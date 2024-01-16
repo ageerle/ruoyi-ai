@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xmzs.system.mapper.SysUserRoleMapper">
+
+    <select id="selectUserIdsByRoleId" resultType="Long">
+        select u.user_id from sys_user u
+        inner join sys_user_role sur
+            on u.user_id = sur.user_id and sur.role_id = #{roleId}
+    </select>
+
+</mapper>

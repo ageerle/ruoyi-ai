@@ -1,0 +1,5 @@
+com.xmzs.common.web.config.CaptchaConfig
+com.xmzs.common.web.config.FilterConfig
+com.xmzs.common.web.config.I18nConfig
+com.xmzs.common.web.config.ResourcesConfig
+com.xmzs.common.web.config.UndertowConfig

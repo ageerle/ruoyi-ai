@@ -1,0 +1,150 @@
+--- # 监控中心配置
+spring.boot.admin.client:
+  # 增加客户端开关
+  enabled: true
+  url: http://localhost:9090/admin
+  instance:
+    service-host-type: IP
+  username: ruoyi
+  password: 123456
+
+--- # xxl-job 配置
+xxl.job:
+  # 执行器开关
+  enabled: false
+  # 调度中心地址：如调度中心集群部署存在多个地址则用逗号分隔。
+  admin-addresses: http://localhost:9100/xxl-job-admin
+  # 执行器通讯TOKEN：非空时启用
+  access-token: xxl-job
+  executor:
+    # 执行器AppName：执行器心跳注册分组依据；为空则关闭自动注册
+    appname: xxl-job-executor
+    # 执行器端口号 执行器从9101开始往后写
+    port: 9101
+    # 执行器注册：默认IP:PORT
+    address:
+    # 执行器IP：默认自动获取IP
+    ip:
+    # 执行器运行日志文件存储磁盘路径
+    logpath: ./logs/xxl-job
+    # 执行器日志文件保存天数：大于3生效
+    logretentiondays: 30
+
+--- # 数据源配置
+spring:
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
+    dynamic:
+      # 性能分析插件(有性能损耗 不建议生产环境使用)
+      p6spy: true
+      # 设置默认的数据源或者数据源组,默认值即为 master
+      primary: master
+      # 严格模式 匹配不到数据源则报错
+      strict: true
+      datasource:
+        # 主库数据源
+        master:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
+          # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
+          url: jdbc:mysql://127.0.0.1:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+          username: ry-vue
+          password: ry-vue
+
+        # 从库数据源
+#        slave:
+#          lazy: true
+#          type: ${spring.datasource.type}
+#          driverClassName: com.mysql.cj.jdbc.Driver
+#          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+#          username:
+#          password:
+#        oracle:
+#          type: ${spring.datasource.type}
+#          driverClassName: oracle.jdbc.OracleDriver
+#          url: jdbc:oracle:thin:@//localhost:1521/XE
+#          username: ROOT
+#          password: root
+#          hikari:
+#            connectionTestQuery: SELECT 1 FROM DUAL
+#        postgres:
+#          type: ${spring.datasource.type}
+#          driverClassName: org.postgresql.Driver
+#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
+#          username: root
+#          password: root
+#        sqlserver:
+#          type: ${spring.datasource.type}
+#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
+#          username: SA
+#          password: root
+      hikari:
+        # 最大连接池数量
+        maxPoolSize: 20
+        # 最小空闲线程数量
+        minIdle: 10
+        # 配置获取连接等待超时的时间
+        connectionTimeout: 30000
+        # 校验超时时间
+        validationTimeout: 5000
+        # 空闲连接存活最大时间，默认10分钟
+        idleTimeout: 600000
+        # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+        maxLifetime: 1800000
+        # 连接测试query（配置检测连接是否有效）
+        connectionTestQuery: SELECT 1
+        # 多久检查一次连接的活性
+        keepaliveTime: 30000
+
+--- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
+spring.data:
+  redis:
+    # 地址
+    host: localhost
+    # 端口，默认为6379
+    port: 6379
+    # 数据库索引
+    database: 0
+    # 密码(如没有密码请注释掉)
+    # password:
+    # 连接超时时间
+    timeout: 10s
+    # 是否开启ssl
+    ssl: false
+
+redisson:
+  # redis key前缀
+  keyPrefix:
+  # 线程池数量
+  threads: 4
+  # Netty线程池数量
+  nettyThreads: 8
+  # 单节点配置
+  singleServerConfig:
+    # 客户端名称
+    clientName: ${ruoyi.name}
+    # 最小空闲连接数
+    connectionMinimumIdleSize: 8
+    # 连接池大小
+    connectionPoolSize: 32
+    # 连接空闲超时，单位：毫秒
+    idleConnectionTimeout: 10000
+    # 命令等待超时，单位：毫秒
+    timeout: 3000
+    # 发布和订阅连接池大小
+    subscriptionConnectionPoolSize: 50
+
+--- # sms 短信
+sms:
+  enabled: false
+  # 阿里云 dysmsapi.aliyuncs.com
+  # 腾讯云 sms.tencentcloudapi.com
+  endpoint: "dysmsapi.aliyuncs.com"
+  accessKeyId: xxxxxxx
+  accessKeySecret: xxxxxx
+  signName: 测试
+  # 腾讯专用
+  sdkAppId:

@@ -1,0 +1,44 @@
+export interface ${BusinessName}VO {
+#foreach ($column in $columns)
+#if($column.insert || $column.edit)
+  /**
+   * $column.columnComment
+   */
+  $column.javaField:#if($column.javaField.indexOf("id") != -1 || $column.javaField.indexOf("Id") != -1) string | number;
+                        #elseif($column.javaType == 'Long' || $column.javaType == 'Integer' || $column.javaType == 'Double' || $column.javaType == 'Float' || $column.javaType == 'BigDecimal') number;
+                        #elseif($column.javaType == 'Boolean') boolean;
+                        #else string;
+                    #end
+#end
+#end
+}
+
+export interface ${BusinessName}Form extends BaseEntity {
+#foreach ($column in $columns)
+#if($column.insert || $column.edit)
+  /**
+   * $column.columnComment
+   */
+  $column.javaField?:#if($column.javaField.indexOf("id") != -1 || $column.javaField.indexOf("Id") != -1) string | number;
+                        #elseif($column.javaType == 'Long' || $column.javaType == 'Integer' || $column.javaType == 'Double' || $column.javaType == 'Float' || $column.javaType == 'BigDecimal') number;
+                        #elseif($column.javaType == 'Boolean') boolean;
+                        #else string;
+                    #end
+#end
+#end
+}
+
+export interface ${BusinessName}Query #if(!${treeCode})extends PageQuery #end{
+#foreach ($column in $columns)
+#if($column.query)
+  /**
+   * $column.columnComment
+   */
+  $column.javaField?:#if($column.javaField.indexOf("id") != -1 || $column.javaField.indexOf("Id") != -1) string | number;
+                        #elseif($column.javaType == 'Long' || $column.javaType == 'Integer' || $column.javaType == 'Double' || $column.javaType == 'Float' || $column.javaType == 'BigDecimal') number;
+                        #elseif($column.javaType == 'Boolean') boolean;
+                        #else string;
+                    #end
+#end
+#end
+}

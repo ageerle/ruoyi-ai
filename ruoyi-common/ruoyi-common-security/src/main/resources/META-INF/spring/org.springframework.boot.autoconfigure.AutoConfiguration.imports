@@ -1,0 +1,3 @@
+com.xmzs.common.security.handler.GlobalExceptionHandler
+com.xmzs.common.security.handler.AllUrlHandler
+com.xmzs.common.security.config.SecurityConfig
