@@ -62,6 +62,11 @@
   <img style="margin-top:10px" src="./image/09.png" alt="drawing" width="550px" height="300px"/>
 </div>
 
+## 语音克隆
+<div>
+  <video src="./video/01.mp4"></video>
+</div>
+
 ## 私有知识库管理（开发中）
 <div>
   <img style="margin-top:10px" src="./image/12.png" alt="drawing" width="550px" height="300px"/>
