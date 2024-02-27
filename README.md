@@ -11,24 +11,25 @@
 > 本项目完全开源免费！
 后台管理界面使用elementUI服务端使用Java17+SpringBoot3.X
 
+> 项目文档：https://1m29197bp6.k.topthink.com/@ruoyi-ai/xiangmuchushihua.html
+
 实现功能
-1. 接入ChatGPT-4-1106-preview,gpt-4-vision-preview,dall-e-3模型
-2. 支持ChatGPT-4-All alltools版本，集成识图、画图、联网和code interpreter
-3. 支持GPTS 可以使用openai的所有的GPTs
-4. 接入AzureOpenAI
-5. 接入文生图模型Midjourney( 史上最强AI画图)
-6. 接入微信支付
-7. 支持微信小程序
-
+1. 支持ChatGPT4,Dall-E-3,ChatGPT-4-All模型
+2. 支持语音克隆(只需5分钟素材,即可克隆任意音色,基于GPT-SoVITS实现)
+3. 支持GPTS 可以使用Openai的所有的GPTs
+4. 支持文生图模型 MidJourney
+5. 支持微信小程序
+6. 支持个人二维码实时到账(易支付)
+7. 支持斗鱼、B站等直播间弹幕监听和AI自动回复
+8. 支持个人微信接入ChatGPT
 >测试功能: 私有知识库
-
+> 
 >项目地址
 <ul>
-<li>后端: https://gitee.com/ageerle/ruoyi-ai</li>
-<li>小程序端: https://gitee.com/ageerle/ruoyi-uniapp</li>
-<li>前端-后台管理: https://gitee.com/ageerle/ruoyi-admin</li>
-<li>前端-用户端: https://gitee.com/ageerle/ruoyi-web</li>
-<li>演示地址: web.pandarobot.chat</li>
+<li>小程序端: https://github.com/ageerle/ruoyi-uniapp</li>
+<li>前端-后台管理: https://github.com/ageerle/ruoyi-admin</li>
+<li>前端-用户端: https://github.com/ageerle/ruoyi-web</li>
+<li>演示地址: https://web.pandarobot.chat</li>
 </ul>
 
 
@@ -73,9 +74,9 @@
   <img src="./image/02.png" alt="drawing" width="300px" height="300px"/>
 </div>
 
-
 ## 参考项目
 <ol>
 <li>https://github.com/Grt1228/chatgpt-java</li>
+<li>https://github.com/Dooy/chatgpt-web-midjourney-proxy</li>
 <li>https://gitee.com/dromara/RuoYi-Vue-Plus</li>
 </ol>
