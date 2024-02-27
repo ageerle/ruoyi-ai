@@ -63,9 +63,11 @@
 </div>
 
 ## 语音克隆
-<div>
-  <video src="./video/01.mp4"></video>
-</div>
+
+<video src="https://github.com/ageerle/ruoyi-ai/blob/main/video/81d065fabda5c26f66b514442dce74a3.mp4?raw=true" controls="controls">
+您的浏览器不支持 video 标签。
+</video>
+
 
 ## 私有知识库管理（开发中）
 <div>
