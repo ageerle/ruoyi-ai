@@ -71,7 +71,6 @@
 ## 进群学习
 <div>
   <img src="./image/01.png" alt="drawing" width="300px" height="300px"/>
-  <img src="./image/02.png" alt="drawing" width="300px" height="300px"/>
 </div>
 
 ## 参考项目
