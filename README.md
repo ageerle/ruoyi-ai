@@ -63,10 +63,8 @@
 </div>
 
 ## 语音克隆
+https://github.com/ageerle/ruoyi-ai/assets/32251822/62c60f2a-add0-421b-8e32-16ed6a3e598b
 
-<video src="https://github.com/ageerle/ruoyi-ai/blob/main/video/81d065fabda5c26f66b514442dce74a3.mp4?raw=true" controls="controls">
-您的浏览器不支持 video 标签。
-</video>
 
 
 ## 私有知识库管理（开发中）
