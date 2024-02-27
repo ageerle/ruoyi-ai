@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package tech.ordinaryroad.live.chat.client.douyin.protobuf;
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf";
+option java_outer_classname = "douyin_websocket_frame_msgProto";
+option java_multiple_files = true;
+option objc_class_prefix = "GPB";
+
+import "douyin_cmd_msg.proto";
+
+message douyin_websocket_frame_msg {
+  repeated douyin_cmd_msg messages_list = 1;
+  string cursor = 2;
+  uint64 fetch_interval = 3;
+  uint64 now = 4;
+  string internal_ext = 5;
+  uint32 fetch_type = 6;
+  map<string, string> route_params = 7;
+  uint64 heartbeat_duration = 8;
+  bool need_ack = 9;
+  string push_server = 10;
+  string live_cursor = 11;
+  bool history_no_more = 12;
+}

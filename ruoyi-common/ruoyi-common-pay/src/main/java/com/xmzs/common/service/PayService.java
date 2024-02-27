@@ -19,5 +19,4 @@ public interface PayService {
      * @return String
      **/
     String getPayUrl(String orderNo, String name, double money, String clientIp);
-
 }

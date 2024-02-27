@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.ContentType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmzs.common.chat.config.LocalCache;
+import com.xmzs.common.chat.entity.Tts.TextToSpeech;
 import com.xmzs.common.chat.entity.billing.BillingUsage;
 import com.xmzs.common.chat.entity.billing.KeyInfo;
 import com.xmzs.common.chat.entity.billing.Subscription;
@@ -37,10 +38,12 @@ import com.xmzs.common.chat.entity.chat.ChatCompletion;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -344,6 +347,67 @@ public class OpenAiStreamClient {
         Transcriptions transcriptions = Transcriptions.builder().build();
         return this.speechToTextTranscriptions(file, transcriptions);
     }
+    /**
+     * 文本转语音（异步）
+     *
+     * @param textToSpeech 参数
+     * @param callback     返回值接收
+     * @since 1.1.2
+     */
+    public void textToSpeech(TextToSpeech textToSpeech, retrofit2.Callback callback) {
+        retrofit2.Call<ResponseBody> responseBody = this.openAiApi.textToSpeech(textToSpeech);
+        responseBody.enqueue(callback);
+    }
+
+    /**
+     * 文本转语音（同步）
+     *
+     * @param textToSpeech 参数
+     * @since 1.1.3
+     */
+    public ResponseBody textToSpeech(TextToSpeech textToSpeech){
+        Call<ResponseBody> responseBody = this.openAiApi.textToSpeech(textToSpeech);
+        try {
+            return responseBody.execute().body();
+        } catch (IOException e) {
+            throw new BaseException("文本转语音（同步）失败: "+e.getMessage());
+        }
+    }
+
+    /**
+     * 文本转语音（克隆）
+     *
+     * @param textToSpeech
+     * @return
+     */
+    public ResponseBody textToSpeechClone(TextToSpeech textToSpeech) {
+        String baseUrl = "http://localhost:8081";
+        String spk = "三月七";
+        String text = textToSpeech.getInput();
+        String lang = "zh";
+
+        // 创建OkHttpClient实例
+        OkHttpClient client = new OkHttpClient();
+
+        // 构建请求URL
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(baseUrl).newBuilder();
+        urlBuilder.addQueryParameter("spk", spk);
+        urlBuilder.addQueryParameter("text", text);
+        urlBuilder.addQueryParameter("lang", lang);
+        String url = urlBuilder.build().toString();
+
+        // 创建请求对象
+        Request request = new Request.Builder()
+            .url(url)
+            .build();
+        // 发送请求并处理响应
+        try {
+            return client.newCall(request).execute().body();
+        } catch (IOException e) {
+            throw new BaseException("语音克隆失败！{}",e.getMessage());
+        }
+    }
+
 
     /**
      * 构造

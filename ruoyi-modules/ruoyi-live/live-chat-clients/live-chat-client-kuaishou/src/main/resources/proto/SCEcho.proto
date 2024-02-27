@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message SCEcho {
+  string content = 1;
+
+}

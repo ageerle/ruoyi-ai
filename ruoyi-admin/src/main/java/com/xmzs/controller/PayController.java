@@ -73,7 +73,6 @@ public class PayController {
         return R.ok(paymentOrdersVo);
     }
 
-
     /**
      * 跳转通知地址
      *
@@ -138,6 +137,9 @@ public class PayController {
         BeanUtil.copyProperties(paymentOrdersVo,paymentOrdersBo);
         paymentOrdersService.updateByBo(paymentOrdersBo);
         SysUserVo sysUserVo = userService.selectUserById(paymentOrdersVo.getUserId());
+        if(money>9.9){
+            money = money*2;
+        }
         sysUserVo.setUserBalance(sysUserVo.getUserBalance()+money);
         SysUserBo sysUserBo = new SysUserBo();
         BeanUtil.copyProperties(sysUserVo,sysUserBo);

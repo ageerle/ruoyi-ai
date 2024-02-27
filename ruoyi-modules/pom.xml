@@ -14,7 +14,9 @@
         <module>ruoyi-demo</module>
         <module>ruoyi-generator</module>
         <module>ruoyi-job</module>
+        <module>ruoyi-midjourney</module>
         <module>ruoyi-system</module>
+        <module>ruoyi-live</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

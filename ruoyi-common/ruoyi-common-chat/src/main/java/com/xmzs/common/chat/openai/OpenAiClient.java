@@ -668,7 +668,6 @@ public class OpenAiClient {
         return this.chatCompletion(chatCompletion);
     }
 
-
     /**
      * 语音翻译：目前仅支持翻译为英文
      *

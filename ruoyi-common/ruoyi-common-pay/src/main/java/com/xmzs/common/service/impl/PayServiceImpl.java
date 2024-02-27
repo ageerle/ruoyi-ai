@@ -40,5 +40,4 @@ public class PayServiceImpl implements PayService {
         JSONObject jsonObject = new JSONObject(body);
         return (String) jsonObject.get("qrcode");
     }
-
 }

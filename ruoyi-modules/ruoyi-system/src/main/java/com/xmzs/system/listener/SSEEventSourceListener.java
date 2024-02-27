@@ -3,18 +3,14 @@ package com.xmzs.system.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmzs.common.chat.config.LocalCache;
-import com.xmzs.common.chat.entity.chat.BaseChatCompletion;
+import com.xmzs.common.chat.constant.OpenAIConst;
 import com.xmzs.common.chat.entity.chat.ChatCompletionResponse;
 import com.xmzs.common.chat.utils.TikTokensUtil;
-import com.xmzs.common.core.domain.model.LoginUser;
-import com.xmzs.common.core.exception.base.BaseException;
 import com.xmzs.common.core.utils.SpringUtils;
 import com.xmzs.common.core.utils.StringUtils;
-import com.xmzs.common.satoken.utils.LoginHelper;
 import com.xmzs.system.domain.bo.ChatMessageBo;
-import com.xmzs.system.service.ChatService;
+import com.xmzs.system.service.IChatService;
 import com.xmzs.system.service.IChatMessageService;
-import com.xmzs.system.service.TextReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -69,16 +65,28 @@ public class SSEEventSourceListener extends EventSourceListener {
                 //成功响应
                 emitter.complete();
                 if(StringUtils.isNotEmpty(modelName)){
-                    ChatService chatService = SpringUtils.context().getBean(ChatService.class);
-                    // 扣除余额
-                    int tokens = TikTokensUtil.tokens(modelName,stringBuffer.toString());
+                    IChatService IChatService = SpringUtils.context().getBean(IChatService.class);
+                    IChatMessageService chatMessageService = SpringUtils.context().getBean(IChatMessageService.class);
                     ChatMessageBo chatMessageBo = new ChatMessageBo();
                     chatMessageBo.setModelName(modelName);
                     chatMessageBo.setContent(stringBuffer.toString());
-                    chatMessageBo.setTotalTokens(tokens);
                     Long userId = (Long)LocalCache.CACHE.get("userId");
                     chatMessageBo.setUserId(userId);
-                    chatService.deductToken(chatMessageBo);
+                    if("gpt-4-all".equals(modelName)
+                        || modelName.startsWith("gpt-4-gizmo")
+                        || modelName.startsWith("net")){
+                        // 扣除余额
+                        IChatService.deductUserBalance(userId, OpenAIConst.GPT4_ALL_COST);
+                        chatMessageBo.setDeductCost(OpenAIConst.GPT4_ALL_COST);
+                        chatMessageBo.setTotalTokens(0);
+                        // 保存消息记录
+                        chatMessageService.insertByBo(chatMessageBo);
+                    }else {
+                        // 扣除余额
+                        int tokens = TikTokensUtil.tokens(modelName,stringBuffer.toString());
+                        chatMessageBo.setTotalTokens(tokens);
+                        IChatService.deductToken(chatMessageBo);
+                    }
                 }
                 return;
             }

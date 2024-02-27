@@ -94,7 +94,7 @@ public class CaptchaController {
         String code = RandomUtil.randomNumbers(4);
         RedisUtils.setCacheObject(key, code, Duration.ofMinutes(Constants.CAPTCHA_EXPIRATION));
         try {
-            MailUtils.sendText(emailRequest.getUsername(), "【GPT助手】登录验证码", "您本次验证码为：" + code + "，有效性为" + Constants.CAPTCHA_EXPIRATION + "分钟，请尽快填写。");
+            MailUtils.sendText(emailRequest.getUsername(), "【熊猫助手】登录验证码", "您本次验证码为：" + code + "，有效性为" + Constants.CAPTCHA_EXPIRATION + "分钟，请尽快填写。");
         } catch (Exception e) {
             log.error("验证码短信发送异常 => {}", e.getMessage());
             return R.fail(e.getMessage());

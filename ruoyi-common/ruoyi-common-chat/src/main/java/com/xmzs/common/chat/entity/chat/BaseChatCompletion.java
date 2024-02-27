@@ -175,6 +175,10 @@ public class BaseChatCompletion implements Serializable {
          */
         GPT_3_5_TURBO_16K_0613("gpt-3.5-turbo-16k-0613"),
         /**
+         * gpt-3.5-turbo-0125 超长上下文 支持函数
+         */
+        GPT_3_5_TURBO_0125("gpt-3.5-turbo-0125"),
+        /**
          * GPT4.0
          */
         GPT_4("gpt-4"),
@@ -209,6 +213,10 @@ public class BaseChatCompletion implements Serializable {
          * 支持图片
          */
         GPT_4_VISION_PREVIEW("gpt-4-vision-preview"),
+        /**
+         * gpt-4-0613，支持函数
+         */
+        GPT_4_0125_PREVIEW("gpt-4-0125-preview"),
         ;
         private final String name;
     }

@@ -1,0 +1,12 @@
+syntax = "proto3";
+import "TextFormat.proto";
+import "TextPiece.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
+
+message Text {
+  string key = 1;
+  string default_patter = 2;
+  TextFormat default_format = 3;
+  TextPiece pieces_list = 4;
+}

@@ -59,6 +59,11 @@
             <artifactId>ruoyi-job</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.xmzs</groupId>
+            <artifactId>ruoyi-midjourney</artifactId>
+        </dependency>
+
         <!-- 代码生成-->
         <dependency>
             <groupId>com.xmzs</groupId>
@@ -71,10 +76,10 @@
             <artifactId>ruoyi-demo</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>de.codecentric</groupId>
-            <artifactId>spring-boot-admin-starter-client</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>de.codecentric</groupId>-->
+<!--            <artifactId>spring-boot-admin-starter-client</artifactId>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

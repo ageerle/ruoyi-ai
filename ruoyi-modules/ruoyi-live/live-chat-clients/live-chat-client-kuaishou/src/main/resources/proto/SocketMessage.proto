@@ -1,0 +1,17 @@
+syntax = "proto3";
+import "PayloadType.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message SocketMessage {
+  PayloadType payloadType = 1;
+  CompressionType compressionType = 2;
+  bytes payload = 3;
+
+enum CompressionType {
+  UNKNOWN = 0;
+  NONE = 1;
+  GZIP = 2;
+  AES = 3;
+}
+}

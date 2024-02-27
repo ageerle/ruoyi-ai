@@ -10,7 +10,7 @@
 
     <name>ruoyi-ai</name>
     <url>https://gitee.com/ageerle/ruoyi-ai</url>
-    <description>AI助手后台管理系统</description>
+    <description>AI助手</description>
 
     <properties>
         <revision>1.0.0</revision>
@@ -242,16 +242,16 @@
                 <version>${tencent.sms.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>de.codecentric</groupId>
-                <artifactId>spring-boot-admin-starter-server</artifactId>
-                <version>${spring-boot-admin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.codecentric</groupId>
-                <artifactId>spring-boot-admin-starter-client</artifactId>
-                <version>${spring-boot-admin.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>de.codecentric</groupId>-->
+<!--                <artifactId>spring-boot-admin-starter-server</artifactId>-->
+<!--                <version>${spring-boot-admin.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>de.codecentric</groupId>-->
+<!--                <artifactId>spring-boot-admin-starter-client</artifactId>-->
+<!--                <version>${spring-boot-admin.version}</version>-->
+<!--            </dependency>-->
 
             <!--redisson-->
             <dependency>
@@ -315,6 +315,12 @@
             <dependency>
                 <groupId>com.xmzs</groupId>
                 <artifactId>ruoyi-job</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.xmzs</groupId>
+                <artifactId>ruoyi-midjourney</artifactId>
                 <version>${revision}</version>
             </dependency>
 

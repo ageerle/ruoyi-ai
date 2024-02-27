@@ -220,11 +220,11 @@ mail:
   # 是否需要用户名密码验证
   auth: true
   # 发送方，遵循RFC-822标准
-  from: xxx@163.com
+  from: ageerle@163.com
   # 用户名（注意：如果使用foxmail邮箱，此处user为qq号）
-  user: xxx@163.com
+  user: ageerle@163.com
   # 密码（填写授权码）
-  pass: pass
+  pass: TOGXBVPYFVPFRQMQ
   # 使用 STARTTLS安全连接，STARTTLS是对纯文本通信协议的扩展。
   starttlsEnable: true
   # 使用SSL安全连接
@@ -318,14 +318,10 @@ websocket:
   path: ''
   # 设置访问源地址
   allowedOrigins: '*'
-# AI助手配置信息
+# chatgpt配置信息
 chat:
-  apiKey: ''
-  apiHost: ''
-# 中转接口
-transit:
-  apiKey: ''
-  apiHost: 'https://api.gptgod.online/'
+  apiKey: 'sk-uMCP3lTg1dQ9L7Xs2bF352Fa216a4c9280577b205dE67e12'
+  apiHost: 'https://api.pandarobot.chat/'
 # 微信小程序配置信息
 wx:
   miniapp:
@@ -343,3 +339,37 @@ baidu:
     apiKey: '' # apiKey
     secretKey: '' # secretKey
 
+wechat:
+  #  是否使用微信 true/false
+  enable: true
+  #  生成的登录二维码路径 默认与项目同级
+  qrPath: "./"
+
+keyword:
+  #  重置会话指令
+  reset: "重置会话"
+  #  ai画图指令(DALL·E模型 https://platform.openai.com/docs/models/dall-e)
+  #  generation 根据关键词生成图片(https://platform.openai.com/docs/guides/images/generations)
+  image: "ai画图"
+  #  ai语音指令(TTS模型 https://platform.openai.com/docs/api-reference/audio)
+  audio: "ai语音"
+mj:
+  api-secret:
+  task-store:
+    type: in_memory
+    timeout: 30d
+  translate-way: gpt
+#  proxy:
+#    host: 127.0.0.1
+#    port: 10809
+  ng-discord:
+    server: https://discord.pandarobot.chat/
+    cdn: https://app.pandarobot.chat/
+    wss: https://gateway.pandarobot.chat/
+  openai:
+    gpt-api-url: 'https://api.pandarobot.chat/'
+    gpt-api-key: 'sk-xxx'
+  accounts:
+    - guild-id: 'xxxxx'
+      channel-id: 'xxxxx'
+      user-token: 'xx.xx'

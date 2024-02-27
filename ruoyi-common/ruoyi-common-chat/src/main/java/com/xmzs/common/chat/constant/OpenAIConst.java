@@ -12,15 +12,17 @@ public class OpenAIConst {
 
     public final static int SUCCEED_CODE = 200;
 
-    public final static double GPT3_COST = 0.03;
+    public final static double GPT3_COST = 0.05;
 
     public final static double GPT4_COST = 0.3;
 
+    public final static double GPT4_ALL_COST = 0.3;
+
     /** 绘图费用 */
-    public final static double DALL3_COST = 0.3;
+    public final static double DALL3_COST = 0.4;
 
     /** 绘图费用-高清 */
-    public final static double DALL3_HD_COST = 0.6;
+    public final static double DALL3_HD_COST = 0.8;
 
     /** mdjourney绘图费用 */
     public final static double MJ_COST = 0.3;

@@ -34,6 +34,7 @@
         <module>ruoyi-common-tenant</module>
         <module>ruoyi-common-chat</module>
         <module>ruoyi-common-pay</module>
+        <module>ruoyi-common-wechat</module>
     </modules>
 
     <artifactId>ruoyi-common</artifactId>

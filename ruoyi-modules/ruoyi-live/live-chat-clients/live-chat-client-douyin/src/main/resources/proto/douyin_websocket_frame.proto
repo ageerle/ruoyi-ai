@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package tech.ordinaryroad.live.chat.client.douyin.protobuf;
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf";
+option java_outer_classname = "Douyin_websocket_frameProto";
+option java_multiple_files = true;
+option objc_class_prefix = "GPB";
+
+message douyin_websocket_frame {
+  uint64 seq_id = 1;
+  uint64 log_id = 2;
+  uint64 service = 3;
+  uint64 method = 4;
+  map<string, string> headers_list = 5;
+  string payload_encoding = 6;
+  string payload_type = 7;
+  bytes payload = 8;
+}

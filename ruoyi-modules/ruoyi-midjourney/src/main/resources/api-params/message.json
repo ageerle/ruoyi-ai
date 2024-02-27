@@ -1,0 +1,13 @@
+{
+  "content":"$content",
+  "channel_id":"$channel_id",
+  "type":0,
+  "sticker_ids":[],
+  "attachments":[
+    {
+      "id":"0",
+      "filename": "$file_name",
+      "uploaded_filename": "$final_file_name"
+    }
+  ]
+}

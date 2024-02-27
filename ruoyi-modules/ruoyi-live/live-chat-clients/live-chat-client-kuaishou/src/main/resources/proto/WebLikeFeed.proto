@@ -1,0 +1,12 @@
+syntax = "proto3";
+import "SimpleUserInfo.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message WebLikeFeed {
+  string id = 1;
+  SimpleUserInfo user = 2;
+  uint64 sortRank = 3;
+  string deviceHash = 4;
+
+}

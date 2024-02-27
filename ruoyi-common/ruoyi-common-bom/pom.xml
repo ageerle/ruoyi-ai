@@ -166,6 +166,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 微信模块 -->
+            <dependency>
+                <groupId>com.xmzs</groupId>
+                <artifactId>ruoyi-common-wechat</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!-- 支付模块 -->
             <dependency>
                 <groupId>com.xmzs</groupId>

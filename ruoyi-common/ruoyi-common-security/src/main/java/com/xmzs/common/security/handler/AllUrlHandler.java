@@ -30,8 +30,10 @@ public class AllUrlHandler implements InitializingBean {
         Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();
         map.keySet().forEach(info -> {
             // 获取注解上边的 path 替代 path variable 为 *
-            Objects.requireNonNull(info.getPathPatternsCondition().getPatterns())
+            if(info.getPathPatternsCondition()!=null){
+                Objects.requireNonNull(info.getPathPatternsCondition().getPatterns())
                     .forEach(url -> set.add(ReUtil.replaceAll(url.getPatternString(), PATTERN, "*")));
+            }
         });
         urls.addAll(set);
     }

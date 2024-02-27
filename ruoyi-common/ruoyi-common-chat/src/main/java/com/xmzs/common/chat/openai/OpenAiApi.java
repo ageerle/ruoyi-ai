@@ -1,5 +1,6 @@
 package com.xmzs.common.chat.openai;
 
+import com.xmzs.common.chat.entity.Tts.TextToSpeech;
 import com.xmzs.common.chat.entity.chat.ChatCompletionWithPicture;
 import io.reactivex.Single;
 import okhttp3.MultipartBody;
@@ -33,6 +34,7 @@ import com.xmzs.common.chat.entity.models.ModelResponse;
 import com.xmzs.common.chat.entity.moderations.Moderation;
 import com.xmzs.common.chat.entity.moderations.ModerationResponse;
 import com.xmzs.common.chat.entity.whisper.WhisperResponse;
+import retrofit2.Call;
 import retrofit2.http.*;
 
 import java.time.LocalDate;
@@ -340,4 +342,15 @@ public interface OpenAiApi {
      */
     @POST("v1/chat/completions")
     Single<ChatCompletionResponse> chatCompletionWithPicture(@Body ChatCompletionWithPicture chatCompletion);
+
+    /**
+     * 文本转语音
+     *
+     * @param textToSpeech 参数
+     * @return ResponseBody body
+     * @since 1.1.2
+     */
+    @POST("v1/audio/speech")
+    @Streaming
+    Call<ResponseBody> textToSpeech(@Body TextToSpeech textToSpeech);
 }

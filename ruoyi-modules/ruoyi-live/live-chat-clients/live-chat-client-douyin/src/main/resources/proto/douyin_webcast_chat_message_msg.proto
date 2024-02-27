@@ -1,0 +1,34 @@
+syntax = "proto3";
+import "Common.proto";
+import "User.proto";
+import "Image.proto";
+
+package tech.ordinaryroad.live.chat.client.douyin.protobuf;
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf";
+option java_outer_classname = "Douyin_webcast_chat_message_msgProto";
+option java_multiple_files = true;
+option objc_class_prefix = "GPB";
+
+message douyin_webcast_chat_message_msg {
+  Common common = 1;
+  User user = 2;
+  string content = 3;
+  bool visible_to_sender = 4;
+  Image background_image = 5;
+  string full_screen_text_color = 6;
+  Image background_image_v2 = 7;
+  // PublicAreaCommon public_area_common = 9;
+  Image gift_image = 10;
+  uint64 agree_msg_id = 11;
+  uint32 priority_level = 12;
+  // LandscapeAreaCommon landscape_area_common = 13;
+  uint64 event_time = 15;
+  bool send_review = 16;
+  bool from_intercom = 17;
+  bool intercom_hide_user_card = 18;
+  // repeated string chatTagsList = 19;
+  string chat_by = 20;
+  uint32 individual_chat_priority = 21;
+  // Text rtf_content = 22 ;
+}

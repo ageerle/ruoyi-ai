@@ -91,6 +91,12 @@
             <groupId>com.xmzs</groupId>
             <artifactId>ruoyi-common-chat</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.xmzs</groupId>
+            <artifactId>ruoyi-common-wechat</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>
