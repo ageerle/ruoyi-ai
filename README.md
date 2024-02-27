@@ -65,6 +65,11 @@
 ## 语音克隆
 https://github.com/ageerle/ruoyi-ai/assets/32251822/62c60f2a-add0-421b-8e32-16ed6a3e598b
 
+## 弹幕助手
+
+
+https://github.com/ageerle/ruoyi-ai/assets/32251822/2d809d94-6cfb-41b1-9dc0-a72ccfc63ba2
+
 
 
 ## 私有知识库管理（开发中）
