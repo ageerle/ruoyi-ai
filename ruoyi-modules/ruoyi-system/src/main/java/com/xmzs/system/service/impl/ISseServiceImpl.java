@@ -74,8 +74,23 @@ public class ISseServiceImpl implements ISseService {
     public SseEmitter sseChat(ChatRequest chatRequest) {
         LocalCache.CACHE.put("userId",getUserId());
         SseEmitter sseEmitter = new SseEmitter(0L);
+        SysUser sysUser = sysUserMapper.selectById(getUserId());
+        // TODO 添加枚举
+        if ("0".equals(sysUser.getUserGrade()) && !ChatCompletion.Model.GPT_3_5_TURBO.getName().equals(chatRequest.getModel())) {
+            // 创建并发送一个名为 "error" 的事件，带有错误消息和状态码
+            SseEmitter.SseEventBuilder event = SseEmitter.event()
+                .name("error") // 客户端将监听这个事件名
+                .data("免费用户暂时不支持此模型,请切换gpt-3.5-turbo模型或者点击《进入市场选购您的商品》充值后使用!");
+            try {
+                sseEmitter.send(event);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            sseEmitter.complete();
+            return sseEmitter;
+        }
+
         SSEEventSourceListener openAIEventSourceListener = new SSEEventSourceListener(sseEmitter);
-        checkUserGrade(sseEmitter, chatRequest.getModel());
         // 获取对话消息列表
         List<Message> msgList = chatRequest.getMessages();
         // 图文识别上下文信息
@@ -255,18 +270,19 @@ public class ISseServiceImpl implements ISseService {
             }
         }
         // TODO 添加枚举
-        if ("0".equals(sysUser.getUserGrade()) && !ChatCompletion.Model.GPT_3_5_TURBO.getName().equals(model)) {
-            // 创建并发送一个名为 "error" 的事件，带有错误消息和状态码
-            SseEmitter.SseEventBuilder event = SseEmitter.event()
-                .name("error") // 客户端将监听这个事件名
-                .data("免费用户暂时不支持此模型,请切换gpt-3.5-turbo模型或者点击《进入市场选购您的商品》充值后使用!");
-            try {
-                emitter.send(event);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            emitter.complete();
-        }
+//        if ("0".equals(sysUser.getUserGrade()) && !ChatCompletion.Model.GPT_3_5_TURBO.getName().equals(model)) {
+//            // 创建并发送一个名为 "error" 的事件，带有错误消息和状态码
+//            SseEmitter.SseEventBuilder event = SseEmitter.event()
+//                .name("error") // 客户端将监听这个事件名
+//                .data("免费用户暂时不支持此模型,请切换gpt-3.5-turbo模型或者点击《进入市场选购您的商品》充值后使用!");
+//            try {
+//                emitter.send(event);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//            emitter.complete();
+//
+//        }
     }
 
     /**
