@@ -91,4 +91,4 @@ https://github.com/ageerle/ruoyi-ai/assets/32251822/2d809d94-6cfb-41b1-9dc0-a72c
 </ol>
 
 ## Star History
-[![Star History Chart](https://api.star-history.com/svg?repos=Kedreamix/ruoyi-ai&type=Date)](https://star-history.com/#Kedreamix/ruoyi-ai&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=ageerle/ruoyi-ai&type=Date)](https://star-history.com/#Kedreamix/ruoyi-ai&Date)
