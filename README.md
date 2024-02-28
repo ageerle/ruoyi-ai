@@ -92,3 +92,4 @@ https://github.com/ageerle/ruoyi-ai/assets/32251822/2d809d94-6cfb-41b1-9dc0-a72c
 
 ## Star History
 [![Star History Chart](https://api.star-history.com/svg?repos=ageerle/ruoyi-ai&type=Date)](https://star-history.com/#ageerle/ruoyi-ai&Date)
+
