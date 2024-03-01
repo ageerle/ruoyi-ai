@@ -39,10 +39,7 @@
             <groupId>com.xmzs</groupId>
             <artifactId>ruoyi-common-satoken</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.xmzs</groupId>
-            <artifactId>ruoyi-common-json</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>

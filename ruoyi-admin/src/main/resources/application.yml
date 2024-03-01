@@ -224,7 +224,7 @@ mail:
   # 用户名（注意：如果使用foxmail邮箱，此处user为qq号）
   user: ageerle@163.com
   # 密码（填写授权码）
-  pass: TOGXBVPYFVPFRQMQ
+  pass: xxxx
   # 使用 STARTTLS安全连接，STARTTLS是对纯文本通信协议的扩展。
   starttlsEnable: true
   # 使用SSL安全连接
@@ -320,7 +320,7 @@ websocket:
   allowedOrigins: '*'
 # chatgpt配置信息
 chat:
-  apiKey: 'sk-uMCP3lTg1dQ9L7Xs2bF352Fa216a4c9280577b205dE67e12'
+  apiKey: 'sk-xxx'
   apiHost: 'https://api.pandarobot.chat/'
 # 微信小程序配置信息
 wx:
@@ -367,9 +367,9 @@ mj:
     cdn: https://app.pandarobot.chat/
     wss: https://gateway.pandarobot.chat/
   openai:
-    gpt-api-url: 'https://api.pandarobot.chat/'
-    gpt-api-key: 'sk-xxx'
+    gpt-api-url: 'https://api.gptgod.online/'
+    gpt-api-key: 'xxxxxxx'
   accounts:
-    - guild-id: 'xxxxx'
+    - guild-id: 'xxxxxx'
       channel-id: 'xxxxx'
-      user-token: 'xx.xx'
+      user-token: 'xxxxxxx'

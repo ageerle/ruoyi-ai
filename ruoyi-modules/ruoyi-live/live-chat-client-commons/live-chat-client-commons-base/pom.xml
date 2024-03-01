@@ -29,10 +29,9 @@
     <parent>
         <groupId>com.xmzs</groupId>
         <artifactId>live-chat-client-commons</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-
-    <packaging>jar</packaging>
 
     <artifactId>live-chat-client-commons-base</artifactId>
     <name>ordinaryroad-live-chat-client-commons-base</name>
