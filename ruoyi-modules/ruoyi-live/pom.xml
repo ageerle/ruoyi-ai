@@ -6,9 +6,10 @@
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
+    <packaging>pom</packaging>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>ruoyi-live</artifactId>
-    <packaging>pom</packaging>
+
     <description>
         AI直播
     </description>

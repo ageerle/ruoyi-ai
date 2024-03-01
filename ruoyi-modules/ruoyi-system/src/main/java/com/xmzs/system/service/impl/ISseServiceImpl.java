@@ -156,7 +156,7 @@ public class ISseServiceImpl implements ISseService {
      */
     @Override
     public ResponseEntity<Resource> textToSpeed(TextToSpeech textToSpeech) {
-        ResponseBody body = openAiStreamClient.textToSpeechClone(textToSpeech);
+        ResponseBody body = openAiStreamClient.textToSpeech(textToSpeech);
         if (body != null) {
             // 将ResponseBody转换为InputStreamResource
             InputStreamResource resource = new InputStreamResource(body.byteStream());

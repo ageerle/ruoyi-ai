@@ -173,6 +173,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 微信模块 -->
+            <dependency>
+                <groupId>com.xmzs</groupId>
+                <artifactId>ruoyi-midjourney</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!-- 支付模块 -->
             <dependency>
                 <groupId>com.xmzs</groupId>
