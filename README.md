@@ -63,7 +63,11 @@
 </div>
 
 ## 语音克隆
-https://github.com/ageerle/ruoyi-ai/assets/32251822/62c60f2a-add0-421b-8e32-16ed6a3e598b
+
+
+https://github.com/ageerle/ruoyi-ai/assets/32251822/c3dd75eb-c5bd-4ab0-93bf-9221f4888827
+
+
 
 ## 弹幕助手
 
