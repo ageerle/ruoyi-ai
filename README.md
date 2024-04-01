@@ -80,12 +80,11 @@ https://github.com/ageerle/ruoyi-ai/assets/32251822/2d809d94-6cfb-41b1-9dc0-a72c
 <div>
   <img style="margin-top:10px" src="./image/12.png" alt="drawing" width="550px" height="300px"/>
   <img style="margin-top:10px" src="./image/私有知识库业务架构图.drawio.png" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/6d44ebcc-1ec4-43e0-b164-cac150e8a044" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/fbd50daf-19d9-4e0f-8e5e-8603af5fb520" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/b14dffe7-2ae1-4fa3-8bb0-bf0b44d7ebd9" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/4ae97a41-f1d2-4bb2-966f-83211193a115" alt="drawing" width="550px" height="300px"/>
 </div>
-![1711955636249](https://github.com/ageerle/ruoyi-ai/assets/32251822/6d44ebcc-1ec4-43e0-b164-cac150e8a044)
-![1711955636262](https://github.com/ageerle/ruoyi-ai/assets/32251822/fbd50daf-19d9-4e0f-8e5e-8603af5fb520)
-![1711955636273](https://github.com/ageerle/ruoyi-ai/assets/32251822/b14dffe7-2ae1-4fa3-8bb0-bf0b44d7ebd9)
-![1711955636284](https://github.com/ageerle/ruoyi-ai/assets/32251822/4ae97a41-f1d2-4bb2-966f-83211193a115)
-
 
 ## 进群学习
 <div>
