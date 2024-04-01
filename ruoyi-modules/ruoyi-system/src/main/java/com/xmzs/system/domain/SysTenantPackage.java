@@ -1,11 +1,13 @@
 package com.xmzs.system.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.xmzs.common.mybatis.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.io.Serial;
 
-import com.xmzs.common.mybatis.core.domain.BaseEntity;
+import java.io.Serial;
 
 /**
  * 租户套餐对象 sys_tenant_package

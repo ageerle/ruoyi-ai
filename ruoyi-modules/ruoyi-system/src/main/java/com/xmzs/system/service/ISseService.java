@@ -3,17 +3,15 @@ package com.xmzs.system.service;
 
 import com.xmzs.common.chat.domain.request.ChatRequest;
 import com.xmzs.common.chat.domain.request.Dall3Request;
-import com.xmzs.common.chat.domain.request.MjTaskRequest;
 import com.xmzs.common.chat.entity.Tts.TextToSpeech;
+import com.xmzs.common.chat.entity.files.UploadFileResponse;
 import com.xmzs.common.chat.entity.images.Item;
 import com.xmzs.common.chat.entity.whisper.WhisperResponse;
-import okhttp3.ResponseBody;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.File;
 import java.util.List;
 
 /**
@@ -54,6 +52,10 @@ public interface ISseService {
     List<Item> dall3(Dall3Request request);
 
 
-    void mjTask(MjTaskRequest mjTaskRequest);
+    /**
+     * 判断用户是否付费
+     */
+    void checkUserGrade();
 
+    UploadFileResponse upload(MultipartFile file);
 }

@@ -24,4 +24,10 @@ public interface IChatService {
      *
      */
     void deductUserBalance(Long userId, Double numberCost);
+
+    /**
+     * 扣除mj任务费用
+     *
+     */
+    void mjTaskDeduct(String prompt, double cost);
 }

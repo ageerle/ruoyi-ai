@@ -1,6 +1,6 @@
 import request from '@/utils/request';
-import { AxiosPromise } from 'axios';
-import { ${BusinessName}VO, ${BusinessName}Form, ${BusinessName}Query } from '@/api/${moduleName}/${businessName}/types';
+import {AxiosPromise} from 'axios';
+import {${BusinessName}Form, ${BusinessName}Query, ${BusinessName}VO} from '@/api/';
 
 /**
  * 查询${functionName}列表

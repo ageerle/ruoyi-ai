@@ -1,14 +1,17 @@
+#基础镜像
 FROM findepi/graalvm:java17-native
 
-MAINTAINER Lion Li
+MAINTAINER ageerle
 
 RUN mkdir -p /ruoyi/server/logs \
     /ruoyi/server/temp \
     /ruoyi/skywalking/agent
 
+
+#工作空间
 WORKDIR /ruoyi/server
 
-ENV SERVER_PORT=8080
+ENV SERVER_PORT=6039
 
 EXPOSE ${SERVER_PORT}
 

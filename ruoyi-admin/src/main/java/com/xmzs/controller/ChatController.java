@@ -3,8 +3,8 @@ package com.xmzs.controller;
 
 import com.xmzs.common.chat.domain.request.ChatRequest;
 import com.xmzs.common.chat.domain.request.Dall3Request;
-import com.xmzs.common.chat.domain.request.MjTaskRequest;
 import com.xmzs.common.chat.entity.Tts.TextToSpeech;
+import com.xmzs.common.chat.entity.files.UploadFileResponse;
 import com.xmzs.common.chat.entity.images.Item;
 import com.xmzs.common.chat.entity.whisper.WhisperResponse;
 import com.xmzs.common.core.domain.R;
@@ -21,24 +21,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.MediaType;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import org.springframework.core.io.Resource;
-
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
-
-import retrofit2.Response;
 
 /**
  * 描述：
@@ -63,6 +53,16 @@ public class ChatController {
     public SseEmitter sseChat(@RequestBody @Valid ChatRequest chatRequest, HttpServletResponse response) {
         return ISseService.sseChat(chatRequest);
     }
+
+    /**
+     * 上传文件
+     */
+    @PostMapping("/v1/upload")
+    @ResponseBody
+    public UploadFileResponse upload(@RequestPart("file") MultipartFile file) {
+        return ISseService.upload(file);
+    }
+
 
     /**
      * 语音转文本
@@ -92,18 +92,6 @@ public class ChatController {
     @ResponseBody
     public R<List<Item>> dall3(@RequestBody @Valid Dall3Request request) {
         return R.ok(ISseService.dall3(request));
-    }
-
-    /**
-     * 扣除mj绘图费用
-     *
-     * @return
-     */
-    @PostMapping("/mjTask")
-    @ResponseBody
-    public R<String> mjTask(@RequestBody MjTaskRequest mjTaskRequest) {
-        ISseService.mjTask(mjTaskRequest);
-        return R.ok();
     }
 
     /**

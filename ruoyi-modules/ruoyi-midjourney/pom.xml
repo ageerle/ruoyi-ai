@@ -110,6 +110,10 @@
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.xmzs</groupId>
+            <artifactId>ruoyi-system</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

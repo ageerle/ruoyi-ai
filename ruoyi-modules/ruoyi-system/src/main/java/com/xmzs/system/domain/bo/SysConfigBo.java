@@ -2,13 +2,14 @@ package com.xmzs.system.domain.bo;
 
 import com.xmzs.common.core.validate.AddGroup;
 import com.xmzs.common.core.validate.EditGroup;
+import com.xmzs.common.mybatis.core.domain.BaseEntity;
 import com.xmzs.system.domain.SysConfig;
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
-
-import com.xmzs.common.mybatis.core.domain.BaseEntity;
 
 /**
  * 参数配置业务对象 sys_config

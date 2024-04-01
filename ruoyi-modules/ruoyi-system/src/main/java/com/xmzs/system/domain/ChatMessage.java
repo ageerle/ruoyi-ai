@@ -1,6 +1,6 @@
 package com.xmzs.system.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.xmzs.common.core.validate.AddGroup;
 import com.xmzs.common.core.validate.EditGroup;
 import com.xmzs.common.mybatis.core.domain.BaseEntity;

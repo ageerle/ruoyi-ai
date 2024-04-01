@@ -16,13 +16,20 @@ import java.io.Serializable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class File implements Serializable {
 
-    private String id;
-    private String object;
+//    private String id;
+//    private String object;
+//    private long bytes;
+//    private long created_at;
+//    private String filename;
+//    private String purpose;
+//    private String status;
+//    @JsonProperty("status_details")
+//    private String statusDetails;
+
     private long bytes;
     private long created_at;
     private String filename;
-    private String purpose;
-    private String status;
-    @JsonProperty("status_details")
-    private String statusDetails;
+    private String id;
+    private String object;
+    private String url;
 }

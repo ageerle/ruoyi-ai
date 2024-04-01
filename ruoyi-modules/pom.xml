@@ -22,7 +22,6 @@
         <module>ruoyi-job</module>
         <module>ruoyi-midjourney</module>
         <module>ruoyi-system</module>
-        <module>ruoyi-live</module>
     </modules>
 
 </project>

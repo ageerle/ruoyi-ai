@@ -1,7 +1,7 @@
 package com.xmzs.web.domain.vo;
 
-import lombok.Data;
 import com.xmzs.common.core.domain.model.LoginUser;
+import lombok.Data;
 
 /**
  * 登录返回信息

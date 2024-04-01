@@ -2,7 +2,6 @@ package com.xmzs.common.chat.entity.chat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.xmzs.common.chat.constant.OpenAIConst;
 import com.xmzs.common.chat.entity.chat.tool.Tools;
 import lombok.*;
@@ -217,6 +216,23 @@ public class BaseChatCompletion implements Serializable {
          * gpt-4-0613，支持函数
          */
         GPT_4_0125_PREVIEW("gpt-4-0125-preview"),
+
+        /**
+         * GPT_4_ALL
+         */
+        GPT_4_ALL("gpt-4-all"),
+
+        GPT_4_GIZMO("gpt-4-gizmo"),
+
+        NET("net"),
+
+        CLAUDE_3_SONNET("claude-3-sonnet-20240229"),
+
+        GEMINI_PRO("gemini-pro"),
+
+        STABLE_DIFFUSION("stable-diffusion"),
+
+        SUNO_V3("suno-v3"),
         ;
         private final String name;
     }
@@ -238,9 +254,10 @@ public class BaseChatCompletion implements Serializable {
     }
 
     public static double getModelCost(String modelName) {
-        return switch (modelName) {
-            case "gpt-3.5-turbo-0613" -> OpenAIConst.GPT3_COST;
-            default -> OpenAIConst.GPT4_COST;
-        };
+        if(modelName.startsWith("gpt-3.5")){
+            return OpenAIConst.GPT3_COST;
+        }else {
+            return OpenAIConst.GPT4_COST;
+        }
     }
 }

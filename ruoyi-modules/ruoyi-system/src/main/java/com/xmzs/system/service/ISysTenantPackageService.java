@@ -1,9 +1,9 @@
 package com.xmzs.system.service;
 
-import com.xmzs.system.domain.vo.SysTenantPackageVo;
-import com.xmzs.system.domain.bo.SysTenantPackageBo;
-import com.xmzs.common.mybatis.core.page.TableDataInfo;
 import com.xmzs.common.mybatis.core.page.PageQuery;
+import com.xmzs.common.mybatis.core.page.TableDataInfo;
+import com.xmzs.system.domain.bo.SysTenantPackageBo;
+import com.xmzs.system.domain.vo.SysTenantPackageVo;
 
 import java.util.Collection;
 import java.util.List;

@@ -23,7 +23,6 @@ import com.xmzs.system.domain.vo.SysUserVo;
 import com.xmzs.system.service.IPaymentOrdersService;
 import com.xmzs.system.service.ISysUserService;
 import com.xmzs.system.util.OrderNumberGenerator;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -43,15 +42,16 @@ public class PayController {
 
     private final IPaymentOrdersService paymentOrdersService;
 
+    private final PayConfig payConfig;
+
     /**
      * 获取支付二维码
      *
      * @Date 2023/7/3
-     * @param response
      * @return void
      **/
     @PostMapping("/payUrl")
-    public R<PaymentOrdersVo> payUrl(HttpServletResponse response, @RequestBody OrderRequest orderRequest) {
+    public R<PaymentOrdersVo> payUrl(@RequestBody OrderRequest orderRequest) {
         LoginUser loginUser = LoginHelper.getLoginUser();
         // 创建订单
         PaymentOrdersBo paymentOrders = new PaymentOrdersBo();
@@ -115,9 +115,9 @@ public class PayController {
     public String returnUrl(PayResponse payResponse) {
         // 校验签名
         String mdString = "money=" + payResponse.getMoney() + "&name=" + payResponse.getName() +
-            "&out_trade_no=" + payResponse.getOut_trade_no() + "&pid=" + PayConfig.pid +
+            "&out_trade_no=" + payResponse.getOut_trade_no() + "&pid=" + payConfig.getPid() +
             "&trade_no=" + payResponse.getTrade_no() + "&trade_status=" + payResponse.getTrade_status() +
-            "&type=" + payResponse.getType() +  PayConfig.key;
+            "&type=" + payResponse.getType() +  payConfig.getKey();
         String sign = MD5Util.GetMD5Code(mdString);
         if(!sign.equals(payResponse.getSign())){
             throw new BaseException("校验签名失败！");
@@ -136,10 +136,8 @@ public class PayController {
         paymentOrdersVo.setPaymentMethod(payResponse.getType());
         BeanUtil.copyProperties(paymentOrdersVo,paymentOrdersBo);
         paymentOrdersService.updateByBo(paymentOrdersBo);
+
         SysUserVo sysUserVo = userService.selectUserById(paymentOrdersVo.getUserId());
-        if(money>9.9){
-            money = money*2;
-        }
         sysUserVo.setUserBalance(sysUserVo.getUserBalance()+money);
         SysUserBo sysUserBo = new SysUserBo();
         BeanUtil.copyProperties(sysUserVo,sysUserBo);

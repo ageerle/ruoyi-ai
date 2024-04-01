@@ -12,6 +12,7 @@ import com.xmzs.common.chat.entity.billing.Subscription;
 import com.xmzs.common.chat.entity.chat.BaseChatCompletion;
 import com.xmzs.common.chat.entity.chat.ChatCompletionResponse;
 import com.xmzs.common.chat.entity.chat.ChatCompletionWithPicture;
+import com.xmzs.common.chat.entity.files.UploadFileResponse;
 import com.xmzs.common.chat.entity.images.Image;
 import com.xmzs.common.chat.entity.images.ImageResponse;
 import com.xmzs.common.chat.entity.models.Model;
@@ -229,6 +230,23 @@ public class OpenAiStreamClient {
         }
         Single<ChatCompletionResponse> chatCompletionResponse = this.openAiApi.chatCompletionWithPicture((ChatCompletionWithPicture) chatCompletion);
         return chatCompletionResponse.blockingGet();
+    }
+
+    /**
+     * 上传文件
+     *
+     * @param purpose purpose
+     * @param file    文件对象
+     * @return UploadFileResponse
+     */
+    public UploadFileResponse uploadFile(String purpose, java.io.File file) {
+        // 创建 RequestBody，用于封装构建RequestBody
+        RequestBody fileBody = RequestBody.create(MediaType.parse("multipart/form-data"), file);
+        MultipartBody.Part multipartBody = MultipartBody.Part.createFormData("file", file.getName(), fileBody);
+
+        RequestBody purposeBody = RequestBody.create(MediaType.parse("multipart/form-data"), purpose);
+        Single<UploadFileResponse> uploadFileResponse = this.openAiApi.uploadFile(multipartBody, purposeBody);
+        return uploadFileResponse.blockingGet();
     }
 
     /**

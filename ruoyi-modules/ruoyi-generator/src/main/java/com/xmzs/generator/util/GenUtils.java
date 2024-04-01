@@ -1,9 +1,9 @@
 package com.xmzs.generator.util;
 
-import com.xmzs.generator.constant.GenConstants;
 import com.xmzs.common.core.utils.StringUtils;
 import com.xmzs.common.satoken.utils.LoginHelper;
 import com.xmzs.generator.config.GenConfig;
+import com.xmzs.generator.constant.GenConstants;
 import com.xmzs.generator.domain.GenTable;
 import com.xmzs.generator.domain.GenTableColumn;
 import lombok.AccessLevel;

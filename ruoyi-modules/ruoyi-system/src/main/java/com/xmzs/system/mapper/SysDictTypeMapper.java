@@ -1,7 +1,7 @@
 package com.xmzs.system.mapper;
 
-import com.xmzs.system.domain.SysDictType;
 import com.xmzs.common.mybatis.core.mapper.BaseMapperPlus;
+import com.xmzs.system.domain.SysDictType;
 import com.xmzs.system.domain.vo.SysDictTypeVo;
 
 /**

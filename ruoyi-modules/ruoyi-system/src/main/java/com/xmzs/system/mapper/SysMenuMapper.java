@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.xmzs.common.core.constant.UserConstants;
-import com.xmzs.system.domain.SysMenu;
 import com.xmzs.common.mybatis.core.mapper.BaseMapperPlus;
+import com.xmzs.system.domain.SysMenu;
 import com.xmzs.system.domain.vo.SysMenuVo;
 import org.apache.ibatis.annotations.Param;
 

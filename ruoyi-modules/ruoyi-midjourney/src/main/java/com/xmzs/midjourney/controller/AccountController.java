@@ -19,6 +19,7 @@ import java.util.List;
 @RequestMapping("/mj/account")
 @RequiredArgsConstructor
 public class AccountController {
+
 	private final DiscordLoadBalancer loadBalancer;
 
 	@ApiOperation(value = "指定ID获取账号")

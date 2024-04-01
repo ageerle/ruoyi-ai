@@ -63,7 +63,11 @@
 </div>
 
 ## 语音克隆
-https://github.com/ageerle/ruoyi-ai/assets/32251822/62c60f2a-add0-421b-8e32-16ed6a3e598b
+
+
+https://github.com/ageerle/ruoyi-ai/assets/32251822/c3dd75eb-c5bd-4ab0-93bf-9221f4888827
+
+
 
 ## 弹幕助手
 
@@ -72,10 +76,14 @@ https://github.com/ageerle/ruoyi-ai/assets/32251822/2d809d94-6cfb-41b1-9dc0-a72c
 
 
 
-## 私有知识库管理（开发中）
+## 私有知识库管理
 <div>
-  <img style="margin-top:10px" src="./image/12.png" alt="drawing" width="550px" height="300px"/>
-  <img style="margin-top:10px" src="./image/私有知识库业务架构图.drawio.png" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px;width:50%" src="./image/12.png" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px;width:50%" src="./image/私有知识库业务架构图.drawio.png" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px;width:50%" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/6d44ebcc-1ec4-43e0-b164-cac150e8a044" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px;width:50%" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/fbd50daf-19d9-4e0f-8e5e-8603af5fb520" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px;width:50%" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/b14dffe7-2ae1-4fa3-8bb0-bf0b44d7ebd9" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px;width:50%" src="https://github.com/ageerle/ruoyi-ai/assets/32251822/4ae97a41-f1d2-4bb2-966f-83211193a115" alt="drawing" width="550px" height="300px"/>
 </div>
 
 ## 进群学习

@@ -1,13 +1,11 @@
 package com.xmzs.system.domain.vo;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.xmzs.common.core.validate.AddGroup;
 import com.xmzs.common.core.validate.EditGroup;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.io.Serial;
 import java.io.Serializable;
 
 /**

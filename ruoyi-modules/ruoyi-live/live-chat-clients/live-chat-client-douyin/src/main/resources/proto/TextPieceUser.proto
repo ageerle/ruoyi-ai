@@ -1,9 +1,0 @@
-syntax = "proto3";
-import "User.proto";
-
-option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
-
-message TextPieceUser {
-  User user = 1;
-  bool with_colon = 2;
-}

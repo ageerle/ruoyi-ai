@@ -5,11 +5,10 @@ import com.xmzs.common.core.validate.EditGroup;
 import com.xmzs.common.mybatis.core.domain.BaseEntity;
 import com.xmzs.demo.domain.TestDemo;
 import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 测试单表业务对象 test_demo

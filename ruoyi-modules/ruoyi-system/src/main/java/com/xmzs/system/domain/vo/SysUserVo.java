@@ -2,15 +2,12 @@ package com.xmzs.system.domain.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.xmzs.common.translation.annotation.Translation;
-import com.xmzs.common.translation.constant.TransConstant;
 import com.xmzs.system.domain.SysUser;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 

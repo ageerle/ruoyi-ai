@@ -9,10 +9,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xmzs.common.core.domain.model.LoginUser;
-import com.xmzs.common.core.exception.base.BaseException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.xmzs.common.core.constant.CacheNames;
 import com.xmzs.common.core.constant.UserConstants;
 import com.xmzs.common.core.exception.ServiceException;
@@ -34,11 +30,12 @@ import com.xmzs.system.domain.vo.SysRoleVo;
 import com.xmzs.system.domain.vo.SysUserVo;
 import com.xmzs.system.mapper.*;
 import com.xmzs.system.service.ISysUserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

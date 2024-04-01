@@ -1,12 +1,13 @@
 package com.xmzs.system.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.xmzs.common.mybatis.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.math.BigDecimal;
 
 import java.io.Serial;
+import java.math.BigDecimal;
 
 /**
  * 支付订单对象 payment_orders

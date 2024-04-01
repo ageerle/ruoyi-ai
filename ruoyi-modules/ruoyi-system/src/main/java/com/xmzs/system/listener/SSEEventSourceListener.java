@@ -1,16 +1,17 @@
 package com.xmzs.system.listener;
 
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmzs.common.chat.config.LocalCache;
-import com.xmzs.common.chat.constant.OpenAIConst;
+import com.xmzs.common.chat.entity.chat.ChatCompletion;
 import com.xmzs.common.chat.entity.chat.ChatCompletionResponse;
 import com.xmzs.common.chat.utils.TikTokensUtil;
 import com.xmzs.common.core.utils.SpringUtils;
 import com.xmzs.common.core.utils.StringUtils;
 import com.xmzs.system.domain.bo.ChatMessageBo;
-import com.xmzs.system.service.IChatService;
 import com.xmzs.system.service.IChatMessageService;
+import com.xmzs.system.service.IChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -72,12 +73,15 @@ public class SSEEventSourceListener extends EventSourceListener {
                     chatMessageBo.setContent(stringBuffer.toString());
                     Long userId = (Long)LocalCache.CACHE.get("userId");
                     chatMessageBo.setUserId(userId);
-                    if("gpt-4-all".equals(modelName)
-                        || modelName.startsWith("gpt-4-gizmo")
-                        || modelName.startsWith("net")){
-                        // 扣除余额
-                        IChatService.deductUserBalance(userId, OpenAIConst.GPT4_ALL_COST);
-                        chatMessageBo.setDeductCost(OpenAIConst.GPT4_ALL_COST);
+                    if(ChatCompletion.Model.GPT_4_ALL.getName().equals(modelName)
+                        || modelName.startsWith(ChatCompletion.Model.GPT_4_GIZMO.getName())
+                        || modelName.startsWith(ChatCompletion.Model.NET.getName())
+                        || ChatCompletion.Model.GPT_4_VISION_PREVIEW.getName().equals(modelName)
+                        || ChatCompletion.Model.CLAUDE_3_SONNET.getName().equals(modelName)
+                        || ChatCompletion.Model.STABLE_DIFFUSION.getName().equals(modelName)
+                        || ChatCompletion.Model.SUNO_V3.getName().equals(modelName)
+                    ){
+                        chatMessageBo.setDeductCost(0.0);
                         chatMessageBo.setTotalTokens(0);
                         // 保存消息记录
                         chatMessageService.insertByBo(chatMessageBo);
@@ -92,7 +96,7 @@ public class SSEEventSourceListener extends EventSourceListener {
             }
             ObjectMapper mapper = new ObjectMapper();
             ChatCompletionResponse completionResponse = mapper.readValue(data, ChatCompletionResponse.class);
-            if(completionResponse == null){
+            if(completionResponse == null || CollectionUtil.isEmpty(completionResponse.getChoices())){
                 return;
             }
             String content = completionResponse.getChoices().get(0).getDelta().getContent();

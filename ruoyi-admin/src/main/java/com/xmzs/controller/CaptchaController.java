@@ -85,6 +85,7 @@ public class CaptchaController {
      *
      * @param emailRequest 用户邮箱
      */
+    //@PostMapping("/resource/email/code")
     @PostMapping("/resource/email/code")
     public R<Void> emailCode(@RequestBody @Valid EmailRequest emailRequest) {
         if (!mailProperties.getEnabled()) {

@@ -1,50 +1,57 @@
 package com.xmzs.common.config;
 
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
 /**
  * 支付配置信息
  *
  * @author Admin
  */
+@Data
+@Component
+@ConfigurationProperties(prefix = "pay")
 public class PayConfig {
 
     /**
      * 商户ID
      */
-    public static String pid = "xxx";
+    private String  pid;
 
     /**
      * 接口地址
      */
-    public static String payUrl = "https://pay-cloud.vip/mapi.php";
+    private String payUrl;
 
     /**
      * 私钥
      */
-    public static String key = "xxx";
+    private String key ;
 
     /**
      * 服务器异步通知地址
      */
-    public static String notify_url = "https://www.pandarobot.chat/pay/returnUrl";
+    private String notify_url;
 
     /**
      * 页面跳转通知地址
      */
-    public static String return_url = "https://www.pandarobot.chat/pay/notifyUrl";
+    private String return_url;
 
     /**
      * 支付方式
      */
-    public static String type = "wxpay";
+    private String type;
 
     /**
      * 设备类型
      */
-    public static String device = "pc";
+    private String device;
 
     /**
      * 加密方式默认MD5
      */
-    public static String sign_type = "MD5";
+    private String sign_type;
 
 }

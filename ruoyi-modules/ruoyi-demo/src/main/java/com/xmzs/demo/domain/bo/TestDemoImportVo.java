@@ -1,10 +1,9 @@
 package com.xmzs.demo.domain.bo;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import lombok.Data;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 /**
  * 测试单表业务对象 test_demo

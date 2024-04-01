@@ -64,6 +64,9 @@
             <artifactId>ruoyi-midjourney</artifactId>
         </dependency>
 
+
+
+
         <!-- 代码生成-->
         <dependency>
             <groupId>com.xmzs</groupId>

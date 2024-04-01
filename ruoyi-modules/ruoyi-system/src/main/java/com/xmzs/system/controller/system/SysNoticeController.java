@@ -1,12 +1,12 @@
 package com.xmzs.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.xmzs.common.log.annotation.Log;
-import com.xmzs.common.web.core.BaseController;
-import com.xmzs.common.mybatis.core.page.PageQuery;
 import com.xmzs.common.core.domain.R;
-import com.xmzs.common.mybatis.core.page.TableDataInfo;
+import com.xmzs.common.log.annotation.Log;
 import com.xmzs.common.log.enums.BusinessType;
+import com.xmzs.common.mybatis.core.page.PageQuery;
+import com.xmzs.common.mybatis.core.page.TableDataInfo;
+import com.xmzs.common.web.core.BaseController;
 import com.xmzs.system.domain.bo.SysNoticeBo;
 import com.xmzs.system.domain.vo.SysNoticeVo;
 import com.xmzs.system.service.ISysNoticeService;

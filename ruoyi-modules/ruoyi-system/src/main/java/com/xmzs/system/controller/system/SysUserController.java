@@ -2,14 +2,9 @@ package com.xmzs.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.secure.BCrypt;
-
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
-import com.xmzs.system.domain.request.UserRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
-import lombok.RequiredArgsConstructor;
 import com.xmzs.common.core.domain.R;
 import com.xmzs.common.core.domain.model.LoginUser;
 import com.xmzs.common.core.utils.MapstructUtils;
@@ -26,9 +21,12 @@ import com.xmzs.common.tenant.helper.TenantHelper;
 import com.xmzs.common.web.core.BaseController;
 import com.xmzs.system.domain.bo.SysDeptBo;
 import com.xmzs.system.domain.bo.SysUserBo;
+import com.xmzs.system.domain.request.UserRequest;
 import com.xmzs.system.domain.vo.*;
 import com.xmzs.system.listener.SysUserImportListener;
 import com.xmzs.system.service.*;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

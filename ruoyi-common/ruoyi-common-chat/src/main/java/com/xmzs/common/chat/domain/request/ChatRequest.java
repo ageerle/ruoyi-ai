@@ -22,16 +22,16 @@ public class ChatRequest {
     @NotEmpty(message = "对话消息不能为空")
     List<Message> messages;
 
-    List<Content> content;
+    List<Content> imageContent;
 
     private String prompt;
 
     private String userId;
 
     /**
-     * 需要识别的图片地址
+     * 知识库id
      */
-    private String imgurl;
+    private String kid;
 
     /**
      * gpt的默认设置

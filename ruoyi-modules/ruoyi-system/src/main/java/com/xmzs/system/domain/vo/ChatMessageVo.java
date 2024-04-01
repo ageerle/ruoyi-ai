@@ -1,12 +1,8 @@
 package com.xmzs.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
-import com.alibaba.excel.annotation.ExcelProperty;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xmzs.common.core.validate.AddGroup;
 import com.xmzs.common.core.validate.EditGroup;
-import com.xmzs.system.handler.CustomerBigDecimalSerialize;
 import com.xmzs.system.domain.ChatMessage;
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +11,6 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 

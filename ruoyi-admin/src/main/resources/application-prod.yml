@@ -4,7 +4,7 @@ spring.servlet.multipart.location: /ruoyi/server/temp
 --- # 监控中心配置
 spring.boot.admin.client:
   # 增加客户端开关
-  enabled: true
+  enabled: false
   url: http://localhost:9090/admin
   instance:
     service-host-type: IP

@@ -11,11 +11,48 @@
  Target Server Version : 80034
  File Encoding         : 65001
 
- Date: 10/01/2024 11:33:28
+ Date: 26/03/2024 18:15:47
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for access_token
+-- ----------------------------
+DROP TABLE IF EXISTS `access_token`;
+CREATE TABLE `access_token`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `app` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '应用',
+  `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'token值',
+  `expired_time` datetime NOT NULL COMMENT '过期时间',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '第三方接口访问token' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of access_token
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for agent_field
+-- ----------------------------
+DROP TABLE IF EXISTS `agent_field`;
+CREATE TABLE `agent_field`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `fid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '领域ID',
+  `field_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '领域名称',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '领域描述',
+  `status` bit(1) NULL DEFAULT b'0' COMMENT '是否生效：0无效1有效',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代理领域' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of agent_field
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for chat_message
@@ -42,6 +79,25 @@ CREATE TABLE `chat_message`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for chat_request_log
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_request_log`;
+CREATE TABLE `chat_request_log`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL COMMENT '用户ID',
+  `kid` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '知识库ID',
+  `request_time` datetime NOT NULL COMMENT '请求时间',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '内容',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '对话请求日志' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of chat_request_log
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for chat_token
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_token`;
@@ -55,6 +111,47 @@ CREATE TABLE `chat_token`  (
 
 -- ----------------------------
 -- Records of chat_token
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for demand
+-- ----------------------------
+DROP TABLE IF EXISTS `demand`;
+CREATE TABLE `demand`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `did` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '需求ID',
+  `fid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '所属领域ID',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '需求内容',
+  `user_id` int NULL DEFAULT NULL COMMENT '用户ID',
+  `unambiguous` bit(1) NULL DEFAULT b'0' COMMENT '明确的',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '需求' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of demand
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for demand_step
+-- ----------------------------
+DROP TABLE IF EXISTS `demand_step`;
+CREATE TABLE `demand_step`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `did` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '需求ID',
+  `fid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '所属领域ID',
+  `step_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '步骤名称',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '步骤描述',
+  `role` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负责人角色',
+  `user_id` int NULL DEFAULT NULL COMMENT '用户ID',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '需求步骤' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of demand_step
 -- ----------------------------
 
 -- ----------------------------
@@ -392,6 +489,107 @@ INSERT INTO `gen_table_column` VALUES (1740573615225053193, 1740573614897897473,
 INSERT INTO `gen_table_column` VALUES (1740573615225053194, 1740573614897897473, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
 INSERT INTO `gen_table_column` VALUES (1740573615225053195, 1740573614897897473, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
 INSERT INTO `gen_table_column` VALUES (1740573615225053196, 1740573614897897473, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 12, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
+
+-- ----------------------------
+-- Table structure for knowledge
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge`;
+CREATE TABLE `knowledge`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `uid` bigint NOT NULL DEFAULT 0 COMMENT '用户ID',
+  `kname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库名称',
+  `description` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_kid`(`kid` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of knowledge
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for knowledge_attach
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_attach`;
+CREATE TABLE `knowledge_attach`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `doc_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档ID',
+  `doc_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档名称',
+  `doc_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档类型',
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文档内容',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_kname`(`kid` ASC, `doc_name` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库附件' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of knowledge_attach
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for knowledge_fragment
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_fragment`;
+CREATE TABLE `knowledge_fragment`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `doc_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文档ID',
+  `fid` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识片段ID',
+  `idx` int NOT NULL COMMENT '片段索引下标',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档内容',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of knowledge_fragment
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for knowledge_share
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_share`;
+CREATE TABLE `knowledge_share`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `uid` int NOT NULL DEFAULT 0 COMMENT '用户ID',
+  `kname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库名称',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库分享表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of knowledge_share
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for media_file
+-- ----------------------------
+DROP TABLE IF EXISTS `media_file`;
+CREATE TABLE `media_file`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `cid` int NOT NULL DEFAULT 0 COMMENT '对话ID',
+  `mfid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '媒体文件ID',
+  `media_type` int NOT NULL COMMENT '媒体类型：1视频，2音频，3图片',
+  `file_suffix` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文件后缀',
+  `file_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文件名',
+  `file_size` bigint NOT NULL COMMENT '文件大小(单位字节)',
+  `file_time` bigint NULL DEFAULT NULL COMMENT '时长(单位秒)',
+  `file_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文件路径',
+  `http_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'http全路径',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '媒体文件' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of media_file
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for mj_room
@@ -772,57 +970,6 @@ CREATE TABLE `sys_file_info`  (
 -- ----------------------------
 -- Records of sys_file_info
 -- ----------------------------
-INSERT INTO `sys_file_info` VALUES (1680497615330447362, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680497611488464896.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 16:40:28', NULL, NULL, '2023-07-16 16:40:28', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680498392497229826, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680498388747522048.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 16:43:34', NULL, NULL, '2023-07-16 16:43:34', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680498798468108290, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680498794991030272.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 16:45:10', NULL, NULL, '2023-07-16 16:45:10', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680499270151147522, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680499266577600512.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 16:47:03', NULL, NULL, '2023-07-16 16:47:03', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680501243424362498, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680501239389442048.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 16:54:53', NULL, NULL, '2023-07-16 16:54:53', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504215915024386, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504212333088768.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:06:42', NULL, NULL, '2023-07-16 17:06:42', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504359825788929, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504356621340672.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:07:16', NULL, NULL, '2023-07-16 17:07:16', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504461810290689, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504458815557632.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:07:41', NULL, NULL, '2023-07-16 17:07:41', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504563446665217, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504560128970752.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:08:05', NULL, NULL, '2023-07-16 17:08:05', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504666311970817, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504662826504192.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:08:29', NULL, NULL, '2023-07-16 17:08:29', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504771475755009, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504767772184576.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:08:54', NULL, NULL, '2023-07-16 17:08:54', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504875007954945, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504871493128192.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:09:19', NULL, NULL, '2023-07-16 17:09:19', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680504979622285314, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680504976069709824.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:09:44', NULL, NULL, '2023-07-16 17:09:44', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680505086774169602, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680505083313868800.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:10:10', NULL, NULL, '2023-07-16 17:10:10', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680505190952292354, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680505187441659904.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:10:34', NULL, NULL, '2023-07-16 17:10:34', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680505293607882754, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680505290164359168.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:10:59', NULL, NULL, '2023-07-16 17:10:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680505399979626497, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680505396498354176.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:11:24', NULL, NULL, '2023-07-16 17:11:24', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680505503469883394, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680505500106051584.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:11:49', NULL, NULL, '2023-07-16 17:11:49', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680505903468072962, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680505900011966464.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:13:24', NULL, NULL, '2023-07-16 17:13:24', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680506303004889090, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680506299167100928.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:15:00', NULL, NULL, '2023-07-16 17:15:00', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680506406075715586, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680506402477002752.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:15:24', NULL, NULL, '2023-07-16 17:15:24', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680506507569483778, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680506504318898176.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:15:48', NULL, NULL, '2023-07-16 17:15:48', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680506608983560193, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680506605502287872.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:16:13', NULL, NULL, '2023-07-16 17:16:13', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680506908322648066, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680506904853958656.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:17:24', NULL, NULL, '2023-07-16 17:17:24', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680507008256135169, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680507004808417280.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:17:48', NULL, NULL, '2023-07-16 17:17:48', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680507147406364674, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680507143727960064.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:18:21', NULL, NULL, '2023-07-16 17:18:21', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680507359759781889, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680507356144291840.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:19:12', NULL, NULL, '2023-07-16 17:19:12', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680507970840514561, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680507967422156800.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 17:21:37', NULL, NULL, '2023-07-16 17:21:37', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680526836295618562, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680526832839512064.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 18:36:35', NULL, NULL, '2023-07-16 18:36:35', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680526937252515842, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680526933968375808.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 18:36:59', NULL, NULL, '2023-07-16 18:36:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680527038914056193, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680527035281788928.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 18:37:23', NULL, NULL, '2023-07-16 18:37:23', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1680527140101640194, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-07-16/1680527136674893824.png', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sd', NULL, NULL, '2023-07-16 18:37:48', NULL, NULL, '2023-07-16 18:37:48', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688105795313041409, '/StableDiffusion/2023-08-06/1688105795258515456.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:32:40', '1', '1', '2023-08-06 16:32:40', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688105901743505409, '/StableDiffusion/2023-08-06/1688105901739311104.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:33:05', '1', '1', '2023-08-06 16:33:05', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688106313796100097, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688106310495182848.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:34:43', '1', '1', '2023-08-06 16:34:43', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688106572739846146, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688106568948195328.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:35:45', '1', '1', '2023-08-06 16:35:45', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688108066235031554, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688108062321745920.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:41:41', '1', '1', '2023-08-06 16:41:41', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688108539901984770, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688108525284835328.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:43:34', '1', '1', '2023-08-06 16:43:34', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688109337788628994, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688109333917286400.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:46:44', '1', '1', '2023-08-06 16:46:44', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688109526054158337, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688109522946179072.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:47:29', '1', '1', '2023-08-06 16:47:29', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688109680681369602, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688109676877135872.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:48:06', '1', '1', '2023-08-06 16:48:06', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688109962416963586, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688109958998605824.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:49:13', '1', '1', '2023-08-06 16:49:13', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688110249684844545, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688110246283264000.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:50:22', '1', '1', '2023-08-06 16:50:22', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688110430224465922, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688110426466369536.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:51:05', '1', '1', '2023-08-06 16:51:05', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688110522054557698, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688110519072407552.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:51:27', '1', '1', '2023-08-06 16:51:27', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688110601553395714, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688110598130843648.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 16:51:46', '1', '1', '2023-08-06 16:51:46', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688133085753352193, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688133081856843776.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 18:21:06', '1', '1', '2023-08-06 18:21:06', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688133343300395010, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688133339932368896.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 18:22:08', '1', '1', '2023-08-06 18:22:08', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688133448241881090, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688133445284896768.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 18:22:33', '1', '1', '2023-08-06 18:22:33', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688133518894931970, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688133515803729920.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 18:22:50', '1', '1', '2023-08-06 18:22:50', NULL, NULL, '0', NULL, 0);
-INSERT INTO `sys_file_info` VALUES (1688133688718106626, 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/StableDiffusion/2023-08-06/1688133685488492544.png', NULL, NULL, NULL, NULL, NULL, NULL, '1', 'sd', NULL, 103, '2023-08-06 18:23:30', '1', '1', '2023-08-06 18:23:30', NULL, NULL, '0', NULL, 0);
 
 -- ----------------------------
 -- Table structure for sys_logininfor
@@ -972,134 +1119,28 @@ INSERT INTO `sys_menu` VALUES (1614, '租户套餐删除', 122, 4, '#', '', '', 
 INSERT INTO `sys_menu` VALUES (1615, '租户套餐导出', 122, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 
 -- ----------------------------
--- Table structure for sys_menu_copy1
+-- Table structure for sys_model
 -- ----------------------------
-DROP TABLE IF EXISTS `sys_menu_copy1`;
-CREATE TABLE `sys_menu_copy1`  (
-  `menu_id` bigint NOT NULL COMMENT '菜单ID',
-  `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '菜单名称',
-  `parent_id` bigint NULL DEFAULT 0 COMMENT '父菜单ID',
-  `order_num` int NULL DEFAULT 0 COMMENT '显示顺序',
-  `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '路由地址',
-  `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件路径',
-  `query_param` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '路由参数',
-  `is_frame` int NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
-  `is_cache` int NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
-  `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
-  `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '显示状态（0显示 1隐藏）',
-  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
-  `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限标识',
-  `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
-  `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+DROP TABLE IF EXISTS `sys_model`;
+CREATE TABLE `sys_model`  (
+  `id` int NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '模型名称',
+  `describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+  `local` bit(1) NULL DEFAULT b'0' COMMENT '是否本地模型',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
+  `free` bit(1) NULL DEFAULT b'0' COMMENT '是否免费',
+  `std_rate` decimal(10, 8) NULL DEFAULT NULL COMMENT '标准token比',
+  `role_text` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '角色设定',
+  `temperature` decimal(10, 2) NULL DEFAULT NULL COMMENT '模型默认温度',
+  `top_p` int NULL DEFAULT NULL COMMENT '默认结果',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统模型' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Records of sys_menu_copy1
+-- Records of sys_model
 -- ----------------------------
-INSERT INTO `sys_menu_copy1` VALUES (1, '系统管理', 0, 1, 'system', NULL, '', 1, 0, 'M', '0', '0', '', 'system', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '系统管理目录');
-INSERT INTO `sys_menu_copy1` VALUES (2, '系统监控', 0, 3, 'monitor', NULL, '', 1, 0, 'M', '0', '0', '', 'monitor', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '系统监控目录');
-INSERT INTO `sys_menu_copy1` VALUES (3, '系统工具', 0, 4, 'tool', NULL, '', 1, 0, 'M', '0', '0', '', 'tool', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '系统工具目录');
-INSERT INTO `sys_menu_copy1` VALUES (4, 'PLUS官网', 0, 5, 'https://gitee.com/dromara/RuoYi-Vue-Plus', NULL, '', 0, 0, 'M', '0', '0', '', 'guide', 103, 1, '2023-05-14 15:19:39', NULL, NULL, 'RuoYi-Vue-Plus官网地址');
-INSERT INTO `sys_menu_copy1` VALUES (6, '租户管理', 0, 2, 'tenant', NULL, '', 1, 0, 'M', '0', '0', '', 'chart', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '租户管理目录');
-INSERT INTO `sys_menu_copy1` VALUES (100, '用户管理', 1, 1, 'user', 'system/user/index', '', 1, 0, 'C', '0', '0', 'system:user:list', 'user', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '用户管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'peoples', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '角色管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (102, '菜单管理', 1, 3, 'menu', 'system/menu/index', '', 1, 0, 'C', '0', '0', 'system:menu:list', 'tree-table', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '菜单管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '0', '0', 'system:dept:list', 'tree', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '部门管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', 1, 0, 'C', '0', '0', 'system:post:list', 'post', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '岗位管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (105, '字典管理', 1, 6, 'dict', 'system/dict/index', '', 1, 0, 'C', '0', '0', 'system:dict:list', 'dict', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '字典管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (106, '参数设置', 1, 7, 'config', 'system/config/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'edit', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '参数设置菜单');
-INSERT INTO `sys_menu_copy1` VALUES (107, '通知公告', 1, 8, 'notice', 'system/notice/index', '', 1, 0, 'C', '0', '0', 'system:notice:list', 'message', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '通知公告菜单');
-INSERT INTO `sys_menu_copy1` VALUES (108, '日志管理', 1, 9, 'log', '', '', 1, 0, 'M', '0', '0', '', 'log', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '日志管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (109, '在线用户', 2, 1, 'online', 'monitor/online/index', '', 1, 0, 'C', '0', '0', 'monitor:online:list', 'online', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '在线用户菜单');
-INSERT INTO `sys_menu_copy1` VALUES (113, '缓存监控', 2, 5, 'cache', 'monitor/cache/index', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '缓存监控菜单');
-INSERT INTO `sys_menu_copy1` VALUES (114, '表单构建', 3, 1, 'build', 'tool/build/index', '', 1, 0, 'C', '0', '0', 'tool:build:list', 'build', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '表单构建菜单');
-INSERT INTO `sys_menu_copy1` VALUES (115, '代码生成', 3, 2, 'gen', 'tool/gen/index', '', 1, 0, 'C', '0', '0', 'tool:gen:list', 'code', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '代码生成菜单');
-INSERT INTO `sys_menu_copy1` VALUES (118, '文件管理', 1, 10, 'oss', 'system/oss/index', '', 1, 0, 'C', '0', '0', 'system:oss:list', 'upload', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '文件管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (121, '租户管理', 6, 1, 'tenant', 'system/tenant/index', '', 1, 0, 'C', '0', '0', 'system:tenant:list', 'list', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '租户管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (122, '租户套餐管理', 6, 2, 'tenantPackage', 'system/tenantPackage/index', '', 1, 0, 'C', '0', '0', 'system:tenantPackage:list', 'form', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '租户套餐管理菜单');
-INSERT INTO `sys_menu_copy1` VALUES (500, '操作日志', 108, 1, 'operlog', 'monitor/operlog/index', '', 1, 0, 'C', '0', '0', 'monitor:operlog:list', 'form', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '操作日志菜单');
-INSERT INTO `sys_menu_copy1` VALUES (501, '登录日志', 108, 2, 'logininfor', 'monitor/logininfor/index', '', 1, 0, 'C', '0', '0', 'monitor:logininfor:list', 'logininfor', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '登录日志菜单');
-INSERT INTO `sys_menu_copy1` VALUES (1001, '用户查询', 100, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:user:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1002, '用户新增', 100, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:user:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1003, '用户修改', 100, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:user:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1004, '用户删除', 100, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1005, '用户导出', 100, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:user:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1006, '用户导入', 100, 6, '', '', '', 1, 0, 'F', '0', '0', 'system:user:import', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1007, '重置密码', 100, 7, '', '', '', 1, 0, 'F', '0', '0', 'system:user:resetPwd', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1008, '角色查询', 101, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:role:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1009, '角色新增', 101, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:role:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1010, '角色修改', 101, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:role:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1011, '角色删除', 101, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:role:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1012, '角色导出', 101, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:role:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1013, '菜单查询', 102, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1014, '菜单新增', 102, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1015, '菜单修改', 102, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1016, '菜单删除', 102, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1017, '部门查询', 103, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1018, '部门新增', 103, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1019, '部门修改', 103, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1020, '部门删除', 103, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1021, '岗位查询', 104, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:post:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1022, '岗位新增', 104, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:post:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1023, '岗位修改', 104, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:post:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1024, '岗位删除', 104, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:post:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1025, '岗位导出', 104, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:post:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1026, '字典查询', 105, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1027, '字典新增', 105, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1028, '字典修改', 105, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1029, '字典删除', 105, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1030, '字典导出', 105, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1031, '参数查询', 106, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1032, '参数新增', 106, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1033, '参数修改', 106, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1034, '参数删除', 106, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1035, '参数导出', 106, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1036, '公告查询', 107, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1037, '公告新增', 107, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1038, '公告修改', 107, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1039, '公告删除', 107, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1040, '操作查询', 500, 1, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1041, '操作删除', 500, 2, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1042, '日志导出', 500, 4, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1043, '登录查询', 501, 1, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1044, '登录删除', 501, 2, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1045, '日志导出', 501, 3, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1046, '在线查询', 109, 1, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1047, '批量强退', 109, 2, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:batchLogout', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1048, '单条强退', 109, 3, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:forceLogout', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1050, '账户解锁', 501, 4, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:unlock', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1055, '生成查询', 115, 1, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1056, '生成修改', 115, 2, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1057, '生成删除', 115, 3, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1058, '导入代码', 115, 2, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:import', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1059, '预览代码', 115, 4, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:preview', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1060, '生成代码', 115, 5, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:code', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1600, '文件查询', 118, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1601, '文件上传', 118, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:upload', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1602, '文件下载', 118, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:download', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1603, '文件删除', 118, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1604, '配置添加', 118, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1605, '配置编辑', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1606, '租户查询', 121, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1607, '租户新增', 121, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1608, '租户修改', 121, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1609, '租户删除', 121, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1610, '租户导出', 121, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1611, '租户套餐查询', 122, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1612, '租户套餐新增', 122, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1613, '租户套餐修改', 122, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1614, '租户套餐删除', 122, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1615, '租户套餐导出', 122, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu_copy1` VALUES (1689201668374556674, 'MJ服务器', 1689205943360188417, 1, 'mjserver', 'midjourney/mjserver/index', NULL, 1, 0, 'C', '0', '0', 'midjourney:mjserver:list', 'cascader', 103, 1, '2023-08-09 17:30:43', 1, '2023-08-09 17:41:50', 'MJ服务器信息配置菜单');
-INSERT INTO `sys_menu_copy1` VALUES (1689205943360188417, 'Midjourney', 0, 1, 'Midjourney', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'documentation', 103, 1, '2023-08-09 17:24:15', 1, '2023-08-09 17:24:15', '');
-INSERT INTO `sys_menu_copy1` VALUES (1689243465037561858, '创作记录', 1689205943360188417, 1, 'mjRoomMsg', 'midjourney/mjRoomMsg/index', NULL, 1, 0, 'C', '0', '0', 'midjourney:mjRoomMsg:list', 'documentation', 103, 1, '2023-08-09 20:10:20', 1, '2023-08-09 20:11:51', 'Midjourney 创作记录菜单');
-INSERT INTO `sys_menu_copy1` VALUES (1689243466220355585, 'MJ创作会话', 1689205943360188417, 1, 'mjroom', 'midjourney/mjroom/index', NULL, 1, 0, 'C', '0', '0', 'midjourney:mjroom:list', 'example', 103, 1, '2023-08-09 20:10:04', 1, '2023-08-09 20:12:41', 'MJ创作会话菜单');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -1183,163 +1224,6 @@ CREATE TABLE `sys_oss`  (
 -- ----------------------------
 -- Records of sys_oss
 -- ----------------------------
-INSERT INTO `sys_oss` VALUES (1724093904361992194, '000000', '2023/11/13/e561a6c853c744a1963451063544b906.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/2023/11/13/e561a6c853c744a1963451063544b906.png', NULL, '2023-11-13 23:56:34', NULL, '2023-11-13 23:56:34', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724094429279137794, '000000', 'panda/2023/11/13/9045cff5d239475a8a33ab479801e9ca.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/13/9045cff5d239475a8a33ab479801e9ca.png', NULL, '2023-11-13 23:58:39', NULL, '2023-11-13 23:58:39', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724094894767144962, '000000', 'panda/2023/11/14/78bb8d6c5e0344bc8b422f8efe49b831.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/78bb8d6c5e0344bc8b422f8efe49b831.png', NULL, '2023-11-14 00:00:30', NULL, '2023-11-14 00:00:30', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724096506927583233, '000000', 'panda/2023/11/14/2ae75741f38746738a8387f2a6a52d38.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/2ae75741f38746738a8387f2a6a52d38.png', NULL, '2023-11-14 00:06:54', NULL, '2023-11-14 00:06:54', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724096774511595522, '000000', 'panda/2023/11/14/a684da9e0afc4d77a7d605594488c4e5.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/a684da9e0afc4d77a7d605594488c4e5.png', NULL, '2023-11-14 00:07:58', NULL, '2023-11-14 00:07:58', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724096873618804738, '000000', 'panda/2023/11/14/b77d26c97b424fd280c0a97cd573d52b.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/b77d26c97b424fd280c0a97cd573d52b.png', NULL, '2023-11-14 00:08:22', NULL, '2023-11-14 00:08:22', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724097020008402945, '000000', 'panda/2023/11/14/0299ff8929414f72ab8e2842506f46cb.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/0299ff8929414f72ab8e2842506f46cb.png', NULL, '2023-11-14 00:08:56', NULL, '2023-11-14 00:08:56', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724097652161318914, '000000', 'panda/2023/11/14/01856e57d24841ccb11a5394f0891697.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/01856e57d24841ccb11a5394f0891697.png', NULL, '2023-11-14 00:11:27', NULL, '2023-11-14 00:11:27', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724097778443423746, '000000', 'panda/2023/11/14/809300ca47e74931a6497b5c7c16cfa2.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/809300ca47e74931a6497b5c7c16cfa2.png', NULL, '2023-11-14 00:11:57', NULL, '2023-11-14 00:11:57', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724098776197042178, '000000', 'panda/2023/11/14/10718cd6cf1a428eb0a1f179d107b82c.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/10718cd6cf1a428eb0a1f179d107b82c.png', NULL, '2023-11-14 00:15:55', NULL, '2023-11-14 00:15:55', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724099123200200705, '000000', 'panda/2023/11/14/7768533b1e064c9d8a515a019df64485.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/7768533b1e064c9d8a515a019df64485.png', NULL, '2023-11-14 00:17:18', NULL, '2023-11-14 00:17:18', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724100420401958913, '000000', 'panda/2023/11/14/721015838ec847bfa7c723d93ab5eb3d.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/721015838ec847bfa7c723d93ab5eb3d.png', NULL, '2023-11-14 00:22:27', NULL, '2023-11-14 00:22:27', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724101239675359233, '000000', 'panda/2023/11/14/051b4994f0e24e0eb7b67b7c06ed1acb.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/051b4994f0e24e0eb7b67b7c06ed1acb.png', NULL, '2023-11-14 00:25:42', NULL, '2023-11-14 00:25:42', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724101751804071938, '000000', 'panda/2023/11/14/eac97a424b9e4afca5c7894387fa747e.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/eac97a424b9e4afca5c7894387fa747e.png', NULL, '2023-11-14 00:27:45', NULL, '2023-11-14 00:27:45', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724401488415498242, '000000', 'panda/2023/11/14/6d4cb7814bbf448eb0fc18449d009093.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/6d4cb7814bbf448eb0fc18449d009093.png', NULL, '2023-11-14 20:18:47', NULL, '2023-11-14 20:18:47', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724405287066607617, '000000', 'panda/2023/11/14/eee8205f028548cb895dc0cda171afee.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/eee8205f028548cb895dc0cda171afee.png', NULL, '2023-11-14 20:33:53', NULL, '2023-11-14 20:33:53', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724405540805222401, '000000', 'panda/2023/11/14/5a7b7c2871ac49bea266454f0d5b6ddc.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/5a7b7c2871ac49bea266454f0d5b6ddc.png', NULL, '2023-11-14 20:34:53', NULL, '2023-11-14 20:34:53', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724406694637281281, '000000', 'panda/2023/11/14/fcb8866034a24968bd2e3014c1ddba35.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/fcb8866034a24968bd2e3014c1ddba35.png', NULL, '2023-11-14 20:39:29', NULL, '2023-11-14 20:39:29', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724406885754937346, '000000', 'panda/2023/11/14/144295909be740139f00c78a72b3defe.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/144295909be740139f00c78a72b3defe.png', NULL, '2023-11-14 20:40:14', NULL, '2023-11-14 20:40:14', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724407020853469185, '000000', 'panda/2023/11/14/521e85dfbf774fa982324b82a0f88024.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/521e85dfbf774fa982324b82a0f88024.png', NULL, '2023-11-14 20:40:46', NULL, '2023-11-14 20:40:46', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724433064465604610, '000000', 'panda/2023/11/14/115f5d28e1224c82b27a8572fc76acbb.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/115f5d28e1224c82b27a8572fc76acbb.png', NULL, '2023-11-14 22:24:16', NULL, '2023-11-14 22:24:16', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724433914823032834, '000000', 'panda/2023/11/14/42815f5c2714433ab6826d7a33764e9b.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/42815f5c2714433ab6826d7a33764e9b.png', NULL, '2023-11-14 22:27:38', NULL, '2023-11-14 22:27:38', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724434495671193602, '000000', 'panda/2023/11/14/28f83274714f43fcaec23e04d386f94e.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/28f83274714f43fcaec23e04d386f94e.png', NULL, '2023-11-14 22:29:57', NULL, '2023-11-14 22:29:57', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724437756327305218, '000000', 'panda/2023/11/14/156fc5a9dd4f4ea3b9adfe29b364b4a3.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/156fc5a9dd4f4ea3b9adfe29b364b4a3.png', NULL, '2023-11-14 22:42:54', NULL, '2023-11-14 22:42:54', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724438370654429186, '000000', 'panda/2023/11/14/eaa08c2d5ad64b84bba08717eedaf929.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/eaa08c2d5ad64b84bba08717eedaf929.png', NULL, '2023-11-14 22:45:21', NULL, '2023-11-14 22:45:21', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724439770461446145, '000000', 'panda/2023/11/14/6f9a7f3a95824ed28214c3884a1bdb79.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/6f9a7f3a95824ed28214c3884a1bdb79.png', NULL, '2023-11-14 22:50:54', NULL, '2023-11-14 22:50:54', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724442703806668801, '000000', 'panda/2023/11/14/333b7056786f46c9b5eb53587e63f579.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/14/333b7056786f46c9b5eb53587e63f579.png', NULL, '2023-11-14 23:02:34', NULL, '2023-11-14 23:02:34', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724765725893611522, '000000', 'panda/2023/11/15/f9c2956e55e74bf0ac03683b688d5754.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/f9c2956e55e74bf0ac03683b688d5754.png', NULL, '2023-11-15 20:26:08', NULL, '2023-11-15 20:26:08', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724766090277965826, '000000', 'panda/2023/11/15/cb383b7672fd4e32b7f719b19ca7f5a4.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/cb383b7672fd4e32b7f719b19ca7f5a4.png', NULL, '2023-11-15 20:27:35', NULL, '2023-11-15 20:27:35', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724766602800922625, '000000', 'panda/2023/11/15/8d43969f4cdc4f8992f4058e427a8a44.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/8d43969f4cdc4f8992f4058e427a8a44.png', NULL, '2023-11-15 20:29:37', NULL, '2023-11-15 20:29:37', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724767373487505410, '000000', 'panda/2023/11/15/99ef8cb376d44ecf8271bb1cb2c57ab2.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/99ef8cb376d44ecf8271bb1cb2c57ab2.png', NULL, '2023-11-15 20:32:41', NULL, '2023-11-15 20:32:41', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724767516244836354, '000000', 'panda/2023/11/15/aef8264fc6404972a3a52076bc011d53.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/aef8264fc6404972a3a52076bc011d53.png', NULL, '2023-11-15 20:33:15', NULL, '2023-11-15 20:33:15', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724767702018949121, '000000', 'panda/2023/11/15/5f800b9dac3146169492e199f5310396.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/5f800b9dac3146169492e199f5310396.png', NULL, '2023-11-15 20:33:59', NULL, '2023-11-15 20:33:59', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724768592499048449, '000000', 'panda/2023/11/15/70d04883055a46ce81849304aa51a6f7.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/70d04883055a46ce81849304aa51a6f7.png', NULL, '2023-11-15 20:37:32', NULL, '2023-11-15 20:37:32', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724768986373554178, '000000', 'panda/2023/11/15/a6595c4dc5374352b825e933ffc7c229.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/a6595c4dc5374352b825e933ffc7c229.png', NULL, '2023-11-15 20:39:06', NULL, '2023-11-15 20:39:06', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724769126123569154, '000000', 'panda/2023/11/15/7b9b652cdbd8458aaab24929226ed0a8.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/7b9b652cdbd8458aaab24929226ed0a8.png', NULL, '2023-11-15 20:39:39', NULL, '2023-11-15 20:39:39', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724769445880528898, '000000', 'panda/2023/11/15/e0f7187f7ad2414190d8722e9b2070b8.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/e0f7187f7ad2414190d8722e9b2070b8.png', NULL, '2023-11-15 20:40:55', NULL, '2023-11-15 20:40:55', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724769768900657153, '000000', 'panda/2023/11/15/0c3cd50edd584d8bba214e26f0f034e2.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/0c3cd50edd584d8bba214e26f0f034e2.png', NULL, '2023-11-15 20:42:12', NULL, '2023-11-15 20:42:12', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724770054327238658, '000000', 'panda/2023/11/15/c012bfafc4b3433aadbe2ab51ed51826.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/c012bfafc4b3433aadbe2ab51ed51826.png', NULL, '2023-11-15 20:43:20', NULL, '2023-11-15 20:43:20', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724778597159854082, '000000', 'panda/2023/11/15/b34ab6fabd7f4cb895c53a562f54b667.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/b34ab6fabd7f4cb895c53a562f54b667.png', NULL, '2023-11-15 21:17:17', NULL, '2023-11-15 21:17:17', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724779240129880065, '000000', 'panda/2023/11/15/1d94798cb4604f2da5635e59a7d4c7a9.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/1d94798cb4604f2da5635e59a7d4c7a9.png', NULL, '2023-11-15 21:19:50', NULL, '2023-11-15 21:19:50', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724779383239532546, '000000', 'panda/2023/11/15/9530efe60c79407e9b285b3ae4c7f4b5.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/9530efe60c79407e9b285b3ae4c7f4b5.png', NULL, '2023-11-15 21:20:24', NULL, '2023-11-15 21:20:24', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724779749196750850, '000000', 'panda/2023/11/15/7f38b8cbef0d4b72b366f934db790cb2.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/7f38b8cbef0d4b72b366f934db790cb2.png', NULL, '2023-11-15 21:21:52', NULL, '2023-11-15 21:21:52', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724780087119241217, '000000', 'panda/2023/11/15/a391cf2a8fa649918785c0ebda8fffe8.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/a391cf2a8fa649918785c0ebda8fffe8.png', NULL, '2023-11-15 21:23:12', NULL, '2023-11-15 21:23:12', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724780197819506689, '000000', 'panda/2023/11/15/2bac630ba299447d9f5b5f389d29910f.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/2bac630ba299447d9f5b5f389d29910f.png', NULL, '2023-11-15 21:23:39', NULL, '2023-11-15 21:23:39', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724780567291551746, '000000', 'panda/2023/11/15/db5bb09cf6594ce997dd7948bb692c4a.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/db5bb09cf6594ce997dd7948bb692c4a.png', NULL, '2023-11-15 21:25:07', NULL, '2023-11-15 21:25:07', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724780734052884482, '000000', 'panda/2023/11/15/d000a64b62924e6e8c9fb1d38d251ba3.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/d000a64b62924e6e8c9fb1d38d251ba3.png', NULL, '2023-11-15 21:25:47', NULL, '2023-11-15 21:25:47', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724780853112397825, '000000', 'panda/2023/11/15/e0927eff92364d438f5d2f9f1e326f7a.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/e0927eff92364d438f5d2f9f1e326f7a.png', NULL, '2023-11-15 21:26:15', NULL, '2023-11-15 21:26:15', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724781086638661633, '000000', 'panda/2023/11/15/59a1adadaf45407e8c2b7ecdd6aed234.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/59a1adadaf45407e8c2b7ecdd6aed234.png', NULL, '2023-11-15 21:27:11', NULL, '2023-11-15 21:27:11', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724781170445049857, '000000', 'panda/2023/11/15/1753a19e6f3949ea8d898d250d814b2a.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/1753a19e6f3949ea8d898d250d814b2a.png', NULL, '2023-11-15 21:27:31', NULL, '2023-11-15 21:27:31', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724781331867033602, '000000', 'panda/2023/11/15/892b31f1fd644cc181503a82eaa91b56.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/892b31f1fd644cc181503a82eaa91b56.png', NULL, '2023-11-15 21:28:09', NULL, '2023-11-15 21:28:09', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724781489526726657, '000000', 'panda/2023/11/15/ba7c50a4bd8e4f218f8f4ec2f972e3bf.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/ba7c50a4bd8e4f218f8f4ec2f972e3bf.png', NULL, '2023-11-15 21:28:47', NULL, '2023-11-15 21:28:47', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724783215763841025, '000000', 'panda/2023/11/15/6299ff42e7ba4be08ddf8eb52b190aa9.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/6299ff42e7ba4be08ddf8eb52b190aa9.png', NULL, '2023-11-15 21:35:38', NULL, '2023-11-15 21:35:38', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724784653952933890, '000000', 'panda/2023/11/15/8aa89605883f486d82152cac156c67ba.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/8aa89605883f486d82152cac156c67ba.png', NULL, '2023-11-15 21:41:21', NULL, '2023-11-15 21:41:21', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724785428187897858, '000000', 'panda/2023/11/15/7cce512cce0b4694a2f2868f83885492.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/7cce512cce0b4694a2f2868f83885492.png', NULL, '2023-11-15 21:44:26', NULL, '2023-11-15 21:44:26', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724785906720235522, '000000', 'panda/2023/11/15/404adf4487ff47a7bf486bede0adb445.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/404adf4487ff47a7bf486bede0adb445.png', NULL, '2023-11-15 21:46:20', NULL, '2023-11-15 21:46:20', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724786545873444865, '000000', 'panda/2023/11/15/6f1bd7a432d6471489fa02b794154245.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/6f1bd7a432d6471489fa02b794154245.png', NULL, '2023-11-15 21:48:52', NULL, '2023-11-15 21:48:52', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787008983326721, '000000', 'panda/2023/11/15/b8b0b5c46e0a42baa17b855b5125e709.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/b8b0b5c46e0a42baa17b855b5125e709.png', NULL, '2023-11-15 21:50:43', NULL, '2023-11-15 21:50:43', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787081741918210, '000000', 'panda/2023/11/15/4e01e0df4e55433bbf11b73f7f170fdc.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/4e01e0df4e55433bbf11b73f7f170fdc.png', NULL, '2023-11-15 21:51:00', NULL, '2023-11-15 21:51:00', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787195835375618, '000000', 'panda/2023/11/15/9717d8c966ab469780845c4ab22e9056.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/9717d8c966ab469780845c4ab22e9056.png', NULL, '2023-11-15 21:51:27', NULL, '2023-11-15 21:51:27', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787290500816897, '000000', 'panda/2023/11/15/0bfa1344b01346a09910574162d743cf.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/0bfa1344b01346a09910574162d743cf.png', NULL, '2023-11-15 21:51:50', NULL, '2023-11-15 21:51:50', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787396339884033, '000000', 'panda/2023/11/15/8624513df5834cbc87e690856ba02f18.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/8624513df5834cbc87e690856ba02f18.png', NULL, '2023-11-15 21:52:15', NULL, '2023-11-15 21:52:15', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787589063958530, '000000', 'panda/2023/11/15/a85bc6d9df7145e7bfc2b5b295c7f92c.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/a85bc6d9df7145e7bfc2b5b295c7f92c.png', NULL, '2023-11-15 21:53:01', NULL, '2023-11-15 21:53:01', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787711298560002, '000000', 'panda/2023/11/15/1c7145c5872b4bd494006acb9fb88573.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/1c7145c5872b4bd494006acb9fb88573.png', NULL, '2023-11-15 21:53:30', NULL, '2023-11-15 21:53:30', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787763475701762, '000000', 'panda/2023/11/15/a55b72158eed48a6be736147c55bd0e4.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/a55b72158eed48a6be736147c55bd0e4.png', NULL, '2023-11-15 21:53:42', NULL, '2023-11-15 21:53:42', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787893566234625, '000000', 'panda/2023/11/15/ebf7e48e1cf44fe08b6e4065fd67f478.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/ebf7e48e1cf44fe08b6e4065fd67f478.png', NULL, '2023-11-15 21:54:14', NULL, '2023-11-15 21:54:14', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724787927120666625, '000000', 'panda/2023/11/15/d728ca4da45f4ee3a1b850f3cdc959aa.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/d728ca4da45f4ee3a1b850f3cdc959aa.png', NULL, '2023-11-15 21:54:22', NULL, '2023-11-15 21:54:22', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724800813741961217, '000000', 'panda/2023/11/15/3d8104064d4b48d1b8fb0e2c0f9b6566.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/3d8104064d4b48d1b8fb0e2c0f9b6566.png', NULL, '2023-11-15 22:45:34', NULL, '2023-11-15 22:45:34', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724801133461172225, '000000', 'panda/2023/11/15/b82063694a48471db67f81ac2ad6ab90.png', 'car.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/b82063694a48471db67f81ac2ad6ab90.png', NULL, '2023-11-15 22:46:50', NULL, '2023-11-15 22:46:50', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724802328179306497, '000000', 'panda/2023/11/15/963a68501d714b1498573ca0e4d10ec3.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/15/963a68501d714b1498573ca0e4d10ec3.png', NULL, '2023-11-15 22:51:35', NULL, '2023-11-15 22:51:35', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724828266845761538, '000000', 'panda/2023/11/16/02bf7cf43551435db8dff93eb6d2c6a4.png', 'IMG_1699544354421.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/16/02bf7cf43551435db8dff93eb6d2c6a4.png', NULL, '2023-11-16 00:34:39', NULL, '2023-11-16 00:34:39', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724828390909079554, '000000', 'panda/2023/11/16/14f0015b41544ec482e0e53a5544d4f7.png', 'IMG_1699544354421.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/16/14f0015b41544ec482e0e53a5544d4f7.png', NULL, '2023-11-16 00:35:09', NULL, '2023-11-16 00:35:09', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724828548040290306, '000000', 'panda/2023/11/16/b4d13b6b3b3c49f28318d772036186df.png', 'IMG_1699544354421.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/16/b4d13b6b3b3c49f28318d772036186df.png', NULL, '2023-11-16 00:35:46', NULL, '2023-11-16 00:35:46', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724951618247782402, '000000', 'panda/2023/11/16/ae1e046de273436387864dbf16b395a1.png', '5fb9f9064adadc3a012626892ea10ed.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/16/ae1e046de273436387864dbf16b395a1.png', NULL, '2023-11-16 08:44:48', NULL, '2023-11-16 08:44:48', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724951857486688258, '000000', 'panda/2023/11/16/fc2576bd00774ca8851ea092f2e99dd0.png', '97d7354f2da41efb9816ec674e373da.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/16/fc2576bd00774ca8851ea092f2e99dd0.png', NULL, '2023-11-16 08:45:46', NULL, '2023-11-16 08:45:46', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1724996532088098818, '000000', 'panda/2023/11/16/2292c6e254bf40a2bd3ca202c5df1d75.png', '5-6-40-c.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/16/2292c6e254bf40a2bd3ca202c5df1d75.png', NULL, '2023-11-16 11:43:17', NULL, '2023-11-16 11:43:17', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725132601643257857, '000000', 'panda/2023/11/16/a0b923c964814893a4458f91b6c830af.png', 'IMG_1332.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/16/a0b923c964814893a4458f91b6c830af.png', NULL, '2023-11-16 20:43:58', NULL, '2023-11-16 20:43:58', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725433928357269506, '000000', 'panda/2023/11/17/c772ceaebf834c18874efc4bff0aa3f3.png', '丁修加钱.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/17/c772ceaebf834c18874efc4bff0aa3f3.png', NULL, '2023-11-17 16:41:20', NULL, '2023-11-17 16:41:20', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725691686469931009, '000000', 'panda/2023/11/18/f4e4520cd2c749c09ae6b00938b81637.png', '5fb9f9064adadc3a012626892ea10ed.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/f4e4520cd2c749c09ae6b00938b81637.png', NULL, '2023-11-18 09:45:35', NULL, '2023-11-18 09:45:35', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725691813939023874, '000000', 'panda/2023/11/18/8dd4b56f93a84f10ae13b8464203c05f.png', '5fb9f9064adadc3a012626892ea10ed.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/8dd4b56f93a84f10ae13b8464203c05f.png', NULL, '2023-11-18 09:46:05', NULL, '2023-11-18 09:46:05', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725691969296044033, '000000', 'panda/2023/11/18/f63907009334477fb8f1d4fc98ceb1b8.png', '5fb9f9064adadc3a012626892ea10ed.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/f63907009334477fb8f1d4fc98ceb1b8.png', NULL, '2023-11-18 09:46:42', NULL, '2023-11-18 09:46:42', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725781563089813505, '000000', 'panda/2023/11/18/22480c231c17466eb9b67ce85cee40e2.png', '5fb9f9064adadc3a012626892ea10ed.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/22480c231c17466eb9b67ce85cee40e2.png', NULL, '2023-11-18 15:42:43', NULL, '2023-11-18 15:42:43', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725781986756427778, '000000', 'panda/2023/11/18/bd12eff2f1e444cf921184bf2a0ecf47.png', '5fb9f9064adadc3a012626892ea10ed.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/bd12eff2f1e444cf921184bf2a0ecf47.png', NULL, '2023-11-18 15:44:24', NULL, '2023-11-18 15:44:24', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725782262561275906, '000000', 'panda/2023/11/18/6b269086b6c34aafbcecd53158171e73.png', 'cxlogo.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/6b269086b6c34aafbcecd53158171e73.png', NULL, '2023-11-18 15:45:30', NULL, '2023-11-18 15:45:30', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725783179062837250, '000000', 'panda/2023/11/18/43b42971403a4369853ab70d2b5de87a.png', 'cxlogo.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/43b42971403a4369853ab70d2b5de87a.png', NULL, '2023-11-18 15:49:08', NULL, '2023-11-18 15:49:08', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725787886057684993, '000000', 'panda/2023/11/18/f9cdc4ab356f40a78b58cafcceff0ad3.png', '2 - 副本.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/f9cdc4ab356f40a78b58cafcceff0ad3.png', NULL, '2023-11-18 16:07:50', NULL, '2023-11-18 16:07:50', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725810738244878338, '000000', 'panda/2023/11/18/fbc1689264fb40f3a6741d9a8630497c.png', '01.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/fbc1689264fb40f3a6741d9a8630497c.png', NULL, '2023-11-18 17:38:39', NULL, '2023-11-18 17:38:39', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1725811449238126593, '000000', 'panda/2023/11/18/226bd230bde545a1944a9d9fb60928bf.png', '01.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/18/226bd230bde545a1944a9d9fb60928bf.png', NULL, '2023-11-18 17:41:28', NULL, '2023-11-18 17:41:28', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1726446207907397634, '000000', 'panda/2023/11/20/b83e2a218e4144a3bbde52fe4e09ab83.png', 'knowledge.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/20/b83e2a218e4144a3bbde52fe4e09ab83.png', NULL, '2023-11-20 11:43:46', NULL, '2023-11-20 11:43:46', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1726446287590785026, '000000', 'panda/2023/11/20/27428b0c89ac431484effbe04e7e0bb3.png', '各项目用例覆盖率和执行率.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/20/27428b0c89ac431484effbe04e7e0bb3.png', NULL, '2023-11-20 11:44:05', NULL, '2023-11-20 11:44:05', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1726508568504696834, '000000', 'panda/2023/11/20/b6c10c8b285f481bb5c88efc4c02fb56.png', 'welt.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/20/b6c10c8b285f481bb5c88efc4c02fb56.png', NULL, '2023-11-20 15:51:34', NULL, '2023-11-20 15:51:34', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1726795990043983873, '000000', 'panda/2023/11/21/9a755fa9b88e4c6d923c8579df762637.png', 'ec29ac14d10ea300952911ebecd02ce2.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/21/9a755fa9b88e4c6d923c8579df762637.png', NULL, '2023-11-21 10:53:41', NULL, '2023-11-21 10:53:41', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727235517598400513, '000000', 'panda/2023/11/22/330b5c8b8ffb44068dd25fecbd4900b7.png', '微信截图_20231122155953.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/22/330b5c8b8ffb44068dd25fecbd4900b7.png', NULL, '2023-11-22 16:00:13', NULL, '2023-11-22 16:00:13', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727488896908132354, '000000', 'panda/2023/11/23/07954d978c9c4c558e0b2fd4a7d5a9d8.png', '01asdasd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/23/07954d978c9c4c558e0b2fd4a7d5a9d8.png', NULL, '2023-11-23 08:47:03', NULL, '2023-11-23 08:47:03', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727586852713791490, '000000', 'panda/2023/11/23/7d6acd12dc2f4735bfaeb8e45f196e32.png', '微信图片_20231123151602.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/23/7d6acd12dc2f4735bfaeb8e45f196e32.png', NULL, '2023-11-23 15:16:17', NULL, '2023-11-23 15:16:17', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727586918321094657, '000000', 'panda/2023/11/23/f4099c1cd3654851a2edc8c3210c161d.png', '微信图片_20231123151602.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/23/f4099c1cd3654851a2edc8c3210c161d.png', NULL, '2023-11-23 15:16:33', NULL, '2023-11-23 15:16:33', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727587636234944514, '000000', 'panda/2023/11/23/8e9719ebe5794aeab84488aa0d360ae6.png', '2.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/23/8e9719ebe5794aeab84488aa0d360ae6.png', NULL, '2023-11-23 15:19:24', NULL, '2023-11-23 15:19:24', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727961424273342466, '000000', 'panda/2023/11/24/c62a8f5413a34ea986a0ea0ba4fc266c.png', '微信图片_20231123143515.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/c62a8f5413a34ea986a0ea0ba4fc266c.png', NULL, '2023-11-24 16:04:42', NULL, '2023-11-24 16:04:42', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727973179221344258, '000000', 'panda/2023/11/24/6b0a354d387543b8a033114a98dc7323.png', '2023-11-24_165112.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/6b0a354d387543b8a033114a98dc7323.png', NULL, '2023-11-24 16:51:25', NULL, '2023-11-24 16:51:25', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727973372570370049, '000000', 'panda/2023/11/24/e371ae8d4f9f42b8a3e6a4d5afe188a3.png', '2023-11-24_165112.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/e371ae8d4f9f42b8a3e6a4d5afe188a3.png', NULL, '2023-11-24 16:52:11', NULL, '2023-11-24 16:52:11', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727979725120602113, '000000', 'panda/2023/11/24/46108eb4766d4e7ab4680edc0d9c0fe5.png', '2023-11-24_171709.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/46108eb4766d4e7ab4680edc0d9c0fe5.png', NULL, '2023-11-24 17:17:25', NULL, '2023-11-24 17:17:25', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727996095774326785, '000000', 'panda/2023/11/24/be344d68bafb44fbaaa81207d2ea2869.png', 'p.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/be344d68bafb44fbaaa81207d2ea2869.png', NULL, '2023-11-24 18:22:29', NULL, '2023-11-24 18:22:29', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727996120692686849, '000000', 'panda/2023/11/24/e33c75f6366e44639ea41602b10432b5.png', 'p.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/e33c75f6366e44639ea41602b10432b5.png', NULL, '2023-11-24 18:22:34', NULL, '2023-11-24 18:22:34', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1727996721103110145, '000000', 'panda/2023/11/24/69625eef260846b2893619001ce987ba.png', '1.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/69625eef260846b2893619001ce987ba.png', NULL, '2023-11-24 18:24:58', NULL, '2023-11-24 18:24:58', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1728066768941088770, '000000', 'panda/2023/11/24/dc1b0de759c542fb87da0160468f60fe.png', 'Screenshot_2023-11-24-22-50-06-755_com.phone.tenc.t.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/dc1b0de759c542fb87da0160468f60fe.png', NULL, '2023-11-24 23:03:18', NULL, '2023-11-24 23:03:18', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1728067360941932546, '000000', 'panda/2023/11/24/b7a5caca31084ae5801c2c357dc27fb5.png', 'Screenshot_2023-11-24-22-50-06-755_com.phone.tenc.t.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/11/24/b7a5caca31084ae5801c2c357dc27fb5.png', NULL, '2023-11-24 23:05:39', NULL, '2023-11-24 23:05:39', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731199309428940802, '000000', 'panda/2023/12/03/806d33f647b14b4cb900341c40fdf02c.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/806d33f647b14b4cb900341c40fdf02c.png', NULL, '2023-12-03 14:30:54', NULL, '2023-12-03 14:30:54', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731292337262895105, '000000', 'panda/2023/12/03/6e0147ed31bf4158b4caefb9421b6e3b.png', '屏幕截图 2023-11-22 223300.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/6e0147ed31bf4158b4caefb9421b6e3b.png', NULL, '2023-12-03 20:40:34', NULL, '2023-12-03 20:40:34', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731292573242826753, '000000', 'panda/2023/12/03/91791610e7ec4c4297791f9ff33230fb.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/91791610e7ec4c4297791f9ff33230fb.png', NULL, '2023-12-03 20:41:30', NULL, '2023-12-03 20:41:30', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731294145418993665, '000000', 'panda/2023/12/03/34441c45c25e4e2385da49c9635287ad.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/34441c45c25e4e2385da49c9635287ad.png', NULL, '2023-12-03 20:47:45', NULL, '2023-12-03 20:47:45', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731294320925450241, '000000', 'panda/2023/12/03/38a5a060e8c74b94a239394e8ba2a14c.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/38a5a060e8c74b94a239394e8ba2a14c.png', NULL, '2023-12-03 20:48:27', NULL, '2023-12-03 20:48:27', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731294871528513538, '000000', 'panda/2023/12/03/0e6cf9193db542ef87689b8c2e340a00.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/0e6cf9193db542ef87689b8c2e340a00.png', NULL, '2023-12-03 20:50:38', NULL, '2023-12-03 20:50:38', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731295198453538817, '000000', 'panda/2023/12/03/ff4c2db9d18d4c2da398522a9cd7e44c.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/ff4c2db9d18d4c2da398522a9cd7e44c.png', NULL, '2023-12-03 20:51:56', NULL, '2023-12-03 20:51:56', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731295666185543681, '000000', 'panda/2023/12/03/bafef9c90033450eadea5f5f78bc3111.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/bafef9c90033450eadea5f5f78bc3111.png', NULL, '2023-12-03 20:53:47', NULL, '2023-12-03 20:53:47', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731295938131632130, '000000', 'panda/2023/12/03/16db4a9fb0924f5084fe73d4c967984f.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/16db4a9fb0924f5084fe73d4c967984f.png', NULL, '2023-12-03 20:54:52', NULL, '2023-12-03 20:54:52', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731304487146557441, '000000', 'panda/2023/12/03/0618d3bb9ed3435bb864fb2efc2a4b28.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/03/0618d3bb9ed3435bb864fb2efc2a4b28.png', NULL, '2023-12-03 21:28:50', NULL, '2023-12-03 21:28:50', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731358847409881089, '000000', 'panda/2023/12/04/963b258630724287b6b802d456bae5c9.png', '26440005_0_final.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/04/963b258630724287b6b802d456bae5c9.png', NULL, '2023-12-04 01:04:51', NULL, '2023-12-04 01:04:51', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1731529436212789249, '000000', 'panda/2023/12/04/c878925646224871866018c746364cdf.png', 'Screenshot_20231130_234800.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/04/c878925646224871866018c746364cdf.png', NULL, '2023-12-04 12:22:43', NULL, '2023-12-04 12:22:43', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1733021108662730753, '000000', 'panda/2023/12/08/63c681674ec146c9ab1fd9ed79ae22a2.png', '1.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/08/63c681674ec146c9ab1fd9ed79ae22a2.png', NULL, '2023-12-08 15:10:05', NULL, '2023-12-08 15:10:05', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1733022568297299969, '000000', 'panda/2023/12/08/cdbbdd6d055140ee8df54a608818932d.png', '1.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/08/cdbbdd6d055140ee8df54a608818932d.png', NULL, '2023-12-08 15:15:53', NULL, '2023-12-08 15:15:53', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1734834493800914945, '000000', 'panda/2023/12/13/3243b4994d914349924116d4e06b502e.png', '1881702451694_.pic.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/13/3243b4994d914349924116d4e06b502e.png', NULL, '2023-12-13 15:15:50', NULL, '2023-12-13 15:15:50', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738112593976434690, '000000', 'panda/2023/12/22/ec9da3d18d1847b3a66a620075cd0843.png', '1737686178787409921_32.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/22/ec9da3d18d1847b3a66a620075cd0843.png', NULL, '2023-12-22 16:21:50', NULL, '2023-12-22 16:21:50', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738112916665212929, '000000', 'panda/2023/12/22/63a19b2432ad46239e4ae7ac43c76b13.png', '1737686178787409921_32.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/22/63a19b2432ad46239e4ae7ac43c76b13.png', NULL, '2023-12-22 16:23:07', NULL, '2023-12-22 16:23:07', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738112995123863554, '000000', 'panda/2023/12/22/83f563f665c94e47bff9f639c10e8e08.png', '1737686178787409921_32.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/22/83f563f665c94e47bff9f639c10e8e08.png', NULL, '2023-12-22 16:23:25', NULL, '2023-12-22 16:23:25', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738114003216441345, '000000', 'panda/2023/12/22/7b2530f5d10549c19adefc4f4b968e85.png', 'test.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/22/7b2530f5d10549c19adefc4f4b968e85.png', NULL, '2023-12-22 16:27:26', NULL, '2023-12-22 16:27:26', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738115155366584322, '000000', 'panda/2023/12/22/7fb08f8de97046928d1188f6c4cb1a85.png', 'test.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/22/7fb08f8de97046928d1188f6c4cb1a85.png', NULL, '2023-12-22 16:32:00', NULL, '2023-12-22 16:32:00', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738115393653383169, '000000', 'panda/2023/12/22/c69f65a8faa74e07bb2093de8874be4e.png', 'test.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/22/c69f65a8faa74e07bb2093de8874be4e.png', NULL, '2023-12-22 16:32:57', NULL, '2023-12-22 16:32:57', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738118191891685378, '000000', 'panda/2023/12/22/13d8ea2c3b6d42129ec47245beabcd14.png', 'test.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/22/13d8ea2c3b6d42129ec47245beabcd14.png', NULL, '2023-12-22 16:44:04', NULL, '2023-12-22 16:44:04', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738486223826657282, '000000', 'panda/2023/12/23/dea2efa96eb64ef2b7661de7a1085097.png', '微信图片_20231223170531.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/23/dea2efa96eb64ef2b7661de7a1085097.png', NULL, '2023-12-23 17:06:30', NULL, '2023-12-23 17:06:30', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1738488595479076865, '000000', 'panda/2023/12/23/5742e78d1a1143ec87857608b39d81d2.png', 'test.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/23/5742e78d1a1143ec87857608b39d81d2.png', NULL, '2023-12-23 17:15:55', NULL, '2023-12-23 17:15:55', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1739860803409485826, '000000', 'panda/2023/12/27/ebcd3065114347419701df78c8164938.png', 'Midjourney绘画2.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/27/ebcd3065114347419701df78c8164938.png', NULL, '2023-12-27 12:08:35', NULL, '2023-12-27 12:08:35', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1740753638301171714, '000000', 'panda/2023/12/29/6f2a2127c30346ac916577bf5534da25.png', '屏幕截图(1).png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/29/6f2a2127c30346ac916577bf5534da25.png', NULL, '2023-12-29 23:16:24', NULL, '2023-12-29 23:16:24', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1741349001566375937, '000000', 'panda/2023/12/31/5567e12262c0486daa28bb03ed2af4fb.png', '100x124.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/31/5567e12262c0486daa28bb03ed2af4fb.png', NULL, '2023-12-31 14:42:09', NULL, '2023-12-31 14:42:09', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1741349297885564929, '000000', 'panda/2023/12/31/26b1e8ddb3b24d0ab8e474afd8b3e896.png', '100x124.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2023/12/31/26b1e8ddb3b24d0ab8e474afd8b3e896.png', NULL, '2023-12-31 14:43:20', NULL, '2023-12-31 14:43:20', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1741824910417219586, '000000', 'panda/2024/01/01/0e9dfd1c168646bc93322217b6296a70.png', 'nginx2.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/01/0e9dfd1c168646bc93322217b6296a70.png', NULL, '2024-01-01 22:13:15', NULL, '2024-01-01 22:13:15', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742149439661359105, '000000', 'panda/2024/01/02/76439aa1dce54f3eb58a57fe55fd6dba.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/02/76439aa1dce54f3eb58a57fe55fd6dba.png', NULL, '2024-01-02 19:42:49', NULL, '2024-01-02 19:42:49', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742149598428348418, '000000', 'panda/2024/01/02/d83e67d8142246dcb97f0ed49bb697f8.jpg', 'car.jpg', '.jpg', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/02/d83e67d8142246dcb97f0ed49bb697f8.jpg', NULL, '2024-01-02 19:43:27', NULL, '2024-01-02 19:43:27', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742149624500142081, '000000', 'panda/2024/01/02/726de4384d4d425eaf1ada3f985e4f32.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/02/726de4384d4d425eaf1ada3f985e4f32.png', NULL, '2024-01-02 19:43:33', NULL, '2024-01-02 19:43:33', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742158338359664641, '000000', 'panda/2024/01/02/3425e42cda3f4c39a54b3596be3227e9.jpg', 'car.jpg', '.jpg', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/02/3425e42cda3f4c39a54b3596be3227e9.jpg', NULL, '2024-01-02 20:18:10', 1714176194496339970, '2024-01-02 20:18:10', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742158569625198593, '000000', 'panda/2024/01/02/d4874f5dd5c24e5380dd1852cf4495e3.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/02/d4874f5dd5c24e5380dd1852cf4495e3.png', NULL, '2024-01-02 20:19:05', 1714176194496339970, '2024-01-02 20:19:05', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742158983951118338, '000000', 'panda/2024/01/02/01921182df474945a7572efafcc9584b.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/02/01921182df474945a7572efafcc9584b.png', NULL, '2024-01-02 20:20:44', 1714176194496339970, '2024-01-02 20:20:44', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742363801802051585, '000000', 'panda/2024/01/03/050a1eb181064a38ae75b1b7100fd81a.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/050a1eb181064a38ae75b1b7100fd81a.png', NULL, '2024-01-03 09:54:37', 1741845883943227393, '2024-01-03 09:54:37', 1741845883943227393, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742375260808364033, '000000', 'panda/2024/01/03/fa0b93aa67bb42ed9dbd04db4c4d7e3d.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/fa0b93aa67bb42ed9dbd04db4c4d7e3d.png', NULL, '2024-01-03 10:40:09', 1714176194496339970, '2024-01-03 10:40:09', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742406106978271234, '000000', 'panda/2024/01/03/3d559970a7ba48c48b9c13f6996a6263.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/3d559970a7ba48c48b9c13f6996a6263.png', NULL, '2024-01-03 12:42:43', 1714176194496339970, '2024-01-03 12:42:43', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742416247656103937, '000000', 'panda/2024/01/03/9eb180968b164131a92d30b1cfdd0779.png', '私有知识库业务架构图.drawio.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/9eb180968b164131a92d30b1cfdd0779.png', NULL, '2024-01-03 13:23:01', 1714176194496339970, '2024-01-03 13:23:01', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742425665852489729, '000000', 'panda/2024/01/03/613d64ca45fd4d51bb6b246c1d7587c1.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/613d64ca45fd4d51bb6b246c1d7587c1.png', NULL, '2024-01-03 14:00:26', 1714176194496339970, '2024-01-03 14:00:26', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742425883994046466, '000000', 'panda/2024/01/03/9709adf9edf74b51865f72b78bbd6b5e.jpg', 'car.jpg', '.jpg', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/9709adf9edf74b51865f72b78bbd6b5e.jpg', NULL, '2024-01-03 14:01:18', 1714176194496339970, '2024-01-03 14:01:18', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742425928411725826, '000000', 'panda/2024/01/03/0e3600b455914b0dade9943f281be19b.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/0e3600b455914b0dade9943f281be19b.png', NULL, '2024-01-03 14:01:29', 1714176194496339970, '2024-01-03 14:01:29', 1714176194496339970, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742540735914782721, '000000', 'panda/2024/01/03/cc6722915e274b519c30026258efae97.png', 'pd.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/03/cc6722915e274b519c30026258efae97.png', NULL, '2024-01-03 21:37:41', NULL, '2024-01-03 21:37:41', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742798084927737857, '000000', 'panda/2024/01/04/9e7d1b86af2646cc86b305b4dd474653.png', '4.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/04/9e7d1b86af2646cc86b305b4dd474653.png', NULL, '2024-01-04 14:40:18', NULL, '2024-01-04 14:40:18', NULL, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742798206709354497, '000000', 'panda/2024/01/04/7fa695b38eb74e38aa5fc67837a54f60.png', 'image.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/04/7fa695b38eb74e38aa5fc67837a54f60.png', NULL, '2024-01-04 14:40:47', 1722083875718737921, '2024-01-04 14:40:47', 1722083875718737921, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742798249252179970, '000000', 'panda/2024/01/04/12aa0f1308f8429bacfdec966803e75b.png', 'image.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/04/12aa0f1308f8429bacfdec966803e75b.png', NULL, '2024-01-04 14:40:57', 1722083875718737921, '2024-01-04 14:40:57', 1722083875718737921, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742800939394879489, '000000', 'panda/2024/01/04/022e9626b8314ddd8b5ddb25b53605c7.png', '29bc4a8389ea73fb8170408b39784e09a13011.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/04/022e9626b8314ddd8b5ddb25b53605c7.png', NULL, '2024-01-04 14:51:38', 1714536425072115714, '2024-01-04 14:51:38', 1714536425072115714, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742808488634568705, '000000', 'panda/2024/01/04/876792ea9c5f4f89b683fae739a08f56.png', 'image.png', '.png', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/04/876792ea9c5f4f89b683fae739a08f56.png', NULL, '2024-01-04 15:21:38', 1714820415783976961, '2024-01-04 15:21:38', 1714820415783976961, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1742844890541805570, '000000', 'panda/2024/01/04/dd5bdec65131411b8616d0592152f127.jpg', 'psc.jpg', '.jpg', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/04/dd5bdec65131411b8616d0592152f127.jpg', NULL, '2024-01-04 17:46:17', 1716076523383177217, '2024-01-04 17:46:17', 1716076523383177217, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1743081813143277569, '000000', 'panda/2024/01/05/877152fc53ac42b59356fec648435d62.jpg', '124_20231222111128A001.jpg', '.jpg', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/05/877152fc53ac42b59356fec648435d62.jpg', NULL, '2024-01-05 09:27:44', 1743079200725225474, '2024-01-05 09:27:44', 1743079200725225474, 'qcloud');
-INSERT INTO `sys_oss` VALUES (1743458219735973890, '000000', 'panda/2024/01/06/21ea270d16f9497e9cc4d52b876b0398.jpg', '1702362792732.jpg', '.jpg', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/01/06/21ea270d16f9497e9cc4d52b876b0398.jpg', 103, '2024-01-06 10:23:26', 1713724795803299841, '2024-01-06 10:23:26', 1713724795803299841, 'qcloud');
 
 -- ----------------------------
 -- Table structure for sys_oss_config
@@ -1375,7 +1259,7 @@ CREATE TABLE `sys_oss_config`  (
 INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'ruoyi', 'ruoyi123', 'ruoyi', '', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-07-13 23:28:18', NULL);
 INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', NULL);
 INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-07-13 23:35:23', NULL);
-INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'AKIDfDeswnSxypgUG0ncQ8lGbp5EAub8QTCj', 'JOEvQhldIl26wZx62qTt665uYxAAxXv8', 'panda-1253683406', 'panda', 'cos.ap-guangzhou.myqcloud.com', '', 'N', 'ap-guangzhou', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-11-13 23:58:09', '');
+INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', 'image', '127.0.0.1:9000', '', 'N', '', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-11-13 23:58:09', '');
 INSERT INTO `sys_oss_config` VALUES (5, '000000', 'image', 'ruoyi', 'ruoyi123', 'ruoyi', 'image', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', NULL);
 
 -- ----------------------------
@@ -1658,7 +1542,6 @@ CREATE TABLE `sys_tenant`  (
 -- Records of sys_tenant
 -- ----------------------------
 INSERT INTO `sys_tenant` VALUES (1, '000000', '管理组', '15888888888', 'XXX有限公司', NULL, NULL, '多租户通用后台管理管理系统', NULL, NULL, NULL, NULL, -1, '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_tenant` VALUES (1729685490647072769, '911866', '陈', '11111111111', '5126', '', '', '', '', '', 1729685389795033090, NULL, 1, '0', '2', 103, 1, '2023-11-29 10:15:32', 1, '2023-11-29 10:15:32');
 
 -- ----------------------------
 -- Table structure for sys_tenant_package
@@ -1721,7 +1604,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, NULL, '0', 4.00, '00000', 103, 'admin', '疯狂的狮子Li', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', NULL, NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2024-01-05 17:11:34', 103, 1, '2023-05-14 15:19:39', 1, '2024-01-05 17:11:34', '管理员');
+INSERT INTO `sys_user` VALUES (1, NULL, '0', 4.00, '00000', 103, 'admin', '疯狂的狮子Li', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', NULL, NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2024-03-19 17:57:07', 103, 1, '2023-05-14 15:19:39', 1, '2024-03-19 17:57:07', '管理员');
 
 -- ----------------------------
 -- Table structure for sys_user_post
@@ -1737,9 +1620,6 @@ CREATE TABLE `sys_user_post`  (
 -- Records of sys_user_post
 -- ----------------------------
 INSERT INTO `sys_user_post` VALUES (1, 1);
-INSERT INTO `sys_user_post` VALUES (2, 2);
-INSERT INTO `sys_user_post` VALUES (1661660085084250114, 2);
-INSERT INTO `sys_user_post` VALUES (1661660804847788034, 1);
 
 -- ----------------------------
 -- Table structure for sys_user_role
@@ -1755,310 +1635,6 @@ CREATE TABLE `sys_user_role`  (
 -- Records of sys_user_role
 -- ----------------------------
 INSERT INTO `sys_user_role` VALUES (1, 1);
-INSERT INTO `sys_user_role` VALUES (2, 2);
-INSERT INTO `sys_user_role` VALUES (3, 3);
-INSERT INTO `sys_user_role` VALUES (4, 4);
-INSERT INTO `sys_user_role` VALUES (1661646824293031937, 1661661183933177857);
-INSERT INTO `sys_user_role` VALUES (1661660085084250114, 1661661183933177857);
-INSERT INTO `sys_user_role` VALUES (1661660804847788034, 2);
-INSERT INTO `sys_user_role` VALUES (1713427806956404738, 1);
-INSERT INTO `sys_user_role` VALUES (1713439839684689921, 1);
-INSERT INTO `sys_user_role` VALUES (1713440206715650049, 1);
-INSERT INTO `sys_user_role` VALUES (1713724795803299841, 1);
-INSERT INTO `sys_user_role` VALUES (1714176194496339970, 1);
-INSERT INTO `sys_user_role` VALUES (1714267685998907393, 1);
-INSERT INTO `sys_user_role` VALUES (1714269581270667265, 1);
-INSERT INTO `sys_user_role` VALUES (1714270420659949569, 1);
-INSERT INTO `sys_user_role` VALUES (1714455864827723777, 1);
-INSERT INTO `sys_user_role` VALUES (1714536425072115714, 1);
-INSERT INTO `sys_user_role` VALUES (1714819715117105153, 1);
-INSERT INTO `sys_user_role` VALUES (1714820415783976961, 1);
-INSERT INTO `sys_user_role` VALUES (1714820611611836417, 1);
-INSERT INTO `sys_user_role` VALUES (1714820755698761729, 1);
-INSERT INTO `sys_user_role` VALUES (1714823588305190914, 1);
-INSERT INTO `sys_user_role` VALUES (1714829502936530945, 1);
-INSERT INTO `sys_user_role` VALUES (1714835527643185154, 1);
-INSERT INTO `sys_user_role` VALUES (1714835835278606337, 1);
-INSERT INTO `sys_user_role` VALUES (1714898663033290754, 1);
-INSERT INTO `sys_user_role` VALUES (1714942733206175746, 1);
-INSERT INTO `sys_user_role` VALUES (1714943378361434113, 1);
-INSERT INTO `sys_user_role` VALUES (1714943388671033346, 1);
-INSERT INTO `sys_user_role` VALUES (1714945928464711682, 1);
-INSERT INTO `sys_user_role` VALUES (1714946100850606082, 1);
-INSERT INTO `sys_user_role` VALUES (1714952355237347329, 1);
-INSERT INTO `sys_user_role` VALUES (1714954192279584770, 1);
-INSERT INTO `sys_user_role` VALUES (1714960721598758913, 1);
-INSERT INTO `sys_user_role` VALUES (1714961357132283906, 1);
-INSERT INTO `sys_user_role` VALUES (1714963426656403458, 1);
-INSERT INTO `sys_user_role` VALUES (1714980339130318850, 1);
-INSERT INTO `sys_user_role` VALUES (1714985002550444034, 1);
-INSERT INTO `sys_user_role` VALUES (1714996959085084674, 1);
-INSERT INTO `sys_user_role` VALUES (1715000784541990913, 1);
-INSERT INTO `sys_user_role` VALUES (1715160830886297602, 1);
-INSERT INTO `sys_user_role` VALUES (1715174792021426177, 1);
-INSERT INTO `sys_user_role` VALUES (1715176760861278209, 1);
-INSERT INTO `sys_user_role` VALUES (1715187418688405506, 1);
-INSERT INTO `sys_user_role` VALUES (1715263570077564930, 1);
-INSERT INTO `sys_user_role` VALUES (1715273299113820162, 1);
-INSERT INTO `sys_user_role` VALUES (1715289765028577281, 1);
-INSERT INTO `sys_user_role` VALUES (1715642509052624897, 1);
-INSERT INTO `sys_user_role` VALUES (1715645217792868353, 1);
-INSERT INTO `sys_user_role` VALUES (1715655140035543041, 1);
-INSERT INTO `sys_user_role` VALUES (1715688813166346242, 1);
-INSERT INTO `sys_user_role` VALUES (1715695623109623810, 1);
-INSERT INTO `sys_user_role` VALUES (1716076523383177217, 1);
-INSERT INTO `sys_user_role` VALUES (1716077329079615490, 1);
-INSERT INTO `sys_user_role` VALUES (1716316658037178370, 1);
-INSERT INTO `sys_user_role` VALUES (1716375479287824386, 1);
-INSERT INTO `sys_user_role` VALUES (1716376929359380482, 1);
-INSERT INTO `sys_user_role` VALUES (1716449431389487106, 1);
-INSERT INTO `sys_user_role` VALUES (1716626232627707906, 1);
-INSERT INTO `sys_user_role` VALUES (1716668774639484929, 1);
-INSERT INTO `sys_user_role` VALUES (1716723582348050434, 1);
-INSERT INTO `sys_user_role` VALUES (1717010625036828674, 1);
-INSERT INTO `sys_user_role` VALUES (1717112818712723458, 1);
-INSERT INTO `sys_user_role` VALUES (1717171039955599361, 1);
-INSERT INTO `sys_user_role` VALUES (1717382776042569730, 1);
-INSERT INTO `sys_user_role` VALUES (1717383874597896194, 1);
-INSERT INTO `sys_user_role` VALUES (1717463477270102018, 1);
-INSERT INTO `sys_user_role` VALUES (1717550755342467074, 1);
-INSERT INTO `sys_user_role` VALUES (1718643906618605569, 1);
-INSERT INTO `sys_user_role` VALUES (1719357065528623105, 1);
-INSERT INTO `sys_user_role` VALUES (1719629669720145921, 1);
-INSERT INTO `sys_user_role` VALUES (1719631746265530370, 1);
-INSERT INTO `sys_user_role` VALUES (1719969371128086529, 1);
-INSERT INTO `sys_user_role` VALUES (1719994192431955970, 1);
-INSERT INTO `sys_user_role` VALUES (1720001597920264194, 1);
-INSERT INTO `sys_user_role` VALUES (1720054174099718145, 1);
-INSERT INTO `sys_user_role` VALUES (1720373256426635265, 1);
-INSERT INTO `sys_user_role` VALUES (1720615324298264578, 1);
-INSERT INTO `sys_user_role` VALUES (1720966085100191746, 1);
-INSERT INTO `sys_user_role` VALUES (1721433118342397954, 1);
-INSERT INTO `sys_user_role` VALUES (1721798759096270850, 1);
-INSERT INTO `sys_user_role` VALUES (1721869407395332097, 1);
-INSERT INTO `sys_user_role` VALUES (1721869952080232450, 1);
-INSERT INTO `sys_user_role` VALUES (1722083875718737921, 1);
-INSERT INTO `sys_user_role` VALUES (1722126825769185282, 1);
-INSERT INTO `sys_user_role` VALUES (1722453238653169665, 1);
-INSERT INTO `sys_user_role` VALUES (1722501722198552577, 1);
-INSERT INTO `sys_user_role` VALUES (1722546398997819394, 1);
-INSERT INTO `sys_user_role` VALUES (1722635856464097281, 1);
-INSERT INTO `sys_user_role` VALUES (1722652602847768578, 1);
-INSERT INTO `sys_user_role` VALUES (1722787874222682114, 1);
-INSERT INTO `sys_user_role` VALUES (1722799180870889473, 1);
-INSERT INTO `sys_user_role` VALUES (1722872660475817986, 1);
-INSERT INTO `sys_user_role` VALUES (1722874592401600514, 1);
-INSERT INTO `sys_user_role` VALUES (1722883137289367554, 1);
-INSERT INTO `sys_user_role` VALUES (1722918534182645762, 1);
-INSERT INTO `sys_user_role` VALUES (1723173295586848769, 1);
-INSERT INTO `sys_user_role` VALUES (1723222687891107841, 1);
-INSERT INTO `sys_user_role` VALUES (1723224404040921089, 1);
-INSERT INTO `sys_user_role` VALUES (1723225015520112641, 1);
-INSERT INTO `sys_user_role` VALUES (1723278284531478529, 1);
-INSERT INTO `sys_user_role` VALUES (1723330835209564161, 1);
-INSERT INTO `sys_user_role` VALUES (1723708198137147393, 1);
-INSERT INTO `sys_user_role` VALUES (1723754683843260417, 1);
-INSERT INTO `sys_user_role` VALUES (1723878185250369537, 1);
-INSERT INTO `sys_user_role` VALUES (1723940614634254337, 1);
-INSERT INTO `sys_user_role` VALUES (1723975861757325314, 1);
-INSERT INTO `sys_user_role` VALUES (1724306907803725826, 1);
-INSERT INTO `sys_user_role` VALUES (1724308252862492673, 1);
-INSERT INTO `sys_user_role` VALUES (1724382895124295681, 1);
-INSERT INTO `sys_user_role` VALUES (1724727778758406145, 1);
-INSERT INTO `sys_user_role` VALUES (1724815478295425026, 1);
-INSERT INTO `sys_user_role` VALUES (1725026071145107458, 1);
-INSERT INTO `sys_user_role` VALUES (1725026978817658881, 1);
-INSERT INTO `sys_user_role` VALUES (1725043562961457154, 1);
-INSERT INTO `sys_user_role` VALUES (1725058936893362178, 1);
-INSERT INTO `sys_user_role` VALUES (1725363117009162242, 1);
-INSERT INTO `sys_user_role` VALUES (1725538633251049474, 1);
-INSERT INTO `sys_user_role` VALUES (1725564937467875329, 1);
-INSERT INTO `sys_user_role` VALUES (1725891713243021314, 1);
-INSERT INTO `sys_user_role` VALUES (1725905000621932546, 1);
-INSERT INTO `sys_user_role` VALUES (1726440708294049793, 1);
-INSERT INTO `sys_user_role` VALUES (1726443526979584002, 1);
-INSERT INTO `sys_user_role` VALUES (1726445663797116929, 1);
-INSERT INTO `sys_user_role` VALUES (1726452867329687553, 1);
-INSERT INTO `sys_user_role` VALUES (1726472827451998209, 1);
-INSERT INTO `sys_user_role` VALUES (1726479651370696705, 1);
-INSERT INTO `sys_user_role` VALUES (1726487492674195458, 1);
-INSERT INTO `sys_user_role` VALUES (1726496513055784961, 1);
-INSERT INTO `sys_user_role` VALUES (1726498781398302722, 1);
-INSERT INTO `sys_user_role` VALUES (1726506873632587778, 1);
-INSERT INTO `sys_user_role` VALUES (1726529248394739714, 1);
-INSERT INTO `sys_user_role` VALUES (1726578079102664705, 1);
-INSERT INTO `sys_user_role` VALUES (1726582181383634946, 1);
-INSERT INTO `sys_user_role` VALUES (1726583555672506369, 1);
-INSERT INTO `sys_user_role` VALUES (1726596448690372609, 1);
-INSERT INTO `sys_user_role` VALUES (1726599361261207553, 1);
-INSERT INTO `sys_user_role` VALUES (1726604511749079041, 1);
-INSERT INTO `sys_user_role` VALUES (1726606973822304258, 1);
-INSERT INTO `sys_user_role` VALUES (1726609379524083713, 1);
-INSERT INTO `sys_user_role` VALUES (1726616151265640450, 1);
-INSERT INTO `sys_user_role` VALUES (1726775811478126594, 1);
-INSERT INTO `sys_user_role` VALUES (1726795490141667329, 1);
-INSERT INTO `sys_user_role` VALUES (1726798403169681410, 1);
-INSERT INTO `sys_user_role` VALUES (1726830794655399937, 1);
-INSERT INTO `sys_user_role` VALUES (1726862038013313026, 1);
-INSERT INTO `sys_user_role` VALUES (1726919220696186882, 1);
-INSERT INTO `sys_user_role` VALUES (1727140184050630658, 1);
-INSERT INTO `sys_user_role` VALUES (1727506163368722433, 1);
-INSERT INTO `sys_user_role` VALUES (1727518983086931969, 1);
-INSERT INTO `sys_user_role` VALUES (1727580969606840321, 1);
-INSERT INTO `sys_user_role` VALUES (1727590505323429890, 1);
-INSERT INTO `sys_user_role` VALUES (1727918393172164609, 1);
-INSERT INTO `sys_user_role` VALUES (1728249002000121857, 1);
-INSERT INTO `sys_user_role` VALUES (1728680561446486017, 1);
-INSERT INTO `sys_user_role` VALUES (1728964404182577153, 1);
-INSERT INTO `sys_user_role` VALUES (1729020459675611137, 1);
-INSERT INTO `sys_user_role` VALUES (1729051002043691009, 1);
-INSERT INTO `sys_user_role` VALUES (1729423744832172033, 1);
-INSERT INTO `sys_user_role` VALUES (1729429590291050497, 1);
-INSERT INTO `sys_user_role` VALUES (1729685493222375426, 1729685491108446210);
-INSERT INTO `sys_user_role` VALUES (1730050324466036738, 1);
-INSERT INTO `sys_user_role` VALUES (1730102403335254018, 1);
-INSERT INTO `sys_user_role` VALUES (1730129923250122754, 1);
-INSERT INTO `sys_user_role` VALUES (1730155108925763586, 1);
-INSERT INTO `sys_user_role` VALUES (1730273428207366145, 1);
-INSERT INTO `sys_user_role` VALUES (1730498722784669697, 1);
-INSERT INTO `sys_user_role` VALUES (1730815105229713410, 1);
-INSERT INTO `sys_user_role` VALUES (1730858886951923714, 1);
-INSERT INTO `sys_user_role` VALUES (1731357405659824130, 1);
-INSERT INTO `sys_user_role` VALUES (1731475532557090818, 1);
-INSERT INTO `sys_user_role` VALUES (1731480953627901953, 1);
-INSERT INTO `sys_user_role` VALUES (1731502381106495490, 1);
-INSERT INTO `sys_user_role` VALUES (1731524458442162177, 1);
-INSERT INTO `sys_user_role` VALUES (1731524630094053377, 1);
-INSERT INTO `sys_user_role` VALUES (1731524650293821441, 1);
-INSERT INTO `sys_user_role` VALUES (1731529253710233601, 1);
-INSERT INTO `sys_user_role` VALUES (1731559936046432258, 1);
-INSERT INTO `sys_user_role` VALUES (1731564032228884482, 1);
-INSERT INTO `sys_user_role` VALUES (1731565926737281026, 1);
-INSERT INTO `sys_user_role` VALUES (1731566918589513729, 1);
-INSERT INTO `sys_user_role` VALUES (1731567740094283778, 1);
-INSERT INTO `sys_user_role` VALUES (1731575439263563777, 1);
-INSERT INTO `sys_user_role` VALUES (1731583864055824385, 1);
-INSERT INTO `sys_user_role` VALUES (1731588155382464513, 1);
-INSERT INTO `sys_user_role` VALUES (1731589827840212993, 1);
-INSERT INTO `sys_user_role` VALUES (1731635461435719682, 1);
-INSERT INTO `sys_user_role` VALUES (1731668049902731266, 1);
-INSERT INTO `sys_user_role` VALUES (1731922694168412162, 1);
-INSERT INTO `sys_user_role` VALUES (1731944975456305153, 1);
-INSERT INTO `sys_user_role` VALUES (1731949019394506753, 1);
-INSERT INTO `sys_user_role` VALUES (1731951425054343170, 1);
-INSERT INTO `sys_user_role` VALUES (1732000242621513729, 1);
-INSERT INTO `sys_user_role` VALUES (1732027163380056066, 1);
-INSERT INTO `sys_user_role` VALUES (1732289382269353985, 1);
-INSERT INTO `sys_user_role` VALUES (1732289439282528258, 1);
-INSERT INTO `sys_user_role` VALUES (1732289699585228801, 1);
-INSERT INTO `sys_user_role` VALUES (1732290827173527553, 1);
-INSERT INTO `sys_user_role` VALUES (1732291549344595969, 1);
-INSERT INTO `sys_user_role` VALUES (1732293265184030721, 1);
-INSERT INTO `sys_user_role` VALUES (1732329664117506049, 1);
-INSERT INTO `sys_user_role` VALUES (1732334104450990081, 1);
-INSERT INTO `sys_user_role` VALUES (1732578671045672962, 1);
-INSERT INTO `sys_user_role` VALUES (1732584047426174978, 1);
-INSERT INTO `sys_user_role` VALUES (1732608690321129474, 1);
-INSERT INTO `sys_user_role` VALUES (1732678147815014401, 1);
-INSERT INTO `sys_user_role` VALUES (1732731410102910977, 1);
-INSERT INTO `sys_user_role` VALUES (1733005266763939841, 1);
-INSERT INTO `sys_user_role` VALUES (1733016149837774850, 1);
-INSERT INTO `sys_user_role` VALUES (1733053523871432705, 1);
-INSERT INTO `sys_user_role` VALUES (1733061400367497218, 1);
-INSERT INTO `sys_user_role` VALUES (1733167090469732353, 1);
-INSERT INTO `sys_user_role` VALUES (1733298702729641986, 1);
-INSERT INTO `sys_user_role` VALUES (1733488544511983617, 1);
-INSERT INTO `sys_user_role` VALUES (1733720554119659521, 1);
-INSERT INTO `sys_user_role` VALUES (1733846657777827842, 1);
-INSERT INTO `sys_user_role` VALUES (1733859832720031745, 1);
-INSERT INTO `sys_user_role` VALUES (1734137817339559938, 1);
-INSERT INTO `sys_user_role` VALUES (1734227535762849793, 1);
-INSERT INTO `sys_user_role` VALUES (1734492373726560257, 1);
-INSERT INTO `sys_user_role` VALUES (1734508040978726914, 1);
-INSERT INTO `sys_user_role` VALUES (1734513545461661697, 1);
-INSERT INTO `sys_user_role` VALUES (1734581580998451202, 1);
-INSERT INTO `sys_user_role` VALUES (1734751884580298754, 1);
-INSERT INTO `sys_user_role` VALUES (1734781716483612674, 1);
-INSERT INTO `sys_user_role` VALUES (1734833221987278849, 1);
-INSERT INTO `sys_user_role` VALUES (1734834063154946050, 1);
-INSERT INTO `sys_user_role` VALUES (1734880697666576386, 1);
-INSERT INTO `sys_user_role` VALUES (1734891995888427009, 1);
-INSERT INTO `sys_user_role` VALUES (1735132534701367297, 1);
-INSERT INTO `sys_user_role` VALUES (1735242647239991298, 1);
-INSERT INTO `sys_user_role` VALUES (1735486862444273666, 1);
-INSERT INTO `sys_user_role` VALUES (1735487912727355394, 1);
-INSERT INTO `sys_user_role` VALUES (1735542352767426561, 1);
-INSERT INTO `sys_user_role` VALUES (1735551915889598466, 1);
-INSERT INTO `sys_user_role` VALUES (1735616653411557377, 1);
-INSERT INTO `sys_user_role` VALUES (1735835864146714626, 1);
-INSERT INTO `sys_user_role` VALUES (1735953007769100289, 1);
-INSERT INTO `sys_user_role` VALUES (1735960189784891393, 1);
-INSERT INTO `sys_user_role` VALUES (1736265950381547522, 1);
-INSERT INTO `sys_user_role` VALUES (1736577606684844034, 1);
-INSERT INTO `sys_user_role` VALUES (1736638822375563266, 1);
-INSERT INTO `sys_user_role` VALUES (1736779069306511361, 1);
-INSERT INTO `sys_user_role` VALUES (1737028378602053634, 1);
-INSERT INTO `sys_user_role` VALUES (1737271234797314050, 1);
-INSERT INTO `sys_user_role` VALUES (1737315322405920770, 1);
-INSERT INTO `sys_user_role` VALUES (1737445221154234370, 1);
-INSERT INTO `sys_user_role` VALUES (1737452907568635906, 1);
-INSERT INTO `sys_user_role` VALUES (1737453186955419649, 1);
-INSERT INTO `sys_user_role` VALUES (1737717777685880833, 1);
-INSERT INTO `sys_user_role` VALUES (1737768515594166274, 1);
-INSERT INTO `sys_user_role` VALUES (1738108912170246145, 1);
-INSERT INTO `sys_user_role` VALUES (1738118086488825858, 1);
-INSERT INTO `sys_user_role` VALUES (1738520430804279297, 1);
-INSERT INTO `sys_user_role` VALUES (1738802060248817666, 1);
-INSERT INTO `sys_user_role` VALUES (1738812447119712257, 1);
-INSERT INTO `sys_user_role` VALUES (1738941480197234689, 1);
-INSERT INTO `sys_user_role` VALUES (1738963430776840194, 1);
-INSERT INTO `sys_user_role` VALUES (1739121784341995522, 1);
-INSERT INTO `sys_user_role` VALUES (1739166931951886338, 1);
-INSERT INTO `sys_user_role` VALUES (1739272055240073217, 1);
-INSERT INTO `sys_user_role` VALUES (1739451838930427905, 1);
-INSERT INTO `sys_user_role` VALUES (1739452037375533057, 1);
-INSERT INTO `sys_user_role` VALUES (1739452376946384898, 1);
-INSERT INTO `sys_user_role` VALUES (1739484503888961537, 1);
-INSERT INTO `sys_user_role` VALUES (1739485282335006722, 1);
-INSERT INTO `sys_user_role` VALUES (1739577551431999490, 1);
-INSERT INTO `sys_user_role` VALUES (1739825609910591489, 1);
-INSERT INTO `sys_user_role` VALUES (1739916453439152130, 1);
-INSERT INTO `sys_user_role` VALUES (1740188388454629378, 1);
-INSERT INTO `sys_user_role` VALUES (1741339991320580097, 1);
-INSERT INTO `sys_user_role` VALUES (1741803737633542145, 1);
-INSERT INTO `sys_user_role` VALUES (1741823858229923841, 1);
-INSERT INTO `sys_user_role` VALUES (1741845883943227393, 1);
-INSERT INTO `sys_user_role` VALUES (1742179775941201921, 1);
-INSERT INTO `sys_user_role` VALUES (1742437553771458562, 1);
-INSERT INTO `sys_user_role` VALUES (1742451201315254273, 1);
-INSERT INTO `sys_user_role` VALUES (1742469913120419841, 1);
-INSERT INTO `sys_user_role` VALUES (1742798283280568321, 1);
-INSERT INTO `sys_user_role` VALUES (1742798987701342210, 1);
-INSERT INTO `sys_user_role` VALUES (1742799476950126594, 1);
-INSERT INTO `sys_user_role` VALUES (1742799839619010562, 1);
-INSERT INTO `sys_user_role` VALUES (1742801019527057410, 1);
-INSERT INTO `sys_user_role` VALUES (1742804073915699202, 1);
-INSERT INTO `sys_user_role` VALUES (1742821280687149058, 1);
-INSERT INTO `sys_user_role` VALUES (1742821467476283394, 1);
-INSERT INTO `sys_user_role` VALUES (1742822775600009217, 1);
-INSERT INTO `sys_user_role` VALUES (1742823890928357377, 1);
-INSERT INTO `sys_user_role` VALUES (1742838225297821697, 1);
-INSERT INTO `sys_user_role` VALUES (1742902317295423490, 1);
-INSERT INTO `sys_user_role` VALUES (1742910854243373058, 1);
-INSERT INTO `sys_user_role` VALUES (1742961994725150721, 1);
-INSERT INTO `sys_user_role` VALUES (1742969861079388161, 1);
-INSERT INTO `sys_user_role` VALUES (1743068363130228737, 1);
-INSERT INTO `sys_user_role` VALUES (1743075924621479938, 1);
-INSERT INTO `sys_user_role` VALUES (1743079200725225474, 1);
-INSERT INTO `sys_user_role` VALUES (1743085878682144769, 1);
-INSERT INTO `sys_user_role` VALUES (1743110774967586818, 1);
-INSERT INTO `sys_user_role` VALUES (1743162481042870274, 1);
-INSERT INTO `sys_user_role` VALUES (1743166491284033537, 1);
-INSERT INTO `sys_user_role` VALUES (1743251016219447297, 1);
-INSERT INTO `sys_user_role` VALUES (1743469820367142914, 1);
-INSERT INTO `sys_user_role` VALUES (1743514389280522242, 1);
-INSERT INTO `sys_user_role` VALUES (1743519646916083714, 1);
-INSERT INTO `sys_user_role` VALUES (1743670356026654722, 1);
 
 -- ----------------------------
 -- Table structure for test_demo
@@ -2085,19 +1661,6 @@ CREATE TABLE `test_demo`  (
 -- ----------------------------
 -- Records of test_demo
 -- ----------------------------
-INSERT INTO `test_demo` VALUES (1, '000000', 102, 4, 1, '测试数据权限', '测试', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (2, '000000', 102, 3, 2, '子节点1', '111', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (3, '000000', 102, 3, 3, '子节点2', '222', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (4, '000000', 108, 4, 4, '测试数据', 'demo', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (5, '000000', 108, 3, 13, '子节点11', '1111', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (6, '000000', 108, 3, 12, '子节点22', '2222', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (7, '000000', 108, 3, 11, '子节点33', '3333', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (8, '000000', 108, 3, 10, '子节点44', '4444', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (9, '000000', 108, 3, 9, '子节点55', '5555', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (10, '000000', 108, 3, 8, '子节点66', '6666', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (11, '000000', 108, 3, 7, '子节点77', '7777', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (12, '000000', 108, 3, 6, '子节点88', '8888', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_demo` VALUES (13, '000000', 108, 3, 5, '子节点99', '9999', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for test_tree
@@ -2123,18 +1686,31 @@ CREATE TABLE `test_tree`  (
 -- ----------------------------
 -- Records of test_tree
 -- ----------------------------
-INSERT INTO `test_tree` VALUES (1, '000000', 0, 102, 4, '测试数据权限', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (2, '000000', 1, 102, 3, '子节点1', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (3, '000000', 2, 102, 3, '子节点2', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (4, '000000', 0, 108, 4, '测试树1', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (5, '000000', 4, 108, 3, '子节点11', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (6, '000000', 4, 108, 3, '子节点22', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (7, '000000', 4, 108, 3, '子节点33', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (8, '000000', 5, 108, 3, '子节点44', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (9, '000000', 6, 108, 3, '子节点55', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (10, '000000', 7, 108, 3, '子节点66', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (11, '000000', 7, 108, 3, '子节点77', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (12, '000000', 10, 108, 3, '子节点88', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
-INSERT INTO `test_tree` VALUES (13, '000000', 10, 108, 3, '子节点99', 0, 103, '2023-05-14 15:20:01', 1, NULL, NULL, 0);
+
+-- ----------------------------
+-- Table structure for voice_role
+-- ----------------------------
+DROP TABLE IF EXISTS `voice_role`;
+CREATE TABLE `voice_role`  (
+  `id` bigint NOT NULL COMMENT 'id',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '角色描述',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
+  `voice_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '角色id',
+  `file_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '音频地址',
+  `pre_process` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '音频预处理（实验性）',
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `voiceId`(`voice_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配音角色' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of voice_role
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;

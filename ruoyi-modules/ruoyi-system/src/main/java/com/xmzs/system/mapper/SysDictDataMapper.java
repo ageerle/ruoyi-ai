@@ -2,8 +2,8 @@ package com.xmzs.system.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xmzs.common.core.constant.UserConstants;
-import com.xmzs.system.domain.SysDictData;
 import com.xmzs.common.mybatis.core.mapper.BaseMapperPlus;
+import com.xmzs.system.domain.SysDictData;
 import com.xmzs.system.domain.vo.SysDictDataVo;
 
 import java.util.List;

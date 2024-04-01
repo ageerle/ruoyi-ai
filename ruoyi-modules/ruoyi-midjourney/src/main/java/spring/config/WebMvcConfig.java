@@ -9,8 +9,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-
-
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 	@Resource
@@ -27,7 +25,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 	public void addInterceptors(InterceptorRegistry registry) {
 		if (CharSequenceUtil.isNotBlank(this.properties.getApiSecret())) {
 			registry.addInterceptor(this.apiAuthorizeInterceptor)
-					.addPathPatterns("/submit/**", "/task/**", "/account/**");
+					.addPathPatterns("/mj/submit/**", "/mj/task/**", "/mj/account/**");
 		}
 	}
 

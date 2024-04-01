@@ -212,27 +212,6 @@ mybatis-encryptor:
   # 公私钥 非对称算法的公私钥 如：SM2，RSA
   publicKey:
   privateKey:
---- # mail 邮件发送
-mail:
-  enabled: true
-  host: smtp.163.com
-  port: 465
-  # 是否需要用户名密码验证
-  auth: true
-  # 发送方，遵循RFC-822标准
-  from: ageerle@163.com
-  # 用户名（注意：如果使用foxmail邮箱，此处user为qq号）
-  user: ageerle@163.com
-  # 密码（填写授权码）
-  pass: xxxx
-  # 使用 STARTTLS安全连接，STARTTLS是对纯文本通信协议的扩展。
-  starttlsEnable: true
-  # 使用SSL安全连接
-  sslEnable: true
-  # SMTP超时时长，单位毫秒，缺省值不超时
-  timeout: 0
-  # Socket连接超时值，单位毫秒，缺省值不超时
-  connectionTimeout: 0
 
 # Swagger配置
 swagger:
@@ -313,15 +292,12 @@ management:
 
 --- # websocket
 websocket:
-  enabled: true
+  enabled: false
   # 路径
   path: ''
   # 设置访问源地址
   allowedOrigins: '*'
-# chatgpt配置信息
-chat:
-  apiKey: 'sk-xxx'
-  apiHost: 'https://api.pandarobot.chat/'
+
 # 微信小程序配置信息
 wx:
   miniapp:
@@ -338,6 +314,8 @@ baidu:
   textReview:
     apiKey: '' # apiKey
     secretKey: '' # secretKey
+  appKey: xxxxxxxxxxxxxxxxx
+  secretKey: xxxxxxxxxxxxxxxxxxxxxxx
 
 wechat:
   #  是否使用微信 true/false
@@ -353,23 +331,62 @@ keyword:
   image: "ai画图"
   #  ai语音指令(TTS模型 https://platform.openai.com/docs/api-reference/audio)
   audio: "ai语音"
+
 mj:
-  api-secret:
+  api-secret: 'sk-xx'
   task-store:
     type: in_memory
     timeout: 30d
   translate-way: gpt
-#  proxy:
-#    host: 127.0.0.1
-#    port: 10809
+  #  proxy:
+  #    host: 127.0.0.1
+  #    port: 10809
   ng-discord:
-    server: https://discord.pandarobot.chat/
-    cdn: https://app.pandarobot.chat/
-    wss: https://gateway.pandarobot.chat/
+    server: 'https://xxx.pandarobot.chat/'
+    cdn: 'https://xxx.pandarobot.chat/'
+    wss: 'https://xxx.pandarobot.chat/'
   openai:
-    gpt-api-url: 'https://api.gptgod.online/'
-    gpt-api-key: 'xxxxxxx'
+    gpt-api-url: 'https://api.pandarobot.chat/'
+    gpt-api-key: 'sk-xx'
   accounts:
-    - guild-id: 'xxxxxx'
-      channel-id: 'xxxxx'
-      user-token: 'xxxxxxx'
+    - guild-id: 'xx'
+      channel-id: 'xx'
+      user-token: 'xx'
+
+--- # mail 邮件发送
+mail:
+  enabled: true
+  host: smtp.163.com
+  port: 465
+  # 是否需要用户名密码验证
+  auth: true
+  # 发送方，遵循RFC-822标准
+  from: ageerle@163.com
+  # 用户名（注意：如果使用foxmail邮箱，此处user为qq号）
+  user: ageerle@163.com
+  # 密码（填写授权码）
+  pass: TOGXBVPYFVPFRQMQ
+  # 使用 STARTTLS安全连接，STARTTLS是对纯文本通信协议的扩展。
+  starttlsEnable: true
+  # 使用SSL安全连接
+  sslEnable: true
+  # SMTP超时时长，单位毫秒，缺省值不超时
+  timeout: 0
+  # Socket连接超时值，单位毫秒，缺省值不超时
+  connectionTimeout: 0
+
+# chatgpt配置信息
+chat:
+  apiKey: 'sk-xxx'
+  apiHost: 'https://api.pandarobot.chat/'
+
+# 支付配置信息
+pay:
+  pid: 'xxx'
+  key: 'xxx'
+  payUrl: 'https://pay.pandarobot.chat/mapi.php'
+  notify_url: 'https://www.pandarobot.chat/pay/returnUrl'
+  return_url: 'https://www.pandarobot.chat/pay/notifyUrl'
+  type: 'wxpay'
+  device: 'pc'
+  sign_type: 'MD5'

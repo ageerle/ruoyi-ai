@@ -2,14 +2,14 @@ package com.xmzs.system.domain.bo;
 
 import com.xmzs.common.core.validate.AddGroup;
 import com.xmzs.common.core.validate.EditGroup;
+import com.xmzs.common.mybatis.core.domain.BaseEntity;
 import com.xmzs.system.domain.SysTenantPackage;
 import io.github.linpeilie.annotations.AutoMapper;
 import io.github.linpeilie.annotations.AutoMapping;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
-
-import com.xmzs.common.mybatis.core.domain.BaseEntity;
 
 /**
  * 租户套餐业务对象 sys_tenant_package

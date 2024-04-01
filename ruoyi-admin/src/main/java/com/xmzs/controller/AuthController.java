@@ -45,8 +45,6 @@ public class AuthController {
     private final SysRegisterService registerService;
     private final ISysTenantService tenantService;
 
-
-
     /**
      * 登录方法
      *

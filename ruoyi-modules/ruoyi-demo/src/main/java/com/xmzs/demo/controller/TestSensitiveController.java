@@ -1,11 +1,11 @@
 package com.xmzs.demo.controller;
 
 import com.xmzs.common.core.domain.R;
-import com.xmzs.common.web.core.BaseController;
 import com.xmzs.common.sensitive.annotation.Sensitive;
-import com.xmzs.common.sensitive.core.SensitiveStrategy;
-import lombok.Data;
 import com.xmzs.common.sensitive.core.SensitiveService;
+import com.xmzs.common.sensitive.core.SensitiveStrategy;
+import com.xmzs.common.web.core.BaseController;
+import lombok.Data;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

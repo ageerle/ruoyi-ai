@@ -5,9 +5,10 @@ import com.xmzs.common.core.validate.EditGroup;
 import com.xmzs.common.mybatis.core.domain.BaseEntity;
 import com.xmzs.system.domain.ChatMessage;
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
 
 /**
  * 聊天消息业务对象 chat_message

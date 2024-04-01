@@ -6,11 +6,11 @@ package com.xmzs.system.cofing;
  * @author: wangle
  * @date: 2023/5/18
  */
-import java.util.List;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.List;
 
 /**
  * @author <a href="https://github.com/binarywang">Binary Wang</a>
