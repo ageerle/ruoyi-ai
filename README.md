@@ -7,9 +7,7 @@
 [![JDK-17](https://img.shields.io/badge/JDK-17-green.svg)]()
 
 > 基于ruoyi-plus实现AI聊天和绘画功能-后端
-
-> 本项目完全开源免费！
-后台管理界面使用elementUI服务端使用Java17+SpringBoot3.X
+后台管理界面使用elementUI 服务端使用Java17+SpringBoot3.X
 
 > 项目文档：https://1m29197bp6.k.topthink.com/@ruoyi-ai/xiangmuchushihua.html
 
@@ -26,7 +24,7 @@
 10. 支持私有知识库
 
 >测试功能: 微信机器人
-> 
+>
 >项目地址
 <ul>
 <li>小程序端: https://github.com/ageerle/ruoyi-uniapp</li>
@@ -65,8 +63,8 @@
 
 ## 语音克隆
 <div>
-  <img style="margin:10px" src="./image/17.png" alt="drawing" width="500px" height="400px"/>
-  <img style="margin:10px" src="./image/18.png" alt="drawing" width="500px" height="400px"/>
+  <img style="margin-top:10px" src="./image/17.png" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px" src="./image/18.png" alt="drawing" width="550px" height="300px"/>
 </div>
 
 ## 知识库
@@ -77,6 +75,12 @@
   <img style="margin-top:10px" src="./image/20.png" alt="drawing" width="550px" height="300px"/>
   <img style="margin-top:10px" src="./image/21.png" alt="drawing" width="550px" height="300px"/>
   <img style="margin-top:10px" src="./image/22.png" alt="drawing" width="550px" height="300px"/>
+</div>
+
+## 后台管理
+<div>
+    <img style="margin-top:10px" src="./image/23.png" alt="drawing" width="550px" height="300px"/>
+  <img style="margin-top:10px" src="./image/24.png" alt="drawing" width="550px" height="300px"/>
 </div>
 
 ## 进群学习
