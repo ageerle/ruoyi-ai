@@ -69,12 +69,12 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        if (!prodProfile.equals(SpringUtils.getActiveProfile())) {
-            StopWatch stopWatch = invokeTimeTL.get();
-            stopWatch.stop();
-            log.debug("[PLUS]结束请求 => URL[{}],耗时:[{}]毫秒", request.getMethod() + " " + request.getRequestURI(), stopWatch.getTime());
-            invokeTimeTL.remove();
-        }
+//        if (!prodProfile.equals(SpringUtils.getActiveProfile())) {
+//            StopWatch stopWatch = invokeTimeTL.get();
+//            stopWatch.stop();
+//            log.debug("[PLUS]结束请求 => URL[{}],耗时:[{}]毫秒", request.getMethod() + " " + request.getRequestURI(), stopWatch.getTime());
+//            invokeTimeTL.remove();
+//        }
     }
 
     /**

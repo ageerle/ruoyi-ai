@@ -1,6 +1,12 @@
 #基础镜像
 FROM findepi/graalvm:java17-native
 
+# 设置环境变量
+ENV LANG C.UTF-8
+ENV LANGUAGE C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV SERVER_PORT=6039
+
 MAINTAINER ageerle
 
 RUN mkdir -p /ruoyi/server/logs \
@@ -11,11 +17,12 @@ RUN mkdir -p /ruoyi/server/logs \
 #工作空间
 WORKDIR /ruoyi/server
 
-ENV SERVER_PORT=6039
+
 
 EXPOSE ${SERVER_PORT}
 
 ADD ./target/ruoyi-admin.jar ./app.jar
+
 
 ENTRYPOINT ["java", \
             "-Djava.security.egd=file:/dev/./urandom", \
@@ -24,3 +31,5 @@ ENTRYPOINT ["java", \
 #            "-Dskywalking.agent.service_name=ruoyi-server", \
 #            "-javaagent:/ruoyi/skywalking/agent/skywalking-agent.jar", \
             "-jar", "app.jar"]
+
+

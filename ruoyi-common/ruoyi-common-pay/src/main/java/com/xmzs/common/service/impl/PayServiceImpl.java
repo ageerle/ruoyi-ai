@@ -7,6 +7,7 @@ import com.xmzs.common.config.PayConfig;
 import com.xmzs.common.service.PayService;
 import com.xmzs.common.utils.MD5Util;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -18,6 +19,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PayServiceImpl implements PayService {
 
     private final PayConfig payConfig;
@@ -42,6 +44,7 @@ public class PayServiceImpl implements PayService {
         map.put("type", payConfig.getType());
         map.put("sign", sign);
         String body = HttpUtil.post(payConfig.getPayUrl(), map);
+        log.info("支付返回信息：{},配置信息: {}",body,payConfig);
         JSONObject jsonObject = new JSONObject(body);
         return (String) jsonObject.get("qrcode");
     }

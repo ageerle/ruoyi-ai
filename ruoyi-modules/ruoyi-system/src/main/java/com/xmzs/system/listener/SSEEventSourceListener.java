@@ -4,14 +4,16 @@ package com.xmzs.system.listener;
 import cn.hutool.core.collection.CollectionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmzs.common.chat.config.LocalCache;
-import com.xmzs.common.chat.entity.chat.ChatCompletion;
 import com.xmzs.common.chat.entity.chat.ChatCompletionResponse;
 import com.xmzs.common.chat.utils.TikTokensUtil;
 import com.xmzs.common.core.utils.SpringUtils;
 import com.xmzs.common.core.utils.StringUtils;
 import com.xmzs.system.domain.bo.ChatMessageBo;
+import com.xmzs.system.domain.bo.SysModelBo;
+import com.xmzs.system.domain.vo.SysModelVo;
 import com.xmzs.system.service.IChatMessageService;
-import com.xmzs.system.service.IChatService;
+import com.xmzs.system.service.IChatCostService;
+import com.xmzs.system.service.ISysModelService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -45,7 +48,7 @@ public class SSEEventSourceListener extends EventSourceListener {
     public SSEEventSourceListener(ResponseBodyEmitter emitter) {
         this.emitter = emitter;
     }
-
+    private static final ISysModelService sysModelService = SpringUtils.getBean(ISysModelService.class);
     private String modelName;
     /**
      * {@inheritDoc}
@@ -66,34 +69,34 @@ public class SSEEventSourceListener extends EventSourceListener {
                 //成功响应
                 emitter.complete();
                 if(StringUtils.isNotEmpty(modelName)){
-                    IChatService IChatService = SpringUtils.context().getBean(IChatService.class);
+                    IChatCostService IChatCostService = SpringUtils.context().getBean(IChatCostService.class);
                     IChatMessageService chatMessageService = SpringUtils.context().getBean(IChatMessageService.class);
                     ChatMessageBo chatMessageBo = new ChatMessageBo();
                     chatMessageBo.setModelName(modelName);
                     chatMessageBo.setContent(stringBuffer.toString());
                     Long userId = (Long)LocalCache.CACHE.get("userId");
                     chatMessageBo.setUserId(userId);
-                    if(ChatCompletion.Model.GPT_4_ALL.getName().equals(modelName)
-                        || modelName.startsWith(ChatCompletion.Model.GPT_4_GIZMO.getName())
-                        || modelName.startsWith(ChatCompletion.Model.NET.getName())
-                        || ChatCompletion.Model.GPT_4_VISION_PREVIEW.getName().equals(modelName)
-                        || ChatCompletion.Model.CLAUDE_3_SONNET.getName().equals(modelName)
-                        || ChatCompletion.Model.STABLE_DIFFUSION.getName().equals(modelName)
-                        || ChatCompletion.Model.SUNO_V3.getName().equals(modelName)
-                    ){
-                        chatMessageBo.setDeductCost(0.0);
-                        chatMessageBo.setTotalTokens(0);
+
+                    //查询按次数扣费的模型
+                    SysModelBo sysModelBo = new SysModelBo();
+                    sysModelBo.setModelType("2");
+                    sysModelBo.setModelName(modelName);
+                    List<SysModelVo> sysModelList = sysModelService.queryList(sysModelBo);
+                    if (CollectionUtil.isNotEmpty(sysModelList)){
+                        chatMessageBo.setDeductCost(0d);
+                        chatMessageBo.setRemark("提问时扣费");
                         // 保存消息记录
                         chatMessageService.insertByBo(chatMessageBo);
-                    }else {
-                        // 扣除余额
+                    }else{
                         int tokens = TikTokensUtil.tokens(modelName,stringBuffer.toString());
                         chatMessageBo.setTotalTokens(tokens);
-                        IChatService.deductToken(chatMessageBo);
+                        // 按token扣费并且保存消息记录
+                        IChatCostService.deductToken(chatMessageBo);
                     }
                 }
                 return;
             }
+            // 解析返回内容
             ObjectMapper mapper = new ObjectMapper();
             ChatCompletionResponse completionResponse = mapper.readValue(data, ChatCompletionResponse.class);
             if(completionResponse == null || CollectionUtil.isEmpty(completionResponse.getChoices())){

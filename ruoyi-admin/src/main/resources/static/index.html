@@ -1,755 +1,104 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>开发教程分享</title>
-    <meta name="description" content="搜索">
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Padna Home">
+    <meta name="keywords" content="Padna,Homepage">
+    <meta name="author" content="Padna">
+    <title>熊猫助手</title>
+    <link rel="stylesheet" type="text/css" href="./assets/css/onlinewebfonts.css"/>
+    <link rel="stylesheet" type="text/css" href="./assets/css/vno.css">
+    <link rel="stylesheet" type="text/css" href="./assets/css/iconfont.css">
+    <link rel="icon" href="./assets/svg/favicon.svg">
 </head>
+
 <body>
-<!--header start-->
-<div class="header">
-    <div class="h_top">
-        <!--h_nav start-->
-        <div class="h_nav">
-            <ul>
-                <li><a href="#">首页</a></li>
-                <li><a href="#">课程</a></li>
-                <li><a href="#">问答</a></li>
-                <li><a href="#">专栏</a></li>
-                <li><a href="#">论坛</a></li>
-            </ul>
-        </div>
-        <!--end h_nav-->
+    <span class="mobile btn-mobile-menu">
+        <i class="social iconfont icon-list btn-mobile-menu__icon"></i>
+        <i class="social iconfont icon-angleup btn-mobile-close__icon hidden"></i>
+    </span>
+    <header id="panel" class="panel-cover">
+        <div class="panel-main">
+            <div class="panel-main__inner panel-inverted">
+                <div class="panel-main__content">
+                    <div class="ih-item circle effect right_to_left">
+                        <a href="#" title="" class="blog-button">
+                            <div>
+							<img src="./assets/img/logo1.jpg" alt="img" class="js-avatar iUp profilepic"></div>
+                        </a>
+                    </div>
+                    <h1 class="panel-cover__title panel-title iUp">
+                        <a href="#" title="Dmego Home">ageerle</a>
+                    </h1>
+                    <p class="panel-cover__subtitle panel-subtitle iUp">Code Create Life</p>
+                    <hr class="panel-cover__divider iUp" />
+                    <p id="description" class="panel-cover__description iUp">如何得与凉风约, 不共尘沙一并来!
+                        <br/>
+                        <strong>-「中牟道中」</strong>
+                    </p>
+                    <div class="navigation-wrapper iUp">
+                        <div>
+                            <nav class="cover-navigation cover-navigation--primary">
+                                <ul class="navigation">
+                                    <li class="navigation__item">
+                                        <a href="#" class="blog-button">首页</a>
+                                    </li>
+                                    <li class="navigation__item">
+                                        <a href="#" class="blog-button" target="_blank">博客</a>
+                                    </li>
+                                    <li class="navigation__item">
+                                        <a href="#" class="blog-button" target="_blank">简历</a>
+                                    </li>
+                                    <li class="navigation__item">
+                                        <a href="#" class="blog-button" target="_blank">关于</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                        <div class="iUp">
+                            <nav class="cover-navigation navigation--social">
+                                <ul class="navigation">
+                                    <li class="navigation__item">
+                                        <a href="https://github.com/ageerle/ruoyi-ai" title="github" target="_blank">
+                                            <i class='social iconfont icon-github'></i>
+                                            <span class="label">github</span>
+                                        </a>
+                                    </li>
+                                    <li class="navigation__item">
+                                        <a href="https://blog.csdn.net/weixin_42416319" title="csdn" target="_blank">
+                                            <i class='social iconfont icon-csdn'></i>
+                                            <span class="label">csdn</span>
+                                        </a>
+                                    </li>
 
-        <!--h_search start-->
-        <div class="h_search">
-            <input type="text" class="h_text">
-        </div>
-        <!--end h_search-->
-    </div>
-</div>
-<!--end header-->
+                                    <li class="navigation__item">
+                                        <a href="https://gitee.com/ageerle/ruoyi-ai" title="gitee" target="_blank">
+                                            <i class='social iconfont icon-cnblogs'></i>
+                                            <span class="label">gitee</span>
+                                        </a>
+                                    </li>
 
-<!--banner start-->
-<div class="banner">
-    <img src="1.jpg" width="70%;" height="80%;" id="img1">
-</div>
-<!--end banner-->
-
-<!--menu start-->
-<div class="menu">
-    <div class="m_con">
-
-        <div class="m_list">
-            <h2>软件教程</h2>
-            <ul>
-                <li><a href="#">网页制作</a></li>
-                <li><a href="#">Java</a></li>
-                <li><a href="#">微信二次开发</a></li>
-                <li><a href="#">C++</a></li>
-                <li><a href="#">Android</a></li>
-                <li><a href="#">iOS</a></li>
-                <li><a href="#">PHP</a></li>
-                <li><a href="#">游戏开发</a></li>
-            </ul>
-        </div>
-
-        <div class="m_list">
-            <h2>技能学习</h2>
-            <ul>
-                <li><a href="#">网络营销</a></li>
-                <li><a href="#">SEO</a></li>
-                <li><a href="#">淘宝美工</a></li>
-                <li><a href="#">影楼后期</a></li>
-                <li><a href="#">淘宝运营</a></li>
-            </ul>
-        </div>
-        <div class="m_list">
-            <h2>语言学习</h2>
-            <ul>
-                <li><a href="#">韩语</a></li>
-                <li><a href="#">日语</a></li>
-                <li><a href="#">泰语</a></li>
-                <li><a href="#">西班牙语</a></li>
-            </ul>
-        </div>
-
-
-    </div>
-</div>
-<!--footer start-->
-<div class="footer">
-    <div class="f_con">
-        <div class="f_desc">
-            <dl>
-                <dt>关于我们</dt>
-                <dd><a href="#">熊猫问问</a></dd>
-                <dd><a href="#">加入我们</a></dd>
-                <dd><a href="#">联系我们</a></dd>
-            </dl>
-
-            <dl>
-                <dt>学习资讯</dt>
-                <dd><a href="#">学习课程</a></dd>
-                <dd><a href="#">就业指南</a></dd>
-            </dl>
-
-            <dl>
-                <dt>服务中心</dt>
-                <dd><a href="#">安卓APP</a></dd>
-                <dd><a href="#">IOS APP</a></dd>
-            </dl>
-        </div>
-
-        <div class="f_tel">
-            <div class="f_time">
-                <p class="f_phone">400-009-6359</p>
-                <p class="f_price">
-                    <span>周一至周六 9:30-23:00</span>
-                    <span>（仅收市话费）</span>
-                </p>
-                <p class="f_mm">24小时在线客服</p>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <div class="panel-cover--overlay cover-slate">
+			</div>
         </div>
-        <div class="clear"></div>
-    </div>
 
-</div>
-<!--end footer-->
-
-<!--copyright start-->
-<div class="copyright">
-    Copyright &copy; 2023-2023  版权所有：xmzs 备案号：<a href="https://beian.miit.gov.cn/">鄂ICP备2023007672号</a>
-</div>
-<!--end copyright-->
-
+        <div class="remark iUp">
+            <p class="power" >
+               Copyright &copy; 2023-2024 版权所有：xmzs 备案号：<a href="https://beian.miit.gov.cn/">鄂ICP备20231008611号</a>
+            </p>
+        </div>
+    </header>
+    <script type="text/javascript" src="./assets/js/main.js"></script>
+    <script type="text/javascript" src="./assets/json/images.json?cb=getBingImages"></script>
 </body>
-
-<style>
-
-    * {
-        margin: 0;
-        padding: 0;
-    }
-
-    p{
-        text-align: center;
-    }
-
-    img{
-        margin-top: 10px;
-        margin-left: 20%;
-        margin-bottom: 10px;
-    }
-
-    body {
-        font-size: 12px;
-        font-family: "微软雅黑";
-        color: #666;
-        background: #eeeff3;
-    }
-
-    /*header start*/
-    .header {
-        width: 100%;
-        height: 70px;
-        background: #15171f;
-    }
-
-    .header .h_top {
-        width: 1180px;
-        height: 70px;
-        margin: 0 auto;
-    }
-
-    .header .h_top .h_logo {
-        width: 220px;
-        padding-top: 16px;
-        float: left;
-    }
-
-    /*h_nav start*/
-    .header .h_top .h_nav {
-        width: 650px;
-        height: 70px;
-        float: left;
-        color: #fff;
-        list-style: none;
-    }
-
-    .header .h_top .h_nav ul li {
-        list-style: none;
-        float: left;
-    }
-
-    .header .h_top .h_nav ul li a {
-        text-decoration: none;
-        display: block;
-        line-height: 70px;
-        padding: 0 20px 0 20px;
-        color: #fff;
-        font-size: 14px;
-        margin: 0 5px 0 5px;
-    }
-
-    .header .h_top .h_nav ul li a:hover {
-        background: #323744;
-    }
-
-    /*end h_nav*/
-
-    /*h_search start*/
-    .header .h_top .h_search {
-        width: 160px;
-        height: 32px;
-        border: 1px solid #323744;
-        background: #323744;
-        float: left;
-        margin-top: 18px;
-    }
-
-    .header .h_top .h_search:hover {
-        border: 1px solid #818997;
-    }
-
-    .header .h_top .h_search .h_text {
-        width: 125px;
-        height: 32px;
-        border: 0;
-        background: #323744;
-        font-size: 14px;
-        font-family: "微软雅黑";
-        color: #fff;
-        line-height: 32px;
-        padding-left: 10px;
-        float: left;
-    }
-
-    .header .h_top .h_search .h_btn {
-        width: 20px;
-        height: 20px;
-        display: block;
-        float: left;
-        margin-top: 5px;
-        background: url("picture/pe_icon.png") no-repeat -368px 0;
-    }
-
-    /*end h_search*/
-
-    /*h_message start*/
-    .header .h_top .h_message {
-        width: 112px;
-        height: 70px;
-        float: left;
-        margin-left: 34px;
-    }
-
-    .header .h_top .h_message .h_info {
-        width: 52px;
-        height: 70px;
-        float: left;
-        position: relative;
-    }
-
-    .header .h_top .h_message .h_info:hover {
-        background: #323744;
-    }
-
-    .header .h_top .h_message .h_info a {
-        width: 22px;
-        height: 16px;
-        display: block;
-        background: url("picture/pe_icon.png") no-repeat -368px -23px;
-        margin: 26px auto;
-    }
-
-    .header .h_top .h_message .h_info i {
-        width: 7px;
-        height: 7px;
-        display: block;
-        background: #eb6b83;
-        border-radius: 4px;
-        border: 1px solid #FFF;
-        position: absolute;
-        top: 17px;
-        left: 34px;
-    }
-
-    .header .h_top .h_message .h_pic a {
-        display: block;
-        width: 30px;
-        height: 30px;
-        margin: 20px auto;
-    }
-
-    .header .h_top .h_message .h_pic a img {
-        border-radius: 15px;
-    }
-
-    /*end h_message*/
-
-    /*banner start*/
-    .banner {
-        width: 100%;
-        height:60%;
-    }
-
-    /*end banner*/
-
-    /*menu start*/
-    .menu {
-        width: 100%;
-        height: 110px;
-        border-bottom: 1px solid #d9dce1;
-        background: #fff;
-    }
-
-    .menu .m_con {
-        width: 1180px;
-        height: 110px;
-        margin: 0 auto;
-    }
-
-    .menu .m_con .m_list {
-        width: 215px;
-        height: 80px;
-        border-right: 1px solid #d9dce1;
-        margin-top: 12px;
-        margin-left: 20px;
-        float: left;
-    }
-
-    .menu .m_con .m_list h2 {
-        font-size: 18px;
-        color: #5580fb;
-        font-weight: 500;
-        line-height: 36px;
-    }
-
-    .menu .m_con .m_list ul li {
-        list-style: none;
-        float: left;
-        margin-right: 10px;
-        line-height: 22px;
-    }
-
-    .menu .m_con .m_list ul li a {
-        color: #333;
-        text-decoration: none;
-    }
-
-    .menu .m_con .m_list ul li a:hover {
-        color: #5580fb;
-    }
-
-    .menu .m_con .m_list_end {
-        border: 0;
-    }
-
-    .course_list .c_course {
-        width: 222px;
-        height: 185px;
-        float: left;
-        margin: 0 7px;
-        margin-bottom: 20px;
-    }
-
-    .course_list .c_course .c_con {
-        width: 222px;
-        height: 185px;
-        position: relative;
-    }
-
-    /*c_first start*/
-    .course_list .c_course .c_first {
-        background: #5580fb;
-        text-align: center;
-        color: #fff;
-        font-size: 14px;
-    }
-
-    .course_list .c_course .c_first h2 {
-        padding-top: 50px;
-        font-weight: 500;
-        font-size: 24px;
-    }
-
-    .course_list .c_course .c_first p {
-        line-height: 36px;
-    }
-
-    .course_list .c_course .c_first a {
-        text-decoration: none;
-        color: #fff;
-    }
-
-    /*end c_first*/
-
-    /*c_list start*/
-    .course_list .c_course .c_list .c_yy {
-        width: 222px;
-        height: 145px;
-        background: #000;
-        position: absolute;
-        top: 0;
-        left: 0;
-        opacity: 0.6;
-        filter: alpha(opacity=60);
-        display: none;
-    }
-
-    .course_list .c_course .c_list .c_desc {
-        width: 222px;
-        height: 145px;
-        position: absolute;
-        top: 0;
-        left: 0;
-        color: #999;
-        display: none;
-    }
-
-    .course_list .c_course .c_list:hover .c_desc {
-        display: block;
-    }
-
-    .course_list .c_course .c_list:hover .c_yy {
-        display: block;
-    }
-
-    .course_list .c_course .c_list .c_desc p {
-        padding-left: 15px;
-        line-height: 24px;
-    }
-
-    .course_list .c_course .c_list .c_desc .c_title {
-        color: #fff;
-        font-size: 14px;
-        padding-top: 15px;
-    }
-
-    .course_list .c_course .c_list .c_tit_main {
-        text-align: center;
-        display: block;
-        line-height: 40px;
-        text-decoration: none;
-        color: #333;
-        font-size: 14px;
-    }
-
-    .course_list .c_course .c_list .c_tit_main:hover {
-        color: #5580fb;
-    }
-
-    .course_list .c_course .c_list .c_desc .c_btn {
-        width: 80px;
-        height: 30px;
-        background: #5580fb;
-        display: block;
-        text-decoration: none;
-        text-align: center;
-        line-height: 30px;
-        margin: 10px auto;
-        color: #fff;
-        font-size: 14px;
-        border-radius: 2px;
-    }
-
-    .clear {
-        clear: both;
-    }
-
-    .course_list .c_course .c_zhiye {
-        background: #7784a9;
-    }
-
-    .course_list .c_course .c_yuyan {
-        background: #3faa77;
-    }
-
-    .course_list .c_course .c_student {
-        background: #6a9a36;
-    }
-
-    /*end c_list*/
-
-    .teams {
-        width: 100%;
-        background: #fff;
-        padding-top: 20px;
-    }
-
-    /*teacher start*/
-    .teacher {
-        width: 1180px;
-        margin: 0 auto;
-        border-bottom: 1px solid #d9dce1;
-    }
-
-    .teacher h2 {
-        font-size: 24px;
-        font-weight: 500;
-    }
-
-    .teacher .t_team {
-        width: 1180px;
-    }
-
-    .teacher .t_team ul li {
-        list-style: none;
-        float: left;
-        width: 216px;
-        height: 66px;
-        margin: 30px 9px;
-    }
-
-    .teacher .t_team ul li:hover {
-        background: #EFEFEF;
-    }
-
-    .teacher .t_team ul li .t_pic {
-        width: 66px;
-        float: left;
-    }
-
-    .teacher .t_team ul li .t_desc {
-        width: 130px;
-        height: 66px;
-        float: right;
-    }
-
-    .teacher .t_team ul li .t_desc p {
-        line-height: 26px;
-    }
-
-    .teacher .t_team ul li .t_desc a {
-        font-size: 14px;
-        color: #5580fb;
-        text-decoration: none;
-    }
-
-    .student h2 {
-        font-weight: 500;
-        font-size: 24px;
-        line-height: 70px;
-    }
-
-    .student .s_box ul li {
-        list-style: none;
-        float: left;
-        width: 216px;
-        height: 280px;
-        margin-right: 22px;
-        position: relative;
-    }
-
-    .student .s_box ul .s_en_li {
-        margin-right: 0;
-    }
-
-    .student .s_box ul li .s_yy {
-        width: 216px;
-        height: 280px;
-        background: #000;
-        position: absolute;
-        top: 0;
-        left: 0;
-        opacity: 0.6;
-        filter: alpha(opacity=60);
-        display: none;
-    }
-
-    .student .s_box ul li .s_desc {
-        width: 216px;
-        height: 280px;
-        position: absolute;
-        top: 0;
-        left: 0;
-        color: #fff;
-        display: none;
-    }
-
-    .student .s_box ul li .s_desc h3 {
-        padding: 15px 0 0 20px;
-        font-weight: 500;
-        font-size: 18px;
-    }
-
-    .student .s_box ul li .s_desc p {
-        padding: 20px;
-        line-height: 26px;
-    }
-
-    .student .s_box ul li .s_desc a {
-        width: 60px;
-        height: 60px;
-        display: block;
-        border-radius: 30px;
-        background: #5580fb;
-        margin: 0 auto;
-        line-height: 60px;
-        text-align: center;
-        font-size: 16px;
-        text-decoration: none;
-        color: #fff;
-    }
-
-    .student .s_box ul li:hover .s_yy {
-        display: block;
-    }
-
-    .student .s_box ul li:hover .s_desc {
-        display: block;
-    }
-
-    .links h2 {
-        font-size: 24px;
-        font-weight: 500;
-        line-height: 70px;
-    }
-
-    .links .l_a {
-        width: 1180px;
-        color: #8e949f;
-    }
-
-    .links .l_a a {
-        padding: 0 10px;
-        line-height: 30px;
-        text-decoration: none;
-        color: #8e949f;
-        font-size: 14px;
-        display: inline-block;
-    }
-
-    .links .l_a a:hover {
-        color: #5580fb;
-    }
-
-    /*end links*/
-
-    /*footer start*/
-    .footer {
-        width: 100%;
-        background: #15171f;
-    }
-
-    .footer .f_con {
-        width: 1180px;
-        margin: 0px auto;
-        color: #51555d;
-        padding: 40px 0 40px 0;
-    }
-
-    .footer .f_con .f_desc dl {
-        float: left;
-        margin-right: 60px;
-    }
-
-    .footer .f_con .f_desc dl dt {
-        font-size: 18px;
-        margin-bottom: 10px;
-    }
-
-    .footer .f_con .f_desc dl dd {
-        line-height: 34px;
-    }
-
-    .footer .f_con .f_desc dl dd a {
-        text-decoration: none;
-        color: #51555d;
-        font-size: 14px;
-    }
-
-    .footer .f_con .f_desc dl dd a:hover {
-        color: #fff;
-    }
-
-    .footer .f_con .f_desc dl dd .share {
-        width: 35px;
-        height: 34px;
-        display: block;
-        float: left;
-        background: url("picture/pe_icon.png") no-repeat;
-        margin-right: 5px;
-    }
-
-    .footer .f_con .f_desc dl dd .f_wb {
-        background-position: -227px -77px;
-    }
-
-    .footer .f_con .f_desc dl dd .f_wb:hover {
-        background-position: -227px -113px;
-    }
-
-    .footer .f_con .f_desc dl dd .f_qq {
-        background-position: -265px -77px;
-    }
-
-    .footer .f_con .f_desc dl dd .f_qq:hover {
-        background-position: -265px -113px;
-    }
-
-    .footer .f_con .f_tel {
-        width: 365px;
-        float: right;
-    }
-
-    .footer .f_con .f_tel .f_qrcode {
-        width: 153px;
-        height: 135px;
-        border-right: 1px solid #202328;
-        float: left;
-    }
-
-    .footer .f_con .f_tel .f_time {
-        float: left;
-        padding-left: 51px;
-    }
-
-    .footer .f_con .f_tel .f_time .f_price {
-        margin: 10px auto;
-    }
-
-    .footer .f_con .f_tel .f_time .f_price span {
-        display: block;
-    }
-
-    .footer .f_con .f_tel .f_time .f_phone {
-        font-size: 24px;
-        color: #fff;
-        margin-bottom: 10px;
-    }
-
-    .footer .f_con .f_tel .f_time .f_price span {
-        line-height: 24px;
-        font-size: 14px;
-    }
-
-    .footer .f_con .f_tel .f_time .f_mm {
-        width: 152px;
-        height: 39px;
-        text-align: center;
-        border: 1px solid #292c35;
-        line-height: 39px;
-        font-size: 14px;
-        border-radius: 19px;
-    }
-
-    /*end footer*/
-
-    /*copyright start*/
-    .copyright {
-        width: 100%;
-        height: 70px;
-        background: #191b24;
-        line-height: 54px;
-        text-align: center;
-        font-size: 18px;
-    }
-
-    /*end copyright*/
-
-</style>
-
 </html>
-

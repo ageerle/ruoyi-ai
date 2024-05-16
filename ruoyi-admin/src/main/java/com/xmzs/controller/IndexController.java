@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class IndexController {
 
-
     /**
      * 访问首页，提示语
      */

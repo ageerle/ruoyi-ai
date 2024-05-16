@@ -17,7 +17,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("payment_orders")
+@TableName("sys_pay_order")
 public class PaymentOrders extends BaseEntity {
 
     @Serial

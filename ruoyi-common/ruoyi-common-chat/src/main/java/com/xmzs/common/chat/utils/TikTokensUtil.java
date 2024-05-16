@@ -139,7 +139,7 @@ public class TikTokensUtil {
      * @return Encoding
      */
     public static Encoding getEncoding(@NotNull String modelName) {
-        return modelMap.get(modelName);
+        return modelMap.getOrDefault(modelName, modelMap.get(ChatCompletion.Model.GPT_4_1106_PREVIEW.getName()));
     }
 
     /**
@@ -204,7 +204,9 @@ public class TikTokensUtil {
             tokensPerMessage = 3;
             tokensPerName = 1;
         }else {
-            log.warn("不支持的model {}. See https://github.com/openai/openai-python/blob/main/chatml.md 更多信息.",modelName);
+            log.warn("不支持的model {} 按gpt4计费",modelName);
+            tokensPerMessage = 3;
+            tokensPerName = 1;
         }
         int sum = 0;
         for (Message msg : messages) {

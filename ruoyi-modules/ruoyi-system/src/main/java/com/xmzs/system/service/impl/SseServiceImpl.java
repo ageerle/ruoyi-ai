@@ -1,5 +1,6 @@
 package com.xmzs.system.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.xmzs.common.chat.config.LocalCache;
 import com.xmzs.common.chat.constant.OpenAIConst;
 import com.xmzs.common.chat.domain.request.ChatRequest;
@@ -15,14 +16,18 @@ import com.xmzs.common.chat.openai.OpenAiStreamClient;
 import com.xmzs.common.chat.utils.TikTokensUtil;
 import com.xmzs.common.core.domain.model.LoginUser;
 import com.xmzs.common.core.exception.base.BaseException;
+import com.xmzs.common.core.utils.StringUtils;
 import com.xmzs.common.satoken.utils.LoginHelper;
 import com.xmzs.system.domain.SysUser;
 import com.xmzs.system.domain.bo.ChatMessageBo;
+import com.xmzs.system.domain.bo.SysModelBo;
+import com.xmzs.system.domain.vo.SysModelVo;
 import com.xmzs.system.listener.SSEEventSourceListener;
 import com.xmzs.system.mapper.SysUserMapper;
+import com.xmzs.system.service.IChatCostService;
 import com.xmzs.system.service.IChatMessageService;
-import com.xmzs.system.service.IChatService;
 import com.xmzs.system.service.ISseService;
+import com.xmzs.system.service.ISysModelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.ResponseBody;
@@ -58,12 +63,13 @@ public class SseServiceImpl implements ISseService {
 
     private final OpenAiStreamClient openAiStreamClient;
 
-
-    private final IChatService IChatService;
+    private final IChatCostService chatService;
 
     private final SysUserMapper sysUserMapper;
 
     private final IChatMessageService chatMessageService;
+
+    private final ISysModelService sysModelService;
 
     @Value("${chat.apiKey}")
     private String apiKey;
@@ -91,33 +97,35 @@ public class SseServiceImpl implements ISseService {
                 // 判断用户是否付费
                 checkUserGrade();
             }
-            // 按次数扣费
-            if(ChatCompletion.Model.GPT_4_ALL.getName().equals(chatRequest.getModel())
-                || chatRequest.getModel().startsWith(ChatCompletion.Model.GPT_4_GIZMO.getName())
-                || chatRequest.getModel().startsWith(ChatCompletion.Model.NET.getName())
-                || ChatCompletion.Model.GPT_4_VISION_PREVIEW.getName().equals(chatRequest.getModel())
-                || ChatCompletion.Model.CLAUDE_3_SONNET.getName().equals(chatRequest.getModel())
-                || ChatCompletion.Model.STABLE_DIFFUSION.getName().equals(chatRequest.getModel())
-                || ChatCompletion.Model.SUNO_V3.getName().equals(chatRequest.getModel())
-            ){
-                double cost = OpenAIConst.GPT4_COST;
-                if(ChatCompletion.Model.STABLE_DIFFUSION.getName().equals(chatRequest.getModel())){
-                    cost = 0.1;
+            //根据模型名称查询模型信息
+            SysModelBo sysModelBo = new SysModelBo();
+            sysModelBo.setModelName(chatRequest.getModel());
+            List<SysModelVo> sysModelList = sysModelService.queryList(sysModelBo);
+            if (CollectionUtil.isEmpty(sysModelList)) {
+                // 如果模型不存在默认使用token扣费方式
+                processByToken(chatRequest.getModel(), msgList, chatMessageBo);
+            } else {
+                // 模型设置默认提示词
+                SysModelVo firstModel = sysModelList.get(0);
+                if (StringUtils.isNotEmpty(firstModel.getSystemPrompt())) {
+                    Message sysMessage = Message.builder().content(firstModel.getSystemPrompt()).role(Message.Role.SYSTEM).build();
+                    // 假设 msgList 不为空并且至少有一个元素
+                    if (msgList.get(0).equals(sysMessage)) {
+                        // 如果第一个元素与sysMessage相等，替换第一个元素
+                        msgList.set(0, sysMessage);
+                    } else {
+                        // 如果不相等，将sysMessage插入到列表的第一个位置
+                        msgList.add(0, sysMessage);
+                    }
                 }
-                if(ChatCompletion.Model.SUNO_V3.getName().equals(chatRequest.getModel())){
-                    cost = 0.5;
+                // 计费类型: 1 token扣费 2 次数扣费
+                if ("2".equals(firstModel.getModelType())) {
+                    processByModelPrice(firstModel, chatMessageBo);
+                } else {
+                    processByToken(chatRequest.getModel(), msgList, chatMessageBo);
                 }
-                IChatService.deductUserBalance(getUserId(), cost);
-                chatMessageBo.setDeductCost(cost);
-                // 保存消息记录
-                chatMessageService.insertByBo(chatMessageBo);
-            }else {
-                int tokens = TikTokensUtil.tokens(chatRequest.getModel(), msgList);
-                chatMessageBo.setTotalTokens(tokens);
-                // 按token扣费并且保存消息记录
-                IChatService.deductToken(chatMessageBo);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             sendErrorEvent(sseEmitter, e.getMessage());
             return sseEmitter;
         }
@@ -145,6 +153,32 @@ public class SseServiceImpl implements ISseService {
             openAiStreamClient.streamChatCompletion(completion, openAIEventSourceListener);
         }
         return sseEmitter;
+    }
+
+    /**
+     * 根据次数扣除余额
+     *
+     * @param model         模型信息
+     * @param chatMessageBo 对话信息
+     */
+    private void processByModelPrice(SysModelVo model, ChatMessageBo chatMessageBo) {
+        double cost = model.getModelPrice();
+        chatService.deductUserBalance(getUserId(), cost);
+        chatMessageBo.setDeductCost(cost);
+        chatMessageService.insertByBo(chatMessageBo);
+    }
+
+    /**
+     * 根据token扣除余额
+     *
+     * @param modelName     模型名称
+     * @param msgList       消息列表
+     * @param chatMessageBo 消息记录
+     */
+    private void processByToken(String modelName, List<Message> msgList, ChatMessageBo chatMessageBo) {
+        int tokens = TikTokensUtil.tokens(modelName, msgList);
+        chatMessageBo.setTotalTokens(tokens);
+        chatService.deductToken(chatMessageBo);
     }
 
     /**
@@ -225,9 +259,9 @@ public class SseServiceImpl implements ISseService {
 
         // 扣除费用
         if(Objects.equals(request.getSize(), "1792x1024") || Objects.equals(request.getSize(), "1024x1792")){
-            IChatService.deductUserBalance(getUserId(),OpenAIConst.DALL3_HD_COST);
+            chatService.deductUserBalance(getUserId(),OpenAIConst.DALL3_HD_COST);
         }else {
-            IChatService.deductUserBalance(getUserId(),OpenAIConst.DALL3_COST);
+            chatService.deductUserBalance(getUserId(),OpenAIConst.DALL3_COST);
         }
         // 保存消息记录
         ChatMessageBo chatMessageBo = new ChatMessageBo();

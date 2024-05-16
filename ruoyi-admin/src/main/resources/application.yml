@@ -48,7 +48,7 @@ server:
 # 日志配置
 logging:
   level:
-    com.xmzs: @logging.level@
+    com.xmzs: '@logging.level@'
     org.springframework: warn
   config: classpath:logback-plus.xml
 
@@ -69,7 +69,7 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: @profiles.active@
+    active: '@profiles.active@'
   # 文件上传
   servlet:
     multipart:
@@ -332,26 +332,24 @@ keyword:
   #  ai语音指令(TTS模型 https://platform.openai.com/docs/api-reference/audio)
   audio: "ai语音"
 
+#绘画价格配置(元)
 mj:
-  api-secret: 'sk-xx'
-  task-store:
-    type: in_memory
-    timeout: 30d
-  translate-way: gpt
-  #  proxy:
-  #    host: 127.0.0.1
-  #    port: 10809
-  ng-discord:
-    server: 'https://xxx.pandarobot.chat/'
-    cdn: 'https://xxx.pandarobot.chat/'
-    wss: 'https://xxx.pandarobot.chat/'
-  openai:
-    gpt-api-url: 'https://api.pandarobot.chat/'
-    gpt-api-key: 'sk-xx'
-  accounts:
-    - guild-id: 'xx'
-      channel-id: 'xx'
-      user-token: 'xx'
+  # 放大
+  upsample: 0.1
+  # 变化
+  change: 0.3
+  # 图生图
+  blend: 0.3
+  # 图生文
+  describe: 0.1
+  # 文生图
+  imagine: 0.3
+  # 局部重绘
+  inpaint: 0.3
+  # 提示词分析
+  shorten: 0.1
+  # 换脸
+  faceSwapping: 0.3
 
 --- # mail 邮件发送
 mail:
@@ -365,7 +363,7 @@ mail:
   # 用户名（注意：如果使用foxmail邮箱，此处user为qq号）
   user: ageerle@163.com
   # 密码（填写授权码）
-  pass: xx
+  pass: ${MAIL_PASS}
   # 使用 STARTTLS安全连接，STARTTLS是对纯文本通信协议的扩展。
   starttlsEnable: true
   # 使用SSL安全连接
@@ -375,15 +373,14 @@ mail:
   # Socket连接超时值，单位毫秒，缺省值不超时
   connectionTimeout: 0
 
-# chatgpt配置信息
+# chatgpt和mj共用一个key
 chat:
-  apiKey: 'sk-xxx'
-  apiHost: 'https://api.pandarobot.chat/'
-
+  apiKey: ${CHAT_API_KEY}
+  apiHost: ${CHAT_API_HOST}
 # 支付配置信息
 pay:
-  pid: 'xxx'
-  key: 'xxx'
+  pid: ${PAY_PID}
+  key: ${PAY_KEY}
   payUrl: 'https://pay.pandarobot.chat/mapi.php'
   notify_url: 'https://www.pandarobot.chat/pay/returnUrl'
   return_url: 'https://www.pandarobot.chat/pay/notifyUrl'
