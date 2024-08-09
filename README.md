@@ -21,14 +21,6 @@
 <li>演示地址: https://web.pandarobot.chat</li>
 </ul>
 
-## 扫码登录
-
-公众号：熊猫AI办公助手
-
-<div>
-  <img src="./image/1716138425810.png" alt="drawing" width="600px" height="300px"/>
-</div>
-
 ## 小程序演示
 <div>
   <img style="margin:10px" src="./image/03.png" alt="drawing" width="300px" height="400px"/>
@@ -62,12 +54,6 @@
 ## 进群学习
 <div>
   <img src="./image/01.png" alt="drawing" width="300px" height="300px"/>
-</div>
-
-## 支持一下
-
-<div>
-  <img src="./image/25.png" alt="drawing" width="300px" height="300px"/>
 </div>
 
 ## 参考项目
