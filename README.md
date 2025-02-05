@@ -17,7 +17,7 @@
 <br />
 
 
-<img style="text-align: center;" src="images/00.png" alt="Logo" width="150" height="150">
+<img style="text-align: center;" src="image/00.png" alt="Logo" width="150" height="150">
 
 <h3 style="text-align: center;">快速搭建属于自己的 AI 助手平台</h3>
 
