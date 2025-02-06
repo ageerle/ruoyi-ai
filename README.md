@@ -189,7 +189,7 @@ RuoYi-AI
 
 ### 版权说明
 
-该项目签署了MIT 授权许可，详情请参阅 [LICENSE.txt](https://github.com/ageerle/ruoyi-ai/blob/master/LICENSE.txt)
+该项目签署了MIT 授权许可，详情请参阅 [LICENSE.txt](https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE)
 
 ### 鸣谢
 - [chatgpt-java](https://github.com/Grt1228/chatgpt-java)
