@@ -1,1 +1,1 @@
-com.xmzs.common.idempotent.config.IdempotentConfig
+org.ruoyi.common.idempotent.config.IdempotentConfig

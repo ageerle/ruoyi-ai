@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.xmzs.system.mapper.SysMenuMapper">
+<mapper namespace="org.ruoyi.system.mapper.SysMenuMapper">
 
-    <resultMap type="com.xmzs.system.domain.SysMenu" id="SysMenuResult">
+    <resultMap type="org.ruoyi.system.domain.SysMenu" id="SysMenuResult">
     </resultMap>
 
     <select id="selectMenuListByUserId" resultMap="SysMenuResult">

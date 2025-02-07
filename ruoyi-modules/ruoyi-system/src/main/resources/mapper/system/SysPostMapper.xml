@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.xmzs.system.mapper.SysPostMapper">
+<mapper namespace="org.ruoyi.system.mapper.SysPostMapper">
 
-    <resultMap type="com.xmzs.system.domain.vo.SysPostVo" id="SysPostResult">
+    <resultMap type="org.ruoyi.system.domain.vo.SysPostVo" id="SysPostResult">
     </resultMap>
 
     <select id="selectPostListByUserId" parameterType="Long" resultType="Long">

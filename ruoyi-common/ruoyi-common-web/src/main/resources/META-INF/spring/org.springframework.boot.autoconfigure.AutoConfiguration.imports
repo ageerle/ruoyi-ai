@@ -1,5 +1,5 @@
-com.xmzs.common.web.config.CaptchaConfig
-com.xmzs.common.web.config.FilterConfig
-com.xmzs.common.web.config.I18nConfig
-com.xmzs.common.web.config.ResourcesConfig
-com.xmzs.common.web.config.UndertowConfig
+org.ruoyi.common.web.config.CaptchaConfig
+org.ruoyi.common.web.config.FilterConfig
+org.ruoyi.common.web.config.I18nConfig
+org.ruoyi.common.web.config.ResourcesConfig
+org.ruoyi.common.web.config.UndertowConfig

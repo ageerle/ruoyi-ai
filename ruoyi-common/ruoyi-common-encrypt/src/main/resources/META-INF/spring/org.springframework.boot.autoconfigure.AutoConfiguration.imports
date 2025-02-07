@@ -1,1 +1,1 @@
-com.xmzs.common.encrypt.config.EncryptorAutoConfiguration
+org.ruoyi.common.encrypt.config.EncryptorAutoConfiguration

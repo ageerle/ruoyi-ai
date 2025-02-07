@@ -2,10 +2,10 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.xmzs.system.mapper.SysUserMapper">
+<mapper namespace="org.ruoyi.system.mapper.SysUserMapper">
 
     <!-- 多结构嵌套自动映射需带上每个实体的主键id 否则映射会失败 -->
-    <resultMap type="com.xmzs.system.domain.vo.SysUserVo" id="SysUserResult">
+    <resultMap type="org.ruoyi.system.domain.vo.SysUserVo" id="SysUserResult">
         <id property="userId" column="user_id"/>
         <result property="deptId" column="dept_id"/>
         <result property="deptId" column="dept_id"/>
@@ -13,11 +13,11 @@
         <collection property="roles" javaType="java.util.List" resultMap="RoleResult"/>
     </resultMap>
 
-    <resultMap id="deptResult" type="com.xmzs.system.domain.vo.SysDeptVo">
+    <resultMap id="deptResult" type="org.ruoyi.system.domain.vo.SysDeptVo">
         <id property="deptId" column="dept_id"/>
     </resultMap>
 
-    <resultMap id="RoleResult" type="com.xmzs.system.domain.vo.SysRoleVo">
+    <resultMap id="RoleResult" type="org.ruoyi.system.domain.vo.SysRoleVo">
         <id property="roleId" column="role_id"/>
     </resultMap>
 
@@ -35,6 +35,7 @@
                u.wx_avatar,
                u.phonenumber,
                u.password,
+               u.user_plan,
                u.sex,
                u.status,
                u.del_flag,
@@ -70,7 +71,7 @@
     </update>
 
     <select id="selectPageUserList" resultMap="SysUserResult">
-        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex,u.user_balance,u.user_grade,
+        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex,u.user_balance,u.user_grade,u.domain_name,
             u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader
         from sys_user u
             left join sys_dept d on u.dept_id = d.dept_id
@@ -78,7 +79,7 @@
     </select>
 
     <select id="selectUserList" resultMap="SysUserResult">
-        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex,
+        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex,u.user_grade,u.user_balance,
             u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader
         from sys_user u
             left join sys_dept d on u.dept_id = d.dept_id

@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.xmzs.demo.mapper.TestDemoMapper">
+<mapper namespace="org.ruoyi.demo.mapper.TestDemoMapper">
 
-    <select id="customPageList" resultType="com.xmzs.demo.domain.vo.TestDemoVo">
+    <select id="customPageList" resultType="org.ruoyi.demo.domain.vo.TestDemoVo">
         SELECT * FROM test_demo ${ew.customSqlSegment}
     </select>
 

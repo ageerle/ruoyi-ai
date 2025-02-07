@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>ruoyi-ai</artifactId>
-        <groupId>com.xmzs</groupId>
+        <groupId>org.ruoyi</groupId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -18,9 +18,7 @@
 
     <modules>
         <module>ruoyi-demo</module>
-        <module>ruoyi-generator</module>
-        <module>ruoyi-job</module>
-        <module>ruoyi-midjourney</module>
+        <module>ruoyi-fusion</module>
         <module>ruoyi-system</module>
     </modules>
 

@@ -1,1 +1,1 @@
-com.xmzs.common.ratelimiter.config.RateLimiterConfig
+org.ruoyi.common.ratelimiter.config.RateLimiterConfig

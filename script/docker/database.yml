@@ -26,7 +26,7 @@ services:
       # 时区上海
       TZ: Asia/Shanghai
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "Ruoyi@123"
+      SA_PASSWORD: "ruoyi@123"
     ports:
       - "1433:1433"
     volumes:

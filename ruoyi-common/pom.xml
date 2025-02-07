@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>ruoyi-ai</artifactId>
-        <groupId>com.xmzs</groupId>
+        <groupId>org.ruoyi</groupId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -16,7 +16,6 @@
         <module>ruoyi-common-doc</module>
         <module>ruoyi-common-excel</module>
         <module>ruoyi-common-idempotent</module>
-        <module>ruoyi-common-job</module>
         <module>ruoyi-common-log</module>
         <module>ruoyi-common-mail</module>
         <module>ruoyi-common-mybatis</module>
@@ -34,7 +33,6 @@
         <module>ruoyi-common-tenant</module>
         <module>ruoyi-common-chat</module>
         <module>ruoyi-common-pay</module>
-        <module>ruoyi-common-wechat</module>
     </modules>
 
     <artifactId>ruoyi-common</artifactId>

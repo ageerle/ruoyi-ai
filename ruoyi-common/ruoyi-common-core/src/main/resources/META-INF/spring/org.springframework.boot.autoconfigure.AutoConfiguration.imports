@@ -1,6 +1,6 @@
-com.xmzs.common.core.config.ApplicationConfig
-com.xmzs.common.core.config.AsyncConfig
-com.xmzs.common.core.config.RuoYiConfig
-com.xmzs.common.core.config.ThreadPoolConfig
-com.xmzs.common.core.config.ValidatorConfig
-com.xmzs.common.core.utils.SpringUtils
+org.ruoyi.common.core.config.ApplicationConfig
+org.ruoyi.common.core.config.AsyncConfig
+org.ruoyi.common.core.config.RuoYiConfig
+org.ruoyi.common.core.config.ThreadPoolConfig
+org.ruoyi.common.core.config.ValidatorConfig
+org.ruoyi.common.core.utils.SpringUtils

@@ -1,104 +1,74 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <!-- Meta, title, CSS, favicons, etc. -->
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Padna Home">
-    <meta name="keywords" content="Padna,Homepage">
-    <meta name="author" content="Padna">
-    <title>熊猫助手</title>
-    <link rel="stylesheet" type="text/css" href="./assets/css/onlinewebfonts.css"/>
-    <link rel="stylesheet" type="text/css" href="./assets/css/vno.css">
-    <link rel="stylesheet" type="text/css" href="./assets/css/iconfont.css">
-    <link rel="icon" href="./assets/svg/favicon.svg">
+    <meta charset="UTF-8">
+    <title>plus-doc</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="description" content="Description">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <!-- 设置浏览器图标 -->
+    <link rel="icon" href="./static/image/favicon.ico" type="image/x-icon"/>
+    <link rel="shortcut icon" href="./static/image/favicon.ico" type="image/x-icon"/>
+    <meta charset="UTF-8">
+    <!-- 默认主题 -->
+    <link rel="stylesheet" href="./static/css/vue.css">
 </head>
-
 <body>
-    <span class="mobile btn-mobile-menu">
-        <i class="social iconfont icon-list btn-mobile-menu__icon"></i>
-        <i class="social iconfont icon-angleup btn-mobile-close__icon hidden"></i>
-    </span>
-    <header id="panel" class="panel-cover">
-        <div class="panel-main">
-            <div class="panel-main__inner panel-inverted">
-                <div class="panel-main__content">
-                    <div class="ih-item circle effect right_to_left">
-                        <a href="#" title="" class="blog-button">
-                            <div>
-							<img src="./assets/img/logo1.jpg" alt="img" class="js-avatar iUp profilepic"></div>
-                        </a>
-                    </div>
-                    <h1 class="panel-cover__title panel-title iUp">
-                        <a href="#" title="Dmego Home">ageerle</a>
-                    </h1>
-                    <p class="panel-cover__subtitle panel-subtitle iUp">Code Create Life</p>
-                    <hr class="panel-cover__divider iUp" />
-                    <p id="description" class="panel-cover__description iUp">如何得与凉风约, 不共尘沙一并来!
-                        <br/>
-                        <strong>-「中牟道中」</strong>
-                    </p>
-                    <div class="navigation-wrapper iUp">
-                        <div>
-                            <nav class="cover-navigation cover-navigation--primary">
-                                <ul class="navigation">
-                                    <li class="navigation__item">
-                                        <a href="#" class="blog-button">首页</a>
-                                    </li>
-                                    <li class="navigation__item">
-                                        <a href="#" class="blog-button" target="_blank">博客</a>
-                                    </li>
-                                    <li class="navigation__item">
-                                        <a href="#" class="blog-button" target="_blank">简历</a>
-                                    </li>
-                                    <li class="navigation__item">
-                                        <a href="#" class="blog-button" target="_blank">关于</a>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                        <div class="iUp">
-                            <nav class="cover-navigation navigation--social">
-                                <ul class="navigation">
-                                    <li class="navigation__item">
-                                        <a href="https://github.com/ageerle/ruoyi-ai" title="github" target="_blank">
-                                            <i class='social iconfont icon-github'></i>
-                                            <span class="label">github</span>
-                                        </a>
-                                    </li>
-                                    <li class="navigation__item">
-                                        <a href="https://blog.csdn.net/weixin_42416319" title="csdn" target="_blank">
-                                            <i class='social iconfont icon-csdn'></i>
-                                            <span class="label">csdn</span>
-                                        </a>
-                                    </li>
+<div id="app"></div>
+<script>
+    window.$docsify = {
+        // 项目名称
+        name: 'ruoyi-ai',
+        // 仓库地址，点击右上角的Github章鱼猫头像会跳转到此地址
+        repo: 'https://gitee.com/ruoyi-ai',
+        // 侧边栏支持，默认加载的是项目根目录下的_sidebar.md文件
+        loadSidebar: true,
+        // 导航栏支持，默认加载的是项目根目录下的_navbar.md文件
+        loadNavbar: true,
+        // 封面支持，默认加载的是项目根目录下的_coverpage.md文件
+        coverpage: true,
+        // 最大支持渲染的标题层级
+        maxLevel: 5,
+        // 自定义侧边栏后默认不会再生成目录，设置生成目录的最大层级（建议配置为2-4）
+        subMaxLevel: 4,
+        // 小屏设备下合并导航栏到侧边栏
+        mergeNavbar: true,
+        // 页脚支持，默认加载的是 _footer.md
+        loadFooter: true,
+        // 首页只展示封面（默认为false，与README.md进行拼接）
+        onlyCover: true,
+        search: {
+            maxAge: 86400000,// 过期时间，单位毫秒，默认一天
+            paths: 'auto',// 注意：仅适用于 paths: 'auto' 模式
+            placeholder: '👉👉👉在这里搜索关键字👈👈👈',
+            noData: '找不到结果',
+            depth: 4,
+            hideOtherSidebarContent: false,
+            namespace: 'Docsify-Guide',
+        }
+    }
+</script>
+<!-- docsify的js依赖 -->
+<script src="./static/js/docsify.min.js"></script>
+<!-- emoji表情支持 -->
+<script src="./static/js/emoji.min.js"></script>
+<!-- 图片放大缩小支持 -->
+<script src="./static/js/zoom-image.min.js"></script>
+<!-- 搜索功能支持 -->
+<script src="./static/js/search.min.js"></script>
+<!--在所有的代码块上添加一个简单的Click to copy按钮来允许用户从你的文档中轻易地复制代码-->
+<script src="./static/js/docsify-copy-code.min.js"></script>
 
-                                    <li class="navigation__item">
-                                        <a href="https://gitee.com/ageerle/ruoyi-ai" title="gitee" target="_blank">
-                                            <i class='social iconfont icon-cnblogs'></i>
-                                            <span class="label">gitee</span>
-                                        </a>
-                                    </li>
+<!-- 回到顶部 -->
+<script src="./static/js/docsify-scroll-to-top.min.js"></script>
+<!-- 分页导航 -->
+<script src="./static/js/docsify-pagination.min.js"></script>
+<!-- 页脚-->
+<script src="./static/js/docsify-footer.min.js"></script>
 
-                                </ul>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="panel-cover--overlay cover-slate">
-			</div>
-        </div>
-
-        <div class="remark iUp">
-            <p class="power" >
-               Copyright &copy; 2023-2024 版权所有：xmzs 备案号：<a href="https://beian.miit.gov.cn/">鄂ICP备20231008611号</a>
-            </p>
-        </div>
-    </header>
-    <script type="text/javascript" src="./assets/js/main.js"></script>
-    <script type="text/javascript" src="./assets/json/images.json?cb=getBingImages"></script>
+<!-- 代码高亮 -->
+<script src="./static/js/prism-typescript.min.js"></script>
+<script src="./static/js/prism-bash.min.js"></script>
 </body>
 </html>

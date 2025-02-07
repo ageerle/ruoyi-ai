@@ -1,3 +1,3 @@
-com.xmzs.common.security.handler.GlobalExceptionHandler
-com.xmzs.common.security.handler.AllUrlHandler
-com.xmzs.common.security.config.SecurityConfig
+org.ruoyi.common.security.handler.GlobalExceptionHandler
+org.ruoyi.common.security.handler.AllUrlHandler
+org.ruoyi.common.security.config.SecurityConfig

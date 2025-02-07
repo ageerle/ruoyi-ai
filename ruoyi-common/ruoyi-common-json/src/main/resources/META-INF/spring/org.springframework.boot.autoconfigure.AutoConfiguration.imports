@@ -1,1 +1,1 @@
-com.xmzs.common.json.config.JacksonConfig
+org.ruoyi.common.json.config.JacksonConfig

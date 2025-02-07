@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>ruoyi-ai</artifactId>
-        <groupId>com.xmzs</groupId>
+        <groupId>org.ruoyi</groupId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -23,16 +23,19 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
+
         <!-- Oracle -->
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc8</artifactId>
         </dependency>
+
         <!-- PostgreSql -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
+
         <!-- SqlServer -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
@@ -40,67 +43,34 @@
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
-            <artifactId>ruoyi-common-chat</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.xmzs</groupId>
-            <artifactId>ruoyi-job</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.xmzs</groupId>
-            <artifactId>ruoyi-midjourney</artifactId>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-fusion</artifactId>
         </dependency>
 
 
 
-
-        <!-- 代码生成-->
-        <dependency>
-            <groupId>com.xmzs</groupId>
-            <artifactId>ruoyi-generator</artifactId>
-        </dependency>
 
         <!--  demo模块  -->
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-demo</artifactId>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>de.codecentric</groupId>-->
-<!--            <artifactId>spring-boot-admin-starter-client</artifactId>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- skywalking 整合 logback -->
-<!--        <dependency>-->
-<!--            <groupId>org.apache.skywalking</groupId>-->
-<!--            <artifactId>apm-toolkit-logback-1.x</artifactId>-->
-<!--            <version>${与你的agent探针版本保持一致}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.apache.skywalking</groupId>-->
-<!--            <artifactId>apm-toolkit-trace</artifactId>-->
-<!--            <version>${与你的agent探针版本保持一致}</version>-->
-<!--        </dependency>-->
 
         <!-- 添加thumbnailator依赖 -->
         <dependency>

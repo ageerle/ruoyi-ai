@@ -1,40 +1,106 @@
 /*
  Navicat MySQL Data Transfer
 
- Source Server         : ruoyi-vue
+ Source Server         : ry-vue
  Source Server Type    : MySQL
  Source Server Version : 50740
  Source Host           : 127.0.0.1:3306
- Source Schema         : ruoyi-vue
+ Source Schema         : ry-vue
 
  Target Server Type    : MySQL
  Target Server Version : 50740
  File Encoding         : 65001
 
- Date: 15/05/2024 10:49:39
+ Date: 27/05/2024 17:34:48
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
+-- Table structure for chat_config
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_config`;
+CREATE TABLE `chat_config`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置类型',
+  `config_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置名称',
+  `config_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置值',
+  `config_dict` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '说明',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `version` int(11) NULL DEFAULT NULL COMMENT '版本',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
+  `update_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新IP',
+  `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户Id',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `unique_category_key`(`category`, `config_name`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1794956871156207618 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配置信息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of chat_config
+-- ----------------------------
+INSERT INTO `chat_config` VALUES (1779450794448789505, 'chat', 'apiKey', 'sk-xx', 'API 密钥', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779450794872414210, 'chat', 'apiHost', 'https://api.pandarobot.chat/', 'API 地址', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497340548784129, 'pay', 'pid', '1000', '商户PID', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497340938854401, 'pay', 'key', 'xx', '商户密钥', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497341135986690, 'pay', 'payUrl', 'https://pay.pandarobot.chat/mapi.php', '支付地址', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497341400227842, 'pay', 'notify_url', 'https://www.pandarobot.chat/pay/notifyUrl', '回调地址', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497341588971522, 'pay', 'return_url', 'https://www.pandarobot.chat/pay/returnUrl', '跳转通知', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779513580331835394, 'mail', 'host', 'smtp.163.com', '主机地址', 103, '2024-04-14 22:14:34', '1', '1', '2024-04-28 17:46:46', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779513580658991106, 'mail', 'port', '465', '主机端口', 103, '2024-04-14 22:14:34', '1', '1', '2024-04-28 17:46:46', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779513580919037953, 'mail', 'from', 'ageerle@163.com', '发送方', 103, '2024-04-14 22:14:34', '1', '1', '2024-04-28 17:46:46', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779513581107781634, 'mail', 'user', 'ageerle@163.com', '用户名', 103, '2024-04-14 22:14:34', '1', '1', '2024-04-28 17:46:46', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779513581309108225, 'mail', 'pass', 'xx', '授权码', 103, '2024-04-14 22:14:34', '1', '1', '2024-04-28 17:46:46', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779726450625687553, 'mj', 'apiKey', 'sk-xx', 'API 密钥', 103, '2024-04-15 12:20:26', '1', '1', '2024-04-23 23:56:58', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779726451036729346, 'mj', 'apiHost', 'https://api.pandarobot.chat/', 'API 地址', 103, '2024-04-15 12:20:26', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331509679181825, 'mj', 'imagine', '0.3', '文生图', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331509939228674, 'mj', 'blend', '0.3', '图生图', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510199275522, 'mj', 'describe', '0.1', '图生文', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510392213505, 'mj', 'change', '0.3', '变化价格', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510652260353, 'mj', 'upsample', '0.1', '放大价格', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510845198338, 'mj', 'inpaint', '0.3', '局部重绘', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331511117828098, 'mj', 'faceSwapping', '0.3', '换脸价格', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331511306571778, 'mj', 'shorten', '0.1', '提示词分析', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782766864937119746, 'mail', 'amount', '1', '注册额度', 103, '2024-04-23 21:41:57', '1', '1', '2024-04-28 17:46:47', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1784166479104135169, 'audio', 'apiKey', 'xx', 'API 密钥', 103, '2024-04-27 18:23:31', '1', '1', '2024-04-27 18:24:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1784166479615840258, 'audio', 'apiHost', 'https://v1.reecho.cn/', 'API 地址', 103, '2024-04-27 18:23:32', '1', '1', '2024-04-27 18:24:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1786058372188569602, 'review', 'enabled', 'false', '文本审核', 103, '2024-05-02 23:41:14', '1', '1', '2024-05-03 01:18:50', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1786058372637360129, 'review', 'apiKey', 'xx', 'apiKey', 103, '2024-05-02 23:41:14', '1', '1', '2024-05-03 01:18:50', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1786058372897406977, 'review', 'secretKey', 'xx', 'secretKey', 103, '2024-05-02 23:41:14', '1', '1', '2024-05-03 01:18:50', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792069350789324801, 'weixin', 'appId', 'xx', '应用ID', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792069351246503938, 'weixin', 'appSecret', 'xx', '应用密钥', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792069351246503939, 'weixin', 'mchId', 'xx', '商户ID', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792183360796790785, 'weixin', 'notifyUrl', 'https://www.pandarobot.chat/pay/notify/wxOrder', '回调地址', 103, '2024-05-19 21:19:45', '1', '1', '2024-05-19 22:34:40', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792183361065226241, 'weixin', 'enabled', 'false', '开启支付', 103, '2024-05-19 21:19:45', '1', '1', '2024-05-19 22:34:40', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207511704100866, 'sys', 'name', '熊猫助手后台管理系统', '网站名称', 103, '2024-05-19 22:55:43', '1', '1', '2024-05-19 23:24:19', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512089976834, 'sys', 'logoImage', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/19/4c106628754b4bd882a4c002eaa317f5.jpg', '网站logo', 103, '2024-05-19 22:55:43', '1', '1', '2024-05-19 23:24:19', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512412938241, 'sys', 'copyright', 'Copyright © 溪溪网络科技工作室 鄂ICP备2023007672号-1', '版权信息', 103, '2024-05-19 22:55:43', '1', '1', '2024-05-19 23:24:20', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512740093954, 'sys', 'customImage', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/19/2faba7a5fa174d7c8d573ce3f031ec51.jpg', '客服二维码', 103, '2024-05-19 22:55:43', '1', '1', '2024-05-19 23:24:20', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512740093955, 'sys', 'activate', 'false', '系统激活状态', 103, '2024-05-19 22:55:43', '1', '1', '2024-05-27 13:03:23', NULL, NULL, '0', NULL, 0);
+
+-- ----------------------------
 -- Table structure for chat_message
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_message`;
 CREATE TABLE `chat_message`  (
-                                 `id` bigint(20) NOT NULL COMMENT '主键',
-                                 `user_id` bigint(20) NOT NULL COMMENT '用户id',
-                                 `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '消息内容',
-                                 `deduct_cost` double(20, 10) NULL DEFAULT 0.0000000000 COMMENT '扣除金额\r\n\r\n',
-                                 `total_tokens` int(11) NULL DEFAULT NULL COMMENT '累计 Tokens',
-                                 `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
-                                 `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                 `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                 `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                 `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                 `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                 `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                                 PRIMARY KEY (`id`) USING BTREE
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `user_id` bigint(20) NOT NULL COMMENT '用户id',
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '消息内容',
+  `deduct_cost` double(20, 2) NULL DEFAULT 0.00 COMMENT '扣除金额\r\n\r\n',
+  `total_tokens` int(20) NULL DEFAULT NULL COMMENT '累计 Tokens',
+  `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '聊天消息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -42,15 +108,33 @@ CREATE TABLE `chat_message`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for chat_sensitive_word
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_sensitive_word`;
+CREATE TABLE `chat_sensitive_word`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `word` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '敏感词内容',
+  `status` int(11) NOT NULL COMMENT '状态 1 启用 2 停用',
+  `is_deleted` int(11) NULL DEFAULT 0 COMMENT '是否删除 0 否 NULL 是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '敏感词表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of chat_sensitive_word
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for chat_token
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_token`;
 CREATE TABLE `chat_token`  (
-                               `id` bigint(20) NOT NULL COMMENT '主键',
-                               `user_id` bigint(20) NOT NULL COMMENT '用户',
-                               `token` int(11) NULL DEFAULT NULL COMMENT '待结算token',
-                               `model_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
-                               PRIMARY KEY (`id`) USING BTREE
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `user_id` bigint(20) NOT NULL COMMENT '用户',
+  `token` int(10) NULL DEFAULT NULL COMMENT '待结算token',
+  `model_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
+  PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'token信息' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -58,32 +142,57 @@ CREATE TABLE `chat_token`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for chat_voucher
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_voucher`;
+CREATE TABLE `chat_voucher`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '兑换码',
+  `amount` double(10, 2) NOT NULL COMMENT '兑换金额',
+  `user_id` bigint(20) NULL DEFAULT NULL COMMENT '用户id',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '兑换状态',
+  `balance_before` double(10, 2) NULL DEFAULT NULL COMMENT '兑换前余额',
+  `balance_after` double(10, 2) NULL DEFAULT NULL COMMENT '兑换后余额',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1786392743269474307 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户兑换记录' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of chat_voucher
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for gen_table
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table`;
 CREATE TABLE `gen_table`  (
-                              `table_id` bigint(20) NOT NULL COMMENT '编号',
-                              `table_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表名称',
-                              `table_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表描述',
-                              `sub_table_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关联子表的表名',
-                              `sub_table_fk_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表关联的外键名',
-                              `class_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '实体类名称',
-                              `tpl_category` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'crud' COMMENT '使用的模板（crud单表操作 tree树表操作）',
-                              `package_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成包路径',
-                              `module_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成模块名',
-                              `business_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成业务名',
-                              `function_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成功能名',
-                              `function_author` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成功能作者',
-                              `gen_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '生成代码方式（0zip压缩包 1自定义路径）',
-                              `gen_path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '/' COMMENT '生成路径（不填默认项目路径）',
-                              `options` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
-                              `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                              `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                              `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                              `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                              `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                              `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                              PRIMARY KEY (`table_id`) USING BTREE
+  `table_id` bigint(20) NOT NULL COMMENT '编号',
+  `table_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表名称',
+  `table_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表描述',
+  `sub_table_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关联子表的表名',
+  `sub_table_fk_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表关联的外键名',
+  `class_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '实体类名称',
+  `tpl_category` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'crud' COMMENT '使用的模板（crud单表操作 tree树表操作）',
+  `package_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成包路径',
+  `module_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成模块名',
+  `business_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成业务名',
+  `function_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成功能名',
+  `function_author` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成功能作者',
+  `gen_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '生成代码方式（0zip压缩包 1自定义路径）',
+  `gen_path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '/' COMMENT '生成路径（不填默认项目路径）',
+  `options` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`table_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -97,45 +206,48 @@ INSERT INTO `gen_table` VALUES (1661288223728783361, 'sys_post', '岗位信息�
 INSERT INTO `gen_table` VALUES (1661288223821058050, 'sys_role', '角色信息表', NULL, NULL, 'SysRole', 'crud', 'org.dromara.system', 'system', 'role', '角色信息', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
 INSERT INTO `gen_table` VALUES (1661288223925915650, 'sys_user_post', '用户与岗位关联表', NULL, NULL, 'SysUserPost', 'crud', 'org.dromara.system', 'system', 'userPost', '用户与岗位关联', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
 INSERT INTO `gen_table` VALUES (1661288223967858689, 'sys_user_role', '用户和角色关联表', NULL, NULL, 'SysUserRole', 'crud', 'org.dromara.system', 'system', 'userRole', '用户和角色关联', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288224013996034, 'test_demo', '测试单表', NULL, NULL, 'TestDemo', 'crud', 'org.dromara.system', 'system', 'demo', '测试单', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288224185962497, 'test_tree', '测试树表', NULL, NULL, 'TestTree', 'crud', 'org.dromara.system', 'system', 'tree', '测试树', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
 INSERT INTO `gen_table` VALUES (1661288385096241154, 'sys_config', '参数配置表', NULL, NULL, 'SysConfig', 'crud', 'org.dromara.system', 'system', 'config', '参数配置', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:10', 1, '2023-05-20 18:05:10', NULL);
-INSERT INTO `gen_table` VALUES (1680196323445579778, 'sys_file_detail', '文件记录表', NULL, NULL, 'SysFileDetail', 'crud', 'com.xmzs.system', 'system', 'fileDetail', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:40:00', 1, '2023-07-15 20:40:00', NULL);
-INSERT INTO `gen_table` VALUES (1680196323521077249, 'sys_file_detail', '文件记录表', NULL, NULL, 'SysFileDetail', 'crud', 'com.xmzs.system', 'system', 'fileDetail', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:40:00', 1, '2023-07-15 20:40:00', NULL);
-INSERT INTO `gen_table` VALUES (1680199147407806465, 'sys_file_info', '文件记录表', NULL, NULL, 'SysFileInfo', 'crud', 'com.xmzs.system', 'system', 'fileInfo', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:53:56', 1, '2023-07-15 20:53:56', NULL);
-INSERT INTO `gen_table` VALUES (1680481752850145282, 'sd_model_param', '模型参数信息表', NULL, NULL, 'SdModelParam', 'crud', 'com.xmzs.system', 'system', 'modelParam', '模型参数信息', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-16 15:18:34', 1, '2023-07-16 15:18:34', NULL);
-INSERT INTO `gen_table` VALUES (1728684654923988993, 'chat_message', '聊天消息表', NULL, NULL, 'ChatMessage', 'crud', 'com.xmzs.system', 'system', 'message', '聊天消息', 'Lion Li', '0', '/', NULL, 103, 1, '2023-11-26 15:28:10', 1, '2023-11-26 15:28:10', NULL);
-INSERT INTO `gen_table` VALUES (1740573614897897473, 'payment_orders', '支付订单表', NULL, NULL, 'PaymentOrders', 'crud', 'com.xmzs.system', 'system', 'orders', '支付订单', 'Lion Li', '0', '/', NULL, 103, 1, '2023-12-27 23:04:45', 1, '2023-12-27 23:04:45', NULL);
+INSERT INTO `gen_table` VALUES (1680196323445579778, 'sys_file_detail', '文件记录表', NULL, NULL, 'SysFileDetail', 'crud', 'org.ruoyi.system', 'system', 'fileDetail', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:40:00', 1, '2023-07-15 20:40:00', NULL);
+INSERT INTO `gen_table` VALUES (1680196323521077249, 'sys_file_detail', '文件记录表', NULL, NULL, 'SysFileDetail', 'crud', 'org.ruoyi.system', 'system', 'fileDetail', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:40:00', 1, '2023-07-15 20:40:00', NULL);
+INSERT INTO `gen_table` VALUES (1680199147407806465, 'sys_file_info', '文件记录表', NULL, NULL, 'SysFileInfo', 'crud', 'org.ruoyi.system', 'system', 'fileInfo', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:53:56', 1, '2023-07-15 20:53:56', NULL);
+INSERT INTO `gen_table` VALUES (1680481752850145282, 'sd_model_param', '模型参数信息表', NULL, NULL, 'SdModelParam', 'crud', 'org.ruoyi.system', 'system', 'modelParam', '模型参数信息', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-16 15:18:34', 1, '2023-07-16 15:18:34', NULL);
+INSERT INTO `gen_table` VALUES (1740573614897897473, 'payment_orders', '支付订单表', NULL, NULL, 'PaymentOrders', 'crud', 'org.ruoyi.system', 'system', 'orders', '支付订单', 'Lion Li', '0', '/', NULL, 103, 1, '2023-12-27 23:04:45', 1, '2023-12-27 23:04:45', NULL);
+INSERT INTO `gen_table` VALUES (1775895242171076610, 'sys_model', '系统模型', NULL, NULL, 'SysModel', 'crud', 'org.ruoyi.system', 'system', 'model', '系统模型', 'Lion Li', '0', '/', NULL, 103, 1, '2024-04-04 22:27:08', 1, '2024-04-04 22:27:08', NULL);
+INSERT INTO `gen_table` VALUES (1785390411861803009, 'wx_rob_config', '微信机器人管理', NULL, NULL, 'WxRobConfig', 'crud', 'org.ruoyi.system', 'system', 'robConfig', 'robot', 'Lion Li', '0', '/', '{\"treeCode\":null,\"treeName\":null,\"treeParentCode\":null,\"parentMenuId\":null}', 103, 1, '2024-05-01 01:10:04', 1, '2024-05-03 21:00:51', NULL);
+INSERT INTO `gen_table` VALUES (1785390413745045505, 'wx_rob_keyword', '', NULL, NULL, 'WxRobKeyword', 'crud', 'org.ruoyi.system', 'system', 'robKeyword', '', 'Lion Li', '0', '/', NULL, 103, 1, '2024-04-30 23:51:44', 1, '2024-04-30 23:51:44', NULL);
+INSERT INTO `gen_table` VALUES (1785390414860730369, 'wx_rob_relation', '', NULL, NULL, 'WxRobRelation', 'crud', 'org.ruoyi.system', 'system', 'robRelation', '', 'Lion Li', '0', '/', NULL, 103, 1, '2024-04-30 23:51:44', 1, '2024-04-30 23:51:44', NULL);
+INSERT INTO `gen_table` VALUES (1786379560181882881, 'chat_voucher', '用户兑换记录', NULL, NULL, 'ChatVoucher', 'crud', 'org.ruoyi.system', 'system', 'voucher', '用户兑换记录', 'Lion Li', '0', '/', NULL, 103, 1, '2024-05-03 20:57:18', 1, '2024-05-03 20:57:18', NULL);
+INSERT INTO `gen_table` VALUES (1789155611035381761, 'sys_notice_state', '用户阅读状态表', NULL, NULL, 'SysNoticeState', 'crud', 'org.ruoyi.system', 'system', 'noticeState', '用户阅读状态', 'Lion Li', '0', '/', NULL, 103, 1, '2024-05-11 12:48:14', 1, '2024-05-11 12:48:14', NULL);
 
 -- ----------------------------
 -- Table structure for gen_table_column
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table_column`;
 CREATE TABLE `gen_table_column`  (
-                                     `column_id` bigint(20) NOT NULL COMMENT '编号',
-                                     `table_id` bigint(20) NULL DEFAULT NULL COMMENT '归属表编号',
-                                     `column_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列名称',
-                                     `column_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列描述',
-                                     `column_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列类型',
-                                     `java_type` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'JAVA类型',
-                                     `java_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'JAVA字段名',
-                                     `is_pk` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否主键（1是）',
-                                     `is_increment` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否自增（1是）',
-                                     `is_required` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否必填（1是）',
-                                     `is_insert` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为插入字段（1是）',
-                                     `is_edit` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否编辑字段（1是）',
-                                     `is_list` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否列表字段（1是）',
-                                     `is_query` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否查询字段（1是）',
-                                     `query_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'EQ' COMMENT '查询方式（等于、不等于、大于、小于、范围）',
-                                     `html_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '显示类型（文本框、文本域、下拉框、复选框、单选框、日期控件）',
-                                     `dict_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
-                                     `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
-                                     `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                     `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                     `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                     `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                     `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                     PRIMARY KEY (`column_id`) USING BTREE
+  `column_id` bigint(20) NOT NULL COMMENT '编号',
+  `table_id` bigint(20) NULL DEFAULT NULL COMMENT '归属表编号',
+  `column_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列名称',
+  `column_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列描述',
+  `column_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列类型',
+  `java_type` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'JAVA类型',
+  `java_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'JAVA字段名',
+  `is_pk` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否主键（1是）',
+  `is_increment` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否自增（1是）',
+  `is_required` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否必填（1是）',
+  `is_insert` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为插入字段（1是）',
+  `is_edit` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否编辑字段（1是）',
+  `is_list` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否列表字段（1是）',
+  `is_query` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否查询字段（1是）',
+  `query_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'EQ' COMMENT '查询方式（等于、不等于、大于、小于、范围）',
+  `html_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '显示类型（文本框、文本域、下拉框、复选框、单选框、日期控件）',
+  `dict_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
+  `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`column_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -235,33 +347,6 @@ INSERT INTO `gen_table_column` VALUES (1661288223951081474, 1661288223925915650,
 INSERT INTO `gen_table_column` VALUES (1661288223951081475, 1661288223925915650, 'post_id', '岗位ID', 'bigint(20)', 'Long', 'postId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
 INSERT INTO `gen_table_column` VALUES (1661288223993024514, 1661288223967858689, 'user_id', '用户ID', 'bigint(20)', 'Long', 'userId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
 INSERT INTO `gen_table_column` VALUES (1661288223993024515, 1661288223967858689, 'role_id', '角色ID', 'bigint(20)', 'Long', 'roleId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356162, 1661288224013996034, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356163, 1661288224013996034, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356164, 1661288224013996034, 'dept_id', '部门id', 'bigint(20)', 'Long', 'deptId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356165, 1661288224013996034, 'user_id', '用户id', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356166, 1661288224013996034, 'order_num', '排序号', 'int(11)', 'Long', 'orderNum', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356167, 1661288224013996034, 'test_key', 'key键', 'varchar(255)', 'String', 'testKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356168, 1661288224013996034, 'value', '值', 'varchar(255)', 'String', 'value', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356169, 1661288224013996034, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356170, 1661288224013996034, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 9, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356171, 1661288224013996034, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 10, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356172, 1661288224013996034, 'create_by', '创建人', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 11, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224043356173, 1661288224013996034, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 12, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224118853634, 1661288224013996034, 'update_by', '更新人', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 13, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224123047938, 1661288224013996034, 'del_flag', '删除标志', 'int(11)', 'Long', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 14, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224206934017, 1661288224185962497, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224206934018, 1661288224185962497, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224206934019, 1661288224185962497, 'parent_id', '父id', 'bigint(20)', 'Long', 'parentId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224206934020, 1661288224185962497, 'dept_id', '部门id', 'bigint(20)', 'Long', 'deptId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224206934021, 1661288224185962497, 'user_id', '用户id', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711233, 1661288224185962497, 'tree_name', '值', 'varchar(255)', 'String', 'treeName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 6, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711234, 1661288224185962497, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711235, 1661288224185962497, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711236, 1661288224185962497, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711237, 1661288224185962497, 'create_by', '创建人', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711238, 1661288224185962497, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711239, 1661288224185962497, 'update_by', '更新人', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 12, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288224223711240, 1661288224185962497, 'del_flag', '删除标志', 'int(11)', 'Long', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 13, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
 INSERT INTO `gen_table_column` VALUES (1661288385121406978, 1661288385096241154, 'config_id', '参数主键', 'bigint(20)', 'Long', 'configId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
 INSERT INTO `gen_table_column` VALUES (1661288385121406979, 1661288385096241154, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
 INSERT INTO `gen_table_column` VALUES (1661288385121406980, 1661288385096241154, 'config_name', '参数名称', 'varchar(100)', 'String', 'configName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
@@ -353,33 +438,6 @@ INSERT INTO `gen_table_column` VALUES (1680481753240215568, 1680481752850145282,
 INSERT INTO `gen_table_column` VALUES (1680481753240215569, 1680481752850145282, 'del_flag', '删除标志（0代表存在 1代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 17, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
 INSERT INTO `gen_table_column` VALUES (1680481753240215570, 1680481752850145282, 'update_ip', '更新IP', 'varchar(128)', 'String', 'updateIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 18, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
 INSERT INTO `gen_table_column` VALUES (1680481753240215571, 1680481752850145282, 'tenant_id', '租户Id', 'bigint(20)', 'Long', 'tenantId', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'input', '', 19, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1728684655246950402, 1728684654923988993, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950403, 1728684654923988993, 'message_id', '消息 id', 'varchar(64)', 'String', 'messageId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950404, 1728684654923988993, 'parent_message_id', '父级消息 id', 'varchar(64)', 'String', 'parentMessageId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950405, 1728684654923988993, 'parent_answer_message_id', '父级回答消息 id', 'varchar(64)', 'String', 'parentAnswerMessageId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950406, 1728684654923988993, 'parent_question_message_id', '父级问题消息 id', 'varchar(64)', 'String', 'parentQuestionMessageId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950407, 1728684654923988993, 'context_count', '上下文数量', 'bigint(20)', 'Long', 'contextCount', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950408, 1728684654923988993, 'question_context_count', '问题上下文数量', 'bigint(20)', 'Long', 'questionContextCount', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950409, 1728684654923988993, 'message_type', '消息类型枚举', 'int(11)', 'Long', 'messageType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 8, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950410, 1728684654923988993, 'chat_room_id', '聊天室 id', 'bigint(20)', 'Long', 'chatRoomId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950411, 1728684654923988993, 'conversation_id', '对话 id', 'varchar(255)', 'String', 'conversationId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 10, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950412, 1728684654923988993, 'api_type', 'API 类型', 'varchar(20)', 'String', 'apiType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 11, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950413, 1728684654923988993, 'api_key', 'ApiKey', 'varchar(255)', 'String', 'apiKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950414, 1728684654923988993, 'content', '消息内容', 'varchar(5000)', 'String', 'content', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'editor', '', 13, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950415, 1728684654923988993, 'original_data', '消息的原始请求或响应数据', 'text', 'String', 'originalData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 14, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950416, 1728684654923988993, 'response_error_data', '错误的响应数据', 'text', 'String', 'responseErrorData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 15, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950417, 1728684654923988993, 'prompt_tokens', '输入消息的 tokens', 'bigint(20)', 'Long', 'promptTokens', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 16, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950418, 1728684654923988993, 'completion_tokens', '输出消息的 tokens', 'bigint(20)', 'Long', 'completionTokens', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 17, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950419, 1728684654923988993, 'total_tokens', '累计 Tokens', 'bigint(20)', 'Long', 'totalTokens', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 18, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950420, 1728684654923988993, 'model_name', '模型名称', 'varchar(255)', 'String', 'modelName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 19, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950421, 1728684654923988993, 'status', '聊天记录状态', 'int(11)', 'Long', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 20, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950422, 1728684654923988993, 'is_hide', '是否隐藏 0 否 1 是', 'tinyint(4)', 'Integer', 'isHide', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 21, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950423, 1728684654923988993, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 22, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950424, 1728684654923988993, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 23, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950425, 1728684654923988993, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 24, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950426, 1728684654923988993, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 25, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950427, 1728684654923988993, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 26, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
-INSERT INTO `gen_table_column` VALUES (1728684655246950428, 1728684654923988993, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 27, 103, 1, '2023-11-26 15:58:34', 1, '2023-11-26 15:58:34');
 INSERT INTO `gen_table_column` VALUES (1740573615225053185, 1740573614897897473, 'id', '主键', 'int(11)', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
 INSERT INTO `gen_table_column` VALUES (1740573615225053186, 1740573614897897473, 'order_no', '订单编号', 'varchar(20)', 'String', 'orderNo', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
 INSERT INTO `gen_table_column` VALUES (1740573615225053187, 1740573614897897473, 'order_name', '订单名称', 'varchar(100)', 'String', 'orderName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
@@ -392,25 +450,191 @@ INSERT INTO `gen_table_column` VALUES (1740573615225053193, 1740573614897897473,
 INSERT INTO `gen_table_column` VALUES (1740573615225053194, 1740573614897897473, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
 INSERT INTO `gen_table_column` VALUES (1740573615225053195, 1740573614897897473, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
 INSERT INTO `gen_table_column` VALUES (1740573615225053196, 1740573614897897473, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 12, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
+INSERT INTO `gen_table_column` VALUES (1775895242624061441, 1775895242171076610, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061442, 1775895242171076610, 'model_name', '模型名称', 'varchar(50)', 'String', 'modelName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 2, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061443, 1775895242171076610, 'model_no', '模型编号', 'varchar(255)', 'String', 'modelNo', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061444, 1775895242171076610, 'model_describe', '模型描述', 'varchar(255)', 'String', 'modelDescribe', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061445, 1775895242171076610, 'model_price', '模型价格', 'double', 'Long', 'modelPrice', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061446, 1775895242171076610, 'model_type', '计费类型', 'char(1)', 'String', 'modelType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 6, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061447, 1775895242171076610, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 7, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061448, 1775895242171076610, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061449, 1775895242171076610, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061450, 1775895242171076610, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061451, 1775895242171076610, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1775895242624061452, 1775895242171076610, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 12, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
+INSERT INTO `gen_table_column` VALUES (1785390412381896706, 1785390411861803009, 'id', '主键', 'int(11) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412381896707, 1785390411861803009, 'user_id', '用户id', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412381896708, 1785390411861803009, 'unique_key', '机器唯一码', 'varchar(16)', 'String', 'uniqueKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412381896709, 1785390411861803009, 'remark', '备注（微信号）', 'varchar(64)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'input', '', 4, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811265, 1785390411861803009, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 5, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811266, 1785390411861803009, 'update_time', '修改时间', 'datetime', 'Date', 'updateTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 6, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811267, 1785390411861803009, 'to_friend', '指定好友回复开关', 'bit(1)', 'Integer', 'toFriend', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811268, 1785390411861803009, 'to_group', '指定群回复开关', 'bit(1)', 'Integer', 'toGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811269, 1785390411861803009, 'default_friend', '默认好友回复开关', 'bit(1)', 'Integer', 'defaultFriend', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811270, 1785390411861803009, 'default_group', '默认群回复开关', 'bit(1)', 'Integer', 'defaultGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 10, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811271, 1785390411861803009, 'from_out', '对外接口开关', 'bit(1)', 'Integer', 'fromOut', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 11, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390412444811272, 1785390411861803009, 'enable', '机器启用1禁用0', 'bit(1)', 'Integer', 'enable', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
+INSERT INTO `gen_table_column` VALUES (1785390414135115778, 1785390413745045505, 'id', '', 'int(11) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115779, 1785390413745045505, 'unique_key', '机器唯一码', 'varchar(16)', 'String', 'uniqueKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115780, 1785390413745045505, 'key_data', '关键词', 'varchar(64)', 'String', 'keyData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115781, 1785390413745045505, 'value_data', '回复内容', 'varchar(1024)', 'String', 'valueData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 4, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115782, 1785390413745045505, 'type_data', '回复类型', 'varchar(64)', 'String', 'typeData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115783, 1785390413745045505, 'nick_name', '目标昵称', 'varchar(64)', 'String', 'nickName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 6, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115784, 1785390413745045505, 'to_group', '群1好友0', 'bit(1)', 'Integer', 'toGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115785, 1785390413745045505, 'enable', '启用1禁用0', 'bit(1)', 'Integer', 'enable', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390414135115786, 1785390413745045505, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
+INSERT INTO `gen_table_column` VALUES (1785390415250800642, 1785390414860730369, 'id', '', 'int(11) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1785390415250800643, 1785390414860730369, 'out_key', '外接唯一码', 'varchar(16)', 'String', 'outKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1785390415250800644, 1785390414860730369, 'unique_key', '机器唯一码', 'varchar(16)', 'String', 'uniqueKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1785390415250800645, 1785390414860730369, 'nick_name', '目标昵称', 'varchar(64)', 'String', 'nickName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1785390415250800646, 1785390414860730369, 'to_group', '群1好友0', 'bit(1)', 'Integer', 'toGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1785390415250800647, 1785390414860730369, 'enable', '启用1禁用0', 'bit(1)', 'Integer', 'enable', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1785390415250800648, 1785390414860730369, 'white_list', 'IP白名单', 'varchar(255)', 'String', 'whiteList', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1785390415250800649, 1785390414860730369, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 8, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
+INSERT INTO `gen_table_column` VALUES (1786379560827805698, 1786379560181882881, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805699, 1786379560181882881, 'user_id', '用户id', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805700, 1786379560181882881, 'code', '兑换码', 'varchar(255)', 'String', 'code', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805701, 1786379560181882881, 'amount', '兑换金额', 'double(10,2)', 'BigDecimal', 'amount', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805702, 1786379560181882881, 'status', '兑换状态', 'char(1)', 'String', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 5, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805703, 1786379560181882881, 'balance_before', '兑换前余额', 'double(10,2)', 'BigDecimal', 'balanceBefore', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805704, 1786379560181882881, 'balance_after', '兑换后余额', 'double(10,2)', 'BigDecimal', 'balanceAfter', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805705, 1786379560181882881, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805706, 1786379560181882881, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805707, 1786379560181882881, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805708, 1786379560181882881, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 11, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560827805709, 1786379560181882881, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 12, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1786379560890720257, 1786379560181882881, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 13, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
+INSERT INTO `gen_table_column` VALUES (1789155611425452034, 1789155611035381761, 'id', 'ID', 'bigint(20)', 'Long', 'id', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452035, 1789155611035381761, 'user_id', '用户ID', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452036, 1789155611035381761, 'notice_id', '公告ID', 'bigint(20)', 'Long', 'noticeId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452037, 1789155611035381761, 'read_status', '阅读状态（0未读 1已读）', 'char(1)', 'String', 'readStatus', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 4, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452038, 1789155611035381761, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 5, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452039, 1789155611035381761, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 6, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452040, 1789155611035381761, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 7, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452041, 1789155611035381761, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452042, 1789155611035381761, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1789155611425452043, 1789155611035381761, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 10, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+
+-- ----------------------------
+-- Table structure for knowledge_attach
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_attach`;
+CREATE TABLE `knowledge_attach`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `doc_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档ID',
+  `doc_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档名称',
+  `doc_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档类型',
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文档内容',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_kname`(`kid`, `doc_name`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 74 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库附件' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of knowledge_attach
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for knowledge_fragment
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_fragment`;
+CREATE TABLE `knowledge_fragment`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `doc_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文档ID',
+  `fid` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识片段ID',
+  `idx` int(11) NOT NULL COMMENT '片段索引下标',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档内容',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5133 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识片段' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of knowledge_fragment
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for knowledge_info
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_info`;
+CREATE TABLE `knowledge_info`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `uid` bigint(20) NOT NULL DEFAULT 0 COMMENT '用户ID',
+  `kname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库名称',
+  `description` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+  `create_time` datetime NULL DEFAULT NULL,
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_kid`(`kid`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 69 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of knowledge_info
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for knowledge_share
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_share`;
+CREATE TABLE `knowledge_share`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `kid` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `uid` int(11) NOT NULL DEFAULT 0 COMMENT '用户ID',
+  `kname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库名称',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库分享表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of knowledge_share
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_audio_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_audio_role`;
+CREATE TABLE `sys_audio_role`  (
+  `id` bigint(20) NOT NULL COMMENT 'id',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '角色描述',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
+  `voice_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '角色id',
+  `file_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '音频地址',
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `voice_id`(`create_by`, `voice_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配音角色' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_audio_role
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_config
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_config`;
 CREATE TABLE `sys_config`  (
-                               `config_id` bigint(20) NOT NULL COMMENT '参数主键',
-                               `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                               `config_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '参数名称',
-                               `config_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '参数键名',
-                               `config_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '参数键值',
-                               `config_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
-                               `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                               `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                               `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                               `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                               `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                               `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                               PRIMARY KEY (`config_id`) USING BTREE
+  `config_id` bigint(20) NOT NULL COMMENT '参数主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `config_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '参数名称',
+  `config_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '参数键名',
+  `config_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '参数键值',
+  `config_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`config_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -421,34 +645,29 @@ INSERT INTO `sys_config` VALUES (2, '000000', '用户管理-账号初始密码',
 INSERT INTO `sys_config` VALUES (3, '000000', '主框架页-侧边栏主题', 'sys.index.sideTheme', 'theme-dark', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '深色主题theme-dark，浅色主题theme-light');
 INSERT INTO `sys_config` VALUES (5, '000000', '账号自助-是否开启用户注册功能', 'sys.account.registerUser', 'false', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '是否开启注册用户功能（true开启，false关闭）');
 INSERT INTO `sys_config` VALUES (11, '000000', 'OSS预览列表资源开关', 'sys.oss.previewListResource', 'true', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, 'true:开启, false:关闭');
-INSERT INTO `sys_config` VALUES (1729685495520854018, '911866', '主框架页-默认皮肤样式名称', 'sys.index.skinName', 'skin-blue', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow');
-INSERT INTO `sys_config` VALUES (1729685495520854019, '911866', '用户管理-账号初始密码', 'sys.user.initPassword', '123456', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', '初始化密码 123456');
-INSERT INTO `sys_config` VALUES (1729685495520854020, '911866', '主框架页-侧边栏主题', 'sys.index.sideTheme', 'theme-dark', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', '深色主题theme-dark，浅色主题theme-light');
-INSERT INTO `sys_config` VALUES (1729685495583768578, '911866', '账号自助-是否开启用户注册功能', 'sys.account.registerUser', 'false', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', '是否开启注册用户功能（true开启，false关闭）');
-INSERT INTO `sys_config` VALUES (1729685495583768579, '911866', 'OSS预览列表资源开关', 'sys.oss.previewListResource', 'true', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', 'true:开启, false:关闭');
 
 -- ----------------------------
 -- Table structure for sys_dept
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dept`;
 CREATE TABLE `sys_dept`  (
-                             `dept_id` bigint(20) NOT NULL COMMENT '部门id',
-                             `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                             `parent_id` bigint(20) NULL DEFAULT 0 COMMENT '父部门id',
-                             `ancestors` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '祖级列表',
-                             `dept_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '部门名称',
-                             `order_num` int(4) NULL DEFAULT 0 COMMENT '显示顺序',
-                             `leader` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负责人',
-                             `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系电话',
-                             `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '邮箱',
-                             `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '部门状态（0正常 1停用）',
-                             `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-                             `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                             `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                             `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                             `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                             `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                             PRIMARY KEY (`dept_id`) USING BTREE
+  `dept_id` bigint(20) NOT NULL COMMENT '部门id',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `parent_id` bigint(20) NULL DEFAULT 0 COMMENT '父部门id',
+  `ancestors` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '祖级列表',
+  `dept_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '部门名称',
+  `order_num` int(4) NULL DEFAULT 0 COMMENT '显示顺序',
+  `leader` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负责人',
+  `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系电话',
+  `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '邮箱',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '部门状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`dept_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -464,29 +683,30 @@ INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', 
 INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', 5, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
 INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
 INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (1729685491964084226, '911866', 0, '0', '5126', 0, 'admin', NULL, NULL, '0', '2', 103, 1, '2023-11-29 10:15:32', 1, '2023-11-29 10:15:32');
 
 -- ----------------------------
 -- Table structure for sys_dict_data
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dict_data`;
 CREATE TABLE `sys_dict_data`  (
-                                  `dict_code` bigint(20) NOT NULL COMMENT '字典编码',
-                                  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                                  `dict_sort` int(4) NULL DEFAULT 0 COMMENT '字典排序',
-                                  `dict_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典标签',
-                                  `dict_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典键值',
-                                  `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
-                                  `css_class` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '样式属性（其他样式扩展）',
-                                  `list_class` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '表格回显样式',
-                                  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
-                                  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
-                                  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                                  PRIMARY KEY (`dict_code`) USING BTREE
+  `dict_code` bigint(20) NOT NULL COMMENT '字典编码',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `dict_sort` int(4) NULL DEFAULT 0 COMMENT '字典排序',
+  `dict_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典标签',
+  `dict_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典键值',
+  `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
+  `css_class` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '样式属性（其他样式扩展）',
+  `list_class` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '表格回显样式',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`dict_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -529,19 +749,19 @@ INSERT INTO `sys_dict_data` VALUES (1780264431589601282, '000000', 2, '已支付
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dict_type`;
 CREATE TABLE `sys_dict_type`  (
-                                  `dict_id` bigint(20) NOT NULL COMMENT '字典主键',
-                                  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                                  `dict_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典名称',
-                                  `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
-                                  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
-                                  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                                  PRIMARY KEY (`dict_id`) USING BTREE,
-                                  UNIQUE INDEX `tenant_id`(`tenant_id`, `dict_type`) USING BTREE
+  `dict_id` bigint(20) NOT NULL COMMENT '字典主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `dict_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典名称',
+  `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`dict_id`) USING BTREE,
+  UNIQUE INDEX `tenant_id`(`tenant_id`, `dict_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -563,7 +783,7 @@ INSERT INTO `sys_dict_type` VALUES (1729685494468083718, '911866', '通知类型
 INSERT INTO `sys_dict_type` VALUES (1729685494468083719, '911866', '通知状态', 'sys_notice_status', '0', 103, 1, '2023-05-14 15:19:41', 1, '2023-05-14 15:19:41', '通知状态列表');
 INSERT INTO `sys_dict_type` VALUES (1729685494468083720, '911866', '操作类型', 'sys_oper_type', '0', 103, 1, '2023-05-14 15:19:41', 1, '2023-05-14 15:19:41', '操作类型列表');
 INSERT INTO `sys_dict_type` VALUES (1729685494468083721, '911866', '系统状态', 'sys_common_status', '0', 103, 1, '2023-05-14 15:19:41', 1, '2023-05-14 15:19:41', '登录状态列表');
-INSERT INTO `sys_dict_type` VALUES (1775756736895438849, '000000', '用户等级', 'sys_user_grade', '0', 103, 1, '2024-04-04 13:26:13', 1, '2024-04-23 19:25:25', '用户等级');
+INSERT INTO `sys_dict_type` VALUES (1775756736895438849, '000000', '用户等级', 'sys_user_grade', '0', 103, 1, '2024-04-04 13:26:13', 1, '2024-04-04 13:26:13', '');
 INSERT INTO `sys_dict_type` VALUES (1776109665045278721, '000000', '模型计费方式', 'sys_model_billing', '0', 103, 1, '2024-04-05 12:48:37', 1, '2024-04-08 11:22:18', '模型计费方式');
 INSERT INTO `sys_dict_type` VALUES (1780263881368219649, '000000', '支付状态', 'pay_state', '0', 103, 1, '2024-04-16 23:56:00', 1, '2024-04-16 23:56:00', '支付状态');
 
@@ -572,29 +792,29 @@ INSERT INTO `sys_dict_type` VALUES (1780263881368219649, '000000', '支付状态
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_file_info`;
 CREATE TABLE `sys_file_info`  (
-                                  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '文件id',
-                                  `url` varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '文件访问地址',
-                                  `size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小，单位字节',
-                                  `filename` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件名称',
-                                  `original_filename` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '原始文件名',
-                                  `base_path` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '基础存储路径',
-                                  `path` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '存储路径',
-                                  `ext` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件扩展名',
-                                  `user_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件所属用户',
-                                  `file_type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件类型',
-                                  `attr` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '附加属性',
-                                  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-                                  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-                                  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                                  `version` int(11) NULL DEFAULT NULL COMMENT '版本',
-                                  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
-                                  `update_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新IP',
-                                  `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户Id',
-                                  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '文件记录表' ROW_FORMAT = Dynamic;
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '文件id',
+  `url` varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '文件访问地址',
+  `size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小，单位字节',
+  `filename` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件名称',
+  `original_filename` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '原始文件名',
+  `base_path` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '基础存储路径',
+  `path` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '存储路径',
+  `ext` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件扩展名',
+  `user_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件所属用户',
+  `file_type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '文件类型',
+  `attr` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '附加属性',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `version` int(11) NULL DEFAULT NULL COMMENT '版本',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
+  `update_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新IP',
+  `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户Id',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1688133688718106627 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '文件记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_file_info
@@ -605,54 +825,51 @@ CREATE TABLE `sys_file_info`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_logininfor`;
 CREATE TABLE `sys_logininfor`  (
-                                   `info_id` bigint(20) NOT NULL COMMENT '访问ID',
-                                   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                                   `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '用户账号',
-                                   `ipaddr` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '登录IP地址',
-                                   `login_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '登录地点',
-                                   `browser` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '浏览器类型',
-                                   `os` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作系统',
-                                   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
-                                   `msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '提示消息',
-                                   `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
-                                   PRIMARY KEY (`info_id`) USING BTREE,
-                                   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
-                                   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
+  `info_id` bigint(20) NOT NULL COMMENT '访问ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '用户账号',
+  `ipaddr` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '登录IP地址',
+  `login_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '登录地点',
+  `browser` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '浏览器类型',
+  `os` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作系统',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
+  `msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '提示消息',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
+  PRIMARY KEY (`info_id`) USING BTREE,
+  INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
+  INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
 -- ----------------------------
-INSERT INTO `sys_logininfor` VALUES (1789929320503357442, '00000', 'pandarobot@163.com', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2024-05-13 16:03:00');
-INSERT INTO `sys_logininfor` VALUES (1789958553149739010, '00000', 'admin', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2024-05-13 17:59:10');
-INSERT INTO `sys_logininfor` VALUES (1789985977795125250, '00000', 'admin', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2024-05-13 19:48:08');
 
 -- ----------------------------
 -- Table structure for sys_menu
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_menu`;
 CREATE TABLE `sys_menu`  (
-                             `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
-                             `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '菜单名称',
-                             `parent_id` bigint(20) NULL DEFAULT 0 COMMENT '父菜单ID',
-                             `order_num` int(11) NULL DEFAULT 0 COMMENT '显示顺序',
-                             `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '路由地址',
-                             `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件路径',
-                             `query_param` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '路由参数',
-                             `is_frame` int(11) NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
-                             `is_cache` int(11) NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
-                             `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
-                             `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '显示状态（0显示 1隐藏）',
-                             `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
-                             `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限标识',
-                             `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
-                             `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                             `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                             `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                             `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                             `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                             `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-                             PRIMARY KEY (`menu_id`) USING BTREE
+  `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
+  `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '菜单名称',
+  `parent_id` bigint(20) NULL DEFAULT 0 COMMENT '父菜单ID',
+  `order_num` int(11) NULL DEFAULT 0 COMMENT '显示顺序',
+  `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '路由地址',
+  `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件路径',
+  `query_param` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '路由参数',
+  `is_frame` int(11) NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
+  `is_cache` int(11) NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
+  `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
+  `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '显示状态（0显示 1隐藏）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
+  `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限标识',
+  `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  PRIMARY KEY (`menu_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -662,13 +879,13 @@ INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 1, 'system', NULL, '', 1, 0
 INSERT INTO `sys_menu` VALUES (2, '系统监控', 0, 3, 'monitor', NULL, '', 1, 0, 'M', '0', '0', '', 'monitor', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '系统监控目录');
 INSERT INTO `sys_menu` VALUES (6, '租户管理', 0, 2, 'tenant', NULL, '', 1, 0, 'M', '1', '1', '', 'chart', 103, 1, '2023-05-14 15:19:39', 1, '2024-04-04 22:35:33', '租户管理目录');
 INSERT INTO `sys_menu` VALUES (100, '用户管理', 1775500307898949634, 1, 'user', 'system/user/index', '', 1, 0, 'C', '0', '0', 'system:user:list', 'user', 103, 1, '2023-05-14 15:19:39', 1, '2024-04-03 20:27:27', '用户管理菜单');
-INSERT INTO `sys_menu` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'peoples', 103, 1, '2023-05-14 15:19:39', 1, '2024-05-12 01:11:47', '角色管理菜单');
+INSERT INTO `sys_menu` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'peoples', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '角色管理菜单');
 INSERT INTO `sys_menu` VALUES (102, '菜单管理', 1, 3, 'menu', 'system/menu/index', '', 1, 0, 'C', '0', '0', 'system:menu:list', 'tree-table', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '菜单管理菜单');
-INSERT INTO `sys_menu` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '0', '0', 'system:dept:list', 'tree', 103, 1, '2023-05-14 15:19:39', 1, '2024-05-12 01:10:23', '部门管理菜单');
+INSERT INTO `sys_menu` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '1', '1', 'system:dept:list', 'tree', 103, 1, '2023-05-14 15:19:39', 1, '2024-04-04 22:36:07', '部门管理菜单');
 INSERT INTO `sys_menu` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', 1, 0, 'C', '1', '1', 'system:post:list', 'post', 103, 1, '2023-05-14 15:19:39', 1, '2024-04-04 22:36:15', '岗位管理菜单');
 INSERT INTO `sys_menu` VALUES (105, '字典管理', 1, 6, 'dict', 'system/dict/index', '', 1, 0, 'C', '0', '0', 'system:dict:list', 'dict', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '字典管理菜单');
-INSERT INTO `sys_menu` VALUES (106, '系统参数', 1, 10, 'config', 'system/config/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'edit', 103, 1, '2023-05-14 15:19:40', 1, '2024-05-13 18:07:44', '参数设置菜单');
-INSERT INTO `sys_menu` VALUES (107, '通知公告', 1775500307898949634, 14, 'notice', 'system/notice/index', '', 1, 0, 'C', '1', '0', 'system:notice:list', 'message', 103, 1, '2023-05-14 15:19:40', 1, '2024-05-13 18:07:50', '通知公告菜单');
+INSERT INTO `sys_menu` VALUES (106, '系统参数', 1, 10, 'config', 'system/config/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'edit', 103, 1, '2023-05-14 15:19:40', 1, '2024-05-19 23:13:49', '参数设置菜单');
+INSERT INTO `sys_menu` VALUES (107, '通知公告', 1775500307898949634, 14, 'notice', 'system/notice/index', '', 1, 0, 'C', '0', '0', 'system:notice:list', 'message', 103, 1, '2023-05-14 15:19:40', 1, '2024-05-02 22:35:07', '通知公告菜单');
 INSERT INTO `sys_menu` VALUES (108, '日志管理', 1, 9, 'log', '', '', 1, 0, 'M', '0', '0', '', 'log', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '日志管理菜单');
 INSERT INTO `sys_menu` VALUES (109, '在线用户', 2, 1, 'online', 'monitor/online/index', '', 1, 0, 'C', '0', '0', 'monitor:online:list', 'online', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '在线用户菜单');
 INSERT INTO `sys_menu` VALUES (113, '缓存监控', 2, 5, 'cache', 'monitor/cache/index', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '缓存监控菜单');
@@ -755,41 +972,78 @@ INSERT INTO `sys_menu` VALUES (1775895273104068612, '系统模型新增', 177589
 INSERT INTO `sys_menu` VALUES (1775895273104068613, '系统模型修改', 1775895273104068610, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:edit', '#', 103, 1, '2024-04-05 12:00:38', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1775895273104068614, '系统模型删除', 1775895273104068610, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:remove', '#', 103, 1, '2024-04-05 12:00:38', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1775895273104068615, '系统模型导出', 1775895273104068610, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:export', '#', 103, 1, '2024-04-05 12:00:38', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1789974539726790658, '机器管理', 1775500307898949634, 9, 'bot', 'system/bot/index', NULL, 1, 0, 'C', '0', '0', NULL, 'people', 103, 1, '2024-05-13 19:02:41', 1, '2024-05-13 19:06:53', '');
+INSERT INTO `sys_menu` VALUES (1779024740525608962, '配置管理', 1775500307898949634, 4, 'chat', 'system/chatconfig/index', NULL, 1, 0, 'C', '0', '0', '', 'dict', 103, 1, '2024-04-13 13:56:30', 1, '2024-04-13 14:47:51', '对话配置信息\r\n菜单');
+INSERT INTO `sys_menu` VALUES (1779024740525608963, '对话配置信息\r\n查询', 1779024740525608962, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:query', '#', 103, 1, '2024-04-13 13:56:30', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1779024740525608964, '对话配置信息\r\n新增', 1779024740525608962, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:add', '#', 103, 1, '2024-04-13 13:56:30', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1779024740525608965, '对话配置信息\r\n修改', 1779024740525608962, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:edit', '#', 103, 1, '2024-04-13 13:56:30', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1779024740525608966, '对话配置信息\r\n删除', 1779024740525608962, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:remove', '#', 103, 1, '2024-04-13 13:56:30', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1779024740525608967, '对话配置信息\r\n导出', 1779024740525608962, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:export', '#', 103, 1, '2024-04-13 13:56:30', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780240077690507266, '聊天消息', 1775500307898949634, 0, 'chatMessage', 'system/message/index', NULL, 1, 0, 'C', '0', '0', 'system:message:list', 'log', 103, 1, '2024-04-16 22:24:48', 1, '2024-04-16 23:10:47', '聊天消息菜单');
+INSERT INTO `sys_menu` VALUES (1780240077690507267, '聊天消息查询', 1780240077690507266, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:query', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780240077690507268, '聊天消息新增', 1780240077690507266, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:add', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780240077690507269, '聊天消息修改', 1780240077690507266, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:edit', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780240077690507270, '聊天消息删除', 1780240077690507266, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:remove', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780240077690507271, '聊天消息导出', 1780240077690507266, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:export', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780255628576018433, '支付订单', 1775500307898949634, 9, 'orders', 'system/orders/index', NULL, 1, 0, 'C', '0', '0', 'system:orders:list', 'documentation', 103, 1, '2024-04-16 23:32:48', 1, '2024-04-16 23:51:51', '支付订单菜单');
+INSERT INTO `sys_menu` VALUES (1780255628576018434, '支付订单查询', 1780255628576018433, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:query', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780255628576018435, '支付订单新增', 1780255628576018433, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:add', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780255628576018436, '支付订单修改', 1780255628576018433, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:edit', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780255628576018437, '支付订单删除', 1780255628576018433, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:remove', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1780255628576018438, '支付订单导出', 1780255628576018433, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:export', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786379590171156481, '兑换管理', 1775500307898949634, 12, 'voucher', 'system/voucher/index', NULL, 1, 0, 'C', '0', '0', 'system:voucher:list', 'druid', 103, 1, '2024-05-03 20:59:54', 1, '2024-05-03 21:11:41', '用户兑换记录菜单');
+INSERT INTO `sys_menu` VALUES (1786379590171156482, '用户兑换记录查询', 1786379590171156481, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:query', '#', 103, 1, '2024-05-03 20:59:54', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786379590171156483, '用户兑换记录新增', 1786379590171156481, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:add', '#', 103, 1, '2024-05-03 20:59:54', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786379590171156484, '用户兑换记录修改', 1786379590171156481, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:edit', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786379590171156485, '用户兑换记录删除', 1786379590171156481, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:remove', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786379590171156486, '用户兑换记录导出', 1786379590171156481, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:export', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786380456739528706, '机器管理', 1775500307898949634, 13, 'robConfig', 'system/robConfig/index', NULL, 1, 0, 'C', '0', '0', 'system:robConfig:list', 'people', 103, 1, '2024-05-03 21:02:57', 1, '2024-05-03 21:13:16', 'robot菜单');
+INSERT INTO `sys_menu` VALUES (1786380456739528707, 'robot查询', 1786380456739528706, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:robConfig:query', '#', 103, 1, '2024-05-03 21:02:57', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786380456739528708, 'robot新增', 1786380456739528706, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:robConfig:add', '#', 103, 1, '2024-05-03 21:02:57', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786380456739528709, 'robot修改', 1786380456739528706, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:robConfig:edit', '#', 103, 1, '2024-05-03 21:02:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786380456739528710, 'robot删除', 1786380456739528706, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:robConfig:remove', '#', 103, 1, '2024-05-03 21:02:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1786380456739528711, 'robot导出', 1786380456739528706, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:robConfig:export', '#', 103, 1, '2024-05-03 21:02:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1787078000285122561, '套餐管理', 1775500307898949634, 1, 'packagePlan', 'system/packagePlan/index', NULL, 1, 0, 'C', '0', '0', 'system:packagePlan:list', 'tool', 103, 1, '2024-05-05 19:13:53', 1, '2024-05-05 19:38:56', '套餐管理菜单');
+INSERT INTO `sys_menu` VALUES (1787078000285122562, '套餐管理查询', 1787078000285122561, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:packagePlan:query', '#', 103, 1, '2024-05-05 19:13:53', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1787078000285122563, '套餐管理新增', 1787078000285122561, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:packagePlan:add', '#', 103, 1, '2024-05-05 19:13:53', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1787078000285122564, '套餐管理修改', 1787078000285122561, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:packagePlan:edit', '#', 103, 1, '2024-05-05 19:13:53', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1787078000285122565, '套餐管理删除', 1787078000285122561, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:packagePlan:remove', '#', 103, 1, '2024-05-05 19:13:53', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1787078000285122566, '套餐管理导出', 1787078000285122561, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:packagePlan:export', '#', 103, 1, '2024-05-05 19:13:53', NULL, NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_model
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_model`;
 CREATE TABLE `sys_model`  (
-                              `id` bigint(20) NOT NULL COMMENT '主键',
-                              `model_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
-                              `model_describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型描述',
-                              `model_price` double NULL DEFAULT NULL COMMENT '模型价格',
-                              `model_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计费类型',
-                              `model_show` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否显示',
-                              `system_prompt` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '系统提示词',
-                              `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                              `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                              `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                              `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                              `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                              `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                              PRIMARY KEY (`id`) USING BTREE
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `model_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
+  `model_describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型描述',
+  `model_price` double NULL DEFAULT NULL COMMENT '模型价格',
+  `model_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计费类型',
+  `model_show` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否显示',
+  `system_prompt` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '系统提示词',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统模型' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_model
 -- ----------------------------
-INSERT INTO `sys_model` VALUES (1776114028757180417, 'gpt-3.5-turbo', 'gpt-3.5-turbo', 0.05, '1', '0', NULL, 103, 1, '2024-04-20 23:40:31', 1, '2024-04-23 21:45:19', 'GPT3.5最新模型,用于文本生成、对话系统、内容摘要等');
-INSERT INTO `sys_model` VALUES (1781709495515783171, 'gpt-4-all', 'gpt-4-all', 0.2, '2', '0', NULL, 103, 1, '2024-04-20 23:40:41', 1, '2024-04-23 21:45:23', '同时拥有联网查询，高级数据分析，画图 DALL.E功能,GPT 会自动识别并调取相关能力工具');
-INSERT INTO `sys_model` VALUES (1781709617662304258, 'gpt-4-turbo-2024-04-09', 'gpt-4-turbo-2024-04-09', 0.2, '1', '0', '使用中文回复', 103, 1, '2024-04-20 23:40:50', 1, '2024-04-23 21:45:28', '最新版GPT-4,相对GPT-3.5更先进、拥有更多的参数和更强大的语言处理能力');
+INSERT INTO `sys_model` VALUES (1776114028757180417, 'gpt-3.5-turbo', 'gpt-3', 0.05, '1', '0', NULL, 103, 1, '2024-04-20 23:40:31', 1, '2024-04-23 21:45:19', 'GPT3.5最新模型,用于文本生成、对话系统、内容摘要等');
+INSERT INTO `sys_model` VALUES (1781709495515783171, 'gpt-4-all', 'gpt-all', 0.2, '2', '0', NULL, 103, 1, '2024-04-20 23:40:41', 1, '2024-04-23 21:45:23', '同时拥有联网查询，高级数据分析，画图 DALL.E功能,GPT 会自动识别并调取相关能力工具');
+INSERT INTO `sys_model` VALUES (1781709617662304258, 'gpt-4-turbo-2024-04-09', 'gpt-4', 0.2, '1', '0', '使用中文回复', 103, 1, '2024-04-20 23:40:50', 1, '2024-04-23 21:45:28', '最新版GPT-4,相对GPT-3.5更先进、拥有更多的参数和更强大的语言处理能力');
 INSERT INTO `sys_model` VALUES (1781715781896646657, 'suno-v3', 'suno-v3', 0.5, '2', '0', NULL, 103, 1, '2024-04-21 00:05:20', 1, '2024-04-23 19:34:36', 'SunoAI 推出的文生歌模型，支持灵感模式、歌词模式，也支持生成纯音乐');
 INSERT INTO `sys_model` VALUES (1781728235120791553, 'stable-diffusion', 'stable-diffusion', 0.1, '2', '0', NULL, 103, 1, '2024-04-21 00:54:49', 1, '2024-04-23 19:34:40', '高级图像生成和处理模型，擅长创建逼真的视觉效果');
 INSERT INTO `sys_model` VALUES (1781728766161620993, 'claude-3-opus-20240229', 'claude-3-opus-20240229', 0.2, '1', '0', NULL, 103, 1, '2024-04-21 00:56:55', 1, '2024-04-23 19:34:43', 'Claude模型的最新版本，具有最先进的语言处理技术');
 INSERT INTO `sys_model` VALUES (1782734319650418690, 'gpt-4-1106-vision-preview', 'gpt-4-1106-vision-preview', 0.2, '2', '1', '', 103, 1, '2024-04-23 19:32:38', 1, '2024-04-23 19:38:38', 'GPT-4 的一个包含视觉处理能力的预览版本，结合了视觉信息处理的能力');
-INSERT INTO `sys_model` VALUES (1782736322308943873, 'dall-e-3', 'dall-e-3', 0.3, '2', '1', '', 103, 1, '2024-04-23 19:40:36', 1, '2024-04-23 21:45:40', 'DALL·E 是一个专注于图像生成的模型');
+INSERT INTO `sys_model` VALUES (1782736322308943873, 'dall-e-3', 'dall3', 0.3, '2', '1', '', 103, 1, '2024-04-23 19:40:36', 1, '2024-04-23 21:45:40', 'DALL·E 是一个专注于图像生成的模型');
 INSERT INTO `sys_model` VALUES (1782736729471004673, 'gpt-4-gizmo', 'gpt-4-gizmo', 0.2, '2', '1', NULL, 103, 1, '2024-04-23 19:42:13', 1, '2024-04-23 19:42:13', 'gpts商店中的模型,使用方式:gpt-4-gizmo-g-xxx');
+INSERT INTO `sys_model` VALUES (1782792839548735490, 'mj-type1', 'Midjourney1', 0.1, '2', '1', NULL, 103, 1, '2024-04-23 23:25:10', 1, '2024-04-23 23:28:04', '图生文、放大、提示词分析费用');
+INSERT INTO `sys_model` VALUES (1782793100841291778, 'mj-type2', 'Midjourney2', 0.3, '2', '1', NULL, 103, 1, '2024-04-23 23:26:13', 1, '2024-04-23 23:28:13', '文生图，图生图，变化、换脸费用');
 INSERT INTO `sys_model` VALUES (1790237707719991298, 'gpt-4o-2024-05-13', 'gpt-4o-2024-05-13', 0.2, '1', '0', NULL, 103, 1, '2024-05-14 12:28:25', 1, '2024-05-14 12:28:25', ' OpenAI 最先进的多模式模型，比 GPT-4 Turbo 更快、更便宜，具有更强的视觉功能');
 
 -- ----------------------------
@@ -797,92 +1051,99 @@ INSERT INTO `sys_model` VALUES (1790237707719991298, 'gpt-4o-2024-05-13', 'gpt-4
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_notice`;
 CREATE TABLE `sys_notice`  (
-                               `notice_id` bigint(20) NOT NULL COMMENT '公告ID',
-                               `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                               `notice_title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '公告标题',
-                               `notice_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '公告类型（1通知 2公告）',
-                               `notice_content` longblob NULL COMMENT '公告内容',
-                               `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
-                               `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                               `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                               `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                               `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                               `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                               `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                               PRIMARY KEY (`notice_id`) USING BTREE
+  `notice_id` bigint(20) NOT NULL COMMENT '公告ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `notice_title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '公告标题',
+  `notice_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '公告类型（1通知 2公告）',
+  `notice_content` longblob NULL COMMENT '公告内容',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`notice_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_notice
 -- ----------------------------
-INSERT INTO `sys_notice` VALUES (1, '000000', '温馨提醒：2018-07-01 新版本发布啦', '2', 0xE696B0E78988E69CACE58685E5AEB9, '0', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '管理员');
-INSERT INTO `sys_notice` VALUES (2, '000000', '维护通知：2018-07-01 系统凌晨维护', '1', 0xE7BBB4E68AA4E58685E5AEB9, '0', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '管理员');
+INSERT INTO `sys_notice` VALUES (1789324923280932865, '000000', '公告', '1', 0x3C68313E3C7370616E207374796C653D226261636B67726F756E642D636F6C6F723A20726762283235352C203235352C2030293B223EE696B0E78988E69CACE58685E5AEB93C2F7370616E3E3C2F68313E3C703EE79BAEE5898DE694AFE68C81E69C80E5A49A3C7370616E207374796C653D226261636B67726F756E642D636F6C6F723A20726762283233302C20302C2030293B223E3530E4BABA3C2F7370616E3EE799BBE5BD95EFBC8CE4B880E4B8AAE794A8E688B7E58FAAE883BDE7BB91E5AE9AE4B880E4B8AAE5BEAEE4BFA1EFBC8CE4B894E4B88DE694AFE68C81E58887E68DA2E6A8A1E59E8BE380823C2F703E3C703EE5BC80E58F91E8AEA1E58892EFBC9A3C2F703E3C703E312E20E58FAFE4BBA5E98089E68BA9E79FA5E8AF86E5BA933C2F703E3C703E322E20E58FAFE4BBA5E58887E68DA2E6A8A1E59E8B3C2F703E3C703E332E3C733E20E5908CE4B880E4B8AAE794A8E688B7E58FAFE4BBA5E799BBE5BD95E5A49AE4B8AAE5BEAEE4BFA13C2F733E3C2F703E, '0', 103, 1, '2024-05-12 00:01:20', 1, '2024-05-12 00:01:20', '');
+
+-- ----------------------------
+-- Table structure for sys_notice_state
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_notice_state`;
+CREATE TABLE `sys_notice_state`  (
+  `id` bigint(20) NOT NULL COMMENT 'ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `notice_id` bigint(20) NOT NULL COMMENT '公告ID',
+  `read_status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '阅读状态（0未读 1已读）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户阅读状态表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_notice_state
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_oper_log
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_oper_log`;
 CREATE TABLE `sys_oper_log`  (
-                                 `oper_id` bigint(20) NOT NULL COMMENT '日志主键',
-                                 `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                                 `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '模块标题',
-                                 `business_type` int(11) NULL DEFAULT 0 COMMENT '业务类型（0其它 1新增 2修改 3删除）',
-                                 `method` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '方法名称',
-                                 `request_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '请求方式',
-                                 `operator_type` int(11) NULL DEFAULT 0 COMMENT '操作类别（0其它 1后台用户 2手机端用户）',
-                                 `oper_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作人员',
-                                 `dept_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '部门名称',
-                                 `oper_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '请求URL',
-                                 `oper_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '主机地址',
-                                 `oper_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作地点',
-                                 `oper_param` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '请求参数',
-                                 `json_result` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '返回参数',
-                                 `status` int(11) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
-                                 `error_msg` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '错误消息',
-                                 `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
-                                 `cost_time` bigint(20) NULL DEFAULT 0 COMMENT '消耗时间',
-                                 PRIMARY KEY (`oper_id`) USING BTREE,
-                                 INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
-                                 INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
-                                 INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
+  `oper_id` bigint(20) NOT NULL COMMENT '日志主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '模块标题',
+  `business_type` int(2) NULL DEFAULT 0 COMMENT '业务类型（0其它 1新增 2修改 3删除）',
+  `method` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '方法名称',
+  `request_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '请求方式',
+  `operator_type` int(1) NULL DEFAULT 0 COMMENT '操作类别（0其它 1后台用户 2手机端用户）',
+  `oper_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作人员',
+  `dept_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '部门名称',
+  `oper_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '请求URL',
+  `oper_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '主机地址',
+  `oper_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作地点',
+  `oper_param` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '请求参数',
+  `json_result` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '返回参数',
+  `status` int(1) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
+  `error_msg` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '错误消息',
+  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
+  `cost_time` bigint(20) NULL DEFAULT 0 COMMENT '消耗时间',
+  PRIMARY KEY (`oper_id`) USING BTREE,
+  INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
+  INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
+  INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
 -- ----------------------------
-INSERT INTO `sys_oper_log` VALUES (1789958779478577153, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:39\",\"updateBy\":null,\"updateTime\":null,\"menuId\":6,\"parentId\":0,\"menuName\":\"租户管理\",\"orderNum\":2,\"path\":\"tenant\",\"component\":null,\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"M\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"\",\"icon\":\"chart\",\"remark\":\"租户管理目录\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:00:04', 164);
-INSERT INTO `sys_oper_log` VALUES (1789959085327224833, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:39\",\"updateBy\":null,\"updateTime\":null,\"menuId\":6,\"parentId\":0,\"menuName\":\"租户管理\",\"orderNum\":2,\"path\":\"tenant\",\"component\":null,\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"M\",\"visible\":\"1\",\"status\":\"1\",\"perms\":\"\",\"icon\":\"chart\",\"remark\":\"租户管理目录\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:01:16', 137);
-INSERT INTO `sys_oper_log` VALUES (1789959387665240065, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:39\",\"updateBy\":null,\"updateTime\":null,\"menuId\":101,\"parentId\":1,\"menuName\":\"角色管理\",\"orderNum\":2,\"path\":\"role\",\"component\":\"system/role/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"system:role:list\",\"icon\":\"peoples\",\"remark\":\"角色管理菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:02:29', 143);
-INSERT INTO `sys_oper_log` VALUES (1789959414731083778, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:39\",\"updateBy\":null,\"updateTime\":null,\"menuId\":103,\"parentId\":1,\"menuName\":\"部门管理\",\"orderNum\":4,\"path\":\"dept\",\"component\":\"system/dept/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"system:dept:list\",\"icon\":\"tree\",\"remark\":\"部门管理菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:02:35', 136);
-INSERT INTO `sys_oper_log` VALUES (1789959430166122498, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:39\",\"updateBy\":null,\"updateTime\":null,\"menuId\":104,\"parentId\":1,\"menuName\":\"岗位管理\",\"orderNum\":5,\"path\":\"post\",\"component\":\"system/post/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"system:post:list\",\"icon\":\"post\",\"remark\":\"岗位管理菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:02:39', 139);
-INSERT INTO `sys_oper_log` VALUES (1789959465704460290, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:40\",\"updateBy\":null,\"updateTime\":null,\"menuId\":107,\"parentId\":1,\"menuName\":\"通知公告\",\"orderNum\":8,\"path\":\"notice\",\"component\":\"system/notice/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"system:notice:list\",\"icon\":\"message\",\"remark\":\"通知公告菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:02:47', 144);
-INSERT INTO `sys_oper_log` VALUES (1789959516686225410, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:40\",\"updateBy\":null,\"updateTime\":null,\"menuId\":118,\"parentId\":1,\"menuName\":\"文件管理\",\"orderNum\":10,\"path\":\"oss\",\"component\":\"system/oss/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"system:oss:list\",\"icon\":\"upload\",\"remark\":\"文件管理菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:02:59', 134);
-INSERT INTO `sys_oper_log` VALUES (1789959599150436353, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:40\",\"updateBy\":null,\"updateTime\":null,\"menuId\":106,\"parentId\":1,\"menuName\":\"参数设置\",\"orderNum\":7,\"path\":\"config\",\"component\":\"system/config/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"system:config:list\",\"icon\":\"edit\",\"remark\":\"参数设置菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:03:19', 146);
-INSERT INTO `sys_oper_log` VALUES (1789960080274853890, '00000', '菜单管理', 3, 'com.xmzs.system.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '', '/system/menu/1780240077690507266', '0:0:0:0:0:0:0:1', '内网IP', '{}', '{\"code\":601,\"msg\":\"存在子菜单,不允许删除\",\"data\":null}', 0, '', '2024-05-13 18:05:14', 65);
-INSERT INTO `sys_oper_log` VALUES (1789960711316279297, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:40\",\"updateBy\":null,\"updateTime\":null,\"menuId\":106,\"parentId\":1,\"menuName\":\"系统参数\",\"orderNum\":10,\"path\":\"config\",\"component\":\"system/config/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"system:config:list\",\"icon\":\"edit\",\"remark\":\"参数设置菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:07:44', 123);
-INSERT INTO `sys_oper_log` VALUES (1789960734875684866, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2023-05-14 15:19:40\",\"updateBy\":null,\"updateTime\":null,\"menuId\":107,\"parentId\":\"1775500307898949634\",\"menuName\":\"通知公告\",\"orderNum\":14,\"path\":\"notice\",\"component\":\"system/notice/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"perms\":\"system:notice:list\",\"icon\":\"message\",\"remark\":\"通知公告菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 18:07:50', 121);
-INSERT INTO `sys_oper_log` VALUES (1789974540146221057, '00000', '菜单管理', 1, 'com.xmzs.system.controller.system.SysMenuController.add()', 'POST', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":null,\"parentId\":\"1775500307898949634\",\"menuName\":\"机器管理\",\"orderNum\":10,\"path\":\"bot\",\"component\":null,\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"M\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"people\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 19:02:41', 174);
-INSERT INTO `sys_oper_log` VALUES (1789975595391164417, '00000', '菜单管理', 2, 'com.xmzs.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2024-05-13 19:02:41\",\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1789974539726790658\",\"parentId\":\"1775500307898949634\",\"menuName\":\"机器管理\",\"orderNum\":9,\"path\":\"bot\",\"component\":\"system/bot/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"people\",\"remark\":\"\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-13 19:06:53', 140);
-INSERT INTO `sys_oper_log` VALUES (1790237708319776770, '00000', '系统模型', 1, 'com.xmzs.system.controller.system.SysModelController.add()', 'POST', 1, 'admin', '', '/system/model', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"1790237707719991298\",\"modelName\":\"gpt-4o-2024-05-13\",\"modelDescribe\":\"gpt-4o-2024-05-13\",\"modelPrice\":0.2,\"modelType\":\"1\",\"modelShow\":\"0\",\"systemPrompt\":null,\"remark\":\" OpenAI 最先进的多模式模型，比 GPT-4 Turbo 更快、更便宜，具有更强的视觉功能\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2024-05-14 12:28:25', 146);
 
 -- ----------------------------
 -- Table structure for sys_oss
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_oss`;
 CREATE TABLE `sys_oss`  (
-                            `oss_id` bigint(20) NOT NULL COMMENT '对象存储主键',
-                            `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                            `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件名',
-                            `original_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '原名',
-                            `file_suffix` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件后缀名',
-                            `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'URL地址',
-                            `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                            `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                            `create_by` bigint(20) NULL DEFAULT NULL COMMENT '上传人',
-                            `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                            `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-                            `service` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'minio' COMMENT '服务商',
-                            PRIMARY KEY (`oss_id`) USING BTREE
+  `oss_id` bigint(20) NOT NULL COMMENT '对象存储主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件名',
+  `original_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '原名',
+  `file_suffix` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件后缀名',
+  `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'URL地址',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '上传人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `service` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'minio' COMMENT '服务商',
+  PRIMARY KEY (`oss_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -894,27 +1155,27 @@ CREATE TABLE `sys_oss`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_oss_config`;
 CREATE TABLE `sys_oss_config`  (
-                                   `oss_config_id` bigint(20) NOT NULL COMMENT '主建',
-                                   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                                   `config_key` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '配置key',
-                                   `access_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT 'accessKey',
-                                   `secret_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '秘钥',
-                                   `bucket_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '桶名称',
-                                   `prefix` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '前缀',
-                                   `endpoint` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '访问站点',
-                                   `domain` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '自定义域名',
-                                   `is_https` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'N' COMMENT '是否https（Y=是,N=否）',
-                                   `region` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '域',
-                                   `access_policy` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '桶权限类型(0=private 1=public 2=custom)',
-                                   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '是否默认（0=是,1=否）',
-                                   `ext1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-                                   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                                   PRIMARY KEY (`oss_config_id`) USING BTREE
+  `oss_config_id` bigint(20) NOT NULL COMMENT '主建',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `config_key` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '配置key',
+  `access_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT 'accessKey',
+  `secret_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '秘钥',
+  `bucket_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '桶名称',
+  `prefix` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '前缀',
+  `endpoint` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '访问站点',
+  `domain` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '自定义域名',
+  `is_https` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'N' COMMENT '是否https（Y=是,N=否）',
+  `region` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '域',
+  `access_policy` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '桶权限类型(0=private 1=public 2=custom)',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '是否默认（0=是,1=否）',
+  `ext1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`oss_config_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -923,29 +1184,55 @@ CREATE TABLE `sys_oss_config`  (
 INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'ruoyi', 'ruoyi123', 'ruoyi', '', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-07-13 23:28:18', NULL);
 INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', NULL);
 INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-07-13 23:35:23', NULL);
-INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', 'image', '127.0.0.1:9000', '', 'N', '', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-11-13 23:58:09', '');
+INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'xx', 'xx', 'panda-1253683406', 'panda', 'cos.ap-guangzhou.myqcloud.com', '', 'N', 'ap-guangzhou', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-11-13 23:58:09', '');
 INSERT INTO `sys_oss_config` VALUES (5, '000000', 'image', 'ruoyi', 'ruoyi123', 'ruoyi', 'image', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', NULL);
+
+-- ----------------------------
+-- Table structure for sys_package_plan
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_package_plan`;
+CREATE TABLE `sys_package_plan`  (
+  `id` bigint(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '套餐名称',
+  `price` double(10, 2) NOT NULL COMMENT '套餐价格',
+  `duration` int(11) NOT NULL COMMENT '有效时间',
+  `plan_detail` varchar(5000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '计划详情',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1787085903419211779 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '套餐管理' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_package_plan
+-- ----------------------------
+INSERT INTO `sys_package_plan` VALUES (1787085620534378498, '初级套餐', 9.90, 30, '解锁全部模型, dall·e 3, midjourney, gpt-3.5-turbo-1106, gpt-4-1106-preview, gpt-4-1106-vision-preview', 103, 1, '2024-05-05 19:43:09', 1, '2024-05-20 00:05:43', '初级套餐');
+INSERT INTO `sys_package_plan` VALUES (1787085808271425538, '中级套餐', 30.00, 30, '解锁全部模型, dall·e 3, midjourney, gpt-3.5-turbo-1106, gpt-4-1106-preview, gpt-4-1106-vision-preview', 103, 1, '2024-05-05 19:43:54', 1, '2024-05-05 22:29:42', '中级套餐');
+INSERT INTO `sys_package_plan` VALUES (1787085903419211778, '高级套餐', 60.00, 30, '解锁全部模型, dall·e 3, midjourney, gpt-3.5-turbo-1106, gpt-4-1106-preview, gpt-4-1106-vision-preview', 103, 1, '2024-05-05 19:44:16', 1, '2024-05-05 22:29:45', '高级套餐');
 
 -- ----------------------------
 -- Table structure for sys_pay_order
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_pay_order`;
 CREATE TABLE `sys_pay_order`  (
-                                  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-                                  `order_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '订单编号',
-                                  `order_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '订单名称',
-                                  `amount` decimal(10, 2) NOT NULL COMMENT '金额',
-                                  `payment_status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付状态',
-                                  `payment_method` char(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付方式',
-                                  `user_id` bigint(20) NULL DEFAULT NULL COMMENT '用户ID',
-                                  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                                  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '支付订单表' ROW_FORMAT = Dynamic;
+  `id` bigint(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `order_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '订单编号',
+  `order_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '订单名称',
+  `amount` decimal(10, 2) NOT NULL COMMENT '金额',
+  `payment_status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付状态',
+  `payment_method` char(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付方式',
+  `user_id` bigint(20) NULL DEFAULT NULL COMMENT '用户ID',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1794031846814027779 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '支付订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_pay_order
@@ -956,19 +1243,19 @@ CREATE TABLE `sys_pay_order`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_post`;
 CREATE TABLE `sys_post`  (
-                             `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
-                             `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                             `post_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '岗位编码',
-                             `post_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '岗位名称',
-                             `post_sort` int(11) NOT NULL COMMENT '显示顺序',
-                             `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
-                             `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                             `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                             `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                             `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                             `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                             `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                             PRIMARY KEY (`post_id`) USING BTREE
+  `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `post_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '岗位编码',
+  `post_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '岗位名称',
+  `post_sort` int(4) NOT NULL COMMENT '显示顺序',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`post_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -984,23 +1271,23 @@ INSERT INTO `sys_post` VALUES (4, '000000', 'user', '普通员工', 4, '0', 103,
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role`;
 CREATE TABLE `sys_role`  (
-                             `role_id` bigint(20) NOT NULL COMMENT '角色ID',
-                             `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                             `role_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
-                             `role_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色权限字符串',
-                             `role_sort` int(11) NOT NULL COMMENT '显示顺序',
-                             `data_scope` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）',
-                             `menu_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
-                             `dept_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '部门树选择项是否关联显示',
-                             `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色状态（0正常 1停用）',
-                             `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-                             `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                             `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                             `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                             `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                             `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                             `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                             PRIMARY KEY (`role_id`) USING BTREE
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `role_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
+  `role_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色权限字符串',
+  `role_sort` int(4) NOT NULL COMMENT '显示顺序',
+  `data_scope` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）',
+  `menu_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
+  `dept_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '部门树选择项是否关联显示',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`role_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1018,9 +1305,9 @@ INSERT INTO `sys_role` VALUES (1729685491108446210, '911866', '管理员', 'admi
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_dept`;
 CREATE TABLE `sys_role_dept`  (
-                                  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
-                                  `dept_id` bigint(20) NOT NULL COMMENT '部门ID',
-                                  PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+  `dept_id` bigint(20) NOT NULL COMMENT '部门ID',
+  PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1036,9 +1323,9 @@ INSERT INTO `sys_role_dept` VALUES (1729685491108446210, 1729685491964084226);
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_menu`;
 CREATE TABLE `sys_role_menu`  (
-                                  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
-                                  `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
-                                  PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+  `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
+  PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1204,126 +1491,1104 @@ INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689243466220355585);
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_tenant`;
 CREATE TABLE `sys_tenant`  (
-                               `id` bigint(20) NOT NULL COMMENT 'id',
-                               `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '租户编号',
-                               `contact_user_name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系人',
-                               `contact_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系电话',
-                               `company_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '企业名称',
-                               `license_number` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '统一社会信用代码',
-                               `address` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '地址',
-                               `intro` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '企业简介',
-                               `domain` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '域名',
-                               `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                               `package_id` bigint(20) NULL DEFAULT NULL COMMENT '租户套餐编号',
-                               `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
-                               `account_count` int(11) NULL DEFAULT -1 COMMENT '用户数量（-1不限制）',
-                               `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '租户状态（0正常 1停用）',
-                               `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-                               `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                               `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                               `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                               `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                               `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                               PRIMARY KEY (`id`) USING BTREE
+  `id` bigint(20) NOT NULL COMMENT 'id',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '租户编号',
+  `contact_user_name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系人',
+  `contact_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系电话',
+  `company_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '企业名称',
+  `license_number` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '统一社会信用代码',
+  `address` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '地址',
+  `intro` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '企业简介',
+  `domain` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '域名',
+  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `package_id` bigint(20) NULL DEFAULT NULL COMMENT '租户套餐编号',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
+  `account_count` int(11) NULL DEFAULT -1 COMMENT '用户数量（-1不限制）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '租户状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '租户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_tenant
 -- ----------------------------
 INSERT INTO `sys_tenant` VALUES (1, '000000', '管理组', '15888888888', 'XXX有限公司', NULL, NULL, '多租户通用后台管理管理系统', NULL, NULL, NULL, NULL, -1, '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_tenant` VALUES (1729685490647072769, '911866', '陈', '11111111111', '5126', '', '', '', '', '', 1729685389795033090, NULL, 1, '0', '2', 103, 1, '2023-11-29 10:15:32', 1, '2023-11-29 10:15:32');
 
 -- ----------------------------
 -- Table structure for sys_tenant_package
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_tenant_package`;
 CREATE TABLE `sys_tenant_package`  (
-                                       `package_id` bigint(20) NOT NULL COMMENT '租户套餐id',
-                                       `package_name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '套餐名称',
-                                       `menu_ids` varchar(3000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关联菜单id',
-                                       `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                                       `menu_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
-                                       `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
-                                       `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-                                       `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                       `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                       `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                       `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                       `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                       PRIMARY KEY (`package_id`) USING BTREE
+  `package_id` bigint(20) NOT NULL COMMENT '租户套餐id',
+  `package_name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '套餐名称',
+  `menu_ids` varchar(3000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关联菜单id',
+  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `menu_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`package_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '租户套餐表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_tenant_package
 -- ----------------------------
-INSERT INTO `sys_tenant_package` VALUES (1729685389795033090, '绘画', '1689205943360188417, 1689243466220355585, 1689201668374556674, 1689243465037561858', '', 1, '0', '2', 103, 1, '2023-11-29 10:15:08', 1, '2023-11-29 10:15:08');
 
 -- ----------------------------
 -- Table structure for sys_user
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE `sys_user`  (
-                             `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-                             `open_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '微信用户标识',
-                             `user_grade` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '用户等级',
-                             `user_balance` double(20, 2) NULL DEFAULT 0.00 COMMENT '账户余额',
-                             `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                             `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID',
-                             `user_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户账号',
-                             `nick_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户昵称',
-                             `user_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'sys_user' COMMENT '用户类型（sys_user系统用户）',
-                             `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '用户邮箱',
-                             `phonenumber` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '手机号码',
-                             `sex` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '用户性别（0男 1女 2未知）',
-                             `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像地址',
-                             `wx_avatar` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '微信头像地址',
-                             `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '密码',
-                             `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
-                             `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-                             `login_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '最后登录IP',
-                             `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
-                             `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                             `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                             `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                             `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                             `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                             `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                             PRIMARY KEY (`user_id`) USING BTREE
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `open_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '微信用户标识',
+  `user_grade` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '用户等级',
+  `user_balance` double(20, 2) NULL DEFAULT 0.00 COMMENT '账户余额',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID',
+  `user_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户账号',
+  `nick_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户昵称',
+  `user_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'sys_user' COMMENT '用户类型（sys_user系统用户）',
+  `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '用户邮箱',
+  `phonenumber` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '手机号码',
+  `sex` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '用户性别（0男 1女 2未知）',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像地址',
+  `wx_avatar` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '微信头像地址',
+  `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '密码',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `login_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '最后登录IP',
+  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`user_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, NULL, '0', 99.00, '00000', 103, 'admin', '熊猫助手', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', NULL, NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2024-05-13 19:48:08', 103, 1, '2023-05-14 15:19:39', 1, '2024-05-13 19:48:08', '管理员');
-INSERT INTO `sys_user` VALUES (1714176194496339970, NULL, '1', 115.55, '00000', NULL, 'pandarobot@163.com', '问答助手', 'sys_user', '', '', '0', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/04/02/ce28414c5eda47c793730a3ea3f006ac.jpg', NULL, '$2a$10$vUINJgUxBFt7L9OdNjxg0.TEGx4r1243rptfXDekLTeiNtlXU0GEK', '0', '0', '127.0.0.1', '2024-05-13 16:03:00', 103, 1713440206715650049, '2023-10-17 15:07:07', 1714176194496339970, '2024-05-13 16:03:00', NULL);
+INSERT INTO `sys_user` VALUES (1, NULL, '1', 90.00, '00000', 103, 'admin', '熊猫助手', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', NULL, NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2024-05-19 23:22:53', 103, 1, '2023-05-14 15:19:39', 1, '2024-05-19 23:22:53', '管理员');
+INSERT INTO `sys_user` VALUES (1784521057603538945, NULL, '1', 99.99, '00000', NULL, 'ageerle@163.com', '熊猫助手', 'sys_user', 'ageerle@163.com', '15888888888', '0', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/01/62bddbd6c367496fbc6145a3c03ecbc4.jpg', NULL, '$2a$10$PShVg1L1GTMwmrfDZY3yAu5/S5qt6AtzFzPB2CAolJmYIKEOs85X6', '0', '0', '127.0.0.1', '2024-05-27 17:31:13', NULL, NULL, '2024-04-28 17:52:30', 1784521057603538945, '2024-05-27 17:31:13', NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_post
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_post`;
 CREATE TABLE `sys_user_post`  (
-                                  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-                                  `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
-                                  PRIMARY KEY (`user_id`, `post_id`) USING BTREE
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
+  PRIMARY KEY (`user_id`, `post_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_post
 -- ----------------------------
 INSERT INTO `sys_user_post` VALUES (1, 1);
+INSERT INTO `sys_user_post` VALUES (2, 2);
+INSERT INTO `sys_user_post` VALUES (1661660085084250114, 2);
+INSERT INTO `sys_user_post` VALUES (1661660804847788034, 1);
 
 -- ----------------------------
 -- Table structure for sys_user_role
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_role`;
 CREATE TABLE `sys_user_role`  (
-                                  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-                                  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
-                                  PRIMARY KEY (`user_id`, `role_id`) USING BTREE
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+  PRIMARY KEY (`user_id`, `role_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_role
 -- ----------------------------
 INSERT INTO `sys_user_role` VALUES (1, 1);
+INSERT INTO `sys_user_role` VALUES (2, 2);
+INSERT INTO `sys_user_role` VALUES (3, 3);
+INSERT INTO `sys_user_role` VALUES (4, 4);
+INSERT INTO `sys_user_role` VALUES (1661646824293031937, 1661661183933177857);
+INSERT INTO `sys_user_role` VALUES (1661660085084250114, 1661661183933177857);
+INSERT INTO `sys_user_role` VALUES (1661660804847788034, 2);
+INSERT INTO `sys_user_role` VALUES (1713427806956404738, 1);
+INSERT INTO `sys_user_role` VALUES (1713439839684689921, 1);
+INSERT INTO `sys_user_role` VALUES (1713440206715650049, 1);
+INSERT INTO `sys_user_role` VALUES (1713724795803299841, 1);
+INSERT INTO `sys_user_role` VALUES (1714176194496339970, 1);
+INSERT INTO `sys_user_role` VALUES (1714267685998907393, 1);
+INSERT INTO `sys_user_role` VALUES (1714269581270667265, 1);
+INSERT INTO `sys_user_role` VALUES (1714270420659949569, 1);
+INSERT INTO `sys_user_role` VALUES (1714455864827723777, 1);
+INSERT INTO `sys_user_role` VALUES (1714536425072115714, 1);
+INSERT INTO `sys_user_role` VALUES (1714819715117105153, 1);
+INSERT INTO `sys_user_role` VALUES (1714820415783976961, 1);
+INSERT INTO `sys_user_role` VALUES (1714820611611836417, 1);
+INSERT INTO `sys_user_role` VALUES (1714820755698761729, 1);
+INSERT INTO `sys_user_role` VALUES (1714823588305190914, 1);
+INSERT INTO `sys_user_role` VALUES (1714829502936530945, 1);
+INSERT INTO `sys_user_role` VALUES (1714835527643185154, 1);
+INSERT INTO `sys_user_role` VALUES (1714835835278606337, 1);
+INSERT INTO `sys_user_role` VALUES (1714898663033290754, 1);
+INSERT INTO `sys_user_role` VALUES (1714942733206175746, 1);
+INSERT INTO `sys_user_role` VALUES (1714943378361434113, 1);
+INSERT INTO `sys_user_role` VALUES (1714943388671033346, 1);
+INSERT INTO `sys_user_role` VALUES (1714945928464711682, 1);
+INSERT INTO `sys_user_role` VALUES (1714946100850606082, 1);
+INSERT INTO `sys_user_role` VALUES (1714952355237347329, 1);
+INSERT INTO `sys_user_role` VALUES (1714954192279584770, 1);
+INSERT INTO `sys_user_role` VALUES (1714960721598758913, 1);
+INSERT INTO `sys_user_role` VALUES (1714961357132283906, 1);
+INSERT INTO `sys_user_role` VALUES (1714963426656403458, 1);
+INSERT INTO `sys_user_role` VALUES (1714980339130318850, 1);
+INSERT INTO `sys_user_role` VALUES (1714985002550444034, 1);
+INSERT INTO `sys_user_role` VALUES (1714996959085084674, 1);
+INSERT INTO `sys_user_role` VALUES (1715000784541990913, 1);
+INSERT INTO `sys_user_role` VALUES (1715160830886297602, 1);
+INSERT INTO `sys_user_role` VALUES (1715174792021426177, 1);
+INSERT INTO `sys_user_role` VALUES (1715176760861278209, 1);
+INSERT INTO `sys_user_role` VALUES (1715187418688405506, 1);
+INSERT INTO `sys_user_role` VALUES (1715263570077564930, 1);
+INSERT INTO `sys_user_role` VALUES (1715273299113820162, 1);
+INSERT INTO `sys_user_role` VALUES (1715289765028577281, 1);
+INSERT INTO `sys_user_role` VALUES (1715642509052624897, 1);
+INSERT INTO `sys_user_role` VALUES (1715645217792868353, 1);
+INSERT INTO `sys_user_role` VALUES (1715655140035543041, 1);
+INSERT INTO `sys_user_role` VALUES (1715688813166346242, 1);
+INSERT INTO `sys_user_role` VALUES (1715695623109623810, 1);
+INSERT INTO `sys_user_role` VALUES (1716076523383177217, 1);
+INSERT INTO `sys_user_role` VALUES (1716077329079615490, 1);
+INSERT INTO `sys_user_role` VALUES (1716316658037178370, 1);
+INSERT INTO `sys_user_role` VALUES (1716375479287824386, 1);
+INSERT INTO `sys_user_role` VALUES (1716376929359380482, 1);
+INSERT INTO `sys_user_role` VALUES (1716449431389487106, 1);
+INSERT INTO `sys_user_role` VALUES (1716626232627707906, 1);
+INSERT INTO `sys_user_role` VALUES (1716668774639484929, 1);
+INSERT INTO `sys_user_role` VALUES (1716723582348050434, 1);
+INSERT INTO `sys_user_role` VALUES (1717010625036828674, 1);
+INSERT INTO `sys_user_role` VALUES (1717112818712723458, 1);
+INSERT INTO `sys_user_role` VALUES (1717171039955599361, 1);
+INSERT INTO `sys_user_role` VALUES (1717382776042569730, 1);
+INSERT INTO `sys_user_role` VALUES (1717383874597896194, 1);
+INSERT INTO `sys_user_role` VALUES (1717463477270102018, 1);
+INSERT INTO `sys_user_role` VALUES (1717550755342467074, 1);
+INSERT INTO `sys_user_role` VALUES (1718643906618605569, 1);
+INSERT INTO `sys_user_role` VALUES (1719357065528623105, 1);
+INSERT INTO `sys_user_role` VALUES (1719629669720145921, 1);
+INSERT INTO `sys_user_role` VALUES (1719631746265530370, 1);
+INSERT INTO `sys_user_role` VALUES (1719969371128086529, 1);
+INSERT INTO `sys_user_role` VALUES (1719994192431955970, 1);
+INSERT INTO `sys_user_role` VALUES (1720001597920264194, 1);
+INSERT INTO `sys_user_role` VALUES (1720054174099718145, 1);
+INSERT INTO `sys_user_role` VALUES (1720373256426635265, 1);
+INSERT INTO `sys_user_role` VALUES (1720615324298264578, 1);
+INSERT INTO `sys_user_role` VALUES (1720966085100191746, 1);
+INSERT INTO `sys_user_role` VALUES (1721433118342397954, 1);
+INSERT INTO `sys_user_role` VALUES (1721798759096270850, 1);
+INSERT INTO `sys_user_role` VALUES (1721869407395332097, 1);
+INSERT INTO `sys_user_role` VALUES (1721869952080232450, 1);
+INSERT INTO `sys_user_role` VALUES (1722083875718737921, 1);
+INSERT INTO `sys_user_role` VALUES (1722126825769185282, 1);
+INSERT INTO `sys_user_role` VALUES (1722453238653169665, 1);
+INSERT INTO `sys_user_role` VALUES (1722501722198552577, 1);
+INSERT INTO `sys_user_role` VALUES (1722546398997819394, 1);
+INSERT INTO `sys_user_role` VALUES (1722635856464097281, 1);
+INSERT INTO `sys_user_role` VALUES (1722652602847768578, 1);
+INSERT INTO `sys_user_role` VALUES (1722787874222682114, 1);
+INSERT INTO `sys_user_role` VALUES (1722799180870889473, 1);
+INSERT INTO `sys_user_role` VALUES (1722872660475817986, 1);
+INSERT INTO `sys_user_role` VALUES (1722874592401600514, 1);
+INSERT INTO `sys_user_role` VALUES (1722883137289367554, 1);
+INSERT INTO `sys_user_role` VALUES (1722918534182645762, 1);
+INSERT INTO `sys_user_role` VALUES (1723173295586848769, 1);
+INSERT INTO `sys_user_role` VALUES (1723222687891107841, 1);
+INSERT INTO `sys_user_role` VALUES (1723224404040921089, 1);
+INSERT INTO `sys_user_role` VALUES (1723225015520112641, 1);
+INSERT INTO `sys_user_role` VALUES (1723278284531478529, 1);
+INSERT INTO `sys_user_role` VALUES (1723330835209564161, 1);
+INSERT INTO `sys_user_role` VALUES (1723708198137147393, 1);
+INSERT INTO `sys_user_role` VALUES (1723754683843260417, 1);
+INSERT INTO `sys_user_role` VALUES (1723878185250369537, 1);
+INSERT INTO `sys_user_role` VALUES (1723940614634254337, 1);
+INSERT INTO `sys_user_role` VALUES (1723975861757325314, 1);
+INSERT INTO `sys_user_role` VALUES (1724306907803725826, 1);
+INSERT INTO `sys_user_role` VALUES (1724308252862492673, 1);
+INSERT INTO `sys_user_role` VALUES (1724382895124295681, 1);
+INSERT INTO `sys_user_role` VALUES (1724727778758406145, 1);
+INSERT INTO `sys_user_role` VALUES (1724815478295425026, 1);
+INSERT INTO `sys_user_role` VALUES (1725026071145107458, 1);
+INSERT INTO `sys_user_role` VALUES (1725026978817658881, 1);
+INSERT INTO `sys_user_role` VALUES (1725043562961457154, 1);
+INSERT INTO `sys_user_role` VALUES (1725058936893362178, 1);
+INSERT INTO `sys_user_role` VALUES (1725363117009162242, 1);
+INSERT INTO `sys_user_role` VALUES (1725538633251049474, 1);
+INSERT INTO `sys_user_role` VALUES (1725564937467875329, 1);
+INSERT INTO `sys_user_role` VALUES (1725891713243021314, 1);
+INSERT INTO `sys_user_role` VALUES (1725905000621932546, 1);
+INSERT INTO `sys_user_role` VALUES (1726440708294049793, 1);
+INSERT INTO `sys_user_role` VALUES (1726443526979584002, 1);
+INSERT INTO `sys_user_role` VALUES (1726445663797116929, 1);
+INSERT INTO `sys_user_role` VALUES (1726452867329687553, 1);
+INSERT INTO `sys_user_role` VALUES (1726472827451998209, 1);
+INSERT INTO `sys_user_role` VALUES (1726479651370696705, 1);
+INSERT INTO `sys_user_role` VALUES (1726487492674195458, 1);
+INSERT INTO `sys_user_role` VALUES (1726496513055784961, 1);
+INSERT INTO `sys_user_role` VALUES (1726498781398302722, 1);
+INSERT INTO `sys_user_role` VALUES (1726506873632587778, 1);
+INSERT INTO `sys_user_role` VALUES (1726529248394739714, 1);
+INSERT INTO `sys_user_role` VALUES (1726578079102664705, 1);
+INSERT INTO `sys_user_role` VALUES (1726582181383634946, 1);
+INSERT INTO `sys_user_role` VALUES (1726583555672506369, 1);
+INSERT INTO `sys_user_role` VALUES (1726596448690372609, 1);
+INSERT INTO `sys_user_role` VALUES (1726599361261207553, 1);
+INSERT INTO `sys_user_role` VALUES (1726604511749079041, 1);
+INSERT INTO `sys_user_role` VALUES (1726606973822304258, 1);
+INSERT INTO `sys_user_role` VALUES (1726609379524083713, 1);
+INSERT INTO `sys_user_role` VALUES (1726616151265640450, 1);
+INSERT INTO `sys_user_role` VALUES (1726775811478126594, 1);
+INSERT INTO `sys_user_role` VALUES (1726795490141667329, 1);
+INSERT INTO `sys_user_role` VALUES (1726798403169681410, 1);
+INSERT INTO `sys_user_role` VALUES (1726830794655399937, 1);
+INSERT INTO `sys_user_role` VALUES (1726862038013313026, 1);
+INSERT INTO `sys_user_role` VALUES (1726919220696186882, 1);
+INSERT INTO `sys_user_role` VALUES (1727140184050630658, 1);
+INSERT INTO `sys_user_role` VALUES (1727506163368722433, 1);
+INSERT INTO `sys_user_role` VALUES (1727518983086931969, 1);
+INSERT INTO `sys_user_role` VALUES (1727580969606840321, 1);
+INSERT INTO `sys_user_role` VALUES (1727590505323429890, 1);
+INSERT INTO `sys_user_role` VALUES (1727918393172164609, 1);
+INSERT INTO `sys_user_role` VALUES (1728249002000121857, 1);
+INSERT INTO `sys_user_role` VALUES (1728680561446486017, 1);
+INSERT INTO `sys_user_role` VALUES (1728964404182577153, 1);
+INSERT INTO `sys_user_role` VALUES (1729020459675611137, 1);
+INSERT INTO `sys_user_role` VALUES (1729051002043691009, 1);
+INSERT INTO `sys_user_role` VALUES (1729423744832172033, 1);
+INSERT INTO `sys_user_role` VALUES (1729429590291050497, 1);
+INSERT INTO `sys_user_role` VALUES (1729685493222375426, 1729685491108446210);
+INSERT INTO `sys_user_role` VALUES (1730050324466036738, 1);
+INSERT INTO `sys_user_role` VALUES (1730102403335254018, 1);
+INSERT INTO `sys_user_role` VALUES (1730129923250122754, 1);
+INSERT INTO `sys_user_role` VALUES (1730155108925763586, 1);
+INSERT INTO `sys_user_role` VALUES (1730273428207366145, 1);
+INSERT INTO `sys_user_role` VALUES (1730498722784669697, 1);
+INSERT INTO `sys_user_role` VALUES (1730815105229713410, 1);
+INSERT INTO `sys_user_role` VALUES (1730858886951923714, 1);
+INSERT INTO `sys_user_role` VALUES (1731357405659824130, 1);
+INSERT INTO `sys_user_role` VALUES (1731475532557090818, 1);
+INSERT INTO `sys_user_role` VALUES (1731480953627901953, 1);
+INSERT INTO `sys_user_role` VALUES (1731502381106495490, 1);
+INSERT INTO `sys_user_role` VALUES (1731524458442162177, 1);
+INSERT INTO `sys_user_role` VALUES (1731524630094053377, 1);
+INSERT INTO `sys_user_role` VALUES (1731524650293821441, 1);
+INSERT INTO `sys_user_role` VALUES (1731529253710233601, 1);
+INSERT INTO `sys_user_role` VALUES (1731559936046432258, 1);
+INSERT INTO `sys_user_role` VALUES (1731564032228884482, 1);
+INSERT INTO `sys_user_role` VALUES (1731565926737281026, 1);
+INSERT INTO `sys_user_role` VALUES (1731566918589513729, 1);
+INSERT INTO `sys_user_role` VALUES (1731567740094283778, 1);
+INSERT INTO `sys_user_role` VALUES (1731575439263563777, 1);
+INSERT INTO `sys_user_role` VALUES (1731583864055824385, 1);
+INSERT INTO `sys_user_role` VALUES (1731588155382464513, 1);
+INSERT INTO `sys_user_role` VALUES (1731589827840212993, 1);
+INSERT INTO `sys_user_role` VALUES (1731635461435719682, 1);
+INSERT INTO `sys_user_role` VALUES (1731668049902731266, 1);
+INSERT INTO `sys_user_role` VALUES (1731922694168412162, 1);
+INSERT INTO `sys_user_role` VALUES (1731944975456305153, 1);
+INSERT INTO `sys_user_role` VALUES (1731949019394506753, 1);
+INSERT INTO `sys_user_role` VALUES (1731951425054343170, 1);
+INSERT INTO `sys_user_role` VALUES (1732000242621513729, 1);
+INSERT INTO `sys_user_role` VALUES (1732027163380056066, 1);
+INSERT INTO `sys_user_role` VALUES (1732289382269353985, 1);
+INSERT INTO `sys_user_role` VALUES (1732289439282528258, 1);
+INSERT INTO `sys_user_role` VALUES (1732289699585228801, 1);
+INSERT INTO `sys_user_role` VALUES (1732290827173527553, 1);
+INSERT INTO `sys_user_role` VALUES (1732291549344595969, 1);
+INSERT INTO `sys_user_role` VALUES (1732293265184030721, 1);
+INSERT INTO `sys_user_role` VALUES (1732329664117506049, 1);
+INSERT INTO `sys_user_role` VALUES (1732334104450990081, 1);
+INSERT INTO `sys_user_role` VALUES (1732578671045672962, 1);
+INSERT INTO `sys_user_role` VALUES (1732584047426174978, 1);
+INSERT INTO `sys_user_role` VALUES (1732608690321129474, 1);
+INSERT INTO `sys_user_role` VALUES (1732678147815014401, 1);
+INSERT INTO `sys_user_role` VALUES (1732731410102910977, 1);
+INSERT INTO `sys_user_role` VALUES (1733005266763939841, 1);
+INSERT INTO `sys_user_role` VALUES (1733016149837774850, 1);
+INSERT INTO `sys_user_role` VALUES (1733053523871432705, 1);
+INSERT INTO `sys_user_role` VALUES (1733061400367497218, 1);
+INSERT INTO `sys_user_role` VALUES (1733167090469732353, 1);
+INSERT INTO `sys_user_role` VALUES (1733298702729641986, 1);
+INSERT INTO `sys_user_role` VALUES (1733488544511983617, 1);
+INSERT INTO `sys_user_role` VALUES (1733720554119659521, 1);
+INSERT INTO `sys_user_role` VALUES (1733846657777827842, 1);
+INSERT INTO `sys_user_role` VALUES (1733859832720031745, 1);
+INSERT INTO `sys_user_role` VALUES (1734137817339559938, 1);
+INSERT INTO `sys_user_role` VALUES (1734227535762849793, 1);
+INSERT INTO `sys_user_role` VALUES (1734492373726560257, 1);
+INSERT INTO `sys_user_role` VALUES (1734508040978726914, 1);
+INSERT INTO `sys_user_role` VALUES (1734513545461661697, 1);
+INSERT INTO `sys_user_role` VALUES (1734581580998451202, 1);
+INSERT INTO `sys_user_role` VALUES (1734751884580298754, 1);
+INSERT INTO `sys_user_role` VALUES (1734781716483612674, 1);
+INSERT INTO `sys_user_role` VALUES (1734833221987278849, 1);
+INSERT INTO `sys_user_role` VALUES (1734834063154946050, 1);
+INSERT INTO `sys_user_role` VALUES (1734880697666576386, 1);
+INSERT INTO `sys_user_role` VALUES (1734891995888427009, 1);
+INSERT INTO `sys_user_role` VALUES (1735132534701367297, 1);
+INSERT INTO `sys_user_role` VALUES (1735242647239991298, 1);
+INSERT INTO `sys_user_role` VALUES (1735486862444273666, 1);
+INSERT INTO `sys_user_role` VALUES (1735487912727355394, 1);
+INSERT INTO `sys_user_role` VALUES (1735542352767426561, 1);
+INSERT INTO `sys_user_role` VALUES (1735551915889598466, 1);
+INSERT INTO `sys_user_role` VALUES (1735616653411557377, 1);
+INSERT INTO `sys_user_role` VALUES (1735835864146714626, 1);
+INSERT INTO `sys_user_role` VALUES (1735953007769100289, 1);
+INSERT INTO `sys_user_role` VALUES (1735960189784891393, 1);
+INSERT INTO `sys_user_role` VALUES (1736265950381547522, 1);
+INSERT INTO `sys_user_role` VALUES (1736577606684844034, 1);
+INSERT INTO `sys_user_role` VALUES (1736638822375563266, 1);
+INSERT INTO `sys_user_role` VALUES (1736779069306511361, 1);
+INSERT INTO `sys_user_role` VALUES (1737028378602053634, 1);
+INSERT INTO `sys_user_role` VALUES (1737271234797314050, 1);
+INSERT INTO `sys_user_role` VALUES (1737315322405920770, 1);
+INSERT INTO `sys_user_role` VALUES (1737445221154234370, 1);
+INSERT INTO `sys_user_role` VALUES (1737452907568635906, 1);
+INSERT INTO `sys_user_role` VALUES (1737453186955419649, 1);
+INSERT INTO `sys_user_role` VALUES (1737717777685880833, 1);
+INSERT INTO `sys_user_role` VALUES (1737768515594166274, 1);
+INSERT INTO `sys_user_role` VALUES (1738108912170246145, 1);
+INSERT INTO `sys_user_role` VALUES (1738118086488825858, 1);
+INSERT INTO `sys_user_role` VALUES (1738520430804279297, 1);
+INSERT INTO `sys_user_role` VALUES (1738802060248817666, 1);
+INSERT INTO `sys_user_role` VALUES (1738812447119712257, 1);
+INSERT INTO `sys_user_role` VALUES (1738941480197234689, 1);
+INSERT INTO `sys_user_role` VALUES (1738963430776840194, 1);
+INSERT INTO `sys_user_role` VALUES (1739121784341995522, 1);
+INSERT INTO `sys_user_role` VALUES (1739166931951886338, 1);
+INSERT INTO `sys_user_role` VALUES (1739272055240073217, 1);
+INSERT INTO `sys_user_role` VALUES (1739451838930427905, 1);
+INSERT INTO `sys_user_role` VALUES (1739452037375533057, 1);
+INSERT INTO `sys_user_role` VALUES (1739452376946384898, 1);
+INSERT INTO `sys_user_role` VALUES (1739484503888961537, 1);
+INSERT INTO `sys_user_role` VALUES (1739485282335006722, 1);
+INSERT INTO `sys_user_role` VALUES (1739577551431999490, 1);
+INSERT INTO `sys_user_role` VALUES (1739825609910591489, 1);
+INSERT INTO `sys_user_role` VALUES (1739916453439152130, 1);
+INSERT INTO `sys_user_role` VALUES (1740188388454629378, 1);
+INSERT INTO `sys_user_role` VALUES (1741339991320580097, 1);
+INSERT INTO `sys_user_role` VALUES (1741803737633542145, 1);
+INSERT INTO `sys_user_role` VALUES (1741823858229923841, 1);
+INSERT INTO `sys_user_role` VALUES (1741845883943227393, 1);
+INSERT INTO `sys_user_role` VALUES (1742179775941201921, 1);
+INSERT INTO `sys_user_role` VALUES (1742437553771458562, 1);
+INSERT INTO `sys_user_role` VALUES (1742451201315254273, 1);
+INSERT INTO `sys_user_role` VALUES (1742469913120419841, 1);
+INSERT INTO `sys_user_role` VALUES (1742798283280568321, 1);
+INSERT INTO `sys_user_role` VALUES (1742798987701342210, 1);
+INSERT INTO `sys_user_role` VALUES (1742799476950126594, 1);
+INSERT INTO `sys_user_role` VALUES (1742799839619010562, 1);
+INSERT INTO `sys_user_role` VALUES (1742801019527057410, 1);
+INSERT INTO `sys_user_role` VALUES (1742804073915699202, 1);
+INSERT INTO `sys_user_role` VALUES (1742821280687149058, 1);
+INSERT INTO `sys_user_role` VALUES (1742821467476283394, 1);
+INSERT INTO `sys_user_role` VALUES (1742822775600009217, 1);
+INSERT INTO `sys_user_role` VALUES (1742823890928357377, 1);
+INSERT INTO `sys_user_role` VALUES (1742838225297821697, 1);
+INSERT INTO `sys_user_role` VALUES (1742902317295423490, 1);
+INSERT INTO `sys_user_role` VALUES (1742910854243373058, 1);
+INSERT INTO `sys_user_role` VALUES (1742961994725150721, 1);
+INSERT INTO `sys_user_role` VALUES (1742969861079388161, 1);
+INSERT INTO `sys_user_role` VALUES (1743068363130228737, 1);
+INSERT INTO `sys_user_role` VALUES (1743075924621479938, 1);
+INSERT INTO `sys_user_role` VALUES (1743079200725225474, 1);
+INSERT INTO `sys_user_role` VALUES (1743085878682144769, 1);
+INSERT INTO `sys_user_role` VALUES (1743110774967586818, 1);
+INSERT INTO `sys_user_role` VALUES (1743162481042870274, 1);
+INSERT INTO `sys_user_role` VALUES (1743166491284033537, 1);
+INSERT INTO `sys_user_role` VALUES (1743251016219447297, 1);
+INSERT INTO `sys_user_role` VALUES (1743469820367142914, 1);
+INSERT INTO `sys_user_role` VALUES (1743514389280522242, 1);
+INSERT INTO `sys_user_role` VALUES (1743519646916083714, 1);
+INSERT INTO `sys_user_role` VALUES (1743670356026654722, 1);
+INSERT INTO `sys_user_role` VALUES (1743892570516815874, 1);
+INSERT INTO `sys_user_role` VALUES (1743952049409146882, 1);
+INSERT INTO `sys_user_role` VALUES (1744268693259993089, 1);
+INSERT INTO `sys_user_role` VALUES (1744351384550567938, 1);
+INSERT INTO `sys_user_role` VALUES (1744561041202278402, 1);
+INSERT INTO `sys_user_role` VALUES (1744574752277196801, 1);
+INSERT INTO `sys_user_role` VALUES (1744619123995373569, 1);
+INSERT INTO `sys_user_role` VALUES (1744627110742913025, 1);
+INSERT INTO `sys_user_role` VALUES (1744634408357916673, 1);
+INSERT INTO `sys_user_role` VALUES (1744645281965207554, 1);
+INSERT INTO `sys_user_role` VALUES (1744724410316156930, 1);
+INSERT INTO `sys_user_role` VALUES (1744892307919400962, 1);
+INSERT INTO `sys_user_role` VALUES (1744903174606090241, 1);
+INSERT INTO `sys_user_role` VALUES (1744904968014983169, 1);
+INSERT INTO `sys_user_role` VALUES (1744905787204497410, 1);
+INSERT INTO `sys_user_role` VALUES (1744911513595473921, 1);
+INSERT INTO `sys_user_role` VALUES (1744912178359103490, 1);
+INSERT INTO `sys_user_role` VALUES (1744912486720139266, 1);
+INSERT INTO `sys_user_role` VALUES (1744915552240463874, 1);
+INSERT INTO `sys_user_role` VALUES (1744923917133869058, 1);
+INSERT INTO `sys_user_role` VALUES (1744971513579761666, 1);
+INSERT INTO `sys_user_role` VALUES (1744984070818426882, 1);
+INSERT INTO `sys_user_role` VALUES (1744984147393835010, 1);
+INSERT INTO `sys_user_role` VALUES (1744992401243041793, 1);
+INSERT INTO `sys_user_role` VALUES (1745011131444424706, 1);
+INSERT INTO `sys_user_role` VALUES (1745061549180514306, 1);
+INSERT INTO `sys_user_role` VALUES (1745346479991091201, 1);
+INSERT INTO `sys_user_role` VALUES (1745346822607007745, 1);
+INSERT INTO `sys_user_role` VALUES (1745368346374217730, 1);
+INSERT INTO `sys_user_role` VALUES (1745424741765259266, 1);
+INSERT INTO `sys_user_role` VALUES (1745426757090582530, 1);
+INSERT INTO `sys_user_role` VALUES (1745620173124575234, 1);
+INSERT INTO `sys_user_role` VALUES (1745623876426571777, 1);
+INSERT INTO `sys_user_role` VALUES (1745654577691664386, 1);
+INSERT INTO `sys_user_role` VALUES (1745663259879972865, 1);
+INSERT INTO `sys_user_role` VALUES (1745686038692012034, 1);
+INSERT INTO `sys_user_role` VALUES (1745738268480675842, 1);
+INSERT INTO `sys_user_role` VALUES (1745790952546017281, 1);
+INSERT INTO `sys_user_role` VALUES (1746397384551211009, 1);
+INSERT INTO `sys_user_role` VALUES (1746400980533551105, 1);
+INSERT INTO `sys_user_role` VALUES (1746522414111039489, 1);
+INSERT INTO `sys_user_role` VALUES (1746873386528223234, 1);
+INSERT INTO `sys_user_role` VALUES (1747067318369333249, 1);
+INSERT INTO `sys_user_role` VALUES (1747071365822361602, 1);
+INSERT INTO `sys_user_role` VALUES (1747153912031948801, 1);
+INSERT INTO `sys_user_role` VALUES (1747197655195922434, 1);
+INSERT INTO `sys_user_role` VALUES (1747519480203390977, 1);
+INSERT INTO `sys_user_role` VALUES (1747521265550831618, 1);
+INSERT INTO `sys_user_role` VALUES (1747523421662162945, 1);
+INSERT INTO `sys_user_role` VALUES (1747797864993075201, 1);
+INSERT INTO `sys_user_role` VALUES (1747800427213697025, 1);
+INSERT INTO `sys_user_role` VALUES (1747910191046275073, 1);
+INSERT INTO `sys_user_role` VALUES (1747923453217419265, 1);
+INSERT INTO `sys_user_role` VALUES (1748187110132232193, 1);
+INSERT INTO `sys_user_role` VALUES (1748260926648823809, 1);
+INSERT INTO `sys_user_role` VALUES (1748276826697445377, 1);
+INSERT INTO `sys_user_role` VALUES (1748312313952808962, 1);
+INSERT INTO `sys_user_role` VALUES (1748635584837529601, 1);
+INSERT INTO `sys_user_role` VALUES (1748642479459610625, 1);
+INSERT INTO `sys_user_role` VALUES (1748663294624346114, 1);
+INSERT INTO `sys_user_role` VALUES (1748703876608503810, 1);
+INSERT INTO `sys_user_role` VALUES (1748704145589219329, 1);
+INSERT INTO `sys_user_role` VALUES (1748708285178523649, 1);
+INSERT INTO `sys_user_role` VALUES (1748728575929430017, 1);
+INSERT INTO `sys_user_role` VALUES (1748761666442047490, 1);
+INSERT INTO `sys_user_role` VALUES (1748925826178035713, 1);
+INSERT INTO `sys_user_role` VALUES (1749259130492235778, 1);
+INSERT INTO `sys_user_role` VALUES (1749280237328871426, 1);
+INSERT INTO `sys_user_role` VALUES (1749289400549322754, 1);
+INSERT INTO `sys_user_role` VALUES (1749327661225291778, 1);
+INSERT INTO `sys_user_role` VALUES (1749365593797636097, 1);
+INSERT INTO `sys_user_role` VALUES (1749407786692325378, 1);
+INSERT INTO `sys_user_role` VALUES (1749519043344805890, 1);
+INSERT INTO `sys_user_role` VALUES (1749683041063219202, 1);
+INSERT INTO `sys_user_role` VALUES (1749683546774646786, 1);
+INSERT INTO `sys_user_role` VALUES (1749691765567860737, 1);
+INSERT INTO `sys_user_role` VALUES (1749705571236917249, 1);
+INSERT INTO `sys_user_role` VALUES (1749740828837359618, 1);
+INSERT INTO `sys_user_role` VALUES (1749741179162406914, 1);
+INSERT INTO `sys_user_role` VALUES (1749741340039131137, 1);
+INSERT INTO `sys_user_role` VALUES (1749747618241130497, 1);
+INSERT INTO `sys_user_role` VALUES (1749747701439344641, 1);
+INSERT INTO `sys_user_role` VALUES (1749786825391157250, 1);
+INSERT INTO `sys_user_role` VALUES (1749789665819963394, 1);
+INSERT INTO `sys_user_role` VALUES (1749797707705823234, 1);
+INSERT INTO `sys_user_role` VALUES (1749974903762210818, 1);
+INSERT INTO `sys_user_role` VALUES (1749982777750081537, 1);
+INSERT INTO `sys_user_role` VALUES (1749990634667134978, 1);
+INSERT INTO `sys_user_role` VALUES (1749991325137653761, 1);
+INSERT INTO `sys_user_role` VALUES (1749992779328016386, 1);
+INSERT INTO `sys_user_role` VALUES (1749993573204905985, 1);
+INSERT INTO `sys_user_role` VALUES (1749994406877351937, 1);
+INSERT INTO `sys_user_role` VALUES (1749995279187726337, 1);
+INSERT INTO `sys_user_role` VALUES (1749995486029828097, 1);
+INSERT INTO `sys_user_role` VALUES (1749995707686211586, 1);
+INSERT INTO `sys_user_role` VALUES (1750000406883749890, 1);
+INSERT INTO `sys_user_role` VALUES (1750000942706085889, 1);
+INSERT INTO `sys_user_role` VALUES (1750005079111913473, 1);
+INSERT INTO `sys_user_role` VALUES (1750428606466117633, 1);
+INSERT INTO `sys_user_role` VALUES (1750553534423126017, 1);
+INSERT INTO `sys_user_role` VALUES (1750690119441469441, 1);
+INSERT INTO `sys_user_role` VALUES (1750723725312413698, 1);
+INSERT INTO `sys_user_role` VALUES (1750724537434525697, 1);
+INSERT INTO `sys_user_role` VALUES (1750743381616119810, 1);
+INSERT INTO `sys_user_role` VALUES (1750822931356192769, 1);
+INSERT INTO `sys_user_role` VALUES (1750823004563574785, 1);
+INSERT INTO `sys_user_role` VALUES (1751548639330177026, 1);
+INSERT INTO `sys_user_role` VALUES (1751796140318658561, 1);
+INSERT INTO `sys_user_role` VALUES (1751889049818763265, 1);
+INSERT INTO `sys_user_role` VALUES (1751896081141600258, 1);
+INSERT INTO `sys_user_role` VALUES (1751949653564723201, 1);
+INSERT INTO `sys_user_role` VALUES (1751955373517443073, 1);
+INSERT INTO `sys_user_role` VALUES (1751980511470292993, 1);
+INSERT INTO `sys_user_role` VALUES (1752128867307884546, 1);
+INSERT INTO `sys_user_role` VALUES (1752128948195037185, 1);
+INSERT INTO `sys_user_role` VALUES (1752138835683708930, 1);
+INSERT INTO `sys_user_role` VALUES (1752148500127682561, 1);
+INSERT INTO `sys_user_role` VALUES (1752276638077816834, 1);
+INSERT INTO `sys_user_role` VALUES (1752299834210521089, 1);
+INSERT INTO `sys_user_role` VALUES (1752306117726703618, 1);
+INSERT INTO `sys_user_role` VALUES (1752504006021222402, 1);
+INSERT INTO `sys_user_role` VALUES (1752602885546840066, 1);
+INSERT INTO `sys_user_role` VALUES (1752724639351050242, 1);
+INSERT INTO `sys_user_role` VALUES (1753215436756357122, 1);
+INSERT INTO `sys_user_role` VALUES (1753402656570216449, 1);
+INSERT INTO `sys_user_role` VALUES (1753486557368029185, 1);
+INSERT INTO `sys_user_role` VALUES (1753797902466551809, 1);
+INSERT INTO `sys_user_role` VALUES (1753967757819908098, 1);
+INSERT INTO `sys_user_role` VALUES (1754016754462887938, 1);
+INSERT INTO `sys_user_role` VALUES (1754029247868440577, 1);
+INSERT INTO `sys_user_role` VALUES (1754413960445562882, 1);
+INSERT INTO `sys_user_role` VALUES (1754424078633537538, 1);
+INSERT INTO `sys_user_role` VALUES (1754764137119354881, 1);
+INSERT INTO `sys_user_role` VALUES (1755042084761899009, 1);
+INSERT INTO `sys_user_role` VALUES (1755047141691625473, 1);
+INSERT INTO `sys_user_role` VALUES (1756274975479173121, 1);
+INSERT INTO `sys_user_role` VALUES (1756308183021260801, 1);
+INSERT INTO `sys_user_role` VALUES (1757325877958938626, 1);
+INSERT INTO `sys_user_role` VALUES (1758445439802675202, 1);
+INSERT INTO `sys_user_role` VALUES (1759032628991234049, 1);
+INSERT INTO `sys_user_role` VALUES (1759050804781125634, 1);
+INSERT INTO `sys_user_role` VALUES (1759089524834045954, 1);
+INSERT INTO `sys_user_role` VALUES (1759092949802029057, 1);
+INSERT INTO `sys_user_role` VALUES (1759100324189573121, 1);
+INSERT INTO `sys_user_role` VALUES (1759103449889771521, 1);
+INSERT INTO `sys_user_role` VALUES (1759147026191749121, 1);
+INSERT INTO `sys_user_role` VALUES (1759413482020147202, 1);
+INSERT INTO `sys_user_role` VALUES (1759427862430486529, 1);
+INSERT INTO `sys_user_role` VALUES (1759428010174844929, 1);
+INSERT INTO `sys_user_role` VALUES (1759496088514465794, 1);
+INSERT INTO `sys_user_role` VALUES (1759764705965510657, 1);
+INSERT INTO `sys_user_role` VALUES (1759777481207320578, 1);
+INSERT INTO `sys_user_role` VALUES (1759806155667279873, 1);
+INSERT INTO `sys_user_role` VALUES (1759812015655227394, 1);
+INSERT INTO `sys_user_role` VALUES (1759815447778693121, 1);
+INSERT INTO `sys_user_role` VALUES (1759832486966726658, 1);
+INSERT INTO `sys_user_role` VALUES (1759858071113830402, 1);
+INSERT INTO `sys_user_role` VALUES (1759863475847827458, 1);
+INSERT INTO `sys_user_role` VALUES (1759868018195173378, 1);
+INSERT INTO `sys_user_role` VALUES (1759869729374736385, 1);
+INSERT INTO `sys_user_role` VALUES (1760186079276175362, 1);
+INSERT INTO `sys_user_role` VALUES (1760319626808922114, 1);
+INSERT INTO `sys_user_role` VALUES (1760347236137963522, 1);
+INSERT INTO `sys_user_role` VALUES (1760358546837868546, 1);
+INSERT INTO `sys_user_role` VALUES (1760377107434180609, 1);
+INSERT INTO `sys_user_role` VALUES (1760472305161998338, 1);
+INSERT INTO `sys_user_role` VALUES (1760472829932343298, 1);
+INSERT INTO `sys_user_role` VALUES (1760477732188721153, 1);
+INSERT INTO `sys_user_role` VALUES (1760502088176504833, 1);
+INSERT INTO `sys_user_role` VALUES (1760508166310203394, 1);
+INSERT INTO `sys_user_role` VALUES (1760511294409543681, 1);
+INSERT INTO `sys_user_role` VALUES (1760562604135682049, 1);
+INSERT INTO `sys_user_role` VALUES (1760841877480280066, 1);
+INSERT INTO `sys_user_role` VALUES (1760896840365510658, 1);
+INSERT INTO `sys_user_role` VALUES (1760903600501428226, 1);
+INSERT INTO `sys_user_role` VALUES (1761404022634844162, 1);
+INSERT INTO `sys_user_role` VALUES (1761954868732891138, 1);
+INSERT INTO `sys_user_role` VALUES (1761955584197267458, 1);
+INSERT INTO `sys_user_role` VALUES (1762003524345401345, 1);
+INSERT INTO `sys_user_role` VALUES (1762004833618366465, 1);
+INSERT INTO `sys_user_role` VALUES (1762010183880937474, 1);
+INSERT INTO `sys_user_role` VALUES (1762298283890839554, 1);
+INSERT INTO `sys_user_role` VALUES (1762363188014747649, 1);
+INSERT INTO `sys_user_role` VALUES (1762389902388367361, 1);
+INSERT INTO `sys_user_role` VALUES (1762401081961746434, 1);
+INSERT INTO `sys_user_role` VALUES (1762481911417540610, 1);
+INSERT INTO `sys_user_role` VALUES (1762482221645041665, 1);
+INSERT INTO `sys_user_role` VALUES (1762482243174404097, 1);
+INSERT INTO `sys_user_role` VALUES (1762483838461153282, 1);
+INSERT INTO `sys_user_role` VALUES (1762487212380262401, 1);
+INSERT INTO `sys_user_role` VALUES (1762498553535008770, 1);
+INSERT INTO `sys_user_role` VALUES (1762636163465138177, 1);
+INSERT INTO `sys_user_role` VALUES (1762655625413185537, 1);
+INSERT INTO `sys_user_role` VALUES (1762656108559257601, 1);
+INSERT INTO `sys_user_role` VALUES (1762673833499217922, 1);
+INSERT INTO `sys_user_role` VALUES (1762677825344163842, 1);
+INSERT INTO `sys_user_role` VALUES (1762677876015550465, 1);
+INSERT INTO `sys_user_role` VALUES (1762678082262061057, 1);
+INSERT INTO `sys_user_role` VALUES (1762678138012749825, 1);
+INSERT INTO `sys_user_role` VALUES (1762678144652333057, 1);
+INSERT INTO `sys_user_role` VALUES (1762678174192816129, 1);
+INSERT INTO `sys_user_role` VALUES (1762678472563019777, 1);
+INSERT INTO `sys_user_role` VALUES (1762678534596775938, 1);
+INSERT INTO `sys_user_role` VALUES (1762678534894571521, 1);
+INSERT INTO `sys_user_role` VALUES (1762678581635895298, 1);
+INSERT INTO `sys_user_role` VALUES (1762678844920745985, 1);
+INSERT INTO `sys_user_role` VALUES (1762679194973163522, 1);
+INSERT INTO `sys_user_role` VALUES (1762679425299173378, 1);
+INSERT INTO `sys_user_role` VALUES (1762679810776682498, 1);
+INSERT INTO `sys_user_role` VALUES (1762679862656028674, 1);
+INSERT INTO `sys_user_role` VALUES (1762679937360777217, 1);
+INSERT INTO `sys_user_role` VALUES (1762680184698884098, 1);
+INSERT INTO `sys_user_role` VALUES (1762680290076577794, 1);
+INSERT INTO `sys_user_role` VALUES (1762680350055124993, 1);
+INSERT INTO `sys_user_role` VALUES (1762681014038614017, 1);
+INSERT INTO `sys_user_role` VALUES (1762681042207559681, 1);
+INSERT INTO `sys_user_role` VALUES (1762681082732924929, 1);
+INSERT INTO `sys_user_role` VALUES (1762681088869191682, 1);
+INSERT INTO `sys_user_role` VALUES (1762681283195490306, 1);
+INSERT INTO `sys_user_role` VALUES (1762681876752420865, 1);
+INSERT INTO `sys_user_role` VALUES (1762681980129431553, 1);
+INSERT INTO `sys_user_role` VALUES (1762682038488977410, 1);
+INSERT INTO `sys_user_role` VALUES (1762682208211488769, 1);
+INSERT INTO `sys_user_role` VALUES (1762683406603833346, 1);
+INSERT INTO `sys_user_role` VALUES (1762683500048732162, 1);
+INSERT INTO `sys_user_role` VALUES (1762683740843724801, 1);
+INSERT INTO `sys_user_role` VALUES (1762683806404890625, 1);
+INSERT INTO `sys_user_role` VALUES (1762684131715108865, 1);
+INSERT INTO `sys_user_role` VALUES (1762684408442703874, 1);
+INSERT INTO `sys_user_role` VALUES (1762684686994821121, 1);
+INSERT INTO `sys_user_role` VALUES (1762686405808017409, 1);
+INSERT INTO `sys_user_role` VALUES (1762687370061729794, 1);
+INSERT INTO `sys_user_role` VALUES (1762687537527705602, 1);
+INSERT INTO `sys_user_role` VALUES (1762687814947360769, 1);
+INSERT INTO `sys_user_role` VALUES (1762688734347186177, 1);
+INSERT INTO `sys_user_role` VALUES (1762690035701305346, 1);
+INSERT INTO `sys_user_role` VALUES (1762690104575971330, 1);
+INSERT INTO `sys_user_role` VALUES (1762691273243283457, 1);
+INSERT INTO `sys_user_role` VALUES (1762691277462753282, 1);
+INSERT INTO `sys_user_role` VALUES (1762692468406013954, 1);
+INSERT INTO `sys_user_role` VALUES (1762693304498573314, 1);
+INSERT INTO `sys_user_role` VALUES (1762693710704332801, 1);
+INSERT INTO `sys_user_role` VALUES (1762694382220791809, 1);
+INSERT INTO `sys_user_role` VALUES (1762696242545610754, 1);
+INSERT INTO `sys_user_role` VALUES (1762696275626086402, 1);
+INSERT INTO `sys_user_role` VALUES (1762696945854894082, 1);
+INSERT INTO `sys_user_role` VALUES (1762698940057702402, 1);
+INSERT INTO `sys_user_role` VALUES (1762699511732948994, 1);
+INSERT INTO `sys_user_role` VALUES (1762701338956320769, 1);
+INSERT INTO `sys_user_role` VALUES (1762701352860438530, 1);
+INSERT INTO `sys_user_role` VALUES (1762703221934575617, 1);
+INSERT INTO `sys_user_role` VALUES (1762705239214444546, 1);
+INSERT INTO `sys_user_role` VALUES (1762705858788642817, 1);
+INSERT INTO `sys_user_role` VALUES (1762706220585111553, 1);
+INSERT INTO `sys_user_role` VALUES (1762707979655237633, 1);
+INSERT INTO `sys_user_role` VALUES (1762709372369686529, 1);
+INSERT INTO `sys_user_role` VALUES (1762717698755186689, 1);
+INSERT INTO `sys_user_role` VALUES (1762719280540471297, 1);
+INSERT INTO `sys_user_role` VALUES (1762719395619590146, 1);
+INSERT INTO `sys_user_role` VALUES (1762721161459322881, 1);
+INSERT INTO `sys_user_role` VALUES (1762721300685049857, 1);
+INSERT INTO `sys_user_role` VALUES (1762724284441612290, 1);
+INSERT INTO `sys_user_role` VALUES (1762728759105474561, 1);
+INSERT INTO `sys_user_role` VALUES (1762732886506131458, 1);
+INSERT INTO `sys_user_role` VALUES (1762744418904354818, 1);
+INSERT INTO `sys_user_role` VALUES (1762749711537188865, 1);
+INSERT INTO `sys_user_role` VALUES (1762749741056700418, 1);
+INSERT INTO `sys_user_role` VALUES (1762750396991320065, 1);
+INSERT INTO `sys_user_role` VALUES (1762752966828797954, 1);
+INSERT INTO `sys_user_role` VALUES (1762753464445218817, 1);
+INSERT INTO `sys_user_role` VALUES (1762753558548623362, 1);
+INSERT INTO `sys_user_role` VALUES (1762755306625478657, 1);
+INSERT INTO `sys_user_role` VALUES (1762756726481268737, 1);
+INSERT INTO `sys_user_role` VALUES (1762756744172843010, 1);
+INSERT INTO `sys_user_role` VALUES (1762760948073410562, 1);
+INSERT INTO `sys_user_role` VALUES (1762768424588062721, 1);
+INSERT INTO `sys_user_role` VALUES (1762770353779159041, 1);
+INSERT INTO `sys_user_role` VALUES (1762770690174922754, 1);
+INSERT INTO `sys_user_role` VALUES (1762773352299671554, 1);
+INSERT INTO `sys_user_role` VALUES (1762809323107954689, 1);
+INSERT INTO `sys_user_role` VALUES (1762839585439133698, 1);
+INSERT INTO `sys_user_role` VALUES (1762854389474177026, 1);
+INSERT INTO `sys_user_role` VALUES (1762962461110611969, 1);
+INSERT INTO `sys_user_role` VALUES (1763011242199920642, 1);
+INSERT INTO `sys_user_role` VALUES (1763014994155843586, 1);
+INSERT INTO `sys_user_role` VALUES (1763017291741048833, 1);
+INSERT INTO `sys_user_role` VALUES (1763021759299760129, 1);
+INSERT INTO `sys_user_role` VALUES (1763033286434140162, 1);
+INSERT INTO `sys_user_role` VALUES (1763034914528735233, 1);
+INSERT INTO `sys_user_role` VALUES (1763039329885138945, 1);
+INSERT INTO `sys_user_role` VALUES (1763046791925248001, 1);
+INSERT INTO `sys_user_role` VALUES (1763059898533851137, 1);
+INSERT INTO `sys_user_role` VALUES (1763074956366229505, 1);
+INSERT INTO `sys_user_role` VALUES (1763083906738335746, 1);
+INSERT INTO `sys_user_role` VALUES (1763087371808059394, 1);
+INSERT INTO `sys_user_role` VALUES (1763110723763351554, 1);
+INSERT INTO `sys_user_role` VALUES (1763119583433633794, 1);
+INSERT INTO `sys_user_role` VALUES (1763121912195100674, 1);
+INSERT INTO `sys_user_role` VALUES (1763150617374142466, 1);
+INSERT INTO `sys_user_role` VALUES (1763219512067928065, 1);
+INSERT INTO `sys_user_role` VALUES (1763232955600777217, 1);
+INSERT INTO `sys_user_role` VALUES (1763234635201425410, 1);
+INSERT INTO `sys_user_role` VALUES (1763246126281568257, 1);
+INSERT INTO `sys_user_role` VALUES (1763323873230106626, 1);
+INSERT INTO `sys_user_role` VALUES (1763384782623387650, 1);
+INSERT INTO `sys_user_role` VALUES (1763386804647014401, 1);
+INSERT INTO `sys_user_role` VALUES (1763396269777661953, 1);
+INSERT INTO `sys_user_role` VALUES (1763405607485353985, 1);
+INSERT INTO `sys_user_role` VALUES (1763432831823425537, 1);
+INSERT INTO `sys_user_role` VALUES (1763453676952268802, 1);
+INSERT INTO `sys_user_role` VALUES (1763456811204653057, 1);
+INSERT INTO `sys_user_role` VALUES (1763461579713064962, 1);
+INSERT INTO `sys_user_role` VALUES (1763491204732379137, 1);
+INSERT INTO `sys_user_role` VALUES (1763497378051612674, 1);
+INSERT INTO `sys_user_role` VALUES (1763559058706096130, 1);
+INSERT INTO `sys_user_role` VALUES (1763577018824876033, 1);
+INSERT INTO `sys_user_role` VALUES (1763633124087521281, 1);
+INSERT INTO `sys_user_role` VALUES (1763886812869775362, 1);
+INSERT INTO `sys_user_role` VALUES (1763913997563285506, 1);
+INSERT INTO `sys_user_role` VALUES (1764173595432013826, 1);
+INSERT INTO `sys_user_role` VALUES (1764261292183998465, 1);
+INSERT INTO `sys_user_role` VALUES (1764287995094585346, 1);
+INSERT INTO `sys_user_role` VALUES (1764461290695774209, 1);
+INSERT INTO `sys_user_role` VALUES (1764474718197993473, 1);
+INSERT INTO `sys_user_role` VALUES (1764482496870305794, 1);
+INSERT INTO `sys_user_role` VALUES (1764495637402439682, 1);
+INSERT INTO `sys_user_role` VALUES (1764498159743619073, 1);
+INSERT INTO `sys_user_role` VALUES (1764498751559913473, 1);
+INSERT INTO `sys_user_role` VALUES (1764514945641828354, 1);
+INSERT INTO `sys_user_role` VALUES (1764519088087453698, 1);
+INSERT INTO `sys_user_role` VALUES (1764520899728986114, 1);
+INSERT INTO `sys_user_role` VALUES (1764525084016988161, 1);
+INSERT INTO `sys_user_role` VALUES (1764539443405475842, 1);
+INSERT INTO `sys_user_role` VALUES (1764564174649249794, 1);
+INSERT INTO `sys_user_role` VALUES (1764583176607977474, 1);
+INSERT INTO `sys_user_role` VALUES (1764607755468505089, 1);
+INSERT INTO `sys_user_role` VALUES (1764634462757920770, 1);
+INSERT INTO `sys_user_role` VALUES (1764827973771915265, 1);
+INSERT INTO `sys_user_role` VALUES (1764831906313596929, 1);
+INSERT INTO `sys_user_role` VALUES (1764857801929715713, 1);
+INSERT INTO `sys_user_role` VALUES (1764882243925913602, 1);
+INSERT INTO `sys_user_role` VALUES (1764897874259816449, 1);
+INSERT INTO `sys_user_role` VALUES (1764945289142677505, 1);
+INSERT INTO `sys_user_role` VALUES (1764973230396354562, 1);
+INSERT INTO `sys_user_role` VALUES (1765026702110044161, 1);
+INSERT INTO `sys_user_role` VALUES (1765029529888829441, 1);
+INSERT INTO `sys_user_role` VALUES (1765032464647532546, 1);
+INSERT INTO `sys_user_role` VALUES (1765189908342321154, 1);
+INSERT INTO `sys_user_role` VALUES (1765214567611838465, 1);
+INSERT INTO `sys_user_role` VALUES (1765219002413035521, 1);
+INSERT INTO `sys_user_role` VALUES (1765220951434801153, 1);
+INSERT INTO `sys_user_role` VALUES (1765248990147325954, 1);
+INSERT INTO `sys_user_role` VALUES (1765249652247572481, 1);
+INSERT INTO `sys_user_role` VALUES (1765256689840893953, 1);
+INSERT INTO `sys_user_role` VALUES (1765258070287003649, 1);
+INSERT INTO `sys_user_role` VALUES (1765276219292069890, 1);
+INSERT INTO `sys_user_role` VALUES (1765276256986279938, 1);
+INSERT INTO `sys_user_role` VALUES (1765288006737539074, 1);
+INSERT INTO `sys_user_role` VALUES (1765312970979094529, 1);
+INSERT INTO `sys_user_role` VALUES (1765626857976840193, 1);
+INSERT INTO `sys_user_role` VALUES (1765662415604236289, 1);
+INSERT INTO `sys_user_role` VALUES (1765673187432546306, 1);
+INSERT INTO `sys_user_role` VALUES (1765733893087510530, 1);
+INSERT INTO `sys_user_role` VALUES (1765927148689326081, 1);
+INSERT INTO `sys_user_role` VALUES (1765946481549279233, 1);
+INSERT INTO `sys_user_role` VALUES (1765987575418880002, 1);
+INSERT INTO `sys_user_role` VALUES (1765991619675848705, 1);
+INSERT INTO `sys_user_role` VALUES (1765997037533822977, 1);
+INSERT INTO `sys_user_role` VALUES (1766008273063411714, 1);
+INSERT INTO `sys_user_role` VALUES (1766011496348286978, 1);
+INSERT INTO `sys_user_role` VALUES (1766017335771561986, 1);
+INSERT INTO `sys_user_role` VALUES (1766020112446947329, 1);
+INSERT INTO `sys_user_role` VALUES (1766085955713269762, 1);
+INSERT INTO `sys_user_role` VALUES (1766102635604639746, 1);
+INSERT INTO `sys_user_role` VALUES (1766323008493355009, 1);
+INSERT INTO `sys_user_role` VALUES (1766387294112612353, 1);
+INSERT INTO `sys_user_role` VALUES (1766842982618136577, 1);
+INSERT INTO `sys_user_role` VALUES (1767018925722730497, 1);
+INSERT INTO `sys_user_role` VALUES (1767098572703563778, 1);
+INSERT INTO `sys_user_role` VALUES (1767193870939488258, 1);
+INSERT INTO `sys_user_role` VALUES (1767371461667356673, 1);
+INSERT INTO `sys_user_role` VALUES (1767472876167397377, 1);
+INSERT INTO `sys_user_role` VALUES (1767484503956684801, 1);
+INSERT INTO `sys_user_role` VALUES (1767494435045146626, 1);
+INSERT INTO `sys_user_role` VALUES (1767502928200368129, 1);
+INSERT INTO `sys_user_role` VALUES (1767790695329333250, 1);
+INSERT INTO `sys_user_role` VALUES (1767797421759823874, 1);
+INSERT INTO `sys_user_role` VALUES (1767867514107756545, 1);
+INSERT INTO `sys_user_role` VALUES (1768123513418842114, 1);
+INSERT INTO `sys_user_role` VALUES (1768125846164897794, 1);
+INSERT INTO `sys_user_role` VALUES (1768137512021688322, 1);
+INSERT INTO `sys_user_role` VALUES (1768172797870768129, 1);
+INSERT INTO `sys_user_role` VALUES (1768257272084463617, 1);
+INSERT INTO `sys_user_role` VALUES (1768452168263172097, 1);
+INSERT INTO `sys_user_role` VALUES (1768487959811096578, 1);
+INSERT INTO `sys_user_role` VALUES (1768522172358754306, 1);
+INSERT INTO `sys_user_role` VALUES (1768523379651411969, 1);
+INSERT INTO `sys_user_role` VALUES (1768528826072596482, 1);
+INSERT INTO `sys_user_role` VALUES (1768554562896560130, 1);
+INSERT INTO `sys_user_role` VALUES (1768560191165988866, 1);
+INSERT INTO `sys_user_role` VALUES (1768560307197214722, 1);
+INSERT INTO `sys_user_role` VALUES (1768561334289989633, 1);
+INSERT INTO `sys_user_role` VALUES (1768565063735083009, 1);
+INSERT INTO `sys_user_role` VALUES (1768570261782167553, 1);
+INSERT INTO `sys_user_role` VALUES (1768598711431626753, 1);
+INSERT INTO `sys_user_role` VALUES (1768635967806668802, 1);
+INSERT INTO `sys_user_role` VALUES (1768887604487946241, 1);
+INSERT INTO `sys_user_role` VALUES (1768911351987077122, 1);
+INSERT INTO `sys_user_role` VALUES (1769186172289449986, 1);
+INSERT INTO `sys_user_role` VALUES (1769408371134857218, 1);
+INSERT INTO `sys_user_role` VALUES (1769520576635371521, 1);
+INSERT INTO `sys_user_role` VALUES (1769561862704758786, 1);
+INSERT INTO `sys_user_role` VALUES (1769569234722521089, 1);
+INSERT INTO `sys_user_role` VALUES (1769607528399273986, 1);
+INSERT INTO `sys_user_role` VALUES (1769617177890553857, 1);
+INSERT INTO `sys_user_role` VALUES (1769663440459694082, 1);
+INSERT INTO `sys_user_role` VALUES (1769908456541233154, 1);
+INSERT INTO `sys_user_role` VALUES (1769957357877043201, 1);
+INSERT INTO `sys_user_role` VALUES (1770021611783168002, 1);
+INSERT INTO `sys_user_role` VALUES (1770063295095087106, 1);
+INSERT INTO `sys_user_role` VALUES (1770063700436819970, 1);
+INSERT INTO `sys_user_role` VALUES (1770281104395837442, 1);
+INSERT INTO `sys_user_role` VALUES (1770288338521661441, 1);
+INSERT INTO `sys_user_role` VALUES (1770322814056333313, 1);
+INSERT INTO `sys_user_role` VALUES (1770338641849679874, 1);
+INSERT INTO `sys_user_role` VALUES (1770351581952802817, 1);
+INSERT INTO `sys_user_role` VALUES (1770357305466486786, 1);
+INSERT INTO `sys_user_role` VALUES (1770364755406028802, 1);
+INSERT INTO `sys_user_role` VALUES (1770381062524436482, 1);
+INSERT INTO `sys_user_role` VALUES (1770470677998534657, 1);
+INSERT INTO `sys_user_role` VALUES (1770642413331218434, 1);
+INSERT INTO `sys_user_role` VALUES (1770648858382630914, 1);
+INSERT INTO `sys_user_role` VALUES (1770715116272680962, 1);
+INSERT INTO `sys_user_role` VALUES (1770720646688997377, 1);
+INSERT INTO `sys_user_role` VALUES (1770726609303175170, 1);
+INSERT INTO `sys_user_role` VALUES (1770757521378181121, 1);
+INSERT INTO `sys_user_role` VALUES (1770759021907214338, 1);
+INSERT INTO `sys_user_role` VALUES (1771002145573240833, 1);
+INSERT INTO `sys_user_role` VALUES (1771019340902629377, 1);
+INSERT INTO `sys_user_role` VALUES (1771085212270788610, 1);
+INSERT INTO `sys_user_role` VALUES (1771091102206066689, 1);
+INSERT INTO `sys_user_role` VALUES (1771105696307806210, 1);
+INSERT INTO `sys_user_role` VALUES (1771529088861274114, 1);
+INSERT INTO `sys_user_role` VALUES (1772148936234565634, 1);
+INSERT INTO `sys_user_role` VALUES (1772170742823714818, 1);
+INSERT INTO `sys_user_role` VALUES (1772173596070313986, 1);
+INSERT INTO `sys_user_role` VALUES (1772181791232819201, 1);
+INSERT INTO `sys_user_role` VALUES (1772807697592832001, 1);
+INSERT INTO `sys_user_role` VALUES (1772821509767254018, 1);
+INSERT INTO `sys_user_role` VALUES (1772947270113251330, 1);
+INSERT INTO `sys_user_role` VALUES (1773149840576434178, 1);
+INSERT INTO `sys_user_role` VALUES (1773180693536919554, 1);
+INSERT INTO `sys_user_role` VALUES (1773192472325345282, 1);
+INSERT INTO `sys_user_role` VALUES (1773200350612377601, 1);
+INSERT INTO `sys_user_role` VALUES (1773307685607395329, 1);
+INSERT INTO `sys_user_role` VALUES (1773529379840282625, 1);
+INSERT INTO `sys_user_role` VALUES (1773543535003914241, 1);
+INSERT INTO `sys_user_role` VALUES (1773615949826052097, 1);
+INSERT INTO `sys_user_role` VALUES (1773714968015278082, 1);
+INSERT INTO `sys_user_role` VALUES (1773741523022123010, 1);
+INSERT INTO `sys_user_role` VALUES (1773774290929848321, 1);
+INSERT INTO `sys_user_role` VALUES (1773969452180258818, 1);
+INSERT INTO `sys_user_role` VALUES (1774094144111198210, 1);
+INSERT INTO `sys_user_role` VALUES (1774326191970926594, 1);
+INSERT INTO `sys_user_role` VALUES (1774595110106685441, 1);
+INSERT INTO `sys_user_role` VALUES (1774603290157113346, 1);
+INSERT INTO `sys_user_role` VALUES (1774671916088287233, 1);
+INSERT INTO `sys_user_role` VALUES (1774712059876728833, 1);
+INSERT INTO `sys_user_role` VALUES (1775005868787359746, 1);
+INSERT INTO `sys_user_role` VALUES (1775039514470637569, 1);
+INSERT INTO `sys_user_role` VALUES (1775046202846208002, 1);
+INSERT INTO `sys_user_role` VALUES (1775055115012399106, 1);
+INSERT INTO `sys_user_role` VALUES (1775058985780371458, 1);
+INSERT INTO `sys_user_role` VALUES (1775066829695082497, 1);
+INSERT INTO `sys_user_role` VALUES (1775078808497283074, 1);
+INSERT INTO `sys_user_role` VALUES (1775109977754427393, 1);
+INSERT INTO `sys_user_role` VALUES (1775109977771204609, 1);
+INSERT INTO `sys_user_role` VALUES (1775192704981786626, 1);
+INSERT INTO `sys_user_role` VALUES (1775421589681987586, 1);
+INSERT INTO `sys_user_role` VALUES (1776124571507613697, 1);
+INSERT INTO `sys_user_role` VALUES (1776550027549597698, 1);
+INSERT INTO `sys_user_role` VALUES (1776815081159254018, 1);
+INSERT INTO `sys_user_role` VALUES (1776827459129171969, 1);
+INSERT INTO `sys_user_role` VALUES (1776861348769947650, 1);
+INSERT INTO `sys_user_role` VALUES (1776864185373548546, 1);
+INSERT INTO `sys_user_role` VALUES (1776871215274516482, 1);
+INSERT INTO `sys_user_role` VALUES (1776872376396275714, 1);
+INSERT INTO `sys_user_role` VALUES (1776889562355589122, 1);
+INSERT INTO `sys_user_role` VALUES (1777118704363757570, 1);
+INSERT INTO `sys_user_role` VALUES (1777126438664527874, 1);
+INSERT INTO `sys_user_role` VALUES (1777157190659727362, 1);
+INSERT INTO `sys_user_role` VALUES (1777217669537062914, 1);
+INSERT INTO `sys_user_role` VALUES (1777220647320936449, 1);
+INSERT INTO `sys_user_role` VALUES (1777252116550508545, 1);
+INSERT INTO `sys_user_role` VALUES (1777260896986193921, 1);
+INSERT INTO `sys_user_role` VALUES (1777296499484254210, 1);
+INSERT INTO `sys_user_role` VALUES (1777301747972038657, 1);
+INSERT INTO `sys_user_role` VALUES (1777363539016409089, 1);
+INSERT INTO `sys_user_role` VALUES (1777483372982820866, 1);
+INSERT INTO `sys_user_role` VALUES (1777537906459402242, 1);
+INSERT INTO `sys_user_role` VALUES (1777610641428570114, 1);
+INSERT INTO `sys_user_role` VALUES (1777613556604067842, 1);
+INSERT INTO `sys_user_role` VALUES (1777718773123244034, 1);
+INSERT INTO `sys_user_role` VALUES (1777743939492503554, 1);
+INSERT INTO `sys_user_role` VALUES (1777887539056467969, 1);
+INSERT INTO `sys_user_role` VALUES (1777887799262699521, 1);
+INSERT INTO `sys_user_role` VALUES (1777890253115088897, 1);
+INSERT INTO `sys_user_role` VALUES (1777909423068274689, 1);
+INSERT INTO `sys_user_role` VALUES (1777930481544585218, 1);
+INSERT INTO `sys_user_role` VALUES (1777954050559303681, 1);
+INSERT INTO `sys_user_role` VALUES (1778078614597525506, 1);
+INSERT INTO `sys_user_role` VALUES (1778307871026307073, 1);
+INSERT INTO `sys_user_role` VALUES (1778341191034462209, 1);
+INSERT INTO `sys_user_role` VALUES (1778352526686281729, 1);
+INSERT INTO `sys_user_role` VALUES (1778591039688138754, 1);
+INSERT INTO `sys_user_role` VALUES (1778625241280274433, 1);
+INSERT INTO `sys_user_role` VALUES (1778645603636338689, 1);
+INSERT INTO `sys_user_role` VALUES (1779329016437530626, 1);
+INSERT INTO `sys_user_role` VALUES (1779509451201306625, 1);
+INSERT INTO `sys_user_role` VALUES (1781359789389049858, 1);
+INSERT INTO `sys_user_role` VALUES (1781463900025450497, 1);
+INSERT INTO `sys_user_role` VALUES (1781519961809940482, 1);
+INSERT INTO `sys_user_role` VALUES (1781570458679963650, 1);
+INSERT INTO `sys_user_role` VALUES (1781679536911609858, 1);
+INSERT INTO `sys_user_role` VALUES (1781680345497923586, 1);
+INSERT INTO `sys_user_role` VALUES (1781938051479711745, 1);
+INSERT INTO `sys_user_role` VALUES (1781979644345659393, 1);
+INSERT INTO `sys_user_role` VALUES (1781982608724537345, 1);
+INSERT INTO `sys_user_role` VALUES (1782339521316294658, 1);
+INSERT INTO `sys_user_role` VALUES (1782584811885596674, 1);
+INSERT INTO `sys_user_role` VALUES (1782597966938411009, 1);
+INSERT INTO `sys_user_role` VALUES (1782598345608564738, 1);
+INSERT INTO `sys_user_role` VALUES (1782599696132509698, 1);
+INSERT INTO `sys_user_role` VALUES (1782655923667505153, 1);
+INSERT INTO `sys_user_role` VALUES (1782658558470557698, 1);
+INSERT INTO `sys_user_role` VALUES (1782697212870037505, 1);
+INSERT INTO `sys_user_role` VALUES (1782711689380270082, 1);
+INSERT INTO `sys_user_role` VALUES (1782733890905083906, 1);
+INSERT INTO `sys_user_role` VALUES (1782734018948796418, 1);
+INSERT INTO `sys_user_role` VALUES (1782741134992379906, 1);
+INSERT INTO `sys_user_role` VALUES (1782926062560382978, 1);
+INSERT INTO `sys_user_role` VALUES (1782941277477834753, 1);
+INSERT INTO `sys_user_role` VALUES (1782982532157050881, 1);
+INSERT INTO `sys_user_role` VALUES (1783068876598317057, 1);
+INSERT INTO `sys_user_role` VALUES (1783086777506107393, 1);
+INSERT INTO `sys_user_role` VALUES (1783144268357079041, 1);
+INSERT INTO `sys_user_role` VALUES (1783297415947915265, 1);
+INSERT INTO `sys_user_role` VALUES (1783310569679523841, 1);
+INSERT INTO `sys_user_role` VALUES (1783326930816372738, 1);
+INSERT INTO `sys_user_role` VALUES (1783358421143293953, 1);
+INSERT INTO `sys_user_role` VALUES (1783421941125910530, 1);
+INSERT INTO `sys_user_role` VALUES (1783439451980206081, 1);
+INSERT INTO `sys_user_role` VALUES (1783471940098494466, 1);
+INSERT INTO `sys_user_role` VALUES (1783777388311777281, 1);
+INSERT INTO `sys_user_role` VALUES (1783796572785643521, 1);
+INSERT INTO `sys_user_role` VALUES (1783877442208960514, 1);
+INSERT INTO `sys_user_role` VALUES (1784199358216048642, 1);
+INSERT INTO `sys_user_role` VALUES (1784389326918029313, 1);
+INSERT INTO `sys_user_role` VALUES (1784400528377286657, 1);
+INSERT INTO `sys_user_role` VALUES (1784435756558880770, 1);
+INSERT INTO `sys_user_role` VALUES (1784457537797656577, 1);
+INSERT INTO `sys_user_role` VALUES (1784521057603538945, 1);
+INSERT INTO `sys_user_role` VALUES (1784522252246724609, 1);
+INSERT INTO `sys_user_role` VALUES (1784548227567202306, 1);
+INSERT INTO `sys_user_role` VALUES (1784569508068995073, 1);
+INSERT INTO `sys_user_role` VALUES (1784777389905162242, 1);
+INSERT INTO `sys_user_role` VALUES (1784783910114308097, 1);
+INSERT INTO `sys_user_role` VALUES (1784821184902344705, 1);
+INSERT INTO `sys_user_role` VALUES (1784838825360633858, 1);
+INSERT INTO `sys_user_role` VALUES (1784870260805087233, 1);
+INSERT INTO `sys_user_role` VALUES (1784910451020279810, 1);
+INSERT INTO `sys_user_role` VALUES (1785130539233193985, 1);
+INSERT INTO `sys_user_role` VALUES (1785240710601125890, 1);
+INSERT INTO `sys_user_role` VALUES (1785360485289439233, 1);
+INSERT INTO `sys_user_role` VALUES (1785588726424023041, 1);
+INSERT INTO `sys_user_role` VALUES (1785975035152019458, 1);
+INSERT INTO `sys_user_role` VALUES (1786448824117735425, 1);
+INSERT INTO `sys_user_role` VALUES (1787036511853850625, 1);
+INSERT INTO `sys_user_role` VALUES (1787040098730356738, 1);
+INSERT INTO `sys_user_role` VALUES (1787442869522636802, 1);
+INSERT INTO `sys_user_role` VALUES (1787802087576530946, 1);
+INSERT INTO `sys_user_role` VALUES (1787878100067119105, 1);
+INSERT INTO `sys_user_role` VALUES (1788016335816716290, 1);
+INSERT INTO `sys_user_role` VALUES (1788135951385718786, 1);
+INSERT INTO `sys_user_role` VALUES (1788136924611047425, 1);
+INSERT INTO `sys_user_role` VALUES (1788564791958401026, 1);
+INSERT INTO `sys_user_role` VALUES (1788861563763126273, 1);
+INSERT INTO `sys_user_role` VALUES (1789104577664217090, 1);
+INSERT INTO `sys_user_role` VALUES (1789215891946434561, 1);
+INSERT INTO `sys_user_role` VALUES (1789891068120231937, 1);
+INSERT INTO `sys_user_role` VALUES (1789916787885961218, 1);
+INSERT INTO `sys_user_role` VALUES (1790285085844664322, 1);
+INSERT INTO `sys_user_role` VALUES (1790395963663413250, 1);
+INSERT INTO `sys_user_role` VALUES (1790626495441698817, 1);
+INSERT INTO `sys_user_role` VALUES (1790733204311015425, 1);
+INSERT INTO `sys_user_role` VALUES (1790747738857832449, 1);
+INSERT INTO `sys_user_role` VALUES (1790893072141549570, 1);
+INSERT INTO `sys_user_role` VALUES (1790953693902045186, 1);
+INSERT INTO `sys_user_role` VALUES (1790986267617689601, 1);
+INSERT INTO `sys_user_role` VALUES (1791058271444172801, 1);
+INSERT INTO `sys_user_role` VALUES (1791123542645178370, 1);
+INSERT INTO `sys_user_role` VALUES (1791170948304764929, 1);
+INSERT INTO `sys_user_role` VALUES (1791173160204533762, 1);
+INSERT INTO `sys_user_role` VALUES (1791181681805524994, 1);
+INSERT INTO `sys_user_role` VALUES (1791184448041287681, 1);
+INSERT INTO `sys_user_role` VALUES (1791281872491544578, 1);
+INSERT INTO `sys_user_role` VALUES (1791281970680201217, 1);
+INSERT INTO `sys_user_role` VALUES (1791283037744693249, 1);
+INSERT INTO `sys_user_role` VALUES (1791285337913589762, 1);
+INSERT INTO `sys_user_role` VALUES (1791289816255856641, 1);
+INSERT INTO `sys_user_role` VALUES (1791296357612683266, 1);
+INSERT INTO `sys_user_role` VALUES (1791299213191315457, 1);
+INSERT INTO `sys_user_role` VALUES (1791308308178829314, 1);
+INSERT INTO `sys_user_role` VALUES (1791318977032781826, 1);
+INSERT INTO `sys_user_role` VALUES (1791371260403687425, 1);
+INSERT INTO `sys_user_role` VALUES (1791387421707116546, 1);
+INSERT INTO `sys_user_role` VALUES (1791447204858470402, 1);
+INSERT INTO `sys_user_role` VALUES (1791729117863124993, 1);
+INSERT INTO `sys_user_role` VALUES (1793165965818912770, 1);
+INSERT INTO `sys_user_role` VALUES (1793568337082740737, 1);
+INSERT INTO `sys_user_role` VALUES (1794560044937154561, 1);
+INSERT INTO `sys_user_role` VALUES (1794749939555143681, 1);
+
+-- ----------------------------
+-- Table structure for wx_rob_config
+-- ----------------------------
+DROP TABLE IF EXISTS `wx_rob_config`;
+CREATE TABLE `wx_rob_config`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint(20) NULL DEFAULT NULL COMMENT '所属用户',
+  `bot_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '机器人名称',
+  `unique_key` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '机器唯一码',
+  `default_friend` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '\0' COMMENT '默认好友回复开关',
+  `default_group` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '\0' COMMENT '默认群回复开关',
+  `enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '机器人状态  0正常 1启用',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `udx_wx_rob_config_uniquekey`(`unique_key`) USING BTREE,
+  UNIQUE INDEX `udx_wx_name`(`bot_name`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1791353611728023554 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '微信机器人配置' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of wx_rob_config
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for wx_rob_keyword
+-- ----------------------------
+DROP TABLE IF EXISTS `wx_rob_keyword`;
+CREATE TABLE `wx_rob_keyword`  (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `unique_key` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '机器唯一码',
+  `key_data` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '关键词',
+  `value_data` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '回复内容',
+  `type_data` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '回复类型',
+  `nick_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '目标昵称',
+  `to_group` bit(1) NOT NULL DEFAULT b'1' COMMENT '群1好友0',
+  `enable` bit(1) NOT NULL DEFAULT b'1' COMMENT '启用1禁用0',
+  `create_time` datetime NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_wx_rob_keyword_unikey`(`unique_key`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '微信关键词' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of wx_rob_keyword
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;

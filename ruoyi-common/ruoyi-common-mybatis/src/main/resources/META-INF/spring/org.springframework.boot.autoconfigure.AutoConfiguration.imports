@@ -1,1 +1,1 @@
-com.xmzs.common.mybatis.config.MybatisPlusConfig
+org.ruoyi.common.mybatis.config.MybatisPlusConfig

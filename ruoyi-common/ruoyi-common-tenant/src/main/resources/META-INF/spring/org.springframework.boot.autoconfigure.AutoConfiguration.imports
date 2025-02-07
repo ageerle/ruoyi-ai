@@ -1,1 +1,1 @@
-com.xmzs.common.tenant.config.TenantConfig
+org.ruoyi.common.tenant.config.TenantConfig

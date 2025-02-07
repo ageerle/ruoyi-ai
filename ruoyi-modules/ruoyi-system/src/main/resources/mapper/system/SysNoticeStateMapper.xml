@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.system.mapper.SysNoticeStateMapper">
+
+    <update id="readAllNotice">
+        UPDATE sys_notice_state SET  read_status = 1
+    </update>
+
+</mapper>

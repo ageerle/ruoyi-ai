@@ -1,1 +1,1 @@
-com.xmzs.common.chat.config.WebSocketConfig
+org.ruoyi.common.chat.config.WebSocketConfig

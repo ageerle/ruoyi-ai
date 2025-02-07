@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>com.xmzs</groupId>
+        <groupId>org.ruoyi</groupId>
         <artifactId>ruoyi-modules</artifactId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
@@ -19,82 +19,89 @@
     <dependencies>
         <!-- 通用工具-->
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-core</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-translation</artifactId>
         </dependency>
 
         <!-- OSS功能模块 -->
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-oss</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
         <!-- excel-->
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-excel</artifactId>
         </dependency>
 
         <!-- SMS功能模块 -->
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-sms</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-tenant</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-web</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-idempotent</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-sensitive</artifactId>
         </dependency>
 
         <!-- SMS功能模块 -->
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-chat</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.xmzs</groupId>
-            <artifactId>ruoyi-common-wechat</artifactId>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+            <version>2.15.2</version>
+        </dependency>
+
+        <!-- 支付功能模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-pay</artifactId>
         </dependency>
 
     </dependencies>

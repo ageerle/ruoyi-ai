@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.xmzs</groupId>
+        <groupId>org.ruoyi</groupId>
         <artifactId>ruoyi-common</artifactId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
@@ -13,7 +13,7 @@
     <artifactId>ruoyi-common-pay</artifactId>
     <dependencies>
         <dependency>
-            <groupId>com.xmzs</groupId>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-web</artifactId>
         </dependency>
         <dependency>
@@ -26,6 +26,13 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>22.5.1</version>
+        </dependency>
+
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>

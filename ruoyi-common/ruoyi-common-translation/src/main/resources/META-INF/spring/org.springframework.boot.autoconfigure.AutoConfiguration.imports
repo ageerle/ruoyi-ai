@@ -1,5 +1,5 @@
-com.xmzs.common.translation.config.TranslationConfig
-com.xmzs.common.translation.core.impl.DeptNameTranslationImpl
-com.xmzs.common.translation.core.impl.DictTypeTranslationImpl
-com.xmzs.common.translation.core.impl.OssUrlTranslationImpl
-com.xmzs.common.translation.core.impl.UserNameTranslationImpl
+org.ruoyi.common.translation.config.TranslationConfig
+org.ruoyi.common.translation.core.impl.DeptNameTranslationImpl
+org.ruoyi.common.translation.core.impl.DictTypeTranslationImpl
+org.ruoyi.common.translation.core.impl.OssUrlTranslationImpl
+org.ruoyi.common.translation.core.impl.UserNameTranslationImpl
