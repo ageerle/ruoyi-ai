@@ -1,0 +1,26 @@
+syntax = "proto3";
+import "Common.proto";
+import "User.proto";
+import "DoubleLikeDetail.proto";
+
+package tech.ordinaryroad.live.chat.client.douyin.protobuf;
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf";
+option java_outer_classname = "douyin_webcast_like_message_msgProto";
+option java_multiple_files = true;
+option objc_class_prefix = "GPB";
+
+message douyin_webcast_like_message_msg {
+  Common common = 1;
+  uint64 count = 2;
+  uint64 total = 3;
+  uint64 color = 4;
+  User user = 5;
+  string icon = 6;
+  DoubleLikeDetail doubleLikeDetail = 7;
+  // DisplayControlInfo displayControlInfo = 8;
+  uint64 linkmicGuestUid = 9;
+  string scene = 10;
+  // PicoDisplayInfo picoDisplayInfo = 11;
+  // = 12;
+}

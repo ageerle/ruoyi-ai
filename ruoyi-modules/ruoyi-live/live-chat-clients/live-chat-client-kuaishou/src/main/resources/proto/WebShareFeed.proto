@@ -1,0 +1,16 @@
+syntax = "proto3";
+import "SimpleUserInfo.proto";
+import "WebLiveAssistantType.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message WebShareFeed {
+  string id = 1;
+  SimpleUserInfo user = 2;
+  uint64 time = 3;
+  uint32 thirdPartyPlatform = 4;
+  uint64 sortRank = 5;
+  WebLiveAssistantType liveAssistantType = 6;
+  string deviceHash = 7;
+
+}

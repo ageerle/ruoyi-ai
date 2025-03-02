@@ -36,7 +36,7 @@ CREATE TABLE `chat_audio_role`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `voice_id`(`create_by`, `voice_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配音角色' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '应用市场' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of chat_audio_role
@@ -123,44 +123,38 @@ INSERT INTO `chat_config` VALUES (1818270017966837761, 'stripe', 'enabled', 'fal
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_gpts`;
 CREATE TABLE `chat_gpts`  (
-  `id` bigint(20) NOT NULL COMMENT 'id',
-  `gid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts应用id',
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts应用名称',
-  `logo` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts图标',
-  `info` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts描述',
-  `author_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '作者id',
-  `author_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '作者名称',
-  `use_cnt` int(11) NULL DEFAULT 0 COMMENT '点赞',
-  `bad` int(11) NULL DEFAULT 0 COMMENT '差评',
-  `type` char(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+                              `id` bigint(20) NOT NULL COMMENT 'id',
+                              `gid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts应用id',
+                              `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts应用名称',
+                              `logo` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts图标',
+                              `info` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'gpts描述',
+                              `author_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '作者id',
+                              `author_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '作者名称',
+                              `use_cnt` int(11) NULL DEFAULT 0 COMMENT '点赞',
+                              `bad` int(11) NULL DEFAULT 0 COMMENT '差评',
+                              `type` char(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型',
+                              `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+                              `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                              `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+                              `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+                              `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+                              `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+                              `version` int(11) NULL DEFAULT NULL COMMENT '版本',
+                              `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
+                              `update_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新IP',
+                              `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户Id',
+                              PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '应用管理' ROW_FORMAT = Dynamic;
 
-
-
-
-
-
-
-
-
-    -+-------------------------
+-- ----------------------------
 -- Records of chat_gpts
 -- ----------------------------
-INSERT INTO `chat_gpts` VALUES (1810602934286237698, 'gpt-4-gizmo-g-GmEINlwwR', 'Language Teacher', 'https://gpt-logo.gptshunt.com/MzMzMzUyMzMyMjE4MmE1OTJm.png', 'Ms. Smith, the AI-powered Language Teacher, is a revolutionary GPT-based bot that offers personalized language learning experiences in over 20 languages, including Spanish, German, French, English, Chinese, Korean, Japanese, and more', NULL, NULL, 0, 0, NULL, 103, '2024-07-09 17:12:34', '1', '1', '2024-07-12 15:40:13', 'Ms. Smith, the AI-powered Language Teacher, is a revolutionary GPT-based bot that offers personalized language learning experiences in over 20 languages, including Spanish, German, French, English, Chinese, Korean, Japanese, and more\n', NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811668058426515458, 'gpt-4-gizmo-g-pmuQfob8d', 'image generator', 'https://gpt-logo.gptshunt.com/MTEwYzE0MzAwNzBlMDM1OTA1.png', 'Image Generator is a cutting-edge  AI bot that leverages the power of GPT technology to generate captivating images from text descriptions. This versatile tool empowers users to create, refine, and personalize visual content ', NULL, NULL, 0, 0, NULL, 103, '2024-07-12 15:44:59', '1', '1', '2024-07-12 15:44:59', '', NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811668415990931458, 'gpt-4-gizmo-g-B3hgivKK9', 'Write For Me', 'https://gpt-logo.gptshunt.com/MjM1MjA5MDYwODE3MmEyYTU4.png', 'Write For Me is an innovative AI-powered bot that harnesses the capabilities of GPT technology to generate tailored, engaging content with a focus on quality, relevance, and precise word count.', NULL, NULL, 0, 0, NULL, 103, '2024-07-12 15:46:24', '1', '1', '2024-07-12 15:46:24', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811670922074988545, 'gpt-4-gizmo-g-bo0FiWLY7', 'Consensus ', 'https://gpt-logo.gptshunt.com/MDMwZTUxMjcwODM2MmQzODU2.png', 'an AI-powered research assistant, revolutionizes the way you access and utilize academic knowledge. By leveraging advanced GPT technology, this bot allows users to search through a vast database of over 200 million academic papers', NULL, NULL, 0, 0, NULL, 103, '2024-07-12 15:56:22', '1', '1', '2024-07-12 15:56:22', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811815442062188545, 'gpt-4-gizmo-g-kZ0eYXlJe', 'Scholar GPT', 'https://gpt-logo.gptshunt.com/MGEzYjUxMDQzODM5MGQyYjA0.png', 'is an innovative AI-powered bot that revolutionizes the way researchers access and analyze academic resources. provides seamless access to over 200 million resources from renowned databases such as Google Scholar, PubMed, JSTOR, and Arxiv.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:30:38', '1', '1', '2024-07-13 01:30:38', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811817323840872450, 'gpt-4-gizmo-g-alKfVrz9K', 'Canva', 'https://gpt-logo.gptshunt.com/MDAwZDJhMDczNzEzMWI1ODJh.png', 'graphic design bot, revolutionizes the way you create stunning visuals., Canva empowers users to effortlessly design a wide range of materials, from captivating social media posts and eye-catching logos to professional  presentations and more.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:38:07', '1', '1', '2024-07-13 01:38:07', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811817605668741121, 'gpt-4-gizmo-g-2DQzU5UZl', 'Code Copilot', 'https://gpt-logo.gptshunt.com/NTMyNTMwMWIzNDU0MzQzYjBk.png', 'is a cutting-edge AI-powered bot that revolutionizes the way developers write code. By leveraging advanced GPT technology, this intelligent assistant acts as a virtual 10x programmer, providing real-time suggestions, code completion, and error detection.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:39:14', '1', '1', '2024-07-13 01:39:14', NULL, NULL, '2', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811818375105421313, 'gpt-4-gizmo-g-gFt1ghYJl', 'Logo Creator', 'https://gpt-logo.gptshunt.com/MDYyNzE1NTAwNjA5MzgyYjBk.png', 'is an AI-powered bot that leverages advanced GPT technology to generate professional logo designs and  app icons tailored to your specific needs.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:42:17', '1', '1', '2024-07-13 01:42:17', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811819494154117121, 'gpt-4-gizmo-g-k3IqoCe1l', 'Code Generator', 'https://gpt-logo.gptshunt.com/MGE1MjI4MTAwZTIyMDQ1MDBk.png', 'is an advanced AI-powered bot that leverages cutting-edge GPT technology to revolutionize the way developers work with code. This intelligent assistant offers a comprehensive suite of features designed to streamline', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:46:44', '1', '1', '2024-07-13 01:46:44', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811822597507063810, 'gpt-4-gizmo-g-a9JivI0y2', 'Consistent Character GPT', 'https://gpt-logo.gptshunt.com/MDA1ODJiMDgxNzI4NTExODUz.png', 'Consistent Character GPT is a cutting-edge  AI bot that leverages the power of GPT technology to generate high-quality character designs with unparalleled speed and consistency.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:59:04', '1', '1', '2024-07-13 01:59:04', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811822865149796353, 'gpt-4-gizmo-g-ZctQCI6MG', 'Photo Multiverse', 'https://gpt-logo.gptshunt.com/M2IwMjE1MzAyMjI4NTcyYzI2.png', 'is a cutting-edge  AI bot that leverages advanced GPT technology to transform your photos into captivating  AI personas.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 02:00:08', '1', '1', '2024-07-13 02:00:08', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811823552902406145, 'gpt-4-gizmo-g-pCq5xaCri', 'LOGO', 'https://gpt-logo.gptshunt.com/MTEyMjEwNTQxOTAwMjIxMzA4.jpg', 'is an AI-powered bot, is a seasoned expert in brand logo design, boasting an impressive 20 years of experience in the field. Leveraging the power of GPT technology, LOGO has been trained on a vast array of designer materials to deliver top-notch results.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 02:02:52', '1', '1', '2024-07-13 02:02:52', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_gpts` VALUES (1811823857308213249, 'gpt-4-gizmo-g-I9f8LxD5P', 'Video Maker', 'https://gpt-logo.gptshunt.com/Mjg1ODA3NTkyZDE5MjU1NDMx.png', 'is a cutting-edge AI-powered bot that leverages advanced GPT technology to create captivating animated  videos with ease.', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 02:04:04', '1', '1', '2024-07-13 02:04:04', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_gpts` VALUES (1810602934286237698, 'gpt-4-gizmo-g-RQAWjtI6u', '翻译助手', 'https://external-content.duckduckgo.com/ip3/chat.openai.com.ico', '中英和英中翻译专家', NULL, NULL, 0, 0, NULL, 103, '2024-07-09 17:12:34', '1', '1', '2024-07-12 15:40:13', 'Ms. Smith, the AI-powered Language Teacher, is a revolutionary GPT-based bot that offers personalized language learning experiences in over 20 languages, including Spanish, German, French, English, Chinese, Korean, Japanese, and more\n', NULL, '0', NULL, 0);
+INSERT INTO `chat_gpts` VALUES (1811668415990931458, 'gpt-4-gizmo-g-XbReEL4Uq', '清北全科医生', 'https://external-content.duckduckgo.com/ip3/chat.openai.com.ico', '富有同情心的全科医生提供健康指导', NULL, NULL, 0, 0, NULL, 103, '2024-07-12 15:46:24', '1', '1', '2024-07-12 15:46:24', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_gpts` VALUES (1811670922074988545, 'gpt-4-gizmo-g-AphhNRLxt', '提示词优化', 'https://external-content.duckduckgo.com/ip3/chat.openai.com.ico', '擅长为Prompt 提升清晰度和创造力的大师', NULL, NULL, 0, 0, NULL, 103, '2024-07-12 15:56:22', '1', '1', '2024-07-12 15:56:22', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_gpts` VALUES (1811815442062188545, 'gpt-4-gizmo-g-ThuHxKi7e', '小红书文案生成器', 'https://external-content.duckduckgo.com/ip3/chat.openai.com.ico', '小红书文案生成器', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:30:38', '1', '1', '2024-07-13 01:30:38', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_gpts` VALUES (1811817605668741121, 'gpt-4-gizmo-g-AsQCd3k8', '中国法律助手', 'https://external-content.duckduckgo.com/ip3/chat.openai.com.ico', '全面掌握中国法律的智能助手，可帮助起草文书，分析案件，进行法律咨询', NULL, NULL, 0, 0, NULL, 103, '2024-07-13 01:39:14', '1', '1', '2024-07-13 01:39:14', NULL, NULL, '2', NULL, 0);
+INSERT INTO `chat_gpts` VALUES (1811817605668741122, 'gpt-4-gizmo-g-IXwub6dJu', '英语老师', 'https://external-content.duckduckgo.com/ip3/chat.openai.com.ico', '英语学习GPT是一个专门设计来帮助用户提高他们的英语技能的人工智能助手', NULL, NULL, 0, 0, NULL, NULL, NULL, '', '', NULL, NULL, NULL, '0', NULL, 0);
 
 -- ----------------------------
 -- Table structure for chat_message

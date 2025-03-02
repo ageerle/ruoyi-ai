@@ -3,6 +3,16 @@ package org.ruoyi.system.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.ai.openai.models.*;
+import com.azure.core.credential.AzureKeyCredential;
+import io.github.ollama4j.OllamaAPI;
+import io.github.ollama4j.models.chat.OllamaChatMessageRole;
+import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
+import io.github.ollama4j.models.chat.OllamaChatRequestModel;
+import io.github.ollama4j.models.generate.OllamaStreamHandler;
+import io.github.ollama4j.utils.Options;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +22,10 @@ import org.ruoyi.common.chat.config.LocalCache;
 import org.ruoyi.common.chat.domain.request.ChatRequest;
 import org.ruoyi.common.chat.domain.request.Dall3Request;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
-import org.ruoyi.common.chat.entity.chat.*;
+import org.ruoyi.common.chat.entity.chat.ChatCompletion;
+import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
+import org.ruoyi.common.chat.entity.chat.Content;
+import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
 import org.ruoyi.common.chat.entity.images.Image;
 import org.ruoyi.common.chat.entity.images.ImageResponse;
@@ -25,18 +38,17 @@ import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.domain.bo.ChatMessageBo;
 import org.ruoyi.system.domain.bo.SysModelBo;
-import org.ruoyi.system.domain.bo.SysPackagePlanBo;
+import org.ruoyi.system.domain.request.translation.TranslationRequest;
 import org.ruoyi.system.domain.vo.SysModelVo;
-import org.ruoyi.system.domain.vo.SysPackagePlanVo;
 import org.ruoyi.system.domain.vo.SysUserVo;
 import org.ruoyi.system.listener.SSEEventSourceListener;
 import org.ruoyi.system.service.*;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -50,8 +62,11 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import io.github.ollama4j.utils.OptionsBuilder;
 
 @Service
 @Slf4j
@@ -87,12 +102,13 @@ public class SseServiceImpl implements ISseService {
         try {
             if (StpUtil.isLogin()) {
                 SysUserVo sysUserVo = userService.selectUserById(getUserId());
-                if (!checkModel(sysUserVo.getUserPlan(), chatRequest.getModel())) {
-                    throw new BaseException("当前套餐不支持此模型!");
-                }
+//                if (!checkModel(sysUserVo.getUserPlan(), chatRequest.getModel())) {
+//                    throw new BaseException("当前套餐不支持此模型!");
+//                }
                 LocalCache.CACHE.put("userId", getUserId());
 
-                Object content = messages.get(0).getContent();
+                Object content = messages.get(messages.size() - 1).getContent();
+
                 String chatString = "";
                 if (content instanceof List<?> listContent) {
                     if (!listContent.isEmpty() && listContent.get(0) instanceof Content) {
@@ -144,28 +160,28 @@ public class SseServiceImpl implements ISseService {
                        processByToken(chatRequest.getModel(), chatString, chatMessageBo);
                     }
                 }
-            } else {
-                if (checkModel("Visitor", chatRequest.getModel())) {
-                    // 初始请求次数
-                    int number = 1;
-                    // 获取请求IP
-                    String realIp = getClientIpAddress(request);
-                    // 根据IP获取次数
-                    Integer requestNumber = RedisUtils.getCacheObject(realIp);
-                    if (requestNumber == null) {
-                        // 记录ip使用次数
-                        RedisUtils.setCacheObject(realIp, number);
-                    } else {
-                        String configValue = configService.getConfigValue("mail", "free");
-                        if (requestNumber > Integer.parseInt(configValue)) {
-                            throw new BaseException("剩余次数不足，请充值后使用");
-                        }
-                        RedisUtils.setCacheObject(realIp, requestNumber + 1);
-                    }
-                } else {
-                    throw new BaseException("当前套餐不支持此模型!");
-                }
             }
+
+//            else {
+//
+//                    // 初始请求次数
+//                    int number = 1;
+//                    // 获取请求IP
+//                    String realIp = getClientIpAddress(request);
+//                    // 根据IP获取次数
+//                    Integer requestNumber = RedisUtils.getCacheObject(realIp);
+//                    if (requestNumber == null) {
+//                        // 记录ip使用次数
+//                        RedisUtils.setCacheObject(realIp, number);
+//                    } else {
+//                        String configValue = configService.getConfigValue("mail", "free");
+//                        if (requestNumber > Integer.parseInt(configValue)) {
+//                            throw new BaseException("剩余次数不足，请充值后使用");
+//                        }
+//                        RedisUtils.setCacheObject(realIp, requestNumber + 1);
+//                    }
+//
+//            }
             ChatCompletion completion = ChatCompletion
                 .builder()
                 .messages(messages)
@@ -184,31 +200,31 @@ public class SseServiceImpl implements ISseService {
     }
 
 
-    /**
-     * 查当前用户是否可以调用此模型
-     *
-     * @param planId
-     * @return
-     */
-    public Boolean checkModel(String planId, String modelName) {
-        SysPackagePlanBo sysPackagePlanBo = new SysPackagePlanBo();
-        if (modelName.startsWith("gpt-4-gizmo")) {
-            modelName = "gpt-4-gizmo";
-        }
-        if (StringUtils.isEmpty(planId)) {
-            sysPackagePlanBo.setName("Visitor");
-        } else if ("Visitor".equals(planId) || "Free".equals(planId)) {
-            sysPackagePlanBo.setName(planId);
-        } else {
-            // sysPackagePlanBo.setId(Long.valueOf(planId));
-            return true;
-        }
-
-        SysPackagePlanVo sysPackagePlanVo = sysPackagePlanService.queryList(sysPackagePlanBo).get(0);
-        // 将字符串转换为数组
-        String[] array = sysPackagePlanVo.getPlanDetail().split(",");
-        return Arrays.asList(array).contains(modelName);
-    }
+//    /**
+//     * 查当前用户是否可以调用此模型
+//     *
+//     * @param planId
+//     * @return
+//     */
+//    public Boolean checkModel(String planId, String modelName) {
+//        SysPackagePlanBo sysPackagePlanBo = new SysPackagePlanBo();
+//        if (modelName.startsWith("gpt-4-gizmo")) {
+//            modelName = "gpt-4-gizmo";
+//        }
+//        if (StringUtils.isEmpty(planId)) {
+//            sysPackagePlanBo.setName("Visitor");
+//        } else if ("Visitor".equals(planId) || "Free".equals(planId)) {
+//            sysPackagePlanBo.setName(planId);
+//        } else {
+//            // sysPackagePlanBo.setId(Long.valueOf(planId));
+//            return true;
+//        }
+//
+//        SysPackagePlanVo sysPackagePlanVo = sysPackagePlanService.queryList(sysPackagePlanBo).get(0);
+//        // 将字符串转换为数组
+//        String[] array = sysPackagePlanVo.getPlanDetail().split(",");
+//        return Arrays.asList(array).contains(modelName);
+//    }
 
     /**
      * 根据次数扣除余额
@@ -241,23 +257,21 @@ public class SseServiceImpl implements ISseService {
      */
     @Override
     public ResponseEntity<Resource> textToSpeed(TextToSpeech textToSpeech) {
+        ResponseBody body = openAiStreamClient.textToSpeech(textToSpeech);
+        if (body != null) {
+            // 将ResponseBody转换为InputStreamResource
+            InputStreamResource resource = new InputStreamResource(body.byteStream());
 
-        try (ResponseBody body = openAiStreamClient.textToSpeech(textToSpeech)) {
-            if (body != null) {
-                // 将ResponseBody转换为InputStreamResource
-                InputStreamResource resource = new InputStreamResource(body.byteStream());
-
-                // 创建并返回ResponseEntity
-                return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType("audio/mpeg"))
-                    .body(resource);
-
-            } else {
-                // 如果ResponseBody为空，返回404状态码
-                return ResponseEntity.notFound().build();
-            }
+            // 创建并返回ResponseEntity
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("audio/mpeg"))
+                .body(resource);
+        } else {
+            // 如果ResponseBody为空，返回404状态码
+            return ResponseEntity.notFound().build();
         }
     }
+
 
     /**
      * 语音转文字
@@ -309,6 +323,7 @@ public class SseServiceImpl implements ISseService {
      * @param request
      * @return
      */
+    @Override
     public List<Item> dall3(Dall3Request request) {
         openAiStreamClient = chatConfig.getOpenAiStreamClient();
         chatService.checkUserGrade();
@@ -520,5 +535,101 @@ public class SseServiceImpl implements ISseService {
         }
 
         return "unknown";
+    }
+
+
+    @Override
+    public String translation(TranslationRequest translationRequest) {
+
+        ChatMessageBo chatMessageBo = new ChatMessageBo();
+        chatMessageBo.setUserId(getUserId());
+        chatMessageBo.setModelName(translationRequest.getModel());
+        chatMessageBo.setContent(translationRequest.getPrompt());
+        chatMessageBo.setDeductCost(0.01);
+        chatMessageBo.setTotalTokens(0);
+        chatMessageService.insertByBo(chatMessageBo);
+
+        openAiStreamClient = chatConfig.getOpenAiStreamClient();
+
+        List<Message> messageList = new ArrayList<>();
+
+        Message sysMessage = Message.builder().role(Message.Role.SYSTEM).content("作为英汉翻译，您的任务是准确地在两种语言之间翻译文本。翻译时，请注意上下文，准确解释成语和谚语。如果连续收到多个英文单词，请默认将其翻译成中文句子。但如果前面有'phrase:’，则应翻译为短语;如果有'norma!:'，则翻译为多个无关的单词。您的翻译应接近母语者的水平，并考虑用户要求的特定语言风格或语气。避免使用冒犯性词汇，必要时用x替换。提供翻译时，请用中文解释每句话的时态、从句、主语、谓语、宾语、特殊短语和谚语对于需要翻译的短语或单词，请提供来源(词典)。如果要求翻译多个短语，请用|符号分隔。请记住:您是英汉翻译，不是汉汉翻译或英英翻译。提交前请仔细检查和修订答案,回复控制在50字以内").build();
+        messageList.add(sysMessage);
+        Message message = Message.builder().role(Message.Role.USER).content(translationRequest.getPrompt()).build();
+        messageList.add(message);
+        ChatCompletionResponse chatCompletionResponse = null;
+        try {
+           ChatCompletion chatCompletion = ChatCompletion
+               .builder()
+               .messages(messageList)
+               .model(translationRequest.getModel())
+               .stream(false)
+               .build();
+           chatCompletionResponse = openAiStreamClient.chatCompletion(chatCompletion);
+       }catch (Exception e) {
+           log.error(e.getMessage());
+       }
+
+        return chatCompletionResponse.getChoices().get(0).getMessage().getContent().toString();
+    }
+
+    @Override
+    public SseEmitter ollamaChat(ChatRequest chatRequest) {
+        final SseEmitter emitter = new SseEmitter();
+        String host = "http://localhost:11434/";
+
+        List<Message> msgList = chatRequest.getMessages();
+        Message message = msgList.get(msgList.size() - 1);
+
+        OllamaAPI ollamaAPI = new OllamaAPI(host);
+
+        ollamaAPI.setRequestTimeoutSeconds(100);
+
+        OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance("qwen2.5:7b");
+
+        OllamaChatRequestModel requestModel = builder
+            .withMessage(OllamaChatMessageRole.USER,
+                message.getContent().toString())
+            .build();
+
+
+        // 异步执行 Ollama API 调用
+        CompletableFuture.runAsync(() -> {
+            try {
+                StringBuilder response = new StringBuilder();
+                OllamaStreamHandler streamHandler = (s) -> {
+                    String substr = s.substring(response.length());
+                    response.append(substr);
+                    System.out.println(substr);
+                    try {
+                        emitter.send(substr);
+                    } catch (IOException e) {
+                        sendErrorEvent(emitter, e.getMessage());
+                    }
+                };
+                ollamaAPI.chat(requestModel, streamHandler);
+                emitter.complete();
+            } catch (Exception e) {
+                sendErrorEvent(emitter, e.getMessage());
+            }
+        });
+
+
+        return emitter;
+    }
+
+    @Override
+    public String wxCpChat(String prompt) {
+        List<Message> messageList = new ArrayList<>();
+        Message message = Message.builder().role(Message.Role.USER).content(prompt).build();
+        messageList.add(message);
+        ChatCompletion chatCompletion = ChatCompletion
+            .builder()
+            .messages(messageList)
+            .model("gpt-4o-mini")
+            .stream(false)
+            .build();
+        ChatCompletionResponse chatCompletionResponse = openAiStreamClient.chatCompletion(chatCompletion);
+        return chatCompletionResponse.getChoices().get(0).getMessage().getContent().toString();
     }
 }

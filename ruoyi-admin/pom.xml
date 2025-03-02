@@ -57,7 +57,10 @@
             <artifactId>ruoyi-fusion</artifactId>
         </dependency>
 
-
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-knowledge</artifactId>
+        </dependency>
 
 
         <!--  demo模块  -->
@@ -77,6 +80,12 @@
             <groupId>net.coobird</groupId>
             <artifactId>thumbnailator</artifactId>
             <version>0.4.11</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.ollama4j</groupId>
+            <artifactId>ollama4j</artifactId>
+            <version>1.0.79</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

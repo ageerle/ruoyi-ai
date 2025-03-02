@@ -159,6 +159,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 微信模块 -->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-common-wechat</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!-- AI绘画 -->
             <dependency>
                 <groupId>org.ruoyi</groupId>

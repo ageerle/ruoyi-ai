@@ -31,7 +31,6 @@ public class ChatConfig {
     // 重启才会生效
     @Bean
     public OpenAiStreamClient openAiStreamClient() {
-
         String apiHost = configService.getConfigValue("chat", "apiHost");
         String apiKey = configService.getConfigValue("chat", "apiKey");
         openAiStreamClient = createOpenAiStreamClient(apiHost,apiKey);

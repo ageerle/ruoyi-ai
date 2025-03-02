@@ -16,6 +16,10 @@
         system系统模块
     </description>
 
+    <properties>
+        <httpclient.version>4.5.14</httpclient.version>
+    </properties>
+
     <dependencies>
         <!-- 通用工具-->
         <dependency>
@@ -93,15 +97,32 @@
         </dependency>
 
         <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-wechat</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
             <version>2.15.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>${httpclient.version}</version>
         </dependency>
 
         <!-- 支付功能模块 -->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-pay</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.ollama4j</groupId>
+            <artifactId>ollama4j</artifactId>
+            <version>1.0.79</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

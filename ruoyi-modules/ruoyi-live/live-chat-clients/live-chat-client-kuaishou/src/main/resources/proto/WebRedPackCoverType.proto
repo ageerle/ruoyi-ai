@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+enum WebRedPackCoverType {
+  UNKNOWN_COVER_TYPE = 0;
+  NORMAL_COVER = 1;
+  PRETTY_COVER = 2;
+}

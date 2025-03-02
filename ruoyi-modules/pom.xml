@@ -20,6 +20,8 @@
         <module>ruoyi-demo</module>
         <module>ruoyi-fusion</module>
         <module>ruoyi-system</module>
+        <module>ruoyi-live</module>
+        <module>ruoyi-knowledge</module>
     </modules>
 
 </project>

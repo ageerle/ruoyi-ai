@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message CSWebError {
+  uint32 code = 1;
+  string msg = 2;
+
+}

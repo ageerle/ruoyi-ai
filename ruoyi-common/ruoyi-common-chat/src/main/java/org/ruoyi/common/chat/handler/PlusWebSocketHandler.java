@@ -12,6 +12,7 @@ import org.ruoyi.common.chat.listener.WebSocketEventListener;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
 import org.ruoyi.common.chat.utils.WebSocketUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
@@ -70,22 +71,6 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
         LocalCache.CACHE.put(session.getId(), JSONUtil.toJsonStr(messages), LocalCache.TIMEOUT);
     }
 
-    /**
-     * 根据key获取Value值
-     *
-     * @Date 2023/7/27
-     * @param jsonObject
-     * @param key
-     * @param defaultValue
-     * @return String
-     **/
-    public String getValue(JSONObject jsonObject,String key,String defaultValue){
-        String value = (String)jsonObject.get(key);
-        if(StrUtil.isEmpty(value)){
-            return defaultValue;
-        }
-        return value;
-    }
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
@@ -128,9 +113,9 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
     }
 
     /**
-     * 是否支持分片消息
+     * 指示处理程序是否支持接收部分消息
      *
-     * @return
+     * @return 如果支持接收部分消息，则返回true；否则返回false
      */
     @Override
     public boolean supportsPartialMessages() {

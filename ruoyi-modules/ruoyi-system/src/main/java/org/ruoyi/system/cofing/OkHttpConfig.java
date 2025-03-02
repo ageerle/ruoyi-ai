@@ -26,6 +26,7 @@ public class OkHttpConfig {
     public void init() {
         initializeOkHttpUtil("suno");
         initializeOkHttpUtil("luma");
+        initializeOkHttpUtil("ppt");
     }
 
     private void initializeOkHttpUtil(String modelName) {

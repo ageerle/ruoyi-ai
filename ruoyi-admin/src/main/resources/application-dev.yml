@@ -8,28 +8,6 @@ spring.boot.admin.client:
   username: ruoyi
   password: 123456
 
---- # xxl-job 配置
-xxl.job:
-  # 执行器开关
-  enabled: false
-  # 调度中心地址：如调度中心集群部署存在多个地址则用逗号分隔。
-  admin-addresses: http://localhost:9100/xxl-job-admin
-  # 执行器通讯TOKEN：非空时启用
-  access-token: xxl-job
-  executor:
-    # 执行器AppName：执行器心跳注册分组依据；为空则关闭自动注册
-    appname: xxl-job-executor
-    # 执行器端口号 执行器从9101开始往后写
-    port: 9101
-    # 执行器注册：默认IP:PORT
-    address:
-    # 执行器IP：默认自动获取IP
-    ip:
-    # 执行器运行日志文件存储磁盘路径
-    logpath: ./logs/xxl-job
-    # 执行器日志文件保存天数：大于3生效
-    logretentiondays: 30
-
 --- # 数据源配置
 spring:
   datasource:
@@ -49,7 +27,8 @@ spring:
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://43.139.70.230:3306/ruoyi-ai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
           username: ruoyi-ai
-          password: TZ7yaGtSRWeeBaBJ
+          password: eCaZ278N62k6fhYj
+
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -78,7 +57,7 @@ spring.data:
     # 数据库索引
     database: 0
     # 密码(如没有密码请注释掉)
-    #password:
+    # password: 123456
     # 连接超时时间
     timeout: 10S
     # 是否开启ssl

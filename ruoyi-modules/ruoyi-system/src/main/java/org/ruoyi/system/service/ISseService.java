@@ -8,6 +8,7 @@ import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
 import org.ruoyi.common.chat.entity.images.Item;
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
+import org.ruoyi.system.domain.request.translation.TranslationRequest;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
@@ -59,4 +60,23 @@ public interface ISseService {
 
 
     UploadFileResponse upload(MultipartFile file);
+
+    /**
+     * 文本翻译
+     * @param
+     */
+    String translation(TranslationRequest translationRequest);
+
+    /**
+     * 调用本地模型
+     * @param chatRequest
+     */
+    SseEmitter ollamaChat(ChatRequest chatRequest);
+
+    /**
+     * 企业应用回复
+     * @param prompt 提示词
+     * @return 回复内容
+     */
+    String wxCpChat(String prompt);
 }

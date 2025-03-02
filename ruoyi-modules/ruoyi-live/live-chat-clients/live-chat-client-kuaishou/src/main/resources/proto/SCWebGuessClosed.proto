@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message SCWebGuessClosed {
+  uint64 time = 1;
+  string guessId = 2;
+  uint64 displayMaxDelayMillis = 3;
+
+}

@@ -68,6 +68,16 @@ public interface Constants {
     Integer CAPTCHA_EXPIRATION = 30;
 
     /**
+     * 文多多apiToken KEY
+     */
+    String WDD_TOKEN_KEY = "sys_chat:wdd_api_token:";
+
+    /**
+     * 文多多apiToken有效期（分钟）
+     */
+    Integer WDD_TOKEN_EXPIRATION = 60 * 2;
+
+    /**
      * 令牌
      */
     String TOKEN = "token";

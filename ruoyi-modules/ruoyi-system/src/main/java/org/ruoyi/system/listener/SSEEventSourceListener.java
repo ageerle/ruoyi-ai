@@ -104,8 +104,8 @@ public class SSEEventSourceListener extends EventSourceListener {
             if(completionResponse == null || CollectionUtil.isEmpty(completionResponse.getChoices())){
                 return;
             }
-            String content = "completionResponse.getChoices().get(0).getDelta().getContent()";
-            if(StringUtils.isEmpty(content)){
+            Object content = completionResponse.getChoices().get(0).getDelta().getContent();
+            if(content == null){
                 return;
             }
             if(StringUtils.isEmpty(modelName)){

@@ -1,0 +1,19 @@
+syntax = "proto3";
+import "SimpleUserInfo.proto";
+import "WebRedPackCoverType.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message WebRedPackInfo {
+  string id = 1;
+  SimpleUserInfo author = 2;
+  uint64 balance = 3;
+  uint64 openTime = 4;
+  uint64 currentTime = 5;
+  string grabToken = 6;
+  bool needSendRequest = 7;
+  uint64 requestDelayMillis = 8;
+  uint64 luckiestDelayMillis = 9;
+  WebRedPackCoverType coverType = 10;
+
+}

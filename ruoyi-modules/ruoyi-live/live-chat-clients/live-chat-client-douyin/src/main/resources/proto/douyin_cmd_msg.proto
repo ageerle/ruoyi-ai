@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package tech.ordinaryroad.live.chat.client.douyin.protobuf;
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf";
+option java_outer_classname = "Douyin_cmd_msgProto";
+option java_multiple_files = true;
+option objc_class_prefix = "GPB";
+
+message douyin_cmd_msg {
+  string method = 1;
+  bytes payload = 2;
+  int64 msg_id = 3;
+  int32 msg_type = 4;
+  int64 offset = 5;
+  bool need_wrds_store = 6;
+  int64 wrds_version = 7;
+  string wrds_sub_key = 8;
+}
