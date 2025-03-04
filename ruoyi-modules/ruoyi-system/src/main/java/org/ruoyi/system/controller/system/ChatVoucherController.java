@@ -15,6 +15,7 @@ import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
+import org.ruoyi.common.wechat.web.utils.UUIDShortUtil;
 import org.ruoyi.system.domain.bo.ChatVoucherBo;
 import org.ruoyi.system.domain.vo.ChatVoucherVo;
 import org.ruoyi.system.service.IChatVoucherService;
@@ -22,7 +23,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 用户兑换记录
@@ -78,7 +78,7 @@ public class ChatVoucherController extends BaseController {
     @RepeatSubmit()
     @PostMapping()
     public R<Void> add(@Validated(AddGroup.class) @RequestBody ChatVoucherBo bo) {
-        bo.setCode(UUID.randomUUID().toString().replace("-", ""));
+        bo.setCode(UUIDShortUtil.generateShortUuid());
         return toAjax(chatVoucherService.insertByBo(bo));
     }
 

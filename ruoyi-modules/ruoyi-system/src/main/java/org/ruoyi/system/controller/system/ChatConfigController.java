@@ -36,8 +36,8 @@ public class ChatConfigController extends BaseController {
      */
     @GetMapping("/list")
     @SaCheckPermission("system:config:list")
-    public R<List<ChatConfigVo>> list(ChatConfigBo bo) {
-        return R.ok(chatConfigService.queryList(bo));
+    public List<ChatConfigVo> list(ChatConfigBo bo) {
+        return chatConfigService.queryList(bo);
     }
 
     /**
@@ -46,7 +46,8 @@ public class ChatConfigController extends BaseController {
      * @param id 主键
      */
     @GetMapping("/{id}")
-    public R<ChatConfigVo> getInfo(@NotNull(message = "主键不能为空") @PathVariable Long id) {
+    public R<ChatConfigVo> getInfo(@NotNull(message = "主键不能为空")
+                                   @PathVariable Long id) {
         return R.ok(chatConfigService.queryById(id));
     }
 

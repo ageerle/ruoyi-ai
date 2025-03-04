@@ -1,0 +1,11 @@
+syntax = "proto3";
+import "LiveCdnNodeView.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message AuditAudienceMask {
+  repeated LiveCdnNodeView iconCdnNodeView = 1;
+  string title = 2;
+  string detail = 3;
+
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message SCWebEnterRoomAck {
+  uint64 minReconnectMs = 1;
+  uint64 maxReconnectMs = 2;
+  uint64 heartbeatIntervalMs = 3;
+
+}

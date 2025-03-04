@@ -17,7 +17,9 @@ import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.satoken.utils.LoginHelper;
+import org.ruoyi.knowledge.service.EmbeddingService;
 import org.ruoyi.system.domain.bo.ChatMessageBo;
+import org.ruoyi.system.domain.request.translation.TranslationRequest;
 import org.ruoyi.system.domain.vo.ChatMessageVo;
 import org.ruoyi.system.service.IChatMessageService;
 import org.ruoyi.system.service.ISseService;
@@ -46,12 +48,16 @@ public class ChatController {
 
     private final IChatMessageService chatMessageService;
 
+    private final EmbeddingService embeddingService;
     /**
      * 聊天接口
      */
     @PostMapping("/send")
     @ResponseBody
     public SseEmitter sseChat(@RequestBody @Valid ChatRequest chatRequest, HttpServletRequest request) {
+        if (chatRequest.getModel().startsWith("ollama")) {
+            return ISseService.ollamaChat(chatRequest);
+        }
         return ISseService.sseChat(chatRequest,request);
     }
 
@@ -87,6 +93,17 @@ public class ChatController {
     @ResponseBody
     public ResponseEntity<Resource> speech(@RequestBody TextToSpeech textToSpeech) {
         return ISseService.textToSpeed(textToSpeech);
+    }
+
+    /**
+     * 文本翻译
+     *
+     * @param
+     */
+    @PostMapping("/translation")
+    @ResponseBody
+    public String translation(@RequestBody TranslationRequest translationRequest) {
+        return ISseService.translation(translationRequest);
     }
 
     @PostMapping("/dall3")

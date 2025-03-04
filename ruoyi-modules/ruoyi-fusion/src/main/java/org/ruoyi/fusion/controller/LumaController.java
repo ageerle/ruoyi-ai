@@ -32,6 +32,7 @@ public class LumaController {
     @PostMapping("/generations/")
     public String generateVideo(@RequestBody GenerateLuma generateLuma) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("luma");
+
         chatCostService.taskDeduct("luma", "文生视频", NumberUtils.toDouble(okHttpConfig.getGenerate(), 0.3));
         String generateJson = JSONUtil.toJsonStr(generateLuma);
         String url = "luma/generations";

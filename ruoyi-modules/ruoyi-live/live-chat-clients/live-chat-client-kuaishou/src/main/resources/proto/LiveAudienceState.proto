@@ -1,0 +1,22 @@
+syntax = "proto3";
+import "GzoneNameplate.proto";
+import "LiveFansGroupState.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message LiveAudienceState {
+  bool isFromFansTop = 1;
+  bool isKoi = 2;
+  AssistantType assistantType = 3;
+  uint32 fansGroupIntimacyLevel = 4;
+  GzoneNameplate nameplate = 5;
+  LiveFansGroupState liveFansGroupState = 6;
+  uint32 wealthGrade = 7;
+  string badgeKey = 8;
+
+enum AssistantType {
+  UNKNOWN_ASSISTANT_TYPE = 0;
+  SUPER = 1;
+  JUNIOR = 2;
+}
+}

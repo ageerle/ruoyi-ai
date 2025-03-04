@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message CSWebEnterRoom {
+  string token = 1;
+  string liveStreamId = 2;
+  uint32 reconnectCount = 3;
+  uint32 lastErrorCode = 4;
+  string expTag = 5;
+  string attach = 6;
+  string pageId = 7;
+
+}

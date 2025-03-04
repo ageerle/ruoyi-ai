@@ -1,0 +1,11 @@
+syntax = "proto3";
+import "PicUrl.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message GzoneNameplate {
+  int64 id = 1;
+  string name = 2;
+  repeated PicUrl urls = 3;
+
+}

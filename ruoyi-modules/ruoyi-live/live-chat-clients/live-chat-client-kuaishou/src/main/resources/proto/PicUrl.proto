@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message PicUrl {
+  string cdn = 1;
+  string url = 2;
+  string urlPattern = 3;
+  string ip = 4;
+
+}

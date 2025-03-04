@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
+
+message TextFormat {
+  string color = 1;
+  bool bold = 2;
+  bool italic = 3;
+  uint32 weight = 4;
+  uint32 italic_angle = 5;
+  uint32 font_size = 6;
+  bool use_heigh_light_color = 7;
+  bool use_remote_clor = 8;
+}

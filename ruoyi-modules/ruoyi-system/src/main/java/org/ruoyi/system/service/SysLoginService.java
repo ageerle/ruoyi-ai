@@ -27,6 +27,7 @@ import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.tenant.exception.TenantException;
 import org.ruoyi.common.tenant.helper.TenantHelper;
+import org.ruoyi.common.wechat.web.utils.UUIDShortUtil;
 import org.ruoyi.system.domain.SysUser;
 import org.ruoyi.system.domain.bo.SysUserBo;
 import org.ruoyi.system.domain.vo.LoginVo;
@@ -43,7 +44,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -159,7 +159,7 @@ public class SysLoginService {
         if (ObjectUtil.isNull(user)) {
             SysUserBo sysUser = new SysUserBo();
             // 改为自增
-            String name = "用户" + UUID.randomUUID();
+            String name = "用户" + UUIDShortUtil.generateShortUuid();;
             // 设置默认用户名
             sysUser.setUserName(name);
             // 设置默认昵称

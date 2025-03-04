@@ -34,12 +34,14 @@ public class ChatRequest {
 
     private double top_p = 1;
 
-//    private String userId;
+    /**
+     * 知识库id
+     */
+    private String kid;
+
+    private String userId;
 //
-//    /**
-//     * 知识库id
-//     */
-//    private String kid;
+
 //
 //    /**
 //     * gpt的默认设置

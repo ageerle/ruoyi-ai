@@ -10,8 +10,7 @@ import org.ruoyi.common.tenant.core.TenantEntity;
 import java.io.Serial;
 
 /**
- * 对话配置信息
-对象 chat_config
+ * 对话配置信息对象 chat_config
  *
  * @author Lion Li
  * @date 2024-04-13

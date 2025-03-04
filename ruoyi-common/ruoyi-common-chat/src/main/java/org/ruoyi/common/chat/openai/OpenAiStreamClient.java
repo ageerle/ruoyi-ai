@@ -21,6 +21,8 @@ import org.ruoyi.common.chat.entity.chat.BaseChatCompletion;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionWithPicture;
+import org.ruoyi.common.chat.entity.embeddings.Embedding;
+import org.ruoyi.common.chat.entity.embeddings.EmbeddingResponse;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
 import org.ruoyi.common.chat.entity.images.Image;
 import org.ruoyi.common.chat.entity.images.ImageResponse;
@@ -290,6 +292,17 @@ public class OpenAiStreamClient {
     public BillingUsage billingUsage(@NotNull LocalDate starDate, @NotNull LocalDate endDate) {
         Single<BillingUsage> billingUsage = this.openAiApi.billingUsage(starDate, endDate);
         return billingUsage.blockingGet();
+    }
+
+    /**
+     * 文本转换向量
+     *
+     * @param embedding 入参
+     * @return EmbeddingResponse
+     */
+    public EmbeddingResponse embeddings(Embedding embedding) {
+        Single<EmbeddingResponse> embeddings = this.openAiApi.embeddings(embedding);
+        return embeddings.blockingGet();
     }
 
     /**
