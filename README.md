@@ -136,11 +136,9 @@ RuoYi-AI
 │  └─ ruoyi-common-security            // 安全模块
 │  └─ ruoyi-common-sensitive           // 脱敏模块
 │  └─ ruoyi-common-sms                 // 短信模块
-│  └─ ruoyi-common-sse                 // sse流推送模块（待更新）
 │  └─ ruoyi-common-tenant              // 租户模块
 │  └─ ruoyi-common-translation         // 通用翻译模块
 │  └─ ruoyi-common-web                 // web模块
-│  └─ ruoyi-common-websocket           // websocket服务集成模块（待更新）
 ├─ ruoyi-modules                       // 模块组
 │  └─ ruoyi-demo                       // 演示模块
 │  └─ ruoyi-generator                  // 代码生成模块
@@ -185,6 +183,7 @@ RuoYi-AI
 
 <div>
   <img src="image/01.png" alt="drawing" width="300px" height="300px"/>
+  <img src="image/12.png" alt="drawing" width="300px" height="300px"/>
 </div>
 
 ### 版权说明
