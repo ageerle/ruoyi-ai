@@ -10,7 +10,7 @@ public interface EmbeddingService {
 
     void removeByKid(String kid);
 
-    List<Double> getQueryVector(String query);
+    List<Double> getQueryVector(String query, String kid);
 
     void createSchema(String kid);
 

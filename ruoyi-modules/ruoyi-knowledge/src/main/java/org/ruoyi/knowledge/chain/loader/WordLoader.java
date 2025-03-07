@@ -30,8 +30,8 @@ public class WordLoader implements ResourceLoader{
     }
 
     @Override
-    public List<String> getChunkList(String content) {
-        return textSplitter.split(content);
+    public List<String> getChunkList(String content, String kid) {
+        return textSplitter.split(content, kid);
     }
 
 }

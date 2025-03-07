@@ -19,8 +19,10 @@ import io.milvus.param.partition.CreatePartitionParam;
 import io.milvus.response.QueryResultsWrapper;
 import io.milvus.response.SearchResultsWrapper;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.core.service.ConfigService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -32,26 +34,27 @@ import java.util.List;
 @Slf4j
 public class MilvusVectorStore implements VectorStore{
 
-
-    @Value("${chain.vector.store.milvus.host}")
-    private String milvusHost;
-    @Value("${chain.vector.store.milvus.port}")
-    private Integer milvausPort;
-
-    @Value("${chain.vector.store.milvus.dimension}")
-    private Integer dimension;
-
-    @Value("${chain.vector.store.milvus.collection}")
-    private String collectionName;
-
+    private volatile Integer dimension;
+    private volatile String collectionName;
     private MilvusServiceClient milvusServiceClient;
+
+    @Resource
+    private ConfigService configService;
+
+    @PostConstruct
+    public void loadConfig() {
+        this.dimension = Integer.parseInt(configService.getConfigValue("milvus", "dimension"));
+        this.collectionName = configService.getConfigValue("milvus", "collection");
+    }
 
     @PostConstruct
     public void init(){
+        String milvusHost = configService.getConfigValue("milvus", "host");
+        String milvausPort = configService.getConfigValue("milvus", "port");
         milvusServiceClient = new MilvusServiceClient(
                 ConnectParam.newBuilder()
                         .withHost(milvusHost)
-                        .withPort(milvausPort)
+                        .withPort(Integer.parseInt(milvausPort))
                         .withDatabaseName("default")
                         .build()
         );

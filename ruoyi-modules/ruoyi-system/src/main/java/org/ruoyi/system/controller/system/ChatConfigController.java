@@ -36,8 +36,8 @@ public class ChatConfigController extends BaseController {
      */
     @GetMapping("/list")
     @SaCheckPermission("system:config:list")
-    public List<ChatConfigVo> list(ChatConfigBo bo) {
-        return chatConfigService.queryList(bo);
+    public R<List<ChatConfigVo>> list(ChatConfigBo bo) {
+        return R.ok(chatConfigService.queryList(bo));
     }
 
     /**

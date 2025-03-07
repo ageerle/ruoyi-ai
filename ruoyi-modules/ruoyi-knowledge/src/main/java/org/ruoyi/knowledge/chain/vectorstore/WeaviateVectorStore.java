@@ -22,10 +22,15 @@ import io.weaviate.client.v1.schema.model.DataType;
 import io.weaviate.client.v1.schema.model.Property;
 import io.weaviate.client.v1.schema.model.Schema;
 import io.weaviate.client.v1.schema.model.WeaviateClass;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.ruoyi.knowledge.chain.retrieve.PromptRetrieverProperties;
+import org.ruoyi.common.core.service.ConfigService;
+import org.ruoyi.knowledge.domain.vo.KnowledgeInfoVo;
+import org.ruoyi.knowledge.service.IKnowledgeInfoService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -37,18 +42,23 @@ import java.util.Map;
 @Slf4j
 public class WeaviateVectorStore implements VectorStore{
 
-    @Value("${chain.vector.store.weaviate.protocol}")
-    private String protocol;
-    @Value("${chain.vector.store.weaviate.host}")
-    private String host;
+    private volatile String protocol;
+    private volatile String host;
+    private volatile String className;
 
-    @Value("${chain.vector.store.weaviate.classname}")
-    private String className;
+    @Lazy
+    @Resource
+    private IKnowledgeInfoService knowledgeInfoService;
 
-    private final PromptRetrieverProperties promptRetrieverProperties;
+    @Lazy
+    @Resource
+    private ConfigService configService;
 
-    public WeaviateVectorStore(PromptRetrieverProperties promptRetrieverProperties) {
-        this.promptRetrieverProperties = promptRetrieverProperties;
+    @PostConstruct
+    public void loadConfig() {
+        this.protocol =  configService.getConfigValue("weaviate", "protocol");
+        this.host = configService.getConfigValue("weaviate", "host");
+        this.className = configService.getConfigValue("weaviate", "classname");
     }
 
     public WeaviateClient getClient(){
@@ -309,11 +319,12 @@ public class WeaviateVectorStore implements VectorStore{
                 .vector(vf)
                 .distance(1.6f) // certainty = 1f - distance /2f
                 .build();
+        KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(kid));
         Result<GraphQLResponse> result = client.graphQL().get()
                 .withClassName(className + kid)
                 .withFields(contentField,_additional)
                 .withNearVector(nearVector)
-                .withLimit(promptRetrieverProperties.getLimits())
+                .withLimit(knowledgeInfoVo.getRetrieveLimit())
                 .run();
         LinkedTreeMap<String,Object> t = (LinkedTreeMap<String, Object>) result.getResult().getData();
         LinkedTreeMap<String,ArrayList<LinkedTreeMap>> l = (LinkedTreeMap<String, ArrayList<LinkedTreeMap>>) t.get("Get");
@@ -342,12 +353,12 @@ public class WeaviateVectorStore implements VectorStore{
                 .concepts(new String[]{ query })
                 .distance(1.6f) // certainty = 1f - distance /2f
                 .build();
-
+        KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(kid));
         Result<GraphQLResponse> result = client.graphQL().get()
                 .withClassName(className + kid)
                 .withFields(contentField,_additional)
                 .withNearText(nearText)
-                .withLimit(promptRetrieverProperties.getLimits())
+                .withLimit(knowledgeInfoVo.getRetrieveLimit())
                 .run();
         LinkedTreeMap<String,Object> t = (LinkedTreeMap<String, Object>) result.getResult().getData();
         LinkedTreeMap<String,ArrayList<LinkedTreeMap>> l = (LinkedTreeMap<String, ArrayList<LinkedTreeMap>>) t.get("Get");

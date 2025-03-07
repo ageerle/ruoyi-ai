@@ -81,7 +81,7 @@ public class KnowledgeController extends BaseController {
         List<Message> messages = chatRequest.getMessages();
         String content = messages.get(messages.size() - 1).getContent().toString();
         List<String> nearestList;
-        List<Double> queryVector = embeddingService.getQueryVector(content);
+        List<Double> queryVector = embeddingService.getQueryVector(content, chatRequest.getKid());
         nearestList = vectorStore.nearest(queryVector,chatRequest.getKid());
         for (String prompt : nearestList) {
             Message sysMessage = Message.builder().content(prompt).role(Message.Role.USER).build();

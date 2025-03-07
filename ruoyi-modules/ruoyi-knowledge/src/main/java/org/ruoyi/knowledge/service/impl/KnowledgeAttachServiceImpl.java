@@ -4,16 +4,21 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.knowledge.domain.KnowledgeAttach;
 import org.ruoyi.knowledge.domain.bo.KnowledgeAttachBo;
 import org.ruoyi.knowledge.domain.vo.KnowledgeAttachVo;
+import org.ruoyi.knowledge.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.knowledge.mapper.KnowledgeAttachMapper;
 import org.ruoyi.knowledge.mapper.KnowledgeFragmentMapper;
+import org.ruoyi.knowledge.mapper.KnowledgeInfoMapper;
 import org.ruoyi.knowledge.service.IKnowledgeAttachService;
+import org.ruoyi.knowledge.service.IKnowledgeInfoService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -34,6 +39,11 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
     private final KnowledgeAttachMapper baseMapper;
 
     private final KnowledgeFragmentMapper fragmentMapper;
+
+    private final KnowledgeInfoMapper knowledgeInfoMapper;
+
+    private final IKnowledgeInfoService knowledgeInfoService;
+
 
     /**
      * 查询知识库附件
@@ -117,8 +127,12 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
     @Override
     public void removeKnowledgeAttach(String kid) {
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("kid", kid);
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        Map<String,Object> map = new HashMap<>();
+        map.put("kid",kid);
+        List<KnowledgeInfoVo> knowledgeInfoList = knowledgeInfoMapper.selectVoByMap(map);
+        knowledgeInfoService.check(knowledgeInfoList);
+
         baseMapper.deleteByMap(map);
         fragmentMapper.deleteByMap(map);
     }

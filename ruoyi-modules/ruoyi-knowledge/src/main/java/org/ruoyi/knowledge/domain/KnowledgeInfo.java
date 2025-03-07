@@ -2,6 +2,7 @@ package org.ruoyi.knowledge.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.io.Serial;
@@ -44,6 +45,11 @@ public class KnowledgeInfo implements Serializable {
     private String kname;
 
     /**
+     * 知识库名称
+     */
+    private String share;
+
+    /**
      * 描述
      */
     private String description;
@@ -59,5 +65,38 @@ public class KnowledgeInfo implements Serializable {
      */
     private Date createTime;
 
+    /**
+     * 知识分隔符
+     */
+    private String knowledgeSeparator;
 
+    /**
+     * 提问分隔符
+     */
+    private String questionSeparator;
+
+    /**
+     * 重叠字符数
+     */
+    private Integer overlapChar;
+
+    /**
+     * 知识库中检索的条数
+     */
+    private Integer retrieveLimit;
+
+    /**
+     * 文本块大小
+     */
+    private Integer textBlockSize;
+
+    /**
+     * 向量库
+     */
+    private String vector;
+
+    /**
+     * 向量模型
+     */
+    private String vectorModel;
 }

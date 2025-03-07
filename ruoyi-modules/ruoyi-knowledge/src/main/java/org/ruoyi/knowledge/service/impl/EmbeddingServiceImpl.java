@@ -24,7 +24,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
      */
     @Override
     public void storeEmbeddings(List<String> chunkList, String kid, String docId,List<String> fidList) {
-        List<List<Double>> vectorList = vectorization.batchVectorization(chunkList);
+        List<List<Double>> vectorList = vectorization.batchVectorization(chunkList, kid);
         vectorStore.storeEmbeddings(chunkList,vectorList,kid,docId,fidList);
     }
 
@@ -39,8 +39,8 @@ public class EmbeddingServiceImpl implements EmbeddingService {
     }
 
     @Override
-    public List<Double> getQueryVector(String query) {
-        List<Double> queryVector = vectorization.singleVectorization(query);
+    public List<Double> getQueryVector(String query, String kid) {
+        List<Double> queryVector = vectorization.singleVectorization(query,kid);
         return queryVector;
     }
 

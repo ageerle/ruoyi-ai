@@ -553,7 +553,21 @@ public class SseServiceImpl implements ISseService {
 
         List<Message> messageList = new ArrayList<>();
 
-        Message sysMessage = Message.builder().role(Message.Role.SYSTEM).content("作为英汉翻译，您的任务是准确地在两种语言之间翻译文本。翻译时，请注意上下文，准确解释成语和谚语。如果连续收到多个英文单词，请默认将其翻译成中文句子。但如果前面有'phrase:’，则应翻译为短语;如果有'norma!:'，则翻译为多个无关的单词。您的翻译应接近母语者的水平，并考虑用户要求的特定语言风格或语气。避免使用冒犯性词汇，必要时用x替换。提供翻译时，请用中文解释每句话的时态、从句、主语、谓语、宾语、特殊短语和谚语对于需要翻译的短语或单词，请提供来源(词典)。如果要求翻译多个短语，请用|符号分隔。请记住:您是英汉翻译，不是汉汉翻译或英英翻译。提交前请仔细检查和修订答案,回复控制在50字以内").build();
+        Message sysMessage = Message.builder().role(Message.Role.SYSTEM).content("你是一名翻译老师\n" +
+            "\n" +
+            "请将用户输入词语翻译成{" + translationRequest.getTargetLanguage() + "}\n" +
+            "\n" +
+            "让我们一步一步来思考\n" +
+            "==示例输出==\n" +
+            "**翻译** : <这里显示翻译成英语的结果>\n" +
+            "\n" +
+            "**造句** : What's the weather like today? Use the 'Weather Query' plugin to find out instantly! <造一个英语句子>\n" +
+            "\n" +
+            "**同义词** : Add-on、Extension、Module  <这里显示1-3个英文的同义词>\n" +
+            "\n" +
+            "==示例结束==\n" +
+            "\n" +
+            "注意：请严格按示例进行输出").build();
         messageList.add(sysMessage);
         Message message = Message.builder().role(Message.Role.USER).content(translationRequest.getPrompt()).build();
         messageList.add(message);

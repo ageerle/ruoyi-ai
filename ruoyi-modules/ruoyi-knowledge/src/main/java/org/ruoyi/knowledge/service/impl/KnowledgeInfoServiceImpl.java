@@ -1,16 +1,16 @@
 package org.ruoyi.knowledge.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.github.ollama4j.OllamaAPI;
-import io.github.ollama4j.exceptions.OllamaBaseException;
 import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
 import io.github.ollama4j.models.chat.OllamaChatRequestModel;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
@@ -21,8 +21,6 @@ import org.ruoyi.knowledge.chain.loader.ResourceLoaderFactory;
 import org.ruoyi.knowledge.domain.KnowledgeAttach;
 import org.ruoyi.knowledge.domain.KnowledgeFragment;
 import org.ruoyi.knowledge.domain.KnowledgeInfo;
-import org.ruoyi.knowledge.domain.bo.KnowledgeAttachBo;
-import org.ruoyi.knowledge.domain.bo.KnowledgeFragmentBo;
 import org.ruoyi.knowledge.domain.bo.KnowledgeInfoBo;
 import org.ruoyi.knowledge.domain.req.KnowledgeInfoUploadRequest;
 import org.ruoyi.knowledge.domain.vo.KnowledgeInfoVo;
@@ -30,14 +28,11 @@ import org.ruoyi.knowledge.mapper.KnowledgeAttachMapper;
 import org.ruoyi.knowledge.mapper.KnowledgeFragmentMapper;
 import org.ruoyi.knowledge.mapper.KnowledgeInfoMapper;
 import org.ruoyi.knowledge.service.EmbeddingService;
-import org.ruoyi.knowledge.service.IKnowledgeAttachService;
-import org.ruoyi.knowledge.service.IKnowledgeFragmentService;
 import org.ruoyi.knowledge.service.IKnowledgeInfoService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -88,12 +83,13 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     }
 
     private LambdaQueryWrapper<KnowledgeInfo> buildQueryWrapper(KnowledgeInfoBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<KnowledgeInfo> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getKid()), KnowledgeInfo::getKid, bo.getKid());
         lqw.eq(bo.getUid() != null, KnowledgeInfo::getUid, bo.getUid());
         lqw.like(StringUtils.isNotBlank(bo.getKname()), KnowledgeInfo::getKname, bo.getKname());
         lqw.eq(StringUtils.isNotBlank(bo.getDescription()), KnowledgeInfo::getDescription, bo.getDescription());
+        // 查询公开的知识库
+        lqw.or(wrapper -> wrapper.eq(KnowledgeInfo::getShare, "1"));
         return lqw;
     }
 
@@ -151,7 +147,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         List<String> fids = new ArrayList<>();
         try {
             content = resourceLoader.getContent(file.getInputStream());
-            chunkList = resourceLoader.getChunkList(content);
+            chunkList = resourceLoader.getChunkList(content, kid);
             for (int i = 0; i < chunkList.size(); i++) {
                 String fid = RandomUtil.randomString(16);
                 fids.add(fid);
@@ -179,6 +175,8 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
         Map<String,Object> map = new HashMap<>();
         map.put("kid",id);
+        List<KnowledgeInfoVo> knowledgeInfoList = baseMapper.selectVoByMap(map);
+        check(knowledgeInfoList);
         // 删除知识库
         baseMapper.deleteByMap(map);
         // 删除附件和知识片段
@@ -188,31 +186,13 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         embeddingService.removeByKid(id);
     }
 
-    /**
-     * 将文本块转换为预训练数据
-     * @param chunk 解析文本块
-     */
-    public String convertTextBlockToPretrainData(String chunk){
-            String host = "http://localhost:11434/";
-            OllamaAPI ollama = new OllamaAPI(host);
-            OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance("qwen2.5:7b");
-            // 设置超时时间
-            ollama.setRequestTimeoutSeconds(100);
-            // create first user question
-            String json = "instruction:用户指令,根据语义提取一个关键词;input:用户输入,根据语义提取多个关键词;output:输出文本内容";
-
-            OllamaChatRequestModel requestModel = builder.withMessage
-                (OllamaChatMessageRole.USER, "文本："+chunk+"理解文本内容，并且将文本内容转换为:"+json+",输出JSON格式，不要包含其他无关内容,内部使用无需脱敏")
-            .build();
-
-            // start conversation with model
-            OllamaChatResult chatResult = null;
-            try {
-                chatResult = ollama.chat(requestModel);
-            } catch (Exception e) {
-                System.out.println("解析失败!");
+    @Override
+    public void check(List<KnowledgeInfoVo> knowledgeInfoList){
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        for (KnowledgeInfoVo knowledgeInfoVo : knowledgeInfoList) {
+            if(!knowledgeInfoVo.getUid().equals(loginUser.getUserId())){
+                throw new SecurityException("权限不足");
             }
-            return chatResult.getResponse();
+        }
     }
-
 }

@@ -55,4 +55,10 @@ public interface IKnowledgeInfoService {
      * 删除知识库
      */
     void removeKnowledge(String id);
+
+    /**
+     * 检查是否有删除权限
+     * @param knowledgeInfoList 知识列表
+     */
+    void check(List<KnowledgeInfoVo> knowledgeInfoList);
 }

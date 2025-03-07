@@ -11,7 +11,7 @@ import java.util.List;
 @Slf4j
 public class CodeTextSplitter implements TextSplitter{
     @Override
-    public List<String> split(String content) {
+    public List<String> split(String content, String kid) {
         return null;
     }
 }

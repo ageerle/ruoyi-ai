@@ -310,11 +310,6 @@ wx:
 
   #  企业微信应用
 wechat:
-  #  是否使用微信 true/false
-  enable: true
-  #  生成的登录二维码路径 默认与项目同级
-  qrPath: "./"
-  #  企业微信应用
   cp:
     corpId:
     appConfigs:
@@ -323,28 +318,5 @@ wechat:
         token:   ''
         aesKey: ''
 
-# 知识库配置
-chain:
-  split:
-    chunk:
-      endspliter: "<STOP>"
-      # 分块文本大小
-      size: 200
-      overlay: 30
-      qaspliter: "###"
-  # 知识库中检索的条数
-  limits: 5
-  vector:
-    model: 'text-embedding-3-small'
-    store:
-      type: weaviate
-      weaviate:
-        protocol: http
-        host: 127.0.0.1:6038
-        classname: LocalKnowledge
-      milvus:
-        host: 127.0.0.1
-        port: 19530
-        dimension: 1536
-        collection: LocalKnowledge
+
 

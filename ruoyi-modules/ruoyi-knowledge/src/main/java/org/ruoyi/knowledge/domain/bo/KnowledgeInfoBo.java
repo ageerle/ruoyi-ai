@@ -44,10 +44,56 @@ public class KnowledgeInfoBo extends BaseEntity {
     private String kname;
 
     /**
+     * 知识库名称
+     */
+    @NotBlank(message = "是否公开知识库")
+    private String share;
+
+    /**
      * 描述
      */
     @NotBlank(message = "描述不能为空")
     private String description;
 
+    /**
+     * 知识分隔符
+     */
+    @NotBlank(message = "知识分隔符不能为空")
+    private String knowledgeSeparator;
 
+    /**
+     * 提问分隔符
+     */
+    @NotBlank(message = "提问分隔符不能为空")
+    private String questionSeparator;
+
+    /**
+     * 重叠字符数
+     */
+    @NotNull(message = "重叠字符数不能为空")
+    private Integer overlapChar;
+
+    /**
+     * 知识库中检索的条数
+     */
+    @NotNull(message = "知识库中检索的条数不能为空")
+    private Integer retrieveLimit;
+
+    /**
+     * 文本块大小
+     */
+    @NotNull(message = "文本块大小不能为空")
+    private Integer textBlockSize;
+
+    /**
+     * 向量库
+     */
+    @NotBlank(message = "向量库不能为空")
+    private String vector;
+
+    /**
+     * 向量模型
+     */
+    @NotBlank(message = "向量模型不能为空")
+    private String vectorModel;
 }

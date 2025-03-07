@@ -22,13 +22,8 @@ public class TranslationRequest {
     private String model;
 
     /**
-     * 源语言
-     */
-    private String  sourceLanguage;
-
-    /**
      * 目标语言
      */
-    private String  targetLanguage;
+    private String targetLanguage;
 
 }

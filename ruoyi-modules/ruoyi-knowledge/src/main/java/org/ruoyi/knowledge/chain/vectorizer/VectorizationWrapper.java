@@ -15,14 +15,14 @@ public class VectorizationWrapper implements Vectorization{
 
     private final VectorizationFactory vectorizationFactory;
     @Override
-    public List<List<Double>> batchVectorization(List<String> chunkList) {
+    public List<List<Double>> batchVectorization(List<String> chunkList, String kid) {
         Vectorization embedding = vectorizationFactory.getEmbedding();
-        return embedding.batchVectorization(chunkList);
+        return embedding.batchVectorization(chunkList, kid);
     }
 
     @Override
-    public List<Double> singleVectorization(String chunk) {
+    public List<Double> singleVectorization(String chunk, String kid) {
         Vectorization embedding = vectorizationFactory.getEmbedding();
-        return embedding.singleVectorization(chunk);
+        return embedding.singleVectorization(chunk, kid);
     }
 }

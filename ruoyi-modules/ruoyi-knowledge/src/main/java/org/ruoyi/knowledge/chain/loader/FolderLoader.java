@@ -10,7 +10,7 @@ public class FolderLoader implements ResourceLoader{
     }
 
     @Override
-    public List<String> getChunkList(String content) {
+    public List<String> getChunkList(String content, String kid) {
         return null;
     }
 }
