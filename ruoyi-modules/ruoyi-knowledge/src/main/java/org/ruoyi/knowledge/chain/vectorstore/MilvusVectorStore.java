@@ -41,13 +41,13 @@ public class MilvusVectorStore implements VectorStore{
     @Resource
     private ConfigService configService;
 
-    // @PostConstruct
+    @PostConstruct
     public void loadConfig() {
         this.dimension = Integer.parseInt(configService.getConfigValue("milvus", "dimension"));
         this.collectionName = configService.getConfigValue("milvus", "collection");
     }
 
-    //@PostConstruct
+    @PostConstruct
     public void init(){
         String milvusHost = configService.getConfigValue("milvus", "host");
         String milvausPort = configService.getConfigValue("milvus", "port");

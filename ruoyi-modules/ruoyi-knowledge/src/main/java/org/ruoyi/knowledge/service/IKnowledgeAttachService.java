@@ -49,8 +49,6 @@ public interface IKnowledgeAttachService {
 
     /**
      * 删除知识附件
-     *
-     * @return
      */
-    void removeKnowledgeAttach(String kid);
+    void removeKnowledgeAttach(String docId);
 }

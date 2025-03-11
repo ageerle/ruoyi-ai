@@ -3,6 +3,7 @@ package org.ruoyi.common.chat.openai;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.ContentType;
+import cn.hutool.json.JSONUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.Single;
 import lombok.Getter;
@@ -17,10 +18,7 @@ import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.billing.BillingUsage;
 import org.ruoyi.common.chat.entity.billing.KeyInfo;
 import org.ruoyi.common.chat.entity.billing.Subscription;
-import org.ruoyi.common.chat.entity.chat.BaseChatCompletion;
-import org.ruoyi.common.chat.entity.chat.ChatCompletion;
-import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
-import org.ruoyi.common.chat.entity.chat.ChatCompletionWithPicture;
+import org.ruoyi.common.chat.entity.chat.*;
 import org.ruoyi.common.chat.entity.embeddings.Embedding;
 import org.ruoyi.common.chat.entity.embeddings.EmbeddingResponse;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
@@ -29,6 +27,7 @@ import org.ruoyi.common.chat.entity.images.ImageResponse;
 import org.ruoyi.common.chat.entity.models.Model;
 import org.ruoyi.common.chat.entity.models.ModelResponse;
 import org.ruoyi.common.chat.entity.whisper.Transcriptions;
+import org.ruoyi.common.chat.entity.whisper.Translations;
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
 import org.ruoyi.common.chat.openai.exception.CommonError;
 import org.ruoyi.common.chat.openai.function.KeyRandomStrategy;
@@ -36,6 +35,10 @@ import org.ruoyi.common.chat.openai.function.KeyStrategyFunction;
 import org.ruoyi.common.chat.openai.interceptor.DefaultOpenAiAuthInterceptor;
 import org.ruoyi.common.chat.openai.interceptor.DynamicKeyOpenAiAuthInterceptor;
 import org.ruoyi.common.chat.openai.interceptor.OpenAiAuthInterceptor;
+import org.ruoyi.common.chat.openai.plugin.PluginAbstract;
+import org.ruoyi.common.chat.openai.plugin.PluginParam;
+import org.ruoyi.common.chat.sse.DefaultPluginListener;
+import org.ruoyi.common.chat.sse.PluginListener;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.jetbrains.annotations.NotNull;
 import retrofit2.Call;
@@ -184,6 +187,93 @@ public class OpenAiStreamClient {
         } catch (Exception e) {
             log.error("请求参数解析异常：{}", e.getMessage());
         }
+    }
+
+    /**
+     * 插件问答简易版
+     * 默认取messages最后一个元素构建插件对话
+     * 默认模型：ChatCompletion.Model.GPT_3_5_TURBO_16K_0613
+     *
+     * @param chatCompletion            参数
+     * @param eventSourceListener       sse监听器
+     * @param pluginEventSourceListener 插件sse监听器，收集function call返回信息
+     * @param plugin                    插件
+     * @param <R>                       插件自定义函数的请求值
+     * @param <T>                       插件自定义函数的返回值
+     */
+    public <R extends PluginParam, T> void streamChatCompletionWithPlugin(ChatCompletion chatCompletion, EventSourceListener eventSourceListener, PluginListener pluginEventSourceListener, PluginAbstract<R, T> plugin) {
+        if (Objects.isNull(plugin)) {
+            this.streamChatCompletion(chatCompletion, eventSourceListener);
+            return;
+        }
+        if (CollectionUtil.isEmpty(chatCompletion.getMessages())) {
+            throw new BaseException(CommonError.MESSAGE_NOT_NUL.msg());
+        }
+        Functions functions = Functions.builder()
+                .name(plugin.getFunction())
+                .description(plugin.getDescription())
+                .parameters(plugin.getParameters())
+                .build();
+        //没有值，设置默认值
+        if (Objects.isNull(chatCompletion.getFunctionCall())) {
+            chatCompletion.setFunctionCall("auto");
+        }
+        //tip: 覆盖自己设置的functions参数，使用plugin构造的functions
+        chatCompletion.setFunctions(Collections.singletonList(functions));
+        //调用OpenAi
+        if (Objects.isNull(pluginEventSourceListener)) {
+            pluginEventSourceListener = new DefaultPluginListener(this, eventSourceListener, plugin, chatCompletion);
+        }
+        this.streamChatCompletion(chatCompletion, pluginEventSourceListener);
+    }
+
+
+    /**
+     * 插件问答简易版
+     * 默认取messages最后一个元素构建插件对话
+     * 默认模型：ChatCompletion.Model.GPT_3_5_TURBO_16K_0613
+     *
+     * @param chatCompletion      参数
+     * @param eventSourceListener sse监听器
+     * @param plugin              插件
+     * @param <R>                 插件自定义函数的请求值
+     * @param <T>                 插件自定义函数的返回值
+     */
+    public <R extends PluginParam, T> void streamChatCompletionWithPlugin(ChatCompletion chatCompletion, EventSourceListener eventSourceListener, PluginAbstract<R, T> plugin) {
+        PluginListener pluginEventSourceListener = new DefaultPluginListener(this, eventSourceListener, plugin, chatCompletion);
+        this.streamChatCompletionWithPlugin(chatCompletion, eventSourceListener, pluginEventSourceListener, plugin);
+    }
+
+
+    /**
+     * 插件问答简易版
+     * 默认取messages最后一个元素构建插件对话
+     * 默认模型：ChatCompletion.Model.GPT_3_5_TURBO_16K_0613
+     *
+     * @param messages            问答参数
+     * @param eventSourceListener sse监听器
+     * @param plugin              插件
+     * @param <R>                 插件自定义函数的请求值
+     * @param <T>                 插件自定义函数的返回值
+     */
+    public <R extends PluginParam, T> void streamChatCompletionWithPlugin(List<Message> messages, EventSourceListener eventSourceListener, PluginAbstract<R, T> plugin) {
+        this.streamChatCompletionWithPlugin(messages, ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName(), eventSourceListener, plugin);
+    }
+
+    /**
+     * 插件问答简易版
+     * 默认取messages最后一个元素构建插件对话
+     *
+     * @param messages            问答参数
+     * @param model               模型
+     * @param eventSourceListener eventSourceListener
+     * @param plugin              插件
+     * @param <R>                 插件自定义函数的请求值
+     * @param <T>                 插件自定义函数的返回值
+     */
+    public <R extends PluginParam, T> void streamChatCompletionWithPlugin(List<Message> messages, String model, EventSourceListener eventSourceListener, PluginAbstract<R, T> plugin) {
+        ChatCompletion chatCompletion = ChatCompletion.builder().messages(messages).model(model).build();
+        this.streamChatCompletionWithPlugin(chatCompletion, eventSourceListener, plugin);
     }
 
 
@@ -417,6 +507,95 @@ public class OpenAiStreamClient {
             throw new BaseException("语音克隆失败！{}",e.getMessage());
         }
     }
+
+    /**
+     * 插件问答简易版
+     * 默认取messages最后一个元素构建插件对话
+     * 默认模型：ChatCompletion.Model.GPT_3_5_TURBO_16K_0613
+     *
+     * @param chatCompletion 参数
+     * @param plugin         插件
+     * @param <R>            插件自定义函数的请求值
+     * @param <T>            插件自定义函数的返回值
+     * @return ChatCompletionResponse
+     */
+    public <R extends PluginParam, T> ChatCompletionResponse chatCompletionWithPlugin(ChatCompletion chatCompletion, PluginAbstract<R, T> plugin) {
+        if (Objects.isNull(plugin)) {
+            return this.chatCompletion(chatCompletion);
+        }
+        if (CollectionUtil.isEmpty(chatCompletion.getMessages())) {
+            throw new BaseException(CommonError.MESSAGE_NOT_NUL.msg());
+        }
+        List<Message> messages = chatCompletion.getMessages();
+        Functions functions = Functions.builder()
+                .name(plugin.getFunction())
+                .description(plugin.getDescription())
+                .parameters(plugin.getParameters())
+                .build();
+        //没有值，设置默认值
+        if (Objects.isNull(chatCompletion.getFunctionCall())) {
+            chatCompletion.setFunctionCall("auto");
+        }
+        //tip: 覆盖自己设置的functions参数，使用plugin构造的functions
+        chatCompletion.setFunctions(Collections.singletonList(functions));
+        //调用OpenAi
+        ChatCompletionResponse functionCallChatCompletionResponse = this.chatCompletion(chatCompletion);
+        ChatChoice chatChoice = functionCallChatCompletionResponse.getChoices().get(0);
+        log.debug("构造的方法值：{}", chatChoice.getMessage().getFunctionCall());
+
+        R realFunctionParam = (R) JSONUtil.toBean(chatChoice.getMessage().getFunctionCall().getArguments(), plugin.getR());
+        T tq = plugin.func(realFunctionParam);
+
+        FunctionCall functionCall = FunctionCall.builder()
+                .arguments(chatChoice.getMessage().getFunctionCall().getArguments())
+                .name(plugin.getFunction())
+                .build();
+        messages.add(Message.builder().role(Message.Role.ASSISTANT).content("function_call").functionCall(functionCall).build());
+        messages.add(Message.builder().role(Message.Role.FUNCTION).name(plugin.getFunction()).content(plugin.content(tq)).build());
+        //设置第二次，请求的参数
+        chatCompletion.setFunctionCall(null);
+        chatCompletion.setFunctions(null);
+
+        ChatCompletionResponse chatCompletionResponse = this.chatCompletion(chatCompletion);
+        log.debug("自定义的方法返回值：{}", chatCompletionResponse.getChoices());
+        return chatCompletionResponse;
+    }
+
+    /**
+     * 插件问答简易版
+     * 默认取messages最后一个元素构建插件对话
+     * 默认模型：ChatCompletion.Model.GPT_3_5_TURBO_16K_0613
+     *
+     * @param messages 问答参数
+     * @param plugin   插件
+     * @param <R>      插件自定义函数的请求值
+     * @param <T>      插件自定义函数的返回值
+     * @return ChatCompletionResponse
+     */
+    public <R extends PluginParam, T> ChatCompletionResponse chatCompletionWithPlugin(List<Message> messages, PluginAbstract<R, T> plugin) {
+        return chatCompletionWithPlugin(messages, ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName(), plugin);
+    }
+
+    /**
+     * 插件问答简易版
+     * 默认取messages最后一个元素构建插件对话
+     *
+     * @param messages 问答参数
+     * @param model    模型
+     * @param plugin   插件
+     * @param <R>      插件自定义函数的请求值
+     * @param <T>      插件自定义函数的返回值
+     * @return ChatCompletionResponse
+     */
+    public <R extends PluginParam, T> ChatCompletionResponse chatCompletionWithPlugin(List<Message> messages, String model, PluginAbstract<R, T> plugin) {
+        ChatCompletion chatCompletion = ChatCompletion.builder().messages(messages).model(model).build();
+        return this.chatCompletionWithPlugin(chatCompletion, plugin);
+    }
+
+
+
+
+
 
 
     /**

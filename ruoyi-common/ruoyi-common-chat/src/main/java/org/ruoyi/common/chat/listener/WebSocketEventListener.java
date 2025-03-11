@@ -75,6 +75,8 @@ public class WebSocketEventListener extends EventSourceListener {
             return;
         }
         ResponseBody body = response.body();
+
+
         if (Objects.nonNull(body)) {
             // 返回非流式回复内容
             if(response.code() == OpenAIConst.SUCCEED_CODE){

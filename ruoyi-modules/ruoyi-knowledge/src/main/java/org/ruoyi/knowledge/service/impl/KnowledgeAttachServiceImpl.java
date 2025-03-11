@@ -126,13 +126,9 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
     }
 
     @Override
-    public void removeKnowledgeAttach(String kid) {
-        LoginUser loginUser = LoginHelper.getLoginUser();
+    public void removeKnowledgeAttach(String docId) {
         Map<String,Object> map = new HashMap<>();
-        map.put("kid",kid);
-        List<KnowledgeInfoVo> knowledgeInfoList = knowledgeInfoMapper.selectVoByMap(map);
-        knowledgeInfoService.check(knowledgeInfoList);
-
+        map.put("doc_id",docId);
         baseMapper.deleteByMap(map);
         fragmentMapper.deleteByMap(map);
     }

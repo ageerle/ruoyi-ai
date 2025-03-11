@@ -11,19 +11,20 @@ import java.util.List;
 @Slf4j
 @Primary
 @AllArgsConstructor
-public class VectorStoreWrapper implements VectorStore{
+public class VectorStoreWrapper implements VectorStore {
 
     private final VectorStoreFactory vectorStoreFactory;
+
     @Override
     public void storeEmbeddings(List<String> chunkList, List<List<Double>> vectorList, String kid, String docId, List<String> fidList) {
         VectorStore vectorStore = vectorStoreFactory.getVectorStore(kid);
-        vectorStore.storeEmbeddings(chunkList, vectorList,  kid,  docId, fidList);
+        vectorStore.storeEmbeddings(chunkList, vectorList, kid, docId, fidList);
     }
 
     @Override
     public void removeByDocId(String kid, String docId) {
         VectorStore vectorStore = vectorStoreFactory.getVectorStore(kid);
-        vectorStore.removeByDocId(kid,docId);
+        vectorStore.removeByDocId(kid, docId);
     }
 
     @Override
@@ -35,7 +36,7 @@ public class VectorStoreWrapper implements VectorStore{
     @Override
     public List<String> nearest(List<Double> queryVector, String kid) {
         VectorStore vectorStore = vectorStoreFactory.getVectorStore(kid);
-        return vectorStore.nearest(queryVector,kid);
+        return vectorStore.nearest(queryVector, kid);
     }
 
     @Override

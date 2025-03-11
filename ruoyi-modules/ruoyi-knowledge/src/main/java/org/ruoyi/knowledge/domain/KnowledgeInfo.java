@@ -45,7 +45,7 @@ public class KnowledgeInfo implements Serializable {
     private String kname;
 
     /**
-     * 知识库名称
+     * 是否公开知识库（0 否 1是）
      */
     private String share;
 

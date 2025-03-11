@@ -40,8 +40,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
 
     @Override
     public List<Double> getQueryVector(String query, String kid) {
-        List<Double> queryVector = vectorization.singleVectorization(query,kid);
-        return queryVector;
+        return vectorization.singleVectorization(query,kid);
     }
 
     @Override

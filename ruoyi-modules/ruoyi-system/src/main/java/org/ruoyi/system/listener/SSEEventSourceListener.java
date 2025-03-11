@@ -65,7 +65,7 @@ public class SSEEventSourceListener extends EventSourceListener {
     @Override
     public void onEvent(@NotNull EventSource eventSource, String id, String type, String data) {
         try {
-            if (data.equals("[DONE]")) {
+            if ("[DONE]".equals(data)) {
                 //成功响应
                 emitter.complete();
                 if(StringUtils.isNotEmpty(modelName)){

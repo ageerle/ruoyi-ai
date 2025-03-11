@@ -24,5 +24,6 @@ public class ResponseFormat {
         TEXT("text"),
         ;
         private final String name;
+
     }
 }

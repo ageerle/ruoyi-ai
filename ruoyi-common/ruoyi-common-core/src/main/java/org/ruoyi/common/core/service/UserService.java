@@ -15,4 +15,11 @@ public interface UserService {
      */
     String selectUserNameById(Long userId);
 
+    /**
+     * 通过用户名称查询余额
+     *
+     * @param userName
+     * @return
+     */
+    String selectUserByName(String userName);
 }

@@ -12,6 +12,7 @@ import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.system.domain.bo.SysUserBo;
+import org.ruoyi.system.domain.bo.SysUserPasswordBo;
 import org.ruoyi.system.domain.bo.SysUserProfileBo;
 import org.ruoyi.system.domain.vo.AvatarVo;
 import org.ruoyi.system.domain.vo.ProfileVo;
@@ -75,23 +76,20 @@ public class SysProfileController extends BaseController {
 
     /**
      * 重置密码
-     *
-     * @param newPassword 旧密码
-     * @param oldPassword 新密码
      */
     @Log(title = "个人信息", businessType = BusinessType.UPDATE)
     @PutMapping("/updatePwd")
-    public R<Void> updatePwd(String oldPassword, String newPassword) {
+    public R<Void> updatePwd(@Validated @RequestBody SysUserPasswordBo bo) {
         SysUserVo user = userService.selectUserById(LoginHelper.getUserId());
         String password = user.getPassword();
-        if (!BCrypt.checkpw(oldPassword, password)) {
+        if (!BCrypt.checkpw(bo.getOldPassword(), password)) {
             return R.fail("修改密码失败，旧密码错误");
         }
-        if (BCrypt.checkpw(newPassword, password)) {
+        if (BCrypt.checkpw(bo.getNewPassword(), password)) {
             return R.fail("新密码不能与旧密码相同");
         }
 
-        if (userService.resetUserPwd(user.getUserId(), BCrypt.hashpw(newPassword)) > 0) {
+        if (userService.resetUserPwd(user.getUserId(), BCrypt.hashpw(bo.getNewPassword())) > 0) {
             return R.ok();
         }
         return R.fail("修改密码异常，请联系管理员");

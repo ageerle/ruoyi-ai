@@ -1,18 +1,21 @@
 package org.ruoyi.knowledge.chain.vectorstore;
 
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.ruoyi.knowledge.domain.vo.KnowledgeInfoVo;
+import org.ruoyi.knowledge.mapper.KnowledgeInfoMapper;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class VectorStoreFactory {
 
-    private final String type = "weaviate";
-
     private final WeaviateVectorStore weaviateVectorStore;
 
     private final MilvusVectorStore milvusVectorStore;
+
+    @Resource
+    private KnowledgeInfoMapper knowledgeInfoMapper;
 
     public VectorStoreFactory(WeaviateVectorStore weaviateVectorStore, MilvusVectorStore milvusVectorStore) {
         this.weaviateVectorStore = weaviateVectorStore;
@@ -20,13 +23,13 @@ public class VectorStoreFactory {
     }
 
     public VectorStore getVectorStore(String kid){
-//        if ("weaviate".equals(type)){
-//            return weaviateVectorStore;
-//        }else if ("milvus".equals(type)){
-//            return milvusVectorStore;
-//        }
-//
-//        return null;
-        return weaviateVectorStore;
+        KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoMapper.selectVoById(Long.valueOf(kid));
+        String vectorModel = knowledgeInfoVo.getVector();
+        if ("weaviate".equals(vectorModel)){
+            return weaviateVectorStore;
+        }else if ("milvus".equals(vectorModel)){
+            return milvusVectorStore;
+        }
+        return null;
     }
 }

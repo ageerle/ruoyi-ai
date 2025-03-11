@@ -73,11 +73,9 @@ public class KnowledgeController extends BaseController {
      */
     @PostMapping("/send")
     public SseEmitter send(@RequestBody @Valid ChatRequest chatRequest) {
-
         openAiStreamClient = chatConfig.getOpenAiStreamClient();
         SseEmitter sseEmitter = new SseEmitter(0L);
         SSEEventSourceListener openAIEventSourceListener = new SSEEventSourceListener(sseEmitter);
-
         List<Message> messages = chatRequest.getMessages();
         String content = messages.get(messages.size() - 1).getContent().toString();
         List<String> nearestList;
@@ -89,8 +87,6 @@ public class KnowledgeController extends BaseController {
         }
         Message userMessage = Message.builder().content(content + (nearestList.size() > 0 ? "\n\n注意：回答问题时，须严格根据我给你的系统上下文内容原文进行回答，请不要自己发挥,回答时保持原来文本的段落层级" : "") ).role(Message.Role.USER).build();
         messages.add(userMessage);
-
-
         ChatCompletion completion = ChatCompletion
             .builder()
             .messages(messages)
@@ -104,7 +100,6 @@ public class KnowledgeController extends BaseController {
         return sseEmitter;
     }
 
-
     /**
      * 根据用户信息查询本地知识库
      */
@@ -116,8 +111,6 @@ public class KnowledgeController extends BaseController {
         bo.setUid(LoginHelper.getUserId());
         return knowledgeInfoService.queryPageList(bo, pageQuery);
     }
-
-
 
     /**
      * 新增知识库
@@ -190,10 +183,9 @@ public class KnowledgeController extends BaseController {
      * 删除知识库附件
      *
      */
-    @PostMapping("attach/remove/{kid}")
-    public R<Void> removeAttach(@NotEmpty(message = "主键不能为空")
-                          @PathVariable String kid) {
-        attachService.removeKnowledgeAttach(kid);
+    @PostMapping("attach/remove/{docId}")
+    public R<Void> removeAttach(@NotEmpty(message = "主键不能为空") @PathVariable String docId) {
+        attachService.removeKnowledgeAttach(docId);
         return R.ok();
     }
 

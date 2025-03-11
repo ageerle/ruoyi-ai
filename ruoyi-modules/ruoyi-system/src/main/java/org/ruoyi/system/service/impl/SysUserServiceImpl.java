@@ -557,4 +557,11 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
             .select(SysUser::getUserName).eq(SysUser::getUserId, userId));
         return ObjectUtil.isNull(sysUser) ? null : sysUser.getUserName();
     }
+
+    @Override
+    public String selectUserByName(String userName) {
+        SysUser sysUser = baseMapper.selectOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserName, userName));
+        return ObjectUtil.isNull(sysUser) ? null : sysUser.getUserBalance().toString();
+    }
 }

@@ -2,13 +2,10 @@ package org.ruoyi.knowledge.service;
 
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.knowledge.domain.KnowledgeAttach;
-import org.ruoyi.knowledge.domain.bo.KnowledgeAttachBo;
 import org.ruoyi.knowledge.domain.bo.KnowledgeInfoBo;
 import org.ruoyi.knowledge.domain.req.KnowledgeInfoUploadRequest;
 import org.ruoyi.knowledge.domain.vo.KnowledgeInfoVo;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -39,7 +36,6 @@ public interface IKnowledgeInfoService {
      * 修改知识库
      */
     Boolean updateByBo(KnowledgeInfoBo bo);
-
 
     /**
      * 新增知识库
