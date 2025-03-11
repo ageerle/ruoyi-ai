@@ -2,6 +2,7 @@ package org.ruoyi.knowledge.chain.split;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.knowledge.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.knowledge.service.IKnowledgeInfoService;
 import org.springframework.context.annotation.Lazy;
@@ -29,7 +30,7 @@ public class CharacterTextSplitter implements TextSplitter {
         int textBlockSize = knowledgeInfoVo.getTextBlockSize();
         int overlapChar = knowledgeInfoVo.getOverlapChar();
         List<String> chunkList = new ArrayList<>();
-        if (content.contains(knowledgeSeparator)) {
+        if (content.contains(knowledgeSeparator) && StringUtils.isNotBlank(knowledgeSeparator)) {
             // 按自定义分隔符切分
             String[] chunks = content.split(knowledgeSeparator);
             chunkList.addAll(Arrays.asList(chunks));

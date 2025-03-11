@@ -2,6 +2,7 @@ package org.ruoyi.system.service;
 
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.system.domain.SysModel;
 import org.ruoyi.system.domain.bo.SysModelBo;
 import org.ruoyi.system.domain.vo.SysModelVo;
 
@@ -45,4 +46,9 @@ public interface ISysModelService {
      * 校验并批量删除系统模型信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 根据模型名称查询模型
+     */
+    SysModel selectModelByName(String modelName);
 }

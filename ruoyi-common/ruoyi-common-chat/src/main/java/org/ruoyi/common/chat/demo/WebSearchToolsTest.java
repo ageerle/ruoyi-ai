@@ -1,4 +1,4 @@
-package org.ruoyi.common.chat.demo.zhipu;
+package org.ruoyi.common.chat.demo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -17,34 +17,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.zhipu.oapi.core.response.HttpxBinaryResponseContent;
-import com.zhipu.oapi.service.v4.batchs.BatchCreateParams;
-import com.zhipu.oapi.service.v4.batchs.BatchResponse;
-import com.zhipu.oapi.service.v4.batchs.QueryBatchResponse;
-import com.zhipu.oapi.service.v4.embedding.EmbeddingApiResponse;
-import com.zhipu.oapi.service.v4.embedding.EmbeddingRequest;
-import com.zhipu.oapi.service.v4.file.*;
-import com.zhipu.oapi.service.v4.fine_turning.*;
-import com.zhipu.oapi.service.v4.image.CreateImageRequest;
-import com.zhipu.oapi.service.v4.image.ImageApiResponse;
 import com.zhipu.oapi.service.v4.model.*;
 import io.reactivex.Flowable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class WebSearchToolsTest {

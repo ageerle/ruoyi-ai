@@ -107,4 +107,11 @@ public class SysModelServiceImpl implements ISysModelService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
+
+    @Override
+    public SysModel selectModelByName(String modelName) {
+        return baseMapper.selectOne(
+                new LambdaQueryWrapper<SysModel>().eq(SysModel::getModelName, modelName)
+        );
+    }
 }
