@@ -609,14 +609,14 @@ public class SseServiceImpl implements ISseService {
     @Override
     public SseEmitter ollamaChat(ChatRequest chatRequest) {
         String[] parts = chatRequest.getModel().split("ollama-");
-        SysModel sysModel = sysModelService.selectModelByName(parts[1]);
+        SysModel sysModel = sysModelService.selectModelByName(chatRequest.getModel());
         final SseEmitter emitter = new SseEmitter();
         String host = sysModel.getApiHost();
         List<Message> msgList = chatRequest.getMessages();
         Message message = msgList.get(msgList.size() - 1);
         OllamaAPI api = new OllamaAPI(host);
         api.setRequestTimeoutSeconds(100);
-        OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(sysModel.getModelName());
+        OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(parts[1]);
         OllamaChatRequestModel requestModel = builder
             .withMessage(OllamaChatMessageRole.USER,
                 message.getContent().toString())
