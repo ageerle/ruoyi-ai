@@ -1,5 +1,6 @@
 package org.ruoyi.system.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -65,6 +66,10 @@ public class SysNoticeServiceImpl implements ISysNoticeService {
      */
     @Override
     public SysNotice getNotice(SysNoticeBo notice) {
+        if(!StpUtil.isLogin()){
+            return null;
+        }
+
         LambdaQueryWrapper<SysNoticeState> lqwState = Wrappers.lambdaQuery();
         Long userId = LoginHelper.getLoginUser().getUserId();
 

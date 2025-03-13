@@ -106,7 +106,7 @@ public class KnowledgeController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo<KnowledgeInfoVo> list(KnowledgeInfoBo bo, PageQuery pageQuery) {
         if(!StpUtil.isLogin()){
-            throw new SecurityException("请先去登录!");
+            return null;
         }
         bo.setUid(LoginHelper.getUserId());
         return knowledgeInfoService.queryPageList(bo, pageQuery);

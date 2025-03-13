@@ -98,33 +98,36 @@ public class SseServiceImpl implements ISseService {
         SSEEventSourceListener openAIEventSourceListener = new SSEEventSourceListener(sseEmitter);
         // 获取对话消息列表
         List<Message> messages = chatRequest.getMessages();
+
         try {
             String chatString = null;
+            Object content = messages.get(messages.size() - 1).getContent();
+            if (content instanceof List<?> listContent) {
+                if (!listContent.isEmpty() && listContent.get(0) instanceof Content) {
+                    chatString = ((Content) listContent.get(0)).getText();
+                }
+            } else if (content instanceof String) {
+                chatString = (String) content;
+            }
+
+            String configValue = getKey("enabled");
+            if (Boolean.parseBoolean(configValue)) {
+                // 判断文本是否合规
+                String type = textReview(chatString);
+                // 审核状态 1 代表合法
+                if (!"1".equals(type) && StringUtils.isNotEmpty(type)) {
+                    throw new BaseException("文本不合规,请修改!");
+                }
+            }
+
             if (StpUtil.isLogin()) {
                 LocalCache.CACHE.put("userId", getUserId());
-                Object content = messages.get(messages.size() - 1).getContent();
-                if (content instanceof List<?> listContent) {
-                    if (!listContent.isEmpty() && listContent.get(0) instanceof Content) {
-                        chatString = ((Content) listContent.get(0)).getText();
-                    }
-                } else if (content instanceof String) {
-                    chatString = (String) content;
-                }
 
                 ChatMessageBo chatMessageBo = new ChatMessageBo();
                 chatMessageBo.setUserId(getUserId());
                 chatMessageBo.setModelName(chatRequest.getModel());
-
                 chatMessageBo.setContent(chatString);
-                String configValue = getKey("enabled");
-                if (Boolean.parseBoolean(configValue)) {
-                    // 判断文本是否合规
-                    String type = textReview(chatString);
-                    // 审核状态 1 代表合法
-                    if (!"1".equals(type) && StringUtils.isNotEmpty(type)) {
-                        throw new BaseException("文本不合规,请修改!");
-                    }
-                }
+
                 String model = chatRequest.getModel();
                 // 如果是gpts系列模型
                 if (chatRequest.getModel().startsWith("gpt-4-gizmo")) {
@@ -137,7 +140,6 @@ public class SseServiceImpl implements ISseService {
                 } else {
                     openAiStreamClient = chatConfig.createOpenAiStreamClient(sysModel.getApiHost(), sysModel.getApiKey());
                     // 模型设置默认提示词
-
                     if (StringUtils.isNotEmpty(sysModel.getSystemPrompt())) {
                         Message sysMessage = Message.builder().content(sysModel.getSystemPrompt()).role(Message.Role.SYSTEM).build();
                         messages.add(sysMessage);
@@ -150,10 +152,10 @@ public class SseServiceImpl implements ISseService {
                     }
                 }
             }
-            String configValue = configService.getConfigValue("zhipu", "key");
+            String zhipuValue = configService.getConfigValue("zhipu", "key");
             // 添加联网信息
             if(StringUtils.isNotEmpty(configValue)){
-                ClientV4 client = new ClientV4.Builder(configValue)
+                ClientV4 client = new ClientV4.Builder(zhipuValue)
                         .networkConfig(300, 100, 100, 100, TimeUnit.SECONDS)
                         .connectionPool(new okhttp3.ConnectionPool(8, 1, TimeUnit.SECONDS))
                         .build();
