@@ -134,7 +134,7 @@ public class SseServiceImpl implements ISseService {
                     model = "gpt-4-gizmo";
                 }
                 SysModel sysModel = sysModelService.selectModelByName(model);
-                if (sysModel != null) {
+                if (sysModel == null) {
                     // 如果模型不存在默认使用token扣费方式
                     processByToken(chatRequest.getModel(), chatString, chatMessageBo);
                 } else {
