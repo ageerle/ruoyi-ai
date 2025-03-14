@@ -4,9 +4,13 @@ import cn.hutool.core.io.FileUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * 文件处理工具类
@@ -15,6 +19,8 @@ import java.nio.charset.StandardCharsets;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FileUtils extends FileUtil {
+
+    private static final String FILE_EXTENTION_SPLIT = ".";
 
     /**
      * 下载文件名重新编码
@@ -39,5 +45,39 @@ public class FileUtils extends FileUtil {
     public static String percentEncode(String s) {
         String encode = URLEncoder.encode(s, StandardCharsets.UTF_8);
         return encode.replaceAll("\\+", "%20");
+    }
+
+    /**
+     * 检查文件扩展名是否符合要求
+     *
+     * @param file
+     * @return
+     */
+    public static boolean isValidFileExtention(MultipartFile file, String[] ALLOWED_EXTENSIONS) {
+        if (file == null || file.isEmpty()) {
+            return false;
+        }
+        final String filename = file.getOriginalFilename();
+        if (StringUtils.isBlank(filename) || !filename.contains(FILE_EXTENTION_SPLIT)) {
+            return false;
+        }
+        // 获取文件后缀
+        String fileExtension = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+
+        return Arrays.asList(ALLOWED_EXTENSIONS).contains(fileExtension);
+    }
+
+    /**
+     * 获取安全的文件路径
+     *
+     * @param originalFilename 原始文件名
+     * @param secureFilePath   安全路径
+     * @return 安全文件路径
+     */
+    public static String getSecureFilePathForUpload(final String originalFilename, final String secureFilePath) {
+        String extension = originalFilename.substring(originalFilename.lastIndexOf(FILE_EXTENTION_SPLIT));
+        String newFileName = UUID.randomUUID() + extension;
+
+        return secureFilePath + newFileName; // 预定义安全路径
     }
 }
