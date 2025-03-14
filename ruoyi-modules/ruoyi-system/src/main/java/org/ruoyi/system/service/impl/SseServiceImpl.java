@@ -154,7 +154,7 @@ public class SseServiceImpl implements ISseService {
             }
             String zhipuValue = configService.getConfigValue("zhipu", "key");
             // 添加联网信息
-            if(StringUtils.isNotEmpty(configValue)){
+            if(StringUtils.isNotEmpty(zhipuValue)){
                 ClientV4 client = new ClientV4.Builder(zhipuValue)
                         .networkConfig(300, 100, 100, 100, TimeUnit.SECONDS)
                         .connectionPool(new okhttp3.ConnectionPool(8, 1, TimeUnit.SECONDS))
