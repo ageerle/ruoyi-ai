@@ -37,6 +37,8 @@ import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.core.utils.file.FileUtils;
+import org.ruoyi.common.core.utils.file.MimeTypeUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.domain.SysModel;
 import org.ruoyi.system.domain.bo.ChatMessageBo;
@@ -333,6 +335,9 @@ public class SseServiceImpl implements ISseService {
         if (file.isEmpty()) {
             throw new IllegalStateException("Cannot convert an empty MultipartFile");
         }
+        if (!FileUtils.isValidFileExtention(file, MimeTypeUtils.AUDIO__EXTENSION)) {
+            throw new IllegalStateException("File Extention not supported");
+        }
         // 创建一个文件对象
         File fileA = new File(System.getProperty("java.io.tmpdir") + File.separator + file.getOriginalFilename());
         try {
@@ -422,6 +427,12 @@ public class SseServiceImpl implements ISseService {
 
     @Override
     public UploadFileResponse upload(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalStateException("Cannot upload an empty MultipartFile");
+        }
+        if (!FileUtils.isValidFileExtention(file, MimeTypeUtils.DEFAULT_ALLOWED_EXTENSION)) {
+            throw new IllegalStateException("File Extention not supported");
+        }
         openAiStreamClient = chatConfig.getOpenAiStreamClient();
         return openAiStreamClient.uploadFile("fine-tune", convertMultiPartToFile(file));
     }
