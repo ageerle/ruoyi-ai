@@ -158,9 +158,10 @@ RuoYi-AI
 - [Naive UI](https://www.naiveui.com)
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus)
 
-### 贡献者
-
-请阅读[CONTRIBUTING](https://github.com/ageerle/ruoyi-ai/graphs/contributors) 查阅为该项目做出贡献的开发者。
+## Community
+<a href="https://github.com/ageerle/ruoyi-ai/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ageerle/ruoyi-ai" />
+</a>
 
 #### 如何参与开源项目
 
