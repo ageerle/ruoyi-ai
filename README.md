@@ -158,7 +158,7 @@ RuoYi-AI
 - [Naive UI](https://www.naiveui.com)
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus)
 
-## Community
+## 贡献者
 <a href="https://github.com/ageerle/ruoyi-ai/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=ageerle/ruoyi-ai" />
 </a>
