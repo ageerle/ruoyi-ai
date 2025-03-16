@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -27,6 +28,9 @@ public class OpenAiVectorization implements Vectorization {
     @Lazy
     @Resource
     private IKnowledgeInfoService knowledgeInfoService;
+    @Lazy
+    @Resource
+    private LocalModelsVectorization localModelsVectorization;
 
     @Getter
     private OpenAiStreamClient openAiStreamClient;
@@ -35,24 +39,62 @@ public class OpenAiVectorization implements Vectorization {
 
     @Override
     public List<List<Double>> batchVectorization(List<String> chunkList, String kid) {
-        openAiStreamClient = chatConfig.getOpenAiStreamClient();
-        KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(kid));
-        Embedding embedding = Embedding.builder()
-            .input(chunkList)
-            .model(knowledgeInfoVo.getVectorModel())
-            .build();
-        EmbeddingResponse embeddings = openAiStreamClient.embeddings(embedding);
         List<List<Double>> vectorList = new ArrayList<>();
-        embeddings.getData().forEach(data -> {
-            List<BigDecimal> vector = data.getEmbedding();
-            List<Double> doubleVector = new ArrayList<>();
-            for (BigDecimal bd : vector) {
-                doubleVector.add(bd.doubleValue());
-            }
-            vectorList.add(doubleVector);
-        });
+
+        // 获取知识库信息
+        KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(kid));
+
+        // 如果使用本地模型
+        try {
+            return localModelsVectorization.batchVectorization(chunkList, kid);
+        } catch (Exception e) {
+            log.error("Local models vectorization failed, falling back to OpenAI embeddings", e);
+        }
+
+        // 如果本地模型失败，则调用 OpenAI 服务进行向量化
+        Embedding embedding = buildEmbedding(chunkList, knowledgeInfoVo);
+        EmbeddingResponse embeddings = openAiStreamClient.embeddings(embedding);
+
+        // 处理 OpenAI 返回的嵌入数据
+        vectorList = processOpenAiEmbeddings(embeddings);
+
         return vectorList;
     }
+
+    /**
+     * 构建 Embedding 对象
+     */
+    private Embedding buildEmbedding(List<String> chunkList, KnowledgeInfoVo knowledgeInfoVo) {
+        return Embedding.builder()
+                .input(chunkList)
+                .model(knowledgeInfoVo.getVectorModel())
+                .build();
+    }
+
+    /**
+     * 处理 OpenAI 返回的嵌入数据
+     */
+    private List<List<Double>> processOpenAiEmbeddings(EmbeddingResponse embeddings) {
+        List<List<Double>> vectorList = new ArrayList<>();
+
+        embeddings.getData().forEach(data -> {
+            List<BigDecimal> vector = data.getEmbedding();
+            List<Double> doubleVector = convertToDoubleList(vector);
+            vectorList.add(doubleVector);
+        });
+
+        return vectorList;
+    }
+
+    /**
+     * 将 BigDecimal 转换为 Double 列表
+     */
+    private List<Double> convertToDoubleList(List<BigDecimal> vector) {
+        return vector.stream()
+                .map(BigDecimal::doubleValue)
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public List<Double> singleVectorization(String chunk, String kid) {
