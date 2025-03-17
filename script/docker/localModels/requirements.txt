@@ -1,3 +1,5 @@
-Flask==2.0.3
-sentence-transformers==2.2.0
-scikit-learn==0.24.2
+Flask==3.1.0
+sentence-transformers==3.4.1
+scikit-learn==1.6.1
+werkzeug>=3.1
+
