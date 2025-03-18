@@ -25,12 +25,14 @@ import org.ruoyi.system.domain.vo.SysUserVo;
 import org.ruoyi.system.service.ISysModelService;
 import org.ruoyi.system.service.ISysPackagePlanService;
 import org.ruoyi.system.service.ISysUserService;
+import org.ruoyi.system.util.DesensitizationUtil;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 系统模型
@@ -49,7 +51,6 @@ public class SysModelController extends BaseController {
     private final ISysPackagePlanService sysPackagePlanService;
 
     private final ISysUserService userService;
-
 
     /**
      * 查询系统模型列表 - 全部
@@ -82,6 +83,14 @@ public class SysModelController extends BaseController {
             List<String> array = new ArrayList<>(Arrays.asList(sysPackagePlanVo.getPlanDetail().split(",")));
             sysModelVos.removeIf(model -> !array.contains(model.getModelName()));
         }
+        sysModelVos.stream().map(vo -> {
+                    String maskedApiHost = DesensitizationUtil.maskData(vo.getApiHost());
+                    String maskedApiKey = DesensitizationUtil.maskData(vo.getApiKey());
+                    vo.setApiHost(maskedApiHost);
+                    vo.setApiKey(maskedApiKey);
+                    return vo;
+                })
+                .collect(Collectors.toList());
         return R.ok(sysModelVos);
     }
 
