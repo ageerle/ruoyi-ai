@@ -52,6 +52,7 @@
 - [鸣谢](#鸣谢)
 
 ### 源码地址
+- 项目文档: https://doc.pandarobot.chat
 - 前端-后台管理: https://github.com/ageerle/ruoyi-admin
 - 前端-用户端: https://github.com/ageerle/ruoyi-web
 - 小程序端: https://github.com/ageerle/ruoyi-uniapp
@@ -60,13 +61,13 @@
 - 用户名: admin 密码：admin123
 
 ### 特色功能
-1. 内置SSE、websocket等网络协议，支持对接OpenAI、Azure、ChatGLM、讯飞星火等大语言模型
-2. 支持接入个人微信或企业微信
-3. 支持易支付、微信支付和Stripe国际信用卡支付
-4. 提供邮箱登录和微信公众号登录
-5. 支持知识库功能，支持AI翻译、AI PPT制作、语音克隆和AI翻唱
-6. 提供完整的前端应用、后台管理以及小程序应用，全部开箱即用。基于MIT开源协议
-
+1. 全套开源系统：提供完整的前端应用、后台管理以及小程序应用，基于MIT协议，代码可灵活修改分发，开箱即用。
+2. 本地RAG解决方案：集成Milvus/Weaviate向量库、本地向量化模型与Ollama，实现本地化RAG，保障数据隐私与性能。
+3. 丰富插件功能：支持联网、SQL查询及Text2API插件，扩展系统能力与应用场景。
+4. 丰富的模型集成：内置网络协议，可对接几十种大模型，并且也支持AI绘画功能。
+5. 强大的多媒体功能：支持AI翻译、PPT制作、语音克隆和翻唱等
+6. 扩展功能：支持将大模型接入个人或企业微信
+7. 支付功能：支持易支付、微信支付等多种支付方式
 
 ### 项目演示
 
@@ -141,7 +142,6 @@ RuoYi-AI
 │  └─ ruoyi-common-web                 // web模块
 ├─ ruoyi-modules                       // 模块组
 │  └─ ruoyi-demo                       // 演示模块
-│  └─ ruoyi-generator                  // 代码生成模块
 │  └─ ruoyi-system                     // 业务模块
 ├─ .run                 // 执行脚本文件
 ├─ .editorconfig        // 编辑器编码格式配置
@@ -157,11 +157,6 @@ RuoYi-AI
 - [Vben Admin](https://github.com/vbenjs/vue-vben-admin)
 - [Naive UI](https://www.naiveui.com)
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus)
-
-## 贡献者
-<a href="https://github.com/ageerle/ruoyi-ai/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ageerle/ruoyi-ai" />
-</a>
 
 #### 如何参与开源项目
 
