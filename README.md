@@ -63,8 +63,8 @@
 ### 特色功能
 1. 全套开源系统：提供完整的前端应用、后台管理以及小程序应用，基于MIT协议，开箱即用。
 2. 本地RAG方案：集成Milvus/Weaviate向量库、本地向量化模型与Ollama，实现本地化RAG
-3. 丰富插件功能：支持联网、SQL查询及Text2API插件，扩展系统能力与应用场景。
-4. 丰富的模型集成：内置网络协议，可对接几十种大模型，并且也支持AI绘画功能。
+3. 丰富插件功能：支持联网、SQL查询插件及Text2API插件，扩展系统能力与应用场景。
+4. 内置SSE、websocket等网络协议，支持对接多种大语言模型，同时还集成了MidJourney和DALLE AI绘画功能
 5. 强大的多媒体功能：支持AI翻译、PPT制作、语音克隆和翻唱等
 6. 扩展功能：支持将大模型接入个人或企业微信
 7. 支付功能：支持易支付、微信支付等多种支付方式
@@ -184,7 +184,7 @@ RuoYi-AI
 
 ### 版权说明
 
-该项目签署了MIT 授权许可，详情请参阅 [LICENSE.txt](https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE)
+该项目使用了MIT授权许可，详情请参阅 [LICENSE.txt](https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE)
 
 ### 鸣谢
 - [chatgpt-java](https://github.com/Grt1228/chatgpt-java)
