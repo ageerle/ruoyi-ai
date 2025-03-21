@@ -1,6 +1,7 @@
 package org.ruoyi.system.service;
 
 import cn.binarywang.wx.miniapp.api.WxMaService;
+import cn.binarywang.wx.miniapp.api.WxMaUserService;
 import cn.binarywang.wx.miniapp.bean.WxMaJscode2SessionResult;
 import cn.binarywang.wx.miniapp.util.WxMaConfigHolder;
 import cn.dev33.satoken.exception.NotLoginException;
@@ -69,6 +70,19 @@ public class SysLoginService {
     private Integer lockTime;
 
     /**
+     * 获取微信
+     * @param xcxCode 获取xcxCode
+    */
+    public String getOpenidFromCode(String xcxCode) {
+        try {
+            WxMaJscode2SessionResult sessionInfo = wxMaService.getUserService().getSessionInfo(xcxCode);
+            return sessionInfo.getOpenid();
+        } catch (WxErrorException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    /**
      * 登录验证
      *
      * @param username 用户名
@@ -135,15 +149,14 @@ public class SysLoginService {
     public void visitorLogin(VisitorLoginBody loginBody) {
         String openid = "";
         // PC端游客登录
-        if(LoginUserType.PC.getCode().equals(loginBody.getType())){
+        if (LoginUserType.PC.getCode().equals(loginBody.getType())) {
             openid = loginBody.getCode();
-        }else {
+        } else {
             // 小程序匿名登录
             try {
                 WxMaJscode2SessionResult session = wxMaService.getUserService().getSessionInfo(loginBody.getCode());
                 openid = session.getOpenid();
-            } catch (
-                WxErrorException e) {
+            } catch (WxErrorException e) {
                 log.error(e.getMessage(), e);
             } finally {
                 // 清理ThreadLocal
@@ -159,7 +172,8 @@ public class SysLoginService {
         if (ObjectUtil.isNull(user)) {
             SysUserBo sysUser = new SysUserBo();
             // 改为自增
-            String name = "用户" + UUIDShortUtil.generateShortUuid();;
+            String name = "用户" + UUIDShortUtil.generateShortUuid();
+            ;
             // 设置默认用户名
             sysUser.setUserName(name);
             // 设置默认昵称
@@ -170,7 +184,7 @@ public class SysLoginService {
             sysUser.setOpenId(openid);
             String configValue = configService.getConfigValue("mail", "amount");
             // 设置默认余额
-            sysUser.setUserBalance(NumberUtils.toDouble(configValue,1));
+            sysUser.setUserBalance(NumberUtils.toDouble(configValue, 1));
             // 注册用户,设置默认租户为0
             SysUser registerUser = userService.registerUser(sysUser, "0");
 
@@ -284,10 +298,7 @@ public class SysLoginService {
 
     private SysUserVo loadUserByUsername(String tenantId, String username) {
 
-        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>()
-            .select(SysUser::getUserName, SysUser::getStatus)
-            .eq(TenantHelper.isEnable(), SysUser::getTenantId, tenantId)
-            .eq(SysUser::getUserName, username));
+        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>().select(SysUser::getUserName, SysUser::getStatus).eq(TenantHelper.isEnable(), SysUser::getTenantId, tenantId).eq(SysUser::getUserName, username));
         if (ObjectUtil.isNull(user)) {
             log.info("登录用户：{} 不存在.", username);
             throw new UserException("user.not.exists", username);
@@ -302,10 +313,7 @@ public class SysLoginService {
     }
 
     private SysUserVo loadUserByPhonenumber(String tenantId, String phonenumber) {
-        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>()
-            .select(SysUser::getPhonenumber, SysUser::getStatus)
-            .eq(TenantHelper.isEnable(), SysUser::getTenantId, tenantId)
-            .eq(SysUser::getPhonenumber, phonenumber));
+        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>().select(SysUser::getPhonenumber, SysUser::getStatus).eq(TenantHelper.isEnable(), SysUser::getTenantId, tenantId).eq(SysUser::getPhonenumber, phonenumber));
         if (ObjectUtil.isNull(user)) {
             log.info("登录用户：{} 不存在.", phonenumber);
             throw new UserException("user.not.exists", phonenumber);
@@ -320,10 +328,7 @@ public class SysLoginService {
     }
 
     private SysUserVo loadUserByEmail(String tenantId, String email) {
-        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>()
-            .select(SysUser::getPhonenumber, SysUser::getStatus)
-            .eq(TenantHelper.isEnable(), SysUser::getTenantId, tenantId)
-            .eq(SysUser::getEmail, email));
+        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>().select(SysUser::getPhonenumber, SysUser::getStatus).eq(TenantHelper.isEnable(), SysUser::getTenantId, tenantId).eq(SysUser::getEmail, email));
         if (ObjectUtil.isNull(user)) {
             log.info("登录用户：{} 不存在.", email);
             throw new UserException("user.not.exists", email);
@@ -419,8 +424,7 @@ public class SysLoginService {
         } else if (TenantStatus.DISABLE.getCode().equals(tenant.getStatus())) {
             log.info("登录租户：{} 已被停用.", tenantId);
             throw new TenantException("tenant.blocked");
-        } else if (ObjectUtil.isNotNull(tenant.getExpireTime())
-            && new Date().after(tenant.getExpireTime())) {
+        } else if (ObjectUtil.isNotNull(tenant.getExpireTime()) && new Date().after(tenant.getExpireTime())) {
             log.info("登录租户：{} 已超过有效期.", tenantId);
             throw new TenantException("tenant.expired");
         }

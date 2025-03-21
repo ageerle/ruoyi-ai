@@ -2,6 +2,9 @@ package org.ruoyi.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.json.ObjectMapper;
+import me.chanjar.weixin.common.error.WxErrorException;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.EmailLoginBody;
@@ -48,6 +51,15 @@ public class AuthController {
     private final SysRegisterService registerService;
     private final ISysTenantService tenantService;
 
+
+    @PostMapping("/xcxLogin")
+    public R<LoginVo> login(@Validated @RequestBody String xcxCode) throws WxErrorException {
+
+        String openidFromCode = loginService.getOpenidFromCode((String) JSONUtil.parseObj(xcxCode).get("xcxCode"));
+        LoginVo loginVo = loginService.mpLogin(openidFromCode);
+            return R.ok(loginVo);
+    }
+
     /**
      * 登录方法
      *
@@ -85,6 +97,7 @@ public class AuthController {
 
     /**
      * 访客登录
+     *
      * @param loginBody 登录信息
      * @return token信息
      */
@@ -123,7 +136,7 @@ public class AuthController {
      */
     @PostMapping("/register")
     public R<Void> register(@Validated @RequestBody RegisterBody user, HttpServletRequest request) {
-        String domainName =  request.getServerName();
+        String domainName = request.getServerName();
         user.setDomainName(domainName);
         registerService.register(user);
         return R.ok();
