@@ -39,19 +39,11 @@ public class OpenAiVectorization implements Vectorization {
 
     @Override
     public List<List<Double>> batchVectorization(List<String> chunkList, String kid) {
-        List<List<Double>> vectorList = new ArrayList<>();
-
+        List<List<Double>> vectorList;
+        openAiStreamClient = chatConfig.getOpenAiStreamClient();
         // 获取知识库信息
         KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(kid));
 
-        // 如果使用本地模型
-        try {
-            return localModelsVectorization.batchVectorization(chunkList, kid);
-        } catch (Exception e) {
-            log.error("Local models vectorization failed, falling back to OpenAI embeddings", e);
-        }
-
-        // 如果本地模型失败，则调用 OpenAI 服务进行向量化
         Embedding embedding = buildEmbedding(chunkList, knowledgeInfoVo);
         EmbeddingResponse embeddings = openAiStreamClient.embeddings(embedding);
 
