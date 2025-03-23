@@ -1,17 +1,17 @@
 /*
- Navicat MySQL Data Transfer
+ Navicat Premium Dump SQL
 
  Source Server         : ruoyi-ai
  Source Server Type    : MySQL
- Source Server Version : 50740
+ Source Server Version : 50740 (5.7.40-log)
  Source Host           : 43.139.70.230:3306
  Source Schema         : ruoyi-ai
 
  Target Server Type    : MySQL
- Target Server Version : 50740
+ Target Server Version : 50740 (5.7.40-log)
  File Encoding         : 65001
 
- Date: 02/03/2025 11:40:49
+ Date: 18/03/2025 13:58:52
 */
 
 SET NAMES utf8mb4;
@@ -47,31 +47,6 @@ INSERT INTO `chat_app_store` VALUES (5, '智能PPT', '一键生成专业 PPT', '
 INSERT INTO `chat_app_store` VALUES (6, '文生视频', '将文字内容转化为生动视频', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2025/02/11/15d878c58db248afa886032efb292467.png', '/video', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
--- Table structure for chat_audio_role
--- ----------------------------
-DROP TABLE IF EXISTS `chat_audio_role`;
-CREATE TABLE `chat_audio_role`  (
-  `id` bigint(20) NOT NULL COMMENT 'id',
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '角色描述',
-  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
-  `voice_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '角色id',
-  `file_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '音频地址',
-  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `voice_id`(`create_by`, `voice_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '应用市场' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of chat_audio_role
--- ----------------------------
-
--- ----------------------------
 -- Table structure for chat_config
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_config`;
@@ -93,12 +68,16 @@ CREATE TABLE `chat_config`  (
   `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户Id',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `unique_category_key`(`category`, `config_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1818270017966837762 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配置信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1897610056458412058 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配置信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chat_config
 -- ----------------------------
 INSERT INTO `chat_config` VALUES (1779450794448789505, 'chat', 'apiKey', 'sk-xx', 'API 密钥', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779450794448799507, 'cover', 'token', 'xx', '绘声美音token', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779450794448799508, 'cover', 'cover_url', 'https://wechatscan.com/a/open/karaoke/cover', '翻唱地址', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779450794448799509, 'cover', 'search_music_url', 'https://wechatscan.com/a/open/karaoke/search', '查找歌曲', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779450794448799601, 'ppt', 'apiKey', 'xx', '文多多apikey', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779450794872414210, 'chat', 'apiHost', 'https://api.pandarobot.chat/', 'API 地址', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779497340548784129, 'pay', 'pid', '1000', '商户PID', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779497340938854401, 'pay', 'key', 'xx', '商户密钥', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
@@ -128,24 +107,32 @@ INSERT INTO `chat_config` VALUES (1786058372637360129, 'review', 'apiKey', 'xx',
 INSERT INTO `chat_config` VALUES (1786058372897406977, 'review', 'secretKey', 'xx', 'secretKey', 103, '2024-05-02 23:41:14', '1', '1', '2024-05-03 01:18:50', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792069350789324801, 'weixin', 'appId', 'xx', '应用ID', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792069351246503938, 'weixin', 'appSecret', 'xx', '应用密钥', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792069351246503939, 'weixin', 'mchId', 'xx', '商户ID', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792183360796790785, 'weixin', 'notifyUrl', 'https://www.pandarobot.chat/pay/notify/wxOrder', '回调地址', 103, '2024-05-19 21:19:45', '1', '1', '2024-05-19 22:34:40', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792069351246503939, 'weixin', 'mchId', '1677338089', '商户ID', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792183360796790785, 'weixin', 'notifyUrl', 'https://mp.pandarobot.chat/pay/notify/wxOrder', '回调地址', 103, '2024-05-19 21:19:45', '1', '1', '2024-05-19 22:34:40', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792183361065226241, 'weixin', 'enabled', 'true', '开启支付', 103, '2024-05-19 21:19:45', '1', '1', '2024-05-19 22:34:40', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792207511704100866, 'sys', 'name', '熊猫助手', '网站名称', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792207512089976834, 'sys', 'logoImage', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/19/4c106628754b4bd882a4c002eaa317f5.jpg', '网站logo', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792207512412938241, 'sys', 'copyright', 'Copyright © 2024', '版权信息', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512412938241, 'sys', 'copyright', 'Copyright © ageerle 2025 ', '版权信息', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792207512740093954, 'sys', 'customImage', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/19/2faba7a5fa174d7c8d573ce3f031ec51.jpg', '客服二维码', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792207512740093955, 'sys', 'activate', 'true', '系统激活状态', 103, '2024-05-19 22:55:43', '1', '1', '2024-06-04 04:26:14', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1795022320576143362, 'sys', 'authcode', '1716475338010', '证书编号', 103, '2024-05-27 17:20:46', NULL, NULL, '2024-05-27 17:20:46', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1795022320576143363, 'stripe', 'success', 'http://xx:6039/success', '成功回调', 103, '2024-05-27 17:20:46', NULL, '1', '2024-08-11 12:02:41', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1795022320576143364, 'stripe', 'cancel', 'http://xx:6039/cancel', '取消回调', 103, '2024-05-27 17:20:46', NULL, '1', '2024-08-11 12:02:41', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1795022320576143365, 'stripe', 'key', 'xx', '支付密钥', 103, '2024-05-27 17:20:46', NULL, '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1795022320576143366, 'stripe', 'secret', 'xx', '回调密钥', 103, '2024-05-27 17:20:46', NULL, '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1795022320576143365, 'stripe', 'key', 'xx0005', '支付密钥', 103, '2024-05-27 17:20:46', NULL, '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1795022320576143366, 'stripe', 'secret', 'xx0005', '回调密钥', 103, '2024-05-27 17:20:46', NULL, '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1811317731650797570, 'mail', 'free', '3', '免费对话次数', 103, '2024-07-11 16:32:55', '1', '1', '2024-07-17 17:28:52', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1811317732300914689, 'mail', 'mailModel', '<p>您此次的验证码为：{code}，有效期为30分钟，请尽快填写!</p><p><br></p>', '邮箱模板', 103, '2024-07-11 16:32:55', '1', '1', '2024-07-17 17:28:52', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1813506141979254785, 'mail', 'mailTitle', '【熊猫助手】验证码', '邮箱标题', 103, '2024-07-17 17:28:52', '1', '1', '2024-07-17 17:28:52', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1818270017648070657, 'stripe', 'prompt', 'This system is for demonstration only and does not currently support this feature!', '提示语', 103, '2024-07-30 20:58:49', '1', '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1818270017966837761, 'stripe', 'enabled', 'false', '开启支付', 103, '2024-07-30 20:58:49', '1', '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1818270017966837761, 'stripe', 'enabled', 'true', '开启支付', 103, '2024-07-30 20:58:49', '1', '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412050, 'weaviate', 'protocol', 'http', '协议', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412051, 'weaviate', 'host', '127.0.0.1:6038', '地址', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412052, 'weaviate', 'classname', 'LocalKnowledge', '分类名称', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412053, 'milvus', 'host', '127.0.0.1', '地址', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412054, 'milvus', 'port', '19530', '端口', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412055, 'milvus', 'dimension', '1536', '维度', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412056, 'milvus', 'collection', 'LocalKnowledge', '分类名称', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412057, 'zhipu', 'key', '', '智谱清言key', 103, '2025-03-12 00:13:12', '1', '1', '2025-03-12 00:13:10', NULL, NULL, '0', NULL, 0);
 
 -- ----------------------------
 -- Table structure for chat_gpts
@@ -235,22 +222,27 @@ CREATE TABLE `chat_model`  (
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
-INSERT INTO `chat_model` VALUES (1781709495515783171, 'gpt-4-all', 'gpt-4-all', 0.2, '2', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-20 23:40:41', 1, '2024-12-27 22:28:36', 'gpt-all');
-INSERT INTO `chat_model` VALUES (1781715781896646657, 'suno-v3', 'suno-v3', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-21 00:05:20', 1, '2024-12-27 22:28:40', 'suno-v3');
-INSERT INTO `chat_model` VALUES (1781728235120791553, 'stable-diffusion', 'stable-diffusion', 0.1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-21 00:54:49', 1, '2024-12-27 22:28:46', 'stable-diffusion');
-INSERT INTO `chat_model` VALUES (1782736322308943873, 'dall-e-3', 'dall3', 0.3, '2', '1', '', 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-23 19:40:36', 1, '2024-12-27 22:29:01', 'dall3');
-INSERT INTO `chat_model` VALUES (1782736729471004673, 'gpt-4-gizmo', 'gpt-4-gizmo', 0.2, '2', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-23 19:42:13', 1, '2024-12-27 22:29:06', 'gpt-4-gizmo');
-INSERT INTO `chat_model` VALUES (1782792839548735490, 'midjourney', 'midjourney', 0.5, '2', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:11', 'midjourney');
-INSERT INTO `chat_model` VALUES (1782792839548735491, 'suno', 'suno', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:15', 'suno');
-INSERT INTO `chat_model` VALUES (1782792839548735492, 'luma', 'luma', 1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:19', 'luma');
-INSERT INTO `chat_model` VALUES (1782792839548735493, 'ppt', 'ppt', 1.1, '2', '1', NULL, 'https://docmee.cn', 'xx', 103, 1, '2025-01-10 23:25:10', 1, '2025-01-10 22:29:19', 'ppt');
-INSERT INTO `chat_model` VALUES (1811030708604317697, 'gemini-1.5-pro', 'gemini-1.5-pro', 0.2, '1', '1', '', 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-07-10 21:32:23', 1, '2024-12-27 22:29:24', 'gemini-1.5-pro');
-INSERT INTO `chat_model` VALUES (1813306888443305986, 'claude-3-5-sonnet-20240620', 'claude-3-5-sonnet-20240620', 0.2, '1', '1', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-07-17 04:17:06', 1, '2024-12-27 22:29:28', 'claude-3-5-sonnet-20240620');
-INSERT INTO `chat_model` VALUES (1814227154275082242, 'o1-mini-2024-09-12', 'o1-mini-2024-09-12', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-07-19 17:13:55', 1, '2024-12-27 22:29:32', 'o1-mini-2024-09-12');
-INSERT INTO `chat_model` VALUES (1828324413241466881, 'deepseek-r1', 'deepseek-r1', 0.1, '1', '0', NULL, 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-08-27 14:51:23', 1, '2024-12-27 22:29:37', 'chatgpt-4o-latest');
-INSERT INTO `chat_model` VALUES (1859570229117022211, 'gpt-4o-mini', 'gpt-4o-mini', 0.1, '1', '0', '', 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-11-21 20:11:06', 1, '2024-11-21 20:12:30', '');
-INSERT INTO `chat_model` VALUES (1859570229117022212, 'o3-mini-2025-01-31', 'o3-mini-2025-01-31', 0.1, '1', '0', '', 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-11-21 20:11:06', 1, '2024-11-21 20:12:30', '');
-INSERT INTO `chat_model` VALUES (1859570229117022213, 'ollama-qwen2.5:7b', 'ollama-qwen2.5:7b', 0.1, '1', '0', '', 'https://api.pandarobot.chat/', 'xx', 103, 1, '2024-11-21 20:11:06', 1, '2024-11-21 20:12:30', '');
+INSERT INTO `chat_model` VALUES (1781709495515783171, 'gpt-4-all', 'gpt-4-all', 0.2, '1', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-20 23:40:41', 1, '2025-03-15 16:46:11', 'gpt-all');
+INSERT INTO `chat_model` VALUES (1781715781896646657, 'suno-v3', 'suno-v3', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-21 00:05:20', 1, '2025-03-12 15:06:39', 'suno-v3');
+INSERT INTO `chat_model` VALUES (1781728235120791553, 'stable-diffusion', 'stable-diffusion', 0.1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-21 00:54:49', 1, '2025-03-04 22:09:12', 'stable-diffusion');
+INSERT INTO `chat_model` VALUES (1782736322308943873, 'dall-e-3', 'dall3', 0.3, '2', '1', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 19:40:36', 1, '2025-03-06 09:13:59', 'dall3');
+INSERT INTO `chat_model` VALUES (1782736729471004673, 'gpt-4-gizmo', 'gpt-4-gizmo', 0.2, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 19:42:13', 1, '2025-03-06 20:16:42', 'gpt-4-gizmo');
+INSERT INTO `chat_model` VALUES (1782792839548735490, 'midjourney', 'midjourney', 0.5, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2025-03-06 13:48:34', 'midjourney');
+INSERT INTO `chat_model` VALUES (1782792839548735491, 'suno', 'suno', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:15', 'suno');
+INSERT INTO `chat_model` VALUES (1782792839548735492, 'luma', 'luma', 1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:19', 'luma');
+INSERT INTO `chat_model` VALUES (1782792839548735493, 'ppt', 'ppt', 1.1, '2', '1', NULL, 'https://docmee.cn', 'sk-xx', 103, 1, '2025-01-10 23:25:10', 1, '2025-03-05 20:14:10', 'ppt');
+INSERT INTO `chat_model` VALUES (1811030708604317697, 'gemini-1.5-pro', 'gemini-1.5-pro', 0.2, '1', '1', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-10 21:32:23', 1, '2024-12-27 22:29:24', 'gemini-1.5-pro');
+INSERT INTO `chat_model` VALUES (1813306888443305986, 'claude-3-5-sonnet-20240620', 'claude-3-5-sonnet-20240620', 0.2, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-17 04:17:06', 1, '2025-03-13 12:06:18', 'claude-3-5-sonnet-20240620');
+INSERT INTO `chat_model` VALUES (1814227154275082242, 'o1-mini-2024-09-12', 'o1-mini-2024-09-12', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-19 17:13:55', 1, '2024-12-27 22:29:32', 'o1-mini-2024-09-12');
+INSERT INTO `chat_model` VALUES (1828324413241466881, 'deepseek-r3', 'deepseek-r3', 0.01, '1', '0', NULL, '785252', 'sk-xx', 103, 1, '2024-08-27 14:51:23', 1, '2025-03-14 17:08:57', 'chatgpt-4o-latest');
+INSERT INTO `chat_model` VALUES (1859570229117022211, 'gpt-4o-mini', 'gpt-4o-mini', 0.1, '2', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-11-21 20:11:06', 1, '2025-03-13 11:39:24', '1');
+INSERT INTO `chat_model` VALUES (1859570229117022212, 'o3-mini-2025-01-31', 'o3-mini-2025-01-31', 0.1, '1', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-11-21 20:11:06', 1, '2024-11-21 20:12:30', '');
+INSERT INTO `chat_model` VALUES (1859570229117022213, 'ollama-qwen2.5:7b', 'ollama-qwen2.5:7b', 0.1, '1', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-11-21 20:11:06', 1, '2024-11-21 20:12:30', '');
+INSERT INTO `chat_model` VALUES (1897618774806515713, 'mink', 'mink大模型', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2025-03-06 20:02:27', 1, '2025-03-08 02:28:59', '111');
+INSERT INTO `chat_model` VALUES (1897618774806515714, 'openCmd', 'openCmd', 0.01, '1', '0', '结合上下文只用回复成功或者失败', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2025-03-06 20:02:27', 1, '2025-03-08 02:28:59', '111');
+INSERT INTO `chat_model` VALUES (1897618774806515715, 'sqlPlugin', 'sqlPlugin', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2025-03-06 20:02:27', 1, '2025-03-08 02:28:59', '111');
+INSERT INTO `chat_model` VALUES (1899652265652015105, 'deepseek-r1:5b', '本地部署', 0.5, '2', '0', NULL, 'http://127.0.0.1:11434/', 'sk-xx', 103, 1, '2025-03-12 10:42:49', 1, '2025-03-15 20:49:36', '测试');
+INSERT INTO `chat_model` VALUES (1899658241792823297, 'siliconflow', '硅基流动', 0.1, '1', '1', NULL, 'https://api.siliconflow.cn', 'sk-xx', 103, 1, '2025-03-12 11:06:33', 1, '2025-03-12 11:13:49', '111');
 
 -- ----------------------------
 -- Table structure for chat_package_plan
@@ -299,7 +291,7 @@ CREATE TABLE `chat_pay_order`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '支付订单表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '支付订单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chat_pay_order
@@ -738,7 +730,7 @@ CREATE TABLE `knowledge_attach`  (
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `idx_kname`(`kid`, `doc_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1895845104886276099 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库附件' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1900472441872076802 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库附件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of knowledge_attach
@@ -758,7 +750,7 @@ CREATE TABLE `knowledge_fragment`  (
   `create_time` datetime NULL DEFAULT NULL,
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1895845104492011522 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1900472441846910978 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of knowledge_fragment
@@ -773,12 +765,20 @@ CREATE TABLE `knowledge_info`  (
   `kid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
   `uid` bigint(20) NOT NULL DEFAULT 0 COMMENT '用户ID',
   `kname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库名称',
+  `share` tinyint(4) NULL DEFAULT NULL COMMENT '是否公开知识库（0 否 1是）',
   `description` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
-  `create_time` datetime NULL DEFAULT NULL,
-  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `knowledge_separator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识分隔符',
+  `question_separator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '提问分隔符',
+  `overlap_char` int(11) NULL DEFAULT NULL COMMENT '重叠字符数',
+  `retrieve_limit` int(11) NULL DEFAULT NULL COMMENT '知识库中检索的条数',
+  `text_block_size` int(11) NULL DEFAULT NULL COMMENT '文本块大小',
+  `vector` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '向量库',
+  `vector_model` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '向量模型',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `idx_kid`(`kid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1895836475231584259 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1900203785917321219 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of knowledge_info
@@ -807,9 +807,9 @@ CREATE TABLE `sys_config`  (
 -- ----------------------------
 -- Records of sys_config
 -- ----------------------------
-INSERT INTO `sys_config` VALUES (1, '000000', '主框架页-默认皮肤样式名称', 'sys.index.skinName', 'skin-blue', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow');
-INSERT INTO `sys_config` VALUES (2, '000000', '用户管理-账号初始密码', 'sys.user.initPassword', '123456', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '初始化密码 123456');
-INSERT INTO `sys_config` VALUES (3, '000000', '主框架页-侧边栏主题', 'sys.index.sideTheme', 'theme-dark', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '深色主题theme-dark，浅色主题theme-light');
+INSERT INTO `sys_config` VALUES (1, '000000', '主框架页-默认皮肤样式名称', 'sys.index.skinName', 'skin-blue', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-12 12:24:07', '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow');
+INSERT INTO `sys_config` VALUES (2, '000000', '用户管理-账号初始密码', 'sys.user.initPassword', '123456', 'N', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-12 10:22:57', '初始化密码 123456');
+INSERT INTO `sys_config` VALUES (3, '000000', '主框架页-侧边栏主题', 'sys.index.sideTheme', 'theme-dark', 'N', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-12 10:23:02', '深色主题theme-dark，浅色主题theme-light');
 INSERT INTO `sys_config` VALUES (5, '000000', '账号自助-是否开启用户注册功能', 'sys.account.registerUser', 'false', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '是否开启注册用户功能（true开启，false关闭）');
 INSERT INTO `sys_config` VALUES (11, '000000', 'OSS预览列表资源开关', 'sys.oss.previewListResource', 'true', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, 'true:开启, false:关闭');
 
@@ -842,15 +842,14 @@ CREATE TABLE `sys_dept`  (
 -- ----------------------------
 INSERT INTO `sys_dept` VALUES (100, '000000', 0, '0', '熊猫科技', 0, 'ageerle', '15888888888', 'ageerle@163.com', '0', '0', 103, 1, '2023-05-14 15:19:39', 1, '2023-12-29 11:18:24');
 INSERT INTO `sys_dept` VALUES (101, '000000', 100, '0,100', '深圳总公司', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (102, '000000', 100, '0,100', '长沙分公司', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (102, '000000', 100, '0,100', '长沙分公司', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
 INSERT INTO `sys_dept` VALUES (103, '000000', 101, '0,100,101', '研发部门', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (104, '000000', 101, '0,100,101', '市场部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (105, '000000', 101, '0,100,101', '测试部门', 3, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', 4, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', 5, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (1729685491964084226, '911866', 0, '0', '5126', 0, 'admin', NULL, NULL, '0', '2', 103, 1, '2023-11-29 10:15:32', 1, '2023-11-29 10:15:32');
+INSERT INTO `sys_dept` VALUES (104, '000000', 101, '0,100,101', '市场部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (105, '000000', 101, '0,100,101', '测试部门', 3, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', 4, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', 5, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_dict_data
@@ -1046,8 +1045,8 @@ INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 2, 'system', NULL, '', 1, 0
 INSERT INTO `sys_menu` VALUES (100, '用户管理', 1775500307898949634, 1, 'user', 'system/user/index', '', 1, 0, 'C', '0', '0', 'system:user:list', 'ph:user-fill', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:29:29', '用户管理菜单');
 INSERT INTO `sys_menu` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'ri:user-3-fill', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:04:59', '角色管理菜单');
 INSERT INTO `sys_menu` VALUES (102, '菜单管理', 1, 3, 'menu', 'system/menu/index', '', 1, 0, 'C', '0', '0', 'system:menu:list', 'typcn:th-menu-outline', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:06:06', '菜单管理菜单');
-INSERT INTO `sys_menu` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '1', '1', 'system:dept:list', 'mdi:company', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:07:38', '部门管理菜单');
-INSERT INTO `sys_menu` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', 1, 0, 'C', '1', '1', 'system:post:list', 'post', 103, 1, '2023-05-14 15:19:39', 1, '2024-04-04 22:36:15', '岗位管理菜单');
+INSERT INTO `sys_menu` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '0', '0', 'system:dept:list', 'mdi:company', 103, 1, '2023-05-14 15:19:39', 1, '2025-03-03 16:44:16', '部门管理菜单');
+INSERT INTO `sys_menu` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', 1, 0, 'C', '0', '0', 'system:post:list', 'post', 103, 1, '2023-05-14 15:19:39', 1, '2025-03-11 13:58:09', '岗位管理菜单');
 INSERT INTO `sys_menu` VALUES (105, '字典管理', 1, 6, 'dict', 'system/dict/index', '', 1, 0, 'C', '0', '0', 'system:dict:list', 'fluent-mdl2:dictionary', 103, 1, '2023-05-14 15:19:40', 1, '2024-10-07 21:14:33', '字典管理菜单');
 INSERT INTO `sys_menu` VALUES (106, '系统参数', 1, 10, 'config', 'system/config/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'tdesign:system-code', 103, 1, '2023-05-14 15:19:40', 1, '2024-10-07 21:11:07', '参数设置菜单');
 INSERT INTO `sys_menu` VALUES (107, '通知公告', 1, 14, 'notice', 'system/notice/index', '', 1, 0, 'C', '0', '0', 'system:notice:list', 'icon-park-solid:volume-notice', 103, 1, '2023-05-14 15:19:40', 1, '2024-10-07 21:11:42', '通知公告菜单');
@@ -1058,7 +1057,7 @@ INSERT INTO `sys_menu` VALUES (501, '登录日志', 108, 2, 'logininfor', 'monit
 INSERT INTO `sys_menu` VALUES (1001, '用户查询', 100, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:user:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1002, '用户新增', 100, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:user:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1003, '用户修改', 100, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:user:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1004, '用户删除', 100, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1004, '用户删除', 100, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove', '#', 103, 1, '2023-05-14 15:19:40', 1, '2025-03-05 17:27:08', '');
 INSERT INTO `sys_menu` VALUES (1005, '用户导出', 100, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:user:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1006, '用户导入', 100, 6, '', '', '', 1, 0, 'F', '0', '0', 'system:user:import', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1007, '重置密码', 100, 7, '', '', '', 1, 0, 'F', '0', '0', 'system:user:resetPwd', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
@@ -1126,14 +1125,18 @@ INSERT INTO `sys_menu` VALUES (1786379590171156483, '用户兑换记录新增', 
 INSERT INTO `sys_menu` VALUES (1786379590171156484, '用户兑换记录修改', 1786379590171156481, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:edit', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1786379590171156485, '用户兑换记录删除', 1786379590171156481, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:remove', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1786379590171156486, '用户兑换记录导出', 1786379590171156481, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:export', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1787078000285122561, '套餐管理', 1775500307898949634, 3, 'package', 'system/package/index', NULL, 1, 0, 'C', '0', '0', 'system:package:list', 'lets-icons:order', 103, 1, '2024-05-05 19:13:53', 1, '2024-11-02 22:20:36', '套餐管理菜单');
-INSERT INTO `sys_menu` VALUES (1810594719028834305, '应用管理', 1775500307898949634, 4, 'gpts', 'system/gpts/index', NULL, 1, 0, 'C', '0', '0', 'system:gpts:list', 'tdesign:app', 103, 1, '2024-07-09 16:40:18', 1, '2025-03-01 17:12:56', 'gpts管理菜单');
+INSERT INTO `sys_menu` VALUES (1787078000285122561, '套餐管理', 1775500307898949634, 3, 'package', 'system/package/index', NULL, 1, 0, 'C', '0', '0', 'system:package:list', 'lets-icons:order', 103, 1, '2024-05-05 19:13:53', 1, '2025-03-05 18:56:22', '套餐管理菜单');
+INSERT INTO `sys_menu` VALUES (1810594719028834305, '应用管理', 1775500307898949634, 4, 'gpts', 'system/gpts/index', NULL, 1, 0, 'C', '0', '0', 'system:gpts:list', 'tdesign:app', 103, 1, '2024-07-09 16:40:18', 1, '2025-03-13 23:59:07', 'gpts管理菜单');
 INSERT INTO `sys_menu` VALUES (1810594719028834306, 'gpts管理查询', 1810594719028834305, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:query', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1810594719028834307, 'gpts管理新增', 1810594719028834305, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:add', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1810594719028834308, 'gpts管理修改', 1810594719028834305, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:edit', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1810594719028834309, 'gpts管理删除', 1810594719028834305, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:remove', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1810594719028834309, 'gpts管理删除', 1810594719028834305, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:remove', '#', 103, 1, '2024-07-09 16:40:19', 1, '2025-03-05 19:02:06', '');
 INSERT INTO `sys_menu` VALUES (1810594719028834310, 'gpts管理导出', 1810594719028834305, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:export', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1843281231381852162, '文件管理', 1775500307898949634, 20, 'file', 'system/oss/index', NULL, 1, 0, 'C', '0', '0', NULL, 'material-symbols-light:folder', 103, 1, '2024-10-07 21:24:27', 1, '2024-12-27 23:03:04', '');
+INSERT INTO `sys_menu` VALUES (1860690448695549953, '配置管理', 1775500307898949634, 9, 'configurationManage', 'system/configurationManage/index', NULL, 1, 0, 'C', '0', '0', NULL, 'mdi:archive-cog-outline', 103, 1, '2024-11-24 22:22:28', 1, '2024-12-30 21:24:01', '');
+INSERT INTO `sys_menu` VALUES (1898286496441393153, '知识库管理', 1775500307898949634, 10, 'knowledgeBase', 'system/knowledgeBase/index', NULL, 1, 0, 'C', '0', '0', NULL, 'garden:knowledge-base-26', 103, 1, '2025-03-08 16:15:44', 1, '2025-03-09 13:35:32', '');
+INSERT INTO `sys_menu` VALUES (1900172314827739137, '流程编排', 1775500307898949634, 11, 'processOrchestration', 'system/processOrchestration/index', NULL, 1, 0, 'C', '0', '0', NULL, '#', 103, 1, '2025-03-13 21:09:18', 1, '2025-03-13 21:09:18', '');
+INSERT INTO `sys_menu` VALUES (1900854435890089985, '聊天测试', 0, 1, '#', '', NULL, 1, 0, 'M', '0', '0', NULL, '#', 103, 1, '2025-03-15 18:19:48', 1, '2025-03-15 18:19:48', '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -1158,7 +1161,7 @@ CREATE TABLE `sys_notice`  (
 -- ----------------------------
 -- Records of sys_notice
 -- ----------------------------
-INSERT INTO `sys_notice` VALUES (1789324923280932865, '000000', '公告', '2', 0x3C703E3C7374726F6E67207374796C653D22636F6C6F723A20726762283235352C203135332C2030293B223EE69CACE7BD91E7AB99E4B88EE4BBBBE4BD95E585B6E4BB96E585ACE58FB8E68896E59586E6A087E6B2A1E69C89E4BBBBE4BD95E585B3E88194E68896E59088E4BD9CE585B3E7B3BB3C2F7374726F6E673E3C2F703E3C703E3C7370616E207374796C653D22636F6C6F723A20726762283233302C20302C2030293B223E4149E4B99FE4BC9AE78AAFE99499E38082E8AFB7E58BBFE5B086E585B6E794A8E4BA8EE9878DE8A681E79BAEE79A843C2F7370616E3E3C2F703E3C703E3C7370616E207374796C653D22636F6C6F723A20726762283235352C203135332C2030293B223EE68891E4BBACE79BAEE5898DE6ADA3E59CA8E4BFAEE5A48DE68891E4BBACE7BD91E7AB99E4B88AE79A84E99499E8AFAFE5B9B6E694B9E8BF9BE7BB86E88A82E38082E5A682E69E9CE682A8E69C89E4BBBBE4BD95E79691E997AEEFBC8CE8AFB7E9809AE8BF87E4BBA5E4B88BE696B9E5BC8FE88194E7B3BBE68891E4BBACEFBC9A61676565726C65403136332E636F6D3C2F7370616E3E3C2F703E3C703E3C62723E3C2F703E, '0', 103, 1, '2024-05-12 00:01:20', 1, '2024-10-28 23:25:21', '');
+INSERT INTO `sys_notice` VALUES (1789324923280932865, '000000', '公告', '1', 0x3C703E3C7374726F6E67207374796C653D22636F6C6F723A20236666393930303B223EE69CACE7BD91E7AB99E4B88EE4BBBBE4BD95E585B6E4BB96E585ACE58FB8E68896E59586E6A087E6B2A1E69C89E4BBBBE4BD95E585B3E88194E68896E59088E4BD9CE585B3E7B3BB3C2F7374726F6E673E3C2F703E0A3C703E3C7370616E207374796C653D22636F6C6F723A20236536303030303B223E4149E4B99FE4BC9AE78AAFE99499E38082E8AFB7E58BBFE5B086E585B6E794A8E4BA8EE9878DE8A681E79BAEE79A843C2F7370616E3E3C2F703E0A3C703E3C7370616E207374796C653D22636F6C6F723A20236666393930303B223EE68891E4BBACE79BAEE5898DE6ADA3E59CA8E4BFAEE5A48DE68891E4BBACE7BD91E7AB99E4B88AE79A84E99499E8AFAFE5B9B6E694B9E8BF9BE7BB86E88A82E38082E5A682E69E9CE682A8E69C89E4BBBBE4BD95E79691E997AEEFBC8CE8AFB7E9809AE8BF87E4BBA5E4B88BE696B9E5BC8FE88194E7B3BBE68891E4BBACEFBC9A61676565726C65403136332E636F6D313434343434353535353C2F7370616E3E3C2F703E0A3C703E266E6273703B3C2F703E, '0', 103, 1, '2024-05-12 00:01:20', 1, '2025-03-11 19:31:59', '');
 INSERT INTO `sys_notice` VALUES (1895352010039119874, '000000', '你好', '1', 0x3C703E6E6968616F3C2F703E, '0', 103, 1, '2025-02-28 13:55:08', 1, '2025-02-28 13:55:08', NULL);
 
 -- ----------------------------
@@ -1182,8 +1185,6 @@ CREATE TABLE `sys_notice_state`  (
 -- ----------------------------
 -- Records of sys_notice_state
 -- ----------------------------
-INSERT INTO `sys_notice_state` VALUES (1895352010437578753, 1, 1895352010039119874, '0', 103, 1, '2025-02-28 13:55:08', 1, '2025-02-28 13:55:08', NULL);
-INSERT INTO `sys_notice_state` VALUES (1895352010437578754, 1714176194496339970, 1895352010039119874, '1', 103, 1, '2025-02-28 13:55:08', 1714176194496339970, '2025-03-01 21:35:20', NULL);
 
 -- ----------------------------
 -- Table structure for sys_oper_log
@@ -1273,11 +1274,11 @@ CREATE TABLE `sys_oss_config`  (
 -- ----------------------------
 -- Records of sys_oss_config
 -- ----------------------------
-INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'ruoyi', 'ruoyi123', 'ruoyi', '', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-07-13 23:28:18', NULL);
-INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'ruoyi', 'ruoyi123', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', NULL);
-INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'ruoyi', 'ruoyi123', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-07-13 23:35:23', NULL);
-INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'ruoyi', 'ruoyi123', 'ruoyi', 'panda', 'cos.ap-guangzhou.myqcloud.com', '', 'N', 'ap-guangzhou', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2024-11-04 00:13:35', '');
-INSERT INTO `sys_oss_config` VALUES (5, '000000', 'image', 'ruoyi', 'ruoyi123', 'ruoyi', 'image', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2023-05-14 15:19:42', NULL);
+INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'ruoyi', 'ruoyi123', 'ruoyi', '', '127.0.0.1:9000', '', 'N', '', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-14 09:55:25', NULL);
+INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'ruoyi', 'ruoyi123', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-14 09:55:22', NULL);
+INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'ruoyi', 'ruoyi123', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-13 13:13:04', NULL);
+INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'ruoyi', 'ruoyi123', 'ruoyi', 'panda', 'cos.ap-guangzhou.myqcloud.com', '', 'N', 'ap-guangzhou', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-05 14:33:35', '');
+INSERT INTO `sys_oss_config` VALUES (5, '000000', 'image', 'ruoyi', 'ruoyi123', 'ruoyi', 'image', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-13 13:12:57', NULL);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -1335,11 +1336,11 @@ CREATE TABLE `sys_role`  (
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO `sys_role` VALUES (1, '000000', '超级管理员', 'superadmin', 1, '1', 1, 1, '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '超级管理员');
-INSERT INTO `sys_role` VALUES (2, '000000', '普通角色', 'common', 2, '2', 1, 1, '0', '0', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 20:59:32', '普通角色');
-INSERT INTO `sys_role` VALUES (3, '000000', '本部门及以下', 'test1', 3, '4', 1, 1, '0', '0', 103, 1, '2023-05-14 15:20:00', 1, '2023-06-04 10:20:43', NULL);
+INSERT INTO `sys_role` VALUES (2, '000000', '普通角色', 'common', 2, '2', 1, 1, '0', '0', 103, 1, '2023-05-14 15:19:39', 1, '2025-03-12 10:07:23', '普通角色');
+INSERT INTO `sys_role` VALUES (3, '000000', '本部门及以下', 'test1', 3, '4', 1, 1, '0', '0', 103, 1, '2023-05-14 15:20:00', 1, '2025-03-17 09:29:25', NULL);
 INSERT INTO `sys_role` VALUES (4, '000000', '仅本人', 'test2', 4, '5', 1, 1, '0', '0', 103, 1, '2023-05-14 15:20:00', 1, '2023-06-04 10:21:01', NULL);
-INSERT INTO `sys_role` VALUES (1661661183933177857, '000000', '小程序管理员', 'xcxadmin', 1, '1', 1, 1, '0', '0', 103, 1, '2023-05-25 17:11:13', 1, '2023-05-25 17:11:13', '');
-INSERT INTO `sys_role` VALUES (1729685491108446210, '911866', '管理员', 'admin', 1, '1', 1, 1, '0', '0', 103, 1, '2023-11-29 10:15:32', 1, '2023-11-29 10:15:32', NULL);
+INSERT INTO `sys_role` VALUES (1661661183933177857, '000000', '小程序管理员', 'xcxadmin', 1, '1', 1, 1, '0', '0', 103, 1, '2023-05-25 17:11:13', 1, '2025-03-14 14:26:26', '');
+INSERT INTO `sys_role` VALUES (1729685491108446210, '911866', '管理员', 'admin', 4, '1', 1, 1, '0', '0', 103, 1, '2023-11-29 10:15:32', 1, '2025-03-12 10:07:57', NULL);
 
 -- ----------------------------
 -- Table structure for sys_role_dept
@@ -1372,6 +1373,100 @@ CREATE TABLE `sys_role_menu`  (
 -- ----------------------------
 -- Records of sys_role_menu
 -- ----------------------------
+INSERT INTO `sys_role_menu` VALUES (2, 1);
+INSERT INTO `sys_role_menu` VALUES (2, 100);
+INSERT INTO `sys_role_menu` VALUES (2, 101);
+INSERT INTO `sys_role_menu` VALUES (2, 102);
+INSERT INTO `sys_role_menu` VALUES (2, 103);
+INSERT INTO `sys_role_menu` VALUES (2, 104);
+INSERT INTO `sys_role_menu` VALUES (2, 105);
+INSERT INTO `sys_role_menu` VALUES (2, 106);
+INSERT INTO `sys_role_menu` VALUES (2, 107);
+INSERT INTO `sys_role_menu` VALUES (2, 108);
+INSERT INTO `sys_role_menu` VALUES (2, 113);
+INSERT INTO `sys_role_menu` VALUES (2, 500);
+INSERT INTO `sys_role_menu` VALUES (2, 501);
+INSERT INTO `sys_role_menu` VALUES (2, 1001);
+INSERT INTO `sys_role_menu` VALUES (2, 1002);
+INSERT INTO `sys_role_menu` VALUES (2, 1003);
+INSERT INTO `sys_role_menu` VALUES (2, 1004);
+INSERT INTO `sys_role_menu` VALUES (2, 1005);
+INSERT INTO `sys_role_menu` VALUES (2, 1006);
+INSERT INTO `sys_role_menu` VALUES (2, 1007);
+INSERT INTO `sys_role_menu` VALUES (2, 1008);
+INSERT INTO `sys_role_menu` VALUES (2, 1009);
+INSERT INTO `sys_role_menu` VALUES (2, 1010);
+INSERT INTO `sys_role_menu` VALUES (2, 1011);
+INSERT INTO `sys_role_menu` VALUES (2, 1012);
+INSERT INTO `sys_role_menu` VALUES (2, 1013);
+INSERT INTO `sys_role_menu` VALUES (2, 1014);
+INSERT INTO `sys_role_menu` VALUES (2, 1015);
+INSERT INTO `sys_role_menu` VALUES (2, 1016);
+INSERT INTO `sys_role_menu` VALUES (2, 1017);
+INSERT INTO `sys_role_menu` VALUES (2, 1018);
+INSERT INTO `sys_role_menu` VALUES (2, 1019);
+INSERT INTO `sys_role_menu` VALUES (2, 1020);
+INSERT INTO `sys_role_menu` VALUES (2, 1021);
+INSERT INTO `sys_role_menu` VALUES (2, 1022);
+INSERT INTO `sys_role_menu` VALUES (2, 1023);
+INSERT INTO `sys_role_menu` VALUES (2, 1024);
+INSERT INTO `sys_role_menu` VALUES (2, 1025);
+INSERT INTO `sys_role_menu` VALUES (2, 1026);
+INSERT INTO `sys_role_menu` VALUES (2, 1027);
+INSERT INTO `sys_role_menu` VALUES (2, 1028);
+INSERT INTO `sys_role_menu` VALUES (2, 1029);
+INSERT INTO `sys_role_menu` VALUES (2, 1030);
+INSERT INTO `sys_role_menu` VALUES (2, 1031);
+INSERT INTO `sys_role_menu` VALUES (2, 1032);
+INSERT INTO `sys_role_menu` VALUES (2, 1033);
+INSERT INTO `sys_role_menu` VALUES (2, 1034);
+INSERT INTO `sys_role_menu` VALUES (2, 1035);
+INSERT INTO `sys_role_menu` VALUES (2, 1036);
+INSERT INTO `sys_role_menu` VALUES (2, 1037);
+INSERT INTO `sys_role_menu` VALUES (2, 1038);
+INSERT INTO `sys_role_menu` VALUES (2, 1039);
+INSERT INTO `sys_role_menu` VALUES (2, 1040);
+INSERT INTO `sys_role_menu` VALUES (2, 1041);
+INSERT INTO `sys_role_menu` VALUES (2, 1042);
+INSERT INTO `sys_role_menu` VALUES (2, 1043);
+INSERT INTO `sys_role_menu` VALUES (2, 1044);
+INSERT INTO `sys_role_menu` VALUES (2, 1045);
+INSERT INTO `sys_role_menu` VALUES (2, 1050);
+INSERT INTO `sys_role_menu` VALUES (2, 1775500307898949634);
+INSERT INTO `sys_role_menu` VALUES (2, 1775895273104068610);
+INSERT INTO `sys_role_menu` VALUES (2, 1775895273104068611);
+INSERT INTO `sys_role_menu` VALUES (2, 1775895273104068612);
+INSERT INTO `sys_role_menu` VALUES (2, 1775895273104068613);
+INSERT INTO `sys_role_menu` VALUES (2, 1775895273104068614);
+INSERT INTO `sys_role_menu` VALUES (2, 1775895273104068615);
+INSERT INTO `sys_role_menu` VALUES (2, 1780240077690507266);
+INSERT INTO `sys_role_menu` VALUES (2, 1780240077690507267);
+INSERT INTO `sys_role_menu` VALUES (2, 1780240077690507268);
+INSERT INTO `sys_role_menu` VALUES (2, 1780240077690507269);
+INSERT INTO `sys_role_menu` VALUES (2, 1780240077690507270);
+INSERT INTO `sys_role_menu` VALUES (2, 1780240077690507271);
+INSERT INTO `sys_role_menu` VALUES (2, 1780255628576018433);
+INSERT INTO `sys_role_menu` VALUES (2, 1780255628576018434);
+INSERT INTO `sys_role_menu` VALUES (2, 1780255628576018435);
+INSERT INTO `sys_role_menu` VALUES (2, 1780255628576018436);
+INSERT INTO `sys_role_menu` VALUES (2, 1780255628576018437);
+INSERT INTO `sys_role_menu` VALUES (2, 1780255628576018438);
+INSERT INTO `sys_role_menu` VALUES (2, 1786379590171156481);
+INSERT INTO `sys_role_menu` VALUES (2, 1786379590171156482);
+INSERT INTO `sys_role_menu` VALUES (2, 1786379590171156483);
+INSERT INTO `sys_role_menu` VALUES (2, 1786379590171156484);
+INSERT INTO `sys_role_menu` VALUES (2, 1786379590171156485);
+INSERT INTO `sys_role_menu` VALUES (2, 1786379590171156486);
+INSERT INTO `sys_role_menu` VALUES (2, 1787078000285122561);
+INSERT INTO `sys_role_menu` VALUES (2, 1810594719028834305);
+INSERT INTO `sys_role_menu` VALUES (2, 1810594719028834306);
+INSERT INTO `sys_role_menu` VALUES (2, 1810594719028834307);
+INSERT INTO `sys_role_menu` VALUES (2, 1810594719028834308);
+INSERT INTO `sys_role_menu` VALUES (2, 1810594719028834309);
+INSERT INTO `sys_role_menu` VALUES (2, 1810594719028834310);
+INSERT INTO `sys_role_menu` VALUES (2, 1843281231381852162);
+INSERT INTO `sys_role_menu` VALUES (2, 1860690448695549953);
+INSERT INTO `sys_role_menu` VALUES (2, 1898286496441393153);
 INSERT INTO `sys_role_menu` VALUES (3, 1);
 INSERT INTO `sys_role_menu` VALUES (3, 100);
 INSERT INTO `sys_role_menu` VALUES (3, 101);
@@ -1382,6 +1477,7 @@ INSERT INTO `sys_role_menu` VALUES (3, 105);
 INSERT INTO `sys_role_menu` VALUES (3, 106);
 INSERT INTO `sys_role_menu` VALUES (3, 107);
 INSERT INTO `sys_role_menu` VALUES (3, 108);
+INSERT INTO `sys_role_menu` VALUES (3, 113);
 INSERT INTO `sys_role_menu` VALUES (3, 500);
 INSERT INTO `sys_role_menu` VALUES (3, 501);
 INSERT INTO `sys_role_menu` VALUES (3, 1001);
@@ -1429,6 +1525,8 @@ INSERT INTO `sys_role_menu` VALUES (3, 1042);
 INSERT INTO `sys_role_menu` VALUES (3, 1043);
 INSERT INTO `sys_role_menu` VALUES (3, 1044);
 INSERT INTO `sys_role_menu` VALUES (3, 1045);
+INSERT INTO `sys_role_menu` VALUES (3, 1050);
+INSERT INTO `sys_role_menu` VALUES (3, 1775500307898949634);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 100);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 107);
@@ -1443,10 +1541,108 @@ INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1036);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1037);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1038);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1039);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689201668374556674);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689205943360188417);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689243465037561858);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689243466220355585);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775500307898949634);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068610);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068611);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068612);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068613);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068614);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068615);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1787078000285122561);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 100);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 101);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 102);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 103);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 104);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 105);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 106);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 107);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 108);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 113);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 500);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 501);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1001);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1002);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1003);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1004);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1005);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1006);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1007);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1008);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1009);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1010);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1011);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1012);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1013);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1014);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1015);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1016);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1017);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1018);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1019);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1020);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1021);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1022);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1023);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1024);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1025);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1026);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1027);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1028);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1029);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1030);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1031);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1032);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1033);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1034);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1035);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1036);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1037);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1038);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1039);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1040);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1041);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1042);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1043);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1044);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1045);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1050);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775500307898949634);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068610);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068611);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068612);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068613);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068614);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068615);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507266);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507267);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507268);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507269);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507270);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507271);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018433);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018434);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018435);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018436);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018437);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018438);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156481);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156482);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156483);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156484);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156485);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156486);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1787078000285122561);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834305);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834306);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834307);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834308);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834309);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834310);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1843281231381852162);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1860690448695549953);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1898286496441393153);
 
 -- ----------------------------
 -- Table structure for sys_tenant
@@ -1545,8 +1741,10 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, NULL, '1', 100.00, '00000', 103, 'admin', '熊猫助手', 'sys_user', 'Free', 'ageerle@163.com', '15888888888', '0', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/10/07/09bd580f55954b50a3093231945123e0.jpg', NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-03-02 11:05:28', NULL, 103, 1, '2023-05-14 15:19:39', 1, '2025-03-02 11:05:28', '管理员');
-INSERT INTO `sys_user` VALUES (1714176194496339970, NULL, '1', 88.88, '00000', NULL, 'pandarobot@163.com', '问答助手', 'sys_user', 'Free', '', '', '0', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/04/28/346796f5c32744c1987bf28d5820325b.jpg', NULL, '$2a$10$rxKsOfft6w7yywmpngroo.2/9y8Rucc9uj1rdc5wPg9dlwe9mITIi', '0', '0', '127.0.0.1', '2025-03-01 21:33:12', NULL, 103, 1713440206715650049, '2023-10-17 15:07:07', 1714176194496339970, '2025-03-01 21:33:12', NULL);
+INSERT INTO `sys_user` VALUES (1, NULL, '1', 100.00, '00000', 103, 'admin', '熊猫助手', 'sys_user', 'Free', 'ageerle@163.com', '15888888888', '1', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/10/07/09bd580f55954b50a3093231945123e0.jpg', NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-03-17 09:46:22', NULL, 103, 1, '2023-05-14 15:19:39', 1, '2025-03-17 09:46:22', '管理员');
+INSERT INTO `sys_user` VALUES (1714176194496339970, NULL, '1', 88.88, '00000', NULL, 'pandarobot@163.com', '问答助手', 'sys_user', 'Free', '', '', '0', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/04/28/346796f5c32744c1987bf28d5820325b.jpg', NULL, '$2a$10$u3LIdNBg6kM3iYqHFJe2IOWCMbT2h5NUI.CeXlF5dyBGcy3nwW836', '1', '2', '127.0.0.1', '2025-03-05 17:18:42', NULL, 103, 1713440206715650049, '2023-10-17 15:07:07', 1714176194496339970, '2025-03-05 17:18:42', NULL);
+INSERT INTO `sys_user` VALUES (1898270044544028674, NULL, '1', 1.00, '00000', NULL, '1150039659@qq.com', '1150039659@qq.com', 'sys_user', 'Free', '', '', '0', NULL, NULL, '$2a$10$Mw9T.kzBuYqvT14ZDP2VoORLU9WMWdaT/iatJxEtCQCZoBYBNmKw6', '0', '2', '127.0.0.1', '2025-03-09 23:01:03', '192.168.20.162', NULL, NULL, '2025-03-08 15:10:21', 1898270044544028674, '2025-03-09 23:01:03', NULL);
+INSERT INTO `sys_user` VALUES (1898283021590552578, NULL, '0', 1.00, '00000', NULL, '1434841024@qq.com', '1434841024@qq.com', 'sys_user', 'Free', '', '', '0', NULL, NULL, '$2a$10$R6rClsJdJK5Ovhp14Xc0w.IITFBDyocgxWqsJ9SS7AhWW6.vCKiAa', '0', '2', '192.168.20.161', '2025-03-08 17:04:37', '127.0.0.1', NULL, NULL, '2025-03-08 16:01:55', 1898283021590552578, '2025-03-08 17:04:37', NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_post
@@ -1589,7 +1787,6 @@ INSERT INTO `sys_user_role` VALUES (1661660804847788034, 2);
 INSERT INTO `sys_user_role` VALUES (1713427806956404738, 1);
 INSERT INTO `sys_user_role` VALUES (1713439839684689921, 1);
 INSERT INTO `sys_user_role` VALUES (1713440206715650049, 1);
-INSERT INTO `sys_user_role` VALUES (1714176194496339970, 1);
 INSERT INTO `sys_user_role` VALUES (1714267685998907393, 1);
 INSERT INTO `sys_user_role` VALUES (1714269581270667265, 1);
 INSERT INTO `sys_user_role` VALUES (1714270420659949569, 1);
@@ -2570,5 +2767,6 @@ INSERT INTO `sys_user_role` VALUES (1838475187125043201, 1);
 INSERT INTO `sys_user_role` VALUES (1846455089220632577, 1);
 INSERT INTO `sys_user_role` VALUES (1847910185208987649, 1);
 INSERT INTO `sys_user_role` VALUES (1871910972567822337, 1);
+INSERT INTO `sys_user_role` VALUES (1897620177094057985, 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
