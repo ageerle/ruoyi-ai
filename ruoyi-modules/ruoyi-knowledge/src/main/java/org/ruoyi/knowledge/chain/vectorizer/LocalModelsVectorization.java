@@ -45,7 +45,7 @@ public class LocalModelsVectorization   {
         try {
             return localModelsofitClient.getTopKEmbeddings(
                     chunkList,
-                    knowledgeInfoVo.getVector(),
+                    knowledgeInfoVo.getVectorModel(),
                     knowledgeInfoVo.getKnowledgeSeparator(),
                     knowledgeInfoVo.getRetrieveLimit(),
                     knowledgeInfoVo.getTextBlockSize(),
