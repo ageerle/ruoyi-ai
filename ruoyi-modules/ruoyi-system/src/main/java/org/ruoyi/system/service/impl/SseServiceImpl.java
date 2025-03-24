@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhipu.oapi.ClientV4;
 import com.zhipu.oapi.service.v4.tools.*;
 import io.github.ollama4j.OllamaAPI;
+import io.github.ollama4j.models.chat.OllamaChatMessage;
 import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
 import io.github.ollama4j.models.chat.OllamaChatRequestModel;
@@ -626,13 +627,20 @@ public class SseServiceImpl implements ISseService {
         final SseEmitter emitter = new SseEmitter();
         String host = sysModel.getApiHost();
         List<Message> msgList = chatRequest.getMessages();
-        Message message = msgList.get(msgList.size() - 1);
+        List<OllamaChatMessage> messages = new ArrayList<>();
+
+        for (Message message : msgList) {
+            OllamaChatMessage ollamaChatMessage = new OllamaChatMessage();
+            ollamaChatMessage.setRole(OllamaChatMessageRole.USER);
+            ollamaChatMessage.setContent(message.getContent().toString());
+            messages.add(ollamaChatMessage);
+        }
         OllamaAPI api = new OllamaAPI(host);
         api.setRequestTimeoutSeconds(100);
         OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(parts[1]);
+
         OllamaChatRequestModel requestModel = builder
-            .withMessage(OllamaChatMessageRole.USER,
-                message.getContent().toString())
+            .withMessages(messages)
             .build();
 
         // 异步执行 OllAma API 调用

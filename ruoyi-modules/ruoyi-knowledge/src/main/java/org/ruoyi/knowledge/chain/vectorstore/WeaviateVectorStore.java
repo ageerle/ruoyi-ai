@@ -229,21 +229,19 @@ public class WeaviateVectorStore implements VectorStore{
     @Override
     public void storeEmbeddings(List<String> chunkList, List<List<Double>> vectorList,String kid, String docId,List<String> fidList) {
         WeaviateClient client = getClient();
-        for (int i = 0; i < chunkList.size(); i++) {
-            if (vectorList != null) {
+        if (vectorList != null) {
+            for (int i = 0; i < Math.min(chunkList.size(), vectorList.size()); i++) {
                 List<Double> vector = vectorList.get(i);
-                Float[] vf = new Float[vector.size()];
-                for (int j = 0; j < vector.size(); j++) {
-                    Double value = vector.get(j);
-                    vf[j] = value.floatValue();
-                }
+                Float[] vf = vector.stream().map(Double::floatValue).toArray(Float[]::new);
+
                 Map<String, Object> dataSchema = new HashMap<>();
                 dataSchema.put("content", chunkList.get(i));
                 dataSchema.put("kid", kid);
                 dataSchema.put("docId", docId);
                 dataSchema.put("fid", fidList.get(i));
-                String uuid = UUID.randomUUID(true).toString();
+                String uuid = UUID.randomUUID().toString();
                 dataSchema.put("uuid", uuid);
+
                 Result<WeaviateObject> result = client.data().creator()
                         .withClassName(className + kid)
                         .withID(uuid)

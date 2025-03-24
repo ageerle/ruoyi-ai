@@ -43,7 +43,7 @@ import java.util.List;
 @RequestMapping("/chat")
 public class ChatController {
 
-    private final ISseService ISseService;
+    private final ISseService sseService;
 
     private final IChatMessageService chatMessageService;
 
@@ -54,9 +54,9 @@ public class ChatController {
     @ResponseBody
     public SseEmitter sseChat(@RequestBody @Valid ChatRequest chatRequest, HttpServletRequest request) {
         if (chatRequest.getModel().startsWith("ollama")) {
-            return ISseService.ollamaChat(chatRequest);
+            return sseService.ollamaChat(chatRequest);
         }
-        return ISseService.sseChat(chatRequest,request);
+        return sseService.sseChat(chatRequest,request);
     }
 
 
@@ -66,7 +66,7 @@ public class ChatController {
     @PostMapping("/upload")
     @ResponseBody
     public UploadFileResponse upload(@RequestPart("file") MultipartFile file) {
-        return ISseService.upload(file);
+        return sseService.upload(file);
     }
 
 
@@ -78,7 +78,7 @@ public class ChatController {
     @PostMapping("/audio")
     @ResponseBody
     public WhisperResponse audio(@RequestParam("file") MultipartFile file) {
-        WhisperResponse whisperResponse = ISseService.speechToTextTranscriptionsV2(file);
+        WhisperResponse whisperResponse = sseService.speechToTextTranscriptionsV2(file);
         return whisperResponse;
     }
 
@@ -90,7 +90,7 @@ public class ChatController {
     @PostMapping("/speech")
     @ResponseBody
     public ResponseEntity<Resource> speech(@RequestBody TextToSpeech textToSpeech) {
-        return ISseService.textToSpeed(textToSpeech);
+        return sseService.textToSpeed(textToSpeech);
     }
 
     /**
@@ -101,13 +101,13 @@ public class ChatController {
     @PostMapping("/translation")
     @ResponseBody
     public String translation(@RequestBody TranslationRequest translationRequest) {
-        return ISseService.translation(translationRequest);
+        return sseService.translation(translationRequest);
     }
 
     @PostMapping("/dall3")
     @ResponseBody
     public R<List<Item>> dall3(@RequestBody @Valid Dall3Request request) {
-        return R.ok(ISseService.dall3(request));
+        return R.ok(sseService.dall3(request));
     }
 
     /**

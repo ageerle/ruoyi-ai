@@ -33,6 +33,7 @@ import org.ruoyi.knowledge.service.IKnowledgeAttachService;
 import org.ruoyi.knowledge.service.IKnowledgeFragmentService;
 import org.ruoyi.knowledge.service.IKnowledgeInfoService;
 import org.ruoyi.system.listener.SSEEventSourceListener;
+import org.ruoyi.system.service.ISseService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.ruoyi.knowledge.chain.vectorstore.VectorStore;
@@ -68,11 +69,14 @@ public class KnowledgeController extends BaseController {
 
     private final ChatConfig chatConfig;
 
+    private final ISseService sseService;
+
     /**
      * 知识库对话
      */
     @PostMapping("/send")
     public SseEmitter send(@RequestBody @Valid ChatRequest chatRequest) {
+
         openAiStreamClient = chatConfig.getOpenAiStreamClient();
         SseEmitter sseEmitter = new SseEmitter(0L);
         SSEEventSourceListener openAIEventSourceListener = new SSEEventSourceListener(sseEmitter);
@@ -87,6 +91,10 @@ public class KnowledgeController extends BaseController {
         }
         Message userMessage = Message.builder().content(content + (nearestList.size() > 0 ? "\n\n注意：回答问题时，须严格根据我给你的系统上下文内容原文进行回答，请不要自己发挥,回答时保持原来文本的段落层级" : "") ).role(Message.Role.USER).build();
         messages.add(userMessage);
+        if (chatRequest.getModel().startsWith("ollama")) {
+            return sseService.ollamaChat(chatRequest);
+        }
+
         ChatCompletion completion = ChatCompletion
             .builder()
             .messages(messages)
