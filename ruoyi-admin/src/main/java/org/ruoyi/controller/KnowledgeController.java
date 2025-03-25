@@ -1,7 +1,6 @@
 package org.ruoyi.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.theokanning.openai.completion.chat.ChatMessageRole;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -39,7 +38,6 @@ import org.springframework.web.bind.annotation.*;
 import org.ruoyi.knowledge.chain.vectorstore.VectorStore;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 

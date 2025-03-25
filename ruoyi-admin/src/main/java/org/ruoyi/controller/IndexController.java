@@ -2,8 +2,8 @@ package org.ruoyi.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 首页
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  */
 @SaIgnore
 @RequiredArgsConstructor
-@Controller
+@RestController
 public class IndexController {
 
     /**
@@ -20,17 +20,7 @@ public class IndexController {
      */
     @GetMapping("/")
     public String index() {
-        return "index.html";
-    }
-
-    @GetMapping("/success")
-    public String success(){
-        return "paySuccess.html";
-    }
-
-    @GetMapping("/cancel")
-    public String cancel(){
-        return "cancel";
+        return "RuoYi-AI 启动成功";
     }
 
 }

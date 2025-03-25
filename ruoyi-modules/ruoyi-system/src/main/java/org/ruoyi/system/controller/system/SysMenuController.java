@@ -3,7 +3,6 @@ package org.ruoyi.system.controller.system;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaMode;
-import cn.hutool.core.lang.tree.Tree;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.TenantConstants;
 import org.ruoyi.common.core.constant.UserConstants;
@@ -86,9 +85,11 @@ public class SysMenuController extends BaseController {
     }, mode = SaMode.OR)
     @SaCheckPermission("system:menu:query")
     @GetMapping("/treeselect")
-    public R<List<Tree<Long>>> treeselect(SysMenuBo menu) {
+    public R<MenuTreeSelectVo> treeselect(SysMenuBo menu) {
         List<SysMenuVo> menus = menuService.selectMenuList(menu, LoginHelper.getUserId());
-        return R.ok(menuService.buildMenuTreeSelect(menus));
+        MenuTreeSelectVo selectVo = new MenuTreeSelectVo();
+        selectVo.setMenus(menuService.buildMenuTreeSelect(menus));
+        return R.ok(selectVo);
     }
 
     /**
