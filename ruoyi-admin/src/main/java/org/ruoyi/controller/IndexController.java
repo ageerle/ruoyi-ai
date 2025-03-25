@@ -20,7 +20,7 @@ public class IndexController {
      */
     @GetMapping("/")
     public String index() {
-        return "index.html";
+        return "RuoYi-AI 启动成功！";
     }
 
     @GetMapping("/success")

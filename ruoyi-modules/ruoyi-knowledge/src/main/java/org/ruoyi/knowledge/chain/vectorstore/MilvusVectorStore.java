@@ -239,7 +239,7 @@ public class MilvusVectorStore implements VectorStore {
         List<List<Float>> vectorFloatList = new ArrayList<>();
         List<String> kidList = new ArrayList<>();
         List<String> docIdList = new ArrayList<>();
-        for (int i = 0; i < chunkList.size(); i++) {
+        for (int i = 0; i < Math.min(chunkList.size(), vectorList.size()); i++) {
             List<Double> vector = vectorList.get(i);
             List<Float> vfList = new ArrayList<>();
             for (int j = 0; j < vector.size(); j++) {
