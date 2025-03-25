@@ -181,12 +181,6 @@ RuoYi-AI
 
 该项目使用Git进行版本管理。您可以在repository参看当前可用版本。
 
-### 进群学习
-
-<div>
-  <img src="image/01.png" alt="drawing" width="300px" height="300px"/>
-</div>
-
 ### 版权说明
 
 该项目使用了MIT授权许可，详情请参阅 [LICENSE.txt](https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE)
