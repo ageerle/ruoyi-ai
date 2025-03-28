@@ -61,7 +61,7 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
         }
         ChatCompletion chatCompletion = ChatCompletion
             .builder()
-            .model(ChatCompletion.Model.GPT_3_5_TURBO.getName())
+            .model("gpt-4o-mini")
             .messages(messages)
             .temperature(0.2)
             .stream(true)

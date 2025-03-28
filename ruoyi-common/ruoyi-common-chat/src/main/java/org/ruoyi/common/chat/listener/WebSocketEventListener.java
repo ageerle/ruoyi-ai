@@ -9,6 +9,7 @@ import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.ruoyi.common.chat.constant.OpenAIConst;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
+import org.ruoyi.common.chat.entity.chat.Message;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -57,7 +58,12 @@ public class WebSocketEventListener extends EventSourceListener {
         ObjectMapper mapper = new ObjectMapper();
         // 读取Json
         ChatCompletionResponse completionResponse = mapper.readValue(data, ChatCompletionResponse.class);
-        String delta = mapper.writeValueAsString(completionResponse.getChoices().get(0).getDelta());
+        String delta = "";
+        try {
+            delta = mapper.writeValueAsString(completionResponse.getChoices().get(0).getDelta());
+        }catch (Exception e){
+            log.error("转换失败{}",e.getMessage());
+        }   
         session.sendMessage(new TextMessage(delta));
     }
 
@@ -75,18 +81,9 @@ public class WebSocketEventListener extends EventSourceListener {
             return;
         }
         ResponseBody body = response.body();
-
-
         if (Objects.nonNull(body)) {
             // 返回非流式回复内容
-            if(response.code() == OpenAIConst.SUCCEED_CODE){
-                ObjectMapper mapper = new ObjectMapper();
-                ChatCompletionResponse completionResponse = mapper.readValue(body.string(), ChatCompletionResponse.class);
-                String delta = mapper.writeValueAsString(completionResponse.getChoices().get(0).getMessage().getContent());
-                session.sendMessage(new TextMessage(delta));
-            }else {
-                log.error("Socket连接异常data：{}，异常：{}", body.string(), t);
-            }
+            log.error("Socket连接异常data：{}，异常：{}", body.string(), t);
         } else {
             log.error("Socket连接异常data：{}，异常：{}", response, t);
         }

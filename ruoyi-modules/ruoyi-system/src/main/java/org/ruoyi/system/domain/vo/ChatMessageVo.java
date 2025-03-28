@@ -47,6 +47,12 @@ public class ChatMessageVo implements Serializable {
     private String userName;
 
     /**
+     * 对话角色
+     */
+    private String role;
+
+
+    /**
      * 消息内容
      */
     @NotBlank(message = "消息内容不能为空", groups = { AddGroup.class, EditGroup.class })

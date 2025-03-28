@@ -30,13 +30,17 @@ public class ChatMessageBo extends BaseEntity {
     /**
      * 用户ID
      */
-    @NotBlank(message = "用户ID", groups = { AddGroup.class, EditGroup.class })
-    private Long UserId;
+    private Long userId;
 
     /**
      * 用户名称
      */
-    private String UserName;
+    private String userName;
+
+    /**
+     * 对话角色
+     */
+    private String role;
 
     /**
      * 消息内容
@@ -52,19 +56,16 @@ public class ChatMessageBo extends BaseEntity {
     /**
      * 累计 Tokens
      */
-    @NotNull(message = "累计 Tokens不能为空", groups = { AddGroup.class, EditGroup.class })
     private Integer totalTokens;
 
     /**
      * 模型名称
      */
-    @NotBlank(message = "模型名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String modelName;
 
     /**
      * 备注
      */
-    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
 
 }

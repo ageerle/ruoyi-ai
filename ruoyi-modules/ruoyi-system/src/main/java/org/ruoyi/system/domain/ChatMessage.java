@@ -38,6 +38,12 @@ public class ChatMessage extends BaseEntity {
     private Long UserId;
 
     /**
+     * 对话角色
+     */
+    private String role;
+
+
+    /**
      * 消息内容
      */
     @NotBlank(message = "消息内容不能为空", groups = { AddGroup.class, EditGroup.class })
