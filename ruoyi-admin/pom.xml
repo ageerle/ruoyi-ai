@@ -62,6 +62,10 @@
             <artifactId>ruoyi-knowledge</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-generator</artifactId>
+        </dependency>
 
         <!--  demo模块  -->
         <dependency>

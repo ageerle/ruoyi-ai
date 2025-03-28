@@ -22,6 +22,7 @@
         <module>ruoyi-system</module>
         <module>ruoyi-live</module>
         <module>ruoyi-knowledge</module>
+        <module>ruoyi-generator</module>
     </modules>
 
 </project>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.generator.mapper.GenTableColumnMapper">
+
+    <resultMap type="org.ruoyi.generator.domain.GenTableColumn" id="GenTableColumnResult">
+    </resultMap>
+
+    <select id="selectDbTableColumnsByName" parameterType="String" resultMap="GenTableColumnResult">
+        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isMySql()">
+            select column_name,
+                   (case when (is_nullable = 'no' <![CDATA[ && ]]> column_key != 'PRI') then '1' else null end) as is_required,
+                   (case when column_key = 'PRI' then '1' else '0' end) as is_pk,
+                   ordinal_position as sort,
+                   column_comment,
+                   (case when extra = 'auto_increment' then '1' else '0' end) as is_increment,
+                   column_type
+            from information_schema.columns where table_schema = (select database()) and table_name = (#{tableName})
+            order by ordinal_position
+        </if>
+        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isOracle()">
+            select lower(temp.column_name) as column_name,
+                    (case when (temp.nullable = 'N'  and  temp.constraint_type != 'P') then '1' else null end) as is_required,
+                    (case when temp.constraint_type = 'P' then '1' else '0' end) as is_pk,
+                    temp.column_id as sort,
+                    temp.comments as column_comment,
+                    (case when temp.constraint_type = 'P' then '1' else '0' end) as is_increment,
+                    lower(temp.data_type) as column_type
+            from (
+                select col.column_id, col.column_name,col.nullable, col.data_type, colc.comments, uc.constraint_type, row_number()
+                    over (partition by col.column_name order by uc.constraint_type desc) as row_flg
+                from user_tab_columns col
+                left join user_col_comments colc on colc.table_name = col.table_name and colc.column_name = col.column_name
+                left join user_cons_columns ucc on ucc.table_name = col.table_name and ucc.column_name = col.column_name
+                left join user_constraints uc on uc.constraint_name = ucc.constraint_name
+                where col.table_name = upper(#{tableName})
+            ) temp
+            WHERE temp.row_flg = 1
+            ORDER BY temp.column_id
+        </if>
+        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isPostgerSql()">
+            SELECT column_name, is_required, is_pk, sort, column_comment, is_increment, column_type
+            FROM (
+                SELECT c.relname AS table_name,
+                       a.attname AS column_name,
+                       d.description AS column_comment,
+                       CASE WHEN a.attnotnull AND con.conname IS NULL THEN 1 ELSE 0
+                       END AS is_required,
+                       CASE WHEN con.conname IS NOT NULL THEN 1 ELSE 0
+                       END AS is_pk,
+                       a.attnum AS sort,
+                       CASE WHEN "position"(pg_get_expr(ad.adbin, ad.adrelid),
+                           ((c.relname::text || '_'::text) || a.attname::text) || '_seq'::text) > 0 THEN 1 ELSE 0
+                       END AS is_increment,
+                       btrim(
+                           CASE WHEN t.typelem <![CDATA[ <> ]]> 0::oid AND t.typlen = '-1'::integer THEN 'ARRAY'::text ELSE
+                                CASE WHEN t.typtype = 'd'::"char" THEN format_type(t.typbasetype, NULL::integer)
+                                ELSE format_type(a.atttypid, NULL::integer) END
+                           END, '"'::text
+                       ) AS column_type
+                FROM pg_attribute a
+                    JOIN (pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid) ON a.attrelid = c.oid
+                    LEFT JOIN pg_description d ON d.objoid = c.oid AND a.attnum = d.objsubid
+                    LEFT JOIN pg_constraint con ON con.conrelid = c.oid AND (a.attnum = ANY (con.conkey))
+                    LEFT JOIN pg_attrdef ad ON a.attrelid = ad.adrelid AND a.attnum = ad.adnum
+                    LEFT JOIN pg_type t ON a.atttypid = t.oid
+                WHERE (c.relkind = ANY (ARRAY ['r'::"char", 'p'::"char"]))
+                    AND a.attnum > 0
+                    AND n.nspname = 'public'::name
+                ORDER BY c.relname, a.attnum
+            ) temp
+            WHERE table_name = (#{tableName})
+                AND column_type <![CDATA[ <> ]]> '-'
+        </if>
+        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isSqlServer()">
+            SELECT
+                cast(A.NAME as nvarchar) as column_name,
+                cast(B.NAME as nvarchar) + (case when B.NAME = 'numeric' then '(' + cast(A.prec as nvarchar) + ',' + cast(A.scale as nvarchar) + ')' else '' end) as column_type,
+                cast(G.[VALUE] as nvarchar) as column_comment,
+                (SELECT 1 FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE Z WHERE TABLE_NAME = D.NAME and A.NAME = Z.column_name  ) as is_pk,
+                colorder as sort
+            FROM SYSCOLUMNS A
+                LEFT JOIN SYSTYPES B ON A.XTYPE = B.XUSERTYPE
+                INNER JOIN SYSOBJECTS D ON A.ID = D.ID AND D.XTYPE='U' AND D.NAME != 'DTPROPERTIES'
+                LEFT JOIN SYS.EXTENDED_PROPERTIES G ON A.ID = G.MAJOR_ID AND A.COLID = G.MINOR_ID
+                LEFT JOIN SYS.EXTENDED_PROPERTIES F ON D.ID = F.MAJOR_ID AND F.MINOR_ID = 0
+            WHERE D.NAME = #{tableName}
+            ORDER BY A.COLORDER
+        </if>
+    </select>
+
+</mapper>
