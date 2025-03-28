@@ -158,44 +158,68 @@ RuoYi-AI
 
 ```
 
-### 使用到的框架
-
-- [Vben Admin](https://github.com/vbenjs/vue-vben-admin)
-- [Naive UI](https://www.naiveui.com)
-- [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus)
-
-#### 如何参与开源项目
-
-贡献使开源社区成为一个学习、激励和创造的绝佳场所。你所作的任何贡献都是**非常感谢**的。
-
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-
-
 ### 版本控制
 
 该项目使用Git进行版本管理。您可以在repository参看当前可用版本。
 
-### 进群学习
 
-<div>
-  <img src="image/01.png" alt="drawing" width="300px" height="300px"/>
-</div>
 
 ### 版权说明
 
 该项目使用了MIT授权许可，详情请参阅 [LICENSE.txt](https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE)
 
+
+### 作者寄语
+
+最近，我们的项目意外地受到了广泛关注，甚至被许多人误以为是一个已经成熟且能够快速落地的项目。然而，事实并非如此。这个项目是我个人在业余时间进行的研究，主要目的是学习和探索。它是一个以人工智能（AI）为核心的平台，旨在帮助企业通过配置的方式快速构建AI应用。
+
+####  项目现状
+
+目前，项目还处于早期阶段，距离成熟还有很长的路要走。由于个人精力有限，项目的发展速度受到了一定的限制。为了加快项目的进度，我真诚地希望更多人能够参与到项目中来。无论是经验丰富的开发者，还是刚刚入门的小白，我都热烈欢迎你们提交Pull Request（PR）。即使代码修改得很少，或者存在一些错误，都没有关系。我会认真审核每一位贡献者的代码，并和大家一起完善项目。
+
+####  开发计划
+
+- 智能体管理
+
+通过设置提示词、插件、知识库等，用户可以快速构建一个AI应用。这将极大地简化AI应用的开发流程，降低开发门槛，使更多企业能够轻松地利用AI技术。
+<div>
+  <img src="image/13.png" alt="drawing" width="600px" height="300px"/>
+</div>
+
+- 流程编排
+
+通过流程编排功能，用户可以将不同的模型按照业务逻辑进行有序连接。这将解决单一模型能力不足的问题，充分发挥多个模型的协同作用，从而更好地满足企业的复杂业务需求。
+
+-  感谢
+
+最后，我要感谢RuoYi-Vue-Plus、chatgpt-java、chatgpt-web-midjourney-proxy等优秀框架。正是因为这些项目的开源和共享，我才能够在这个基础上进行开发，使我们的项目能够取得今天的成果。再次感谢这些项目及其背后的开发者们！
+
+希望更多志同道合的朋友能够加入我们，共同推动这个项目的发展。让我们一起努力，将这个项目打造成一个真正成熟、实用的AI平台！
+
+#### 如何参与开源项目
+
+贡献使开源社区成为一个学习、激励和创造的绝佳场所。你所作的任何贡献都是**非常感谢**的。
+
+1. Fork 这个项目
+2. 创建你的功能分支 (`git checkout -b feature/dev`)
+3. 提交你的更改 (`git commit -m 'Add some dev'`)
+4. 推送到分支 (`git push origin feature/dev`)
+5. 打开拉取请求
+6. pr请提交到GitHub上，会定时同步到gitee
+
+#### 项目文档
+1. 项目文档基于vitepress构建
+2. 按照[如何参与开源项目](#如何参与开源项目)拉取 https://github.com/ageerle/ruoyi-doc
+3. 安装依赖：npm install
+4. 启动项目：npm run docs:dev
+5. 主页路径：docs/guide/introduction/index.md
+
 ### 鸣谢
 - [chatgpt-java](https://github.com/Grt1228/chatgpt-java)
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus)
 - [chatgpt-web-midjourney-proxy](https://github.com/Dooy/chatgpt-web-midjourney-proxy)
-
+- [Vben Admin](https://github.com/vbenjs/vue-vben-admin)
+- [Naive UI](https://www.naiveui.com)
 
 <!-- links -->
 [your-project-path]:https://github.com/ageerle/ruoyi-ai
