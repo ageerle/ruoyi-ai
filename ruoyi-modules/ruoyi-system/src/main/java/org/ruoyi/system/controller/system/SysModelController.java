@@ -97,6 +97,7 @@ public class SysModelController extends BaseController {
     /**
      * 导出系统模型列表
      */
+    @SaCheckPermission("system:model:export")
     @Log(title = "系统模型", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(SysModelBo bo, HttpServletResponse response) {
@@ -119,6 +120,7 @@ public class SysModelController extends BaseController {
     /**
      * 新增系统模型
      */
+    @SaCheckPermission("system:model:add")
     @Log(title = "系统模型", businessType = BusinessType.INSERT)
     @PostMapping()
     public R<Void> add(@Validated(AddGroup.class) @RequestBody SysModelBo bo) {
@@ -128,6 +130,7 @@ public class SysModelController extends BaseController {
     /**
      * 修改系统模型
      */
+    @SaCheckPermission("system:model:edit")
     @Log(title = "系统模型", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
