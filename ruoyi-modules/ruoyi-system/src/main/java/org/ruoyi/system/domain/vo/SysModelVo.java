@@ -4,6 +4,8 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.common.sensitive.annotation.Sensitive;
+import org.ruoyi.common.sensitive.core.SensitiveStrategy;
 import org.ruoyi.system.domain.SysModel;
 
 import java.io.Serial;
@@ -74,6 +76,7 @@ public class SysModelVo implements Serializable {
     /**
      * 模型名称
      */
+    @Sensitive(strategy = SensitiveStrategy.ID_CARD)
     private String apiKey;
 
     /**
