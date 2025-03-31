@@ -3,6 +3,7 @@ package org.ruoyi.generator.util;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Dict;
+import cn.hutool.core.util.ObjectUtil;
 import org.ruoyi.generator.constant.GenConstants;
 import org.ruoyi.generator.domain.GenTable;
 import org.ruoyi.generator.domain.GenTableColumn;
@@ -74,6 +75,27 @@ public class VelocityUtils {
         if (GenConstants.TPL_TREE.equals(tplCategory)) {
             setTreeVelocityContext(velocityContext, genTable);
         }
+        // 判断是modal还是drawer
+        Dict paramsObj = JsonUtils.parseMap(genTable.getOptions());
+        if (ObjectUtil.isNotNull(paramsObj)) {
+            String popupComponent = Optional
+                .ofNullable(paramsObj.getStr("popupComponent"))
+                .orElse("modal");
+            velocityContext.put("popupComponent", popupComponent);
+            velocityContext.put("PopupComponent", StringUtils.capitalize(popupComponent));
+        } else {
+            velocityContext.put("popupComponent", "modal");
+            velocityContext.put("PopupComponent", "Modal");
+        }
+        // 判断是原生antd表单还是useForm表单
+        // native 原生antd表单
+        // useForm useVbenForm
+        if (ObjectUtil.isNotNull(paramsObj)) {
+            String formComponent = Optional
+                .ofNullable(paramsObj.getStr("formComponent"))
+                .orElse("useForm");
+            velocityContext.put("formComponent", formComponent);
+        }
         return velocityContext;
     }
 
@@ -109,7 +131,7 @@ public class VelocityUtils {
      * @return 模板列表
      */
     public static List<String> getTemplateList(String tplCategory) {
-        List<String> templates = new ArrayList<String>();
+        List<String> templates = new ArrayList<>();
         templates.add("vm/java/domain.java.vm");
         templates.add("vm/java/vo.java.vm");
         templates.add("vm/java/bo.java.vm");
@@ -134,6 +156,21 @@ public class VelocityUtils {
         } else if (GenConstants.TPL_TREE.equals(tplCategory)) {
             templates.add("vm/vue/index-tree.vue.vm");
         }
+
+        /**
+         * 添加vben5
+         */
+        templates.add("vm/vben5/api/index.ts.vm");
+        templates.add("vm/vben5/api/model.d.ts.vm");
+        templates.add("vm/vben5/views/data.ts.vm");
+        if (GenConstants.TPL_CRUD.equals(tplCategory)) {
+            templates.add("vm/vben5/views/index_vben.vue.vm");
+            templates.add("vm/vben5/views/popup.vue.vm");
+        } else if (GenConstants.TPL_TREE.equals(tplCategory)) {
+            templates.add("vm/vben5/views/index_vben_tree.vue.vm");
+            templates.add("vm/vben5/views/popup_tree.vue.vm");
+        }
+
         return templates;
     }
 
@@ -186,6 +223,38 @@ public class VelocityUtils {
         } else if (template.contains("index-tree.vue.vm")) {
             fileName = StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
         }
+
+        // 判断是modal还是drawer
+        Dict paramsObj = JsonUtils.parseMap(genTable.getOptions());
+        String popupComponent = "modal";
+        if (ObjectUtil.isNotNull(paramsObj)) {
+            popupComponent = Optional
+                .ofNullable(paramsObj.getStr("popupComponent"))
+                .orElse("modal");
+        }
+        String vben5Path = "vben5";
+        if (template.contains("vm/vben5/api/index.ts.vm")) {
+            fileName = StringUtils.format("{}/api/{}/{}/index.ts", vben5Path, moduleName, businessName);
+        }
+        if (template.contains("vm/vben5/api/model.d.ts.vm")) {
+            fileName = StringUtils.format("{}/api/{}/{}/model.d.ts", vben5Path, moduleName, businessName);
+        }
+        if (template.contains("vm/vben5/views/index_vben.vue.vm")) {
+            fileName = StringUtils.format("{}/views/{}/{}/index.vue", vben5Path, moduleName, businessName);
+        }
+        if (template.contains("vm/vben5/views/index_vben_tree.vue.vm")) {
+            fileName = StringUtils.format("{}/views/{}/{}/index.vue", vben5Path, moduleName, businessName);
+        }
+        if (template.contains("vm/vben5/views/data.ts.vm")) {
+            fileName = StringUtils.format("{}/views/{}/{}/data.ts", vben5Path, moduleName, businessName);
+        }
+        if (template.contains("vm/vben5/views/popup.vue.vm")) {
+            fileName = StringUtils.format("{}/views/{}/{}/{}-{}.vue", vben5Path, moduleName, businessName, businessName, popupComponent);
+        }
+        if (template.contains("vm/vben5/views/popup_tree.vue.vm")) {
+            fileName = StringUtils.format("{}/views/{}/{}/{}-{}.vue", vben5Path, moduleName, businessName, businessName, popupComponent);
+        }
+
         return fileName;
     }
 
@@ -208,13 +277,16 @@ public class VelocityUtils {
      */
     public static HashSet<String> getImportList(GenTable genTable) {
         List<GenTableColumn> columns = genTable.getColumns();
-        HashSet<String> importList = new HashSet<String>();
+        HashSet<String> importList = new HashSet<>();
         for (GenTableColumn column : columns) {
             if (!column.isSuperColumn() && GenConstants.TYPE_DATE.equals(column.getJavaType())) {
                 importList.add("java.util.Date");
                 importList.add("com.fasterxml.jackson.annotation.JsonFormat");
             } else if (!column.isSuperColumn() && GenConstants.TYPE_BIGDECIMAL.equals(column.getJavaType())) {
                 importList.add("java.math.BigDecimal");
+            } else if (!column.isSuperColumn() && "imageUpload".equals(column.getHtmlType())) {
+                importList.add("org.dromara.common.translation.annotation.Translation");
+                importList.add("org.dromara.common.translation.constant.TransConstant");
             }
         }
         return importList;

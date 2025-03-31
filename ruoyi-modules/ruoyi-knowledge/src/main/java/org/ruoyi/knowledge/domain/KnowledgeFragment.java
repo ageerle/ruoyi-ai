@@ -3,6 +3,7 @@ package org.ruoyi.knowledge.domain;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -16,7 +17,7 @@ import java.util.Date;
  */
 @Data
 @TableName("knowledge_fragment")
-public class KnowledgeFragment implements Serializable {
+public class KnowledgeFragment extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -49,14 +50,5 @@ public class KnowledgeFragment implements Serializable {
      */
     private String content;
 
-    /**
-     * 创建者
-     */
-    private String createBy;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
 
 }

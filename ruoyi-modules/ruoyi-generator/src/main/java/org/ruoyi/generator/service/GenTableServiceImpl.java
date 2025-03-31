@@ -49,7 +49,7 @@ import java.util.zip.ZipOutputStream;
  *
  * @author Lion Li
  */
-@DS("#header.datasource")
+//@DS("#header.datasource")
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -228,17 +228,29 @@ public class GenTableServiceImpl implements IGenTableService {
         return dataMap;
     }
 
+
+    @Override
+    public byte[] downloadCode(Long tableId) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ZipOutputStream zip = new ZipOutputStream(outputStream);
+        generatorCode(tableId, zip);
+        IoUtil.close(zip);
+        return outputStream.toByteArray();
+    }
+
     /**
      * 生成代码（下载方式）
      *
-     * @param tableName 表名称
+     * @param tableIds 表名称
      * @return 数据
      */
     @Override
-    public byte[] downloadCode(String tableName) {
+    public byte[] downloadCode(String[] tableIds) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ZipOutputStream zip = new ZipOutputStream(outputStream);
-        generatorCode(tableName, zip);
+        for (String tableId : tableIds) {
+            generatorCode(Long.parseLong(tableId), zip);
+        }
         IoUtil.close(zip);
         return outputStream.toByteArray();
     }
@@ -327,28 +339,14 @@ public class GenTableServiceImpl implements IGenTableService {
     }
 
     /**
-     * 批量生成代码（下载方式）
-     *
-     * @param tableNames 表数组
-     * @return 数据
+     * 查询表信息并生成代码
      */
-    @Override
-    public byte[] downloadCode(String[] tableNames) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ZipOutputStream zip = new ZipOutputStream(outputStream);
-        for (String tableName : tableNames) {
-            generatorCode(tableName, zip);
-        }
-        IoUtil.close(zip);
-        return outputStream.toByteArray();
-    }
-
     /**
      * 查询表信息并生成代码
      */
-    private void generatorCode(String tableName, ZipOutputStream zip) {
+    private void generatorCode(Long tableId, ZipOutputStream zip) {
         // 查询表信息
-        GenTable table = baseMapper.selectGenTableByName(tableName);
+        GenTable table = baseMapper.selectGenTableById(tableId);
         List<Long> menuIds = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
             menuIds.add(identifierGenerator.nextId(null).longValue());

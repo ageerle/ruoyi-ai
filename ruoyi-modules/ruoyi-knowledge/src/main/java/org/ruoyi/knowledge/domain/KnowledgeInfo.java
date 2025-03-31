@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -18,7 +19,7 @@ import java.util.Date;
  */
 @Data
 @TableName("knowledge_info")
-public class KnowledgeInfo implements Serializable {
+public class KnowledgeInfo  extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -53,17 +54,6 @@ public class KnowledgeInfo implements Serializable {
      * 描述
      */
     private String description;
-
-
-    /**
-     * 创建者
-     */
-    private String createBy;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
 
     /**
      * 知识分隔符

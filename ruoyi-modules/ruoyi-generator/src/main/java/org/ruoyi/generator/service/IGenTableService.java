@@ -99,7 +99,7 @@ public interface IGenTableService {
      * @param tableName 表名称
      * @return 数据
      */
-    byte[] downloadCode(String tableName);
+    byte[] downloadCode(Long tableName);
 
     /**
      * 生成代码（自定义路径）
@@ -119,10 +119,10 @@ public interface IGenTableService {
     /**
      * 批量生成代码（下载方式）
      *
-     * @param tableNames 表数组
+     * @param tableIds 表数组
      * @return 数据
      */
-    byte[] downloadCode(String[] tableNames);
+    byte[] downloadCode(String[] tableIds);
 
     /**
      * 修改保存参数校验

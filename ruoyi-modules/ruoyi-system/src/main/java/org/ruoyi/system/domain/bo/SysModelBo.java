@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain.bo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +27,12 @@ public class SysModelBo extends BaseEntity {
      */
     @NotNull(message = "主键不能为空", groups = { EditGroup.class })
     private Long id;
+
+    /**
+     * 模型分类
+     */
+    @ExcelProperty(value = "模型分类")
+    private String category;
 
     /**
      * 模型名称

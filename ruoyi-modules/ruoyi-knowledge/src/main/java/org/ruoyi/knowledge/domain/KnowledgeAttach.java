@@ -3,6 +3,7 @@ package org.ruoyi.knowledge.domain;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -16,7 +17,7 @@ import java.util.Date;
 @Data
 
 @TableName("knowledge_attach")
-public class KnowledgeAttach implements Serializable {
+public class KnowledgeAttach  extends BaseEntity {
 
 
     @TableId(value = "id")
@@ -46,15 +47,5 @@ public class KnowledgeAttach implements Serializable {
      * 文档内容
      */
     private String content;
-
-    /**
-     * 创建者
-     */
-    private String createBy;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
 
 }

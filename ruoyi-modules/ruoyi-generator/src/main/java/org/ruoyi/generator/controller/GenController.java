@@ -3,6 +3,7 @@ package org.ruoyi.generator.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.IoUtil;
+import org.ruoyi.common.mybatis.helper.DataBaseHelper;
 import org.ruoyi.generator.domain.GenTable;
 import org.ruoyi.generator.domain.GenTableColumn;
 import org.ruoyi.generator.service.IGenTableService;
@@ -41,6 +42,7 @@ public class GenController extends BaseController {
     @SaCheckPermission("tool:gen:list")
     @GetMapping("/list")
     public TableDataInfo<GenTable> genList(GenTable genTable, PageQuery pageQuery) {
+
         return genTableService.selectPageGenTableList(genTable, pageQuery);
     }
 
@@ -142,13 +144,13 @@ public class GenController extends BaseController {
     /**
      * 生成代码（下载方式）
      *
-     * @param tableName 表名
+     * @param tableId 表名
      */
     @SaCheckPermission("tool:gen:code")
     @Log(title = "代码生成", businessType = BusinessType.GENCODE)
-    @GetMapping("/download/{tableName}")
-    public void download(HttpServletResponse response, @PathVariable("tableName") String tableName) throws IOException {
-        byte[] data = genTableService.downloadCode(tableName);
+    @GetMapping("/download/{tableId}")
+    public void download(HttpServletResponse response, @PathVariable("tableId") Long tableId) throws IOException {
+        byte[] data = genTableService.downloadCode(tableId);
         genCode(response, data);
     }
 
@@ -181,16 +183,17 @@ public class GenController extends BaseController {
     /**
      * 批量生成代码
      *
-     * @param tables 表名串
+     * @param tableIdStr 表名串
      */
     @SaCheckPermission("tool:gen:code")
     @Log(title = "代码生成", businessType = BusinessType.GENCODE)
     @GetMapping("/batchGenCode")
-    public void batchGenCode(HttpServletResponse response, String tables) throws IOException {
-        String[] tableNames = Convert.toStrArray(tables);
-        byte[] data = genTableService.downloadCode(tableNames);
+    public void batchGenCode(HttpServletResponse response, String tableIdStr) throws IOException {
+        String[] tableIds = Convert.toStrArray(tableIdStr);
+        byte[] data = genTableService.downloadCode(tableIds);
         genCode(response, data);
     }
+
 
     /**
      * 生成zip文件
@@ -203,5 +206,14 @@ public class GenController extends BaseController {
         response.addHeader("Content-Length", "" + data.length);
         response.setContentType("application/octet-stream; charset=UTF-8");
         IoUtil.write(response.getOutputStream(), false, data);
+    }
+
+    /**
+     * 查询数据源名称列表
+     */
+    @SaCheckPermission("tool:gen:list")
+    @GetMapping(value = "/getDataNames")
+    public R<Object> getCurrentDataSourceNameList(){
+        return R.ok(DataBaseHelper.getDataSourceNameList());
     }
 }

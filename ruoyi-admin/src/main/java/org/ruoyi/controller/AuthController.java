@@ -3,7 +3,6 @@ package org.ruoyi.controller;
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.json.ObjectMapper;
 import me.chanjar.weixin.common.error.WxErrorException;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.domain.R;
@@ -76,6 +75,7 @@ public class AuthController {
                 body.getUsername(), body.getPassword(),
                 body.getCode(), body.getUuid());
         loginVo.setToken(token);
+        loginVo.setAccess_token(token);
         loginVo.setUserInfo(LoginHelper.getLoginUser());
         return R.ok(loginVo);
     }

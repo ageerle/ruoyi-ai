@@ -33,6 +33,12 @@ public class SysModelVo implements Serializable {
     private Long id;
 
     /**
+     * 模型分类
+     */
+    @ExcelProperty(value = "模型分类")
+    private String category;
+
+    /**
      * 模型名称
      */
     @ExcelProperty(value = "模型名称")

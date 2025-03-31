@@ -18,9 +18,8 @@
 
     <modules>
         <module>ruoyi-demo</module>
-        <module>ruoyi-fusion</module>
+        <module>ruoyi-chat</module>
         <module>ruoyi-system</module>
-        <module>ruoyi-live</module>
         <module>ruoyi-knowledge</module>
         <module>ruoyi-generator</module>
     </modules>

@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -27,6 +28,12 @@ public class SysModel extends BaseEntity {
      */
     @TableId(value = "id")
     private Long id;
+
+    /**
+     * 模型分类
+     */
+    @ExcelProperty(value = "模型分类")
+    private String category;
 
     /**
      * 模型名称

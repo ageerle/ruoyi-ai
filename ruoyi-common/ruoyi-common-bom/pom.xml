@@ -169,7 +169,7 @@
             <!-- AI绘画 -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-fusion</artifactId>
+                <artifactId>ruoyi-chat</artifactId>
                 <version>${revision}</version>
             </dependency>
 

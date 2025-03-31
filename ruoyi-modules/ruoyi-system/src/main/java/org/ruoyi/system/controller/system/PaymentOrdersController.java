@@ -32,7 +32,7 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/system/orders")
+@RequestMapping("/system/payOrder")
 public class PaymentOrdersController extends BaseController {
 
     private final IPaymentOrdersService paymentOrdersService;
@@ -40,7 +40,7 @@ public class PaymentOrdersController extends BaseController {
     /**
      * 查询支付订单列表
      */
-    @SaCheckPermission("system:orders:list")
+    @SaCheckPermission("system:order:list")
     @GetMapping("/list")
     public TableDataInfo<PaymentOrdersVo> list(PaymentOrdersBo bo, PageQuery pageQuery) {
         pageQuery.setOrderByColumn("createTime");
@@ -51,7 +51,7 @@ public class PaymentOrdersController extends BaseController {
     /**
      * 导出支付订单列表
      */
-    @SaCheckPermission("system:orders:export")
+    @SaCheckPermission("system:order:export")
     @Log(title = "支付订单", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(PaymentOrdersBo bo, HttpServletResponse response) {
@@ -64,7 +64,7 @@ public class PaymentOrdersController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("system:orders:query")
+    @SaCheckPermission("system:order:query")
     @GetMapping("/{id}")
     public R<PaymentOrdersVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {
@@ -74,7 +74,7 @@ public class PaymentOrdersController extends BaseController {
     /**
      * 新增支付订单
      */
-    @SaCheckPermission("system:orders:add")
+    @SaCheckPermission("system:order:add")
     @Log(title = "支付订单", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -85,7 +85,7 @@ public class PaymentOrdersController extends BaseController {
     /**
      * 修改支付订单
      */
-    @SaCheckPermission("system:orders:edit")
+    @SaCheckPermission("system:order:edit")
     @Log(title = "支付订单", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -98,7 +98,7 @@ public class PaymentOrdersController extends BaseController {
      *
      * @param ids 主键串
      */
-    @SaCheckPermission("system:orders:remove")
+    @SaCheckPermission("system:order:remove")
     @Log(title = "支付订单", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")

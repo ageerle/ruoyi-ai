@@ -1,12 +1,17 @@
 ######################################################################
 # Build Tools
 
+
+
+
 .gradle
 /build/
 !gradle/wrapper/gradle-wrapper.jar
 
 target/
 !.mvn/wrapper/maven-wrapper.jar
+
+ruoyi-modules/ruoyi-generator/src/main/resources/vm/vben5
 
 ######################################################################
 # IDE
