@@ -44,7 +44,7 @@ public class ChatConfig extends TenantEntity {
     /**
      * 配置值
      */
-    @Sensitive(strategy = SensitiveStrategy.ID_CARD)
+    @Sensitive(strategy = SensitiveStrategy.SKY)
     private String configValue;
 
     /**

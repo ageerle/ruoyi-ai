@@ -45,7 +45,7 @@ public class ChatConfigBo extends BaseEntity {
     /**
      * 配置值
      */
-    @Sensitive(strategy = SensitiveStrategy.ID_CARD)
+    @Sensitive(strategy = SensitiveStrategy.SKY)
     @NotBlank(message = "配置值不能为空", groups = { AddGroup.class, EditGroup.class })
     private String configValue;
 

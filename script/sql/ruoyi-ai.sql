@@ -1,21 +1,50 @@
 /*
- Navicat Premium Dump SQL
+ Navicat MySQL Data Transfer
 
  Source Server         : ruoyi-ai
  Source Server Type    : MySQL
- Source Server Version : 50740 (5.7.40-log)
+ Source Server Version : 50740
  Source Host           : 43.139.70.230:3306
  Source Schema         : ruoyi-ai
 
  Target Server Type    : MySQL
- Target Server Version : 50740 (5.7.40-log)
+ Target Server Version : 50740
  File Encoding         : 65001
 
- Date: 18/03/2025 13:58:52
+ Date: 31/03/2025 20:11:04
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for chat_agent_manage
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_agent_manage`;
+CREATE TABLE `chat_agent_manage`  (
+  `id` bigint(20) NOT NULL COMMENT '主键id',
+  `app_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用名称',
+  `app_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用类型',
+  `app_icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用头像',
+  `app_description` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用描述',
+  `introduction` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '开场介绍',
+  `model` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型',
+  `conversation_model` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '对话可选模型',
+  `application_settings` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用设定',
+  `plugin_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '插件id',
+  `Knowledge_id` bigint(20) NULL DEFAULT NULL COMMENT '知识库id',
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '智能体管理' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of chat_agent_manage
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for chat_app_store
@@ -68,21 +97,21 @@ CREATE TABLE `chat_config`  (
   `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户Id',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `unique_category_key`(`category`, `config_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1897610056458412058 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配置信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1904862904897019906 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配置信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chat_config
 -- ----------------------------
-INSERT INTO `chat_config` VALUES (1779450794448789505, 'chat', 'apiKey', 'sk-xx', 'API 密钥', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779450794448789505, 'chat', 'apiKey', 'sk-xxs', 'API 密钥', 103, '2024-04-14 18:05:05', '1', '1', '2025-03-31 19:54:16', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779450794448799507, 'cover', 'token', 'xx', '绘声美音token', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779450794448799508, 'cover', 'cover_url', 'https://wechatscan.com/a/open/karaoke/cover', '翻唱地址', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779450794448799509, 'cover', 'search_music_url', 'https://wechatscan.com/a/open/karaoke/search', '查找歌曲', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779450794448799601, 'ppt', 'apiKey', 'xx', '文多多apikey', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1779450794872414210, 'chat', 'apiHost', 'https://api.pandarobot.chat/', 'API 地址', 103, '2024-04-14 18:05:05', '1', '1', '2024-04-23 23:56:54', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1779497340548784129, 'pay', 'pid', '1000', '商户PID', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1779497340938854401, 'pay', 'key', 'xx', '商户密钥', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1779497341135986690, 'pay', 'payUrl', 'https://pay.pandarobot.chat/mapi.php', '支付地址', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1779497341400227842, 'pay', 'notify_url', 'https://www.pandarobot.chat/pay/notifyUrl', '回调地址', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779450794872414210, 'chat', 'apiHost', 'https://api.pandarobot.chat/', 'API 地址', 103, '2024-04-14 18:05:05', '1', '1', '2025-03-31 19:54:16', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497340548784129, 'pay', 'pid', '1000', '商户PID', 103, '2024-04-14 21:10:02', '1', NULL, '2025-03-31 17:31:19', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497340938854401, 'pay', 'key', 'xx', '商户密钥', 103, '2024-04-14 21:10:02', '1', NULL, '2025-03-31 17:31:19', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497341135986690, 'pay', 'payUrl', 'https://pay.pandarobot.chat/mapi.php', '支付地址', 103, '2024-04-14 21:10:02', '1', NULL, '2025-03-31 17:31:19', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1779497341400227842, 'pay', 'notify_url', 'https://www.pandarobot.chat/pay/notifyUrl', '回调地址', 103, '2024-04-14 21:10:02', '1', NULL, '2025-03-31 17:31:19', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779497341588971522, 'pay', 'return_url', 'https://www.pandarobot.chat/pay/returnUrl', '跳转通知', 103, '2024-04-14 21:10:02', '1', '1', '2024-04-28 17:46:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779513580331835394, 'mail', 'host', 'smtp.163.com', '主机地址', 103, '2024-04-14 22:14:34', '1', '1', '2024-07-17 17:28:51', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779513580658991106, 'mail', 'port', '465', '主机端口', 103, '2024-04-14 22:14:34', '1', '1', '2024-07-17 17:28:51', NULL, NULL, '0', NULL, 0);
@@ -91,29 +120,29 @@ INSERT INTO `chat_config` VALUES (1779513581107781634, 'mail', 'user', 'ageerle@
 INSERT INTO `chat_config` VALUES (1779513581309108225, 'mail', 'pass', 'xx', '邮箱授权码', 103, '2024-04-14 22:14:34', '1', '1', '2024-07-17 17:28:52', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779726450625687553, 'mj', 'apiKey', 'sk-xx', 'API 密钥', 103, '2024-04-15 12:20:26', '1', '1', '2024-04-23 23:56:58', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1779726451036729346, 'mj', 'apiHost', 'https://api.pandarobot.chat/', 'API 地址', 103, '2024-04-15 12:20:26', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331509679181825, 'mj', 'imagine', '0.3', '文生图', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331509939228674, 'mj', 'blend', '0.3', '图生图', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331510199275522, 'mj', 'describe', '0.1', '图生文', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331510392213505, 'mj', 'change', '0.3', '变化价格', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331510652260353, 'mj', 'upsample', '0.1', '放大价格', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331510845198338, 'mj', 'inpaint', '0.3', '局部重绘', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331511117828098, 'mj', 'faceSwapping', '0.3', '换脸价格', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1782331511306571778, 'mj', 'shorten', '0.1', '提示词分析', 103, '2024-04-22 16:52:01', '1', '1', '2024-04-23 23:56:59', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331509679181825, 'mj', 'imagine', '1', '文生图', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:28', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331509939228674, 'mj', 'blend', '0', '图生图', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:28', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510199275522, 'mj', 'describe', '0', '图生文', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:28', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510392213505, 'mj', 'change', '0', '变化价格', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:29', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510652260353, 'mj', 'upsample', '0', '放大价格', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:29', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331510845198338, 'mj', 'inpaint', '0', '局部重绘', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:29', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331511117828098, 'mj', 'faceSwapping', '0', '换脸价格', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:29', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1782331511306571778, 'mj', 'shorten', '0', '提示词分析', 103, '2024-04-22 16:52:01', '1', '1', '2025-03-31 19:54:29', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1782766864937119746, 'mail', 'amount', '1', '用户注册额度', 103, '2024-04-23 21:41:57', '1', '1', '2024-07-17 17:28:52', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1784166479104135169, 'audio', 'apiKey', 'sk-xx', 'API 密钥', 103, '2024-04-27 18:23:31', '1', '1', '2024-04-27 18:24:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1784166479615840258, 'audio', 'apiHost', 'https://v1.reecho.cn/', 'API 地址', 103, '2024-04-27 18:23:32', '1', '1', '2024-04-27 18:24:31', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1786058372188569602, 'review', 'enabled', 'false', '文本审核', 103, '2024-05-02 23:41:14', '1', '1', '2024-05-03 01:18:50', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1786058372637360129, 'review', 'apiKey', 'xx', 'apiKey', 103, '2024-05-02 23:41:14', '1', '1', '2024-05-03 01:18:50', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1786058372897406977, 'review', 'secretKey', 'xx', 'secretKey', 103, '2024-05-02 23:41:14', '1', '1', '2024-05-03 01:18:50', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792069350789324801, 'weixin', 'appId', 'xx', '应用ID', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792069351246503938, 'weixin', 'appSecret', 'xx', '应用密钥', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792069351246503939, 'weixin', 'mchId', '1677338089', '商户ID', 103, '2024-05-19 13:46:43', '1', '1', '2024-05-19 22:34:39', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792183360796790785, 'weixin', 'notifyUrl', 'https://mp.pandarobot.chat/pay/notify/wxOrder', '回调地址', 103, '2024-05-19 21:19:45', '1', '1', '2024-05-19 22:34:40', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792183361065226241, 'weixin', 'enabled', 'true', '开启支付', 103, '2024-05-19 21:19:45', '1', '1', '2024-05-19 22:34:40', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792207511704100866, 'sys', 'name', '熊猫助手', '网站名称', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792207512089976834, 'sys', 'logoImage', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/19/4c106628754b4bd882a4c002eaa317f5.jpg', '网站logo', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792207512412938241, 'sys', 'copyright', 'Copyright © ageerle 2025 ', '版权信息', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1792207512740093954, 'sys', 'customImage', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/19/2faba7a5fa174d7c8d573ce3f031ec51.jpg', '客服二维码', 103, '2024-05-19 22:55:43', '1', '1', '2024-08-11 12:03:04', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1786058372188569602, 'review', 'enabled', 'false', '文本审核', 103, '2024-05-02 23:41:14', '1', '1', '2025-03-30 22:45:29', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1786058372637360129, 'review', 'apiKey', 'xx', 'apiKey', 103, '2024-05-02 23:41:14', '1', '1', '2025-03-30 22:45:29', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1786058372897406977, 'review', 'secretKey', 'xx', 'secretKey', 103, '2024-05-02 23:41:14', '1', '1', '2025-03-30 22:45:29', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792069350789324801, 'weixin', 'appId', 'xx', '应用ID', 103, '2024-05-19 13:46:43', '1', '1', '2025-03-28 17:33:46', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792069351246503938, 'weixin', 'appSecret', 'xx', '应用密钥', 103, '2024-05-19 13:46:43', '1', '1', '2025-03-28 17:33:47', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792069351246503939, 'weixin', 'mchId', '1677338089', '商户ID', 103, '2024-05-19 13:46:43', '1', '1', '2025-03-28 17:33:47', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792183360796790785, 'weixin', 'notifyUrl', 'https://mp.pandarobot.chat/pay/notify/wxOrder', '回调地址', 103, '2024-05-19 21:19:45', '1', '1', '2025-03-28 17:33:47', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792183361065226241, 'weixin', 'enabled', 'true', '开启支付', 103, '2024-05-19 21:19:45', '1', '1', '2025-03-28 17:33:47', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207511704100866, 'sys', 'name', '熊猫助手', '网站名称', 103, '2024-05-19 22:55:43', '1', '1', '2025-03-26 19:48:33', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512089976834, 'sys', 'logoImage', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/05/19/4c106628754b4bd882a4c002eaa317f5.jpg', '网站logo', 103, '2024-05-19 22:55:43', '1', '1', '2025-03-26 19:48:33', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512412938241, 'sys', 'copyright', 'ageerle', '版权信息', 103, '2024-05-19 22:55:43', '1', '1', '2025-03-26 19:48:33', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1792207512740093954, 'sys', 'customImage', '', '客服二维码', 103, '2024-05-19 22:55:43', '1', '1', '2025-03-26 19:48:33', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1792207512740093955, 'sys', 'activate', 'true', '系统激活状态', 103, '2024-05-19 22:55:43', '1', '1', '2024-06-04 04:26:14', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1795022320576143362, 'sys', 'authcode', '1716475338010', '证书编号', 103, '2024-05-27 17:20:46', NULL, NULL, '2024-05-27 17:20:46', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1795022320576143363, 'stripe', 'success', 'http://xx:6039/success', '成功回调', 103, '2024-05-27 17:20:46', NULL, '1', '2024-08-11 12:02:41', NULL, NULL, '0', NULL, 0);
@@ -133,6 +162,7 @@ INSERT INTO `chat_config` VALUES (1897610056458412054, 'milvus', 'port', '19530'
 INSERT INTO `chat_config` VALUES (1897610056458412055, 'milvus', 'dimension', '1536', '维度', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1897610056458412056, 'milvus', 'collection', 'LocalKnowledge', '分类名称', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1897610056458412057, 'zhipu', 'key', '', '智谱清言key', 103, '2025-03-12 00:13:12', '1', '1', '2025-03-12 00:13:10', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1904862904897019905, 'sys', 'model', '', '系统模型', 103, '2025-03-26 19:48:02', '1', '1', '2025-03-26 19:48:02', NULL, NULL, '0', NULL, 0);
 
 -- ----------------------------
 -- Table structure for chat_gpts
@@ -180,7 +210,8 @@ CREATE TABLE `chat_message`  (
   `id` bigint(20) NOT NULL COMMENT '主键',
   `user_id` bigint(20) NOT NULL COMMENT '用户id',
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '消息内容',
-  `deduct_cost` double(20, 2) NULL DEFAULT 0.00 COMMENT '扣除金额\r\n\r\n',
+  `role` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '对话角色',
+  `deduct_cost` double(20, 2) NULL DEFAULT 0.00 COMMENT '扣除金额',
   `total_tokens` int(20) NULL DEFAULT 0 COMMENT '累计 Tokens',
   `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
@@ -202,6 +233,8 @@ CREATE TABLE `chat_message`  (
 DROP TABLE IF EXISTS `chat_model`;
 CREATE TABLE `chat_model`  (
   `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `category` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型分类',
   `model_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
   `model_describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型描述',
   `model_price` double NULL DEFAULT NULL COMMENT '模型价格',
@@ -222,27 +255,20 @@ CREATE TABLE `chat_model`  (
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
-INSERT INTO `chat_model` VALUES (1781709495515783171, 'gpt-4-all', 'gpt-4-all', 0.2, '1', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-20 23:40:41', 1, '2025-03-15 16:46:11', 'gpt-all');
-INSERT INTO `chat_model` VALUES (1781715781896646657, 'suno-v3', 'suno-v3', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-21 00:05:20', 1, '2025-03-12 15:06:39', 'suno-v3');
-INSERT INTO `chat_model` VALUES (1781728235120791553, 'stable-diffusion', 'stable-diffusion', 0.1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-21 00:54:49', 1, '2025-03-04 22:09:12', 'stable-diffusion');
-INSERT INTO `chat_model` VALUES (1782736322308943873, 'dall-e-3', 'dall3', 0.3, '2', '1', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 19:40:36', 1, '2025-03-06 09:13:59', 'dall3');
-INSERT INTO `chat_model` VALUES (1782736729471004673, 'gpt-4-gizmo', 'gpt-4-gizmo', 0.2, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 19:42:13', 1, '2025-03-06 20:16:42', 'gpt-4-gizmo');
-INSERT INTO `chat_model` VALUES (1782792839548735490, 'midjourney', 'midjourney', 0.5, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2025-03-06 13:48:34', 'midjourney');
-INSERT INTO `chat_model` VALUES (1782792839548735491, 'suno', 'suno', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:15', 'suno');
-INSERT INTO `chat_model` VALUES (1782792839548735492, 'luma', 'luma', 1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:19', 'luma');
-INSERT INTO `chat_model` VALUES (1782792839548735493, 'ppt', 'ppt', 1.1, '2', '1', NULL, 'https://docmee.cn', 'sk-xx', 103, 1, '2025-01-10 23:25:10', 1, '2025-03-05 20:14:10', 'ppt');
-INSERT INTO `chat_model` VALUES (1811030708604317697, 'gemini-1.5-pro', 'gemini-1.5-pro', 0.2, '1', '1', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-10 21:32:23', 1, '2024-12-27 22:29:24', 'gemini-1.5-pro');
-INSERT INTO `chat_model` VALUES (1813306888443305986, 'claude-3-5-sonnet-20240620', 'claude-3-5-sonnet-20240620', 0.2, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-17 04:17:06', 1, '2025-03-13 12:06:18', 'claude-3-5-sonnet-20240620');
-INSERT INTO `chat_model` VALUES (1814227154275082242, 'o1-mini-2024-09-12', 'o1-mini-2024-09-12', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-19 17:13:55', 1, '2024-12-27 22:29:32', 'o1-mini-2024-09-12');
-INSERT INTO `chat_model` VALUES (1828324413241466881, 'deepseek-r3', 'deepseek-r3', 0.01, '1', '0', NULL, '785252', 'sk-xx', 103, 1, '2024-08-27 14:51:23', 1, '2025-03-14 17:08:57', 'chatgpt-4o-latest');
-INSERT INTO `chat_model` VALUES (1859570229117022211, 'gpt-4o-mini', 'gpt-4o-mini', 0.1, '2', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-11-21 20:11:06', 1, '2025-03-13 11:39:24', '1');
-INSERT INTO `chat_model` VALUES (1859570229117022212, 'o3-mini-2025-01-31', 'o3-mini-2025-01-31', 0.1, '1', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-11-21 20:11:06', 1, '2024-11-21 20:12:30', '');
-INSERT INTO `chat_model` VALUES (1859570229117022213, 'ollama-qwen2.5:7b', 'ollama-qwen2.5:7b', 0.1, '1', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-11-21 20:11:06', 1, '2024-11-21 20:12:30', '');
-INSERT INTO `chat_model` VALUES (1897618774806515713, 'mink', 'mink大模型', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2025-03-06 20:02:27', 1, '2025-03-08 02:28:59', '111');
-INSERT INTO `chat_model` VALUES (1897618774806515714, 'openCmd', 'openCmd', 0.01, '1', '0', '结合上下文只用回复成功或者失败', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2025-03-06 20:02:27', 1, '2025-03-08 02:28:59', '111');
-INSERT INTO `chat_model` VALUES (1897618774806515715, 'sqlPlugin', 'sqlPlugin', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2025-03-06 20:02:27', 1, '2025-03-08 02:28:59', '111');
-INSERT INTO `chat_model` VALUES (1899652265652015105, 'deepseek-r1:5b', '本地部署', 0.5, '2', '0', NULL, 'http://127.0.0.1:11434/', 'sk-xx', 103, 1, '2025-03-12 10:42:49', 1, '2025-03-15 20:49:36', '测试');
-INSERT INTO `chat_model` VALUES (1899658241792823297, 'siliconflow', '硅基流动', 0.1, '1', '1', NULL, 'https://api.siliconflow.cn', 'sk-xx', 103, 1, '2025-03-12 11:06:33', 1, '2025-03-12 11:13:49', '111');
+INSERT INTO `chat_model` VALUES (1781709495515783171, '000000', 'chat', 'gpt-4-all', 'gpt-4-hhh', 0, '2', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-20 23:40:41', 1, '2025-03-31 16:32:19', 'My name is Tr0e');
+INSERT INTO `chat_model` VALUES (1781715781896646657, '000000', 'chat', 'suno-v3', 'suno-v3', 0.3, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-21 00:05:20', 1, '2025-03-31 13:24:33', 'suno-v3');
+INSERT INTO `chat_model` VALUES (1781728235120791553, '000000', 'chat', 'stable-diffusion', 'stable-diffusion', 0.1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-21 00:54:49', 1, '2025-03-26 10:46:38', 'stable-diffusion');
+INSERT INTO `chat_model` VALUES (1782736322308943873, '000000', 'chat', 'dall-e-3', 'dall3', 0.3, '2', '1', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 19:40:36', 1, '2025-03-27 10:08:07', 'dall3');
+INSERT INTO `chat_model` VALUES (1782736729471004673, '000000', 'chat', 'gpt-4-gizmo', 'gpt-4-gizmo', 0.2, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 19:42:13', 1, '2025-03-06 20:16:42', 'gpt-4-gizmo');
+INSERT INTO `chat_model` VALUES (1782792839548735490, '000000', 'chat', 'midjourney', 'midjourney', 0.5, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2025-03-23 09:15:55', 'midjourney');
+INSERT INTO `chat_model` VALUES (1782792839548735491, '000000', 'chat', 'suno', 'suno', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:15', 'suno');
+INSERT INTO `chat_model` VALUES (1782792839548735492, '000000', 'chat', 'luma', 'luma', 1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-04-23 23:25:10', 1, '2025-03-27 10:08:15', 'luma');
+INSERT INTO `chat_model` VALUES (1782792839548735493, '000000', 'chat', 'ppt', 'ppt', 1.1, '2', '1', NULL, 'https://docmee.cn', 'sk-xx', 103, 1, '2025-01-10 23:25:10', 1, '2025-03-22 08:30:29', 'ppt');
+INSERT INTO `chat_model` VALUES (1811030708604317697, '000000', 'chat', 'gemini-1.5-pro', 'gemini-1.5-pro', 0.2, '1', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-10 21:32:23', 1, '2025-03-27 16:37:17', 'gemini-1.5-pro');
+INSERT INTO `chat_model` VALUES (1813306888443305986, '000000', 'chat', 'claude-3-5-sonnet-20240620', 'claude-3-5-sonnet-20240620', 0.2, '1', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-17 04:17:06', 1, '2025-03-23 09:15:49', 'claude-3-5-sonnet-20240620');
+INSERT INTO `chat_model` VALUES (1814227154275082242, '000000', 'chat', 'o1-mini-2024-09-12', 'o1-mini-2024-09-12', 0.01, '1', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-07-19 17:13:55', 1, '2025-03-23 09:15:41', 'o1-mini-2024-09-12');
+INSERT INTO `chat_model` VALUES (1828324413241466881, '000000', 'chat', 'deepseek-r1', 'deepseek-r1', 0.01, '1', '0', NULL, 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-08-27 14:51:23', NULL, '2025-03-27 16:21:04', 'chatgpt-4o-latest');
+INSERT INTO `chat_model` VALUES (1859570229117022211, '000000', 'chat', 'gpt-4o-mini', 'gpt-4o-mini', 0.1, '2', '0', '', 'https://api.pandarobot.chat/', 'sk-xx', 103, 1, '2024-11-21 20:11:06', 1, '2025-03-27 16:20:39', '1');
 
 -- ----------------------------
 -- Table structure for chat_package_plan
@@ -295,6 +321,27 @@ CREATE TABLE `chat_pay_order`  (
 
 -- ----------------------------
 -- Records of chat_pay_order
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for chat_plugin
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_plugin`;
+CREATE TABLE `chat_plugin`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '插件名称',
+  `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '插件编码',
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '插件管理' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of chat_plugin
 -- ----------------------------
 
 -- ----------------------------
@@ -398,26 +445,7 @@ CREATE TABLE `gen_table`  (
 -- ----------------------------
 -- Records of gen_table
 -- ----------------------------
-INSERT INTO `gen_table` VALUES (1661288222902505474, 'sys_notice', '通知公告表', NULL, NULL, 'SysNotice', 'crud', 'org.dromara.system', 'system', 'notice', '通知公告', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288223338713089, 'sys_oper_log', '操作日志记录', NULL, NULL, 'SysOperLog', 'crud', 'org.dromara.system', 'system', 'operLog', '操作日志记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288223477125122, 'sys_oss', 'OSS对象存储表', NULL, NULL, 'SysOss', 'crud', 'org.dromara.system', 'system', 'oss', 'OSS对象存储', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288223586177025, 'sys_oss_config', '对象存储配置表', NULL, NULL, 'SysOssConfig', 'crud', 'org.dromara.system', 'system', 'ossConfig', '对象存储配置', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288223728783361, 'sys_post', '岗位信息表', NULL, NULL, 'SysPost', 'crud', 'org.dromara.system', 'system', 'post', '岗位信息', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288223821058050, 'sys_role', '角色信息表', NULL, NULL, 'SysRole', 'crud', 'org.dromara.system', 'system', 'role', '角色信息', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288223925915650, 'sys_user_post', '用户与岗位关联表', NULL, NULL, 'SysUserPost', 'crud', 'org.dromara.system', 'system', 'userPost', '用户与岗位关联', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288223967858689, 'sys_user_role', '用户和角色关联表', NULL, NULL, 'SysUserRole', 'crud', 'org.dromara.system', 'system', 'userRole', '用户和角色关联', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:11', 1, '2023-05-20 18:05:11', NULL);
-INSERT INTO `gen_table` VALUES (1661288385096241154, 'sys_config', '参数配置表', NULL, NULL, 'SysConfig', 'crud', 'org.dromara.system', 'system', 'config', '参数配置', 'Lion Li', '0', '/', NULL, 103, 1, '2023-05-20 18:05:10', 1, '2023-05-20 18:05:10', NULL);
-INSERT INTO `gen_table` VALUES (1680196323445579778, 'sys_file_detail', '文件记录表', NULL, NULL, 'SysFileDetail', 'crud', 'org.ruoyi.system', 'system', 'fileDetail', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:40:00', 1, '2023-07-15 20:40:00', NULL);
-INSERT INTO `gen_table` VALUES (1680196323521077249, 'sys_file_detail', '文件记录表', NULL, NULL, 'SysFileDetail', 'crud', 'org.ruoyi.system', 'system', 'fileDetail', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:40:00', 1, '2023-07-15 20:40:00', NULL);
-INSERT INTO `gen_table` VALUES (1680199147407806465, 'sys_file_info', '文件记录表', NULL, NULL, 'SysFileInfo', 'crud', 'org.ruoyi.system', 'system', 'fileInfo', '文件记录', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-15 20:53:56', 1, '2023-07-15 20:53:56', NULL);
-INSERT INTO `gen_table` VALUES (1680481752850145282, 'sd_model_param', '模型参数信息表', NULL, NULL, 'SdModelParam', 'crud', 'org.ruoyi.system', 'system', 'modelParam', '模型参数信息', 'Lion Li', '0', '/', NULL, 103, 1, '2023-07-16 15:18:34', 1, '2023-07-16 15:18:34', NULL);
-INSERT INTO `gen_table` VALUES (1740573614897897473, 'payment_orders', '支付订单表', NULL, NULL, 'PaymentOrders', 'crud', 'org.ruoyi.system', 'system', 'orders', '支付订单', 'Lion Li', '0', '/', NULL, 103, 1, '2023-12-27 23:04:45', 1, '2023-12-27 23:04:45', NULL);
-INSERT INTO `gen_table` VALUES (1775895242171076610, 'sys_model', '系统模型', NULL, NULL, 'SysModel', 'crud', 'org.ruoyi.system', 'system', 'model', '系统模型', 'Lion Li', '0', '/', NULL, 103, 1, '2024-04-04 22:27:08', 1, '2024-04-04 22:27:08', NULL);
-INSERT INTO `gen_table` VALUES (1785390411861803009, 'wx_rob_config', '微信机器人管理', NULL, NULL, 'WxRobConfig', 'crud', 'org.ruoyi.system', 'system', 'robConfig', 'robot', 'Lion Li', '0', '/', '{\"treeCode\":null,\"treeName\":null,\"treeParentCode\":null,\"parentMenuId\":null}', 103, 1, '2024-05-01 01:10:04', 1, '2024-05-03 21:00:51', NULL);
-INSERT INTO `gen_table` VALUES (1785390413745045505, 'wx_rob_keyword', '', NULL, NULL, 'WxRobKeyword', 'crud', 'org.ruoyi.system', 'system', 'robKeyword', '', 'Lion Li', '0', '/', NULL, 103, 1, '2024-04-30 23:51:44', 1, '2024-04-30 23:51:44', NULL);
-INSERT INTO `gen_table` VALUES (1785390414860730369, 'wx_rob_relation', '', NULL, NULL, 'WxRobRelation', 'crud', 'org.ruoyi.system', 'system', 'robRelation', '', 'Lion Li', '0', '/', NULL, 103, 1, '2024-04-30 23:51:44', 1, '2024-04-30 23:51:44', NULL);
-INSERT INTO `gen_table` VALUES (1786379560181882881, 'chat_voucher', '用户兑换记录', NULL, NULL, 'ChatVoucher', 'crud', 'org.ruoyi.system', 'system', 'voucher', '用户兑换记录', 'Lion Li', '0', '/', NULL, 103, 1, '2024-05-03 20:57:18', 1, '2024-05-03 20:57:18', NULL);
-INSERT INTO `gen_table` VALUES (1789155611035381761, 'sys_notice_state', '用户阅读状态表', NULL, NULL, 'SysNoticeState', 'crud', 'org.ruoyi.system', 'system', 'noticeState', '用户阅读状态', 'Lion Li', '0', '/', NULL, 103, 1, '2024-05-11 12:48:14', 1, '2024-05-11 12:48:14', NULL);
+INSERT INTO `gen_table` VALUES (1906673887579049985, 'chat_config', '配置信息表', NULL, NULL, 'ChatConfig', 'crud', 'org.ruoyi.system', 'system', 'config', '配置信息', 'ageerle', '0', '/', NULL, 103, 1, '2025-03-31 19:36:27', 1, '2025-03-31 19:36:27', NULL);
 
 -- ----------------------------
 -- Table structure for gen_table_column
@@ -453,267 +481,21 @@ CREATE TABLE `gen_table_column`  (
 -- ----------------------------
 -- Records of gen_table_column
 -- ----------------------------
-INSERT INTO `gen_table_column` VALUES (1661288223078666241, 1661288222902505474, 'notice_id', '公告ID', 'bigint(20)', 'Long', 'noticeId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223108026369, 1661288222902505474, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223108026370, 1661288222902505474, 'notice_title', '公告标题', 'varchar(50)', 'String', 'noticeTitle', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223108026371, 1661288222902505474, 'notice_type', '公告类型（1通知 2公告）', 'char(1)', 'String', 'noticeType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 4, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223108026372, 1661288222902505474, 'notice_content', '公告内容', 'longblob', 'String', 'noticeContent', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'editor', '', 5, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223120609282, 1661288222902505474, 'status', '公告状态（0正常 1关闭）', 'char(1)', 'String', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 6, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223120609283, 1661288222902505474, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223120609284, 1661288222902505474, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223120609285, 1661288222902505474, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223120609286, 1661288222902505474, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223120609287, 1661288222902505474, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223120609288, 1661288222902505474, 'remark', '备注', 'varchar(255)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'input', '', 12, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223363878913, 1661288223338713089, 'oper_id', '日志主键', 'bigint(20)', 'Long', 'operId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223363878914, 1661288223338713089, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223363878915, 1661288223338713089, 'title', '模块标题', 'varchar(50)', 'String', 'title', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223363878916, 1661288223338713089, 'business_type', '业务类型（0其它 1新增 2修改 3删除）', 'int(2)', 'Integer', 'businessType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 4, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627649, 1661288223338713089, 'method', '方法名称', 'varchar(100)', 'String', 'method', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627650, 1661288223338713089, 'request_method', '请求方式', 'varchar(10)', 'String', 'requestMethod', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627651, 1661288223338713089, 'operator_type', '操作类别（0其它 1后台用户 2手机端用户）', 'int(1)', 'Integer', 'operatorType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 7, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627652, 1661288223338713089, 'oper_name', '操作人员', 'varchar(50)', 'String', 'operName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 8, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627653, 1661288223338713089, 'dept_name', '部门名称', 'varchar(50)', 'String', 'deptName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 9, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627654, 1661288223338713089, 'oper_url', '请求URL', 'varchar(255)', 'String', 'operUrl', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 10, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627655, 1661288223338713089, 'oper_ip', '主机地址', 'varchar(128)', 'String', 'operIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 11, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627656, 1661288223338713089, 'oper_location', '操作地点', 'varchar(255)', 'String', 'operLocation', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627657, 1661288223338713089, 'oper_param', '请求参数', 'varchar(2000)', 'String', 'operParam', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 13, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627658, 1661288223338713089, 'json_result', '返回参数', 'varchar(2000)', 'String', 'jsonResult', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 14, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627659, 1661288223338713089, 'status', '操作状态（0正常 1异常）', 'int(1)', 'Integer', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 15, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627660, 1661288223338713089, 'error_msg', '错误消息', 'varchar(2000)', 'String', 'errorMsg', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 16, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627661, 1661288223338713089, 'oper_time', '操作时间', 'datetime', 'Date', 'operTime', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 17, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223401627662, 1661288223338713089, 'cost_time', '消耗时间', 'bigint(20)', 'Long', 'costTime', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 18, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290946, 1661288223477125122, 'oss_id', '对象存储主键', 'bigint(20)', 'Long', 'ossId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290947, 1661288223477125122, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290948, 1661288223477125122, 'file_name', '文件名', 'varchar(255)', 'String', 'fileName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290949, 1661288223477125122, 'original_name', '原名', 'varchar(255)', 'String', 'originalName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290950, 1661288223477125122, 'file_suffix', '文件后缀名', 'varchar(10)', 'String', 'fileSuffix', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290951, 1661288223477125122, 'url', 'URL地址', 'varchar(500)', 'String', 'url', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 6, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290952, 1661288223477125122, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290953, 1661288223477125122, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 8, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290954, 1661288223477125122, 'create_by', '上传人', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 9, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290955, 1661288223477125122, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 10, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290956, 1661288223477125122, 'update_by', '更新人', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 11, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223502290957, 1661288223477125122, 'service', '服务商', 'varchar(20)', 'String', 'service', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342850, 1661288223586177025, 'oss_config_id', '主建', 'bigint(20)', 'Long', 'ossConfigId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342851, 1661288223586177025, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342852, 1661288223586177025, 'config_key', '配置key', 'varchar(20)', 'String', 'configKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342853, 1661288223586177025, 'access_key', 'accessKey', 'varchar(255)', 'String', 'accessKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342854, 1661288223586177025, 'secret_key', '秘钥', 'varchar(255)', 'String', 'secretKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342855, 1661288223586177025, 'bucket_name', '桶名称', 'varchar(255)', 'String', 'bucketName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 6, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342856, 1661288223586177025, 'prefix', '前缀', 'varchar(255)', 'String', 'prefix', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342857, 1661288223586177025, 'endpoint', '访问站点', 'varchar(255)', 'String', 'endpoint', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342858, 1661288223586177025, 'domain', '自定义域名', 'varchar(255)', 'String', 'domain', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342859, 1661288223586177025, 'is_https', '是否https（Y=是,N=否）', 'char(1)', 'String', 'isHttps', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 10, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223611342860, 1661288223586177025, 'region', '域', 'varchar(255)', 'String', 'region', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 11, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285889, 1661288223586177025, 'access_policy', '桶权限类型(0=private 1=public 2=custom)', 'char(1)', 'String', 'accessPolicy', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285890, 1661288223586177025, 'status', '是否默认（0=是,1=否）', 'char(1)', 'String', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 13, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285891, 1661288223586177025, 'ext1', '扩展字段', 'varchar(255)', 'String', 'ext1', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 14, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285892, 1661288223586177025, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 15, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285893, 1661288223586177025, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 16, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285894, 1661288223586177025, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 17, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285895, 1661288223586177025, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 18, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285896, 1661288223586177025, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 19, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223653285897, 1661288223586177025, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 20, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754881, 1661288223728783361, 'post_id', '岗位ID', 'bigint(20)', 'Long', 'postId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754882, 1661288223728783361, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754883, 1661288223728783361, 'post_code', '岗位编码', 'varchar(64)', 'String', 'postCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754884, 1661288223728783361, 'post_name', '岗位名称', 'varchar(50)', 'String', 'postName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754885, 1661288223728783361, 'post_sort', '显示顺序', 'int(4)', 'Integer', 'postSort', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754886, 1661288223728783361, 'status', '状态（0正常 1停用）', 'char(1)', 'String', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 6, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754887, 1661288223728783361, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754888, 1661288223728783361, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754889, 1661288223728783361, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754890, 1661288223728783361, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754891, 1661288223728783361, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223749754892, 1661288223728783361, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 12, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223874, 1661288223821058050, 'role_id', '角色ID', 'bigint(20)', 'Long', 'roleId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223875, 1661288223821058050, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223876, 1661288223821058050, 'role_name', '角色名称', 'varchar(30)', 'String', 'roleName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223877, 1661288223821058050, 'role_key', '角色权限字符串', 'varchar(100)', 'String', 'roleKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223878, 1661288223821058050, 'role_sort', '显示顺序', 'int(4)', 'Integer', 'roleSort', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223879, 1661288223821058050, 'data_scope', '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）', 'char(1)', 'String', 'dataScope', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223880, 1661288223821058050, 'menu_check_strictly', '菜单树选择项是否关联显示', 'tinyint(1)', 'Integer', 'menuCheckStrictly', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223881, 1661288223821058050, 'dept_check_strictly', '部门树选择项是否关联显示', 'tinyint(1)', 'Integer', 'deptCheckStrictly', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223882, 1661288223821058050, 'status', '角色状态（0正常 1停用）', 'char(1)', 'String', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 9, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223883, 1661288223821058050, 'del_flag', '删除标志（0代表存在 2代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223884, 1661288223821058050, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 11, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223885, 1661288223821058050, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 12, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223886, 1661288223821058050, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 13, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223887, 1661288223821058050, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 14, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223888, 1661288223821058050, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223846223889, 1661288223821058050, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 16, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223951081474, 1661288223925915650, 'user_id', '用户ID', 'bigint(20)', 'Long', 'userId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223951081475, 1661288223925915650, 'post_id', '岗位ID', 'bigint(20)', 'Long', 'postId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:12', 1, '2023-05-24 16:29:12');
-INSERT INTO `gen_table_column` VALUES (1661288223993024514, 1661288223967858689, 'user_id', '用户ID', 'bigint(20)', 'Long', 'userId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288223993024515, 1661288223967858689, 'role_id', '角色ID', 'bigint(20)', 'Long', 'roleId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:13', 1, '2023-05-24 16:29:13');
-INSERT INTO `gen_table_column` VALUES (1661288385121406978, 1661288385096241154, 'config_id', '参数主键', 'bigint(20)', 'Long', 'configId', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385121406979, 1661288385096241154, 'tenant_id', '租户编号', 'varchar(20)', 'String', 'tenantId', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 2, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385121406980, 1661288385096241154, 'config_name', '参数名称', 'varchar(100)', 'String', 'configName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385121406981, 1661288385096241154, 'config_key', '参数键名', 'varchar(100)', 'String', 'configKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385121406982, 1661288385096241154, 'config_value', '参数键值', 'varchar(500)', 'String', 'configValue', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 5, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385121406983, 1661288385096241154, 'config_type', '系统内置（Y是 N否）', 'char(1)', 'String', 'configType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 6, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385121406984, 1661288385096241154, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 7, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385142378498, 1661288385096241154, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385142378499, 1661288385096241154, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385142378500, 1661288385096241154, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385142378501, 1661288385096241154, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1661288385142378502, 1661288385096241154, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 12, 103, 1, '2023-05-24 16:29:51', 1, '2023-05-24 16:29:51');
-INSERT INTO `gen_table_column` VALUES (1680196323806289921, 1680196323521077249, 'id', '文件id', 'bigint(20) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323806289922, 1680196323521077249, 'url', '文件访问地址', 'varchar(512)', 'String', 'url', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 2, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323835650050, 1680196323445579778, 'id', '文件id', 'bigint(20) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323835650051, 1680196323445579778, 'url', '文件访问地址', 'varchar(512)', 'String', 'url', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 2, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323835650052, 1680196323445579778, 'size', '文件大小，单位字节', 'bigint(20)', 'Long', 'size', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323873398785, 1680196323445579778, 'filename', '文件名称', 'varchar(256)', 'String', 'filename', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323873398786, 1680196323445579778, 'original_filename', '原始文件名', 'varchar(256)', 'String', 'originalFilename', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 5, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323873398787, 1680196323445579778, 'base_path', '基础存储路径', 'varchar(256)', 'String', 'basePath', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323873398788, 1680196323445579778, 'path', '存储路径', 'varchar(256)', 'String', 'path', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323873398789, 1680196323445579778, 'ext', '文件扩展名', 'varchar(32)', 'String', 'ext', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323873398790, 1680196323445579778, 'object_id', '文件所属对象id', 'varchar(32)', 'String', 'objectId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323873398791, 1680196323445579778, 'file_type', '文件类型', 'varchar(32)', 'String', 'fileType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 10, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323932119041, 1680196323445579778, 'attr', '附加属性', 'text', 'String', 'attr', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 11, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323932119042, 1680196323445579778, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 12, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323940507649, 1680196323445579778, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 13, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323940507650, 1680196323445579778, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 14, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323940507651, 1680196323445579778, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323940507652, 1680196323445579778, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 16, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323940507653, 1680196323445579778, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 17, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323940507654, 1680196323445579778, 'del_flag', '删除标志（0代表存在 1代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 18, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479170, 1680196323521077249, 'size', '文件大小，单位字节', 'bigint(20)', 'Long', 'size', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479171, 1680196323521077249, 'filename', '文件名称', 'varchar(256)', 'String', 'filename', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479172, 1680196323521077249, 'original_filename', '原始文件名', 'varchar(256)', 'String', 'originalFilename', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 5, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479173, 1680196323521077249, 'base_path', '基础存储路径', 'varchar(256)', 'String', 'basePath', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479174, 1680196323521077249, 'path', '存储路径', 'varchar(256)', 'String', 'path', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479175, 1680196323521077249, 'ext', '文件扩展名', 'varchar(32)', 'String', 'ext', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479176, 1680196323521077249, 'object_id', '文件所属对象id', 'varchar(32)', 'String', 'objectId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479177, 1680196323521077249, 'file_type', '文件类型', 'varchar(32)', 'String', 'fileType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 10, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323961479178, 1680196323521077249, 'attr', '附加属性', 'text', 'String', 'attr', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 11, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323999227905, 1680196323445579778, 'update_ip', '更新IP', 'varchar(128)', 'String', 'updateIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 19, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196323999227906, 1680196323445579778, 'tenant_id', '租户Id', 'bigint(20)', 'Long', 'tenantId', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'input', '', 20, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199425, 1680196323521077249, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 12, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199426, 1680196323521077249, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 13, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199427, 1680196323521077249, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 14, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199428, 1680196323521077249, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199429, 1680196323521077249, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 16, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199430, 1680196323521077249, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 17, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199431, 1680196323521077249, 'del_flag', '删除标志（0代表存在 1代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 18, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199432, 1680196323521077249, 'update_ip', '更新IP', 'varchar(128)', 'String', 'updateIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 19, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680196324020199433, 1680196323521077249, 'tenant_id', '租户Id', 'bigint(20)', 'Long', 'tenantId', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'input', '', 20, 103, 1, '2023-07-15 20:43:15', 1, '2023-07-15 20:43:15');
-INSERT INTO `gen_table_column` VALUES (1680199147667853313, 1680199147407806465, 'id', '文件id', 'bigint(20) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147667853314, 1680199147407806465, 'url', '文件访问地址', 'varchar(512)', 'String', 'url', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 2, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147667853315, 1680199147407806465, 'size', '文件大小，单位字节', 'bigint(20)', 'Long', 'size', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147667853316, 1680199147407806465, 'filename', '文件名称', 'varchar(256)', 'String', 'filename', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147667853317, 1680199147407806465, 'original_filename', '原始文件名', 'varchar(256)', 'String', 'originalFilename', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 5, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147667853318, 1680199147407806465, 'base_path', '基础存储路径', 'varchar(256)', 'String', 'basePath', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962178, 1680199147407806465, 'path', '存储路径', 'varchar(256)', 'String', 'path', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962179, 1680199147407806465, 'ext', '文件扩展名', 'varchar(32)', 'String', 'ext', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962180, 1680199147407806465, 'object_id', '文件所属对象id', 'varchar(32)', 'String', 'objectId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962181, 1680199147407806465, 'file_type', '文件类型', 'varchar(32)', 'String', 'fileType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 10, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962182, 1680199147407806465, 'attr', '附加属性', 'text', 'String', 'attr', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 11, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962183, 1680199147407806465, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 12, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962184, 1680199147407806465, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 13, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962185, 1680199147407806465, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 14, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962186, 1680199147407806465, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962187, 1680199147407806465, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 16, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962188, 1680199147407806465, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 17, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962189, 1680199147407806465, 'del_flag', '删除标志（0代表存在 1代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 18, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962190, 1680199147407806465, 'update_ip', '更新IP', 'varchar(128)', 'String', 'updateIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 19, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680199147734962191, 1680199147407806465, 'tenant_id', '租户Id', 'bigint(20)', 'Long', 'tenantId', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'input', '', 20, 103, 1, '2023-07-15 20:54:28', 1, '2023-07-15 20:54:28');
-INSERT INTO `gen_table_column` VALUES (1680481753240215553, 1680481752850145282, 'id', 'id', 'bigint(20) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215554, 1680481752850145282, 'prompt', '描述词', 'text', 'String', 'prompt', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 2, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215555, 1680481752850145282, 'negative_prompt', '负面词', 'text', 'String', 'negativePrompt', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 3, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215556, 1680481752850145282, 'model_name', '模型名称', 'varchar(256)', 'String', 'modelName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215557, 1680481752850145282, 'steps', '迭代步数', 'int(10)', 'Integer', 'steps', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215558, 1680481752850145282, 'seed', '种子', 'varchar(256)', 'String', 'seed', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215559, 1680481752850145282, 'width', '图片宽度', 'varchar(256)', 'String', 'width', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215560, 1680481752850145282, 'height', '图片高度', 'varchar(32)', 'String', 'height', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215561, 1680481752850145282, 'sampler_name', '采样方法', 'varchar(32)', 'String', 'samplerName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 9, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215562, 1680481752850145282, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215563, 1680481752850145282, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215564, 1680481752850145282, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 12, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215565, 1680481752850145282, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 13, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215566, 1680481752850145282, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 14, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215567, 1680481752850145282, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 15, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215568, 1680481752850145282, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 16, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215569, 1680481752850145282, 'del_flag', '删除标志（0代表存在 1代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 17, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215570, 1680481752850145282, 'update_ip', '更新IP', 'varchar(128)', 'String', 'updateIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 18, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1680481753240215571, 1680481752850145282, 'tenant_id', '租户Id', 'bigint(20)', 'Long', 'tenantId', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'input', '', 19, 103, 1, '2023-07-16 15:37:26', 1, '2023-07-16 15:37:26');
-INSERT INTO `gen_table_column` VALUES (1740573615225053185, 1740573614897897473, 'id', '主键', 'int(11)', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053186, 1740573614897897473, 'order_no', '订单编号', 'varchar(20)', 'String', 'orderNo', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053187, 1740573614897897473, 'order_name', '订单名称', 'varchar(100)', 'String', 'orderName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053188, 1740573614897897473, 'amount', '金额', 'decimal(10,2)', 'BigDecimal', 'amount', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053189, 1740573614897897473, 'payment_status', '支付状态', 'char(1)', 'String', 'paymentStatus', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 5, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053190, 1740573614897897473, 'payment_method', '支付方式', 'char(1)', 'String', 'paymentMethod', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053191, 1740573614897897473, 'user_id', '用户ID', 'timestamp', 'Date', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 7, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053192, 1740573614897897473, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053193, 1740573614897897473, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053194, 1740573614897897473, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053195, 1740573614897897473, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1740573615225053196, 1740573614897897473, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 12, 103, 1, '2023-12-29 11:21:03', 1, '2023-12-29 11:21:03');
-INSERT INTO `gen_table_column` VALUES (1775895242624061441, 1775895242171076610, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061442, 1775895242171076610, 'model_name', '模型名称', 'varchar(50)', 'String', 'modelName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 2, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061443, 1775895242171076610, 'model_no', '模型编号', 'varchar(255)', 'String', 'modelNo', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061444, 1775895242171076610, 'model_describe', '模型描述', 'varchar(255)', 'String', 'modelDescribe', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061445, 1775895242171076610, 'model_price', '模型价格', 'double', 'Long', 'modelPrice', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061446, 1775895242171076610, 'model_type', '计费类型', 'char(1)', 'String', 'modelType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 6, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061447, 1775895242171076610, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 7, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061448, 1775895242171076610, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061449, 1775895242171076610, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061450, 1775895242171076610, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061451, 1775895242171076610, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 11, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1775895242624061452, 1775895242171076610, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 12, 103, 1, '2024-04-04 22:36:35', 1, '2024-04-04 22:36:35');
-INSERT INTO `gen_table_column` VALUES (1785390412381896706, 1785390411861803009, 'id', '主键', 'int(11) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412381896707, 1785390411861803009, 'user_id', '用户id', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412381896708, 1785390411861803009, 'unique_key', '机器唯一码', 'varchar(16)', 'String', 'uniqueKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412381896709, 1785390411861803009, 'remark', '备注（微信号）', 'varchar(64)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'input', '', 4, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811265, 1785390411861803009, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 5, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811266, 1785390411861803009, 'update_time', '修改时间', 'datetime', 'Date', 'updateTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 6, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811267, 1785390411861803009, 'to_friend', '指定好友回复开关', 'bit(1)', 'Integer', 'toFriend', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811268, 1785390411861803009, 'to_group', '指定群回复开关', 'bit(1)', 'Integer', 'toGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811269, 1785390411861803009, 'default_friend', '默认好友回复开关', 'bit(1)', 'Integer', 'defaultFriend', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811270, 1785390411861803009, 'default_group', '默认群回复开关', 'bit(1)', 'Integer', 'defaultGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 10, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811271, 1785390411861803009, 'from_out', '对外接口开关', 'bit(1)', 'Integer', 'fromOut', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 11, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390412444811272, 1785390411861803009, 'enable', '机器启用1禁用0', 'bit(1)', 'Integer', 'enable', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-03 21:00:52');
-INSERT INTO `gen_table_column` VALUES (1785390414135115778, 1785390413745045505, 'id', '', 'int(11) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115779, 1785390413745045505, 'unique_key', '机器唯一码', 'varchar(16)', 'String', 'uniqueKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115780, 1785390413745045505, 'key_data', '关键词', 'varchar(64)', 'String', 'keyData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115781, 1785390413745045505, 'value_data', '回复内容', 'varchar(1024)', 'String', 'valueData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 4, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115782, 1785390413745045505, 'type_data', '回复类型', 'varchar(64)', 'String', 'typeData', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115783, 1785390413745045505, 'nick_name', '目标昵称', 'varchar(64)', 'String', 'nickName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 6, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115784, 1785390413745045505, 'to_group', '群1好友0', 'bit(1)', 'Integer', 'toGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115785, 1785390413745045505, 'enable', '启用1禁用0', 'bit(1)', 'Integer', 'enable', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390414135115786, 1785390413745045505, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-05-01 03:27:00', 1, '2024-05-01 03:27:00');
-INSERT INTO `gen_table_column` VALUES (1785390415250800642, 1785390414860730369, 'id', '', 'int(11) unsigned', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1785390415250800643, 1785390414860730369, 'out_key', '外接唯一码', 'varchar(16)', 'String', 'outKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1785390415250800644, 1785390414860730369, 'unique_key', '机器唯一码', 'varchar(16)', 'String', 'uniqueKey', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1785390415250800645, 1785390414860730369, 'nick_name', '目标昵称', 'varchar(64)', 'String', 'nickName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1785390415250800646, 1785390414860730369, 'to_group', '群1好友0', 'bit(1)', 'Integer', 'toGroup', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1785390415250800647, 1785390414860730369, 'enable', '启用1禁用0', 'bit(1)', 'Integer', 'enable', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1785390415250800648, 1785390414860730369, 'white_list', 'IP白名单', 'varchar(255)', 'String', 'whiteList', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1785390415250800649, 1785390414860730369, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 8, 103, 1, '2024-05-01 03:27:01', 1, '2024-05-01 03:27:01');
-INSERT INTO `gen_table_column` VALUES (1786379560827805698, 1786379560181882881, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805699, 1786379560181882881, 'user_id', '用户id', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805700, 1786379560181882881, 'code', '兑换码', 'varchar(255)', 'String', 'code', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805701, 1786379560181882881, 'amount', '兑换金额', 'double(10,2)', 'BigDecimal', 'amount', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805702, 1786379560181882881, 'status', '兑换状态', 'char(1)', 'String', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 5, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805703, 1786379560181882881, 'balance_before', '兑换前余额', 'double(10,2)', 'BigDecimal', 'balanceBefore', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805704, 1786379560181882881, 'balance_after', '兑换后余额', 'double(10,2)', 'BigDecimal', 'balanceAfter', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805705, 1786379560181882881, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805706, 1786379560181882881, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805707, 1786379560181882881, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 10, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805708, 1786379560181882881, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 11, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560827805709, 1786379560181882881, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 12, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1786379560890720257, 1786379560181882881, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 13, 103, 1, '2024-05-03 20:57:31', 1, '2024-05-03 20:57:31');
-INSERT INTO `gen_table_column` VALUES (1789155611425452034, 1789155611035381761, 'id', 'ID', 'bigint(20)', 'Long', 'id', '1', '0', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452035, 1789155611035381761, 'user_id', '用户ID', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452036, 1789155611035381761, 'notice_id', '公告ID', 'bigint(20)', 'Long', 'noticeId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452037, 1789155611035381761, 'read_status', '阅读状态（0未读 1已读）', 'char(1)', 'String', 'readStatus', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', '', 4, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452038, 1789155611035381761, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 5, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452039, 1789155611035381761, 'create_by', '创建者', 'bigint(20)', 'Long', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 6, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452040, 1789155611035381761, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 7, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452041, 1789155611035381761, 'update_by', '更新者', 'bigint(20)', 'Long', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452042, 1789155611035381761, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 9, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
-INSERT INTO `gen_table_column` VALUES (1789155611425452043, 1789155611035381761, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 10, 103, 1, '2024-05-11 12:48:33', 1, '2024-05-11 12:48:33');
+INSERT INTO `gen_table_column` VALUES (1906673888229167105, 1906673887579049985, 'id', '主键', 'bigint(20)', 'Long', 'id', '1', '1', '1', NULL, '1', '1', NULL, 'EQ', 'input', '', 1, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167106, 1906673887579049985, 'category', '配置类型', 'varchar(255)', 'String', 'category', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167107, 1906673887579049985, 'config_name', '配置名称', 'varchar(255)', 'String', 'configName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167108, 1906673887579049985, 'config_value', '配置值', 'text', 'String', 'configValue', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 4, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167109, 1906673887579049985, 'config_dict', '说明', 'varchar(255)', 'String', 'configDict', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167110, 1906673887579049985, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 6, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167111, 1906673887579049985, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 7, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167112, 1906673887579049985, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 8, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167113, 1906673887579049985, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 9, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167114, 1906673887579049985, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'datetime', '', 10, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167115, 1906673887579049985, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', NULL, 'EQ', 'textarea', '', 11, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888229167116, 1906673887579049985, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 12, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888292081665, 1906673887579049985, 'del_flag', '删除标志（0代表存在 1代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', NULL, NULL, NULL, NULL, NULL, 'EQ', 'input', '', 13, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888292081666, 1906673887579049985, 'update_ip', '更新IP', 'varchar(128)', 'String', 'updateIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 14, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
+INSERT INTO `gen_table_column` VALUES (1906673888292081667, 1906673887579049985, 'tenant_id', '租户Id', 'bigint(20)', 'Long', 'tenantId', '0', '0', '1', NULL, NULL, NULL, NULL, 'EQ', 'input', '', 15, 103, 1, '2025-03-31 19:44:14', 1, '2025-03-31 19:44:14');
 
 -- ----------------------------
 -- Table structure for knowledge_attach
@@ -723,14 +505,18 @@ CREATE TABLE `knowledge_attach`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `kid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
   `doc_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档ID',
-  `doc_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档名称',
+  `doc_name` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文档名称',
   `doc_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档类型',
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文档内容',
-  `create_time` datetime NULL DEFAULT NULL,
-  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `idx_kname`(`kid`, `doc_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1900472441872076802 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库附件' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1906640977816494082 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库附件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of knowledge_attach
@@ -747,10 +533,14 @@ CREATE TABLE `knowledge_fragment`  (
   `fid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识片段ID',
   `idx` int(11) NOT NULL COMMENT '片段索引下标',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档内容',
-  `create_time` datetime NULL DEFAULT NULL,
-  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
+  `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1900472441846910978 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1906640976134578257 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of knowledge_fragment
@@ -774,11 +564,15 @@ CREATE TABLE `knowledge_info`  (
   `text_block_size` int(11) NULL DEFAULT NULL COMMENT '文本块大小',
   `vector` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '向量库',
   `vector_model` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '向量模型',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `idx_kid`(`kid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1900203785917321219 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1906589542361899010 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of knowledge_info
@@ -807,11 +601,31 @@ CREATE TABLE `sys_config`  (
 -- ----------------------------
 -- Records of sys_config
 -- ----------------------------
-INSERT INTO `sys_config` VALUES (1, '000000', '主框架页-默认皮肤样式名称', 'sys.index.skinName', 'skin-blue', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-12 12:24:07', '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow');
-INSERT INTO `sys_config` VALUES (2, '000000', '用户管理-账号初始密码', 'sys.user.initPassword', '123456', 'N', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-12 10:22:57', '初始化密码 123456');
-INSERT INTO `sys_config` VALUES (3, '000000', '主框架页-侧边栏主题', 'sys.index.sideTheme', 'theme-dark', 'N', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-12 10:23:02', '深色主题theme-dark，浅色主题theme-light');
-INSERT INTO `sys_config` VALUES (5, '000000', '账号自助-是否开启用户注册功能', 'sys.account.registerUser', 'false', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, '是否开启注册用户功能（true开启，false关闭）');
+INSERT INTO `sys_config` VALUES (1, '000000', '时间参数', 'skin-purple', 'skin-blue', 'N', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-28 22:30:49', '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow');
+INSERT INTO `sys_config` VALUES (2, '000000', '显示方式', 'sys.user.initPassword', '123456', 'N', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-28 10:40:44', '初始化密码 123456');
+INSERT INTO `sys_config` VALUES (3, '000000', '回答模板', 'sys.index.sideTheme', 'theme-dark', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-28 10:40:50', '深色主题theme-dark，浅色主题theme-light');
+INSERT INTO `sys_config` VALUES (5, '000000', '无结果时是否交由其他回答指令模板进行配置处理', 'sys.account.registerUser', 'false', 'Y', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-28 10:40:57', '是否开启注册用户功能（true开启，false关闭）');
 INSERT INTO `sys_config` VALUES (11, '000000', 'OSS预览列表资源开关', 'sys.oss.previewListResource', 'true', 'Y', 103, 1, '2023-05-14 15:19:42', NULL, NULL, 'true:开启, false:关闭');
+INSERT INTO `sys_config` VALUES (1901957791626854401, '000000', '1', '1', '1', 'N', 103, 1, '2025-03-18 19:24:09', 1, '2025-03-18 19:24:09', NULL);
+INSERT INTO `sys_config` VALUES (1902001922927525890, '000000', '111', '111', '111', 'N', 103, 1, '2025-03-18 22:19:31', 1, '2025-03-18 22:19:31', NULL);
+INSERT INTO `sys_config` VALUES (1903121770873139202, '000000', '12', '12', '12', 'N', 103, 1, '2025-03-22 00:29:23', 1, '2025-03-22 00:29:23', NULL);
+INSERT INTO `sys_config` VALUES (1903148170321637377, '000000', '324', '234', '234', 'N', 103, 1, '2025-03-22 02:14:17', 1, '2025-03-22 02:14:17', NULL);
+INSERT INTO `sys_config` VALUES (1903150187299516418, '000000', '1去', '额', '额外', 'N', 103, 1, '2025-03-22 02:22:18', 1, '2025-03-22 02:22:18', NULL);
+INSERT INTO `sys_config` VALUES (1903150796597669890, '000000', '1323321', '1321', '1', 'Y', 103, 1, '2025-03-22 02:24:43', 1, '2025-03-22 02:24:43', NULL);
+INSERT INTO `sys_config` VALUES (1903977127044497410, '000000', 'aq', 'as', 'sa', 'Y', 103, 1, '2025-03-24 09:08:16', 1, '2025-03-24 09:08:16', 'as');
+INSERT INTO `sys_config` VALUES (1903992403639189505, '000000', '12', '12323234', '1', 'N', 103, 1, '2025-03-24 10:08:58', 1, '2025-03-24 10:08:58', '1');
+INSERT INTO `sys_config` VALUES (1904348758011060225, '000000', '123', '123', '123', 'N', 103, 1, '2025-03-25 09:45:00', 1, '2025-03-25 09:45:00', NULL);
+INSERT INTO `sys_config` VALUES (1904433831695654913, '000000', 'Test01', '1111', '1222', 'N', 103, 1, '2025-03-25 15:23:03', 1, '2025-03-28 22:30:53', '123123');
+INSERT INTO `sys_config` VALUES (1904492290667487233, '000000', 'test', 'test', 'test', 'Y', 103, 1, '2025-03-25 19:15:21', 1, '2025-03-25 19:15:21', '阿斯顿发');
+INSERT INTO `sys_config` VALUES (1904526572685402114, '000000', 'a', 'k', '123', 'N', 103, 1, '2025-03-25 21:31:34', 1, '2025-03-25 21:31:34', NULL);
+INSERT INTO `sys_config` VALUES (1904730931222323202, '000000', '支付111', '支付111', '100', 'N', 103, 1, '2025-03-26 11:03:37', 1, '2025-03-26 11:03:37', '测试');
+INSERT INTO `sys_config` VALUES (1904731973473312770, '000000', '积分兑换111', '121', '121', 'N', 103, 1, '2025-03-26 11:07:45', 1, '2025-03-26 11:07:45', '积分兑换');
+INSERT INTO `sys_config` VALUES (1904789679236227073, '000000', '2', '2', '2', 'N', 103, 1, '2025-03-26 14:57:03', 1, '2025-03-26 14:57:03', NULL);
+INSERT INTO `sys_config` VALUES (1905070856643846146, '000000', '21', '21', '2121', 'N', 103, 1, '2025-03-27 09:34:21', 1, '2025-03-27 09:34:21', '21212');
+INSERT INTO `sys_config` VALUES (1905449847099793409, '000000', '指标时间参数配置', '12321', '12321', 'N', 103, 1, '2025-03-28 10:40:20', 1, '2025-03-28 10:40:20', NULL);
+INSERT INTO `sys_config` VALUES (1906533795238289409, '000000', '123222', '123222', '123222', 'Y', 103, 1, '2025-03-31 10:27:33', 1, '2025-03-31 10:27:33', NULL);
+INSERT INTO `sys_config` VALUES (1906597665071996929, '000000', '什么都参数', '什么都参数', '1', 'Y', 103, 1, '2025-03-31 14:41:21', 1, '2025-03-31 14:41:21', '1');
+INSERT INTO `sys_config` VALUES (1906619956543660034, '000000', '测试', '测试', '测试', 'N', 103, 1, '2025-03-31 16:09:56', 1, '2025-03-31 16:09:56', NULL);
 
 -- ----------------------------
 -- Table structure for sys_dept
@@ -850,6 +664,12 @@ INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', 
 INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', 5, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
 INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
 INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (1903101865297752066, '000000', 103, '0,100,101,103', 'AA', 1, NULL, '18701676790', '1234@ss.com', '0', '0', 103, 1, '2025-03-21 23:10:17', 1, '2025-03-21 23:10:17');
+INSERT INTO `sys_dept` VALUES (1904430886174367746, '000000', 1903101865297752066, '0,100,101,103,1903101865297752066', '测试', 1, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-25 15:11:21', 1, '2025-03-25 15:11:21');
+INSERT INTO `sys_dept` VALUES (1904736932721893377, '000000', 101, '0,100,101', '研发部门2', 100, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-26 11:27:28', 1, '2025-03-26 11:27:28');
+INSERT INTO `sys_dept` VALUES (1905140221372309505, '000000', 1903101865297752066, '0,100,101,103,1903101865297752066', 'test', 1, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-27 14:09:59', 1, '2025-03-27 14:09:59');
+INSERT INTO `sys_dept` VALUES (1905554900431183874, '000000', 103, '0,100,101,103', '部门1', 5, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-28 17:37:46', 1, '2025-03-28 17:37:46');
+INSERT INTO `sys_dept` VALUES (1905849169498906626, '000000', 1903101865297752066, '0,100,101,103,1903101865297752066', '111111', 1, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-29 13:07:06', 1, '2025-03-29 13:07:06');
 
 -- ----------------------------
 -- Table structure for sys_dict_data
@@ -951,7 +771,10 @@ INSERT INTO `sys_dict_type` VALUES (1729685494468083720, '911866', '操作类型
 INSERT INTO `sys_dict_type` VALUES (1729685494468083721, '911866', '系统状态', 'sys_common_status', '0', 103, 1, '2023-05-14 15:19:41', 1, '2023-05-14 15:19:41', '登录状态列表');
 INSERT INTO `sys_dict_type` VALUES (1775756736895438849, '000000', '用户等级', 'sys_user_grade', '0', 103, 1, '2024-04-04 13:26:13', 1, '2024-04-04 13:26:13', '');
 INSERT INTO `sys_dict_type` VALUES (1776109665045278721, '000000', '模型计费方式', 'sys_model_billing', '0', 103, 1, '2024-04-05 12:48:37', 1, '2024-04-08 11:22:18', '模型计费方式');
-INSERT INTO `sys_dict_type` VALUES (1780263881368219649, '000000', '支付状态', 'pay_state', '0', 103, 1, '2024-04-16 23:56:00', 1, '2024-04-16 23:56:00', '支付状态');
+INSERT INTO `sys_dict_type` VALUES (1780263881368219649, '000000', '支付状态', 'pay_state', '0', 103, 1, '2024-04-16 23:56:00', 1, '2025-03-29 15:21:57', '支付状态');
+INSERT INTO `sys_dict_type` VALUES (1904565568803217409, '000000', '状态类型', 'status_type', '0', 103, 1, '2025-03-26 00:06:31', 1, '2025-03-26 00:06:31', NULL);
+INSERT INTO `sys_dict_type` VALUES (1904753371814076417, '000000', '222', 'sadffasd', '0', 103, 1, '2025-03-26 12:32:47', 1, '2025-03-26 12:32:47', '34444');
+INSERT INTO `sys_dict_type` VALUES (1905807388002525185, '000000', '11', 'ee', '0', 103, 1, '2025-03-29 10:21:04', 1, '2025-03-29 10:21:04', '11');
 
 -- ----------------------------
 -- Table structure for sys_file_info
@@ -1009,6 +832,8 @@ CREATE TABLE `sys_logininfor`  (
 -- ----------------------------
 -- Records of sys_logininfor
 -- ----------------------------
+INSERT INTO `sys_logininfor` VALUES (1906674629019475969, '00000', 'admin', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2025-03-31 19:47:11');
+INSERT INTO `sys_logininfor` VALUES (1906677855705931778, '00000', 'admin', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2025-03-31 20:00:00');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -1036,7 +861,7 @@ CREATE TABLE `sys_menu`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -1045,8 +870,8 @@ INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 2, 'system', NULL, '', 1, 0
 INSERT INTO `sys_menu` VALUES (100, '用户管理', 1775500307898949634, 1, 'user', 'system/user/index', '', 1, 0, 'C', '0', '0', 'system:user:list', 'ph:user-fill', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:29:29', '用户管理菜单');
 INSERT INTO `sys_menu` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'ri:user-3-fill', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:04:59', '角色管理菜单');
 INSERT INTO `sys_menu` VALUES (102, '菜单管理', 1, 3, 'menu', 'system/menu/index', '', 1, 0, 'C', '0', '0', 'system:menu:list', 'typcn:th-menu-outline', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:06:06', '菜单管理菜单');
-INSERT INTO `sys_menu` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '0', '0', 'system:dept:list', 'mdi:company', 103, 1, '2023-05-14 15:19:39', 1, '2025-03-03 16:44:16', '部门管理菜单');
-INSERT INTO `sys_menu` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', 1, 0, 'C', '0', '0', 'system:post:list', 'post', 103, 1, '2023-05-14 15:19:39', 1, '2025-03-11 13:58:09', '岗位管理菜单');
+INSERT INTO `sys_menu` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '1', '1', 'system:dept:list', 'mdi:company', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:07:38', '部门管理菜单');
+INSERT INTO `sys_menu` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', 1, 0, 'C', '1', '1', 'system:post:list', 'post', 103, 1, '2023-05-14 15:19:39', 1, '2024-04-04 22:36:15', '岗位管理菜单');
 INSERT INTO `sys_menu` VALUES (105, '字典管理', 1, 6, 'dict', 'system/dict/index', '', 1, 0, 'C', '0', '0', 'system:dict:list', 'fluent-mdl2:dictionary', 103, 1, '2023-05-14 15:19:40', 1, '2024-10-07 21:14:33', '字典管理菜单');
 INSERT INTO `sys_menu` VALUES (106, '系统参数', 1, 10, 'config', 'system/config/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'tdesign:system-code', 103, 1, '2023-05-14 15:19:40', 1, '2024-10-07 21:11:07', '参数设置菜单');
 INSERT INTO `sys_menu` VALUES (107, '通知公告', 1, 14, 'notice', 'system/notice/index', '', 1, 0, 'C', '0', '0', 'system:notice:list', 'icon-park-solid:volume-notice', 103, 1, '2023-05-14 15:19:40', 1, '2024-10-07 21:11:42', '通知公告菜单');
@@ -1057,7 +882,7 @@ INSERT INTO `sys_menu` VALUES (501, '登录日志', 108, 2, 'logininfor', 'monit
 INSERT INTO `sys_menu` VALUES (1001, '用户查询', 100, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:user:query', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1002, '用户新增', 100, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:user:add', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1003, '用户修改', 100, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:user:edit', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1004, '用户删除', 100, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove', '#', 103, 1, '2023-05-14 15:19:40', 1, '2025-03-05 17:27:08', '');
+INSERT INTO `sys_menu` VALUES (1004, '用户删除', 100, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1005, '用户导出', 100, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:user:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1006, '用户导入', 100, 6, '', '', '', 1, 0, 'F', '0', '0', 'system:user:import', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1007, '重置密码', 100, 7, '', '', '', 1, 0, 'F', '0', '0', 'system:user:resetPwd', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
@@ -1113,30 +938,50 @@ INSERT INTO `sys_menu` VALUES (1780240077690507268, '聊天消息新增', 178024
 INSERT INTO `sys_menu` VALUES (1780240077690507269, '聊天消息修改', 1780240077690507266, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:edit', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1780240077690507270, '聊天消息删除', 1780240077690507266, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:remove', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1780240077690507271, '聊天消息导出', 1780240077690507266, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:export', '#', 103, 1, '2024-04-16 22:24:48', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1780255628576018433, '支付订单', 1775500307898949634, 6, 'order', 'system/order/index', NULL, 1, 0, 'C', '0', '0', 'system:order:list', 'material-symbols:order-approve', 103, 1, '2024-04-16 23:32:48', 1, '2024-11-02 22:21:15', '支付订单菜单');
+INSERT INTO `sys_menu` VALUES (1780255628576018433, '支付订单', 1775500307898949634, 6, 'order', 'system/payOrder/index', NULL, 1, 0, 'C', '0', '0', 'system:order:list', 'material-symbols:order-approve', 103, 1, '2024-04-16 23:32:48', 1, '2025-03-30 21:12:38', '支付订单菜单');
 INSERT INTO `sys_menu` VALUES (1780255628576018434, '支付订单查询', 1780255628576018433, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:query', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1780255628576018435, '支付订单新增', 1780255628576018433, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:add', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1780255628576018436, '支付订单修改', 1780255628576018433, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:edit', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1780255628576018437, '支付订单删除', 1780255628576018433, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:remove', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1780255628576018438, '支付订单导出', 1780255628576018433, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:export', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1786379590171156481, '兑换管理', 1775500307898949634, 8, 'exchange', 'system/exchange/index', NULL, 1, 0, 'C', '0', '0', 'system:exchange:list', 'mingcute:exchange-cny-fill', 103, 1, '2024-05-03 20:59:54', 1, '2024-11-02 22:22:41', '用户兑换记录菜单');
+INSERT INTO `sys_menu` VALUES (1786379590171156481, '兑换管理', 1775500307898949634, 8, 'voucher', 'system/voucher/index', NULL, 1, 0, 'C', '0', '0', 'system:voucher:list', 'mingcute:exchange-cny-fill', 103, 1, '2024-05-03 20:59:54', 1, '2025-03-30 21:18:22', '用户兑换记录菜单');
 INSERT INTO `sys_menu` VALUES (1786379590171156482, '用户兑换记录查询', 1786379590171156481, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:query', '#', 103, 1, '2024-05-03 20:59:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1786379590171156483, '用户兑换记录新增', 1786379590171156481, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:add', '#', 103, 1, '2024-05-03 20:59:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1786379590171156484, '用户兑换记录修改', 1786379590171156481, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:edit', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1786379590171156485, '用户兑换记录删除', 1786379590171156481, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:remove', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1786379590171156486, '用户兑换记录导出', 1786379590171156481, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:voucher:export', '#', 103, 1, '2024-05-03 20:59:55', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1787078000285122561, '套餐管理', 1775500307898949634, 3, 'package', 'system/package/index', NULL, 1, 0, 'C', '0', '0', 'system:package:list', 'lets-icons:order', 103, 1, '2024-05-05 19:13:53', 1, '2025-03-05 18:56:22', '套餐管理菜单');
-INSERT INTO `sys_menu` VALUES (1810594719028834305, '应用管理', 1775500307898949634, 4, 'gpts', 'system/gpts/index', NULL, 1, 0, 'C', '0', '0', 'system:gpts:list', 'tdesign:app', 103, 1, '2024-07-09 16:40:18', 1, '2025-03-13 23:59:07', 'gpts管理菜单');
+INSERT INTO `sys_menu` VALUES (1787078000285122561, '套餐管理', 1775500307898949634, 3, 'package', 'system/packagePlan/index', NULL, 1, 0, 'C', '0', '0', 'system:package:list', 'lets-icons:order', 103, 1, '2024-05-05 19:13:53', 1, '2025-03-30 21:04:22', '套餐管理菜单');
+INSERT INTO `sys_menu` VALUES (1810594719028834305, 'GPTS管理', 1775500307898949634, 4, 'gpts', 'system/gpts/index', NULL, 1, 0, 'C', '1', '0', 'system:gpts:list', 'tdesign:app', 103, 1, '2024-07-09 16:40:18', 1, '2025-03-30 21:29:57', 'gpts管理菜单');
 INSERT INTO `sys_menu` VALUES (1810594719028834306, 'gpts管理查询', 1810594719028834305, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:query', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1810594719028834307, 'gpts管理新增', 1810594719028834305, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:add', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1810594719028834308, 'gpts管理修改', 1810594719028834305, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:edit', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1810594719028834309, 'gpts管理删除', 1810594719028834305, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:remove', '#', 103, 1, '2024-07-09 16:40:19', 1, '2025-03-05 19:02:06', '');
+INSERT INTO `sys_menu` VALUES (1810594719028834309, 'gpts管理删除', 1810594719028834305, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:remove', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1810594719028834310, 'gpts管理导出', 1810594719028834305, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:export', '#', 103, 1, '2024-07-09 16:40:19', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1843281231381852162, '文件管理', 1775500307898949634, 20, 'file', 'system/oss/index', NULL, 1, 0, 'C', '0', '0', NULL, 'material-symbols-light:folder', 103, 1, '2024-10-07 21:24:27', 1, '2024-12-27 23:03:04', '');
-INSERT INTO `sys_menu` VALUES (1860690448695549953, '配置管理', 1775500307898949634, 9, 'configurationManage', 'system/configurationManage/index', NULL, 1, 0, 'C', '0', '0', NULL, 'mdi:archive-cog-outline', 103, 1, '2024-11-24 22:22:28', 1, '2024-12-30 21:24:01', '');
-INSERT INTO `sys_menu` VALUES (1898286496441393153, '知识库管理', 1775500307898949634, 10, 'knowledgeBase', 'system/knowledgeBase/index', NULL, 1, 0, 'C', '0', '0', NULL, 'garden:knowledge-base-26', 103, 1, '2025-03-08 16:15:44', 1, '2025-03-09 13:35:32', '');
-INSERT INTO `sys_menu` VALUES (1900172314827739137, '流程编排', 1775500307898949634, 11, 'processOrchestration', 'system/processOrchestration/index', NULL, 1, 0, 'C', '0', '0', NULL, '#', 103, 1, '2025-03-13 21:09:18', 1, '2025-03-13 21:09:18', '');
-INSERT INTO `sys_menu` VALUES (1900854435890089985, '聊天测试', 0, 1, '#', '', NULL, 1, 0, 'M', '0', '0', NULL, '#', 103, 1, '2025-03-15 18:19:48', 1, '2025-03-15 18:19:48', '');
+INSERT INTO `sys_menu` VALUES (1860690448695549953, '配置管理123', 1775500307898949634, 9, 'configurationManage', 'system/configurationManage/index', NULL, 1, 0, 'C', '1', '0', NULL, 'mdi:archive-cog-outline', 103, 1, '2024-11-24 22:22:28', 1, '2025-03-31 20:05:34', '');
+INSERT INTO `sys_menu` VALUES (1898286496441393153, '知识库管理', 1775500307898949634, 10, 'knowledgeBase', 'system/knowledgeBase/index', NULL, 1, 0, 'C', '0', '0', '', 'garden:knowledge-base-26', 103, 1, '2025-03-08 16:15:44', 1, '2025-03-10 00:21:26', '');
+INSERT INTO `sys_menu` VALUES (1900172314827739137, '流程编排', 1775500307898949634, 11, 'processOrchestration', 'system/processOrchestration/index', NULL, 1, 0, 'C', '1', '0', NULL, 'hugeicons:flow-square', 103, 1, '2025-03-13 21:09:18', 1, '2025-03-30 21:21:20', '');
+INSERT INTO `sys_menu` VALUES (1902184523796742145, '智能体管理', 1775500307898949634, 11, 'agents', 'system/agents/index', NULL, 1, 0, 'C', '1', '0', NULL, 'icon-park-twotone:robot-two', 103, 1, '2025-03-19 10:25:06', 1, '2025-03-30 21:21:36', '');
+INSERT INTO `sys_menu` VALUES (1906199640746344450, '系统工具', 0, 10, 'tool', '', NULL, 1, 0, 'M', '0', '0', NULL, 'carbon:tool-kit', 103, 1, '2025-03-30 12:19:44', 1, '2025-03-30 12:21:56', '');
+INSERT INTO `sys_menu` VALUES (1906200030325882882, '代码生成', 1906199640746344450, 2, 'gen', 'tool/gen/index', NULL, 1, 0, 'C', '0', '0', 'tool:gen:list', 'tabler:code', 103, 1, '2025-03-30 12:21:17', 1, '2025-03-30 12:21:17', '');
+INSERT INTO `sys_menu` VALUES (1906336170039103490, '应用管理', 1775500307898949634, 10, 'gpts', 'system/gpts/index', NULL, 1, 0, 'C', '0', '0', 'system:gpts:list', 'fe:app-menu', 103, 1, '2025-03-30 21:23:59', 1, '2025-03-30 21:30:08', '应用管理菜单');
+INSERT INTO `sys_menu` VALUES (1906336170039103491, '应用管理查询', 1906336170039103490, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:query', '#', 103, 1, '2025-03-30 21:23:59', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906336170039103492, '应用管理新增', 1906336170039103490, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:add', '#', 103, 1, '2025-03-30 21:23:59', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906336170039103493, '应用管理修改', 1906336170039103490, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:edit', '#', 103, 1, '2025-03-30 21:23:59', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906336170039103494, '应用管理删除', 1906336170039103490, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:remove', '#', 103, 1, '2025-03-30 21:23:59', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906336170039103495, '应用管理导出', 1906336170039103490, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:gpts:export', '#', 103, 1, '2025-03-30 21:23:59', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906358690184294402, '插件管理', 1775500307898949634, 9, 'plugin', 'system/plugin/index', NULL, 1, 0, 'C', '0', '0', 'system:plugin:list', 'mingcute:plugin-line', 103, 1, '2025-03-30 22:53:25', 1, '2025-03-31 19:56:37', '插件管理菜单');
+INSERT INTO `sys_menu` VALUES (1906358690184294403, '插件管理查询', 1906358690184294402, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:plugin:query', '#', 103, 1, '2025-03-30 22:53:25', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906358690184294404, '插件管理新增', 1906358690184294402, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:plugin:add', '#', 103, 1, '2025-03-30 22:53:25', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906358690184294405, '插件管理修改', 1906358690184294402, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:plugin:edit', '#', 103, 1, '2025-03-30 22:53:25', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906358690184294406, '插件管理删除', 1906358690184294402, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:plugin:remove', '#', 103, 1, '2025-03-30 22:53:25', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906358690184294407, '插件管理导出', 1906358690184294402, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:plugin:export', '#', 103, 1, '2025-03-30 22:53:25', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906674838461321217, '配置信息', 1775500307898949634, 13, 'configurationManage', 'system/configurationManage/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'mdi:archive-cog-outline', 103, 1, '2025-03-31 19:48:48', 1, '2025-03-31 19:59:58', '配置信息菜单');
+INSERT INTO `sys_menu` VALUES (1906674838461321218, '配置信息查询', 1906674838461321217, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:query', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906674838461321219, '配置信息新增', 1906674838461321217, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:add', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906674838461321220, '配置信息修改', 1906674838461321217, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:edit', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906674838461321221, '配置信息删除', 1906674838461321217, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:remove', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1906674838461321222, '配置信息导出', 1906674838461321217, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:export', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -1162,7 +1007,6 @@ CREATE TABLE `sys_notice`  (
 -- Records of sys_notice
 -- ----------------------------
 INSERT INTO `sys_notice` VALUES (1789324923280932865, '000000', '公告', '1', 0x3C703E3C7374726F6E67207374796C653D22636F6C6F723A20236666393930303B223EE69CACE7BD91E7AB99E4B88EE4BBBBE4BD95E585B6E4BB96E585ACE58FB8E68896E59586E6A087E6B2A1E69C89E4BBBBE4BD95E585B3E88194E68896E59088E4BD9CE585B3E7B3BB3C2F7374726F6E673E3C2F703E0A3C703E3C7370616E207374796C653D22636F6C6F723A20236536303030303B223E4149E4B99FE4BC9AE78AAFE99499E38082E8AFB7E58BBFE5B086E585B6E794A8E4BA8EE9878DE8A681E79BAEE79A843C2F7370616E3E3C2F703E0A3C703E3C7370616E207374796C653D22636F6C6F723A20236666393930303B223EE68891E4BBACE79BAEE5898DE6ADA3E59CA8E4BFAEE5A48DE68891E4BBACE7BD91E7AB99E4B88AE79A84E99499E8AFAFE5B9B6E694B9E8BF9BE7BB86E88A82E38082E5A682E69E9CE682A8E69C89E4BBBBE4BD95E79691E997AEEFBC8CE8AFB7E9809AE8BF87E4BBA5E4B88BE696B9E5BC8FE88194E7B3BBE68891E4BBACEFBC9A61676565726C65403136332E636F6D313434343434353535353C2F7370616E3E3C2F703E0A3C703E266E6273703B3C2F703E, '0', 103, 1, '2024-05-12 00:01:20', 1, '2025-03-11 19:31:59', '');
-INSERT INTO `sys_notice` VALUES (1895352010039119874, '000000', '你好', '1', 0x3C703E6E6968616F3C2F703E, '0', 103, 1, '2025-02-28 13:55:08', 1, '2025-02-28 13:55:08', NULL);
 
 -- ----------------------------
 -- Table structure for sys_notice_state
@@ -1218,6 +1062,22 @@ CREATE TABLE `sys_oper_log`  (
 -- ----------------------------
 -- Records of sys_oper_log
 -- ----------------------------
+INSERT INTO `sys_oper_log` VALUES (1906673220559609857, '00000', '角色管理', 2, 'org.ruoyi.system.controller.system.SysRoleController.edit()', 'PUT', 1, 'admin', '', '/system/role', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"roleId\":2,\"roleName\":\"普通角色\",\"roleKey\":\"common\",\"roleSort\":2,\"dataScope\":null,\"menuCheckStrictly\":null,\"deptCheckStrictly\":null,\"status\":\"0\",\"remark\":\"普通角色\",\"menuIds\":[\"1775500307898949634\",100,\"1775895273104068610\",\"1787078000285122561\",\"1810594719028834305\",\"1780240077690507266\",\"1780255628576018433\",\"1786379590171156481\",\"1860690448695549953\",\"1906358690184294402\",\"1898286496441393153\",\"1906336170039103490\",\"1902184523796742145\",\"1900172314827739137\",\"1843281231381852162\",1001,1002,1003,1004,1005,1006,1007,\"1775895273104068611\",\"1775895273104068612\",\"1775895273104068613\",\"1775895273104068614\",\"1775895273104068615\",\"1810594719028834306\",\"1810594719028834307\",\"1810594719028834308\",\"1810594719028834309\",\"1810594719028834310\",\"1780240077690507267\",\"1780240077690507268\",\"1780240077690507269\",\"1780240077690507270\",\"1780240077690507271\",\"1780255628576018434\",\"1780255628576018435\",\"1780255628576018436\",\"1780255628576018437\",\"1780255628576018438\",\"1786379590171156482\",\"1786379590171156483\",\"1786379590171156484\",\"1786379590171156485\",\"1786379590171156486\",\"1906358690184294403\",\"1906358690184294404\",\"1906358690184294405\",\"1906358690184294406\",\"1906358690184294407\",\"1906336170039103491\",\"1906336170039103492\",\"1906336170039103493\",\"1906336170039103494\",\"1906336170039103495\",1,101,102,103,104,113,105,108,106,107,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1019,1020,1021,1022,1023,1024,1025,1026,1027,1028,1029,1030,1031,1032,1033,1034,1035,1036,1037,1038,1039,500,501,1040,1041,1042,1043,1044,1045,1050,\"1906199640746344450\",\"1906200030325882882\"],\"deptIds\":null,\"superAdmin\":false}', '', 1, '非Web上下文无法获取Request', '2025-03-31 19:41:35', 43);
+INSERT INTO `sys_oper_log` VALUES (1906673729755779074, '00000', '菜单管理', 3, 'org.ruoyi.system.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '', '/system/menu/1860690448695549953', '0:0:0:0:0:0:0:1', '内网IP', '{}', '{\"code\":601,\"msg\":\"菜单已分配,不允许删除\",\"data\":null}', 0, '', '2025-03-31 19:43:36', 103);
+INSERT INTO `sys_oper_log` VALUES (1906673840489598977, '00000', '代码生成', 3, 'org.ruoyi.generator.controller.GenController.remove()', 'DELETE', 1, 'admin', '', '/tool/gen/1661288222902505474,1661288223338713089,1661288223477125122,1661288223586177025,1661288223728783361,1661288223821058050,1661288223925915650,1661288223967858689,1661288385096241154,1680196323445579778', '0:0:0:0:0:0:0:1', '内网IP', '{}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:44:03', 287);
+INSERT INTO `sys_oper_log` VALUES (1906673868964728834, '00000', '代码生成', 3, 'org.ruoyi.generator.controller.GenController.remove()', 'DELETE', 1, 'admin', '', '/tool/gen/1680196323521077249,1680199147407806465,1680481752850145282,1740573614897897473,1775895242171076610,1785390411861803009,1785390413745045505,1785390414860730369,1786379560181882881,1789155611035381761', '0:0:0:0:0:0:0:1', '内网IP', '{}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:44:09', 247);
+INSERT INTO `sys_oper_log` VALUES (1906673890963853313, '00000', '代码生成', 6, 'org.ruoyi.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '', '/tool/gen/importTable', '0:0:0:0:0:0:0:1', '内网IP', '\"chat_config\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:44:15', 935);
+INSERT INTO `sys_oper_log` VALUES (1906674126281084929, '00000', '角色管理', 2, 'org.ruoyi.system.controller.system.SysRoleController.edit()', 'PUT', 1, 'admin', '', '/system/role', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"roleId\":\"1661661183933177857\",\"roleName\":\"小程序管理员5454\",\"roleKey\":\"xcxadmin\",\"roleSort\":1,\"dataScope\":null,\"menuCheckStrictly\":true,\"deptCheckStrictly\":null,\"status\":\"0\",\"remark\":\"\",\"menuIds\":[\"1775500307898949634\",1036,1037,1038,1039,107,100,\"1775895273104068610\",\"1787078000285122561\",\"1810594719028834305\",\"1780240077690507266\",\"1780255628576018433\",\"1786379590171156481\",\"1906358690184294402\",\"1898286496441393153\",\"1906336170039103490\",\"1902184523796742145\",\"1900172314827739137\",\"1843281231381852162\",1001,1002,1003,1004,1005,1006,1007,\"1775895273104068611\",\"1775895273104068612\",\"1775895273104068613\",\"1775895273104068614\",\"1775895273104068615\",\"1810594719028834306\",\"1810594719028834307\",\"1810594719028834308\",\"1810594719028834309\",\"1810594719028834310\",\"1780240077690507267\",\"1780240077690507268\",\"1780240077690507269\",\"1780240077690507270\",\"1780240077690507271\",\"1780255628576018434\",\"1780255628576018435\",\"1780255628576018436\",\"1780255628576018437\",\"1780255628576018438\",\"1786379590171156482\",\"1786379590171156483\",\"1786379590171156484\",\"1786379590171156485\",\"1786379590171156486\",\"1906358690184294403\",\"1906358690184294404\",\"1906358690184294405\",\"1906358690184294406\",\"1906358690184294407\",\"1906336170039103491\",\"1906336170039103492\",\"1906336170039103493\",\"1906336170039103494\",\"1906336170039103495\",1,101,102,103,104,113,105,108,106,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1019,1020,1021,1022,1023,1024,1025,1026,1027,1028,1029,1030,1031,1032,1033,1034,1035,500,501,1040,1041,1042,1043,1044,1045,1050,\"1906199640746344450\",\"1906200030325882882\"],\"deptIds\":null,\"superAdmin\":false}', '', 1, '非Web上下文无法获取Request', '2025-03-31 19:45:11', 439);
+INSERT INTO `sys_oper_log` VALUES (1906674242551386113, '00000', '角色管理', 2, 'org.ruoyi.system.controller.system.SysRoleController.edit()', 'PUT', 1, 'admin', '', '/system/role', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"roleId\":\"1661661183933177857\",\"roleName\":\"小程序管理员\",\"roleKey\":\"xcxadmin\",\"roleSort\":1,\"dataScope\":null,\"menuCheckStrictly\":true,\"deptCheckStrictly\":null,\"status\":\"0\",\"remark\":\"\",\"menuIds\":[1,100,101,102,103,104,105,106,107,108,\"1775500307898949634\",\"1775895273104068610\",\"1780240077690507266\",\"1780255628576018433\",\"1786379590171156481\",\"1810594719028834305\",\"1906199640746344450\",\"1906336170039103490\",\"1906358690184294402\",500,501,113,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1019,1020,1021,1022,1023,1024,1025,1026,1027,1028,1029,1030,1031,1032,1033,1034,1035,1036,1037,1038,1039,1040,1041,1042,1043,1044,1045,1050,\"1787078000285122561\",\"1898286496441393153\",\"1900172314827739137\",\"1902184523796742145\",\"1843281231381852162\",\"1775895273104068611\",\"1775895273104068612\",\"1775895273104068613\",\"1775895273104068614\",\"1775895273104068615\",\"1780240077690507267\",\"1780240077690507268\",\"1780240077690507269\",\"1780240077690507270\",\"1780240077690507271\",\"1780255628576018434\",\"1780255628576018435\",\"1780255628576018436\",\"1780255628576018437\",\"1780255628576018438\",\"1786379590171156482\",\"1786379590171156483\",\"1786379590171156484\",\"1786379590171156485\",\"1786379590171156486\",\"1810594719028834306\",\"1810594719028834307\",\"1810594719028834308\",\"1810594719028834309\",\"1810594719028834310\",\"1906200030325882882\",\"1906336170039103491\",\"1906336170039103492\",\"1906336170039103493\",\"1906336170039103494\",\"1906336170039103495\",\"1906358690184294403\",\"1906358690184294404\",\"1906358690184294405\",\"1906358690184294406\",\"1906358690184294407\"],\"deptIds\":null,\"superAdmin\":false}', '', 1, '非Web上下文无法获取Request', '2025-03-31 19:45:38', 386);
+INSERT INTO `sys_oper_log` VALUES (1906674566691393538, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1860690448695549953\",\"parentId\":\"1775500307898949634\",\"menuName\":\"配置管理123\",\"orderNum\":9,\"path\":\"configurationManage\",\"component\":\"system/configurationManage/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"mdi:archive-cog-outline\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:46:56', 183);
+INSERT INTO `sys_oper_log` VALUES (1906674839174352898, '00000', '代码生成', 8, 'org.ruoyi.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '', '/tool/gen/batchGenCode', '0:0:0:0:0:0:0:1', '内网IP', '{\"tableIdStr\":\"1906673887579049985\"}', '', 0, '', '2025-03-31 19:48:01', 239);
+INSERT INTO `sys_oper_log` VALUES (1906675243077439490, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1906674838461321217\",\"parentId\":\"1775500307898949634\",\"menuName\":\"配置信息\",\"orderNum\":1,\"path\":\"config\",\"component\":\"system/config/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"system:config:list\",\"icon\":\"#\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:49:37', 161);
+INSERT INTO `sys_oper_log` VALUES (1906675560401702914, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1906674838461321217\",\"parentId\":\"1775500307898949634\",\"menuName\":\"配置信息\",\"orderNum\":13,\"path\":\"configurationManage\",\"component\":\"system/configurationManage/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"system:config:list\",\"icon\":\"grommet-icons:document-config\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:50:53', 148);
+INSERT INTO `sys_oper_log` VALUES (1906675637346209793, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1860690448695549953\",\"parentId\":\"1775500307898949634\",\"menuName\":\"配置管理123\",\"orderNum\":9,\"path\":\"configurationManage\",\"component\":\"system/configurationManage/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"icon\":\"mdi:archive-cog-outline\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:51:11', 155);
+INSERT INTO `sys_oper_log` VALUES (1906677004714479617, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1906358690184294402\",\"parentId\":\"1775500307898949634\",\"menuName\":\"插件管理\",\"orderNum\":9,\"path\":\"plugin\",\"component\":\"system/plugin/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"system:plugin:list\",\"icon\":\"mingcute:plugin-line\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:56:37', 121);
+INSERT INTO `sys_oper_log` VALUES (1906677192501858305, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1860690448695549953\",\"parentId\":\"1775500307898949634\",\"menuName\":\"配置管理123\",\"orderNum\":9,\"path\":\"configurationManage\",\"component\":\"system/configurationManage/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"mdi:archive-cog-outline\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:57:22', 143);
+INSERT INTO `sys_oper_log` VALUES (1906677849958977538, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1906674838461321217\",\"parentId\":\"1775500307898949634\",\"menuName\":\"配置信息\",\"orderNum\":13,\"path\":\"configurationManage\",\"component\":\"system/configurationManage/index\",\"queryParam\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"system:config:list\",\"icon\":\"mdi:archive-cog-outline\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 19:59:58', 203);
+INSERT INTO `sys_oper_log` VALUES (1906679257265422337, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":\"1860690448695549953\",\"parentId\":\"1775500307898949634\",\"menuName\":\"配置管理123\",\"orderNum\":9,\"path\":\"configurationManage\",\"component\":\"system/configurationManage/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"0\",\"icon\":\"mdi:archive-cog-outline\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2025-03-31 20:05:34', 239);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -1274,11 +1134,10 @@ CREATE TABLE `sys_oss_config`  (
 -- ----------------------------
 -- Records of sys_oss_config
 -- ----------------------------
-INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'ruoyi', 'ruoyi123', 'ruoyi', '', '127.0.0.1:9000', '', 'N', '', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-14 09:55:25', NULL);
-INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'ruoyi', 'ruoyi123', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-14 09:55:22', NULL);
+INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'ruoyi', 'ruoyi123', 'ruoyi', '', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-26 16:25:55', NULL);
+INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'ruoyi', 'ruoyi123', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-26 19:44:56', NULL);
 INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'ruoyi', 'ruoyi123', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-13 13:13:04', NULL);
-INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'ruoyi', 'ruoyi123', 'ruoyi', 'panda', 'cos.ap-guangzhou.myqcloud.com', '', 'N', 'ap-guangzhou', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-05 14:33:35', '');
-INSERT INTO `sys_oss_config` VALUES (5, '000000', 'image', 'ruoyi', 'ruoyi123', 'ruoyi', 'image', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-13 13:12:57', NULL);
+INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'ruoyi', 'ruoyi123', 'ruoyi', 'panda', 'cos.ap-guangzhou.myqcloud.com', '', 'N', 'ap-guangzhou', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-26 09:23:26', '');
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -1336,11 +1195,11 @@ CREATE TABLE `sys_role`  (
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO `sys_role` VALUES (1, '000000', '超级管理员', 'superadmin', 1, '1', 1, 1, '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL, '超级管理员');
-INSERT INTO `sys_role` VALUES (2, '000000', '普通角色', 'common', 2, '2', 1, 1, '0', '0', 103, 1, '2023-05-14 15:19:39', 1, '2025-03-12 10:07:23', '普通角色');
+INSERT INTO `sys_role` VALUES (2, '000000', '普通角色', 'common', 2, '2', 0, 1, '0', '0', 103, 1, '2023-05-14 15:19:39', 1, '2025-03-31 19:41:35', '普通角色');
 INSERT INTO `sys_role` VALUES (3, '000000', '本部门及以下', 'test1', 3, '4', 1, 1, '0', '0', 103, 1, '2023-05-14 15:20:00', 1, '2025-03-17 09:29:25', NULL);
-INSERT INTO `sys_role` VALUES (4, '000000', '仅本人', 'test2', 4, '5', 1, 1, '0', '0', 103, 1, '2023-05-14 15:20:00', 1, '2023-06-04 10:21:01', NULL);
-INSERT INTO `sys_role` VALUES (1661661183933177857, '000000', '小程序管理员', 'xcxadmin', 1, '1', 1, 1, '0', '0', 103, 1, '2023-05-25 17:11:13', 1, '2025-03-14 14:26:26', '');
-INSERT INTO `sys_role` VALUES (1729685491108446210, '911866', '管理员', 'admin', 4, '1', 1, 1, '0', '0', 103, 1, '2023-11-29 10:15:32', 1, '2025-03-12 10:07:57', NULL);
+INSERT INTO `sys_role` VALUES (4, '000000', '仅本人', 'test2', 4, '5', 1, 1, '0', '0', 103, 1, '2023-05-14 15:20:00', 1, '2025-03-24 10:56:45', NULL);
+INSERT INTO `sys_role` VALUES (1661661183933177857, '000000', '小程序管理员', 'xcxadmin', 1, '1', 1, 1, '0', '0', 103, 1, '2023-05-25 17:11:13', 1, '2025-03-31 19:45:38', '');
+INSERT INTO `sys_role` VALUES (1729685491108446210, '911866', '管理员', 'admin', 4, '1', 1, 1, '0', '0', 103, 1, '2023-11-29 10:15:32', 1, '2025-03-26 18:25:07', NULL);
 
 -- ----------------------------
 -- Table structure for sys_role_dept
@@ -1358,7 +1217,6 @@ CREATE TABLE `sys_role_dept`  (
 INSERT INTO `sys_role_dept` VALUES (2, 100);
 INSERT INTO `sys_role_dept` VALUES (2, 101);
 INSERT INTO `sys_role_dept` VALUES (2, 105);
-INSERT INTO `sys_role_dept` VALUES (1729685491108446210, 1729685491964084226);
 
 -- ----------------------------
 -- Table structure for sys_role_menu
@@ -1368,7 +1226,7 @@ CREATE TABLE `sys_role_menu`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -1467,6 +1325,22 @@ INSERT INTO `sys_role_menu` VALUES (2, 1810594719028834310);
 INSERT INTO `sys_role_menu` VALUES (2, 1843281231381852162);
 INSERT INTO `sys_role_menu` VALUES (2, 1860690448695549953);
 INSERT INTO `sys_role_menu` VALUES (2, 1898286496441393153);
+INSERT INTO `sys_role_menu` VALUES (2, 1900172314827739137);
+INSERT INTO `sys_role_menu` VALUES (2, 1902184523796742145);
+INSERT INTO `sys_role_menu` VALUES (2, 1906199640746344450);
+INSERT INTO `sys_role_menu` VALUES (2, 1906200030325882882);
+INSERT INTO `sys_role_menu` VALUES (2, 1906336170039103490);
+INSERT INTO `sys_role_menu` VALUES (2, 1906336170039103491);
+INSERT INTO `sys_role_menu` VALUES (2, 1906336170039103492);
+INSERT INTO `sys_role_menu` VALUES (2, 1906336170039103493);
+INSERT INTO `sys_role_menu` VALUES (2, 1906336170039103494);
+INSERT INTO `sys_role_menu` VALUES (2, 1906336170039103495);
+INSERT INTO `sys_role_menu` VALUES (2, 1906358690184294402);
+INSERT INTO `sys_role_menu` VALUES (2, 1906358690184294403);
+INSERT INTO `sys_role_menu` VALUES (2, 1906358690184294404);
+INSERT INTO `sys_role_menu` VALUES (2, 1906358690184294405);
+INSERT INTO `sys_role_menu` VALUES (2, 1906358690184294406);
+INSERT INTO `sys_role_menu` VALUES (2, 1906358690184294407);
 INSERT INTO `sys_role_menu` VALUES (3, 1);
 INSERT INTO `sys_role_menu` VALUES (3, 100);
 INSERT INTO `sys_role_menu` VALUES (3, 101);
@@ -1477,7 +1351,6 @@ INSERT INTO `sys_role_menu` VALUES (3, 105);
 INSERT INTO `sys_role_menu` VALUES (3, 106);
 INSERT INTO `sys_role_menu` VALUES (3, 107);
 INSERT INTO `sys_role_menu` VALUES (3, 108);
-INSERT INTO `sys_role_menu` VALUES (3, 113);
 INSERT INTO `sys_role_menu` VALUES (3, 500);
 INSERT INTO `sys_role_menu` VALUES (3, 501);
 INSERT INTO `sys_role_menu` VALUES (3, 1001);
@@ -1525,11 +1398,19 @@ INSERT INTO `sys_role_menu` VALUES (3, 1042);
 INSERT INTO `sys_role_menu` VALUES (3, 1043);
 INSERT INTO `sys_role_menu` VALUES (3, 1044);
 INSERT INTO `sys_role_menu` VALUES (3, 1045);
-INSERT INTO `sys_role_menu` VALUES (3, 1050);
-INSERT INTO `sys_role_menu` VALUES (3, 1775500307898949634);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 100);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 101);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 102);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 103);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 104);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 105);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 106);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 107);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 108);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 113);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 500);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 501);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1001);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1002);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1003);
@@ -1537,10 +1418,45 @@ INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1004);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1005);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1006);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1007);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1008);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1009);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1010);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1011);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1012);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1013);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1014);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1015);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1016);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1017);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1018);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1019);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1020);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1021);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1022);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1023);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1024);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1025);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1026);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1027);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1028);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1029);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1030);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1031);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1032);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1033);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1034);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1035);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1036);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1037);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1038);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1039);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1040);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1041);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1042);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1043);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1044);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1045);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1050);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775500307898949634);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068610);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068611);
@@ -1548,101 +1464,98 @@ INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068612);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068613);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068614);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1775895273104068615);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780240077690507266);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780240077690507267);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780240077690507268);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780240077690507269);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780240077690507270);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780240077690507271);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780255628576018433);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780255628576018434);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780255628576018435);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780255628576018436);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780255628576018437);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1780255628576018438);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1786379590171156481);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1786379590171156482);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1786379590171156483);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1786379590171156484);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1786379590171156485);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1786379590171156486);
 INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1787078000285122561);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 100);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 101);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 102);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 103);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 104);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 105);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 106);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 107);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 108);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 113);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 500);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 501);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1001);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1002);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1003);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1004);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1005);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1006);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1007);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1008);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1009);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1010);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1011);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1012);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1013);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1014);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1015);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1016);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1017);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1018);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1019);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1020);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1021);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1022);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1023);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1024);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1025);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1026);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1027);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1028);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1029);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1030);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1031);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1032);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1033);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1034);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1035);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1036);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1037);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1038);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1039);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1040);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1041);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1042);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1043);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1044);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1045);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1050);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775500307898949634);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068610);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068611);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068612);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068613);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068614);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1775895273104068615);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507266);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507267);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507268);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507269);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507270);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780240077690507271);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018433);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018434);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018435);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018436);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018437);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1780255628576018438);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156481);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156482);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156483);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156484);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156485);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1786379590171156486);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1787078000285122561);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834305);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834306);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834307);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834308);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834309);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1810594719028834310);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1843281231381852162);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1860690448695549953);
-INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1898286496441393153);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1810594719028834305);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1810594719028834306);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1810594719028834307);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1810594719028834308);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1810594719028834309);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1810594719028834310);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1843281231381852162);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1898286496441393153);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1900172314827739137);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1902184523796742145);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906199640746344450);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906200030325882882);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906336170039103490);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906336170039103491);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906336170039103492);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906336170039103493);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906336170039103494);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906336170039103495);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906358690184294402);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906358690184294403);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906358690184294404);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906358690184294405);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906358690184294406);
+INSERT INTO `sys_role_menu` VALUES (1661661183933177857, 1906358690184294407);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689201668374556674);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689205943360188417);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689243465037561858);
+INSERT INTO `sys_role_menu` VALUES (1729685491108446210, 1689243466220355585);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 100);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1001);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1002);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1003);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1004);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1005);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1006);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1007);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1775500307898949634);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1775895273104068610);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1775895273104068611);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1775895273104068612);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1775895273104068613);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1775895273104068614);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1775895273104068615);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780240077690507266);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780240077690507267);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780240077690507268);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780240077690507269);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780240077690507270);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780240077690507271);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780255628576018433);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780255628576018434);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780255628576018435);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780255628576018436);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780255628576018437);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1780255628576018438);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1786379590171156481);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1786379590171156482);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1786379590171156483);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1786379590171156484);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1786379590171156485);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1786379590171156486);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1787078000285122561);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1810594719028834305);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1810594719028834306);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1810594719028834307);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1810594719028834308);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1810594719028834309);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1810594719028834310);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1843281231381852162);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1860690448695549953);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1898286496441393153);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1900172314827739137);
+INSERT INTO `sys_role_menu` VALUES (1905899651235143681, 1902184523796742145);
 
 -- ----------------------------
 -- Table structure for sys_tenant
@@ -1741,10 +1654,12 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, NULL, '1', 100.00, '00000', 103, 'admin', '熊猫助手', 'sys_user', 'Free', 'ageerle@163.com', '15888888888', '1', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/10/07/09bd580f55954b50a3093231945123e0.jpg', NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-03-17 09:46:22', NULL, 103, 1, '2023-05-14 15:19:39', 1, '2025-03-17 09:46:22', '管理员');
+INSERT INTO `sys_user` VALUES (1, NULL, '1', 100.00, '00000', 103, 'admin', '111222333', 'sys_user', 'Free', 'ageerle@163.com', '15888888888', '0', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/10/07/09bd580f55954b50a3093231945123e0.jpg', NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-03-31 20:00:00', NULL, 103, 1, '2023-05-14 15:19:39', 1, '2025-03-31 20:00:00', '管理员');
 INSERT INTO `sys_user` VALUES (1714176194496339970, NULL, '1', 88.88, '00000', NULL, 'pandarobot@163.com', '问答助手', 'sys_user', 'Free', '', '', '0', 'http://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2024/04/28/346796f5c32744c1987bf28d5820325b.jpg', NULL, '$2a$10$u3LIdNBg6kM3iYqHFJe2IOWCMbT2h5NUI.CeXlF5dyBGcy3nwW836', '1', '2', '127.0.0.1', '2025-03-05 17:18:42', NULL, 103, 1713440206715650049, '2023-10-17 15:07:07', 1714176194496339970, '2025-03-05 17:18:42', NULL);
 INSERT INTO `sys_user` VALUES (1898270044544028674, NULL, '1', 1.00, '00000', NULL, '1150039659@qq.com', '1150039659@qq.com', 'sys_user', 'Free', '', '', '0', NULL, NULL, '$2a$10$Mw9T.kzBuYqvT14ZDP2VoORLU9WMWdaT/iatJxEtCQCZoBYBNmKw6', '0', '2', '127.0.0.1', '2025-03-09 23:01:03', '192.168.20.162', NULL, NULL, '2025-03-08 15:10:21', 1898270044544028674, '2025-03-09 23:01:03', NULL);
 INSERT INTO `sys_user` VALUES (1898283021590552578, NULL, '0', 1.00, '00000', NULL, '1434841024@qq.com', '1434841024@qq.com', 'sys_user', 'Free', '', '', '0', NULL, NULL, '$2a$10$R6rClsJdJK5Ovhp14Xc0w.IITFBDyocgxWqsJ9SS7AhWW6.vCKiAa', '0', '2', '192.168.20.161', '2025-03-08 17:04:37', '127.0.0.1', NULL, NULL, '2025-03-08 16:01:55', 1898283021590552578, '2025-03-08 17:04:37', NULL);
+INSERT INTO `sys_user` VALUES (1904371025403224065, NULL, '1', 999999999.00, '000000', 103, 'dddd', 'dddd', 'sys_user', 'Free', '', '', '0', NULL, NULL, '$2a$10$y0IYGL1MY5rvTUEl9Pjg4uIVMpbwwuzIl.8nH2Ie3uK2A9EJor0VK', '1', '2', '127.0.0.1', '2025-03-25 11:15:16', NULL, 103, 1, '2025-03-25 11:13:29', 1904371025403224065, '2025-03-25 11:15:16', NULL);
+INSERT INTO `sys_user` VALUES (1905928435494330370, NULL, '0', 100.00, '000000', 103, '熊猫助手', '熊猫助手', 'sys_user', 'Free', 'iii@g545.bo', '', '0', NULL, NULL, '$2a$10$8WO.FFcmu4L/DhzpfM4rbee0HRK6gIYIs2KsRXkc4ckjudbzchvPi', '0', '2', '', NULL, NULL, 103, 1, '2025-03-29 18:22:04', 1, '2025-03-31 10:15:11', NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_post

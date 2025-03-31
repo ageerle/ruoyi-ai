@@ -38,7 +38,6 @@ public class ChatConfigVo implements Serializable {
      * 配置类型
      */
     @ExcelProperty(value = "配置类型")
-    @Sensitive(strategy = SensitiveStrategy.ID_CARD)
     private String category;
 
     /**
@@ -51,6 +50,7 @@ public class ChatConfigVo implements Serializable {
      * 配置值
      */
     @ExcelProperty(value = "配置值")
+    @Sensitive(strategy = SensitiveStrategy.SKY)
     private String configValue;
 
     /**

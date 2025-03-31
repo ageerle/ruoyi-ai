@@ -59,7 +59,7 @@
 - 演示地址: https://web.pandarobot.chat
 - 后台管理: https://admin.pandarobot.chat
 - 用户名: admin 密码：admin123
-- 
+
 ### gitcode源码地址
 - https://gitcode.com/ageerle/ruoyi-ai
 - https://gitcode.com/ageerle/ruoyi-web
@@ -168,16 +168,11 @@ RuoYi-AI
 
 该项目使用了MIT授权许可，详情请参阅 [LICENSE.txt](https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE)
 
-
-### 作者寄语
-
-最近，我们的项目意外地受到了广泛关注，甚至被许多人误以为是一个已经成熟且能够快速落地的项目。然而，事实并非如此。这个项目是我个人在业余时间进行的研究，主要目的是学习和探索。它是一个以人工智能（AI）为核心的平台，旨在帮助企业通过配置的方式快速构建AI应用。
-
-####  项目现状
+###  项目现状
 
 目前，项目还处于早期阶段，距离成熟还有很长的路要走。由于个人精力有限，项目的发展速度受到了一定的限制。为了加快项目的进度，我真诚地希望更多人能够参与到项目中来。无论是经验丰富的开发者，还是刚刚入门的小白，我都热烈欢迎你们提交Pull Request（PR）。即使代码修改得很少，或者存在一些错误，都没有关系。我会认真审核每一位贡献者的代码，并和大家一起完善项目。
 
-####  开发计划
+###  开发计划
 
 - 智能体管理
 
