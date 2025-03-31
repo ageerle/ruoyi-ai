@@ -8,6 +8,8 @@ import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.common.sensitive.annotation.Sensitive;
+import org.ruoyi.common.sensitive.core.SensitiveStrategy;
 import org.ruoyi.system.domain.ChatConfig;
 
 /**
@@ -43,6 +45,7 @@ public class ChatConfigBo extends BaseEntity {
     /**
      * 配置值
      */
+    @Sensitive(strategy = SensitiveStrategy.ID_CARD)
     @NotBlank(message = "配置值不能为空", groups = { AddGroup.class, EditGroup.class })
     private String configValue;
 

@@ -45,6 +45,7 @@ public class ChatConfigController extends BaseController {
      *
      * @param id 主键
      */
+    @SaCheckPermission("system:config:list")
     @GetMapping("/{id}")
     public R<ChatConfigVo> getInfo(@NotNull(message = "主键不能为空")
                                    @PathVariable Long id) {
@@ -56,6 +57,7 @@ public class ChatConfigController extends BaseController {
      *
      * @param configKey 参数Key
      */
+    @SaCheckPermission("system:config:list")
     @GetMapping(value = "/configKey/{configKey}")
     public R<String> getConfigKey(@PathVariable String configKey) {
         return R.ok(configService.getConfigValue("sys",configKey));
@@ -65,6 +67,7 @@ public class ChatConfigController extends BaseController {
      * 查询系统参数
      *
      */
+    @SaCheckPermission("system:config:list")
     @GetMapping(value = "/sysConfigKey")
     public R<List<ChatConfigVo>> getSysConfigKey() {
         return R.ok(chatConfigService.getSysConfigValue("sys"));
@@ -73,6 +76,7 @@ public class ChatConfigController extends BaseController {
     /**
      * 新增对话配置信息
      */
+    @SaCheckPermission("system:config:add")
     @PostMapping("/add")
     public R<Void> add(@RequestBody List<ChatConfigBo> boList) {
         for (ChatConfigBo chatConfigBo : boList) {
@@ -88,6 +92,7 @@ public class ChatConfigController extends BaseController {
     /**
      * 修改对话配置信息
      */
+    @SaCheckPermission("system:config:edit")
     @PutMapping("/edit")
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody ChatConfigBo bo) {
         return toAjax(chatConfigService.updateByBo(bo));
@@ -98,6 +103,7 @@ public class ChatConfigController extends BaseController {
      *
      * @param ids 主键串
      */
+    @SaCheckPermission("system:config:edit")
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {

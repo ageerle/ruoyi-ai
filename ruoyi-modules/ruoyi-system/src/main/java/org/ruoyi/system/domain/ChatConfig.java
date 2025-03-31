@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.ruoyi.common.sensitive.annotation.Sensitive;
+import org.ruoyi.common.sensitive.core.SensitiveStrategy;
 import org.ruoyi.common.tenant.core.TenantEntity;
 
 import java.io.Serial;
@@ -42,6 +44,7 @@ public class ChatConfig extends TenantEntity {
     /**
      * 配置值
      */
+    @Sensitive(strategy = SensitiveStrategy.ID_CARD)
     private String configValue;
 
     /**
