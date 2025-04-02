@@ -1,0 +1,1 @@
+INSERT INTO `ry-vue`.`chat_app_store` (`id`, `name`, `description`, `avatar`, `app_url`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (7, '微信机器人', '微信机器人', 'https://panda-1253683406.cos.ap-guangzhou.myqcloud.com/panda/2025/04/02/0557a7d68fa842bba952ce0d6ef38a2e.png', '/wxbot', NULL, NULL, NULL, NULL, NULL, NULL);
