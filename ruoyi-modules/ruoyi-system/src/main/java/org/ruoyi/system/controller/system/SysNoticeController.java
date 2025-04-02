@@ -31,7 +31,6 @@ public class SysNoticeController extends BaseController {
     /**
      * 获取公告列表
      */
-    @SaCheckPermission("system:notice:list")
     @GetMapping("/list")
     public TableDataInfo<SysNoticeVo> list(SysNoticeBo notice, PageQuery pageQuery) {
         //公告类型（1通知 2公告）

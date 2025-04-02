@@ -2,6 +2,7 @@ package org.ruoyi.common.satoken.utils;
 
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.context.model.SaStorage;
+import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.convert.Convert;
@@ -73,8 +74,11 @@ public class LoginHelper {
         if (loginUser != null) {
             return loginUser;
         }
-        loginUser = (LoginUser) StpUtil.getTokenSession().get(LOGIN_USER_KEY);
-        SaHolder.getStorage().set(LOGIN_USER_KEY, loginUser);
+        SaSession tokenSession = StpUtil.getTokenSession();
+        if (tokenSession != null) {
+            loginUser =  (LoginUser) tokenSession.get(LOGIN_USER_KEY);
+            SaHolder.getStorage().set(LOGIN_USER_KEY, loginUser);
+        };
         return loginUser;
     }
 
