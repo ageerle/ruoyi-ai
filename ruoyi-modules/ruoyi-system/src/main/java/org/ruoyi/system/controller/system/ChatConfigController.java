@@ -64,6 +64,24 @@ public class ChatConfigController extends BaseController {
     }
 
     /**
+     * 查询版权信息
+     *
+     */
+    @GetMapping(value = "/configKey/copyright")
+    public R<String> getConfigKeyCopyright() {
+        return R.ok(configService.getConfigValue("sys","copyright"));
+    }
+
+    /**
+     * 查询logoImage
+     *
+     */
+    @GetMapping(value = "/configKey/logoImage")
+    public R<String> getConfigKeyLogoImage() {
+        return R.ok(configService.getConfigValue("sys","logoImage"));
+    }
+
+    /**
      * 查询系统参数
      *
      */
