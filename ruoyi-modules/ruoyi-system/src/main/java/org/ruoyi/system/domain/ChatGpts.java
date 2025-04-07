@@ -103,4 +103,9 @@ public class ChatGpts extends BaseEntity {
     private String modelName;
 
 
+    /**
+     * 模型system
+     */
+    private String systemPrompt;
+
 }

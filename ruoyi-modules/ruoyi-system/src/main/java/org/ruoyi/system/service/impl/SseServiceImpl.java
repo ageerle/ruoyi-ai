@@ -143,7 +143,7 @@ public class SseServiceImpl implements ISseService {
                     openAiStreamClient = chatConfig.createOpenAiStreamClient(sysModel.getApiHost(), sysModel.getApiKey());
                     if (StringUtils.isNotEmpty(chatRequest.getAppId())) { // 设置应用的系统角色为描述
                         ChatGptsVo chatGptsVo = chatGptsService.queryById(Long.valueOf(chatRequest.getAppId()));
-                        Message sysMessage = Message.builder().content(chatGptsVo.getInfo()).role(Message.Role.SYSTEM).build();
+                        Message sysMessage = Message.builder().content(chatGptsVo.getSystemPrompt()).role(Message.Role.SYSTEM).build();
                         messages.add(0,sysMessage);
                     } else {
                         // 模型设置默认提示词
