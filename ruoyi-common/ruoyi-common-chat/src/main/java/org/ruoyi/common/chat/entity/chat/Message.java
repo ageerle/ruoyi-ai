@@ -2,6 +2,7 @@ package org.ruoyi.common.chat.entity.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.ruoyi.common.chat.entity.chat.tool.ToolCalls;
 
@@ -20,6 +21,8 @@ import java.util.List;
 public class Message extends BaseMessage implements Serializable {
 
     private Object content;
+    @JsonProperty("reasoning_content")
+    private String reasoningContent;
 
     public static Builder builder() {
         return new Builder();
