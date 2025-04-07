@@ -63,6 +63,7 @@ public class SysModelServiceImpl implements ISysModelService {
         lqw.like(StringUtils.isNotBlank(bo.getModelShow()), SysModel::getModelShow, bo.getModelShow());
         lqw.eq(StringUtils.isNotBlank(bo.getModelDescribe()), SysModel::getModelDescribe, bo.getModelDescribe());
         lqw.eq(StringUtils.isNotBlank(bo.getModelType()), SysModel::getModelType, bo.getModelType());
+        lqw.eq(StringUtils.isNotBlank(bo.getCategory()), SysModel::getCategory, bo.getCategory());
         return lqw;
     }
 
