@@ -97,5 +97,10 @@ public class ChatGpts extends BaseEntity {
      */
     private String updateIp;
 
+    /**
+     * 模型名称
+     */
+    private String modelName;
+
 
 }

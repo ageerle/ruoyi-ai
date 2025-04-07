@@ -96,5 +96,11 @@ public class ChatGptsVo implements Serializable {
     @ExcelProperty(value = "更新IP")
     private String updateIp;
 
+    /**
+     * 模型名称
+     */
+    @ExcelProperty(value = "模型名称")
+    private String modelName;
+
 
 }

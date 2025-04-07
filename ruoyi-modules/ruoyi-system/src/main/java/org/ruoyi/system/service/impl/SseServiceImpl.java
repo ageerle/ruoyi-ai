@@ -44,6 +44,7 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.domain.SysModel;
 import org.ruoyi.system.domain.bo.ChatMessageBo;
 import org.ruoyi.system.domain.request.translation.TranslationRequest;
+import org.ruoyi.system.domain.vo.ChatGptsVo;
 import org.ruoyi.system.listener.SSEEventSourceListener;
 import org.ruoyi.system.service.*;
 import org.springframework.core.io.InputStreamResource;
@@ -87,6 +88,8 @@ public class SseServiceImpl implements ISseService {
     private final ISysModelService sysModelService;
 
     private final ConfigService configService;
+
+    private final IChatGptsService chatGptsService;
 
     static final OkHttpClient HTTP_CLIENT = new OkHttpClient().newBuilder().build();
 
@@ -132,20 +135,22 @@ public class SseServiceImpl implements ISseService {
                 chatMessageBo.setContent(chatString);
 
                 String model = chatRequest.getModel();
-                // 如果是gpts系列模型
-                if (chatRequest.getModel().startsWith("gpt-4-gizmo")) {
-                    model = "gpt-4-gizmo";
-                }
                 SysModel sysModel = sysModelService.selectModelByName(model);
                 if (sysModel == null) {
                     // 如果模型不存在默认使用token扣费方式
                     processByToken(chatRequest.getModel(), chatString, chatMessageBo);
                 } else {
                     openAiStreamClient = chatConfig.createOpenAiStreamClient(sysModel.getApiHost(), sysModel.getApiKey());
-                    // 模型设置默认提示词
-                    if (StringUtils.isNotEmpty(sysModel.getSystemPrompt())) {
-                        Message sysMessage = Message.builder().content(sysModel.getSystemPrompt()).role(Message.Role.SYSTEM).build();
-                        messages.add(sysMessage);
+                    if (StringUtils.isNotEmpty(chatRequest.getAppId())) { // 设置应用的系统角色为描述
+                        ChatGptsVo chatGptsVo = chatGptsService.queryById(Long.valueOf(chatRequest.getAppId()));
+                        Message sysMessage = Message.builder().content(chatGptsVo.getInfo()).role(Message.Role.SYSTEM).build();
+                        messages.add(0,sysMessage);
+                    } else {
+                        // 模型设置默认提示词
+                        if (StringUtils.isNotEmpty(sysModel.getSystemPrompt())) {
+                            Message sysMessage = Message.builder().content(sysModel.getSystemPrompt()).role(Message.Role.SYSTEM).build();
+                            messages.add(0,sysMessage);
+                        }
                     }
                     // 计费类型: 1 token扣费 2 次数扣费
                     if ("2".equals(sysModel.getModelType())) {
