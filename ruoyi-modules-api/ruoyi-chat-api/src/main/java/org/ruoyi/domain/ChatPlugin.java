@@ -1,7 +1,6 @@
 package org.ruoyi.domain;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -12,7 +11,7 @@ import java.io.Serial;
  * 插件管理对象 chat_plugin
  *
  * @author ageerle
- * @date 2025-03-30
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

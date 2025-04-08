@@ -1,7 +1,6 @@
 package org.ruoyi.domain;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -9,10 +8,10 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import java.io.Serial;
 
 /**
- * 应用市场
+ * 应用商店对象 chat_app_store
  *
- * @author Lion Li
- * @date 2024-03-19
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -23,7 +22,7 @@ public class ChatAppStore extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 主键
+     * id
      */
     @TableId(value = "id")
     private Long id;
@@ -39,15 +38,14 @@ public class ChatAppStore extends BaseEntity {
     private String description;
 
     /**
-     * 头像
+     * logo
      */
     private String avatar;
 
     /**
-     * 应用地址
+     * 地址
      */
     private String appUrl;
-
 
     /**
      * 备注

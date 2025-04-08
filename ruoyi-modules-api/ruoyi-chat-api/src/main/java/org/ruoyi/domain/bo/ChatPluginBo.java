@@ -1,21 +1,19 @@
 package org.ruoyi.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.system.domain.ChatPlugin;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
-import org.ruoyi.domain.ChatPlugin;
-
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import jakarta.validation.constraints.*;
 
 /**
  * 插件管理业务对象 chat_plugin
  *
  * @author ageerle
- * @date 2025-03-30
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

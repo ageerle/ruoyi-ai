@@ -1,7 +1,8 @@
 package org.ruoyi.service;
 
-import org.ruoyi.common.mybatis.core.page.PageQuery;
+
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.domain.bo.ChatMessageBo;
 import org.ruoyi.domain.vo.ChatMessageVo;
 
@@ -11,8 +12,8 @@ import java.util.List;
 /**
  * 聊天消息Service接口
  *
- * @author Lion Li
- * @date 2023-11-26
+ * @author ageerle
+ * @date 2025-04-08
  */
 public interface IChatMessageService {
 

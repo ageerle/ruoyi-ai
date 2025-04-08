@@ -1,21 +1,19 @@
 package org.ruoyi.domain;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+
+import java.math.BigDecimal;
 
 import java.io.Serial;
 
 /**
  * 聊天消息对象 chat_message
  *
- * @author Lion Li
- * @date 2023-11-26
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -28,49 +26,45 @@ public class ChatMessage extends BaseEntity {
     /**
      * 主键
      */
-    @NotNull(message = "主键不能为空", groups = { EditGroup.class })
+    @TableId(value = "id")
     private Long id;
 
     /**
-     * 用户ID
+     * 用户id
      */
-    @NotBlank(message = "用户ID", groups = { AddGroup.class, EditGroup.class })
-    private Long UserId;
+    private Long userId;
+
+    /**
+     * 消息内容
+     */
+    private String content;
 
     /**
      * 对话角色
      */
     private String role;
 
-
     /**
-     * 消息内容
-     */
-    @NotBlank(message = "消息内容不能为空", groups = { AddGroup.class, EditGroup.class })
-    private String content;
+     * 扣除金额
 
 
-    /**
-     * 扣除费用
      */
-    private Double deductCost;
+    private BigDecimal deductCost;
 
     /**
      * 累计 Tokens
      */
-    @NotNull(message = "累计 Tokens不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Integer totalTokens;
+    private Long totalTokens;
 
     /**
      * 模型名称
      */
-    @NotBlank(message = "模型名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String modelName;
 
     /**
      * 备注
      */
-    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
+
 
 }

@@ -1,19 +1,19 @@
 package org.ruoyi.domain;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
-import java.io.Serial;
 import java.math.BigDecimal;
+
+import java.io.Serial;
 
 /**
  * 用户兑换记录对象 chat_voucher
  *
- * @author Lion Li
- * @date 2024-05-03
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -30,11 +30,6 @@ public class ChatVoucher extends BaseEntity {
     private Long id;
 
     /**
-     * 用户id
-     */
-    private Long userId;
-
-    /**
      * 兑换码
      */
     private String code;
@@ -43,6 +38,11 @@ public class ChatVoucher extends BaseEntity {
      * 兑换金额
      */
     private BigDecimal amount;
+
+    /**
+     * 用户id
+     */
+    private Long userId;
 
     /**
      * 兑换状态

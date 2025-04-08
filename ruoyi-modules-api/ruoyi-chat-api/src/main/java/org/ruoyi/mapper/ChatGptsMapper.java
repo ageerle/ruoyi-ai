@@ -4,12 +4,11 @@ import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.domain.ChatGpts;
 import org.ruoyi.domain.vo.ChatGptsVo;
 
-
 /**
- * gpts管理Mapper接口
+ * 应用管理Mapper接口
  *
- * @author Lion Li
- * @date 2024-07-09
+ * @author ageerle
+ * @date 2025-04-08
  */
 public interface ChatGptsMapper extends BaseMapperPlus<ChatGpts, ChatGptsVo> {
 

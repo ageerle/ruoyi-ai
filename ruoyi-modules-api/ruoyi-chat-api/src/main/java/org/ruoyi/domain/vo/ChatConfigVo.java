@@ -1,25 +1,23 @@
 package org.ruoyi.domain.vo;
 
+import org.ruoyi.system.domain.ChatConfig;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.ruoyi.common.sensitive.annotation.Sensitive;
-import org.ruoyi.common.sensitive.core.SensitiveStrategy;
-import org.ruoyi.domain.ChatConfig;
-
 
 import java.io.Serial;
 import java.io.Serializable;
 
 
 
+
 /**
- * 对话配置信息
-视图对象 chat_config
+ * 配置信息视图对象 chat_config
  *
- * @author Lion Li
- * @date 2024-04-13
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -51,7 +49,6 @@ public class ChatConfigVo implements Serializable {
      * 配置值
      */
     @ExcelProperty(value = "配置值")
-    @Sensitive(strategy = SensitiveStrategy.SKY)
     private String configValue;
 
     /**

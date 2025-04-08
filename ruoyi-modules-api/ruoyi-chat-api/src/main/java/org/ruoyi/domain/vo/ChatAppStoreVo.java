@@ -1,23 +1,23 @@
-package org.ruoyi.domain.vo;
+package org.ruoyi.system.domain.vo;
 
-
+import org.ruoyi.system.domain.ChatAppStore;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.ruoyi.domain.ChatAppStore;
-
 
 import java.io.Serial;
 import java.io.Serializable;
 
 
 
+
 /**
- * 应用市场视图对象
+ * 应用商店视图对象 chat_app_store
  *
- * @author Lion Li
- * @date 2024-03-19
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -34,27 +34,27 @@ public class ChatAppStoreVo implements Serializable {
     private Long id;
 
     /**
-     * 角色名称
+     * 名称
      */
     @ExcelProperty(value = "名称")
     private String name;
 
     /**
-     * 角色描述
+     * 描述
      */
     @ExcelProperty(value = "描述")
     private String description;
 
     /**
-     * 头像
+     * logo
      */
-    @ExcelProperty(value = "头像")
+    @ExcelProperty(value = "logo")
     private String avatar;
 
     /**
-     * 音频地址
+     * 地址
      */
-    @ExcelProperty(value = "应用地址")
+    @ExcelProperty(value = "地址")
     private String appUrl;
 
     /**

@@ -1,20 +1,19 @@
 package org.ruoyi.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.system.domain.ChatGpts;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
-import org.ruoyi.domain.ChatGpts;
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import jakarta.validation.constraints.*;
 
 /**
- * gpts管理业务对象 chat_gpts
+ * 应用管理业务对象 chat_gpts
  *
- * @author Lion Li
- * @date 2024-07-09
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -42,56 +41,56 @@ public class ChatGptsBo extends BaseEntity {
     /**
      * gpts图标
      */
+    @NotBlank(message = "gpts图标不能为空", groups = { AddGroup.class, EditGroup.class })
     private String logo;
 
     /**
      * gpts描述
      */
+    @NotBlank(message = "gpts描述不能为空", groups = { AddGroup.class, EditGroup.class })
     private String info;
 
     /**
      * 作者id
      */
+    @NotBlank(message = "作者id不能为空", groups = { AddGroup.class, EditGroup.class })
     private String authorId;
 
     /**
      * 作者名称
      */
+    @NotBlank(message = "作者名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String authorName;
 
     /**
      * 点赞
      */
-    private String useCnt;
+    @NotNull(message = "点赞不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Long useCnt;
 
     /**
      * 差评
      */
-    private String bad;
+    @NotNull(message = "差评不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Long bad;
 
     /**
      * 类型
      */
+    @NotBlank(message = "类型不能为空", groups = { AddGroup.class, EditGroup.class })
     private String type;
 
     /**
      * 备注
      */
+    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
 
     /**
      * 更新IP
      */
+    @NotBlank(message = "更新IP不能为空", groups = { AddGroup.class, EditGroup.class })
     private String updateIp;
 
-    /**
-     * 模型名称
-     */
-    private String modelName;
-
-    /**
-     * 模型system
-     */
-    private String systemPrompt;
 
 }

@@ -1,21 +1,20 @@
 package org.ruoyi.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.system.domain.ChatMessage;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
-import org.ruoyi.domain.ChatMessage;
-
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
 
 /**
  * 聊天消息业务对象 chat_message
  *
- * @author Lion Li
- * @date 2023-11-26
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -29,19 +28,10 @@ public class ChatMessageBo extends BaseEntity {
     private Long id;
 
     /**
-     * 用户ID
+     * 用户id
      */
+    @NotNull(message = "用户id不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long userId;
-
-    /**
-     * 用户名称
-     */
-    private String userName;
-
-    /**
-     * 对话角色
-     */
-    private String role;
 
     /**
      * 消息内容
@@ -50,23 +40,36 @@ public class ChatMessageBo extends BaseEntity {
     private String content;
 
     /**
-     * 扣除费用
+     * 对话角色
      */
-    private Double deductCost;
+    @NotBlank(message = "对话角色不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String role;
+
+    /**
+     * 扣除金额
+
+
+     */
+    @NotNull(message = "扣除金额不能为空", groups = { AddGroup.class, EditGroup.class })
+    private BigDecimal deductCost;
 
     /**
      * 累计 Tokens
      */
-    private Integer totalTokens;
+    @NotNull(message = "累计 Tokens不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Long totalTokens;
 
     /**
      * 模型名称
      */
+    @NotBlank(message = "模型名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String modelName;
 
     /**
      * 备注
      */
+    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
+
 
 }

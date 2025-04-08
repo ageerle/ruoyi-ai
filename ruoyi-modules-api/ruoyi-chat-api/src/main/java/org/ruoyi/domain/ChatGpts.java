@@ -1,9 +1,6 @@
 package org.ruoyi.domain;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.Version;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -11,10 +8,10 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import java.io.Serial;
 
 /**
- * gpts管理对象 chat_gpts
+ * 应用管理对象 chat_gpts
  *
- * @author Lion Li
- * @date 2024-07-09
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -63,12 +60,12 @@ public class ChatGpts extends BaseEntity {
     /**
      * 点赞
      */
-    private String useCnt;
+    private Long useCnt;
 
     /**
      * 差评
      */
-    private String bad;
+    private Long bad;
 
     /**
      * 类型
@@ -97,15 +94,5 @@ public class ChatGpts extends BaseEntity {
      */
     private String updateIp;
 
-    /**
-     * 模型名称
-     */
-    private String modelName;
-
-
-    /**
-     * 模型system
-     */
-    private String systemPrompt;
 
 }

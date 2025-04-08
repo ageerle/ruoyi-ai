@@ -1,25 +1,24 @@
 package org.ruoyi.domain.vo;
 
+import java.math.BigDecimal;
+import org.ruoyi.system.domain.ChatMessage;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.domain.ChatMessage;
+import com.alibaba.excel.annotation.ExcelProperty;
 
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
+
+
 
 
 /**
  * 聊天消息视图对象 chat_message
  *
- * @author Lion Li
- * @date 2023-11-26
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -32,60 +31,50 @@ public class ChatMessageVo implements Serializable {
     /**
      * 主键
      */
-    @NotNull(message = "主键不能为空", groups = { EditGroup.class })
+    @ExcelProperty(value = "主键")
     private Long id;
 
     /**
-     * 用户ID
+     * 用户id
      */
-    @NotBlank(message = "用户ID", groups = { AddGroup.class, EditGroup.class })
+    @ExcelProperty(value = "用户id")
     private Long userId;
-
-    /**
-     * 用户名称
-     */
-    @NotBlank(message = "用户名称")
-    private String userName;
-
-    /**
-     * 对话角色
-     */
-    private String role;
-
 
     /**
      * 消息内容
      */
-    @NotBlank(message = "消息内容不能为空", groups = { AddGroup.class, EditGroup.class })
+    @ExcelProperty(value = "消息内容")
     private String content;
 
+    /**
+     * 对话角色
+     */
+    @ExcelProperty(value = "对话角色")
+    private String role;
 
     /**
-     * 扣除费用
+     * 扣除金额
      */
-    private Double deductCost;
+    @ExcelProperty(value = "扣除金额")
+    private BigDecimal deductCost;
 
     /**
      * 累计 Tokens
      */
-    @NotNull(message = "累计 Tokens不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Integer totalTokens;
+    @ExcelProperty(value = "累计 Tokens")
+    private Long totalTokens;
 
     /**
      * 模型名称
      */
-    @NotBlank(message = "模型名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    @ExcelProperty(value = "模型名称")
     private String modelName;
 
     /**
      * 备注
      */
-    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
+    @ExcelProperty(value = "备注")
     private String remark;
 
-    /**
-     * 创建时间
-     */
-    private Date createTime;
 
 }

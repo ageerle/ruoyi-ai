@@ -1,20 +1,23 @@
 package org.ruoyi.domain.vo;
 
+import org.ruoyi.system.domain.ChatPlugin;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.ruoyi.domain.ChatPlugin;
 
 import java.io.Serial;
 import java.io.Serializable;
+
+
 
 
 /**
  * 插件管理视图对象 chat_plugin
  *
  * @author ageerle
- * @date 2025-03-30
+ * @date 2025-04-08
  */
 @Data
 @ExcelIgnoreUnannotated

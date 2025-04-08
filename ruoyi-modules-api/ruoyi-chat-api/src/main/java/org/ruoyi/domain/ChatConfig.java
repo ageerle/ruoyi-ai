@@ -1,21 +1,18 @@
 package org.ruoyi.domain;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
-import org.ruoyi.common.sensitive.annotation.Sensitive;
-import org.ruoyi.common.sensitive.core.SensitiveStrategy;
 
 import java.io.Serial;
 
 /**
- * 对话配置信息对象 chat_config
+ * 配置信息对象 chat_config
  *
- * @author Lion Li
- * @date 2024-04-13
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -44,7 +41,6 @@ public class ChatConfig extends BaseEntity {
     /**
      * 配置值
      */
-    @Sensitive(strategy = SensitiveStrategy.SKY)
     private String configValue;
 
     /**
@@ -56,6 +52,12 @@ public class ChatConfig extends BaseEntity {
      * 备注
      */
     private String remark;
+
+    /**
+     * 版本
+     */
+    @Version
+    private Long version;
 
     /**
      * 删除标志（0代表存在 1代表删除）

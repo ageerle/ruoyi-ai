@@ -1,10 +1,12 @@
 package org.ruoyi.domain.vo;
 
+import java.math.BigDecimal;
+import org.ruoyi.system.domain.ChatVoucher;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.ruoyi.domain.ChatVoucher;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -14,8 +16,8 @@ import java.io.Serializable;
 /**
  * 用户兑换记录视图对象 chat_voucher
  *
- * @author Lion Li
- * @date 2024-05-03
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -32,18 +34,6 @@ public class ChatVoucherVo implements Serializable {
     private Long id;
 
     /**
-     * 用户id
-     */
-    @ExcelProperty(value = "用户id")
-    private Long userId;
-
-    /**
-     * 用户名称
-     */
-    @ExcelProperty(value = "用户名称")
-    private String userName;
-
-    /**
      * 兑换码
      */
     @ExcelProperty(value = "兑换码")
@@ -53,7 +43,13 @@ public class ChatVoucherVo implements Serializable {
      * 兑换金额
      */
     @ExcelProperty(value = "兑换金额")
-    private Double amount;
+    private BigDecimal amount;
+
+    /**
+     * 用户id
+     */
+    @ExcelProperty(value = "用户id")
+    private Long userId;
 
     /**
      * 兑换状态
@@ -65,22 +61,19 @@ public class ChatVoucherVo implements Serializable {
      * 兑换前余额
      */
     @ExcelProperty(value = "兑换前余额")
-    private Double balanceBefore;
+    private BigDecimal balanceBefore;
 
     /**
      * 兑换后余额
      */
     @ExcelProperty(value = "兑换后余额")
-    private Double balanceAfter;
+    private BigDecimal balanceAfter;
 
     /**
      * 备注
      */
     @ExcelProperty(value = "备注")
     private String remark;
-
-    @ExcelProperty(value = "创建时间")
-    private String createTime;
 
 
 }

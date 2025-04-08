@@ -1,21 +1,23 @@
 package org.ruoyi.domain.vo;
 
+import org.ruoyi.system.domain.ChatGpts;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.ruoyi.domain.ChatGpts;
-
 
 import java.io.Serial;
 import java.io.Serializable;
 
 
+
+
 /**
- * gpts管理视图对象 chat_gpts
+ * 应用管理视图对象 chat_gpts
  *
- * @author Lion Li
- * @date 2024-07-09
+ * @author ageerle
+ * @date 2025-04-08
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -71,13 +73,13 @@ public class ChatGptsVo implements Serializable {
      * 点赞
      */
     @ExcelProperty(value = "点赞")
-    private String useCnt;
+    private Long useCnt;
 
     /**
      * 差评
      */
     @ExcelProperty(value = "差评")
-    private String bad;
+    private Long bad;
 
     /**
      * 类型
@@ -96,17 +98,6 @@ public class ChatGptsVo implements Serializable {
      */
     @ExcelProperty(value = "更新IP")
     private String updateIp;
-
-    /**
-     * 模型名称
-     */
-    @ExcelProperty(value = "模型名称")
-    private String modelName;
-
-    /**
-     * 模型system
-     */
-    private String systemPrompt;
 
 
 }
