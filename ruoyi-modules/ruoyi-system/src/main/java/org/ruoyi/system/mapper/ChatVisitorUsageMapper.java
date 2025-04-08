@@ -1,7 +1,5 @@
 package org.ruoyi.system.mapper;
 
-import org.ruoyi.system.domain.ChatVisitorUsage;
-import org.ruoyi.system.domain.vo.ChatVisitorUsageVo;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 
 /**

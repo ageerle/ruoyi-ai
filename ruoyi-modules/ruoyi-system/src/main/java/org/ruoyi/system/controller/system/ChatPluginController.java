@@ -17,9 +17,6 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.log.enums.BusinessType;
-import org.ruoyi.system.domain.vo.ChatPluginVo;
-import org.ruoyi.system.domain.bo.ChatPluginBo;
-import org.ruoyi.system.service.IChatPluginService;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 
 /**

@@ -19,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MsgHandler extends AbstractHandler {
 
-    private final ISseService sseService;
+//    private final ISseService sseService;
 
 
 
@@ -34,8 +34,10 @@ public class MsgHandler extends AbstractHandler {
         if (!msgType.equals(WxConsts.XmlMsgType.EVENT)) {
             //TODO 可以选择将消息保存到本地
         }
+
         //TODO 组装回复消息
-        String content = sseService.wxCpChat(wxMessage.getContent());
+        String content = "";
+                //sseService.wxCpChat(wxMessage.getContent());
 
         return new TextBuilder().build(content, wxMessage, cpService);
 

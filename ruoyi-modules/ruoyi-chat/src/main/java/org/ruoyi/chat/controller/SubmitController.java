@@ -10,7 +10,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.ruoyi.chat.dto.*;
 import org.ruoyi.chat.enums.ActionType;
 import org.ruoyi.chat.util.MjOkHttpUtil;
-import org.ruoyi.system.service.IChatCostService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

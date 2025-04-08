@@ -8,9 +8,6 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.system.domain.bo.ChatConfigBo;
-import org.ruoyi.system.domain.vo.ChatConfigVo;
-import org.ruoyi.system.service.IChatConfigService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

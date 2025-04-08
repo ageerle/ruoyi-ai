@@ -344,10 +344,16 @@
     </dependencyManagement>
 
     <modules>
-        <module>ruoyi-admin</module>
         <module>ruoyi-common</module>
         <module>ruoyi-modules</module>
+        <module>ruoyi-modules-api</module>
+        <module>ruoyi-modules-api</module>
+        <module>ruoyi-modules-api/ruoyi-device-api</module>
+        <module>ruoyi-modules-api/ruoyi-weixin-api</module>
+        <module>ruoyi-modules/ruoyi-weixin</module>
+        <module>ruoyi-modules/ruoyi-device</module>
     </modules>
+
     <packaging>pom</packaging>
 
     <build>

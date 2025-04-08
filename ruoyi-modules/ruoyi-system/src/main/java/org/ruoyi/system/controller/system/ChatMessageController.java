@@ -16,9 +16,6 @@ import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.system.domain.bo.ChatMessageBo;
-import org.ruoyi.system.domain.vo.ChatMessageVo;
-import org.ruoyi.system.service.IChatMessageService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

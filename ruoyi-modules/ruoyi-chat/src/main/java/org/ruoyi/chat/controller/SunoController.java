@@ -10,7 +10,6 @@ import org.ruoyi.common.core.utils.OkHttpUtil;
 import org.ruoyi.system.cofing.OkHttpConfig;
 import org.ruoyi.system.domain.GenerateLyric;
 import org.ruoyi.system.domain.GenerateSuno;
-import org.ruoyi.system.service.IChatCostService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

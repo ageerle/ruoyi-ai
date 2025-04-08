@@ -9,13 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.domain.model.LoginUser;
-import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.cofing.OkHttpConfig;
 import org.ruoyi.system.domain.vo.ppt.*;
-import org.ruoyi.system.service.IChatCostService;
 import org.ruoyi.system.service.IPptService;
 import org.ruoyi.system.util.HttpUtils;
 import org.ruoyi.system.util.WddPptApi;
@@ -25,8 +23,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.time.Duration;
-
-import static org.ruoyi.common.satoken.utils.LoginHelper.getLoginUser;
 
 /**
  * AI-PPTService业务层处理

@@ -24,7 +24,6 @@ import org.ruoyi.system.domain.model.ApiResult;
 import org.ruoyi.system.domain.vo.cover.*;
 import org.ruoyi.system.mapper.CoverMapper;
 import org.ruoyi.system.mapper.CoverPromptAudioMapper;
-import org.ruoyi.system.service.IChatCostService;
 import org.ruoyi.system.service.ICoverService;
 import org.ruoyi.system.util.WeChatScanHttpUtil;
 import org.springframework.stereotype.Service;

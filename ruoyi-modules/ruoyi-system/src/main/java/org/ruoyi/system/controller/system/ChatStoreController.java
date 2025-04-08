@@ -3,10 +3,6 @@ package org.ruoyi.system.controller.system;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.system.domain.bo.ChatAppStoreBo;
-import org.ruoyi.system.domain.bo.ChatMessageBo;
-import org.ruoyi.system.domain.vo.ChatAppStoreVo;
-import org.ruoyi.system.service.IChatAppStoreService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

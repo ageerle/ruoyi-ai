@@ -42,9 +42,7 @@ import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.core.utils.file.MimeTypeUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.domain.SysModel;
-import org.ruoyi.system.domain.bo.ChatMessageBo;
 import org.ruoyi.system.domain.request.translation.TranslationRequest;
-import org.ruoyi.system.domain.vo.ChatGptsVo;
 import org.ruoyi.system.listener.SSEEventSourceListener;
 import org.ruoyi.system.service.*;
 import org.springframework.core.io.InputStreamResource;
@@ -78,8 +76,7 @@ public class SseServiceImpl implements ISseService {
 
     private OpenAiStreamClient openAiStreamClient;
 
-    private final ChatConfig chatConfig;
-
+    ChatConfig chatConfig;
 
     private final IChatCostService chatService;
 

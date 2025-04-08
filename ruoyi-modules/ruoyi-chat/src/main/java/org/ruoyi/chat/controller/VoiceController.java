@@ -7,7 +7,6 @@ import org.ruoyi.system.request.RoleListDto;
 import org.ruoyi.system.request.SimpleGenerateRequest;
 import org.ruoyi.system.response.SimpleGenerateDataResponse;
 import org.ruoyi.system.response.rolelist.ChatAppStoreVO;
-import org.ruoyi.system.service.IChatAppStoreService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
