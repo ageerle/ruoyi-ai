@@ -317,8 +317,9 @@ public class SysUserController extends BaseController {
      */
     @SaCheckPermission("system:user:list")
     @GetMapping("/deptTree")
-    public R<List<Tree<Long>>> deptTree(SysDeptBo dept) {
-        return R.ok(deptService.selectDeptTreeList(dept));
+    public R<List> deptTree(SysDeptBo dept) {
+        List<Tree<Long>> trees = deptService.selectDeptTreeList(dept);
+        return R.ok(trees);
     }
 
 }
