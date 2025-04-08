@@ -78,7 +78,6 @@ public class KnowledgeController extends BaseController {
             sb.append("\n####").append(prompt);
         }
         sb.append( (nearestList.size() > 0 ? "\n\n注意：回答问题时，须严格根据我给你的系统上下文内容原文进行回答，请不要自己发挥,回答时保持原来文本的段落层级" : ""));
-        message.setRole(Message.Role.USER.getName());
         message.setContent(sb.toString());
         return sseService.sseChat(chatRequest, request);
     }

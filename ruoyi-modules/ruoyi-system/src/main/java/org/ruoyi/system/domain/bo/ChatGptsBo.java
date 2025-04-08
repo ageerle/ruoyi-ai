@@ -84,4 +84,14 @@ public class ChatGptsBo extends BaseEntity {
      */
     private String updateIp;
 
+    /**
+     * 模型名称
+     */
+    private String modelName;
+
+    /**
+     * 模型system
+     */
+    private String systemPrompt;
+
 }
