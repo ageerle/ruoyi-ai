@@ -231,4 +231,16 @@ RuoYi-AI
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 
 
+### 附：讨论群
+    🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
+  
+    🏠 qq：1603234088 （加人备注：ruoyi-ai）
+
+        👏👏👏 ruoyi-ai官方交流1群（qq区）：1034554687 
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+  <img src="image/QQ区-官方交流1群.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+</div>
+
+
 
