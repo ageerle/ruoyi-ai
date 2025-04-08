@@ -106,7 +106,8 @@ public class SSEEventSourceListener extends EventSourceListener {
             }
             Object content = completionResponse.getChoices().get(0).getDelta().getContent();
             if(content == null){
-                return;
+                content = completionResponse.getChoices().get(0).getDelta().getReasoningContent();
+                if(content == null) return;
             }
             if(StringUtils.isEmpty(modelName)){
                 modelName = completionResponse.getModel();

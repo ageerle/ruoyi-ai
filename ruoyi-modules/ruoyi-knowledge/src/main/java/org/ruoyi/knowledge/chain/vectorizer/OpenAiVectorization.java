@@ -11,6 +11,8 @@ import org.ruoyi.common.chat.entity.embeddings.EmbeddingResponse;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
 import org.ruoyi.knowledge.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.knowledge.service.IKnowledgeInfoService;
+import org.ruoyi.system.domain.SysModel;
+import org.ruoyi.system.service.ISysModelService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -31,6 +33,9 @@ public class OpenAiVectorization implements Vectorization {
     @Lazy
     @Resource
     private LocalModelsVectorization localModelsVectorization;
+    @Lazy
+    @Resource
+    private ISysModelService sysModelService;
 
     @Getter
     private OpenAiStreamClient openAiStreamClient;
@@ -40,9 +45,18 @@ public class OpenAiVectorization implements Vectorization {
     @Override
     public List<List<Double>> batchVectorization(List<String> chunkList, String kid) {
         List<List<Double>> vectorList;
-        openAiStreamClient = chatConfig.getOpenAiStreamClient();
         // 获取知识库信息
         KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(kid));
+        if(knowledgeInfoVo == null){
+            log.warn("知识库不存在:请查检ID {}",kid);
+            vectorList=new ArrayList<>();
+            vectorList.add(new ArrayList<>());
+            return vectorList;
+        }
+        SysModel sysModel = sysModelService.selectModelByName(knowledgeInfoVo.getVectorModel());
+        String apiHost= sysModel.getApiHost();
+        String apiKey= sysModel.getApiKey();
+        openAiStreamClient = chatConfig.createOpenAiStreamClient(apiHost,apiKey);
 
         Embedding embedding = buildEmbedding(chunkList, knowledgeInfoVo);
         EmbeddingResponse embeddings = openAiStreamClient.embeddings(embedding);

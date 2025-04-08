@@ -228,7 +228,9 @@ public class SysLoginService {
                 TenantHelper.clearDynamic();
             }
             StpUtil.logout();
-            recordLogininfor(loginUser.getTenantId(), loginUser.getUsername(), Constants.LOGOUT, MessageUtils.message("user.logout.success"));
+            if (loginUser !=null) {
+                recordLogininfor(loginUser.getTenantId(), loginUser.getUsername(), Constants.LOGOUT, MessageUtils.message("user.logout.success"));
+            }
         } catch (NotLoginException ignored) {
         }
     }
