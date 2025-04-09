@@ -5,11 +5,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.chat.service.chat.ISseService;
 import org.ruoyi.common.chat.domain.request.ChatRequest;
-import org.ruoyi.common.chat.domain.request.Dall3Request;
+
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
-import org.ruoyi.common.chat.entity.images.Item;
+
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.LoginUser;
@@ -17,8 +18,10 @@ import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.satoken.utils.LoginHelper;
-import org.ruoyi.system.domain.request.translation.TranslationRequest;
-import org.ruoyi.system.service.ISseService;
+import org.ruoyi.domain.bo.ChatMessageBo;
+
+import org.ruoyi.domain.vo.ChatMessageVo;
+import org.ruoyi.service.IChatMessageService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -26,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.List;
 
 /**
  * 描述：聊天管理
@@ -55,7 +57,6 @@ public class ChatController {
         }
         return sseService.sseChat(chatRequest,request);
     }
-
 
     /**
      * 上传文件
@@ -90,22 +91,6 @@ public class ChatController {
         return sseService.textToSpeed(textToSpeech);
     }
 
-    /**
-     * 文本翻译
-     *
-     * @param
-     */
-    @PostMapping("/translation")
-    @ResponseBody
-    public String translation(@RequestBody TranslationRequest translationRequest) {
-        return sseService.translation(translationRequest);
-    }
-
-    @PostMapping("/dall3")
-    @ResponseBody
-    public R<List<Item>> dall3(@RequestBody @Valid Dall3Request request) {
-        return R.ok(sseService.dall3(request));
-    }
 
     /**
      * 聊天记录

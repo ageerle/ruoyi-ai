@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.ruoyi.chat.dto.*;
+import org.ruoyi.chat.domain.dto.*;
 import org.ruoyi.chat.enums.ActionType;
 import org.ruoyi.chat.util.MjOkHttpUtil;
 import org.springframework.web.bind.annotation.PostMapping;

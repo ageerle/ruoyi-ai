@@ -20,7 +20,6 @@
         <module>ruoyi-demo</module>
         <module>ruoyi-chat</module>
         <module>ruoyi-system</module>
-        <module>ruoyi-knowledge</module>
         <module>ruoyi-generator</module>
     </modules>
 

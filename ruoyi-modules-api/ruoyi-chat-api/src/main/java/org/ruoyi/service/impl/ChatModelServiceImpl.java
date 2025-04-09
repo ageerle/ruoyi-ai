@@ -115,4 +115,12 @@ public class ChatModelServiceImpl implements IChatModelService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
+
+    /**
+     * 通过模型名称获取模型信息
+     */
+    @Override
+    public ChatModelVo selectModelByName(String modelName) {
+       return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, modelName));
+    }
 }

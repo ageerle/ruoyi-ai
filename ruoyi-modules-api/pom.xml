@@ -12,9 +12,11 @@
     <artifactId>ruoyi-modules-api</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>ruoyi-system-api</module>
         <module>ruoyi-chat-api</module>
+        <module>ruoyi-device-api</module>
         <module>ruoyi-knowledge-api</module>
+        <module>ruoyi-system-api</module>
+        <module>ruoyi-weixin-api</module>
     </modules>
 
     <properties>
@@ -24,13 +26,11 @@
     </properties>
 
     <dependencies>
-
         <!-- 系统核心模块 -->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-core</artifactId>
         </dependency>
-
 
         <!-- mybaits基础模块 -->
         <dependency>
@@ -38,13 +38,11 @@
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
 
-
         <!-- 脱敏模块 -->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-sensitive</artifactId>
         </dependency>
-
 
         <!-- excel模块-->
         <dependency>
@@ -52,10 +50,31 @@
             <artifactId>ruoyi-common-excel</artifactId>
         </dependency>
 
+        <!-- 租户基础模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <!-- 字段翻译基础模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <!-- 系统日志模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <!-- 对象存储模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-oss</artifactId>
+        </dependency>
+
 
     </dependencies>
-
-
-
 
 </project>

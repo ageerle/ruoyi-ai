@@ -11,8 +11,8 @@ import java.util.List;
 /**
  * 访客管理Service接口
  *
- * @author Lion Li
- * @date 2024-07-14
+ * @author ageerle
+ * @date 2025-04-08
  */
 public interface IChatVisitorUsageService {
 

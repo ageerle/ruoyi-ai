@@ -46,8 +46,6 @@ public class ChatMessage extends BaseEntity {
 
     /**
      * 扣除金额
-
-
      */
     private BigDecimal deductCost;
 

@@ -47,25 +47,11 @@
             <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
 
+        <!-- hutool工具模块 -->
         <dependency>
             <groupId>cn.hutool</groupId>
-            <artifactId>hutool-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-http</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-extra</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-json</artifactId>
-            <scope>provided</scope>
+            <artifactId>hutool-all</artifactId>
+            <version>5.8.24</version>
         </dependency>
 
         <dependency>

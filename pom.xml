@@ -244,18 +244,6 @@
                 <version>${tencent.sms.version}</version>
             </dependency>
 
-            <!--            <dependency>-->
-            <!--                <groupId>de.codecentric</groupId>-->
-            <!--                <artifactId>spring-boot-admin-starter-server</artifactId>-->
-            <!--                <version>${spring-boot-admin.version}</version>-->
-            <!--            </dependency>-->
-            <!--            <dependency>-->
-            <!--                <groupId>de.codecentric</groupId>-->
-            <!--                <artifactId>spring-boot-admin-starter-client</artifactId>-->
-            <!--                <version>${spring-boot-admin.version}</version>-->
-            <!--            </dependency>-->
-
-            <!--redisson-->
             <dependency>
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
@@ -321,10 +309,15 @@
                 <version>${revision}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-knowledge-api</artifactId>
+                <version>${revision}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-knowledge</artifactId>
+                <artifactId>ruoyi-system-api</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -347,11 +340,6 @@
         <module>ruoyi-common</module>
         <module>ruoyi-modules</module>
         <module>ruoyi-modules-api</module>
-        <module>ruoyi-modules-api</module>
-        <module>ruoyi-modules-api/ruoyi-device-api</module>
-        <module>ruoyi-modules-api/ruoyi-weixin-api</module>
-        <module>ruoyi-modules/ruoyi-weixin</module>
-        <module>ruoyi-modules/ruoyi-device</module>
     </modules>
 
     <packaging>pom</packaging>

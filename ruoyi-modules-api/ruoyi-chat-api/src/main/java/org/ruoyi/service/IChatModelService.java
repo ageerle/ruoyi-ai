@@ -46,4 +46,10 @@ public interface IChatModelService {
      * 校验并批量删除聊天模型信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+
+    /**
+     * 通过模型名称获取模型信息
+     */
+    ChatModelVo selectModelByName(String modelName);
 }
