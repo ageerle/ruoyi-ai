@@ -2,10 +2,8 @@ package org.ruoyi.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSONUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import me.chanjar.weixin.common.error.WxErrorException;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.*;
@@ -45,13 +43,13 @@ public class AuthController {
     private final ISysTenantService tenantService;
 
 
-    @PostMapping("/xcxLogin")
-    public R<LoginVo> login(@Validated @RequestBody String xcxCode) throws WxErrorException {
-
-        String openidFromCode = loginService.getOpenidFromCode((String) JSONUtil.parseObj(xcxCode).get("xcxCode"));
-        LoginVo loginVo = loginService.mpLogin(openidFromCode);
-            return R.ok(loginVo);
-    }
+//    @PostMapping("/xcxLogin")
+//    public R<LoginVo> login(@Validated @RequestBody String xcxCode) throws WxErrorException {
+//
+//        String openidFromCode = loginService.getOpenidFromCode((String) JSONUtil.parseObj(xcxCode).get("xcxCode"));
+//        LoginVo loginVo = loginService.mpLogin(openidFromCode);
+//            return R.ok(loginVo);
+//    }
 
     /**
      * 登录方法

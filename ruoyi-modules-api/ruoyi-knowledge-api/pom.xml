@@ -6,7 +6,8 @@
     <parent>
         <groupId>org.ruoyi</groupId>
         <artifactId>ruoyi-modules-api</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>ruoyi-knowledge-api</artifactId>

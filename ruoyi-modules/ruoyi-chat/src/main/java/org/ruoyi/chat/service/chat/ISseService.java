@@ -1,7 +1,7 @@
 package org.ruoyi.chat.service.chat;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.ruoyi.common.chat.domain.request.ChatRequest;
+import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
@@ -62,4 +62,13 @@ public interface ISseService {
      * @return 回复内容
      */
     String wxCpChat(String prompt);
+
+
+    /**
+     * 联网查询
+     *
+     * @param prompt 提示词
+     * @return 查询内容
+     */
+    String webSearch (String prompt);
 }

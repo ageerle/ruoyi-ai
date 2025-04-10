@@ -8,10 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
-import org.ruoyi.domain.ChatConfig;
-import org.ruoyi.domain.bo.ChatConfigBo;
-import org.ruoyi.domain.vo.ChatConfigVo;
-import org.ruoyi.mapper.ChatConfigMapper;
 import org.ruoyi.service.IChatConfigService;
 import org.springframework.stereotype.Service;
 

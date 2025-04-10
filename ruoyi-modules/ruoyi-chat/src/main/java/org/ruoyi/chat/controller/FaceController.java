@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.ruoyi.chat.domain.InsightFace;
+import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.util.MjOkHttpUtil;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

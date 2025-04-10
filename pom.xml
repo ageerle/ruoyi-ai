@@ -18,6 +18,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>17</java.version>
+        <mysql.version>8.0.33</mysql.version>
         <spring-boot.mybatis>3.0.1</spring-boot.mybatis>
         <springdoc.version>2.1.0</springdoc.version>
         <therapi-javadoc.version>0.15.0</therapi-javadoc.version>
@@ -60,6 +61,7 @@
         <weixin-java-miniapp.version>4.5.0</weixin-java-miniapp.version>
         <weixin-java-pay.version>4.6.0</weixin-java-pay.version>
         <weixin-java-cp.version>4.6.0</weixin-java-cp.version>
+        <weixin-java-cp.version>4.6.0</weixin-java-cp.version>
     </properties>
 
     <profiles>
@@ -95,6 +97,12 @@
     <!-- 依赖声明 -->
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
 
             <!-- SpringBoot的依赖配置-->
             <dependency>
@@ -312,6 +320,12 @@
             <dependency>
                 <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-knowledge-api</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-chat-api</artifactId>
                 <version>${revision}</version>
             </dependency>
 

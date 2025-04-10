@@ -11,7 +11,10 @@ import okhttp3.ResponseBody;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
+import org.ruoyi.chat.service.chat.IChatCostService;
+import org.ruoyi.common.chat.domain.request.ChatRequest;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
+import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,6 +43,9 @@ public class SSEEventSourceListener extends EventSourceListener {
     private StringBuilder stringBuffer;
 
     private String modelName;
+
+    private static final IChatCostService chatCostService = SpringUtils.getBean(IChatCostService.class);
+
     /**
      * {@inheritDoc}
      */
@@ -55,11 +61,15 @@ public class SSEEventSourceListener extends EventSourceListener {
     @Override
     public void onEvent(@NotNull EventSource eventSource, String id, String type, String data) {
         try {
+
             if ("[DONE]".equals(data)) {
                 //成功响应
                 emitter.complete();
-
-                // 扣除费用 (消耗字符 模型名称)
+                // 扣除费用
+                ChatRequest chatRequest = new ChatRequest();
+                chatRequest.setModel(modelName);
+                chatRequest.setPrompt(stringBuffer.toString());
+                chatCostService.deductToken(chatRequest);
                 return;
             }
             // 解析返回内容

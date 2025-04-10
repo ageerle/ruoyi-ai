@@ -2,7 +2,6 @@ package org.ruoyi.common.chat.handler;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.config.LocalCache;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
@@ -12,7 +11,6 @@ import org.ruoyi.common.chat.listener.WebSocketEventListener;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
 import org.ruoyi.common.chat.utils.WebSocketUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 

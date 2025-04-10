@@ -4,19 +4,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.ruoyi</groupId>
         <artifactId>ruoyi-ai</artifactId>
-        <version>1.0.0</version>
+        <groupId>org.ruoyi</groupId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>ruoyi-modules-api</artifactId>
     <packaging>pom</packaging>
+
     <modules>
         <module>ruoyi-chat-api</module>
-        <module>ruoyi-device-api</module>
         <module>ruoyi-knowledge-api</module>
         <module>ruoyi-system-api</module>
-        <module>ruoyi-weixin-api</module>
     </modules>
 
     <properties>
@@ -72,6 +72,11 @@
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-oss</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
         </dependency>
 
 

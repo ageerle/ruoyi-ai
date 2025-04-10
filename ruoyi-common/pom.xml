@@ -2,13 +2,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>ruoyi-ai</artifactId>
         <groupId>org.ruoyi</groupId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ruoyi-common</artifactId>
+    <packaging>pom</packaging>
+
+    <description>
+        common 通用模块
+    </description>
 
     <modules>
         <module>ruoyi-common-bom</module>
@@ -32,16 +39,6 @@
         <module>ruoyi-common-encrypt</module>
         <module>ruoyi-common-tenant</module>
         <module>ruoyi-common-chat</module>
-        <module>ruoyi-common-pay</module>
-        <module>ruoyi-common-wechat</module>
-        <module>ruoyi-common-live</module>
     </modules>
-
-    <artifactId>ruoyi-common</artifactId>
-    <packaging>pom</packaging>
-
-    <description>
-        common 通用模块
-    </description>
 
 </project>

@@ -15,7 +15,6 @@
     </description>
 
     <properties>
-        <hutool.version>5.8.18</hutool.version>
         <org-json.version>20220924</org-json.version>
         <jda.version>5.0.0-beta.9</jda.version>
         <chatgpt-java.version>1.1.2-beta0</chatgpt-java.version>
@@ -36,25 +35,11 @@
         </dependency>
 
         <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-core</artifactId>
-            <version>${hutool.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-cache</artifactId>
-            <version>${hutool.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-crypto</artifactId>
-            <version>${hutool.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>${org-json.version}</version>
         </dependency>
+
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
@@ -66,6 +51,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>com.unfbx</groupId>
             <artifactId>chatgpt-java</artifactId>
@@ -77,16 +63,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>eu.maxschuster</groupId>
             <artifactId>dataurl</artifactId>
             <version>${dataurl.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-openapi2-spring-boot-starter</artifactId>
             <version>${knife4j.verison}</version>
         </dependency>
+
         <dependency>
             <groupId>eu.bitwalker</groupId>
             <artifactId>UserAgentUtils</artifactId>
@@ -98,11 +87,13 @@
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
@@ -110,25 +101,14 @@
 
         <dependency>
             <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-system</artifactId>
+            <artifactId>ruoyi-knowledge-api</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-knowledge-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-chat-api</artifactId>
-            <version>1.0.0</version>
-            <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>5.8.26</version>
-            <scope>compile</scope>
-        </dependency>
+
     </dependencies>
 
 </project>

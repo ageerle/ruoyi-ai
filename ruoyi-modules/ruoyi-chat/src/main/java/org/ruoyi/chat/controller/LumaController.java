@@ -4,11 +4,13 @@ import cn.hutool.json.JSONUtil;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import okhttp3.Request;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.ruoyi.chat.config.OkHttpConfig;
+import org.ruoyi.chat.domain.bo.GenerateLuma;
+import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.common.core.utils.OkHttpUtil;
-import org.ruoyi.system.cofing.OkHttpConfig;
-import org.ruoyi.system.domain.GenerateLuma;
 import org.springframework.web.bind.annotation.*;
 
 /**

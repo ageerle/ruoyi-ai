@@ -95,7 +95,6 @@ public class CaptchaController {
         String suffix = configService.getConfigValue("mail", "suffix");
         String prompt = configService.getConfigValue("mail", "prompt");
         if(StringUtils.isNotEmpty(suffix)){
-            // 动态的域名列表
             String[] invalidDomains = suffix.split(",");
             for (String domain : invalidDomains) {
                 if (emailRequest.getUsername().endsWith(domain)) {
@@ -108,7 +107,7 @@ public class CaptchaController {
         String mailTitle = configService.getConfigValue("mail", "mailTitle");
         String replacedModel = model.replace("{code}", code);
         try {
-            MailUtils.sendHtml(emailRequest.getUsername(), mailTitle, replacedModel);
+           MailUtils.sendHtml(emailRequest.getUsername(), mailTitle, replacedModel);
         } catch (Exception e) {
             log.error("邮箱验证码发送异常 => {}", e.getMessage());
             return R.fail(e.getMessage());

@@ -6,11 +6,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.service.chat.ISseService;
-import org.ruoyi.common.chat.domain.request.ChatRequest;
-
+import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
-
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.LoginUser;
@@ -19,7 +17,6 @@ import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.domain.bo.ChatMessageBo;
-
 import org.ruoyi.domain.vo.ChatMessageVo;
 import org.ruoyi.service.IChatMessageService;
 import org.springframework.core.io.Resource;

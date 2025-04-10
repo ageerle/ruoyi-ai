@@ -2,12 +2,13 @@ package org.ruoyi.domain.bo;
 
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.system.domain.ChatMessage;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import jakarta.validation.constraints.*;
+import org.ruoyi.domain.ChatMessage;
+
 import java.math.BigDecimal;
 
 /**
@@ -47,17 +48,15 @@ public class ChatMessageBo extends BaseEntity {
 
     /**
      * 扣除金额
-
-
      */
     @NotNull(message = "扣除金额不能为空", groups = { AddGroup.class, EditGroup.class })
-    private BigDecimal deductCost;
+    private Double deductCost;
 
     /**
      * 累计 Tokens
      */
     @NotNull(message = "累计 Tokens不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long totalTokens;
+    private Integer totalTokens;
 
     /**
      * 模型名称

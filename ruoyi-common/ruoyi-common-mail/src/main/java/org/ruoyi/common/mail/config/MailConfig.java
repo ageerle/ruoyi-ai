@@ -7,8 +7,7 @@ import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.mail.utils.MailAccount;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
-import org.springframework.scheduling.annotation.Scheduled;
+
 
 /**
  * JavaMail 配置
@@ -22,10 +21,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class MailConfig {
 
     private final ConfigService configService;
-    private MailAccount account;  // 缓存MailAccount实例
+    private MailAccount account;
 
     @Bean
-    @Scope("singleton")
     public MailAccount mailAccount() {
         if (account == null) {
             account = new MailAccount();
@@ -34,7 +32,6 @@ public class MailConfig {
         return account;
     }
 
-    @Scheduled(fixedDelay = 10000)  // 每10秒检查一次
     public void updateMailAccount() {
         account.setHost(getKey("host"));
         account.setPort(NumberUtils.toInt(getKey("port"), 465));

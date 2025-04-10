@@ -4,7 +4,6 @@ import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.chat.config.ChatConfig;
 import org.ruoyi.common.chat.entity.embeddings.Embedding;
 import org.ruoyi.common.chat.entity.embeddings.EmbeddingResponse;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;

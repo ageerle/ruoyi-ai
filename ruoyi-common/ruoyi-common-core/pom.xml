@@ -51,24 +51,12 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>5.8.24</version>
+            <version>${hutool.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.binarywang</groupId>
-            <artifactId>weixin-java-cp</artifactId>
-            <version>${weixin-java-miniapp.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.binarywang</groupId>
-            <artifactId>weixin-java-cp</artifactId>
-            <version>${weixin-java-cp.version}</version>
         </dependency>
 
         <!--  自动生成YML配置关联JSON文件  -->
@@ -94,6 +82,11 @@
             <artifactId>ip2region</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-cp</artifactId>
+            <version>${weixin-java-cp.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.github.binarywang</groupId>
