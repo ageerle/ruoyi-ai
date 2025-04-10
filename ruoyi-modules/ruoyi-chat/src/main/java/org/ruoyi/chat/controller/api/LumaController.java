@@ -1,4 +1,4 @@
-package org.ruoyi.chat.controller;
+package org.ruoyi.chat.controller.api;
 
 import cn.hutool.json.JSONUtil;
 import io.swagger.annotations.ApiOperation;

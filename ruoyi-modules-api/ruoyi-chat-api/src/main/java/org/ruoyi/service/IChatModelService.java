@@ -52,4 +52,5 @@ public interface IChatModelService {
      * 通过模型名称获取模型信息
      */
     ChatModelVo selectModelByName(String modelName);
+
 }

@@ -1,4 +1,4 @@
-package org.ruoyi.chat.controller;
+package org.ruoyi.chat.controller.api;
 
 
 import jakarta.servlet.http.HttpServletRequest;

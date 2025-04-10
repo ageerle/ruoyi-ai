@@ -16,9 +16,7 @@ import org.ruoyi.service.IChatModelService;
 import org.springframework.stereotype.Service;
 
 
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
+import java.util.*;
 
 /**
  * 聊天模型Service业务层处理
@@ -31,6 +29,7 @@ import java.util.Collection;
 public class ChatModelServiceImpl implements IChatModelService {
 
     private final ChatModelMapper baseMapper;
+
 
     /**
      * 查询聊天模型
@@ -123,4 +122,6 @@ public class ChatModelServiceImpl implements IChatModelService {
     public ChatModelVo selectModelByName(String modelName) {
        return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, modelName));
     }
+
+
 }

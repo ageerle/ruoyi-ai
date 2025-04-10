@@ -3,28 +3,30 @@ package org.ruoyi.chat.enums;
 import lombok.Getter;
 
 /**
- * @author ageer
+ * 描述：
+ *
+ * @author ageerle@163.com
+ * date 2025/4/10
  */
 @Getter
-public enum UserGradeType {
-    UNPAID("0", "未付费"),
-    PAID("1", "已付费");
+public enum DisplayType {
+    HIDDEN("1", "不显示"),
+    VISIBLE("0", "显示");
 
     private final String code;
     private final String description;
 
-    UserGradeType(String code, String description) {
+    DisplayType(String code, String description) {
         this.code = code;
         this.description = description;
     }
 
-    public static UserGradeType fromCode(String code) {
-        for (UserGradeType type : values()) {
+    public static DisplayType fromCode(String code) {
+        for (DisplayType type : values()) {
             if (type.getCode().equals(code)) {
                 return type;
             }
         }
         return null;
     }
-
 }

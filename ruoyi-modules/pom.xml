@@ -24,4 +24,16 @@
         <module>ruoyi-generator</module>
     </modules>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>
