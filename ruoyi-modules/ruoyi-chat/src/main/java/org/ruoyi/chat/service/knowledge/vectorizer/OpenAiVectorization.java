@@ -4,14 +4,15 @@ import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.chat.config.ChatConfig;
 import org.ruoyi.common.chat.entity.embeddings.Embedding;
 import org.ruoyi.common.chat.entity.embeddings.EmbeddingResponse;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
+import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
+import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.ruoyi.service.VectorizationService;
-import org.ruoyi.system.domain.SysModel;
-import org.ruoyi.system.service.ISysModelService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +32,7 @@ public class OpenAiVectorization implements VectorizationService {
 
     @Lazy
     @Resource
-    private ISysModelService sysModelService;
+    private IChatModelService chatModelService;
 
     @Getter
     private OpenAiStreamClient openAiStreamClient;
@@ -49,17 +50,14 @@ public class OpenAiVectorization implements VectorizationService {
             vectorList.add(new ArrayList<>());
             return vectorList;
         }
-        SysModel sysModel = sysModelService.selectModelByName(knowledgeInfoVo.getVectorModel());
-        String apiHost= sysModel.getApiHost();
-        String apiKey= sysModel.getApiKey();
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getVectorModel());
+        String apiHost= chatModelVo.getApiHost();
+        String apiKey= chatModelVo.getApiKey();
         openAiStreamClient = chatConfig.createOpenAiStreamClient(apiHost,apiKey);
-
         Embedding embedding = buildEmbedding(chunkList, knowledgeInfoVo);
         EmbeddingResponse embeddings = openAiStreamClient.embeddings(embedding);
-
         // 处理 OpenAI 返回的嵌入数据
         vectorList = processOpenAiEmbeddings(embeddings);
-
         return vectorList;
     }
 

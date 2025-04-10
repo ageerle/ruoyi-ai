@@ -1,44 +1,57 @@
 package org.ruoyi.chat.service.knowledge.vectorizer;
 
-import com.google.gson.Gson;
 import io.github.ollama4j.OllamaAPI;
 import io.github.ollama4j.models.embeddings.OllamaEmbeddingsRequestModel;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
+import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.ruoyi.service.VectorizationService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.List;
 
+/**
+ * @author ageer
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class BgeLargeVectorization implements VectorizationService {
 
-    String host = "http://localhost:11434/";
-
     @Lazy
     @Resource
     private IKnowledgeInfoService knowledgeInfoService;
 
+    @Lazy
+    @Resource
+    private final IChatModelService chatModelService;
+
     @Override
     public List<List<Double>> batchVectorization(List<String> chunkList, String kid) {
-        OllamaAPI ollamaAPI = new OllamaAPI(host);
+
         KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(kid));
+
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getVectorModel());
+
+        OllamaAPI api = new OllamaAPI(chatModelVo.getApiHost());
+
         List<Double> doubleVector;
-        try {
-            doubleVector = ollamaAPI.generateEmbeddings(new OllamaEmbeddingsRequestModel(knowledgeInfoVo.getVectorModel(), new Gson().toJson(chunkList)));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
         List<List<Double>> vectorList = new ArrayList<>();
-        vectorList.add(doubleVector);
+        try {
+            for (String chunk : chunkList) {
+                doubleVector = api.generateEmbeddings(new OllamaEmbeddingsRequestModel(knowledgeInfoVo.getVectorModel(), chunk));
+                vectorList.add(doubleVector);
+            }
+        } catch (Exception e) {
+            throw new ServiceException("文本向量化异常："+e.getMessage());
+        }
         return vectorList;
     }
 
@@ -50,15 +63,4 @@ public class BgeLargeVectorization implements VectorizationService {
         return vectorList.get(0);
     }
 
-    public static void main(String[] args) {
-        OllamaAPI ollamaAPI = new OllamaAPI("http://localhost:11434/");
-        List<String> chunkList = Arrays.asList("天很蓝", "海很深");
-        List<Double> doubleVector;
-        try {
-            doubleVector = ollamaAPI.generateEmbeddings(new OllamaEmbeddingsRequestModel("quentinz/bge-large-zh-v1.5", new Gson().toJson(chunkList)));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println("=== " + doubleVector + " 1===");
-    }
 }

@@ -348,6 +348,7 @@ public class SseServiceImpl implements ISseService {
         return chatCompletionResponse.getChoices().get(0).getMessage().getContent().toString();
     }
 
+    @Override
     public String webSearch (String prompt) {
         String zhipuValue = configService.getConfigValue("zhipu", "key");
         if(StringUtils.isEmpty(zhipuValue)){

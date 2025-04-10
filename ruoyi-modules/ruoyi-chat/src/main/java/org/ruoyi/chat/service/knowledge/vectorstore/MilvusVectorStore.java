@@ -328,16 +328,6 @@ public class MilvusVectorStore implements VectorStoreService {
             System.err.println("获取索引失败: " + describeIndexResponseR.getMessage());
         }
 
-//        // 加载集合到内存
-//        LoadCollectionParam loadCollectionParam = LoadCollectionParam.newBuilder()
-//                .withCollectionName(fullCollectionName)
-//                .build();
-//        R<RpcStatus> loadResponse = milvusServiceClient.loadCollection(loadCollectionParam);
-//        if (loadResponse.getStatus() != R.Status.Success.getCode()) {
-//            System.err.println("加载集合 " + fullCollectionName + " 到内存时出错：" + loadResponse.getMessage());
-//            return new ArrayList<>();
-//        }
-
         List<String> search_output_fields = Arrays.asList("content", "fv");
         List<Float> fv = new ArrayList<>();
         for (int i = 0; i < queryVector.size(); i++) {
