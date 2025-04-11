@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+enum WebUserPauseType {
+  UNKNOWN_USER_PAUSE_TYPE = 0;
+  BACKGROUND = 1;
+}

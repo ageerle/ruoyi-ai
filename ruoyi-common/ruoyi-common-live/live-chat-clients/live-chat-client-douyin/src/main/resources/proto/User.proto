@@ -1,0 +1,272 @@
+syntax = "proto3";
+import "Image.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
+
+message User {
+  uint64 id = 1;
+  uint64 shortId = 2;
+  string nickname = 3;
+  uint32 gender = 4;
+  string signature = 5;
+  uint32 level = 6;
+  uint64 birthday = 7;
+  string telephone = 8;
+  Image avatarThumb = 9;
+  Image avatarMedium = 10;
+  Image avatarLarge = 11;
+  bool verified = 12;
+  int32 experience = 13;
+  string city = 14;
+  int32 status = 15;
+  int64 createTime = 16;
+  int64 modifyTime = 17;
+  int32 secret = 18;
+  string shareQrcodeUri = 19;
+  int32 incomeSharePercent = 20;
+  Image badgeImageListList = 21;
+  FollowInfo followInfo = 22;
+  PayGrade payGrade = 23;
+  FansClub fansClub = 24;
+  Border border = 25;
+  string specialId = 26;
+  Image avatarBorder = 27;
+  Image medal = 28;
+  repeated Image realTimeIconsList = 29;
+  repeated Image newRealTimeIconsList = 30;
+  int64 topVipNo = 31;
+  UserAttr userAttr = 32;
+  OwnRoom ownRoom = 33;
+  int64 payScore = 34;
+  int64 ticketCount = 35;
+  AnchorInfo anchorInfo = 36;
+  int32 linkMicStats = 37;
+  string displayId = 38;
+  bool withCommercePermission = 39;
+  bool withFusionShopEntry = 40;
+  int64 totalRechargeDiamondCount = 41;
+  AnchorLevel webcastAnchorLevel = 42;
+  string  verifiedContent = 43;
+  AuthorStats  authorStats = 44;
+  repeated User   topFansList = 45;
+  string   secUid = 46;
+  int32  userRole = 47;
+  XiguaParams   xiguaInfo = 48;
+  ActivityInfo  activityReward = 49;
+  NobleLevelInfo  nobleInfo = 50;
+  BrotherhoodInfo  brotherhoodInfo = 51;
+  Image  personalCard = 52;
+  AuthenticationInfo  authenticationInfo = 53;
+  int32 authorizationInfo = 54;
+  int32  adversaryAuthorizationInfo = 55;
+  PoiInfo  poiInfo = 56;
+  Image  mediaBadgeImageListList = 57;
+  int32   adversaryUserStatus = 58;
+  UserVIPInfo  userVipInfo = 59;
+  repeated int64   commerceWebcastConfigIdsList = 60;
+  Image  badgeImageListV2List = 61;
+  // IndustryCertification  industryCertification = 62;
+  string  locationCity = 63;
+  FansGroupInfo  fansGroupInfo = 64;
+  string  remarkName = 65;
+  int32 mysteryMan = 66;
+  string  webRid = 67;
+  string  desensitizedNickname = 68;
+  JAccreditInfo  jAccreditInfo = 69;
+  Subscribe  subscribe = 70;
+  bool  isAnonymous = 71;
+  int32  consumeDiamondLevel = 72;
+  string  webcastUid = 73;
+  ProfileStyleParams  profileStyleParams = 74;
+  UserDressInfo   userDressInfo = 75;
+  bool   allowBeLocated = 1001;
+  bool   allowFindByContacts = 1002;
+  bool   allowOthersDownloadVideo = 1003;
+  bool  allowOthersDownloadWhenSharingVideo = 1004;
+  bool   allowShareShowProfile = 1005;
+  bool   allowShowInGossip = 1006;
+  bool   allowShowMyAction = 1007;
+  bool  allowStrangeComment = 1008;
+  bool   allowUnfollowerComment = 1009;
+  bool  allowUseLinkmic = 1010;
+  AnchorLevel  anchorLevel = 1011;
+  Image  avatarJpg = 1012;
+  string  bgImgUrl = 1013;
+  string   birthdayDescription = 1014;
+  bool   birthdayValid = 1015;
+  int32   blockStatus = 1016;
+  int32    commentRestrict = 1017;
+  string   constellation = 1018;
+  int32   disableIchat = 1019;
+  int64   enableIchatImg = 1020;
+  int32   exp = 1021;
+  int64 fanTicketCount = 1022;
+  bool foldStrangerChat = 1023;
+  int64   followStatus = 1024;
+  bool    hotsoonVerified = 1025;
+  string    hotsoonVerifiedReason = 1026;
+  int32   ichatRestrictType = 1027;
+  string   idStr = 1028;
+  bool    isFollower = 1029;
+  bool    isFollowing = 1030;
+  bool    needProfileGuide = 1031;
+  int64    payScores = 1032;
+  bool   pushCommentStatus = 1033;
+  bool     pushDigg = 1034;
+  bool     pushFollow = 1035;
+  bool    pushFriendAction = 1036;
+  bool   pushIchat = 1037;
+  bool    pushStatus = 1038;
+  bool    pushVideoPost = 1039;
+  bool    pushVideoRecommend = 1040;
+  UserStats   stats = 1041;
+  bool   verifiedMobile = 1042;
+  string  verifiedReason = 1043;
+  bool   withCarManagementPermission = 1044;
+  int32  ageRange = 1045;
+  int64  watchDurationMonth = 1046;
+
+  message ActivityInfo{
+
+  }
+
+  message AnchorInfo {
+
+  }
+
+  message AnchorLevel{
+
+  }
+
+  message AuthenticationInfo{
+
+  }
+
+  message AuthorStats{
+
+  }
+
+  message Border{
+
+  }
+
+  message BrotherhoodInfo{
+
+  }
+
+  message FansClub {
+    FansClubData data = 1;
+    map<int32, FansClubData> preferData = 2;
+
+    message FansClubData {
+      string clubName = 1;
+      int32 level = 2;
+      int32 userFansClubStatus = 3;
+      UserBadge badge = 4;
+      repeated int64 availableGiftIds = 5;
+      int64 anchorId = 6;
+
+      message UserBadge {
+        map<int32, Image> icons = 1;
+        string title = 2;
+      }
+
+    }
+  }
+
+  message FansGroupInfo{
+
+  }
+
+  message FollowInfo {
+    int64 followingCount = 1;
+    int64 followerCount = 2;
+    int64 followStatus = 3;
+    int64 pushStatus = 4;
+    string remarkName = 5;
+  }
+
+  message JAccreditInfo{
+
+  }
+
+  message NobleLevelInfo{
+
+  }
+
+  message OwnRoom {
+
+  }
+
+  message PayGrade {
+    int64 totalDiamondCount = 1;
+    Image diamondIcon = 2;
+    string name = 3;
+    Image icon = 4;
+    string nextName = 5;
+    int64 level = 6;
+    Image nextIcon = 7;
+    int64 nextDiamond = 8;
+    int64 nowDiamond = 9;
+    int64 thisGradeMinDiamond = 10;
+    int64 thisGradeMaxDiamond = 11;
+    int64 payDiamondBak = 12;
+    string gradeDescribe = 13;
+    repeated GradeIcon gradeIconList = 14;
+    int64 screenChatType = 15;
+    Image imIcon = 16;
+    Image imIconWithLevel = 17;
+    Image liveIcon = 18;
+    Image newImIconWithLevel = 19;
+    Image newLiveIcon = 20;
+    int64 upgradeNeedConsume = 21;
+    string nextPrivileges = 22;
+    Image background = 23;
+    Image backgroundBack = 24;
+    int64 score = 25;
+    // GradeBuffInfo buffInfo = 26;
+    string gradeBanner = 1001;
+    Image profileDialogBg = 1002;
+    Image profileDialogBgBack = 1003;
+
+    message GradeIcon{
+      Image icon = 1;
+      int64 iconDiamond = 2;
+      int64 level = 3;
+      string levelStr = 4;
+    }
+
+  }
+
+  message PoiInfo{
+
+  }
+
+  message ProfileStyleParams{
+
+  }
+
+  message Subscribe{
+
+  }
+
+  message UserAttr{
+
+  }
+
+  message UserDressInfo{
+
+  }
+
+  message UserVIPInfo {
+
+  }
+
+  message UserStats{
+
+  }
+
+  message XiguaParams{
+
+  }
+}

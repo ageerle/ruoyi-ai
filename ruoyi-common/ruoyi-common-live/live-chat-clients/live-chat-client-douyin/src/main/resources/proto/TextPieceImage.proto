@@ -1,0 +1,9 @@
+syntax = "proto3";
+import "Image.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
+
+message TextPieceImage {
+  Image image = 1;
+  float scaling_rate = 2;
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+enum ConfigSwitchType {
+  UNKNOWN = 0;
+  HIDE_BARRAGE = 1;
+  HIDE_SPECIAL_EFFECT = 2;
+}

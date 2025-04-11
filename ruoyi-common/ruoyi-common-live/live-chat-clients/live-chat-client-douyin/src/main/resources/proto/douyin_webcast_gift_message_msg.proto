@@ -1,0 +1,52 @@
+syntax = "proto3";
+import "Common.proto";
+import "User.proto";
+import "TextEffect.proto";
+import "Text.proto";
+import "GiftIMPriority.proto";
+import "GiftStruct.proto";
+import "PublicAreaCommon.proto";
+
+package tech.ordinaryroad.live.chat.client.douyin.protobuf;
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf";
+option java_outer_classname = "Douyin_webcast_gift_message_msgProto";
+option java_multiple_files = true;
+option objc_class_prefix = "GPB";
+
+message douyin_webcast_gift_message_msg {
+  Common common = 1;
+  uint64 long_gift_id = 2;
+  uint64 fan_ticket_count = 3;
+  uint64 group_count = 4;
+  uint64 repeat_count = 5;
+  uint64 combo_count = 6;
+  User user = 7;
+  User to_user = 8 ;
+  uint32 repeat_end = 9 ;
+  TextEffect text_effect = 10 ;
+  uint64 group_id = 11 ;
+  uint64 income_taskgifts = 12 ;
+  uint64 room_fan_ticket_count = 13 ;
+  GiftIMPriority priority = 14 ;
+  GiftStruct gift = 15 ;
+  string log_id = 16 ;
+  uint64 send_type = 17 ;
+  PublicAreaCommon public_area_common = 18 ;
+  Text tray_display_text = 19 ;
+  uint64 banned_display_effects = 20 ;
+  // GiftTrayInfo trayInfo = 21;
+  // AssetEffectMixInfo assetEffectMixInfo = 22;
+  bool display_for_self = 25;
+  string interact_gift_info = 26;
+  string diy_item_info = 27;
+  repeated uint64 min_asset_set_list = 28;
+  uint64 total_count = 29;
+  uint32 client_gift_source = 30;
+  // AnchorGiftData anchorGift = 31;
+  repeated uint64  to_user_ids_list = 32;
+  uint64 send_timet = 33;
+  uint64 force_display_effectst = 34;
+  string trace_id = 35;
+  uint64 effect_display_ts = 36;
+}

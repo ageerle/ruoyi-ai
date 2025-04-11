@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
+
+message TextPieceHeart {
+  string color = 1;
+}

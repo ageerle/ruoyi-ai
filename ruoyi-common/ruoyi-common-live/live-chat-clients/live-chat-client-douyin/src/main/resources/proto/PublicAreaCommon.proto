@@ -1,0 +1,10 @@
+syntax = "proto3";
+import "Image.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
+
+message PublicAreaCommon {
+  Image user_label = 1;
+  uint64 user_consume_in_room = 2;
+  uint64 user_send_gift_cnt_in_room = 3;
+}

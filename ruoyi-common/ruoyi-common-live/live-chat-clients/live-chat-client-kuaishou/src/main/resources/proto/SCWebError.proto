@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message SCWebError {
+  uint32 code = 1;
+  string msg = 2;
+  uint32 subCode = 3;
+
+}

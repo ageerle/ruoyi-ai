@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message SCWebRideChanged {
+  string rideId = 1;
+  uint32 requestMaxDelayMillis = 2;
+
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+import "ClientId.proto";
+
+option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
+
+message CSPing {
+  string echoData = 1;
+  ClientId clientId = 2;
+  string deviceId = 3;
+  string appVer = 4;
+
+}
