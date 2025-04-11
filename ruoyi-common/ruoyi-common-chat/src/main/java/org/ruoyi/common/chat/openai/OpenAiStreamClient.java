@@ -466,8 +466,8 @@ public class OpenAiStreamClient {
      * @since 1.1.3
      */
     public ResponseBody textToSpeech(TextToSpeech textToSpeech){
-        Call<ResponseBody> responseBody = this.openAiApi.textToSpeech(textToSpeech);
         try {
+            Call<ResponseBody> responseBody = this.openAiApi.textToSpeech(textToSpeech);
             return responseBody.execute().body();
         } catch (IOException e) {
             throw new BaseException("文本转语音（同步）失败: "+e.getMessage());
