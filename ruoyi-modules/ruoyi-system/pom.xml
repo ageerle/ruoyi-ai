@@ -19,8 +19,6 @@
     <properties>
         <httpclient.version>4.5.14</httpclient.version>
         <jackson.version>2.15.2</jackson.version>
-
-
     </properties>
 
     <dependencies>
@@ -40,7 +38,6 @@
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-oss</artifactId>
         </dependency>
-
 
         <!-- excel-->
         <dependency>
@@ -89,7 +86,6 @@
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-mail</artifactId>
         </dependency>
-
 
         <dependency>
             <groupId>org.ruoyi</groupId>
