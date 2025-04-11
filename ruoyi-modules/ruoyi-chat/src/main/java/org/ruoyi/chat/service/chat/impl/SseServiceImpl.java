@@ -70,7 +70,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class SseServiceImpl implements ISseService {
 
-    private OpenAiStreamClient openAiStreamClient;
+    private final OpenAiStreamClient openAiStreamClient;
 
     private final ChatConfig chatConfig;
 
@@ -88,6 +88,8 @@ public class SseServiceImpl implements ISseService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    private OpenAiStreamClient openAiModelStreamClient;
+
     @Override
     public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
         SseEmitter sseEmitter = new SseEmitter(0L);
@@ -100,8 +102,13 @@ public class SseServiceImpl implements ISseService {
             if (StpUtil.isLogin()) {
                 // 通过模型名称查询模型信息
                 ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-                // 构建api请求客户端
-                openAiStreamClient = chatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
+                if(chatModelVo!=null){
+                    // 通过模型信息构建请求客户端
+                    openAiModelStreamClient = chatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
+                }else {
+                    // 使用默认客户端
+                    openAiModelStreamClient  = openAiStreamClient;
+                }
                 // 设置默认提示词
                 Message sysMessage = Message.builder().content(chatModelVo.getSystemPrompt()).role(Message.Role.SYSTEM).build();
                 messages.add(0,sysMessage);
@@ -167,7 +174,7 @@ public class SseServiceImpl implements ISseService {
                     .model(chatRequest.getModel())
                     .stream(chatRequest.getStream())
                     .build();
-            openAiStreamClient.streamChatCompletion(completion, openAIEventSourceListener);
+            openAiModelStreamClient.streamChatCompletion(completion, openAIEventSourceListener);
             // 保存消息记录 并扣除费用
             chatCostService.deductToken(chatRequest);
         } catch (Exception e) {
@@ -192,7 +199,7 @@ public class SseServiceImpl implements ISseService {
         try {
             sseEmitter.send(event);
         } catch (IOException e) {
-            log.error("发送事件失败: {}", e.getMessage());
+            log.error("SSE发送失败: {}", e.getMessage());
         }
         sseEmitter.complete();
     }
@@ -248,7 +255,6 @@ public class SseServiceImpl implements ISseService {
         if (!FileUtils.isValidFileExtention(file, MimeTypeUtils.DEFAULT_ALLOWED_EXTENSION)) {
             throw new IllegalStateException("File Extention not supported");
         }
-        openAiStreamClient = chatConfig.getOpenAiStreamClient();
         return openAiStreamClient.uploadFile("fine-tune", convertMultiPartToFile(file));
     }
 

@@ -593,11 +593,6 @@ public class OpenAiStreamClient {
     }
 
 
-
-
-
-
-
     /**
      * 构造
      *
