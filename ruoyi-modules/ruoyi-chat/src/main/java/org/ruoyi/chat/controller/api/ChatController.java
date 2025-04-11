@@ -49,9 +49,6 @@ public class ChatController {
     @PostMapping("/send")
     @ResponseBody
     public SseEmitter sseChat(@RequestBody @Valid ChatRequest chatRequest, HttpServletRequest request) {
-        if (chatRequest.getModel().startsWith("ollama")) {
-            return sseService.ollamaChat(chatRequest);
-        }
         return sseService.sseChat(chatRequest,request);
     }
 

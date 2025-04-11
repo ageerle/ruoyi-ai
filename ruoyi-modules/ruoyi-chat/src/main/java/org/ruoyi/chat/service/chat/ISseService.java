@@ -39,9 +39,8 @@ public interface ISseService {
      */
     ResponseEntity<Resource> textToSpeed(TextToSpeech textToSpeech);
 
-
     /**
-     * 上传文件到api服务器
+     * 上传文件到服务器
      *
      * @param file 文件信息
      * @return 返回文件信息
@@ -50,19 +49,11 @@ public interface ISseService {
 
 
     /**
-     * 使用ollama调用本地模型
-     * @param chatRequest 对话信息
-     * @return 流式输出返回内容
-     */
-    SseEmitter ollamaChat(ChatRequest chatRequest);
-
-    /**
      * 企业应用回复
      * @param prompt 提示词
      * @return 回复内容
      */
     String wxCpChat(String prompt);
-
 
     /**
      * 联网查询

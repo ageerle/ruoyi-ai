@@ -1,9 +1,11 @@
-package org.ruoyi.chat.service.knowledge.vectorizer;
+package org.ruoyi.chat.factory;
 
 import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
+import org.ruoyi.chat.service.knowledge.vectorizer.BgeLargeVectorization;
+import org.ruoyi.chat.service.knowledge.vectorizer.OpenAiVectorization;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.ruoyi.service.VectorizationService;

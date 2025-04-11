@@ -6,22 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ServiceException;
 import com.zhipu.oapi.ClientV4;
 import com.zhipu.oapi.service.v4.tools.*;
-import io.github.ollama4j.OllamaAPI;
-import io.github.ollama4j.models.chat.OllamaChatMessage;
-import io.github.ollama4j.models.chat.OllamaChatMessageRole;
-import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
-import io.github.ollama4j.models.chat.OllamaChatRequestModel;
-import io.github.ollama4j.models.generate.OllamaStreamHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.ruoyi.chat.config.ChatConfig;
-import org.ruoyi.chat.listener.SSEEventSourceListener;
 
 import org.ruoyi.chat.service.chat.IChatCostService;
+import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.service.chat.ISseService;
+import org.ruoyi.chat.factory.SseServiceFactory;
 import org.ruoyi.chat.util.IpUtil;
+import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
@@ -32,15 +27,14 @@ import org.ruoyi.common.chat.entity.files.UploadFileResponse;
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
 import org.ruoyi.common.core.service.ConfigService;
+import org.ruoyi.common.core.utils.DateUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.core.utils.file.MimeTypeUtils;
 
 import org.ruoyi.common.redis.utils.RedisUtils;
 
-import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.EmbeddingService;
-import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.VectorStoreService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -60,7 +54,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -72,10 +65,6 @@ public class SseServiceImpl implements ISseService {
 
     private final OpenAiStreamClient openAiStreamClient;
 
-    private final ChatConfig chatConfig;
-
-    private final IChatModelService chatModelService;
-
     private final EmbeddingService embeddingService;
 
     private final VectorStoreService vectorStore;
@@ -84,6 +73,8 @@ public class SseServiceImpl implements ISseService {
 
     private final IChatCostService chatCostService;
 
+    private final SseServiceFactory sseServiceFactory;
+
     private static final String requestIdTemplate = "company-%d";
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -91,78 +82,64 @@ public class SseServiceImpl implements ISseService {
     @Override
     public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
         SseEmitter sseEmitter = new SseEmitter(0L);
-        SSEEventSourceListener openAIEventSourceListener = new SSEEventSourceListener(sseEmitter);
-        // 获取对话消息列表
-        List<Message> messages = chatRequest.getMessages();
         try {
-            // 查询模型信息
-            ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-
-            OpenAiStreamClient openAiModelStreamClient;
-            if(chatModelVo!=null){
-                // 建请求客户端
-                openAiModelStreamClient = chatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
-                // 设置默认提示词
-                chatRequest.setSysPrompt(chatModelVo.getSystemPrompt());
-            }else {
-                // 使用默认客户端
-                openAiModelStreamClient = openAiStreamClient;
-            }
             // 构建消息列表增加联网、知识库等内容
             buildChatMessageList(chatRequest);
-
             // 根据模型名称前缀调用不同的处理逻辑
-            switchModelAndHandle(chatRequest);
-
+            switchModelAndHandle(chatRequest,sseEmitter);
             // 未登录用户限制对话次数
-            if (!StpUtil.isLogin()) {
-                String clientIp = IpUtil.getClientIp(request);
-                // 访客每天默认只能对话5次
-                int timeWindowInSeconds = 5;
-                String redisKey = "clientIp:" + clientIp;
-                int count = 0;
-                if (RedisUtils.getCacheObject(redisKey) == null) {
-                    // 缓存有效时间1天
-                    RedisUtils.setCacheObject(redisKey, count, Duration.ofSeconds(86400));
-                }else {
-                    count = RedisUtils.getCacheObject(redisKey);
-                    if (count >= timeWindowInSeconds) {
-                        throw new ServiceException("当日免费次数已用完");
-                    }
-                    count++;
-                    RedisUtils.setCacheObject(redisKey, count);
-                }
-            }
-
-            ChatCompletion completion = ChatCompletion
-                    .builder()
-                    .messages(messages)
-                    .model(chatRequest.getModel())
-                    .stream(chatRequest.getStream())
-                    .build();
-            openAiModelStreamClient.streamChatCompletion(completion, openAIEventSourceListener);
-
+            checkUnauthenticatedUserChatLimit(request);
             // 保存消息记录 并扣除费用
             chatCostService.deductToken(chatRequest);
         } catch (Exception e) {
             String message = e.getMessage();
-            sendErrorEvent(sseEmitter, message);
+            SSEUtil.sendErrorEvent(sseEmitter, message);
             return sseEmitter;
         }
         return sseEmitter;
     }
 
     /**
+     * 检查未登录用户是否超过当日对话次数限制
+     *
+     * @param request 当前请求
+     * @throws ServiceException 如果当日免费次数已用完
+     */
+    public void checkUnauthenticatedUserChatLimit(HttpServletRequest request) throws ServiceException {
+        // 未登录用户限制对话次数
+        if (!StpUtil.isLogin()) {
+            String clientIp = IpUtil.getClientIp(request);
+            // 访客每天默认只能对话5次
+            int timeWindowInSeconds = 5;
+            String redisKey = "clientIp:" + clientIp;
+            int count = 0;
+            // 检查Redis中的对话次数
+            if (RedisUtils.getCacheObject(redisKey) == null) {
+                // 缓存有效时间1天
+                RedisUtils.setCacheObject(redisKey, count, Duration.ofSeconds(86400));
+            } else {
+                count = RedisUtils.getCacheObject(redisKey);
+                if (count >= timeWindowInSeconds) {
+                    throw new ServiceException("当日免费次数已用完");
+                }
+                count++;
+                RedisUtils.setCacheObject(redisKey, count);
+            }
+        }
+    }
+
+    /**
      *  根据模型名称前缀调用不同的处理逻辑
      */
-    private void switchModelAndHandle(ChatRequest chatRequest) {
+    private void switchModelAndHandle(ChatRequest chatRequest,SseEmitter emitter) {
         String model = chatRequest.getModel();
         // 如果模型名称以ollama开头，则调用ollama中部署的本地模型
         if (model.startsWith("ollama-")) {
             String[] parts = chatRequest.getModel().split("ollama-", 2); // 限制分割次数为2
             if (parts.length > 1) {
                 chatRequest.setModel(parts[1]);
-                ollamaChat(chatRequest);
+                IChatService chatService = sseServiceFactory.getSseService("ollama");
+                chatService.chat(chatRequest,emitter);
             } else {
                 throw new IllegalArgumentException("Invalid ollama model name: " + chatRequest.getModel());
             }
@@ -177,8 +154,13 @@ public class SseServiceImpl implements ISseService {
     private void buildChatMessageList(ChatRequest chatRequest){
         // 获取对话消息列表
         List<Message> messages = chatRequest.getMessages();
+        String sysPrompt = chatRequest.getSysPrompt();
+        if(StringUtils.isEmpty(sysPrompt)){
+            sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
+                    "当前时间："+ DateUtils.getDate();
+        }
         // 设置系统默认提示词
-        Message sysMessage = Message.builder().content(chatRequest.getSysPrompt()).role(Message.Role.SYSTEM).build();
+        Message sysMessage = Message.builder().content(sysPrompt).role(Message.Role.SYSTEM).build();
         messages.add(0,sysMessage);
 
         // 查询向量库相关信息加入到上下文
@@ -216,23 +198,6 @@ public class SseServiceImpl implements ISseService {
         }
     }
 
-    /**
-     * 发送SSE错误事件的封装方法
-     *
-     * @param sseEmitter
-     * @param errorMessage
-     */
-    private void sendErrorEvent(SseEmitter sseEmitter, String errorMessage) {
-        SseEmitter.SseEventBuilder event = SseEmitter.event()
-                .name("error")
-                .data(errorMessage);
-        try {
-            sseEmitter.send(event);
-        } catch (IOException e) {
-            log.error("SSE发送失败: {}", e.getMessage());
-        }
-        sseEmitter.complete();
-    }
 
     /**
      * 文字转语音
@@ -323,51 +288,6 @@ public class SseServiceImpl implements ISseService {
         return file;
     }
 
-    @Override
-    public SseEmitter ollamaChat(ChatRequest chatRequest) {
-
-        ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-        final SseEmitter emitter = new SseEmitter();
-        String host = chatModelVo.getApiHost();
-        List<Message> msgList = chatRequest.getMessages();
-
-        List<OllamaChatMessage> messages = new ArrayList<>();
-        for (Message message : msgList) {
-            OllamaChatMessage ollamaChatMessage = new OllamaChatMessage();
-            ollamaChatMessage.setRole(OllamaChatMessageRole.USER);
-            ollamaChatMessage.setContent(message.getContent().toString());
-            messages.add(ollamaChatMessage);
-        }
-        OllamaAPI api = new OllamaAPI(host);
-        api.setRequestTimeoutSeconds(100);
-        OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(chatRequest.getModel());
-
-        OllamaChatRequestModel requestModel = builder
-            .withMessages(messages)
-            .build();
-
-        // 异步执行 OllAma API 调用
-        CompletableFuture.runAsync(() -> {
-            try {
-                StringBuilder response = new StringBuilder();
-                OllamaStreamHandler streamHandler = (s) -> {
-                    String substr = s.substring(response.length());
-                    response.append(substr);
-                    System.out.println(substr);
-                    try {
-                        emitter.send(substr);
-                    } catch (IOException e) {
-                        sendErrorEvent(emitter, e.getMessage());
-                    }
-                };
-                api.chat(requestModel, streamHandler);
-                emitter.complete();
-            } catch (Exception e) {
-                sendErrorEvent(emitter, e.getMessage());
-            }
-        });
-        return emitter;
-    }
 
     @Override
     public String wxCpChat(String prompt) {

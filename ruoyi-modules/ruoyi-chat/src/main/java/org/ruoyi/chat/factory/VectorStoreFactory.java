@@ -1,8 +1,10 @@
-package org.ruoyi.chat.service.knowledge.vectorstore;
+package org.ruoyi.chat.factory;
 
 import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.chat.service.knowledge.vectorstore.MilvusVectorStore;
+import org.ruoyi.chat.service.knowledge.vectorstore.WeaviateVectorStore;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.mapper.KnowledgeInfoMapper;
 import org.ruoyi.service.VectorStoreService;
