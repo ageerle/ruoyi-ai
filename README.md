@@ -36,48 +36,67 @@
 
 ## 目录
 
+- [系统体验](#系统体验)
 - [源码地址](#源码地址)
-- [特色功能](#特色功能)
+- [配套文档](#项目文档)
+- [核心功能](#核心功能)
 - [项目演示](#项目演示)
-  - [后台管理](#后台管理)
+  - [管理端](#管理端)
   - [用户端](#用户端)
   - [小程序端](#小程序端)
-- [开发前的配置要求](#开发前的配置要求)
-- [文件目录说明](#文件目录说明)
-- [使用到的框架](#使用到的框架)
+- [开发环境](#开发环境)
+- [项目结构](#项目结构)
+  - [ruoyi-ai](#ruoyi-ai)
+- [注意事项](#注意事项)
+  - [vben模板](#vben模板)
 - [贡献者](#贡献者)
   - [如何参与开源项目](#如何参与开源项目)
 - [版本控制](#版本控制)
 - [作者](#作者)
 - [鸣谢](#鸣谢)
+- [技术讨论群](#技术讨论群)
+
+### 系统体验
+- 用户端：https://web.pandarobot.chat
+- 管理端：https://admin.pandarobot.chat
+  
+  用户名: admin 密码：admin123
 
 ### 源码地址
-- 项目文档: https://doc.pandarobot.chat
-- 前端-后台管理: https://github.com/ageerle/ruoyi-admin
-- 前端-用户端: https://github.com/ageerle/ruoyi-web
-- 小程序端: https://github.com/ageerle/ruoyi-uniapp
-- 演示地址: https://web.pandarobot.chat
-- 后台管理: https://admin.pandarobot.chat
-- 用户名: admin 密码：admin123
+[1]github
+- 前端服务-用户端: https://github.com/ageerle/ruoyi-web
+- 前端服务-管理端: https://github.com/ageerle/ruoyi-admin
+- 前端服务-小程序端: https://github.com/ageerle/ruoyi-uniapp
+- 后端服务：https://github.com/ageerle/ruoyi-ai
 
-### gitcode源码地址
-- https://gitcode.com/ageerle/ruoyi-ai
-- https://gitcode.com/ageerle/ruoyi-web
-- https://gitcode.com/ageerle/ruoyi-admin
-- https://gitcode.com/ageerle/ruoyi-uniapp
+[2]gitee
+- 前端服务-用户端: https://gitee.com/ageerle/ruoyi-web
+- 前端服务-管理端: https://gitee.com/ageerle/ruoyi-admin
+- 前端服务-小程序端: https://gitee.com/ageerle/ruoyi-uniapp
+- 后端服务：https://gitee.com/ageerle/ruoyi-ai
 
-### 特色功能
+[3]gitcode
+- 前端服务-用户端：https://gitcode.com/ageerle/ruoyi-web
+- 前端服务-管理端:  https://gitcode.com/ageerle/ruoyi-admin
+- 前端服务-小程序端:  https://gitcode.com/ageerle/ruoyi-uniapp
+- 后端服务：https://gitcode.com/ageerle/ruoyi-ai
+
+### 配套文档
+- 配套文档: https://doc.pandarobot.chat
+  - 项目部署文档：https://doc.pandarobot.chat/guide/introduction/
+
+### 核心功能
 1. 全套开源系统：提供完整的前端应用、后台管理以及小程序应用，基于MIT协议，开箱即用。
-2. 本地RAG方案：集成Milvus/Weaviate向量库、本地向量化模型与Ollama，实现本地化RAG
+2. 本地RAG方案：集成Milvus/Weaviate向量库、本地向量化模型与Ollama，实现本地化RAG。
 3. 丰富插件功能：支持联网、SQL查询插件及Text2API插件，扩展系统能力与应用场景。
-4. 内置SSE、websocket等网络协议，支持对接多种大语言模型，同时还集成了MidJourney和DALLE AI绘画功能
-5. 强大的多媒体功能：支持AI翻译、PPT制作、语音克隆和翻唱等
-6. 扩展功能：支持将大模型接入个人或企业微信
-7. 支付功能：支持易支付、微信支付等多种支付方式
+4. 内置SSE、websocket等网络协议，支持对接多种大语言模型，同时还集成了MidJourney和DALLE AI绘画功能。
+5. 强大的多媒体功能：支持AI翻译、PPT制作、语音克隆和翻唱等。
+6. 扩展功能：支持将大模型接入个人或企业微信。
+7. 支付功能：支持易支付、微信支付等多种支付方式。
 
 ### 项目演示
 
-#### 后台管理
+#### 管理端
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
   <img src="image/02.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
   <img src="image/03.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
@@ -100,7 +119,7 @@
   <img src="image/07.png" alt="drawing" style="width: 320px; height: 600px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
 </div>
 
-### 开发前的配置要求
+### 开发环境
 
 1. jdk 17
 2. mysql 5.7、8.0
@@ -108,8 +127,14 @@
 4. maven 3.8+
 5. nodejs 20+ & pnpm
 
-### 文件目录说明
-RuoYi-AI
+- 附-部署配套视频：https://www.bilibili.com/video/BV1jDXkYWEba
+
+<div>
+  <img src="image/教程搭建.png" alt="drawing" width="600px" height="300px"/>
+</div>
+
+### 项目结构
+- RuoYi-AI
 
 ```
 ├─ ruoyi-admin                         // 管理模块
@@ -158,6 +183,14 @@ RuoYi-AI
 
 ```
 
+### 注意事项
+- vben模板
+
+
+    Q：vben5 的模板默认是没有的吗？
+  
+    A：vben模板是收费的 请联系vben-vue-plus作者获取。
+
 ### 版本控制
 
 该项目使用Git进行版本管理。您可以在repository参看当前可用版本。
@@ -170,7 +203,7 @@ RuoYi-AI
 
 ###  项目现状
 
-目前，项目还处于早期阶段，距离成熟还有很长的路要走。由于个人精力有限，项目的发展速度受到了一定的限制。为了加快项目的进度，我真诚地希望更多人能够参与到项目中来。无论是经验丰富的开发者，还是刚刚入门的小白，我都热烈欢迎你们提交Pull Request（PR）。即使代码修改得很少，或者存在一些错误，都没有关系。我会认真审核每一位贡献者的代码，并和大家一起完善项目。
+目前，项目还处于早期阶段，距离成熟还有很长的路要走。由于个人精力有限，项目的发展速度受到了一定的限制。为了加快项目的进度，我真诚地希望更多人能够参与到项目中来。无论是经验丰富的开发者，还是刚刚入门的小白，我都热烈欢迎你们提交Pull Request（PR）👏👏👏。即使代码修改得很少，或者存在一些错误，都没有关系。我会认真审核每一位贡献者的代码，并和大家一起完善项目⛽️⛽️⛽️。
 
 ###  开发计划
 
@@ -193,7 +226,7 @@ RuoYi-AI
 
 #### 如何参与开源项目
 
-贡献使开源社区成为一个学习、激励和创造的绝佳场所。你所作的任何贡献都是**非常感谢**的。
+贡献使开源社区成为一个学习、激励和创造的绝佳场所。你所作的任何贡献，我们都非常感谢！🙏
 
 1. Fork 这个项目
 2. 创建你的功能分支 (`git checkout -b feature/dev`)
@@ -231,16 +264,29 @@ RuoYi-AI
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 
 
-### 附：讨论群
-    🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
-  
-    🏠 qq：1603234088 （加人备注：ruoyi-ai）
+### 附：技术讨论群
 
-        👏👏👏 ruoyi-ai官方交流1群（qq区）：1034554687 
+#### 氛围积极、拥抱AI
+- wx交流群
+<div>
+  <img src="image/wx-msg.png" alt="drawing" width="600px" height="300px"/>
+  <img src="image/wx-msg2.png" alt="drawing" width="600px" height="300px"/>
+</div>
+
+- qq交流群
+<div>
+  <img src="image/qq-msg.png" alt="drawing" width="600px" height="300px"/>
+</div>
+
+#### 全面开放，欢迎加入
+🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
+
+🏠 qq：1603234088 （加人备注：ruoyi-ai）
+
+👏👏👏 ruoyi-ai官方交流1群（qq区）：1034554687 
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
   <img src="image/QQ区-官方交流1群.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
 </div>
-
 
 
