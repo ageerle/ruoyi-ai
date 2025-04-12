@@ -318,5 +318,22 @@ wechat:
         token:   ''
         aesKey: ''
 
-
-
+  #  spring ai配置
+spring:
+  ai:
+    openai:
+      api-key: sk-xx
+      base-url: https://api.pandarobot.chat/
+    mcp:
+      client:
+        enabled: true
+        name: call-mcp-server
+        sse:
+          connections:
+            server1:
+              url: http://127.0.0.1:8080
+    ollama:
+      init:
+        pull-model-strategy: always
+        timeout: 60s
+        max-retries: 1
