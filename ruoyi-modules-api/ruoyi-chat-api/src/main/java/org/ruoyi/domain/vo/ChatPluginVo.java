@@ -1,6 +1,6 @@
 package org.ruoyi.domain.vo;
 
-import org.ruoyi.system.domain.ChatPlugin;
+import org.ruoyi.domain.ChatPlugin;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 

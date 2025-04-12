@@ -1,16 +1,16 @@
-package org.ruoyi.system.domain.vo;
+package org.ruoyi.domain.vo;
 
-import org.ruoyi.system.domain.ChatAgentManage;
+
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import annotation.excel.common.org.ruoyi.ExcelDictFormat;
-import convert.excel.common.org.ruoyi.ExcelDictConvert;
+
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.domain.ChatAgentManage;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
+
 
 
 

@@ -1,13 +1,12 @@
 package org.ruoyi.chain.loader;
 
 import lombok.AllArgsConstructor;
-import org.ruoyi.chain.loader.ResourceLoader;
-import org.ruoyi.chain.loader.TextFileLoader;
 import org.ruoyi.chain.split.CharacterTextSplitter;
 import org.ruoyi.chain.split.CodeTextSplitter;
 import org.ruoyi.chain.split.MarkdownTextSplitter;
 import org.ruoyi.chain.split.TokenTextSplitter;
-import org.ruoyi.knowledge.constant.FileType;
+
+import org.ruoyi.constant.FileType;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor

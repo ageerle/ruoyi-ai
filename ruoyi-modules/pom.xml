@@ -22,7 +22,13 @@
         <module>ruoyi-chat</module>
         <module>ruoyi-system</module>
         <module>ruoyi-generator</module>
+        <module>ruoyi-admin</module>
     </modules>
+
+    <properties>
+        <httpclient.version>4.5.14</httpclient.version>
+        <jackson.version>2.15.2</jackson.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -34,6 +40,34 @@
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-idempotent</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-sensitive</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>${httpclient.version}</version>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -1,10 +1,10 @@
 package org.ruoyi.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import org.ruoyi.mapper.ChatAgentManageMapper;
 import org.ruoyi.service.IChatAgentManageService;
 import org.springframework.stereotype.Service;
 
-import org.ruoyi.system.domain.vo.ChatAgentManageVo;
+import org.ruoyi.domain.vo.ChatAgentManageVo;
 
 
 import java.util.List;

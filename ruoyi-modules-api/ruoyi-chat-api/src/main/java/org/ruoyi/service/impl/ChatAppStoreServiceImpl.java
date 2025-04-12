@@ -13,9 +13,7 @@ import org.ruoyi.domain.bo.ChatAppStoreBo;
 import org.ruoyi.mapper.ChatAppStoreMapper;
 import org.ruoyi.service.IChatAppStoreService;
 import org.springframework.stereotype.Service;
-
-import org.ruoyi.system.domain.vo.ChatAppStoreVo;
-
+import org.ruoyi.domain.vo.ChatAppStoreVo;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;

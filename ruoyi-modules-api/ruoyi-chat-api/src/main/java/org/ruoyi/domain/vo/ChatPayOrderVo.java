@@ -1,12 +1,12 @@
 package org.ruoyi.domain.vo;
 
 import java.math.BigDecimal;
-import org.ruoyi.system.domain.ChatPayOrder;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.domain.ChatPayOrder;
 
 import java.io.Serial;
 import java.io.Serializable;

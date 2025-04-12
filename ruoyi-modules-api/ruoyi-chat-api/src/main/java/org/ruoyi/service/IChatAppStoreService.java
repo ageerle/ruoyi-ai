@@ -2,7 +2,7 @@ package org.ruoyi.service;
 
 
 import org.ruoyi.domain.bo.ChatAppStoreBo;
-import org.ruoyi.system.domain.vo.ChatAppStoreVo;
+import org.ruoyi.domain.vo.ChatAppStoreVo;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 

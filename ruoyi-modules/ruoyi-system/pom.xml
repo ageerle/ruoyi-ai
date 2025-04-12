@@ -16,11 +16,6 @@
         system系统模块
     </description>
 
-    <properties>
-        <httpclient.version>4.5.14</httpclient.version>
-        <jackson.version>2.15.2</jackson.version>
-    </properties>
-
     <dependencies>
         <!-- 通用工具-->
         <dependency>
@@ -53,55 +48,12 @@
 
         <dependency>
             <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-tenant</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-web</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-idempotent</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-sensitive</artifactId>
-        </dependency>
-
-        <!-- SMS功能模块 -->
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-chat</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-mail</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-system-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>${httpclient.version}</version>
         </dependency>
 
     </dependencies>

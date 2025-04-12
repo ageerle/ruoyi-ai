@@ -2,7 +2,7 @@ package org.ruoyi.domain.bo;
 
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.system.domain.ChatGpts;
+import org.ruoyi.domain.ChatGpts;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;

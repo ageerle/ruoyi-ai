@@ -2,7 +2,7 @@ package org.ruoyi.service;
 
 
 import org.ruoyi.domain.bo.ChatAgentManageBo;
-import org.ruoyi.system.domain.vo.ChatAgentManageVo;
+import org.ruoyi.domain.vo.ChatAgentManageVo;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 

@@ -2,7 +2,7 @@ package org.ruoyi.mapper;
 
 
 import org.ruoyi.domain.ChatAgentManage;
-import org.ruoyi.system.domain.vo.ChatAgentManageVo;
+import org.ruoyi.domain.vo.ChatAgentManageVo;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 
 /**

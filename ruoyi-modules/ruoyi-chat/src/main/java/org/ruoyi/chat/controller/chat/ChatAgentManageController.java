@@ -8,8 +8,10 @@ import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.domain.bo.ChatAgentManageBo;
+import org.ruoyi.domain.vo.ChatAgentManageVo;
 import org.ruoyi.service.IChatAgentManageService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
@@ -19,8 +21,6 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.log.enums.BusinessType;
-import org.ruoyi.system.domain.vo.ChatAgentManageVo;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 
 /**
  * 智能体管理

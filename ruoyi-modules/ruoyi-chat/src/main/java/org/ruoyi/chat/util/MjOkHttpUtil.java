@@ -5,12 +5,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.ruoyi.common.core.service.ConfigService;
-import org.ruoyi.system.domain.bo.SysModelBo;
-import org.ruoyi.system.domain.vo.SysModelVo;
-import org.ruoyi.system.service.ISysModelService;
+import org.ruoyi.domain.bo.ChatModelBo;
+import org.ruoyi.domain.vo.ChatModelVo;
+import org.ruoyi.service.IChatModelService;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class MjOkHttpUtil {
 
-    private final ISysModelService sysModelService;
+    private final IChatModelService chatModelService;
 
     private final ConfigService configService;
 
@@ -70,13 +71,12 @@ public class MjOkHttpUtil {
 
     @PostConstruct
     public void init() {
-        SysModelBo sysModelBo = new SysModelBo();
-        sysModelBo.setModelName("midjourney");
-        List<SysModelVo> sysModelList = sysModelService.queryList(sysModelBo);
-        if (!sysModelList.isEmpty()) {
-            SysModelVo model = sysModelList.get(0);
-            this.apiKey  = model.getApiKey();
-            this.apiHost =  model.getApiHost();
+        ChatModelBo sysModelBo = new ChatModelBo();
+        sysModelBo.setModelName("");
+        ChatModelVo midjourney = chatModelService.selectModelByName("midjourney");
+        if (midjourney != null) {
+            this.apiKey  = midjourney.getApiKey();
+            this.apiHost =  midjourney.getApiHost();
         }
     }
 

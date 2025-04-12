@@ -1,11 +1,12 @@
 package org.ruoyi.domain.vo;
 
-import org.ruoyi.system.domain.ChatModel;
+
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.domain.ChatModel;
 
 import java.io.Serial;
 import java.io.Serializable;
