@@ -354,6 +354,7 @@
         <module>ruoyi-common</module>
         <module>ruoyi-modules</module>
         <module>ruoyi-modules-api</module>
+        <module>ruoyi-modules/ruoyi-mcp-server</module>
     </modules>
 
     <packaging>pom</packaging>
