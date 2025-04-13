@@ -5,9 +5,9 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Param;
-import org.ruoyi.common.mybatis.annotation.DataColumn;
-import org.ruoyi.common.mybatis.annotation.DataPermission;
-import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
+import org.ruoyi.annotation.DataColumn;
+import org.ruoyi.annotation.DataPermission;
+import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.demo.domain.TestDemo;
 import org.ruoyi.demo.domain.vo.TestDemoVo;
 

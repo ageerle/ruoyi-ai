@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.InnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
 import org.ruoyi.common.core.utils.reflect.ReflectUtils;
-import org.ruoyi.common.mybatis.config.MybatisPlusConfig;
+
 import org.ruoyi.common.redis.config.RedisConfig;
 import org.ruoyi.common.redis.config.properties.RedissonProperties;
 import org.ruoyi.common.tenant.core.TenantSaTokenDao;
@@ -17,6 +17,7 @@ import org.ruoyi.common.tenant.properties.TenantProperties;
 import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.SingleServerConfig;
 import org.redisson.spring.starter.RedissonAutoConfigurationCustomizer;
+import org.ruoyi.config.MybatisPlusConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

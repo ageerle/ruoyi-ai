@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.ruoyi.common.core.utils.StreamUtils;
-import org.ruoyi.common.mybatis.helper.DataBaseHelper;
+import org.ruoyi.helper.DataBaseHelper;
 import org.ruoyi.system.domain.SysDept;
 import org.ruoyi.system.domain.SysRoleDept;
 import org.ruoyi.system.mapper.SysDeptMapper;

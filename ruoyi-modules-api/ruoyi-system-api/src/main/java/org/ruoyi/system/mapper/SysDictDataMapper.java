@@ -2,7 +2,7 @@ package org.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.ruoyi.common.core.constant.UserConstants;
-import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
+import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysDictData;
 import org.ruoyi.system.domain.vo.SysDictDataVo;
 

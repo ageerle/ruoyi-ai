@@ -14,7 +14,6 @@ import okhttp3.*;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.service.chat.ISseService;
-import org.ruoyi.chat.factory.SseServiceFactory;
 import org.ruoyi.chat.util.IpUtil;
 import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.request.ChatRequest;
@@ -73,7 +72,8 @@ public class SseServiceImpl implements ISseService {
 
     private final IChatCostService chatCostService;
 
-    private final SseServiceFactory sseServiceFactory;
+    private final IChatService chatService;
+
 
     private static final String requestIdTemplate = "company-%d";
 
@@ -135,11 +135,10 @@ public class SseServiceImpl implements ISseService {
         String model = chatRequest.getModel();
         // 如果模型名称以ollama开头，则调用ollama中部署的本地模型
         if (model.startsWith("ollama-")) {
-            String[] parts = chatRequest.getModel().split("ollama-", 2); // 限制分割次数为2
+            String[] parts = chatRequest.getModel().split("ollama-", 2);
             if (parts.length > 1) {
                 chatRequest.setModel(parts[1]);
-                IChatService chatService = sseServiceFactory.getSseService("ollama");
-                chatService.chat(chatRequest,emitter);
+                chatService.mcpChat(chatRequest,emitter);
             } else {
                 throw new IllegalArgumentException("Invalid ollama model name: " + chatRequest.getModel());
             }

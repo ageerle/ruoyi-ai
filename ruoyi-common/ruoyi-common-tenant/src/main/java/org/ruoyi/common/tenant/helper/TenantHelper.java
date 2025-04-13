@@ -95,6 +95,27 @@ public class TenantHelper {
     }
 
     /**
+     * 设置动态租户(一直有效 需要手动清理)
+     * <p>
+     * 如果为未登录状态下 那么只在当前线程内生效
+     *
+     * @param tenantId 租户id
+     * @param global   是否全局生效
+     */
+    public static void setDynamic(String tenantId, boolean global) {
+        if (!isEnable()) {
+            return;
+        }
+        if (!LoginHelper.isLogin() || !global) {
+            TEMP_DYNAMIC_TENANT.set(tenantId);
+            return;
+        }
+        String cacheKey = DYNAMIC_TENANT_KEY + ":" + LoginHelper.getUserId();
+        RedisUtils.setCacheObject(cacheKey, tenantId);
+        SaHolder.getStorage().set(cacheKey, tenantId);
+    }
+
+    /**
      * 获取动态租户(一直有效 需要手动清理)
      * <p>
      * 如果为非web环境 那么只在当前线程内生效
@@ -135,6 +156,20 @@ public class TenantHelper {
             tenantId = LoginHelper.getTenantId();
         }
         return tenantId;
+    }
+
+    /**
+     * 在动态租户中执行
+     *
+     * @param handle 处理执行方法
+     */
+    public static void dynamic(String tenantId, Runnable handle) {
+        setDynamic(tenantId);
+        try {
+            handle.run();
+        } finally {
+            clearDynamic();
+        }
     }
 
 }

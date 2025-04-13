@@ -1,7 +1,7 @@
 package org.ruoyi.system.service;
 
-import org.ruoyi.common.mybatis.core.page.PageQuery;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.SysUserRole;
 import org.ruoyi.system.domain.bo.SysRoleBo;
 import org.ruoyi.system.domain.vo.SysRoleVo;

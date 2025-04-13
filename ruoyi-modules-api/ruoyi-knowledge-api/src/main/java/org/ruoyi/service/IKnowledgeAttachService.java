@@ -3,8 +3,8 @@ package org.ruoyi.service;
 
 import org.ruoyi.domain.bo.KnowledgeAttachBo;
 import org.ruoyi.domain.vo.KnowledgeAttachVo;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.core.page.PageQuery;
 
 import java.util.Collection;
 import java.util.List;

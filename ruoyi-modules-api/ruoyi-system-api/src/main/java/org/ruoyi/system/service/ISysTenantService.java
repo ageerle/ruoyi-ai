@@ -1,7 +1,9 @@
 package org.ruoyi.system.service;
 
-import org.ruoyi.common.mybatis.core.page.PageQuery;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+
+
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysTenantBo;
 import org.ruoyi.system.domain.vo.SysTenantVo;
 
@@ -78,5 +80,10 @@ public interface ISysTenantService {
     /**
      * 同步租户套餐
      */
-    Boolean syncTenantPackage(String tenantId, String packageId);
+    Boolean syncTenantPackage(String tenantId, Long packageId);
+
+    /**
+     * 同步租户字典
+     */
+    void syncTenantDict();
 }

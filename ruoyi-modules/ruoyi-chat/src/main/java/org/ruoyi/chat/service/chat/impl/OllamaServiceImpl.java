@@ -39,13 +39,21 @@ public class OllamaServiceImpl implements IChatService {
 
     @Autowired
     private  IChatModelService chatModelService;
-    @Autowired
-    private ChatClient chatClient;
-    @Autowired
-    private ToolCallbackProvider tools;
+
+    private final ChatClient chatClient;
 
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 
+    public OllamaServiceImpl(ChatClient.Builder chatClientBuilder,ToolCallbackProvider tools) {
+        this.chatClient = chatClientBuilder
+                .defaultTools(tools)
+                .defaultOptions(
+                        OllamaOptions.builder()
+                                .model(OllamaModel.QWEN_2_5_7B)
+                                .temperature(0.4)
+                                .build())
+                .build();
+    }
 
     @Override
     public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
@@ -104,11 +112,6 @@ public class OllamaServiceImpl implements IChatService {
 
         this.chatClient.prompt(chatRequest.getPrompt())
                 .advisors(messageChatMemoryAdvisor)
-                .tools(tools)
-                .options(OllamaOptions.builder()
-                        .model(OllamaModel.QWEN_2_5_7B)
-                        .temperature(0.4)
-                        .build())
                 .stream()
                 .chatResponse()
                 .subscribe(

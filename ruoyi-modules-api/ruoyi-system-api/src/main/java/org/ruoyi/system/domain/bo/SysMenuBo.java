@@ -3,7 +3,7 @@ package org.ruoyi.system.domain.bo;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.core.domain.BaseEntity;
 import org.ruoyi.system.domain.SysMenu;
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;

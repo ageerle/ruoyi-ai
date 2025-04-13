@@ -4,8 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
-import org.ruoyi.chat.service.knowledge.vectorizer.BgeLargeVectorization;
-import org.ruoyi.chat.service.knowledge.vectorizer.OpenAiVectorization;
+import org.ruoyi.chat.service.knowledge.BgeLargeVectorizationImpl;
+import org.ruoyi.chat.service.knowledge.OpenAiVectorizationImpl;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.ruoyi.service.VectorizationService;
@@ -20,15 +20,15 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class VectorizationFactory {
 
-    private final OpenAiVectorization openAiVectorization;
+    private final OpenAiVectorizationImpl openAiVectorization;
 
-    private final BgeLargeVectorization bgeLargeVectorization;
+    private final BgeLargeVectorizationImpl bgeLargeVectorization;
 
     @Lazy
     @Resource
     private IKnowledgeInfoService knowledgeInfoService;
 
-    public VectorizationFactory(OpenAiVectorization openAiVectorization, BgeLargeVectorization bgeLargeVectorization) {
+    public VectorizationFactory(OpenAiVectorizationImpl openAiVectorization, BgeLargeVectorizationImpl bgeLargeVectorization) {
         this.openAiVectorization = openAiVectorization;
         this.bgeLargeVectorization = bgeLargeVectorization;
     }

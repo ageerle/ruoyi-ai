@@ -16,7 +16,7 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.TreeBuildUtils;
-import org.ruoyi.common.mybatis.helper.DataBaseHelper;
+import org.ruoyi.helper.DataBaseHelper;
 import org.ruoyi.common.redis.utils.CacheUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.domain.SysDept;

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

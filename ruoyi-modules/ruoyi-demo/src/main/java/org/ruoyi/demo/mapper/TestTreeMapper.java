@@ -1,8 +1,8 @@
 package org.ruoyi.demo.mapper;
 
-import org.ruoyi.common.mybatis.annotation.DataColumn;
-import org.ruoyi.common.mybatis.annotation.DataPermission;
-import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
+import org.ruoyi.annotation.DataColumn;
+import org.ruoyi.annotation.DataPermission;
+import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.demo.domain.TestTree;
 import org.ruoyi.demo.domain.vo.TestTreeVo;
 

@@ -60,9 +60,6 @@ spring.data:
     # password: 123456
     # 连接超时时间
     timeout: 10S
-    # 是否开启ssl
-    ssl: false
-
 redisson:
   # redis key前缀
   keyPrefix:
@@ -97,22 +94,3 @@ sms:
   # 腾讯专用
   sdkAppId:
 
-spring:
-  ai:
-    openai:
-      api-key: sk-xX
-      base-url: https://api.pandarobot.chat
-    ollama:
-      base-url: http://localhost:11434
-      init:
-        pull-model-strategy: always
-        timeout: 60s
-        max-retries: 1
-    mcp:
-      client:
-        enabled: true
-        name: call-mcp-server
-        sse:
-          connections:
-            server1:
-              url: http://127.0.0.1:8080

@@ -18,11 +18,9 @@
     </description>
 
     <modules>
-        <module>ruoyi-demo</module>
         <module>ruoyi-chat</module>
         <module>ruoyi-system</module>
         <module>ruoyi-generator</module>
-        <module>ruoyi-admin</module>
     </modules>
 
     <properties>

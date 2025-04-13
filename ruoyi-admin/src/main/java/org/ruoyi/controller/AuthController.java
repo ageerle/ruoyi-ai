@@ -14,18 +14,17 @@ import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.tenant.helper.TenantHelper;
-import org.ruoyi.system.domain.bo.SysTenantBo;
-import org.ruoyi.system.domain.vo.LoginTenantVo;
-import org.ruoyi.system.domain.vo.SysTenantVo;
-import org.ruoyi.system.domain.vo.TenantListVo;
-import org.ruoyi.system.service.ISysTenantService;
-
-import org.ruoyi.system.service.SysLoginService;
-import org.ruoyi.system.service.SysRegisterService;
-import org.ruoyi.system.domain.vo.LoginVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.system.domain.bo.SysTenantBo;
+import org.ruoyi.system.domain.vo.LoginTenantVo;
+import org.ruoyi.system.domain.vo.LoginVo;
+import org.ruoyi.system.domain.vo.SysTenantVo;
+import org.ruoyi.system.domain.vo.TenantListVo;
+import org.ruoyi.system.service.ISysTenantService;
+import org.ruoyi.system.service.SysLoginService;
+import org.ruoyi.system.service.SysRegisterService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

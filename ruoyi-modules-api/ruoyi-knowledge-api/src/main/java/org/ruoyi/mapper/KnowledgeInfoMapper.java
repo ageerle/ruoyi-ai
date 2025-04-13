@@ -3,7 +3,7 @@ package org.ruoyi.mapper;
 
 import org.ruoyi.domain.KnowledgeInfo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
-import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
+import org.ruoyi.core.mapper.BaseMapperPlus;
 
 /**
  * 知识库Mapper接口

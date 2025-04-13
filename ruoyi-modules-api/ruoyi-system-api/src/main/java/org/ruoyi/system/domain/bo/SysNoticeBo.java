@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.core.xss.Xss;
-import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.core.domain.BaseEntity;
 import org.ruoyi.system.domain.SysNotice;
 
 /**

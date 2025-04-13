@@ -3,7 +3,7 @@ package org.ruoyi.domain.bo;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.domain.KnowledgeAttach;
-import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

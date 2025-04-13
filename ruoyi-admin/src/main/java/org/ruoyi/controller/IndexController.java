@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 首页
@@ -11,8 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * @author Lion Li
  */
 @SaIgnore
-@RequiredArgsConstructor
-@Controller
+@RestController
 public class IndexController {
 
     /**
@@ -20,17 +20,9 @@ public class IndexController {
      */
     @GetMapping("/")
     public String index() {
-        return "index.html";
+        return "RuoYi AI启动成功！";
     }
 
-    @GetMapping("/success")
-    public String success(){
-        return "paySuccess.html";
-    }
 
-    @GetMapping("/cancel")
-    public String cancel(){
-        return "cancel";
-    }
 
 }

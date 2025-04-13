@@ -1,0 +1,33 @@
+# 内置配置 不允许修改 如需修改请在 nacos 上写相同配置覆盖
+# MyBatisPlus配置
+# https://baomidou.com/config/
+mybatis-plus:
+  # 启动时是否检查 MyBatis XML 文件的存在，默认不检查
+  checkConfigLocation: false
+  configuration:
+    # 自动驼峰命名规则（camel case）映射
+    mapUnderscoreToCamelCase: true
+    # MyBatis 自动映射策略
+    # NONE：不启用 PARTIAL：只对非嵌套 resultMap 自动映射 FULL：对所有 resultMap 自动映射
+    autoMappingBehavior: FULL
+    # MyBatis 自动映射时未知列或未知属性处理策
+    # NONE：不做处理 WARNING：打印相关警告 FAILING：抛出异常和详细信息
+    autoMappingUnknownColumnBehavior: NONE
+    # 更详细的日志输出 会有性能损耗 org.apache.ibatis.logging.stdout.StdOutImpl
+    # 关闭日志记录 (可单纯使用 p6spy 分析) org.apache.ibatis.logging.nologging.NoLoggingImpl
+    # 默认日志输出 org.apache.ibatis.logging.slf4j.Slf4jImpl
+    logImpl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    # 是否打印 Logo banner
+    banner: true
+    dbConfig:
+      # 主键类型
+      # AUTO 自增 NONE 空 INPUT 用户输入 ASSIGN_ID 雪花 ASSIGN_UUID 唯一 UUID
+      idType: ASSIGN_ID
+      # 逻辑已删除值(可按需求随意修改)
+      logicDeleteValue: 1
+      # 逻辑未删除值
+      logicNotDeleteValue: 0
+      insertStrategy: NOT_NULL
+      updateStrategy: NOT_NULL
+      whereStrategy: NOT_NULL

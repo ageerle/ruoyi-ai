@@ -2,8 +2,8 @@ package org.ruoyi.system.service.impl;
 
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.core.page.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;

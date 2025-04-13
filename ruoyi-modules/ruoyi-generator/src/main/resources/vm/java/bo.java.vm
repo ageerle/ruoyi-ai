@@ -1,7 +1,7 @@
 package ${packageName}.domain.bo;
 
 import ${packageName}.domain.${ClassName};
-import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

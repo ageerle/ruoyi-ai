@@ -1,7 +1,7 @@
 package org.ruoyi.service;
 
-import org.ruoyi.common.mybatis.core.page.PageQuery;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.ChatVisitorUsageBo;
 import org.ruoyi.domain.vo.ChatVisitorUsageVo;
 

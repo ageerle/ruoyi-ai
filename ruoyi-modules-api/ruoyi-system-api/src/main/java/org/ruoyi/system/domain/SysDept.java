@@ -47,7 +47,7 @@ public class SysDept extends TenantEntity {
     /**
      * 负责人
      */
-    private String leader;
+    private Long leader;
 
     /**
      * 联系电话
