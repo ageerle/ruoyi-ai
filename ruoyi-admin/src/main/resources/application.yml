@@ -322,6 +322,9 @@ wechat:
 
 spring:
   ai:
+    openai:
+      api-key: sk-xX
+      base-url: https://api.pandarobot.chat/
     ollama:
       base-url: http://localhost:11434
     mcp:

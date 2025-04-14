@@ -18,7 +18,7 @@ import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Objects;
 
@@ -34,13 +34,13 @@ import java.util.Objects;
 public class SSEEventSourceListener extends EventSourceListener {
 
     @Autowired(required = false)
-    public SSEEventSourceListener(ResponseBodyEmitter emitter) {
+    public SSEEventSourceListener(SseEmitter emitter) {
         this.emitter = emitter;
     }
 
-    private ResponseBodyEmitter emitter;
+    private SseEmitter emitter;
 
-    private StringBuilder stringBuffer;
+    private StringBuilder stringBuffer = new StringBuilder();
 
     private String modelName;
 
@@ -61,7 +61,6 @@ public class SSEEventSourceListener extends EventSourceListener {
     @Override
     public void onEvent(@NotNull EventSource eventSource, String id, String type, String data) {
         try {
-
             if ("[DONE]".equals(data)) {
                 //成功响应
                 emitter.complete();
@@ -72,25 +71,23 @@ public class SSEEventSourceListener extends EventSourceListener {
                 chatCostService.deductToken(chatRequest);
                 return;
             }
-            // 解析返回内容
+
             ObjectMapper mapper = new ObjectMapper();
             ChatCompletionResponse completionResponse = mapper.readValue(data, ChatCompletionResponse.class);
             if(completionResponse == null || CollectionUtil.isEmpty(completionResponse.getChoices())){
                 return;
             }
             Object content = completionResponse.getChoices().get(0).getDelta().getContent();
-            if(content == null){
-                content = completionResponse.getChoices().get(0).getDelta().getReasoningContent();
-                if(content == null) return;
+
+            if(content != null ){
+                if(StringUtils.isEmpty(modelName)){
+                    modelName = completionResponse.getModel();
+                }
+                stringBuffer.append(content);
+                emitter.send(content);
             }
-            if(StringUtils.isEmpty(modelName)){
-                modelName = completionResponse.getModel();
-            }
-            stringBuffer.append(content);
-            emitter.send(data);
         } catch (Exception e) {
-            log.error("sse信息推送失败{}内容：{}",e.getMessage(),data);
-            eventSource.cancel();
+            emitter.completeWithError(e);
         }
     }
 

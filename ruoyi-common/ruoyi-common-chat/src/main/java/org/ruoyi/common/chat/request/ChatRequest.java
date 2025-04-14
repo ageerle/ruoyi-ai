@@ -49,7 +49,7 @@ public class ChatRequest {
     /**
      * 用户id
      */
-    private String userId;
+    private Long userId;
 
     /**
      * 应用ID

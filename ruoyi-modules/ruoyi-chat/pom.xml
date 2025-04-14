@@ -113,12 +113,6 @@
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-system-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-ollama</artifactId>
-            <version>1.0.0-M6</version>
-            <scope>compile</scope>
-        </dependency>
 
     </dependencies>
 

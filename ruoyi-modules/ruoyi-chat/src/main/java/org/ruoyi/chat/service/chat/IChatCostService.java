@@ -40,4 +40,9 @@ public interface IChatCostService {
      * 判断用户是否付费
      */
     void checkUserGrade();
+
+    /**
+     * 获取登录用户id
+     */
+    Long getUserId();
 }

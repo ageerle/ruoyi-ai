@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.BillingType;
 import org.ruoyi.chat.enums.UserGradeType;
 import org.ruoyi.chat.service.chat.IChatCostService;
+import org.ruoyi.common.chat.config.LocalCache;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.chat.utils.TikTokensUtil;
 import org.ruoyi.common.core.domain.model.LoginUser;
@@ -95,6 +96,12 @@ public class ChatCostServiceImpl implements IChatCostService {
             chatToken.setModelName(chatMessageBo.getModelName());
             chatToken.setUserId(chatMessageBo.getUserId());
             chatTokenService.editToken(chatToken);
+        }
+        Object userId = LocalCache.CACHE.get("userId");
+        if(userId!=null){
+            chatMessageBo.setUserId((Long) userId);
+        }else {
+            chatMessageBo.setUserId(getUserId());
         }
         // 保存消息记录
         chatMessageService.insertByBo(chatMessageBo);

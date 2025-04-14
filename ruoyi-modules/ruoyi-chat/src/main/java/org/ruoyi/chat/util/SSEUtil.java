@@ -1,6 +1,7 @@
 package org.ruoyi.chat.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -19,7 +20,7 @@ public class SSEUtil {
      * @param sseEmitter sse事件对象
      * @param errorMessage 错误信息
      */
-    public static void sendErrorEvent(SseEmitter sseEmitter, String errorMessage) {
+    public static void sendErrorEvent(ResponseBodyEmitter sseEmitter, String errorMessage) {
         SseEmitter.SseEventBuilder event = SseEmitter.event()
                 .name("error")
                 .data(errorMessage);
