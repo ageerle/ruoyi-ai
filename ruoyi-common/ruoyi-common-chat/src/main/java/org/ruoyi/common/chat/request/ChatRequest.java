@@ -42,6 +42,11 @@ public class ChatRequest {
     private Boolean search = Boolean.FALSE;
 
     /**
+     *  是否开启mcp
+     */
+    private Boolean isMcp = Boolean.FALSE;
+
+    /**
      * 知识库id
      */
     private String kid;

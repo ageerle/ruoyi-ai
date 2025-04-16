@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>ruoyi-mcp-server</module>
+        <module>ruoyi-ai-mcp-webflux-server</module>
     </modules>
 
 </project>

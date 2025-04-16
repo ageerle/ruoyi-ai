@@ -18,9 +18,4 @@ public interface IChatService {
     SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter);
 
 
-    /**
-     * 客户端发送消息到服务端
-     * @param chatRequest 请求对象
-     */
-    void mcpChat(ChatRequest chatRequest,SseEmitter emitter);
 }

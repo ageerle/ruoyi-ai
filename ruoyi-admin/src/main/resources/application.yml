@@ -320,19 +320,4 @@ wechat:
         token:   ''
         aesKey: ''
 
-spring:
-  ai:
-    openai:
-      api-key: sk-xX
-      base-url: https://api.pandarobot.chat/
-    ollama:
-      base-url: http://localhost:11434
-    mcp:
-      client:
-        enabled: true
-        name: call-mcp-server
-        sse:
-          connections:
-            server1:
-              url: http://127.0.0.1:6040
 

@@ -55,11 +55,4 @@ public interface ISseService {
      */
     String wxCpChat(String prompt);
 
-    /**
-     * 联网查询
-     *
-     * @param prompt 提示词
-     * @return 查询内容
-     */
-    String webSearch (String prompt);
 }

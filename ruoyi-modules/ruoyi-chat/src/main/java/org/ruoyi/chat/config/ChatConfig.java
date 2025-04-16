@@ -36,7 +36,7 @@ public class ChatConfig {
         return openAiStreamClient;
     }
 
-    public OpenAiStreamClient createOpenAiStreamClient(String apiHost, String apiKey) {
+    public static OpenAiStreamClient createOpenAiStreamClient(String apiHost, String apiKey) {
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
         httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.HEADERS);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
