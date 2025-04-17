@@ -289,4 +289,10 @@
   <img src="image/QQ区-官方交流1群.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
 </div>
 
+👏👏👏 ruoyi-ai官方交流4群（微信区）：
+<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+  <img src="image/WX区-官方交流4群.jpg" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+</div>
+
+
 
