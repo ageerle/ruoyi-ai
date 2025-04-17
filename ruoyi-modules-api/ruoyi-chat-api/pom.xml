@@ -32,6 +32,14 @@
 
     <!-- 对话基础模块 -->
     <dependencies>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-spring-webflux</artifactId>
+            <version>0.8.0</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-chat</artifactId>
@@ -55,15 +63,26 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-mcp-client-webflux-spring-boot-starter</artifactId>
+            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
-            <artifactId>mcp-spring-webflux</artifactId>
-            <version>0.8.0</version>
-            <scope>compile</scope>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-mcp</artifactId>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-mcp-client-webflux-spring-boot-starter</artifactId>
+        </dependency>
+
+
 
 
     </dependencies>

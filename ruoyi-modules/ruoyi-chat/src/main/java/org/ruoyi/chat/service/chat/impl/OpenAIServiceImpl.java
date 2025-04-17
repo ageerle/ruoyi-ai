@@ -2,6 +2,7 @@ package org.ruoyi.chat.service.chat.impl;
 
 import cn.hutool.json.JSONUtil;
 import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,12 @@ import org.ruoyi.common.chat.entity.chat.tool.ToolsFunction;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -27,14 +34,33 @@ import java.util.Map;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class OpenAIServiceImpl implements IChatService {
 
-    private final OpenAiStreamClient openAiStreamClient;
+    @Autowired
+    private OpenAiStreamClient openAiStreamClient;
+
+    private final ChatClient chatClient;
+
+    private final ChatMemory chatMemory = new InMemoryChatMemory();
+
+
+
+    public OpenAIServiceImpl(ChatClient.Builder chatClientBuilder, List<McpSyncClient> mcpSyncClients, ToolCallbackProvider tools) {
+        this.chatClient = chatClientBuilder
+                .defaultTools(new SyncMcpToolCallbackProvider(mcpSyncClients))
+                .build();
+    }
+
+
+    public String webMcpChat(String prompt){
+        return this.chatClient.prompt(prompt).call().content();
+
+    }
+
 
     @Override
     public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
-        String toolString = mcpChat(chatRequest);
+        String toolString = webMcpChat(chatRequest.getPrompt());
 
         Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.ASSISTANT).build();
         List<Message> messages = chatRequest.getMessages();

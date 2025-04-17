@@ -319,5 +319,15 @@ wechat:
         secret: ''
         token:   ''
         aesKey: ''
-
+spring:
+  ai:
+    openai:
+      api-key: sk-xXe1WMPjhlVb1aiI1b4c6c8934D8463f9e4b67Ed8718B772
+      base-url: https://api.pandarobot.chat/
+    mcp:
+      client:
+        enabled: true
+        name: call-mcp-server
+        stdio:
+          servers-configuration: classpath:mcp-server.json
 
