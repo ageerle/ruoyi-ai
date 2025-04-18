@@ -96,6 +96,14 @@
 
 ### 项目演示
 
+#### mcp支持(需要切换dev分支 下周发布正式版)
+<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+  <img src="image/mcp-01.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+  <img src="image/mcp-02.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+  <img src="image/mcp-03.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+  <img src="image/mcp-04.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+</div>
+
 #### 管理端
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
   <img src="image/02.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
@@ -207,13 +215,6 @@
 
 ###  开发计划
 
-- 智能体管理
-
-通过设置提示词、插件、知识库等，用户可以快速构建一个AI应用。这将极大地简化AI应用的开发流程，降低开发门槛，使更多企业能够轻松地利用AI技术。
-<div>
-  <img src="image/13.png" alt="drawing" width="600px" height="300px"/>
-</div>
-
 - 流程编排
 
 通过流程编排功能，用户可以将不同的模型按照业务逻辑进行有序连接。这将解决单一模型能力不足的问题，充分发挥多个模型的协同作用，从而更好地满足企业的复杂业务需求。
@@ -265,18 +266,6 @@
 
 
 ### 附：技术讨论群
-
-#### 氛围积极、拥抱AI
-- wx交流群
-<div>
-  <img src="image/wx-msg.png" alt="drawing" width="600px" height="300px"/>
-  <img src="image/wx-msg2.png" alt="drawing" width="600px" height="300px"/>
-</div>
-
-- qq交流群
-<div>
-  <img src="image/qq-msg.png" alt="drawing" width="600px" height="300px"/>
-</div>
 
 #### 全面开放，欢迎加入
 🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
