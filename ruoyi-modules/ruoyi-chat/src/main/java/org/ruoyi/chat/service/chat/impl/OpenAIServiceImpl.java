@@ -62,7 +62,7 @@ public class OpenAIServiceImpl implements IChatService {
     public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
         String toolString = webMcpChat(chatRequest.getPrompt());
 
-        Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.ASSISTANT).build();
+        Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
         List<Message> messages = chatRequest.getMessages();
         messages.add(userMessage);
 

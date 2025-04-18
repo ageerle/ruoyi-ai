@@ -144,7 +144,9 @@ public class SseServiceImpl implements ISseService {
         String sysPrompt = chatModelVo.getSystemPrompt();
         if(StringUtils.isEmpty(sysPrompt)){
             sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
-                    "当前时间："+ DateUtils.getDate();
+                    "当前时间："+ DateUtils.getDate()+
+                    "#注意：回复之前注意结合上下文内容。 ";
+
         }
         // 设置系统默认提示词
         Message sysMessage = Message.builder().content(sysPrompt).role(Message.Role.SYSTEM).build();

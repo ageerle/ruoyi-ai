@@ -7,6 +7,16 @@
         "@modelcontextprotocol/server-filesystem",
         "D:\\software"
       ]
+    },
+    "search1api": {
+      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "args": [
+        "-y",
+        "search1api-mcp"
+      ],
+      "env": {
+        "SEARCH1API_KEY": "92A3D8F1-9BFA-485A-90E9-7680914CB666"
+      }
     }
   }
 }
