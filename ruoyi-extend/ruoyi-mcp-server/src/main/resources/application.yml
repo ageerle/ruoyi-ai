@@ -1,0 +1,10 @@
+server:
+  port: 8081
+spring:
+  ai:
+    mcp:
+      server:
+        name: ruoyi-mcp-serve
+        version: 1.0.0
+
+
