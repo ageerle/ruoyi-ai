@@ -5,7 +5,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "D:\\test"
+        "D:\\"
       ]
     },
     "search1api": {
@@ -15,7 +15,7 @@
         "search1api-mcp"
       ],
       "env": {
-        "SEARCH1API_KEY": "92A3D8F1-9BFA-485A-90E9-7680914CB666"
+        "SEARCH1API_KEY": "xx"
       }
     }
   }
