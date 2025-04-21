@@ -20,6 +20,7 @@ import java.util.List;
 @Service
 @Slf4j
 public class OpenAIServiceImpl implements IChatService {
+
     @Autowired
     private OpenAiStreamClient openAiStreamClient;
 

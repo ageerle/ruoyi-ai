@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.core.page.TableDataInfo;
@@ -31,10 +32,13 @@ import org.ruoyi.common.log.enums.BusinessType;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/system/chatConfig")
+@RequestMapping("/chat/config")
 public class ChatConfigController extends BaseController {
 
     private final IChatConfigService chatConfigService;
+
+
+    private final ConfigService configService;
 
     /**
      * 查询配置信息列表
@@ -102,4 +106,24 @@ public class ChatConfigController extends BaseController {
                           @PathVariable Long[] ids) {
         return toAjax(chatConfigService.deleteWithValidByIds(List.of(ids), true));
     }
+
+    /**
+     * 根据参数键名查询系统参数值
+     *
+     * @param configKey 参数Key
+     */
+    @GetMapping(value = "/configKey/{configKey}")
+    public R<String> getConfigKey(@PathVariable String configKey) {
+        return R.ok(configService.getConfigValue("sys",configKey));
+    }
+
+    /**
+     * 查询系统参数
+     *
+     */
+    @GetMapping(value = "/sysConfigKey")
+    public R<List<ChatConfigVo>> getSysConfigKey() {
+        return R.ok(chatConfigService.getSysConfigValue("sys"));
+    }
+
 }

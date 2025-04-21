@@ -129,4 +129,18 @@ public class ChatConfigServiceImpl implements ConfigService, IChatConfigService 
         return baseMapper.deleteBatchIds(ids) > 0;
     }
 
+    /**
+     * 根据配置类型和配置key获取值
+     *
+     * @param category
+     * @return
+     */
+    @Override
+    public List<ChatConfigVo> getSysConfigValue(String category) {
+        ChatConfigBo bo = new ChatConfigBo();
+        bo.setCategory(category);
+        LambdaQueryWrapper<ChatConfig> lqw = buildQueryWrapper(bo);
+        return baseMapper.selectVoList(lqw);
+    }
+
 }

@@ -9,13 +9,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.domain.vo.KnowledgeAttachVo;
+import org.ruoyi.mapper.KnowledgeFragmentMapper;
 import org.springframework.stereotype.Service;
 import org.ruoyi.domain.bo.KnowledgeAttachBo;
 
 import org.ruoyi.domain.KnowledgeAttach;
 import org.ruoyi.mapper.KnowledgeAttachMapper;
 import org.ruoyi.service.IKnowledgeAttachService;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -31,6 +34,7 @@ import java.util.Collection;
 public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
     private final KnowledgeAttachMapper baseMapper;
+    private final KnowledgeFragmentMapper fragmentMapper;
 
     /**
      * 查询知识库附件
@@ -110,5 +114,65 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    @Override
+    public void removeKnowledgeAttach(String docId) {
+        Map<String,Object> map = new HashMap<>();
+        map.put("doc_id",docId);
+        baseMapper.deleteByMap(map);
+        fragmentMapper.deleteByMap(map);
+    }
+
+    @Override
+    public String translationByFile(MultipartFile file, String targetLanguage) {
+        /*String fileName = file.getOriginalFilename();
+        String docType = fileName.substring(fileName.lastIndexOf(".")+1);
+        String content = "";
+        ResourceLoader resourceLoader = resourceLoaderFactory.getLoaderByFileType(docType);
+        try {
+            content = resourceLoader.getContent(file.getInputStream());
+        } catch (IOException e) {
+            throw new BaseException("该文件类型暂不支持！");
+        }
+        // 翻译模型固定为gpt-4o-mini
+        String model = "gpt-4o-mini";
+        ChatMessageBo chatMessageBo = new ChatMessageBo();
+        chatMessageBo.setUserId(getUserId());
+        chatMessageBo.setModelName(model);
+        chatMessageBo.setContent(content);
+        chatMessageBo.setDeductCost(0.01);
+        chatMessageBo.setTotalTokens(0);
+        OpenAiStreamClient openAiStreamClient = chatConfig.getOpenAiStreamClient();
+        List<Message> messageList = new ArrayList<>();
+        Message sysMessage = Message.builder().role(Message.Role.SYSTEM).content("你是一位精通各国语言的翻译大师\n" +
+            "\n" +
+            "请将用户输入词语翻译成{" + targetLanguage + "}\n" +
+            "\n" +
+            "==示例输出==\n" +
+            "**原文** : <这里显示要翻译的原文信息>\n" +
+            "**翻译** : <这里显示翻译之后的结果>\n" +
+            "**总结** : <这里是对关键信息一个总结>\n" +
+            "**提取的关键信息** : <这里返回关键信息>\n" +
+            "==示例结束==\n" +
+            "\n" +
+            "注意：请严格按示例进行输出，返回markdown格式").build();
+        messageList.add(sysMessage);
+        Message message = Message.builder().role(Message.Role.USER).content(content).build();
+        messageList.add(message);
+        ChatCompletionResponse chatCompletionResponse = null;
+        try {
+            ChatCompletion chatCompletion = ChatCompletion
+                .builder()
+                .messages(messageList)
+                .model(model)
+                .stream(false)
+                .build();
+            chatCompletionResponse = openAiStreamClient.chatCompletion(chatCompletion);
+        }catch (Exception e) {
+            throw new BaseException("调用大模型失败，请检查密钥是否正确！");
+        }
+        return chatCompletionResponse.getChoices().get(0).getMessage().getContent().toString();*/
+        return "接口开发中!";
     }
 }

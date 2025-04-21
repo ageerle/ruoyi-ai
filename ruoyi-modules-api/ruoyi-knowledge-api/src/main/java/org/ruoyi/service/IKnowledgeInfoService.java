@@ -2,6 +2,7 @@ package org.ruoyi.service;
 
 
 import org.ruoyi.domain.bo.KnowledgeInfoBo;
+import org.ruoyi.domain.bo.KnowledgeInfoUploadBo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.core.page.PageQuery;
@@ -46,4 +47,19 @@ public interface IKnowledgeInfoService {
      * 校验并批量删除知识库信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 新增知识库
+     */
+    void saveOne(KnowledgeInfoBo bo);
+
+    /**
+     * 删除知识库
+     */
+    void removeKnowledge(String id);
+
+    /**
+     * 上传附件
+     */
+    void upload(KnowledgeInfoUploadBo bo);
 }

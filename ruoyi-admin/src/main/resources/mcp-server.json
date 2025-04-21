@@ -5,7 +5,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "D:\\software"
+        "D:\\test"
       ]
     },
     "search1api": {

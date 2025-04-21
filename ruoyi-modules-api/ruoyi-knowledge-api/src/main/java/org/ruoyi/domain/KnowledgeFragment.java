@@ -45,7 +45,7 @@ public class KnowledgeFragment extends BaseEntity {
     /**
      * 片段索引下标
      */
-    private Long idx;
+    private Integer idx;
 
     /**
      * 文档内容

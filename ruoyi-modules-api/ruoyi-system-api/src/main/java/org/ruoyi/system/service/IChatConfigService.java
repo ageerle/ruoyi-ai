@@ -46,4 +46,10 @@ public interface IChatConfigService {
      * 校验并批量删除配置信息信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+
+    /**
+     * 查询系统参数
+     */
+    List<ChatConfigVo> getSysConfigValue(String category);
 }

@@ -5,6 +5,7 @@ import org.ruoyi.domain.bo.KnowledgeAttachBo;
 import org.ruoyi.domain.vo.KnowledgeAttachVo;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.core.page.PageQuery;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 import java.util.List;
@@ -46,4 +47,17 @@ public interface IKnowledgeAttachService {
      * 校验并批量删除知识库附件信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 删除知识附件
+     */
+    void removeKnowledgeAttach(String docId);
+
+    /**
+     * 翻译文件
+     *
+     * @param file 文件
+     * @param targetLanguage 目标语音
+     */
+    String translationByFile(MultipartFile file, String targetLanguage);
 }
