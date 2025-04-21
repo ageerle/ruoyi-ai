@@ -2,8 +2,6 @@ package org.ruoyi.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSONUtil;
-import me.chanjar.weixin.common.error.WxErrorException;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.EmailLoginBody;
@@ -16,18 +14,17 @@ import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.tenant.helper.TenantHelper;
-import org.ruoyi.system.domain.bo.SysTenantBo;
-import org.ruoyi.system.domain.vo.LoginTenantVo;
-import org.ruoyi.system.domain.vo.SysTenantVo;
-import org.ruoyi.system.domain.vo.TenantListVo;
-import org.ruoyi.system.service.ISysTenantService;
-
-import org.ruoyi.system.service.SysLoginService;
-import org.ruoyi.system.service.SysRegisterService;
-import org.ruoyi.system.domain.vo.LoginVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.system.domain.bo.SysTenantBo;
+import org.ruoyi.system.domain.vo.LoginTenantVo;
+import org.ruoyi.system.domain.vo.LoginVo;
+import org.ruoyi.system.domain.vo.SysTenantVo;
+import org.ruoyi.system.domain.vo.TenantListVo;
+import org.ruoyi.system.service.ISysTenantService;
+import org.ruoyi.system.service.SysLoginService;
+import org.ruoyi.system.service.SysRegisterService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,15 +47,6 @@ public class AuthController {
     private final SysRegisterService registerService;
     private final ISysTenantService tenantService;
 
-
-    @PostMapping("/xcxLogin")
-    public R<LoginVo> login(@Validated @RequestBody String xcxCode) throws WxErrorException {
-
-        String openidFromCode = loginService.getOpenidFromCode((String) JSONUtil.parseObj(xcxCode).get("xcxCode"));
-        LoginVo loginVo = loginService.mpLogin(openidFromCode);
-            return R.ok(loginVo);
-    }
-
     /**
      * 登录方法
      *
@@ -75,7 +63,6 @@ public class AuthController {
                 body.getUsername(), body.getPassword(),
                 body.getCode(), body.getUuid());
         loginVo.setToken(token);
-        loginVo.setAccess_token(token);
         loginVo.setUserInfo(LoginHelper.getLoginUser());
         return R.ok(loginVo);
     }
@@ -97,7 +84,6 @@ public class AuthController {
 
     /**
      * 访客登录
-     *
      * @param loginBody 登录信息
      * @return token信息
      */
@@ -136,7 +122,7 @@ public class AuthController {
      */
     @PostMapping("/register")
     public R<Void> register(@Validated @RequestBody RegisterBody user, HttpServletRequest request) {
-        String domainName = request.getServerName();
+        String domainName =  request.getServerName();
         user.setDomainName(domainName);
         registerService.register(user);
         return R.ok();

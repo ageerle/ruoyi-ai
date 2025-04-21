@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import annotation.idempotent.common.org.ruoyi.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
@@ -21,7 +21,7 @@ import ${packageName}.domain.vo.${ClassName}Vo;
 import ${packageName}.domain.bo.${ClassName}Bo;
 import ${packageName}.service.I${ClassName}Service;
 #if($table.crud || $table.sub)
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.core.page.TableDataInfo;
 #elseif($table.tree)
 #end
 

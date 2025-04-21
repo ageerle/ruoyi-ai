@@ -23,7 +23,6 @@ public class PayInit {
     private PayConfig payConfig;
 
     @Bean
-    @Scope("singleton")
     public PayConfig payConfig() {
         if (payConfig == null) {
             payConfig = new PayConfig();
@@ -32,7 +31,6 @@ public class PayInit {
         return payConfig;
     }
 
-    @Scheduled(fixedDelay = 10000)  // 每10秒检查一次
     public void updatePayConfig() {
         payConfig.setType("wxpay");
         payConfig.setDevice("pc");

@@ -25,10 +25,9 @@ spring:
         master:
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://43.139.70.230:3306/ruoyi-ai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
-          username: ruoyi-ai
-          password: ruoyi-ai
-
+          url: jdbc:mysql://43.139.70.230:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+          username: ry-vue
+          password: xx
 
       hikari:
         # 最大连接池数量
@@ -61,9 +60,6 @@ spring.data:
     # password: 123456
     # 连接超时时间
     timeout: 10S
-    # 是否开启ssl
-    ssl: false
-
 redisson:
   # redis key前缀
   keyPrefix:
@@ -97,3 +93,4 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
+

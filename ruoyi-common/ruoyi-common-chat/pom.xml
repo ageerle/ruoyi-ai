@@ -18,6 +18,10 @@
 
     <properties>
         <retrofit2.version>2.9.0</retrofit2.version>
+        <azure.version>1.0.0-beta.12</azure.version>
+        <chatglm.version>release-V4-2.3.0</chatglm.version>
+        <okhttp.version>2.7.5</okhttp.version>
+        <jtokkit.version>0.5.0</jtokkit.version>
     </properties>
 
     <dependencies>
@@ -26,38 +30,22 @@
             <artifactId>ruoyi-common-core</artifactId>
         </dependency>
 
+        <!-- 序列化模块 -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-json</artifactId>
+        </dependency>
+
+        <!-- redis模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-ai-openai</artifactId>
-            <version>1.0.0-beta.12</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.github.ollama4j</groupId>
-            <artifactId>ollama4j</artifactId>
-            <version>1.0.79</version>
-        </dependency>
-
-        <!-- 序列化模块 -->
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-json</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-redis</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-satoken</artifactId>
+            <version>${azure.version}</version>
         </dependency>
 
         <dependency>
@@ -79,13 +67,7 @@
         <dependency>
             <groupId>com.knuddels</groupId>
             <artifactId>jtokkit</artifactId>
-            <version>0.5.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>5.8.12</version>
+            <version>${jtokkit.version}</version>
         </dependency>
 
         <dependency>
@@ -98,21 +80,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>cn.bigmodel.openapi</groupId>
             <artifactId>oapi-java-sdk</artifactId>
-            <version>release-V4-2.3.0</version>
+            <version>${chatglm.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.squareup.okhttp</groupId>
             <artifactId>okhttp</artifactId>
-            <version>2.7.5</version>
-            <scope>compile</scope>
+            <version>${okhttp.version}</version>
         </dependency>
+
     </dependencies>
 </project>

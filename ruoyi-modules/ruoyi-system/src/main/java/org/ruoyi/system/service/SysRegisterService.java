@@ -37,7 +37,7 @@ public class SysRegisterService {
 
     private final SysUserRoleMapper userRoleMapper;
 
-    private final ConfigService configService;
+   // private final ConfigService configService;
     /**
      * 注册
      */
@@ -61,12 +61,9 @@ public class SysRegisterService {
         if (!userService.checkUserNameUnique(sysUser)) {
             throw new UserException("添加用户失败", username);
         }
-        String configValue = configService.getConfigValue("mail", "amount");
+        // String configValue = configService.getConfigValue("mail", "amount");
 
-
-
-        // 设置默认余额
-        sysUser.setUserBalance(NumberUtils.toDouble(configValue,1));
+        sysUser.setUserBalance(NumberUtils.toDouble("configValue",1));
         SysUser user = userService.registerUser(sysUser, tenantId);
         if (user == null) {
             throw new UserException("用户注册失败!");

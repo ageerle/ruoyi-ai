@@ -3,7 +3,7 @@ package org.ruoyi.common.wechat.web.enums;
 import com.jfinal.plugin.activerecord.Record;
 
 import java.util.*;
-public enum KeyMsgValueType {
+public enum  KeyMsgValueType {
 
     IMG("IMG", "图片"),
     FILE("FILE", "文件"),

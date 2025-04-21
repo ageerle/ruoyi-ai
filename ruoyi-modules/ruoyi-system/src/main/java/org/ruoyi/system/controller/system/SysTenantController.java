@@ -16,13 +16,14 @@ import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.system.domain.bo.SysTenantBo;
 import org.ruoyi.system.domain.vo.SysTenantVo;
 import org.ruoyi.system.service.ISysTenantService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +38,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/system/tenant")
+@ConditionalOnProperty(value = "tenant.enable", havingValue = "true")
 public class SysTenantController extends BaseController {
 
     private final ISysTenantService tenantService;
@@ -56,7 +58,7 @@ public class SysTenantController extends BaseController {
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:export")
-    @Log(title = "租户", businessType = BusinessType.EXPORT)
+    @Log(title = "租户管理", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(SysTenantBo bo, HttpServletResponse response) {
         List<SysTenantVo> list = tenantService.queryList(bo);
@@ -79,9 +81,10 @@ public class SysTenantController extends BaseController {
     /**
      * 新增租户
      */
+    //@ApiEncrypt
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:add")
-    @Log(title = "租户", businessType = BusinessType.INSERT)
+    @Log(title = "租户管理", businessType = BusinessType.INSERT)
     @Lock4j
     @RepeatSubmit()
     @PostMapping()
@@ -97,7 +100,7 @@ public class SysTenantController extends BaseController {
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:edit")
-    @Log(title = "租户", businessType = BusinessType.UPDATE)
+    @Log(title = "租户管理", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody SysTenantBo bo) {
@@ -113,7 +116,7 @@ public class SysTenantController extends BaseController {
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:edit")
-    @Log(title = "租户", businessType = BusinessType.UPDATE)
+    @Log(title = "租户管理", businessType = BusinessType.UPDATE)
     @PutMapping("/changeStatus")
     public R<Void> changeStatus(@RequestBody SysTenantBo bo) {
         tenantService.checkTenantAllowed(bo.getTenantId());
@@ -127,7 +130,7 @@ public class SysTenantController extends BaseController {
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:remove")
-    @Log(title = "租户", businessType = BusinessType.DELETE)
+    @Log(title = "租户管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {
@@ -142,7 +145,7 @@ public class SysTenantController extends BaseController {
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @GetMapping("/dynamic/{tenantId}")
     public R<Void> dynamicTenant(@NotBlank(message = "租户ID不能为空") @PathVariable String tenantId) {
-        TenantHelper.setDynamic(tenantId);
+        TenantHelper.setDynamic(tenantId, true);
         return R.ok();
     }
 
@@ -165,10 +168,25 @@ public class SysTenantController extends BaseController {
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:edit")
-    @Log(title = "租户", businessType = BusinessType.UPDATE)
+    @Log(title = "租户管理", businessType = BusinessType.UPDATE)
     @GetMapping("/syncTenantPackage")
-    public R<Void> syncTenantPackage(@NotBlank(message = "租户ID不能为空") String tenantId, @NotBlank(message = "套餐ID不能为空") String packageId) {
+    public R<Void> syncTenantPackage(@NotBlank(message = "租户ID不能为空") String tenantId,
+                                     @NotNull(message = "套餐ID不能为空") Long packageId) {
         return toAjax(TenantHelper.ignore(() -> tenantService.syncTenantPackage(tenantId, packageId)));
+    }
+
+    /**
+     * 同步租户字典
+     */
+    @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
+    @Log(title = "租户管理", businessType = BusinessType.INSERT)
+    @GetMapping("/syncTenantDict")
+    public R<Void> syncTenantDict() {
+        if (!TenantHelper.isEnable()) {
+            return R.fail("当前未开启租户模式");
+        }
+        tenantService.syncTenantDict();
+        return R.ok("同步租户字典成功");
     }
 
 }

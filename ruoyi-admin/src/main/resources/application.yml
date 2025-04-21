@@ -49,8 +49,10 @@ server:
 # 日志配置
 logging:
   level:
-    org.ruoyi: @logging.level@
+    org.dromara: @logging.level@
     org.springframework: warn
+    org.mybatis.spring.mapper: error
+    org.apache.fury: warn
   config: classpath:logback-plus.xml
 
 # 用户配置
@@ -318,5 +320,19 @@ wechat:
         token:   ''
         aesKey: ''
 
-
+spring:
+  ai:
+    openai:
+      api-key: sk-xxx
+      base-url: https://api.pandarobot.chat/
+    mcp:
+      client:
+        enabled: true
+        name: ruoyi-ai-mcp
+        sse:
+          connections:
+            server:
+              url: http://127.0.0.1:8081
+        stdio:
+          servers-configuration: classpath:mcp-server.json
 

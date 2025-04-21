@@ -8,7 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <select id="selectDbTableColumnsByName" parameterType="String" resultMap="GenTableColumnResult">
-        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isMySql()">
+        <if test="@org.ruoyi.helper.DataBaseHelper@isMySql()">
             select column_name,
                    (case when (is_nullable = 'no' <![CDATA[ && ]]> column_key != 'PRI') then '1' else null end) as is_required,
                    (case when column_key = 'PRI' then '1' else '0' end) as is_pk,
@@ -19,7 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             from information_schema.columns where table_schema = (select database()) and table_name = (#{tableName})
             order by ordinal_position
         </if>
-        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isOracle()">
+        <if test="@org.ruoyi.helper.DataBaseHelper@isOracle()">
             select lower(temp.column_name) as column_name,
                     (case when (temp.nullable = 'N'  and  temp.constraint_type != 'P') then '1' else null end) as is_required,
                     (case when temp.constraint_type = 'P' then '1' else '0' end) as is_pk,
@@ -39,7 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             WHERE temp.row_flg = 1
             ORDER BY temp.column_id
         </if>
-        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isPostgerSql()">
+        <if test="@org.ruoyi.helper.DataBaseHelper@isPostgerSql()">
             SELECT column_name, is_required, is_pk, sort, column_comment, is_increment, column_type
             FROM (
                 SELECT c.relname AS table_name,
@@ -73,7 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             WHERE table_name = (#{tableName})
                 AND column_type <![CDATA[ <> ]]> '-'
         </if>
-        <if test="@org.ruoyi.common.mybatis.helper.DataBaseHelper@isSqlServer()">
+        <if test="@org.ruoyi.helper.DataBaseHelper@isSqlServer()">
             SELECT
                 cast(A.NAME as nvarchar) as column_name,
                 cast(B.NAME as nvarchar) + (case when B.NAME = 'numeric' then '(' + cast(A.prec as nvarchar) + ',' + cast(A.scale as nvarchar) + ')' else '' end) as column_type,

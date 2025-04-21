@@ -8,9 +8,11 @@
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
+
     <artifactId>ruoyi-common-wechat</artifactId>
     <version>1.0.0</version>
     <description>ruoyi-common-wechat 微信服务</description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -21,6 +23,7 @@
             <artifactId>jfinal</artifactId>
             <version>3.5</version>
         </dependency>
+
         <dependency>
             <groupId>com.jfinal</groupId>
             <artifactId>cos</artifactId>
@@ -44,16 +47,19 @@
             <artifactId>emoji-java</artifactId>
             <version>3.2.0</version>
         </dependency>
+
         <dependency>
             <groupId>javax.activation</groupId>
             <artifactId>activation</artifactId>
             <version>1.1.1</version>
         </dependency>
+
         <dependency>
             <groupId>net.mamoe</groupId>
             <artifactId>mirai-core-jvm</artifactId>
             <version>2.16.0</version>
         </dependency>
+
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-json</artifactId>
@@ -64,5 +70,6 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.31</version>
         </dependency>
+
     </dependencies>
 </project>

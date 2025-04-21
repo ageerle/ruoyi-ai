@@ -36,20 +36,6 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
         String url = request.getMethod() + " " + request.getRequestURI();
         String domainName =  request.getServerName();
         log.info("域名信息：{}",domainName);
-
-        String requestURI = request.getRequestURI();
-        List<String> urls = whitelistUrls();
-        boolean isWhitelisted = urls.stream().anyMatch(requestURI::startsWith);
-
-        if (!isWhitelisted){
-            // 根据授权编号查询激活状态
-//            ConfigService configService = SpringUtils.context().getBean(ConfigService.class);
-//            String authNo = configService.getConfigValue("sys", "authcode");
-//            if(!configService.checkAuth(authNo,domainName)){
-//                throw new BaseException("系统未激活,请联系管理员授权");
-//            }
-        }
-
         // 打印请求参数
         if (isJsonRequest(request)) {
             String jsonParam = "";
@@ -67,7 +53,6 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
                 log.debug("[PLUS]开始请求 => URL[{}],无参数", url);
             }
         }
-
         StopWatch stopWatch = new StopWatch();
         invokeTimeTL.set(stopWatch);
         stopWatch.start();
@@ -98,16 +83,5 @@ public class PlusWebInvokeTimeInterceptor implements HandlerInterceptor {
             return StringUtils.startsWithIgnoreCase(contentType, MediaType.APPLICATION_JSON_VALUE);
         }
         return false;
-    }
-
-    // 授权白名单
-    public List<String> whitelistUrls() {
-        return Arrays.asList(
-            "/chat/config",
-            "/pay",
-            "/weixin",
-            "/user/qrcode",
-            "/user/login/qrcode"
-        );
     }
 }

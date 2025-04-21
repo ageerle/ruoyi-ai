@@ -42,10 +42,11 @@
             <artifactId>mssql-jdbc</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-doc</artifactId>
-        </dependency>
+        <!--  demo模块  -->
+<!--        <dependency>-->
+<!--            <groupId>org.ruoyi</groupId>-->
+<!--            <artifactId>ruoyi-demo</artifactId>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.ruoyi</groupId>
@@ -55,41 +56,6 @@
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-chat</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-knowledge</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-generator</artifactId>
-        </dependency>
-
-        <!--  demo模块  -->
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-demo</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- 添加thumbnailator依赖 -->
-        <dependency>
-            <groupId>net.coobird</groupId>
-            <artifactId>thumbnailator</artifactId>
-            <version>0.4.11</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.ollama4j</groupId>
-            <artifactId>ollama4j</artifactId>
-            <version>1.0.79</version>
-            <scope>compile</scope>
         </dependency>
 
     </dependencies>

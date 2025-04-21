@@ -10,7 +10,7 @@ import org.ruoyi.generator.domain.GenTableColumn;
 import org.ruoyi.common.core.utils.DateUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.json.utils.JsonUtils;
-import org.ruoyi.common.mybatis.helper.DataBaseHelper;
+import org.ruoyi.helper.DataBaseHelper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.velocity.VelocityContext;
