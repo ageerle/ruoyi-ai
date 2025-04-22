@@ -73,7 +73,7 @@ public class SseServiceImpl implements ISseService {
     public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
         SseEmitter sseEmitter = new SseEmitter();
         try {
-            // 构建消息列表增加联网、知识库等内容
+            // 构建消息列表
             buildChatMessageList(chatRequest);
             if (!StpUtil.isLogin()) {
                 // 未登录用户限制对话次数
@@ -145,7 +145,7 @@ public class SseServiceImpl implements ISseService {
         if(StringUtils.isEmpty(sysPrompt)){
             sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
                     "当前时间："+ DateUtils.getDate()+
-                    "#注意：回复之前注意结合上下文内容。 ";
+                    "#注意：回复之前注意结合上下文和工具返回内容。";
 
         }
         // 设置系统默认提示词
