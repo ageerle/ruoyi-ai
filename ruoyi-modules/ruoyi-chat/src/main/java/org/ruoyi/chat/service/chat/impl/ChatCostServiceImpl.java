@@ -61,7 +61,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             chatMessageBo.setUserId(getUserId());
         }
         // 计算总token数
-        ChatToken chatToken = chatTokenService.queryByUserId(getUserId(), modelName);
+        ChatToken chatToken = chatTokenService.queryByUserId(chatMessageBo.getUserId(), modelName);
         if (chatToken == null) {
             chatToken = new ChatToken();
             chatToken.setToken(0);
@@ -75,17 +75,17 @@ public class ChatCostServiceImpl implements IChatCostService {
             if (token2 > 0) {
                 // 保存剩余tokens
                 chatToken.setModelName(modelName);
-                chatToken.setUserId(getUserId());
+                chatToken.setUserId(chatMessageBo.getUserId());
                 chatToken.setToken(token2);
                 chatTokenService.editToken(chatToken);
             } else {
-                chatTokenService.resetToken(getUserId(), modelName);
+                chatTokenService.resetToken(chatMessageBo.getUserId(), modelName);
             }
             ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
             double cost = chatModelVo.getModelPrice();
             if (BillingType.TIMES.getCode().equals(chatModelVo.getModelType())) {
                 // 按次数扣费
-                deductUserBalance(getUserId(), cost);
+                deductUserBalance(chatMessageBo.getUserId(), cost);
                 chatMessageBo.setDeductCost(cost);
             }else {
                 // 按token扣费
@@ -95,7 +95,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             }
             chatMessageBo.setContent(chatRequest.getPrompt());
         } else {
-            deductUserBalance(getUserId(), 0.0);
+            deductUserBalance(chatMessageBo.getUserId(), 0.0);
             chatMessageBo.setDeductCost(0d);
             chatMessageBo.setRemark("不满1kToken,计入下一次!");
             chatToken.setToken(totalTokens);
