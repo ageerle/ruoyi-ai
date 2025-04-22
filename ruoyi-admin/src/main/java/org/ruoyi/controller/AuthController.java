@@ -63,6 +63,8 @@ public class AuthController {
                 body.getUsername(), body.getPassword(),
                 body.getCode(), body.getUuid());
         loginVo.setToken(token);
+        // 兼容后台管理登录
+        loginVo.setAccess_token(token);
         loginVo.setUserInfo(LoginHelper.getLoginUser());
         return R.ok(loginVo);
     }
