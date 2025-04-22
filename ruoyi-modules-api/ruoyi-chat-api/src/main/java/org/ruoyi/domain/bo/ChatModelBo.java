@@ -65,7 +65,6 @@ public class ChatModelBo extends BaseEntity {
     /**
      * 系统提示词
      */
-    @NotBlank(message = "系统提示词不能为空", groups = { AddGroup.class, EditGroup.class })
     private String systemPrompt;
 
     /**
