@@ -21,7 +21,7 @@ import jakarta.validation.constraints.*;
 public class KnowledgeInfoBo extends BaseEntity {
 
     /**
-     *
+     *  主键
      */
     @NotNull(message = "不能为空", groups = { EditGroup.class })
     private Long id;
@@ -29,13 +29,13 @@ public class KnowledgeInfoBo extends BaseEntity {
     /**
      * 知识库ID
      */
-    @NotBlank(message = "知识库ID不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "知识库ID不能为空", groups = {EditGroup.class })
     private String kid;
 
     /**
      * 用户ID
      */
-    @NotNull(message = "用户ID不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "用户ID不能为空", groups = {EditGroup.class })
     private Long uid;
 
     /**
@@ -53,25 +53,21 @@ public class KnowledgeInfoBo extends BaseEntity {
     /**
      * 描述
      */
-    @NotBlank(message = "描述不能为空", groups = { AddGroup.class, EditGroup.class })
     private String description;
 
     /**
      * 知识分隔符
      */
-    @NotBlank(message = "知识分隔符不能为空", groups = { AddGroup.class, EditGroup.class })
     private String knowledgeSeparator;
 
     /**
      * 提问分隔符
      */
-    @NotBlank(message = "提问分隔符不能为空", groups = { AddGroup.class, EditGroup.class })
     private String questionSeparator;
 
     /**
      * 重叠字符数
      */
-    @NotNull(message = "重叠字符数不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long overlapChar;
 
     /**
@@ -101,8 +97,6 @@ public class KnowledgeInfoBo extends BaseEntity {
     /**
      * 备注
      */
-    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
-
 
 }
