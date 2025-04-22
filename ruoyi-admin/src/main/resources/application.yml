@@ -327,7 +327,7 @@ spring:
       base-url: https://api.pandarobot.chat/
     mcp:
       client:
-        enabled: true
+        enabled: false
         name: ruoyi-ai-mcp
         sse:
           connections:
