@@ -2,12 +2,15 @@ package org.ruoyi.chat.service.chat.impl;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.chat.config.ChatConfig;
 import org.ruoyi.chat.listener.SSEEventSourceListener;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
 import org.ruoyi.common.chat.request.ChatRequest;
+import org.ruoyi.domain.vo.ChatModelVo;
+import org.ruoyi.service.IChatModelService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -22,6 +25,8 @@ import java.util.List;
 public class OpenAIServiceImpl implements IChatService {
 
     @Autowired
+    private IChatModelService chatModelService;
+
     private OpenAiStreamClient openAiStreamClient;
 
     private final ChatClient chatClient;
@@ -36,6 +41,8 @@ public class OpenAIServiceImpl implements IChatService {
 
     @Override
     public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+        openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
         String toolString = mcpChat(chatRequest.getPrompt());
         Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
         List<Message> messages = chatRequest.getMessages();

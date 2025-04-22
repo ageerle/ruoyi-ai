@@ -71,7 +71,7 @@ public class SseServiceImpl implements ISseService {
 
     @Override
     public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
-        SseEmitter sseEmitter = new SseEmitter();
+        SseEmitter sseEmitter = new SseEmitter(0L);
         try {
             // 构建消息列表
             buildChatMessageList(chatRequest);
