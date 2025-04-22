@@ -53,7 +53,7 @@ public class OpenAiVectorizationImpl implements VectorizationService {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getVectorModel());
         String apiHost= chatModelVo.getApiHost();
         String apiKey= chatModelVo.getApiKey();
-        openAiStreamClient = chatConfig.createOpenAiStreamClient(apiHost,apiKey);
+        openAiStreamClient = ChatConfig.createOpenAiStreamClient(apiHost,apiKey);
         Embedding embedding = buildEmbedding(chunkList, knowledgeInfoVo);
         EmbeddingResponse embeddings = openAiStreamClient.embeddings(embedding);
         // 处理 OpenAI 返回的嵌入数据
