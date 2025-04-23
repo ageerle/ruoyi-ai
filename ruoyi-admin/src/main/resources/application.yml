@@ -323,11 +323,11 @@ wechat:
 spring:
   ai:
     openai:
-      api-key: sk-xxx
+      api-key: sk-xx
       base-url: https://api.pandarobot.chat/
     mcp:
       client:
-        enabled: false
+        enabled: true
         name: ruoyi-ai-mcp
         sse:
           connections:

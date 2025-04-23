@@ -75,12 +75,19 @@ public class ChatConfigController extends BaseController {
     /**
      * 新增配置信息
      */
-    @SaCheckPermission("system:config:add")
-    @Log(title = "配置信息", businessType = BusinessType.INSERT)
+    @SaCheckPermission("system:config:edit")
+    @Log(title = "新增或者修改配置信息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
-    @PostMapping()
-    public R<Void> add(@Validated(AddGroup.class) @RequestBody ChatConfigBo bo) {
-        return toAjax(chatConfigService.insertByBo(bo));
+    @PostMapping("/saveOrUpdate")
+    public R<Void> saveOrUpdate(@RequestBody List<ChatConfigBo> boList) {
+        for (ChatConfigBo chatConfigBo : boList) {
+            if(chatConfigBo.getId() == null){
+                chatConfigService.insertByBo(chatConfigBo);
+            }else {
+                chatConfigService.updateByBo(chatConfigBo);
+            }
+        }
+        return toAjax(true);
     }
 
     /**

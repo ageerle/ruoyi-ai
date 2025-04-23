@@ -46,6 +46,14 @@ public class ChatPackagePlanController extends BaseController {
     }
 
     /**
+     * 查询套餐列表-不分页
+     */
+    @GetMapping("/listPlan")
+    public R<List<ChatPackagePlanVo>> listPlan() {
+        return R.ok(chatPackagePlanService.queryList(new ChatPackagePlanBo()));
+    }
+
+    /**
      * 导出套餐管理列表
      */
     @SaCheckPermission("system:packagePlan:export")
