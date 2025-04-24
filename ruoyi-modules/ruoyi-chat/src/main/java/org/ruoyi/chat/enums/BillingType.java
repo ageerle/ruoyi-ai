@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum BillingType {
-    TOKEN("1", "token扣费"), // token扣费
-    TIMES("2", "次数扣费");   // 次数扣费
+    TOKEN("1", "token扣费"),
+    TIMES("2", "次数扣费");
 
     private final String code;
     private final String description;

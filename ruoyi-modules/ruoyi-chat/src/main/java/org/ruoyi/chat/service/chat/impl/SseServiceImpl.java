@@ -80,12 +80,11 @@ public class SseServiceImpl implements ISseService {
                 checkUnauthenticatedUserChatLimit(request);
             }else {
                 LocalCache.CACHE.put("userId", chatCostService.getUserId());
-
                 chatRequest.setUserId(chatCostService.getUserId());
                 // 保存消息记录 并扣除费用
                 chatCostService.deductToken(chatRequest);
             }
-            // 根据模型名称前缀调用不同的处理逻辑
+            // 根据模型分类调用不同的处理逻辑
             switchModelAndHandle(chatRequest,sseEmitter);
         } catch (Exception e) {
             log.error(e.getMessage(),e);
@@ -119,7 +118,6 @@ public class SseServiceImpl implements ISseService {
                 count++;
                 RedisUtils.setCacheObject(redisKey, count);
             }
-
     }
 
     /**
@@ -145,8 +143,7 @@ public class SseServiceImpl implements ISseService {
         if(StringUtils.isEmpty(sysPrompt)){
             sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
                     "当前时间："+ DateUtils.getDate()+
-                    "#注意：回复之前注意结合上下文和工具返回内容。";
-
+                    "#注意：回复之前注意结合上下文和工具返回内容进行回复。";
         }
         // 设置系统默认提示词
         Message sysMessage = Message.builder().content(sysPrompt).role(Message.Role.SYSTEM).build();

@@ -15,6 +15,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
@@ -28,6 +29,10 @@ public class OpenAIServiceImpl implements IChatService {
     private IChatModelService chatModelService;
 
     private OpenAiStreamClient openAiStreamClient;
+
+
+    @Value("${spring.ai.mcp.client.enabled}")
+    private Boolean enabled;
 
     private final ChatClient chatClient;
 
@@ -43,10 +48,12 @@ public class OpenAIServiceImpl implements IChatService {
     public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
-        String toolString = mcpChat(chatRequest.getPrompt());
-        Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
         List<Message> messages = chatRequest.getMessages();
-        messages.add(userMessage);
+        if (enabled) {
+            String toolString = mcpChat(chatRequest.getPrompt());
+            Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
+            messages.add(userMessage);
+        }
         SSEEventSourceListener listener = new SSEEventSourceListener(emitter);
         ChatCompletion completion = ChatCompletion
                 .builder()

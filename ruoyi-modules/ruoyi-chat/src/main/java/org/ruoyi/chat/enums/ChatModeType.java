@@ -4,9 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum ChatModeType {
-    OLLAMA("ollama", "本地部署模型"), // token扣费
-    CHAT("chat", "中转模型"),   // 次数扣费
-    VECTOR("vector", "知识库向量模型");   // 次数扣费
+    OLLAMA("ollama", "本地部署模型"),
+    CHAT("chat", "中转模型"),
+    VECTOR("vector", "知识库向量模型");
 
     private final String code;
     private final String description;
@@ -16,11 +16,4 @@ public enum ChatModeType {
         this.description = description;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 }
