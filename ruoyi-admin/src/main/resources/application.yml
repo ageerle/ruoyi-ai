@@ -335,4 +335,5 @@ spring:
               url: http://127.0.0.1:8081
         stdio:
           servers-configuration: classpath:mcp-server.json
+        request-timeout: 300s
 
