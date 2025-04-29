@@ -21,11 +21,8 @@ public class SSEUtil {
      * @param errorMessage 错误信息
      */
     public static void sendErrorEvent(ResponseBodyEmitter sseEmitter, String errorMessage) {
-        SseEmitter.SseEventBuilder event = SseEmitter.event()
-                .name("error")
-                .data(errorMessage);
         try {
-            sseEmitter.send(event);
+            sseEmitter.send(errorMessage);
         } catch (IOException e) {
             log.error("SSE发送失败: {}", e.getMessage());
         }

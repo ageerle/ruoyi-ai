@@ -12,6 +12,7 @@ import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
 import org.ruoyi.chat.service.chat.IChatCostService;
+import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.core.utils.SpringUtils;
@@ -84,10 +85,10 @@ public class SSEEventSourceListener extends EventSourceListener {
                     modelName = completionResponse.getModel();
                 }
                 stringBuffer.append(content);
-                emitter.send(content);
+                emitter.send(data);
             }
         } catch (Exception e) {
-            emitter.completeWithError(e);
+            log.error(e.getMessage(), e);
         }
     }
 

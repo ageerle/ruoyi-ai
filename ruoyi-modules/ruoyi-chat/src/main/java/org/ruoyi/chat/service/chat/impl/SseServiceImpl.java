@@ -11,6 +11,7 @@ import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.service.chat.ISseService;
 import org.ruoyi.chat.util.IpUtil;
+import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.config.LocalCache;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
@@ -88,7 +89,7 @@ public class SseServiceImpl implements ISseService {
             switchModelAndHandle(chatRequest,sseEmitter);
         } catch (Exception e) {
             log.error(e.getMessage(),e);
-            sseEmitter.completeWithError(e);
+            SSEUtil.sendErrorEvent(sseEmitter,e.getMessage());
         }
         return sseEmitter;
     }
