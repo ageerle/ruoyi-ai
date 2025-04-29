@@ -39,7 +39,6 @@ public class ChatGptsController extends BaseController {
     /**
      * 查询应用管理列表
      */
-    @SaCheckPermission("system:gpts:list")
     @GetMapping("/list")
     public TableDataInfo<ChatGptsVo> list(ChatGptsBo bo, PageQuery pageQuery) {
         return chatGptsService.queryPageList(bo, pageQuery);
