@@ -638,7 +638,7 @@ CREATE TABLE `sys_dept`  (
   `ancestors` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '祖级列表',
   `dept_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '部门名称',
   `order_num` int(4) NULL DEFAULT 0 COMMENT '显示顺序',
-  `leader` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负责人',
+  `leader` bigint(20) NULL DEFAULT NULL COMMENT '负责人',
   `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系电话',
   `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '邮箱',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '部门状态（0正常 1停用）',
@@ -654,23 +654,16 @@ CREATE TABLE `sys_dept`  (
 -- ----------------------------
 -- Records of sys_dept
 -- ----------------------------
-INSERT INTO `sys_dept` VALUES (100, '000000', 0, '0', '熊猫科技', 0, 'ageerle', '15888888888', 'ageerle@163.com', '0', '0', 103, 1, '2023-05-14 15:19:39', 1, '2023-12-29 11:18:24');
-INSERT INTO `sys_dept` VALUES (101, '000000', 100, '0,100', '深圳总公司', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (102, '000000', 100, '0,100', '长沙分公司', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (103, '000000', 101, '0,100,101', '研发部门', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (104, '000000', 101, '0,100,101', '市场部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (105, '000000', 101, '0,100,101', '测试部门', 3, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', 4, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', 5, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', 1, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', 2, '疯狂的狮子Li', '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (1903101865297752066, '000000', 103, '0,100,101,103', 'AA', 1, NULL, '18701676790', '1234@ss.com', '0', '0', 103, 1, '2025-03-21 23:10:17', 1, '2025-03-21 23:10:17');
-INSERT INTO `sys_dept` VALUES (1904430886174367746, '000000', 1903101865297752066, '0,100,101,103,1903101865297752066', '测试', 1, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-25 15:11:21', 1, '2025-03-25 15:11:21');
-INSERT INTO `sys_dept` VALUES (1904736932721893377, '000000', 101, '0,100,101', '研发部门2', 100, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-26 11:27:28', 1, '2025-03-26 11:27:28');
-INSERT INTO `sys_dept` VALUES (1905140221372309505, '000000', 1903101865297752066, '0,100,101,103,1903101865297752066', 'test', 1, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-27 14:09:59', 1, '2025-03-27 14:09:59');
-INSERT INTO `sys_dept` VALUES (1905554900431183874, '000000', 103, '0,100,101,103', '部门1', 5, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-28 17:37:46', 1, '2025-03-28 17:37:46');
-INSERT INTO `sys_dept` VALUES (1905849169498906626, '000000', 1903101865297752066, '0,100,101,103,1903101865297752066', '111111', 1, NULL, NULL, NULL, '0', '0', 103, 1, '2025-03-29 13:07:06', 1, '2025-03-29 13:07:06');
-
+INSERT INTO `sys_dept` VALUES (100, '000000', 0, '0', '熊猫科技', 0, 1, '15888888888', 'ageerle@163.com', '0', '0', 103, 1, '2023-05-14 15:19:39', 1, '2023-12-29 11:18:24');
+INSERT INTO `sys_dept` VALUES (101, '000000', 100, '0,100', '深圳总公司', 1, 1, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (102, '000000', 100, '0,100', '长沙分公司', 2, 1, '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (103, '000000', 101, '0,100,101', '研发部门', 1, 1, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (104, '000000', 101, '0,100,101', '市场部门', 2, 1, '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (105, '000000', 101, '0,100,101', '测试部门', 3, 1, '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', 4, 1, '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', 5, 1, '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', 1, 1, '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', 2, 1, '15888888888', 'xxx@qq.com', '0', '2', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
 -- ----------------------------
 -- Table structure for sys_dict_data
 -- ----------------------------
