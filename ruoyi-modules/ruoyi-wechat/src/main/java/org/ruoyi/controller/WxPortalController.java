@@ -1,4 +1,4 @@
-package org.ruoyi.controller.wxcplogin;
+package org.ruoyi.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.cp.api.WxCpService;

@@ -337,11 +337,11 @@
                 <version>${revision}</version>
             </dependency>
 
-<!--            <dependency>-->
-<!--                <groupId>org.ruoyi</groupId>-->
-<!--                <artifactId>ruoyi-demo</artifactId>-->
-<!--                <version>${revision}</version>-->
-<!--            </dependency>-->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-wechat</artifactId>
+                <version>${revision}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>
