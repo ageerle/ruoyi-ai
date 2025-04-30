@@ -14,8 +14,6 @@ import org.ruoyi.chat.util.IpUtil;
 import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.config.LocalCache;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
-import org.ruoyi.common.chat.entity.chat.ChatCompletion;
-import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
@@ -269,22 +267,6 @@ public class SseServiceImpl implements ISseService {
             e.printStackTrace();
         }
         return file;
-    }
-
-
-    @Override
-    public String wxCpChat(String prompt) {
-        List<Message> messageList = new ArrayList<>();
-        Message message = Message.builder().role(Message.Role.USER).content(prompt).build();
-        messageList.add(message);
-        ChatCompletion chatCompletion = ChatCompletion
-            .builder()
-            .messages(messageList)
-            .model("gpt-4o-mini")
-            .stream(false)
-            .build();
-        ChatCompletionResponse chatCompletionResponse = openAiStreamClient.chatCompletion(chatCompletion);
-        return chatCompletionResponse.getChoices().get(0).getMessage().getContent().toString();
     }
 
 }

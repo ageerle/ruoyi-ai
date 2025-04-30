@@ -48,11 +48,4 @@ public interface ISseService {
     UploadFileResponse upload(MultipartFile file);
 
 
-    /**
-     * 企业应用回复
-     * @param prompt 提示词
-     * @return 回复内容
-     */
-    String wxCpChat(String prompt);
-
 }
