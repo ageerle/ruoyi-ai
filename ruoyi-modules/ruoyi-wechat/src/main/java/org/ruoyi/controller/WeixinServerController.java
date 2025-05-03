@@ -9,7 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * @author https://www.wdbyte.com
+ * 企业微信应用
+ *
+ * @author ageerle
+ * @date 2025-05-03
  */
 @Slf4j
 @RestController

@@ -30,7 +30,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * @author ageer
+ * 知识库管理
+ *
+ * @author ageerle
+ * @date 2025-05-03
  */
 @Validated
 @RequiredArgsConstructor

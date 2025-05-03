@@ -11,6 +11,13 @@ import org.ruoyi.chat.domain.dto.TaskConditionDTO;
 import org.ruoyi.chat.util.MjOkHttpUtil;
 import org.springframework.web.bind.annotation.*;
 
+
+/**
+ * 绘画任务查询
+ *
+ * @author ageerle
+ * @date 2025-05-03
+ */
 @Api(tags = "任务查询")
 @RestController
 @RequestMapping("/mj/task")

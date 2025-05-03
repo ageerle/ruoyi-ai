@@ -15,9 +15,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.Optional;
 
+/**
+ * 绘画任务提交
+ *
+ * @author ageerle
+ * @date 2025-05-03
+ */
 @Api(tags = "任务提交")
 @RestController
 @RequestMapping("/mj/submit")

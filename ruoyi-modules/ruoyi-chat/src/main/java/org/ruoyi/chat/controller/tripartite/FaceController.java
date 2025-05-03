@@ -16,6 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
+/**
+ * 绘画(换脸)任务查询
+ *
+ * @author ageerle
+ * @date 2025-05-03
+ */
 @Api(tags = "任务查询")
 @RestController
 @RequestMapping("/mj")

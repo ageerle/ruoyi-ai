@@ -14,10 +14,10 @@ import org.ruoyi.common.core.utils.OkHttpUtil;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 描述：文生视频
+ * 文生视频
  *
- * @author ageerle@163.com
- * date 2024/6/27
+ * @author ageerle
+ * @date 2025-05-03
  */
 @RestController
 @RequestMapping("/luma")

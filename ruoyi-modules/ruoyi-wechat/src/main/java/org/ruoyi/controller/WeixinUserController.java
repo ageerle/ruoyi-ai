@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @author https://www.wdbyte.com
+ * 微信公众号登录
+ *
+ * @author ageerle
+ * @date 2025-05-03
  */
 @Slf4j
 @RestController

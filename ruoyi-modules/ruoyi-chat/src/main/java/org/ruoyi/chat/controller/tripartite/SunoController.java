@@ -14,6 +14,13 @@ import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.common.core.utils.OkHttpUtil;
 import org.springframework.web.bind.annotation.*;
 
+
+/**
+ * 文生歌曲任务提交
+ *
+ * @author ageerle
+ * @date 2025-05-03
+ */
 @RestController
 @RequestMapping("/sunoapi")
 @RequiredArgsConstructor

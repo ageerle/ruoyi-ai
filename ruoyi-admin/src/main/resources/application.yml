@@ -231,9 +231,9 @@ springdoc:
     version: '版本号: ${ruoyi.version}'
     # 作者信息
     contact:
-      name: Lion Li
-      email: crazylionli@163.com
-      url: https://gitee.com/dromara/RuoYi-Vue-Plus
+      name: ageerle
+      email: ageerle@163.com
+      url: https://gitee.com/ageerle/ruoyi-ai
   components:
     # 鉴权方式配置
     security-schemes:
@@ -243,16 +243,8 @@ springdoc:
         name: ${sa-token.token-name}
   #这里定义了两个分组，可定义多个，也可以不定义
   group-configs:
-    - group: 1.演示模块
-      packages-to-scan: org.dromara.demo
-    - group: 2.通用模块
-      packages-to-scan: org.dromara.web
-    - group: 3.系统模块
-      packages-to-scan: org.dromara.system
-    - group: 4.代码生成模块
-      packages-to-scan: org.dromara.generator
-    - group: 5.工作流模块
-      packages-to-scan: org.dromara.workflow
+    - group: 1.系统模块
+      packages-to-scan: org.ruoyi.system
 
 # 防止XSS攻击
 xss:

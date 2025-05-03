@@ -13,7 +13,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * @author <a href="https://github.com/binarywang">Binary Wang</a>
+ * 微信公众号登录校验
+ *
+ * @author ageerle
+ * @date 2025-05-03
  */
 @RestController
 @RequestMapping("/wx/cp")
