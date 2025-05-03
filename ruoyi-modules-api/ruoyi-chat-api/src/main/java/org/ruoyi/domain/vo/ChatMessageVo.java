@@ -42,6 +42,11 @@ public class ChatMessageVo implements Serializable {
     private Long userId;
 
     /**
+     * 会话id
+     */
+    private Long sessionId;
+
+    /**
      * 消息内容
      */
     @ExcelProperty(value = "消息内容")

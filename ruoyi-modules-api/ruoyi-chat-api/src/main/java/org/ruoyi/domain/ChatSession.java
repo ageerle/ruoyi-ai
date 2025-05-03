@@ -5,20 +5,18 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.core.domain.BaseEntity;
 
-import java.math.BigDecimal;
-
 import java.io.Serial;
 
 /**
- * 聊天消息对象 chat_message
+ * 会话管理对象 chat_session
  *
  * @author ageerle
- * @date 2025-04-08
+ * @date 2025-05-03
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("chat_message")
-public class ChatMessage extends BaseEntity {
+@TableName("chat_session")
+public class ChatSession extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -35,34 +33,14 @@ public class ChatMessage extends BaseEntity {
     private Long userId;
 
     /**
-     * 会话id
+     * 会话标题
      */
-    private Long sessionId;
+    private String sessionTitle;
 
     /**
-     * 消息内容
+     * 会话内容
      */
-    private String content;
-
-    /**
-     * 对话角色
-     */
-    private String role;
-
-    /**
-     * 扣除金额
-     */
-    private BigDecimal deductCost;
-
-    /**
-     * 累计 Tokens
-     */
-    private Long totalTokens;
-
-    /**
-     * 模型名称
-     */
-    private String modelName;
+    private String sessionContent;
 
     /**
      * 备注

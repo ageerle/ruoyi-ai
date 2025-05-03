@@ -46,6 +46,7 @@ public class ChatCostServiceImpl implements IChatCostService {
     /**
      * 扣除用户余额
      */
+    @Override
     public void deductToken(ChatRequest chatRequest) {
 
         int tokens = TikTokensUtil.tokens(chatRequest.getModel(), chatRequest.getPrompt());
@@ -53,6 +54,7 @@ public class ChatCostServiceImpl implements IChatCostService {
         String modelName = chatRequest.getModel();
 
         ChatMessageBo chatMessageBo = new ChatMessageBo();
+        chatMessageBo.setSessionId(chatRequest.getSessionId());
 
         Object userId = LocalCache.CACHE.get("userId");
         if(userId!=null){

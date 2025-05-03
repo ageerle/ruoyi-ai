@@ -56,6 +56,12 @@ public class ChatRequest {
      */
     private Long userId;
 
+
+    /**
+     * 会话id
+     */
+    private Long sessionId;
+
     /**
      * 应用ID
      */
