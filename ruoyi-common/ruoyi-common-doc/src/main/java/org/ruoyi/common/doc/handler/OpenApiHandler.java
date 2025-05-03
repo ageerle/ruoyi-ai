@@ -11,6 +11,7 @@ import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.core.utils.StreamUtils;
 import org.springdoc.core.customizers.OpenApiBuilderCustomizer;
 import org.springdoc.core.customizers.ServerBaseUrlCustomizer;
 import org.springdoc.core.properties.SpringDocConfigProperties;
@@ -154,11 +155,11 @@ public class OpenApiHandler extends OpenAPIService {
 
         if (!CollectionUtils.isEmpty(tagsStr))
             tagsStr = tagsStr.stream()
-                .map(str -> propertyResolverUtils.resolve(str, locale))
-                .collect(Collectors.toSet());
+                    .map(str -> propertyResolverUtils.resolve(str, locale))
+                    .collect(Collectors.toSet());
 
         if (springdocTags.containsKey(handlerMethod)) {
-            Tag tag = springdocTags.get(handlerMethod);
+            io.swagger.v3.oas.models.tags.Tag tag = springdocTags.get(handlerMethod);
             tagsStr.add(tag.getName());
             if (openAPI.getTags() == null || !openAPI.getTags().contains(tag)) {
                 openAPI.addTagsItem(tag);
@@ -182,7 +183,7 @@ public class OpenApiHandler extends OpenAPIService {
             if (javadocProvider.isPresent()) {
                 String description = javadocProvider.get().getClassJavadoc(handlerMethod.getBeanType());
                 if (StringUtils.isNotBlank(description)) {
-                    Tag tag = new Tag();
+                    io.swagger.v3.oas.models.tags.Tag tag = new io.swagger.v3.oas.models.tags.Tag();
 
                     // 自定义部分 修改使用java注释当tag名
                     List<String> list = IoUtil.readLines(new StringReader(description), new ArrayList<>());
@@ -203,7 +204,7 @@ public class OpenApiHandler extends OpenAPIService {
 
         if (!CollectionUtils.isEmpty(tags)) {
             // Existing tags
-            List<Tag> openApiTags = openAPI.getTags();
+            List<io.swagger.v3.oas.models.tags.Tag> openApiTags = openAPI.getTags();
             if (!CollectionUtils.isEmpty(openApiTags))
                 tags.addAll(openApiTags);
             openAPI.setTags(new ArrayList<>(tags));
@@ -211,7 +212,7 @@ public class OpenApiHandler extends OpenAPIService {
 
         // Handle SecurityRequirement at operation level
         io.swagger.v3.oas.annotations.security.SecurityRequirement[] securityRequirements = securityParser
-            .getSecurityRequirements(handlerMethod);
+                .getSecurityRequirements(handlerMethod);
         if (securityRequirements != null) {
             if (securityRequirements.length == 0)
                 operation.setSecurity(Collections.emptyList());
@@ -222,23 +223,23 @@ public class OpenApiHandler extends OpenAPIService {
         return operation;
     }
 
-    private void buildTagsFromMethod(Method method, Set<Tag> tags, Set<String> tagsStr, Locale locale) {
+    private void buildTagsFromMethod(Method method, Set<io.swagger.v3.oas.models.tags.Tag> tags, Set<String> tagsStr, Locale locale) {
         // method tags
         Set<Tags> tagsSet = AnnotatedElementUtils
-            .findAllMergedAnnotations(method, Tags.class);
+                .findAllMergedAnnotations(method, Tags.class);
         Set<io.swagger.v3.oas.annotations.tags.Tag> methodTags = tagsSet.stream()
-            .flatMap(x -> Stream.of(x.value())).collect(Collectors.toSet());
+                .flatMap(x -> Stream.of(x.value())).collect(Collectors.toSet());
         methodTags.addAll(AnnotatedElementUtils.findAllMergedAnnotations(method, io.swagger.v3.oas.annotations.tags.Tag.class));
         if (!CollectionUtils.isEmpty(methodTags)) {
-            tagsStr.addAll(methodTags.stream().map(tag -> propertyResolverUtils.resolve(tag.name(), locale)).collect(Collectors.toSet()));
+            tagsStr.addAll(StreamUtils.toSet(methodTags, tag -> propertyResolverUtils.resolve(tag.name(), locale)));
             List<io.swagger.v3.oas.annotations.tags.Tag> allTags = new ArrayList<>(methodTags);
             addTags(allTags, tags, locale);
         }
     }
 
-    private void addTags(List<io.swagger.v3.oas.annotations.tags.Tag> sourceTags, Set<Tag> tags, Locale locale) {
-        Optional<Set<Tag>> optionalTagSet = AnnotationsUtils
-            .getTags(sourceTags.toArray(new io.swagger.v3.oas.annotations.tags.Tag[0]), true);
+    private void addTags(List<io.swagger.v3.oas.annotations.tags.Tag> sourceTags, Set<io.swagger.v3.oas.models.tags.Tag> tags, Locale locale) {
+        Optional<Set<io.swagger.v3.oas.models.tags.Tag>> optionalTagSet = AnnotationsUtils
+                .getTags(sourceTags.toArray(new io.swagger.v3.oas.annotations.tags.Tag[0]), true);
         optionalTagSet.ifPresent(tagsSet -> {
             tagsSet.forEach(tag -> {
                 tag.name(propertyResolverUtils.resolve(tag.getName(), locale));

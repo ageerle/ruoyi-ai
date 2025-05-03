@@ -18,8 +18,8 @@ import java.util.List;
  * @author Lion Li
  */
 @Data
-@ConfigurationProperties(prefix = "swagger")
-public class SwaggerProperties {
+@ConfigurationProperties(prefix = "springdoc")
+public class SpringDocProperties {
 
     /**
      * 文档基本信息
