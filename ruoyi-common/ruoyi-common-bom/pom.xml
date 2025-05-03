@@ -159,12 +159,20 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 微信模块 -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-chat</artifactId>
+                <artifactId>ruoyi-common-wechat</artifactId>
                 <version>${revision}</version>
             </dependency>
 
+
+            <!-- 支付模块 -->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-common-pay</artifactId>
+                <version>${revision}</version>
+            </dependency>
         </dependencies>
 
     </dependencyManagement>
