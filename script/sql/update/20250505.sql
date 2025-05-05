@@ -37,6 +37,6 @@ CREATE TABLE `chat_session`  (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
-ALTER TABLE `ry-vue`.`chat_message`
-    MODIFY COLUMN `session_id` bigint(20) NULL COMMENT '会话id' AFTER `id`;
+ALTER TABLE `chat_message`
+    ADD COLUMN `session_id` bigint(20) NULL COMMENT '会话id' AFTER `id`;
 
