@@ -36,3 +36,7 @@ CREATE TABLE `chat_session`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会话管理' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+ALTER TABLE `ry-vue`.`chat_message`
+    MODIFY COLUMN `session_id` bigint(20) NULL COMMENT '会话id' AFTER `id`;
+
