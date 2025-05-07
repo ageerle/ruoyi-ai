@@ -23,7 +23,7 @@ import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.mapper.KnowledgeAttachMapper;
 import org.ruoyi.mapper.KnowledgeFragmentMapper;
 import org.ruoyi.mapper.KnowledgeInfoMapper;
-import org.ruoyi.service.EmbeddingService;
+import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +44,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
     private final KnowledgeInfoMapper baseMapper;
 
-    private final EmbeddingService embeddingService;
+    private final VectorStoreService vectorStoreService;
 
     private final ResourceLoaderFactory resourceLoaderFactory;
 
@@ -150,7 +150,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
                 knowledgeInfo.setUid(LoginHelper.getLoginUser().getUserId());
             }
             baseMapper.insert(knowledgeInfo);
-            embeddingService.createSchema(String.valueOf(knowledgeInfo.getId()));
+            vectorStoreService.createSchema(String.valueOf(knowledgeInfo.getId()));
         }else {
             baseMapper.updateById(knowledgeInfo);
         }
@@ -165,7 +165,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         check(knowledgeInfoList);
         // 删除向量库信息
         knowledgeInfoList.forEach(knowledgeInfoVo -> {
-            embeddingService.removeByKid(String.valueOf(knowledgeInfoVo.getId()));
+            vectorStoreService.removeByKid(String.valueOf(knowledgeInfoVo.getId()));
         });
         // 删除附件和知识片段
         fragmentMapper.deleteByMap(map);
@@ -197,7 +197,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             List<KnowledgeFragment> knowledgeFragmentList = new ArrayList<>();
             if (CollUtil.isNotEmpty(chunkList)) {
                 for (int i = 0; i < chunkList.size(); i++) {
-                    String fid = RandomUtil.randomString(16);
+                    String fid = RandomUtil.randomString(10);
                     fids.add(fid);
                     KnowledgeFragment knowledgeFragment = new KnowledgeFragment();
                     knowledgeFragment.setKid(kid);
@@ -216,7 +216,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         knowledgeAttach.setContent(content);
         knowledgeAttach.setCreateTime(new Date());
         attachMapper.insert(knowledgeAttach);
-        embeddingService.storeEmbeddings(chunkList,kid,docId,fids);
+        vectorStoreService.storeEmbeddings(chunkList,kid);
     }
 
 

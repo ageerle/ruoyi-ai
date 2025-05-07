@@ -24,13 +24,11 @@ import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.core.utils.file.MimeTypeUtils;
 import org.ruoyi.common.redis.utils.RedisUtils;
-import org.ruoyi.domain.ChatSession;
 import org.ruoyi.domain.bo.ChatSessionBo;
 import org.ruoyi.domain.vo.ChatModelVo;
-import org.ruoyi.service.EmbeddingService;
+import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.IChatSessionService;
-import org.ruoyi.service.VectorStoreService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -56,7 +54,7 @@ public class SseServiceImpl implements ISseService {
 
     private final OpenAiStreamClient openAiStreamClient;
 
-    private final EmbeddingService embeddingService;
+    private final VectorStoreService vectorStoreService;
 
     private final VectorStoreService vectorStore;
 
@@ -184,9 +182,7 @@ public class SseServiceImpl implements ISseService {
         if(StringUtils.isNotEmpty(chatRequest.getKid())){
             List<Message> knMessages = new ArrayList<>();
             String content = messages.get(messages.size() - 1).getContent().toString();
-            List<String> nearestList;
-            List<Double> queryVector = embeddingService.getQueryVector(content, chatRequest.getKid());
-            nearestList = vectorStore.nearest(queryVector, chatRequest.getKid());
+            List<String> nearestList = vectorStoreService.getQueryVector(content, chatRequest.getKid());
             for (String prompt : nearestList) {
                 Message userMessage = Message.builder().content(prompt).role(Message.Role.USER).build();
                 knMessages.add(userMessage);
