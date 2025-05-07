@@ -25,6 +25,8 @@ import org.ruoyi.mapper.KnowledgeFragmentMapper;
 import org.ruoyi.mapper.KnowledgeInfoMapper;
 import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.IKnowledgeInfoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +44,7 @@ import java.util.*;
 @Service
 public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
+    private static final Logger log = LoggerFactory.getLogger(KnowledgeInfoServiceImpl.class);
     private final KnowledgeInfoMapper baseMapper;
 
     private final VectorStoreService vectorStoreService;
@@ -211,12 +214,12 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             }
             fragmentMapper.insertBatch(knowledgeFragmentList);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("保存知识库信息失败！{}", e.getMessage());
         }
         knowledgeAttach.setContent(content);
         knowledgeAttach.setCreateTime(new Date());
         attachMapper.insert(knowledgeAttach);
-        vectorStoreService.storeEmbeddings(chunkList,kid);
+        vectorStoreService.storeEmbeddings(chunkList,kid,docId,fids);
     }
 
 

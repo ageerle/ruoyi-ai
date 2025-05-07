@@ -56,8 +56,6 @@ public class SseServiceImpl implements ISseService {
 
     private final VectorStoreService vectorStoreService;
 
-    private final VectorStoreService vectorStore;
-
     private final IChatCostService chatCostService;
 
     private final IChatModelService chatModelService;

@@ -2,9 +2,13 @@ package org.ruoyi.service;
 
 import java.util.List;
 
+/**
+ * @author ageer
+ * 向量库管理
+ */
 public interface VectorStoreService {
 
-    void storeEmbeddings(List<String> chunkList, String kid);
+    void storeEmbeddings(List<String> chunkList, String kid,String docId,List<String> fids);
 
     void removeByDocId(String kid,String docId);
 

@@ -1,75 +1,63 @@
 package org.ruoyi.service.impl;
 
-import cn.hutool.core.util.RandomUtil;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
+import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import dev.langchain4j.store.embedding.filter.comparison.IsEqualTo;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.service.VectorStoreService;
-import org.ruoyi.service.IKnowledgeInfoService;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.testcontainers.weaviate.WeaviateContainer;
 
+import static dev.langchain4j.model.openai.OpenAiEmbeddingModelName.TEXT_EMBEDDING_3_SMALL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author ageer
+ * Weaviate 向量库管理
+ */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WeaviateVectorStoreImpl implements VectorStoreService {
 
-    private volatile String protocol;
-    private volatile String host;
-    private volatile String className;
+    private EmbeddingStore<TextSegment> embeddingStore;
 
-    @Lazy
-    @Resource
-    private IKnowledgeInfoService knowledgeInfoService;
-
-    @Lazy
-    @Resource
-    private ConfigService configService;
-
-    private  EmbeddingStore<TextSegment> embeddingStore;
-
-    @PostConstruct
-    public void loadConfig() {
-        this.protocol = configService.getConfigValue("weaviate", "protocol");
-        this.host = configService.getConfigValue("weaviate", "host");
-        this.className = configService.getConfigValue("weaviate", "classname");
-    }
-
+    private final ConfigService configService;
 
     @Override
     public List<String> getQueryVector(String query, String kid) {
         EmbeddingModel embeddingModel = OpenAiEmbeddingModel.builder()
-                .apiKey(System.getenv("OPENAI_API_KEY"))
-                .baseUrl(System.getenv("OPENAI_BASE_URL"))
-                .modelName("text-embedding-3-small")
+                .apiKey("sk-xxx")
+                .baseUrl("https://api.pandarobot.chat/v1/")
+                .modelName(TEXT_EMBEDDING_3_SMALL)
                 .build();
 
-        Filter simpleFilter = new IsEqualTo("kid", kid);
+      //  Filter simpleFilter = new IsEqualTo("kid", kid);
 
-        Embedding queryEmbedding = embeddingModel.embed("What is your favourite sport?").content();
+     //   createSchema(kid);
+
+        Embedding queryEmbedding = embeddingModel.embed("聊天补全模型").content();
         EmbeddingSearchRequest embeddingSearchRequest = EmbeddingSearchRequest.builder()
                 .queryEmbedding(queryEmbedding)
-                .maxResults(3)
+                .maxResults(2)
                 // 添加过滤条件
-                .filter(simpleFilter)
+             //   .filter(simpleFilter)
                 .build();
         List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(embeddingSearchRequest).matches();
+
+
 
         List<String> results = new ArrayList<>();
 
@@ -82,10 +70,11 @@ public class WeaviateVectorStoreImpl implements VectorStoreService {
 
     @Override
     public void createSchema(String kid) {
-        WeaviateContainer weaviate = new WeaviateContainer(protocol);
-        weaviate.start();
+        String protocol = configService.getConfigValue("weaviate", "protocol");
+        String host = configService.getConfigValue("weaviate", "host");
+        String className = configService.getConfigValue("weaviate", "classname");
         this.embeddingStore = WeaviateEmbeddingStore.builder()
-                .scheme("http")
+                .scheme(protocol)
                 .host(host)
                 .objectClass(className+kid)
                 .scheme(protocol)
@@ -95,25 +84,23 @@ public class WeaviateVectorStoreImpl implements VectorStoreService {
     }
 
     @Override
-    public void storeEmbeddings(List<String> chunkList,String kid) {
+    public void storeEmbeddings(List<String> chunkList,String kid,String docId,List<String> fids) {
         EmbeddingModel embeddingModel = OpenAiEmbeddingModel.builder()
-                .apiKey(System.getenv("OPENAI_API_KEY"))
-                .baseUrl(System.getenv("OPENAI_BASE_URL"))
-                .modelName("text-embedding-3-small")
+                .apiKey("sk-xxxx")
+                .baseUrl("https://api.pandarobot.chat/v1/")
+                .modelName(TEXT_EMBEDDING_3_SMALL)
                 .build();
-        // 生成文档id
-        String docId = RandomUtil.randomString(10);
+
         chunkList.forEach(chunk -> {
-            // 生成知识块id
-            String fid = RandomUtil.randomString(10);
             Map<String, Object> dataSchema = new HashMap<>();
             dataSchema.put("kid", kid);
             dataSchema.put("docId", docId);
-            dataSchema.put("fid", fid);
+            dataSchema.put("fid", fids.get(0));
+            Response<Embedding> response = embeddingModel.embed(chunk);
+            Embedding embedding = response.content();
             TextSegment segment = TextSegment.from(chunk);
             segment.metadata().putAll(dataSchema);
-            Embedding content = embeddingModel.embed(segment).content();
-            embeddingStore.add(content);
+            embeddingStore.add(embedding,segment);
         });
     }
 
