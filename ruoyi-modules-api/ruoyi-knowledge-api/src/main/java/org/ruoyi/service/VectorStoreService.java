@@ -1,20 +1,23 @@
 package org.ruoyi.service;
 
+import org.ruoyi.domain.bo.QueryVectorBo;
+import org.ruoyi.domain.bo.StoreEmbeddingBo;
+
 import java.util.List;
 
 /**
- * @author ageer
  * 向量库管理
+ * @author ageer
  */
 public interface VectorStoreService {
 
-    void storeEmbeddings(List<String> chunkList, String kid,String docId,List<String> fids);
+    void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo);
 
     void removeByDocId(String kid,String docId);
 
     void removeByKid(String kid);
 
-    List<String> getQueryVector(String query, String kid);
+    List<String> getQueryVector(QueryVectorBo queryVectorBo);
 
     void createSchema(String kid);
 

@@ -25,6 +25,7 @@ import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.core.utils.file.MimeTypeUtils;
 import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.domain.bo.ChatSessionBo;
+import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.IChatModelService;
@@ -166,7 +167,10 @@ public class SseServiceImpl implements ISseService {
         // 获取对话消息列表
         List<Message> messages = chatRequest.getMessages();
         String sysPrompt = chatModelVo.getSystemPrompt();
+
+
         if(StringUtils.isEmpty(sysPrompt)){
+            // TODO 系统默认提示词,后续会增加提示词管理
             sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
                     "当前时间："+ DateUtils.getDate()+
                     "#注意：回复之前注意结合上下文和工具返回内容进行回复。";
@@ -180,11 +184,20 @@ public class SseServiceImpl implements ISseService {
         if(StringUtils.isNotEmpty(chatRequest.getKid())){
             List<Message> knMessages = new ArrayList<>();
             String content = messages.get(messages.size() - 1).getContent().toString();
-            List<String> nearestList = vectorStoreService.getQueryVector(content, chatRequest.getKid());
+            QueryVectorBo queryVectorBo = new QueryVectorBo();
+            queryVectorBo.setQuery(content);
+            queryVectorBo.setKid(chatRequest.getKid());
+            queryVectorBo.setApiKey(chatModelVo.getApiKey());
+            queryVectorBo.setBaseUrl(chatModelVo.getApiHost());
+            queryVectorBo.setModelName(chatModelVo.getModelName());
+            // TODO 查询向量返回条数,这里应该查询知识库配置
+            queryVectorBo.setMaxResults(3);
+            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
             for (String prompt : nearestList) {
                 Message userMessage = Message.builder().content(prompt).role(Message.Role.USER).build();
                 knMessages.add(userMessage);
             }
+            // TODO 提示词,这里应该查询知识库配置
             Message userMessage = Message.builder().content(content + (!nearestList.isEmpty() ? "\n\n注意：回答问题时，须严格根据我给你的系统上下文内容原文进行回答，请不要自己发挥,回答时保持原来文本的段落层级" : "")).role(Message.Role.USER).build();
             knMessages.add(userMessage);
             messages.addAll(knMessages);

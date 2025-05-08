@@ -3,6 +3,7 @@ package org.ruoyi.chat.service.knowledge;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -14,15 +15,19 @@ import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.domain.ChatModel;
 import org.ruoyi.domain.KnowledgeAttach;
 import org.ruoyi.domain.KnowledgeFragment;
 import org.ruoyi.domain.KnowledgeInfo;
 import org.ruoyi.domain.bo.KnowledgeInfoBo;
 import org.ruoyi.domain.bo.KnowledgeInfoUploadBo;
+import org.ruoyi.domain.bo.StoreEmbeddingBo;
+import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.mapper.KnowledgeAttachMapper;
 import org.ruoyi.mapper.KnowledgeFragmentMapper;
 import org.ruoyi.mapper.KnowledgeInfoMapper;
+import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.slf4j.Logger;
@@ -54,6 +59,8 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     private final KnowledgeFragmentMapper fragmentMapper;
 
     private final KnowledgeAttachMapper attachMapper;
+
+    private final IChatModelService chatModelService;
 
     /**
      * 查询知识库
@@ -219,10 +226,31 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         knowledgeAttach.setContent(content);
         knowledgeAttach.setCreateTime(new Date());
         attachMapper.insert(knowledgeAttach);
-        vectorStoreService.storeEmbeddings(chunkList,kid,docId,fids);
+
+        // 通过kid查询知识库信息
+        KnowledgeInfoVo knowledgeInfoVo = baseMapper.selectVoOne(Wrappers.<KnowledgeInfo>lambdaQuery()
+                .eq(KnowledgeInfo::getKid, kid));
+
+        // 通过向量模型查询模型信息
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getVectorModel());
+
+        StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
+        storeEmbeddingBo.setKid(kid);
+        storeEmbeddingBo.setDocId(docId);
+        storeEmbeddingBo.setFids(fids);
+        storeEmbeddingBo.setChunkList(chunkList);
+        storeEmbeddingBo.setModelName(knowledgeInfoVo.getVectorModel());
+        storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
+        storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
+        vectorStoreService.storeEmbeddings(storeEmbeddingBo);
     }
 
 
+    /**
+     * 检查用户是否有删除知识库权限
+     *
+     * @param knowledgeInfoList 知识库列表
+     */
     public void check(List<KnowledgeInfoVo> knowledgeInfoList){
         LoginUser loginUser = LoginHelper.getLoginUser();
         for (KnowledgeInfoVo knowledgeInfoVo : knowledgeInfoList) {
