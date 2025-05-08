@@ -45,7 +45,6 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     private final ConfigService configService;
 
     @Override
-    @PostConstruct
     public void createSchema(String kid,String modelName) {
         switch (modelName) {
             case "weaviate" -> {
