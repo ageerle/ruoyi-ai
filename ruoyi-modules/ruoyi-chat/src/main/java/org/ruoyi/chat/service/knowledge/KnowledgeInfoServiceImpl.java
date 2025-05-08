@@ -160,7 +160,9 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
                 knowledgeInfo.setUid(LoginHelper.getLoginUser().getUserId());
             }
             baseMapper.insert(knowledgeInfo);
-            vectorStoreService.createSchema(String.valueOf(knowledgeInfo.getId()));
+            if (knowledgeInfo != null) {
+                vectorStoreService.createSchema(String.valueOf(knowledgeInfo.getId()),bo.getVector());
+            }
         }else {
             baseMapper.updateById(knowledgeInfo);
         }

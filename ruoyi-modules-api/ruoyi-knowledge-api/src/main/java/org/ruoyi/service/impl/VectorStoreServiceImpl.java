@@ -11,6 +11,8 @@ import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import dev.langchain4j.store.embedding.filter.comparison.IsEqualTo;
+import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
+import dev.langchain4j.store.embedding.qdrant.QdrantEmbeddingStore;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +32,13 @@ import java.util.Map;
 
 
 /**
- * Weaviate向量库管理
+ * 向量库管理
  * @author ageer
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class WeaviateVectorStoreImpl implements VectorStoreService {
+public class VectorStoreServiceImpl implements VectorStoreService {
 
     private EmbeddingStore<TextSegment> embeddingStore;
 
@@ -44,18 +46,38 @@ public class WeaviateVectorStoreImpl implements VectorStoreService {
 
     @Override
     @PostConstruct
-    public void createSchema(String kid) {
-        String protocol = configService.getConfigValue("weaviate", "protocol");
-        String host = configService.getConfigValue("weaviate", "host");
-        String className = configService.getConfigValue("weaviate", "classname");
-        this.embeddingStore = WeaviateEmbeddingStore.builder()
-                .scheme(protocol)
-                .host(host)
-                .objectClass(className+kid)
-                .scheme(protocol)
-                .avoidDups(true)
-                .consistencyLevel("ALL")
-                .build();
+    public void createSchema(String kid,String modelName) {
+        if(modelName.equals("weaviate")){
+            String protocol = configService.getConfigValue("weaviate", "protocol");
+            String host = configService.getConfigValue("weaviate", "host");
+            String className = configService.getConfigValue("weaviate", "classname");
+            this.embeddingStore = WeaviateEmbeddingStore.builder()
+                    .scheme(protocol)
+                    .host(host)
+                    .objectClass(className+kid)
+                    .scheme(protocol)
+                    .avoidDups(true)
+                    .consistencyLevel("ALL")
+                    .build();
+        }else if(modelName.equals("milvus")){
+            String uri = configService.getConfigValue("milvus", "host");
+            String collection = configService.getConfigValue("milvus", "collection");
+            String dimension = configService.getConfigValue("milvus", "dimension");
+            this.embeddingStore =  MilvusEmbeddingStore.builder()
+                    .uri(uri)
+                    .collectionName(collection+kid)
+                    .dimension(Integer.parseInt(dimension))
+                    .build();
+        }else if(modelName.equals("qdrant")){
+            String host = configService.getConfigValue("qdrant", "host");
+            String port = configService.getConfigValue("qdrant", "port");
+            String collectionName = configService.getConfigValue("qdrant", "collectionName");
+            this.embeddingStore = QdrantEmbeddingStore.builder()
+                            .host(host)
+                            .port(Integer.parseInt(port))
+                            .collectionName(collectionName)
+                            .build();
+        }
     }
 
     @Override

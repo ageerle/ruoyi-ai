@@ -19,7 +19,7 @@ public interface VectorStoreService {
 
     List<String> getQueryVector(QueryVectorBo queryVectorBo);
 
-    void createSchema(String kid);
+    void createSchema(String kid,String modelName);
 
     void removeByKidAndFid(String kid, String fid);
 
