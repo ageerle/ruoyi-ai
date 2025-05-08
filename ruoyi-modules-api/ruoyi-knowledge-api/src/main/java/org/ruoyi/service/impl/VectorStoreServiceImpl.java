@@ -14,7 +14,6 @@ import dev.langchain4j.store.embedding.filter.comparison.IsEqualTo;
 import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
 import dev.langchain4j.store.embedding.qdrant.QdrantEmbeddingStore;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.service.ConfigService;
@@ -29,8 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
 /**
  * 向量库管理
  * @author ageer
@@ -40,18 +37,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VectorStoreServiceImpl implements VectorStoreService {
 
-    private EmbeddingStore<TextSegment> embeddingStore;
-
     private final ConfigService configService;
+
+    Map<String,EmbeddingStore<TextSegment>> storeMap;
 
     @Override
     public void createSchema(String kid,String modelName) {
+        EmbeddingStore<TextSegment> embeddingStore = WeaviateEmbeddingStore.builder().build();
         switch (modelName) {
             case "weaviate" -> {
                 String protocol = configService.getConfigValue("weaviate", "protocol");
                 String host = configService.getConfigValue("weaviate", "host");
                 String className = configService.getConfigValue("weaviate", "classname");
-                this.embeddingStore = WeaviateEmbeddingStore.builder()
+                embeddingStore = WeaviateEmbeddingStore.builder()
                         .scheme(protocol)
                         .host(host)
                         .objectClass(className + kid)
@@ -64,7 +62,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 String uri = configService.getConfigValue("milvus", "host");
                 String collection = configService.getConfigValue("milvus", "collection");
                 String dimension = configService.getConfigValue("milvus", "dimension");
-                this.embeddingStore = MilvusEmbeddingStore.builder()
+                embeddingStore = MilvusEmbeddingStore.builder()
                         .uri(uri)
                         .collectionName(collection + kid)
                         .dimension(Integer.parseInt(dimension))
@@ -74,17 +72,19 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 String host = configService.getConfigValue("qdrant", "host");
                 String port = configService.getConfigValue("qdrant", "port");
                 String collectionName = configService.getConfigValue("qdrant", "collectionName");
-                this.embeddingStore = QdrantEmbeddingStore.builder()
+                embeddingStore = QdrantEmbeddingStore.builder()
                         .host(host)
                         .port(Integer.parseInt(port))
                         .collectionName(collectionName)
                         .build();
             }
         }
+        storeMap.put(kid,embeddingStore);
     }
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
+        EmbeddingStore<TextSegment> store = storeMap.get(storeEmbeddingBo.getKid());
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getModelName(),
                 storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
         for (int i = 0; i < storeEmbeddingBo.getChunkList().size(); i++) {
@@ -96,12 +96,15 @@ public class VectorStoreServiceImpl implements VectorStoreService {
             Embedding embedding = response.content();
             TextSegment segment = TextSegment.from(storeEmbeddingBo.getChunkList().get(i));
             segment.metadata().putAll(dataSchema);
-            embeddingStore.add(embedding,segment);
+
+            store.add(embedding,segment);
         }
     }
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
+        EmbeddingStore<TextSegment> store = storeMap.get(queryVectorBo.getKid());
+
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getModelName(),
                 queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
         Filter simpleFilter = new IsEqualTo("kid", queryVectorBo.getKid());
@@ -112,38 +115,40 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 // 添加过滤条件
                 .filter(simpleFilter)
                 .build();
-        List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(embeddingSearchRequest).matches();
+        List<EmbeddingMatch<TextSegment>> matches = store.search(embeddingSearchRequest).matches();
 
         List<String> results = new ArrayList<>();
 
-        matches.forEach(embeddingMatch -> {
-            results.add(embeddingMatch.embedded().text());
-        });
+        matches.forEach(embeddingMatch -> results.add(embeddingMatch.embedded().text()));
         return results;
     }
 
 
     @Override
     public void removeByKid(String kid) {
+        EmbeddingStore<TextSegment> store = storeMap.get(kid);
+
         // 根据条件删除向量数据
         Filter simpleFilter = new IsEqualTo("kid", kid);
-        embeddingStore.removeAll(simpleFilter);
+        store.removeAll(simpleFilter);
     }
 
     @Override
     public void removeByDocId(String kid, String docId) {
+        EmbeddingStore<TextSegment> store = storeMap.get(kid);
         // 根据条件删除向量数据
         Filter simpleFilterByDocId = new IsEqualTo("docId", docId);
-        embeddingStore.removeAll(simpleFilterByDocId);
+        store.removeAll(simpleFilterByDocId);
     }
 
     @Override
     public void removeByKidAndFid(String kid, String fid) {
+        EmbeddingStore<TextSegment> store = storeMap.get(kid);
         // 根据条件删除向量数据
         Filter simpleFilterByKid = new IsEqualTo("kid", kid);
         Filter simpleFilterFid = new IsEqualTo("fid", fid);
         Filter simpleFilterByAnd = Filter.and(simpleFilterFid, simpleFilterByKid);
-        embeddingStore.removeAll(simpleFilterByAnd);
+        store.removeAll(simpleFilterByAnd);
     }
 
     /**
