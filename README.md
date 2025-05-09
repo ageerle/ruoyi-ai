@@ -277,6 +277,8 @@
 [license-url]: https://github.com/ageerle/ruoyi-ai/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 
+## 🌿 第三方生态
+- [PPIO 派欧云：一键调用高性价比的开源模型 API 和 GPU 容器](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai)
 
 ### 附：技术讨论群
 
