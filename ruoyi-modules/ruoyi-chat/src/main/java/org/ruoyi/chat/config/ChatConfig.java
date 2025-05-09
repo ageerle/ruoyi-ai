@@ -32,11 +32,12 @@ public class ChatConfig {
     public OpenAiStreamClient openAiStreamClient() {
         String apiHost = configService.getConfigValue("chat", "apiHost");
         String apiKey = configService.getConfigValue("chat", "apiKey");
-        openAiStreamClient = createOpenAiStreamClient(apiHost,apiKey);
+        String url = configService.getConfigValue("chat", "apiUrl");
+        openAiStreamClient = createOpenAiStreamClient(apiHost,apiKey,url);
         return openAiStreamClient;
     }
 
-    public static OpenAiStreamClient createOpenAiStreamClient(String apiHost, String apiKey) {
+    public static OpenAiStreamClient createOpenAiStreamClient(String apiHost, String apiKey,String url) {
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
         httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.HEADERS);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -47,6 +48,7 @@ public class ChatConfig {
             .build();
         return OpenAiStreamClient.builder()
             .apiHost(apiHost)
+            .apiUrl(url)
             .apiKey(Collections.singletonList(apiKey))
             .keyStrategy(new KeyRandomStrategy())
             .okHttpClient(okHttpClient)

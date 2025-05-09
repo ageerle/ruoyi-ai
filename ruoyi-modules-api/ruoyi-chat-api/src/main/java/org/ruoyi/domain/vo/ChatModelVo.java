@@ -89,10 +89,15 @@ public class ChatModelVo implements Serializable {
     private String apiKey;
 
     /**
+     * 请求地址后缀 - 兼容多平台
+     */
+    @ExcelProperty(value = "请求地址后缀")
+    private String apiUrl;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")
     private String remark;
-
 
 }

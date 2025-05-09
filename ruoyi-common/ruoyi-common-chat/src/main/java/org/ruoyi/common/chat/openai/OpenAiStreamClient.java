@@ -72,6 +72,11 @@ public class OpenAiStreamClient {
     private String apiHost;
 
     /**
+     * 自定义url 兼容多个平台
+     */
+    private String apiUrl;
+
+    /**
      * 自定义的okHttpClient
      * 如果不自定义 ，就是用sdk默认的OkHttpClient实例
      */
@@ -111,6 +116,11 @@ public class OpenAiStreamClient {
             builder.apiHost = OpenAIConst.OPENAI_HOST;
         }
         apiHost = builder.apiHost;
+
+        if (StrUtil.isBlank(builder.apiUrl)) {
+            builder.apiUrl = OpenAIConst.apiUrl;
+        }
+        apiUrl = builder.apiUrl;
 
         if (Objects.isNull(builder.keyStrategy)) {
             builder.keyStrategy = new KeyRandomStrategy();
@@ -180,7 +190,7 @@ public class OpenAiStreamClient {
             ObjectMapper mapper = new ObjectMapper();
             String requestBody = mapper.writeValueAsString(chatCompletion);
             Request request = new Request.Builder()
-                .url(this.apiHost + "v1/chat/completions")
+                .url(this.apiHost + apiUrl)
                 .post(RequestBody.create(MediaType.parse(ContentType.JSON.getValue()), requestBody))
                 .build();
             factory.newEventSource(request, eventSourceListener);
@@ -611,6 +621,8 @@ public class OpenAiStreamClient {
          */
         private String apiHost;
 
+        private String apiUrl;
+
         /**
          * 自定义OkhttpClient
          */
@@ -642,6 +654,16 @@ public class OpenAiStreamClient {
          */
         public Builder apiHost(String val) {
             apiHost = val;
+            return this;
+        }
+
+        /**
+         * @param val 自定义请求后缀
+         * @return Builder
+         * @see OpenAIConst
+         */
+        public Builder apiUrl(String val) {
+            apiUrl = val;
             return this;
         }
 

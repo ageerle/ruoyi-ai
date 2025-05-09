@@ -47,7 +47,7 @@ public class OpenAIServiceImpl implements IChatService {
     @Override
     public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-        openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
+        openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey(),chatModelVo.getApiUrl());
         List<Message> messages = chatRequest.getMessages();
         if (enabled) {
             String toolString = mcpChat(chatRequest.getPrompt());

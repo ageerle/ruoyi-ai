@@ -1,5 +1,6 @@
 package org.ruoyi.domain.bo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.domain.ChatModel;
@@ -78,6 +79,12 @@ public class ChatModelBo extends BaseEntity {
      */
     @NotBlank(message = "密钥不能为空", groups = { AddGroup.class, EditGroup.class })
     private String apiKey;
+
+    /**
+     * 请求地址后缀 - 兼容多平台
+     */
+    @ExcelProperty(value = "请求地址后缀")
+    private String apiUrl;
 
     /**
      * 备注

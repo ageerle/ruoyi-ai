@@ -1,6 +1,7 @@
 package org.ruoyi.domain;
 
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -67,6 +68,12 @@ public class ChatModel extends BaseEntity {
      * 请求地址
      */
     private String apiHost;
+
+    /**
+     * 请求地址后缀 - 兼容多平台
+     */
+    @ExcelProperty(value = "请求地址后缀")
+    private String apiUrl;
 
     /**
      * 密钥
