@@ -146,12 +146,12 @@ public class OpenAiStreamClient {
         }
         okHttpClient = builder.okHttpClient;
 
-        this.openAiApi = new Retrofit.Builder()
-            .baseUrl(apiHost)
-            .client(okHttpClient)
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-            .addConverterFactory(JacksonConverterFactory.create())
-            .build().create(OpenAiApi.class);
+//        this.openAiApi = new Retrofit.Builder()
+//            .baseUrl(apiHost)
+//            .client(okHttpClient)
+//            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+//            .addConverterFactory(JacksonConverterFactory.create())
+//            .build().create(OpenAiApi.class);
     }
 
     /**
