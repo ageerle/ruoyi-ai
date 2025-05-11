@@ -13,7 +13,7 @@ import java.util.Map;
 import static org.ruoyi.common.chat.entity.chat.BaseChatCompletion.Model.GPT_3_5_TURBO;
 
 /**
- * 描述： chat模型基础类
+ * chat模型基础类
  *
  * @author https:www.unfbx.com
  * @since 1.1.2

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /**
- * 描述：账户信息
+ * 账户信息
  *
  * @author https:www.unfbx.com
  * @since  2023-04-08

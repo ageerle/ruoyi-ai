@@ -40,7 +40,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 /**
- * 描述： open ai官方api接口
+ *   open ai官方api接口
  *
  * @author https:www.unfbx.com
  * 2023-02-15

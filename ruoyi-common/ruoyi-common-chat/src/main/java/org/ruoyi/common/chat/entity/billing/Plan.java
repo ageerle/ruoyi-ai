@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 /**
- * 描述：
  *
  * @author https:www.unfbx.com
  * @since  2023-04-08

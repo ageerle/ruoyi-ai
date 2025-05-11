@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 描述：文本审核，敏感词鉴别
+ *  文本审核，敏感词鉴别
  *
  * @author https:www.unfbx.com
  *  2023-02-15

@@ -53,7 +53,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 描述： open ai 客户端
+ *   open ai 客户端
  *
  * @author https:www.unfbx.com
  * 2023-02-28
@@ -190,7 +190,7 @@ public class OpenAiStreamClient {
             ObjectMapper mapper = new ObjectMapper();
             String requestBody = mapper.writeValueAsString(chatCompletion);
             Request request = new Request.Builder()
-                .url(this.apiHost + apiUrl)
+                .url(this.apiHost)
                 .post(RequestBody.create(MediaType.parse(ContentType.JSON.getValue()), requestBody))
                 .build();
             factory.newEventSource(request, eventSourceListener);

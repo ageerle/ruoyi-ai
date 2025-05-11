@@ -12,7 +12,6 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 描述：
  *
  * @author https:www.unfbx.com
  * @since 1.1.2

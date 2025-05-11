@@ -56,7 +56,7 @@ public class ChatModelVo implements Serializable {
      * 模型价格
      */
     @ExcelProperty(value = "模型价格")
-    private Long modelPrice;
+    private Double modelPrice;
 
     /**
      * 计费类型
@@ -87,12 +87,6 @@ public class ChatModelVo implements Serializable {
      */
     @ExcelProperty(value = "密钥")
     private String apiKey;
-
-    /**
-     * 请求地址后缀 - 兼容多平台
-     */
-    @ExcelProperty(value = "请求地址后缀")
-    private String apiUrl;
 
     /**
      * 备注

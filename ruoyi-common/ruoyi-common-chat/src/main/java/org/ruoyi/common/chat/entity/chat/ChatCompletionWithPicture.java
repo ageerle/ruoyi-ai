@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 描述： chat模型附带图片的参数
+ *  ： chat模型附带图片的参数
  *
  * @author https:www.unfbx.com
  * @since 1.1.2

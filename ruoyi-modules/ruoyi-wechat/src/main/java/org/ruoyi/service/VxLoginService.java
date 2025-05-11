@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * 描述：微信公众号登录
+ *  微信公众号登录
  *
  * @author ageerle@163.com
  * date 2025/4/30

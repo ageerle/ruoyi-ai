@@ -49,7 +49,7 @@ public class ChatModelBo extends BaseEntity {
      * 模型价格
      */
     @NotNull(message = "模型价格不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long modelPrice;
+    private Double modelPrice;
 
     /**
      * 计费类型
@@ -80,11 +80,6 @@ public class ChatModelBo extends BaseEntity {
     @NotBlank(message = "密钥不能为空", groups = { AddGroup.class, EditGroup.class })
     private String apiKey;
 
-    /**
-     * 请求地址后缀 - 兼容多平台
-     */
-    @ExcelProperty(value = "请求地址后缀")
-    private String apiUrl;
 
     /**
      * 备注

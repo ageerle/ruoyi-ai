@@ -10,7 +10,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 描述：创建一个监听器，用于处理配置变化事件
+ *  创建一个监听器，用于处理配置变化事件
  *
  * @author ageerle@163.com
  * date 2024/5/19

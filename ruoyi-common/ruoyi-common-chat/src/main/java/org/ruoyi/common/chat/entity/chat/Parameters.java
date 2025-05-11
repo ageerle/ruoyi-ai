@@ -6,7 +6,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.List;
 /**
- * 描述：方法参数类，扩展参数可以继承Parameters自己实现
+ *  方法参数类，扩展参数可以继承Parameters自己实现
  * 参考：
  * <pre>
  * {

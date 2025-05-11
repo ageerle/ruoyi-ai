@@ -24,7 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Objects;
 
 /**
- * 描述：OpenAIEventSourceListener
+ *  OpenAIEventSourceListener
  *
  * @author https:www.unfbx.com
  * @date 2023-02-22

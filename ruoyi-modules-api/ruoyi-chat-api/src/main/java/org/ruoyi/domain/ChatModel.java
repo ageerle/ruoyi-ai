@@ -47,7 +47,7 @@ public class ChatModel extends BaseEntity {
     /**
      * 模型价格
      */
-    private Long modelPrice;
+    private Double modelPrice;
 
     /**
      * 计费类型
@@ -69,11 +69,6 @@ public class ChatModel extends BaseEntity {
      */
     private String apiHost;
 
-    /**
-     * 请求地址后缀 - 兼容多平台
-     */
-    @ExcelProperty(value = "请求地址后缀")
-    private String apiUrl;
 
     /**
      * 密钥

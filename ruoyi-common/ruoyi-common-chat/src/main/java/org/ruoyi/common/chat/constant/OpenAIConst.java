@@ -1,7 +1,6 @@
 package org.ruoyi.common.chat.constant;
 
 /**
- * 描述：
  *
  * @author https:www.unfbx.com
  * @since  2023-03-06

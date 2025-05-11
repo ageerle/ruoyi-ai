@@ -16,6 +16,8 @@ public interface IChatService {
      * @param chatRequest 请求对象
      */
     SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter);
-
-
+    /**
+     * 获取此服务支持的模型类别
+     */
+    String getCategory();
 }

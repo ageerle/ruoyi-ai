@@ -28,7 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 
 /**
- * 描述：聊天管理
+ *  聊天管理
  *
  * @author ageerle@163.com
  * @date 2023-03-01

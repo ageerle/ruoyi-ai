@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 描述： chat答案类
+ * chat答案类
  *
  * @author https:www.unfbx.com
  * 2023-03-02

@@ -6,7 +6,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 描述：方法参数实体类，实例数据如下
+ * 方法参数实体类，实例数据如下
  * <pre>
  *     {
  *          "name": "get_current_weather",
