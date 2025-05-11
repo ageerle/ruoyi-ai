@@ -272,9 +272,10 @@
 #### 进群学习
 🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-  ![5bb84713340dec8aac7c00b4e5f1a33](https://github.com/user-attachments/assets/6a8fc14c-8760-45ba-9c7f-7c9b25624f93)
-</div>
+     <img src="https://github-production-user-asset-6210df.s3.amazonaws.com/32251822/442507124-6a8fc14c-8760-45ba-9c7f-7c9b25624f93.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
 
+</div>
+?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20250511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250511T133458Z&X-Amz-Expires=300&X-Amz-Signature=82ac8e1b5628094d5b166d2348c44d165b4aedae61c5a5e634682e383b36bbf9&X-Amz-SignedHeaders=host
 🏠 qq：1603234088 （加人备注：ruoyi-ai）
 
 👏👏👏 ruoyi-ai官方交流1群（qq区）：1034554687 
