@@ -271,7 +271,8 @@
 
 #### 进群学习
 🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
-![1cc0022eeb5c266041b6e2212cf5253](https://github.com/user-attachments/assets/0b4d1b73-b1eb-41c2-b454-0bf7d196adac)
+![5bb84713340dec8aac7c00b4e5f1a33](https://github.com/user-attachments/assets/d49b6aaf-4116-4468-bbe9-2c4e8d819962)
+
 
 🏠 qq：1603234088 （加人备注：ruoyi-ai）
 
