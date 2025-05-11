@@ -272,7 +272,7 @@
 #### 进群学习
 🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-  ![5bb84713340dec8aac7c00b4e5f1a33](https://github.com/user-attachments/assets/d49b6aaf-4116-4468-bbe9-2c4e8d819962)
+  ![5bb84713340dec8aac7c00b4e5f1a33](https://github.com/user-attachments/assets/6a8fc14c-8760-45ba-9c7f-7c9b25624f93)
 </div>
 
 🏠 qq：1603234088 （加人备注：ruoyi-ai）
