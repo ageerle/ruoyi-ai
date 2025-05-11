@@ -70,8 +70,7 @@ public class ChatController {
     @PostMapping("/audio")
     @ResponseBody
     public WhisperResponse audio(@RequestParam("file") MultipartFile file) {
-        WhisperResponse whisperResponse = sseService.speechToTextTranscriptionsV2(file);
-        return whisperResponse;
+        return sseService.speechToTextTranscriptionsV2(file);
     }
 
     /**

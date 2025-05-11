@@ -344,7 +344,6 @@ public class OpenAiStreamClient {
 
         BillingUsage billingUsage = billingUsage(start.toInstant().atZone(ZoneId.systemDefault()).toLocalDate(), end.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         double totalUsage = billingUsage.getTotalUsage().doubleValue() / 100;
-        System.out.println(totalUsage);
         Subscription subscription = subscription();
         KeyInfo keyInfo = new KeyInfo();
         String start_key = key.substring(0, 6);

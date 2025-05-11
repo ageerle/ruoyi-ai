@@ -62,7 +62,6 @@ public class OllamaServiceImpl implements IChatService {
                 OllamaStreamHandler streamHandler = (s) -> {
                     String substr = s.substring(response.length());
                     response.append(substr);
-                    System.out.println(substr);
                     try {
                         emitter.send(substr);
                     } catch (IOException e) {

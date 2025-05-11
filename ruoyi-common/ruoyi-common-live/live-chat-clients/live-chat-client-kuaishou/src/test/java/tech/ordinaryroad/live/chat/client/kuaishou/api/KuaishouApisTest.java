@@ -28,13 +28,5 @@ class KuaishouApisTest {
 
     @Test
     void sendComment() {
-        System.out.println(KuaishouApis.sendComment(System.getenv("cookie"),
-                "3x6pb6bcmjrarvs",
-                KuaishouApis.SendCommentRequest
-                        .builder()
-                        .liveStreamId("XKLoBv2mAEo")
-                        .content("666666a")
-                        .build()
-        ));
     }
 }
