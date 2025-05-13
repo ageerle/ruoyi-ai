@@ -84,7 +84,6 @@ public class SingleHttpClient {
             if (params != null) {
                 String paramStr = EntityUtils.toString(new UrlEncodedFormEntity(params, Consts.UTF_8));
                 httpGet = new HttpGet(url + "?" + paramStr);
-//                System.out.println(url + "?" + paramStr);
             } else {
                 httpGet = new HttpGet(url);
             }

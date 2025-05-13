@@ -10,7 +10,7 @@ import okhttp3.sse.EventSourceListener;
 import java.util.Objects;
 
 /**
- * 描述： sse
+ *   sse
  *
  * @author https:www.unfbx.com
  * 2023-02-28

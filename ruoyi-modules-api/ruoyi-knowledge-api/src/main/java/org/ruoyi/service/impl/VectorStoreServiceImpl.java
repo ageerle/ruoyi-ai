@@ -11,6 +11,7 @@ import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import dev.langchain4j.store.embedding.filter.comparison.IsEqualTo;
+import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
 import dev.langchain4j.store.embedding.qdrant.QdrantEmbeddingStore;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
@@ -39,11 +40,11 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
     private final ConfigService configService;
 
-    Map<String,EmbeddingStore<TextSegment>> storeMap;
+    Map<String,EmbeddingStore<TextSegment>> storeMap = new HashMap<>();
 
     @Override
     public void createSchema(String kid,String modelName) {
-        EmbeddingStore<TextSegment> embeddingStore = WeaviateEmbeddingStore.builder().build();
+        EmbeddingStore<TextSegment> embeddingStore;
         switch (modelName) {
             case "weaviate" -> {
                 String protocol = configService.getConfigValue("weaviate", "protocol");
@@ -77,6 +78,10 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                         .port(Integer.parseInt(port))
                         .collectionName(collectionName)
                         .build();
+            }
+            default -> {
+                //使用内存
+                embeddingStore = new InMemoryEmbeddingStore<>();
             }
         }
         storeMap.put(kid,embeddingStore);

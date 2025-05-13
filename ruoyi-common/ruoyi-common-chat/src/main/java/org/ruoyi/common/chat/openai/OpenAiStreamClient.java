@@ -53,7 +53,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 描述： open ai 客户端
+ *   open ai 客户端
  *
  * @author https:www.unfbx.com
  * 2023-02-28
@@ -70,6 +70,11 @@ public class OpenAiStreamClient {
      * 自定义api host使用builder的方式构造client
      */
     private String apiHost;
+
+    /**
+     * 自定义url 兼容多个平台
+     */
+    private String apiUrl;
 
     /**
      * 自定义的okHttpClient
@@ -112,6 +117,11 @@ public class OpenAiStreamClient {
         }
         apiHost = builder.apiHost;
 
+        if (StrUtil.isBlank(builder.apiUrl)) {
+            builder.apiUrl = OpenAIConst.apiUrl;
+        }
+        apiUrl = builder.apiUrl;
+
         if (Objects.isNull(builder.keyStrategy)) {
             builder.keyStrategy = new KeyRandomStrategy();
         }
@@ -136,12 +146,12 @@ public class OpenAiStreamClient {
         }
         okHttpClient = builder.okHttpClient;
 
-        this.openAiApi = new Retrofit.Builder()
-            .baseUrl(apiHost)
-            .client(okHttpClient)
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-            .addConverterFactory(JacksonConverterFactory.create())
-            .build().create(OpenAiApi.class);
+//        this.openAiApi = new Retrofit.Builder()
+//            .baseUrl(apiHost)
+//            .client(okHttpClient)
+//            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+//            .addConverterFactory(JacksonConverterFactory.create())
+//            .build().create(OpenAiApi.class);
     }
 
     /**
@@ -180,7 +190,7 @@ public class OpenAiStreamClient {
             ObjectMapper mapper = new ObjectMapper();
             String requestBody = mapper.writeValueAsString(chatCompletion);
             Request request = new Request.Builder()
-                .url(this.apiHost + "v1/chat/completions")
+                .url(this.apiHost)
                 .post(RequestBody.create(MediaType.parse(ContentType.JSON.getValue()), requestBody))
                 .build();
             factory.newEventSource(request, eventSourceListener);
@@ -334,7 +344,6 @@ public class OpenAiStreamClient {
 
         BillingUsage billingUsage = billingUsage(start.toInstant().atZone(ZoneId.systemDefault()).toLocalDate(), end.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         double totalUsage = billingUsage.getTotalUsage().doubleValue() / 100;
-        System.out.println(totalUsage);
         Subscription subscription = subscription();
         KeyInfo keyInfo = new KeyInfo();
         String start_key = key.substring(0, 6);
@@ -611,6 +620,8 @@ public class OpenAiStreamClient {
          */
         private String apiHost;
 
+        private String apiUrl;
+
         /**
          * 自定义OkhttpClient
          */
@@ -642,6 +653,16 @@ public class OpenAiStreamClient {
          */
         public Builder apiHost(String val) {
             apiHost = val;
+            return this;
+        }
+
+        /**
+         * @param val 自定义请求后缀
+         * @return Builder
+         * @see OpenAIConst
+         */
+        public Builder apiUrl(String val) {
+            apiUrl = val;
             return this;
         }
 

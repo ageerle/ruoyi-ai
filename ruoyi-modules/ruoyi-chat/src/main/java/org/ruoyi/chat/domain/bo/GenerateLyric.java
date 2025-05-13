@@ -3,7 +3,7 @@ package org.ruoyi.chat.domain.bo;
 import lombok.Data;
 
 /**
- * 描述：生成歌词
+ *  生成歌词
  *
  * @author ageerle@163.com
  * date 2024/6/27

@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 描述： chat模型参数
+ * chat模型参数
  *
  * @author https:www.unfbx.com
  * 2023-03-02

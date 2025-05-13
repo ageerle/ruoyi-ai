@@ -3,7 +3,7 @@ package org.ruoyi.domain.request;
 import lombok.Data;
 
 /**
- * 描述：翻译请求对象
+ *  翻译请求对象
  *
  * @author ageerle@163.com
  * date 2025/1/13

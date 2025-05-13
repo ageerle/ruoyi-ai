@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 
 /**
- * 描述：用户密码修改bo
+ *  用户密码修改bo
  *
  * @author ageerle@163.com
  * date 2025/3/9

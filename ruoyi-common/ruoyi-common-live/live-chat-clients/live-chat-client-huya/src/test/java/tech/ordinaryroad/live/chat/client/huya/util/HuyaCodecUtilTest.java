@@ -26,7 +26,6 @@ class HuyaCodecUtilTest {
         ConnectParaInfo wsConnectParaInfo = ConnectParaInfo.newWSConnectParaInfo(ver, exp, appSrc);
         byte[] byteArray = wsConnectParaInfo.toByteArray();
         String s = HuyaCodecUtil.ab2str(byteArray);
-        System.out.println(s);
     }
 
     @Test
@@ -36,7 +35,6 @@ class HuyaCodecUtilTest {
         String s = HuyaCodecUtil.ab2str(byteArray);
 
         String btoa = HuyaCodecUtil.btoa(s);
-        System.out.println(btoa);
     }
 
     @Test
@@ -67,7 +65,6 @@ class HuyaCodecUtilTest {
         LiveLaunchReq liveLaunchReq = new LiveLaunchReq();
         liveLaunchReq = wupReq.getUniAttribute().getByClass("tReq", liveLaunchReq);
         UserId tId = liveLaunchReq.getTId();
-        System.out.println(wupReq.getTarsServantRequest().getVersion());
     }
 
     @Test

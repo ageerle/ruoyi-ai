@@ -1,6 +1,7 @@
 package org.ruoyi.domain;
 
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -46,7 +47,7 @@ public class ChatModel extends BaseEntity {
     /**
      * 模型价格
      */
-    private Long modelPrice;
+    private Double modelPrice;
 
     /**
      * 计费类型
@@ -67,6 +68,7 @@ public class ChatModel extends BaseEntity {
      * 请求地址
      */
     private String apiHost;
+
 
     /**
      * 密钥

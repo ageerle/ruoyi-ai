@@ -7,7 +7,7 @@ import org.ruoyi.common.chat.entity.chat.Message;
 import java.util.List;
 
 /**
- * 描述：对话请求对象
+ *  对话请求对象
  *
  * @author ageerle
  * @sine 2023-04-08

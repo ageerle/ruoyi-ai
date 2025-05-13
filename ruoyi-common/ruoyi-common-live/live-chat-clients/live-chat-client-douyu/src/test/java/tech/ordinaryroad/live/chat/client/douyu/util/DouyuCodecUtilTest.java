@@ -48,7 +48,6 @@ class DouyuCodecUtilTest {
         Map<String, Object> stringObjectMap = DouyuCodecUtil.parseDouyuSttStringToMap(mapkb);
         assertNotNull(stringObjectMap);
         stringObjectMap.forEach((string, o) -> {
-            System.out.println(string);
         });
     }
 
@@ -58,7 +57,6 @@ class DouyuCodecUtilTest {
         Map<String, Object> stringObjectMap = DouyuCodecUtil.parseDouyuSttStringToMap(pdrinfo);
         assertNotNull(stringObjectMap);
         stringObjectMap.forEach((string, o) -> {
-            System.out.println(string);
         });
     }
 
@@ -78,7 +76,6 @@ class DouyuCodecUtilTest {
                 }});
             }});
         }});
-        System.out.println(douyuSttString);
         assertEquals("key1@=value1/key2@=2/key3@=11@AA=11@AS12@AA=12@AS@S22@AA=22@AS21@AA=21@AS@S/".length(), douyuSttString.length());
     }
 
@@ -87,8 +84,6 @@ class DouyuCodecUtilTest {
         String mapkb = "type@=mapkb/pk_time@=600/teams@=team@AA=5@ASres@AA=1@ASsc@AA=660000@ASbf@AA=0@AS@Steam@AA=6@ASres@AA=2@ASsc@AA=600000@ASbf@AA=0@AS@Steam@AA=4@ASres@AA=3@ASsc@AA=456000@ASbf@AA=0@AS@Steam@AA=2@ASres@AA=4@ASsc@AA=302000@ASbf@AA=0@AS@Steam@AA=3@ASres@AA=5@ASsc@AA=100000@ASbf@AA=0@AS@Steam@AA=1@ASres@AA=6@ASsc@AA=200@ASbf@AA=0@AS@S/";
         IDouyuMsg iDouyuMsg = DouyuCodecUtil.parseDouyuSttString(mapkb, DouyuCodecUtil.MSG_TYPE_RECEIVE);
         String douyuSttString = DouyuCodecUtil.toDouyuSttString(iDouyuMsg);
-        System.out.println(mapkb);
-        System.out.println(douyuSttString);
         assertEquals(mapkb.length(), douyuSttString.length());
         IDouyuMsg douyuSttStringMsg = DouyuCodecUtil.parseDouyuSttString(douyuSttString, DouyuCodecUtil.MSG_TYPE_RECEIVE);
         assertNotNull(douyuSttStringMsg);
@@ -97,6 +92,5 @@ class DouyuCodecUtilTest {
     @Test
     void unescape() {
         String unescape = DouyuCodecUtil.unescape("team@AA=5@ASres@AA=1@ASsc@AA=660000@ASbf@AA=0@AS@Steam@AA=6@ASres@AA=2@ASsc@AA=600000@ASbf@AA=0@AS@Steam@AA=4@ASres@AA=3@ASsc@AA=456000@ASbf@AA=0@AS@Steam@AA=2@ASres@AA=4@ASsc@AA=302000@ASbf@AA=0@AS@Steam@AA=3@ASres@AA=5@ASsc@AA=100000@ASbf@AA=0@AS@Steam@AA=1@ASres@AA=6@ASsc@AA=200@ASbf@AA=0@AS@S");
-        System.out.println(unescape);
     }
 }

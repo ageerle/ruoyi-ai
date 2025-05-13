@@ -292,9 +292,6 @@ public class CommonTools {
 			sb.append(content.substring(lastStart));
 		}
 		if (sb.length() != 0) {
-			System.out.println(EmojiParser.parseToUnicode(sb.toString()));
-			System.out.println(EmojiParser.parseToAliases(EmojiParser.parseToUnicode(sb.toString())));
-			System.out.println(EmojiParser.removeAllEmojis(sb.toString()));
 		}
 	}
 

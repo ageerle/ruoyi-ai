@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.ResponseBody;
 import org.ruoyi.chat.enums.ChatModeType;
+import org.ruoyi.chat.factory.ChatServiceFactory;
 import org.ruoyi.chat.service.chat.IChatCostService;
+import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.service.chat.ISseService;
 import org.ruoyi.chat.util.IpUtil;
 import org.ruoyi.chat.util.SSEUtil;
@@ -61,9 +63,7 @@ public class SseServiceImpl implements ISseService {
 
     private final IChatModelService chatModelService;
 
-    private final OpenAIServiceImpl openAIService;
-
-    private final OllamaServiceImpl ollamaService;
+    private final ChatServiceFactory chatServiceFactory;
 
     private final IChatSessionService chatSessionService;
 
@@ -95,7 +95,8 @@ public class SseServiceImpl implements ISseService {
                 chatCostService.deductToken(chatRequest);
             }
             // 根据模型分类调用不同的处理逻辑
-            switchModelAndHandle(chatRequest,sseEmitter);
+            IChatService chatService = chatServiceFactory.getChatService(chatModelVo.getCategory());
+            chatService.chat(chatRequest, sseEmitter);
         } catch (Exception e) {
             log.error(e.getMessage(),e);
             SSEUtil.sendErrorEvent(sseEmitter,e.getMessage());
@@ -147,17 +148,6 @@ public class SseServiceImpl implements ISseService {
             }
     }
 
-    /**
-     *  根据模型名称前缀调用不同的处理逻辑
-     */
-    private void switchModelAndHandle(ChatRequest chatRequest,SseEmitter emitter) {
-        // 调用ollama中部署的本地模型
-        if (ChatModeType.OLLAMA.getCode().equals(chatModelVo.getCategory())) {
-            ollamaService.chat(chatRequest,emitter);
-        } else {
-            openAIService.chat(chatRequest,emitter);
-        }
-    }
 
     /**
      *  构建消息列表

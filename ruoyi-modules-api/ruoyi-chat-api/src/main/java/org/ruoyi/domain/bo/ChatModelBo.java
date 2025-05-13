@@ -1,5 +1,6 @@
 package org.ruoyi.domain.bo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.domain.ChatModel;
@@ -48,7 +49,7 @@ public class ChatModelBo extends BaseEntity {
      * 模型价格
      */
     @NotNull(message = "模型价格不能为空", groups = { AddGroup.class, EditGroup.class })
-    private Long modelPrice;
+    private Double modelPrice;
 
     /**
      * 计费类型
@@ -78,6 +79,7 @@ public class ChatModelBo extends BaseEntity {
      */
     @NotBlank(message = "密钥不能为空", groups = { AddGroup.class, EditGroup.class })
     private String apiKey;
+
 
     /**
      * 备注

@@ -3,7 +3,7 @@ package org.ruoyi.common.chat.openai.function;
 import java.util.function.Function;
 
 /**
- * 描述：key 的获取策略
+ *  key 的获取策略
  * jdk默认实现
  * @see Function
  *

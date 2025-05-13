@@ -3,6 +3,7 @@ package org.ruoyi.chat.service.chat.impl;
 import io.modelcontextprotocol.client.McpSyncClient;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.config.ChatConfig;
+import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.listener.SSEEventSourceListener;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
@@ -21,15 +22,15 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 
+/**
+ * @author ageer
+ */
 @Service
 @Slf4j
 public class OpenAIServiceImpl implements IChatService {
 
     @Autowired
     private IChatModelService chatModelService;
-
-    private OpenAiStreamClient openAiStreamClient;
-
 
     @Value("${spring.ai.mcp.client.enabled}")
     private Boolean enabled;
@@ -47,7 +48,7 @@ public class OpenAIServiceImpl implements IChatService {
     @Override
     public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-        openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
+        OpenAiStreamClient openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
         List<Message> messages = chatRequest.getMessages();
         if (enabled) {
             String toolString = mcpChat(chatRequest.getPrompt());
@@ -67,6 +68,11 @@ public class OpenAIServiceImpl implements IChatService {
 
     public String mcpChat(String prompt){
         return this.chatClient.prompt(prompt).call().content();
+    }
+
+    @Override
+    public String getCategory() {
+        return ChatModeType.CHAT.getCode();
     }
 
 }

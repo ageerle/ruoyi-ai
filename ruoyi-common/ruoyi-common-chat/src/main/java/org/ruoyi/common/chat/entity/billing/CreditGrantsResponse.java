@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * 描述：余额查询接口返回值
+ * 余额查询接口返回值
  *
  * @author https:www.unfbx.com
  * @since 2023-03-18

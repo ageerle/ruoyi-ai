@@ -45,11 +45,7 @@ import tech.ordinaryroad.live.chat.client.douyu.netty.handler.DouyuConnectionHan
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -95,12 +91,9 @@ class DouyuLiveChatClientTest implements IDouyuConnectionListener, IDouyuMsgList
                     .build();
 
             long startTime = System.currentTimeMillis(); // 获取开始时间的毫秒数
-            System.out.println("执行前.......");
             Thread.sleep(3000);
-            System.out.println("执行后.......");
             long endTime = System.currentTimeMillis(); // 获取结束时间的毫秒数
             long timeDiff = endTime - startTime; // 计算时间差
-            System.out.println("执行时间 " + timeDiff / 1000 + " 秒。");
 
             try (Response response = okClient.newCall(request).execute()) {
                 if (response.body() != null) {

@@ -5,7 +5,7 @@ import cn.hutool.core.util.RandomUtil;
 import java.util.List;
 
 /**
- * 描述：随机策略
+ *  随机策略
  *
  * @author https:www.unfbx.com
  * @since 2023-04-03

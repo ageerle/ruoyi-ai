@@ -8,7 +8,7 @@ import org.ruoyi.common.chat.openai.OpenAiStreamClient;
 import org.ruoyi.common.chat.openai.plugin.PluginAbstract;
 
 /**
- * 描述： 插件开发返回信息收集sse监听器
+ *   插件开发返回信息收集sse监听器
  *
  * @author https:www.unfbx.com
  * 2023-08-18

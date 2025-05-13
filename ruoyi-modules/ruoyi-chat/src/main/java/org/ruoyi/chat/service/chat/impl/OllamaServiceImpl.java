@@ -7,6 +7,8 @@ import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
 import io.github.ollama4j.models.chat.OllamaChatRequestModel;
 import io.github.ollama4j.models.generate.OllamaStreamHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.chat.enums.ChatModeType;
+import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.request.ChatRequest;
@@ -22,14 +24,18 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 
+/**
+ * @author ageer
+ */
 @Service
 @Slf4j
-public class OllamaServiceImpl  {
+public class OllamaServiceImpl implements IChatService {
 
-   @Autowired
-   private  IChatModelService chatModelService;
+    @Autowired
+    private IChatModelService chatModelService;
 
-    public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
+    @Override
+    public SseEmitter chat(ChatRequest chatRequest, SseEmitter emitter) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         String host = chatModelVo.getApiHost();
         List<Message> msgList = chatRequest.getMessages();
@@ -56,7 +62,6 @@ public class OllamaServiceImpl  {
                 OllamaStreamHandler streamHandler = (s) -> {
                     String substr = s.substring(response.length());
                     response.append(substr);
-                    System.out.println(substr);
                     try {
                         emitter.send(substr);
                     } catch (IOException e) {
@@ -73,4 +78,8 @@ public class OllamaServiceImpl  {
         return emitter;
     }
 
+    @Override
+    public String getCategory() {
+        return ChatModeType.OLLAMA.getCode();
+    }
 }

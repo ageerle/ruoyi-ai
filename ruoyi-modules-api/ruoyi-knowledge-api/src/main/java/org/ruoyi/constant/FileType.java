@@ -7,6 +7,8 @@ public class FileType {
     public static final String DOC = "doc";
     public static final String DOCX = "docx";
     public static final String PDF = "pdf";
+    public static final String XLS = "xls";
+    public static final String XLSX = "xlsx";
 
     public static final String LOG = "log";
     public static final String XML = "xml";
@@ -81,6 +83,15 @@ public class FileType {
 
     public static boolean isPdf(String type){
         if (type.equalsIgnoreCase(PDF)){
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public static boolean isExcel(String type){
+        if (type.equalsIgnoreCase(XLS) || type.equalsIgnoreCase(XLSX)){
             return true;
         }
         else {
