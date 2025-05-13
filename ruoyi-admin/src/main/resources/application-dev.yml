@@ -98,4 +98,7 @@ pdf:
   extract:
     service:
       url: http://localhost:8080
+    ai-api:
+      url: https://api.pandarobot.chat/v1/chat/completions
+      key: sk-DqEWHabaAvft3nj4Ad980727E7674fE095BdEb710b8cE77b
 
