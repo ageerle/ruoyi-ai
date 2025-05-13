@@ -94,3 +94,8 @@ sms:
   # 腾讯专用
   sdkAppId:
 
+pdf:
+  extract:
+    service:
+      url: http://localhost:8080
+
