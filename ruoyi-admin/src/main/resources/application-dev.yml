@@ -94,3 +94,11 @@ sms:
   # 腾讯专用
   sdkAppId:
 
+pdf:
+  extract:
+    service:
+      url: http://localhost:8080
+    ai-api:
+      url: https://api.pandarobot.chat/v1/chat/completions
+      key: sk-xxxx
+
