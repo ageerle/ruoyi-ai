@@ -94,6 +94,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         lqw.eq(bo.getTextBlockSize() != null, KnowledgeInfo::getTextBlockSize, bo.getTextBlockSize());
         lqw.eq(StringUtils.isNotBlank(bo.getVector()), KnowledgeInfo::getVector, bo.getVector());
         lqw.eq(StringUtils.isNotBlank(bo.getVectorModel()), KnowledgeInfo::getVectorModel, bo.getVectorModel());
+        lqw.or().eq(KnowledgeInfo::getShare, 1);
         return lqw;
     }
 
