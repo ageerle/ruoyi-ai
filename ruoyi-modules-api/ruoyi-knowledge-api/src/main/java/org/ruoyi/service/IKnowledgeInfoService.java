@@ -61,5 +61,5 @@ public interface IKnowledgeInfoService {
     /**
      * 上传附件
      */
-    void upload(KnowledgeInfoUploadBo bo);
+    void upload(KnowledgeInfoUploadBo bo) throws Exception;
 }

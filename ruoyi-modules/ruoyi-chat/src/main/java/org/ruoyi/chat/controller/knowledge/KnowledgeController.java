@@ -118,7 +118,7 @@ public class KnowledgeController extends BaseController {
    * 上传知识库附件
    */
   @PostMapping(value = "/attach/upload")
-  public R<String> upload(KnowledgeInfoUploadBo bo) {
+  public R<String> upload(KnowledgeInfoUploadBo bo) throws Exception {
     knowledgeInfoService.upload(bo);
     return R.ok("上传知识库附件成功!");
   }
