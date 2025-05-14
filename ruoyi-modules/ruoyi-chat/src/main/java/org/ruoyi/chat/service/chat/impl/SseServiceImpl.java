@@ -2,6 +2,7 @@ package org.ruoyi.chat.service.chat.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.google.protobuf.ServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,8 @@ import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.domain.bo.ChatSessionBo;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.vo.ChatModelVo;
+import org.ruoyi.domain.vo.KnowledgeInfoVo;
+import org.ruoyi.service.IKnowledgeInfoService;
 import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.IChatSessionService;
@@ -66,6 +69,8 @@ public class SseServiceImpl implements ISseService {
     private final ChatServiceFactory chatServiceFactory;
 
     private final IChatSessionService chatSessionService;
+
+    private final IKnowledgeInfoService knowledgeInfoService;
 
     private ChatModelVo chatModelVo;
 
@@ -148,50 +153,61 @@ public class SseServiceImpl implements ISseService {
             }
     }
 
-
     /**
      *  构建消息列表
      */
     private void buildChatMessageList(ChatRequest chatRequest){
-         chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+        String sysPrompt;
+        chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         // 获取对话消息列表
         List<Message> messages = chatRequest.getMessages();
-        String sysPrompt = chatModelVo.getSystemPrompt();
+        // 查询向量库相关信息加入到上下文
+        if(StringUtils.isNotEmpty(chatRequest.getKid())){
+            List<Message> knMessages = new ArrayList<>();
+            String content = messages.get(messages.size() - 1).getContent().toString();
+            // 通过kid查询知识库信息
+            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKid()));
+            // 查询向量模型配置信息
+            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
 
-
-        if(StringUtils.isEmpty(sysPrompt)){
-            // TODO 系统默认提示词,后续会增加提示词管理
-            sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
-                    "当前时间："+ DateUtils.getDate()+
-                    "#注意：回复之前注意结合上下文和工具返回内容进行回复。";
+            QueryVectorBo queryVectorBo = new QueryVectorBo();
+            queryVectorBo.setQuery(content);
+            queryVectorBo.setKid(chatRequest.getKid());
+            queryVectorBo.setApiKey(chatModel.getApiKey());
+            queryVectorBo.setBaseUrl(chatModel.getApiHost());
+            queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
+            queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
+            queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
+            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
+            for (String prompt : nearestList) {
+                Message userMessage = Message.builder().content(prompt).role(Message.Role.USER).build();
+                knMessages.add(userMessage);
+            }
+            messages.addAll(knMessages);
+            // 设置知识库系统提示词
+            sysPrompt = knowledgeInfoVo.getSystemPrompt();
+            if(StringUtils.isEmpty(sysPrompt)){
+                sysPrompt ="###角色设定\n" +
+                        "你是一个智能知识助手，专注于利用上下文中的信息来提供准确和相关的回答。\n" +
+                        "###指令\n" +
+                        "当用户的问题与上下文知识匹配时，利用上下文信息进行回答。如果问题与上下文不匹配，运用自身的推理能力生成合适的回答。\n" +
+                        "###限制\n" +
+                        "确保回答清晰简洁，避免提供不必要的细节。始终保持语气友好" +
+                        "当前时间："+ DateUtils.getDate();
+            }
+        }else {
+            sysPrompt = chatModelVo.getSystemPrompt();
+            if(StringUtils.isEmpty(sysPrompt)){
+                sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
+                        "当前时间："+ DateUtils.getDate()+
+                        "#注意：回复之前注意结合上下文和工具返回内容进行回复。";
+            }
         }
         // 设置系统默认提示词
         Message sysMessage = Message.builder().content(sysPrompt).role(Message.Role.SYSTEM).build();
         messages.add(0,sysMessage);
 
         chatRequest.setSysPrompt(sysPrompt);
-        // 查询向量库相关信息加入到上下文
-        if(StringUtils.isNotEmpty(chatRequest.getKid())){
-            List<Message> knMessages = new ArrayList<>();
-            String content = messages.get(messages.size() - 1).getContent().toString();
-            QueryVectorBo queryVectorBo = new QueryVectorBo();
-            queryVectorBo.setQuery(content);
-            queryVectorBo.setKid(chatRequest.getKid());
-            queryVectorBo.setApiKey(chatModelVo.getApiKey());
-            queryVectorBo.setBaseUrl(chatModelVo.getApiHost());
-            queryVectorBo.setModelName(chatModelVo.getModelName());
-            // TODO 查询向量返回条数,这里应该查询知识库配置
-            queryVectorBo.setMaxResults(3);
-            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
-            for (String prompt : nearestList) {
-                Message userMessage = Message.builder().content(prompt).role(Message.Role.USER).build();
-                knMessages.add(userMessage);
-            }
-            // TODO 提示词,这里应该查询知识库配置
-            Message userMessage = Message.builder().content(content + (!nearestList.isEmpty() ? "\n\n注意：回答问题时，须严格根据我给你的系统上下文内容原文进行回答，请不要自己发挥,回答时保持原来文本的段落层级" : "")).role(Message.Role.USER).build();
-            knMessages.add(userMessage);
-            messages.addAll(knMessages);
-        }
         // 用户对话内容
         String chatString = null;
         // 获取用户对话信息

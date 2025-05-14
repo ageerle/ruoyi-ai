@@ -34,6 +34,23 @@
     <a href="https://github.com/ageerle/ruoyi-ai/issues">提出新特性</a>
 </p>
 
+## 快速启动
+
+1. **克隆项目**
+   ```bash
+   git clone https://github.com/alanpeng/ruoyi-ai-docker-deploy
+   cd ruoyi-ai-docker-deploy
+   ```
+
+2. **启动全套应用**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **访问应用界面**
+   - 用户界面：`http://your-server-ip:8081`
+   - 管理员界面：`http://your-server-ip:8082`
+
 ## 目录
 
 - [系统体验](#系统体验)
