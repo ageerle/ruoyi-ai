@@ -1,5 +1,6 @@
 package org.ruoyi.domain;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -78,14 +79,19 @@ public class KnowledgeInfo extends BaseEntity {
     private Long textBlockSize;
 
     /**
-     * 向量库
+     * 向量库模型名称
      */
-    private String vector;
+    private String vectorModelName;
 
     /**
-     * 向量模型
+     * 向量化模型名称
      */
-    private String vectorModel;
+    private String embeddingModelName;
+
+    /**
+     * 系统提示词
+     */
+    private String systemPrompt;
 
     /**
      * 备注

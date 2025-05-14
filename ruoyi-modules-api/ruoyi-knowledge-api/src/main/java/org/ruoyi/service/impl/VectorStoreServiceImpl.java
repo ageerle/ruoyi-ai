@@ -1,5 +1,7 @@
 package org.ruoyi.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
+import com.google.protobuf.ServiceException;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -16,6 +18,7 @@ import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
 import dev.langchain4j.store.embedding.qdrant.QdrantEmbeddingStore;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.domain.bo.QueryVectorBo;
@@ -40,11 +43,10 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
     private final ConfigService configService;
 
-    Map<String,EmbeddingStore<TextSegment>> storeMap = new HashMap<>();
+    private EmbeddingStore<TextSegment> embeddingStore;
 
     @Override
     public void createSchema(String kid,String modelName) {
-        EmbeddingStore<TextSegment> embeddingStore;
         switch (modelName) {
             case "weaviate" -> {
                 String protocol = configService.getConfigValue("weaviate", "protocol");
@@ -84,88 +86,83 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 embeddingStore = new InMemoryEmbeddingStore<>();
             }
         }
-        storeMap.put(kid,embeddingStore);
     }
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        EmbeddingStore<TextSegment> store = storeMap.get(storeEmbeddingBo.getKid());
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getModelName(),
+        createSchema(storeEmbeddingBo.getKid(),storeEmbeddingBo.getVectorModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
                 storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
-        for (int i = 0; i < storeEmbeddingBo.getChunkList().size(); i++) {
+        List<String> chunkList = storeEmbeddingBo.getChunkList();
+        for (int i = 0; i < chunkList.size(); i++) {
             Map<String, Object> dataSchema = new HashMap<>();
             dataSchema.put("kid", storeEmbeddingBo.getKid());
             dataSchema.put("docId", storeEmbeddingBo.getKid());
             dataSchema.put("fid", storeEmbeddingBo.getFids().get(i));
-            Response<Embedding> response = embeddingModel.embed(storeEmbeddingBo.getChunkList().get(i));
-            Embedding embedding = response.content();
-            TextSegment segment = TextSegment.from(storeEmbeddingBo.getChunkList().get(i));
+            Embedding embedding = embeddingModel.embed(chunkList.get(i)).content();
+            TextSegment segment = TextSegment.from(chunkList.get(i));
             segment.metadata().putAll(dataSchema);
-
-            store.add(embedding,segment);
+            embeddingStore.add(embedding,segment);
         }
     }
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        EmbeddingStore<TextSegment> store = storeMap.get(queryVectorBo.getKid());
-
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getModelName(),
+        createSchema(queryVectorBo.getKid(),queryVectorBo.getVectorModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
                 queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
-        Filter simpleFilter = new IsEqualTo("kid", queryVectorBo.getKid());
+       // Filter simpleFilter = new IsEqualTo("kid", queryVectorBo.getKid());
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         EmbeddingSearchRequest embeddingSearchRequest = EmbeddingSearchRequest.builder()
                 .queryEmbedding(queryEmbedding)
                 .maxResults(queryVectorBo.getMaxResults())
                 // 添加过滤条件
-                .filter(simpleFilter)
+         //       .filter(simpleFilter)
                 .build();
-        List<EmbeddingMatch<TextSegment>> matches = store.search(embeddingSearchRequest).matches();
-
+        List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(embeddingSearchRequest).matches();
         List<String> results = new ArrayList<>();
-
         matches.forEach(embeddingMatch -> results.add(embeddingMatch.embedded().text()));
         return results;
     }
 
 
     @Override
-    public void removeByKid(String kid) {
-        EmbeddingStore<TextSegment> store = storeMap.get(kid);
-
+    public void removeByKid(String kid,String modelName) {
+        createSchema(kid,modelName);
         // 根据条件删除向量数据
         Filter simpleFilter = new IsEqualTo("kid", kid);
-        store.removeAll(simpleFilter);
+        embeddingStore.removeAll(simpleFilter);
     }
 
     @Override
-    public void removeByDocId(String kid, String docId) {
-        EmbeddingStore<TextSegment> store = storeMap.get(kid);
+    public void removeByDocId(String kid, String docId,String modelName) {
+        createSchema(kid,modelName);
         // 根据条件删除向量数据
         Filter simpleFilterByDocId = new IsEqualTo("docId", docId);
-        store.removeAll(simpleFilterByDocId);
+        embeddingStore.removeAll(simpleFilterByDocId);
     }
 
     @Override
-    public void removeByKidAndFid(String kid, String fid) {
-        EmbeddingStore<TextSegment> store = storeMap.get(kid);
+    public void removeByKidAndFid(String kid, String fid,String modelName) {
+        createSchema(kid,modelName);
         // 根据条件删除向量数据
         Filter simpleFilterByKid = new IsEqualTo("kid", kid);
         Filter simpleFilterFid = new IsEqualTo("fid", fid);
         Filter simpleFilterByAnd = Filter.and(simpleFilterFid, simpleFilterByKid);
-        store.removeAll(simpleFilterByAnd);
+        embeddingStore.removeAll(simpleFilterByAnd);
     }
 
     /**
      * 获取向量模型
      */
-    public EmbeddingModel getEmbeddingModel(String modelName,String apiKey,String baseUrl) {
-        EmbeddingModel embeddingModel = OpenAiEmbeddingModel.builder().build();
+    @SneakyThrows
+    public EmbeddingModel getEmbeddingModel(String modelName, String apiKey, String baseUrl) {
+        EmbeddingModel embeddingModel;
         if(TEXT_EMBEDDING_3_SMALL.toString().equals(modelName)) {
              embeddingModel = OpenAiEmbeddingModel.builder()
                     .apiKey(apiKey)
                     .baseUrl(baseUrl)
-                    .modelName(TEXT_EMBEDDING_3_SMALL)
+                    .modelName(modelName)
                     .build();
         // TODO 添加枚举
         }else if("quentinz/bge-large-zh-v1.5".equals(modelName)) {
@@ -173,6 +170,14 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                     .baseUrl(baseUrl)
                     .modelName(modelName)
                     .build();
+        }else if("baai/bge-m3".equals(modelName)) {
+            embeddingModel = OpenAiEmbeddingModel.builder()
+                    .apiKey(apiKey)
+                    .baseUrl(baseUrl)
+                    .modelName(modelName)
+                    .build();
+        }else {
+            throw new ServiceException("未找到对应向量化模型!");
         }
         return embeddingModel;
     }

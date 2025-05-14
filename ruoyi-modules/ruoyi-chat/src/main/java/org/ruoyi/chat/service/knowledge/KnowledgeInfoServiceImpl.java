@@ -102,8 +102,6 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         lqw.eq(bo.getOverlapChar() != null, KnowledgeInfo::getOverlapChar, bo.getOverlapChar());
         lqw.eq(bo.getRetrieveLimit() != null, KnowledgeInfo::getRetrieveLimit, bo.getRetrieveLimit());
         lqw.eq(bo.getTextBlockSize() != null, KnowledgeInfo::getTextBlockSize, bo.getTextBlockSize());
-        lqw.eq(StringUtils.isNotBlank(bo.getVector()), KnowledgeInfo::getVector, bo.getVector());
-        lqw.eq(StringUtils.isNotBlank(bo.getVectorModel()), KnowledgeInfo::getVectorModel, bo.getVectorModel());
         return lqw;
     }
 
@@ -161,7 +159,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             }
             baseMapper.insert(knowledgeInfo);
             if (knowledgeInfo != null) {
-                vectorStoreService.createSchema(String.valueOf(knowledgeInfo.getId()),bo.getVector());
+                vectorStoreService.createSchema(String.valueOf(knowledgeInfo.getId()),bo.getVectorModelName());
             }
         }else {
             baseMapper.updateById(knowledgeInfo);
@@ -177,7 +175,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         check(knowledgeInfoList);
         // 删除向量库信息
         knowledgeInfoList.forEach(knowledgeInfoVo -> {
-            vectorStoreService.removeByKid(String.valueOf(knowledgeInfoVo.getId()));
+            vectorStoreService.removeByKid(String.valueOf(knowledgeInfoVo.getId()),knowledgeInfoVo.getVectorModelName());
         });
         // 删除附件和知识片段
         fragmentMapper.deleteByMap(map);
@@ -231,17 +229,18 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
         // 通过kid查询知识库信息
         KnowledgeInfoVo knowledgeInfoVo = baseMapper.selectVoOne(Wrappers.<KnowledgeInfo>lambdaQuery()
-                .eq(KnowledgeInfo::getKid, kid));
+                .eq(KnowledgeInfo::getId, kid));
 
         // 通过向量模型查询模型信息
-        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getVectorModel());
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
 
         StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
         storeEmbeddingBo.setKid(kid);
         storeEmbeddingBo.setDocId(docId);
         storeEmbeddingBo.setFids(fids);
         storeEmbeddingBo.setChunkList(chunkList);
-        storeEmbeddingBo.setModelName(knowledgeInfoVo.getVectorModel());
+        storeEmbeddingBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
+        storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
         storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
         storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
         vectorStoreService.storeEmbeddings(storeEmbeddingBo);

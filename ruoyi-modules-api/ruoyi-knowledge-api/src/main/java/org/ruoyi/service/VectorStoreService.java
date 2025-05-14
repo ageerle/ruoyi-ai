@@ -13,14 +13,14 @@ public interface VectorStoreService {
 
     void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo);
 
-    void removeByDocId(String kid,String docId);
-
-    void removeByKid(String kid);
-
     List<String> getQueryVector(QueryVectorBo queryVectorBo);
 
     void createSchema(String kid,String modelName);
 
-    void removeByKidAndFid(String kid, String fid);
+    void removeByKid(String kid,String modelName);
+
+    void removeByDocId(String kid,String docId,String modelName);
+
+    void removeByKidAndFid(String kid, String fid,String modelName);
 
 }

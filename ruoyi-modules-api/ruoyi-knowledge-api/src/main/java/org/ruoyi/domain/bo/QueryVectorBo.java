@@ -26,9 +26,14 @@ public class QueryVectorBo {
     private Integer maxResults;
 
     /**
-     * 模型名称
+     * 向量库模型名称
      */
-    private String modelName;
+    private String vectorModelName;
+
+    /**
+     * 向量化模型名称
+     */
+    private String embeddingModelName;
 
     /**
      * 请求key
