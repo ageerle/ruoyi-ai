@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -23,16 +25,19 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * PDF图片提取服务实现类
  */
-@Service
+//@Service
 @Slf4j
-public class PdfImageExtractServiceImpl implements PdfImageExtractService {
+@Data
+@AllArgsConstructor
+//public class PdfImageExtractServiceImpl implements PdfImageExtractService {
+public class PdfImageExtractServiceImpl  {
 
-  @Value("${pdf.extract.service.url}")
+//  @Value("${pdf.extract.service.url}")
   private String serviceUrl;
-  @Value("${pdf.extract.ai-api.url}")
+//  @Value("${pdf.extract.ai-api.url}")
   private String aiApiUrl;
-  @Value("${pdf.extract.ai-api.key}")
-  private String aiApiKey ;
+//  @Value("${pdf.extract.ai-api.key}")
+  private String aiApiKey;
 
   private final OkHttpClient client = new Builder()
       .connectTimeout(100, TimeUnit.SECONDS)
@@ -43,7 +48,7 @@ public class PdfImageExtractServiceImpl implements PdfImageExtractService {
 
   private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
-  @Override
+//  @Override
   public byte[] extractImages(MultipartFile pdfFile, String imageFormat, boolean allowDuplicates)
       throws IOException {
     // 构建multipart请求
@@ -77,7 +82,7 @@ public class PdfImageExtractServiceImpl implements PdfImageExtractService {
    * @return 文件内容结果列表
    * @throws IOException 如果API调用过程中发生错误
    */
-  @Override
+//  @Override
   public List<PdfFileContentResult> dealFileContent(String[] unzip) throws IOException {
     List<PdfFileContentResult> results = new ArrayList<>();
     int i = 0;
@@ -110,6 +115,7 @@ public class PdfImageExtractServiceImpl implements PdfImageExtractService {
       // 执行请求
       try {
         log.info("=============call=" + ++i);
+
         Response response = client.newCall(request).execute();
         log.info("=============response=" + response);
         if (!response.isSuccessful()) {
@@ -126,11 +132,10 @@ public class PdfImageExtractServiceImpl implements PdfImageExtractService {
         throw new RuntimeException(e);
       }
     }
-
     return results;
   }
 
-  @Override
+//  @Override
   public List<PdfFileContentResult> extractImages(MultipartFile file) throws IOException {
     String format = "png";
     boolean allowDuplicates = true;

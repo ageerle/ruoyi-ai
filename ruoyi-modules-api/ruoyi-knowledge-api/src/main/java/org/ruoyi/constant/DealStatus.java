@@ -11,6 +11,8 @@ public class DealStatus {
   public static final Integer STATUS_20 = 20;
   //已结束
   public static final Integer STATUS_30 = 30;
+  //处理失败
+  public static final Integer STATUS_40 = 40;
 
 
 }

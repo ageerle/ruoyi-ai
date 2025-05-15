@@ -18,16 +18,20 @@ import java.util.List;
  */
 public interface ISysOssService {
 
-    TableDataInfo<SysOssVo> queryPageList(SysOssBo sysOss, PageQuery pageQuery);
+  TableDataInfo<SysOssVo> queryPageList(SysOssBo sysOss, PageQuery pageQuery);
 
-    List<SysOssVo> listByIds(Collection<Long> ossIds);
+  List<SysOssVo> listByIds(Collection<Long> ossIds);
 
-    SysOssVo getById(Long ossId);
+  SysOssVo getById(Long ossId);
 
-    SysOssVo upload(MultipartFile file);
+  SysOssVo upload(MultipartFile file);
 
-    void download(Long ossId, HttpServletResponse response) throws IOException;
+  void download(Long ossId, HttpServletResponse response) throws IOException;
 
-    Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+  MultipartFile downloadByFile(Long ossId) throws IOException;
+
+  String downloadByByte(Long ossId) throws IOException;
+
+  Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
 }

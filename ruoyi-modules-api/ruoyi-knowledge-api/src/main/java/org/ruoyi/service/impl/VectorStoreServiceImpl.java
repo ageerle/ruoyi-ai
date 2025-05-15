@@ -97,7 +97,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         for (int i = 0; i < chunkList.size(); i++) {
             Map<String, Object> dataSchema = new HashMap<>();
             dataSchema.put("kid", storeEmbeddingBo.getKid());
-            dataSchema.put("docId", storeEmbeddingBo.getKid());
+            dataSchema.put("docId", storeEmbeddingBo.getDocId());
             dataSchema.put("fid", storeEmbeddingBo.getFids().get(i));
             Embedding embedding = embeddingModel.embed(chunkList.get(i)).content();
             TextSegment segment = TextSegment.from(chunkList.get(i));
