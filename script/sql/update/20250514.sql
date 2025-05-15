@@ -1,4 +1,4 @@
-LTER TABLE `knowledge_info`
+ALTER TABLE `knowledge_info`
 ADD COLUMN `system_prompt` varchar(255) NULL COMMENT '系统提示词' AFTER `vector_model`;
 
 ALTER TABLE `knowledge_info`
