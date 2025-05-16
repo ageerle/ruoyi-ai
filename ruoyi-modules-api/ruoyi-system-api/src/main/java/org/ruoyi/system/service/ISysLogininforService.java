@@ -1,5 +1,6 @@
 package org.ruoyi.system.service;
 
+import org.ruoyi.common.log.event.LogininforEvent;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysLogininforBo;
@@ -44,4 +45,6 @@ public interface ISysLogininforService {
      * 清空系统登录日志
      */
     void cleanLogininfor();
+
+  void recordLogininfor(LogininforEvent logininforEvent);
 }

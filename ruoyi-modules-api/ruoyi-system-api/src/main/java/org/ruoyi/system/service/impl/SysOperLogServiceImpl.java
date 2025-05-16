@@ -42,6 +42,7 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
      */
     @Async
     @EventListener
+    @Override
     public void recordOper(OperLogEvent operLogEvent) {
         SysOperLogBo operLog = MapstructUtils.convert(operLogEvent, SysOperLogBo.class);
         // 远程查询操作地点

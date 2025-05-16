@@ -52,7 +52,7 @@ public class KnowledgeController extends BaseController {
 
   private final IKnowledgeFragmentService fragmentService;
 
-  private final PdfImageExtractService pdfImageExtractService;
+//  private final PdfImageExtractService pdfImageExtractService;
 
   /**
    * 根据用户信息查询本地知识库
@@ -118,7 +118,7 @@ public class KnowledgeController extends BaseController {
    * 上传知识库附件
    */
   @PostMapping(value = "/attach/upload")
-  public R<String> upload(KnowledgeInfoUploadBo bo) {
+  public R<String> upload(KnowledgeInfoUploadBo bo) throws Exception {
     knowledgeInfoService.upload(bo);
     return R.ok("上传知识库附件成功!");
   }
@@ -168,13 +168,13 @@ public class KnowledgeController extends BaseController {
    * 提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回
    *
    * @param file PDF文件
-   * @return 保存的文件路径信息
+   * @return 文件名称和图片内容
    */
-  @PostMapping("/extract-images")
-  @Operation(summary = "提取PDF中的图片并调用大模型,识别图片内容并返回", description = "提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回")
-  public R<List<PdfFileContentResult>> extractImages(
-      @RequestPart("file") MultipartFile file
-  ) throws IOException {
-    return R.ok(pdfImageExtractService.extractImages(file));
-  }
+//  @PostMapping("/extract-images")
+//  @Operation(summary = "提取PDF中的图片并调用大模型,识别图片内容并返回", description = "提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回")
+//  public R<List<PdfFileContentResult>> extractImages(
+//      @RequestPart("file") MultipartFile file
+//  ) throws IOException {
+//    return R.ok(pdfImageExtractService.extractImages(file));
+//  }
 }

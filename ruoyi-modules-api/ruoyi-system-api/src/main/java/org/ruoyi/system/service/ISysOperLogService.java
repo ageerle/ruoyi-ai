@@ -1,5 +1,6 @@
 package org.ruoyi.system.service;
 
+import org.ruoyi.common.log.event.OperLogEvent;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysOperLogBo;
@@ -51,4 +52,5 @@ public interface ISysOperLogService {
      * 清空操作日志
      */
     void cleanOperLog();
+  void recordOper(OperLogEvent operLogEvent);
 }

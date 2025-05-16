@@ -1,46 +1,45 @@
 package org.ruoyi.domain.vo;
 
-import org.ruoyi.domain.KnowledgeAttach;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
+import org.ruoyi.domain.KnowledgeAttachPic;
 
 
 /**
- * 知识库附件视图对象 knowledge_attach
+ * 知识库附件图片列视图对象 knowledge_attach_pic
  *
- * @author ageerle
- * @date 2025-04-08
+ * @author Albert
+ * @date 2025-05-15
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = KnowledgeAttach.class)
-public class KnowledgeAttachVo implements Serializable {
+@AutoMapper(target = KnowledgeAttachPic.class)
+public class KnowledgeAttachPicVo implements Serializable {
 
   @Serial
   private static final long serialVersionUID = 1L;
 
   /**
-   *
+   * 主键
    */
-  @ExcelProperty(value = "")
+  @ExcelProperty(value = "主键")
   private Long id;
 
   /**
-   * 知识库ID
+   * 知识库id
    */
-  @ExcelProperty(value = "知识库ID")
+  @ExcelProperty(value = "知识库id")
   private String kid;
 
   /**
-   * 文档ID
+   * 附件id
    */
-  @ExcelProperty(value = "文档ID")
-  private String docId;
+  @ExcelProperty(value = "附件id")
+  private String aid;
 
   /**
    * 文档名称
@@ -61,24 +60,16 @@ public class KnowledgeAttachVo implements Serializable {
   private String content;
 
   /**
-   * 备注
+   * 所在页数
    */
-  @ExcelProperty(value = "备注")
-  private String remark;
+  @ExcelProperty(value = "所在页数")
+  private Integer pageNum;
 
   /**
-   * 对象存储主键
+   * 所在页index
    */
-  @ExcelProperty(value = "对象存储主键")
-  private Long ossId;
-
-
-
-  /**
-   * 拆解图片状态10未开始，20进行中，30已完成
-   */
-  @ExcelProperty(value = "拆解图片状态10未开始，20进行中，30已完成")
-  private Integer picStatus;
+  @ExcelProperty(value = "所在页index")
+  private Integer indexNum;
 
   /**
    * 分析图片状态10未开始，20进行中，30已完成
@@ -87,8 +78,15 @@ public class KnowledgeAttachVo implements Serializable {
   private Integer picAnysStatus;
 
   /**
-   * 写入向量数据库状态10未开始，20进行中，30已完成
+   * 对象存储主键
    */
-  @ExcelProperty(value = "写入向量数据库状态10未开始，20进行中，30已完成")
-  private Integer vectorStatus;
+  @ExcelProperty(value = "对象存储主键")
+  private Long ossId;
+
+  /**
+   * 备注
+   */
+  @ExcelProperty(value = "备注")
+  private String remark;
+
 }

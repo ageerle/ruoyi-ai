@@ -48,6 +48,7 @@ public class SysLogininforServiceImpl implements ISysLogininforService {
      */
     @Async
     @EventListener
+    @Override
     public void recordLogininfor(LogininforEvent logininforEvent) {
         HttpServletRequest request = logininforEvent.getRequest();
         final UserAgent userAgent = UserAgentUtil.parse(request.getHeader("User-Agent"));

@@ -114,6 +114,10 @@
             <artifactId>commons-io</artifactId>
             <version>2.17.0</version>
         </dependency>
+      <dependency>
+        <groupId>org.ruoyi</groupId>
+        <artifactId>ruoyi-system-api</artifactId>
+      </dependency>
 
     </dependencies>
 
