@@ -302,11 +302,6 @@ public class DealFileService {
           .eq(KnowledgeAttachPic::getPicAnysStatus, DealStatus.STATUS_20)
           .eq(KnowledgeAttachPic::getId, picItem.getId()));
       throw new RuntimeException(e);
-    } finally {
-      //将图片分析失败的数据 重新设置状态
-      picMapper.update(new LambdaUpdateWrapper<KnowledgeAttachPic>()
-          .set(KnowledgeAttachPic::getPicAnysStatus, DealStatus.STATUS_10)
-          .eq(KnowledgeAttachPic::getPicAnysStatus, DealStatus.STATUS_40));
     }
   }
 

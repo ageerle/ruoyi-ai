@@ -317,7 +317,6 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
   }
 
-
   /**
    * 检查用户是否有删除知识库权限
    *
@@ -331,8 +330,6 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
       }
     }
   }
-
-
   /**
    * 第一步 定时 拆解PDF文件中的图片
    */
@@ -352,8 +349,6 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
       }
     }
   }
-
-
   /**
    * 第二步 定时 解析图片内容
    */
@@ -363,6 +358,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     List<KnowledgeAttachPic> knowledgeAttachPics = picMapper.selectList(
         new LambdaQueryWrapper<KnowledgeAttachPic>()
             .eq(KnowledgeAttachPic::getPicAnysStatus, DealStatus.STATUS_10)
+            .last("LIMIT 20")
     );
     if (ObjectUtil.isNotEmpty(knowledgeAttachPics)) {
       for (KnowledgeAttachPic picItem : knowledgeAttachPics) {
@@ -370,8 +366,6 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
       }
     }
   }
-
-
   /**
    * 第三步 定时 处理 附件上传后上传向量数据库
    */
@@ -391,7 +385,22 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
       }
     }
   }
-
-
-
+  /**
+   * 第四步 定时 处理 失败数据
+   */
+  @Scheduled(fixedDelay = 30 * 60 * 1000)
+  public void dealKnowledge40Status() throws Exception {
+      //拆解PDF失败 重新设置状态
+      attachMapper.update(new LambdaUpdateWrapper<KnowledgeAttach>()
+          .set(KnowledgeAttach::getPicStatus, DealStatus.STATUS_10)
+          .eq(KnowledgeAttach::getPicStatus, DealStatus.STATUS_40));
+      //将图片分析失败的数据 重新设置状态
+      picMapper.update(new LambdaUpdateWrapper<KnowledgeAttachPic>()
+          .set(KnowledgeAttachPic::getPicAnysStatus, DealStatus.STATUS_10)
+          .eq(KnowledgeAttachPic::getPicAnysStatus, DealStatus.STATUS_40));
+      //上传向量库失败 重新设置状态
+      attachMapper.update(new LambdaUpdateWrapper<KnowledgeAttach>()
+          .set(KnowledgeAttach::getVectorStatus, DealStatus.STATUS_10)
+          .eq(KnowledgeAttach::getVectorStatus, DealStatus.STATUS_40));
+  }
 }
