@@ -8,6 +8,7 @@ import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.ChatSessionBo;
 import org.ruoyi.domain.vo.ChatSessionVo;
@@ -42,6 +43,12 @@ public class ChatSessionController extends BaseController {
     @SaCheckPermission("system:session:list")
     @GetMapping("/list")
     public TableDataInfo<ChatSessionVo> list(ChatSessionBo bo, PageQuery pageQuery) {
+        if(!LoginHelper.isLogin()){
+           // 如果用户没有登录,返回空会话列表
+           return TableDataInfo.build();
+        }
+        // 默认查询当前用户会话
+        bo.setUserId(LoginHelper.getUserId());
         return chatSessionService.queryPageList(bo, pageQuery);
     }
 

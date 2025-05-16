@@ -2,6 +2,7 @@ package org.ruoyi.service.impl;
 
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.core.page.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -45,6 +46,10 @@ public class ChatMessageServiceImpl implements IChatMessageService {
      */
     @Override
     public TableDataInfo<ChatMessageVo> queryPageList(ChatMessageBo bo, PageQuery pageQuery) {
+        if(!LoginHelper.isLogin()){
+            return TableDataInfo.build();
+        }
+        bo.setUserId(LoginHelper.getUserId());
         LambdaQueryWrapper<ChatMessage> lqw = buildQueryWrapper(bo);
         Page<ChatMessageVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
@@ -64,9 +69,8 @@ public class ChatMessageServiceImpl implements IChatMessageService {
         LambdaQueryWrapper<ChatMessage> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getUserId() != null, ChatMessage::getUserId, bo.getUserId());
         lqw.eq(StringUtils.isNotBlank(bo.getContent()), ChatMessage::getContent, bo.getContent());
-        lqw.eq(StringUtils.isNotBlank(bo.getRole()), ChatMessage::getRole, bo.getRole());
-        lqw.eq(bo.getDeductCost() != null, ChatMessage::getDeductCost, bo.getDeductCost());
-        lqw.eq(bo.getTotalTokens() != null, ChatMessage::getTotalTokens, bo.getTotalTokens());
+        lqw.eq(bo.getSessionId() != null, ChatMessage::getSessionId, bo.getSessionId());
+        lqw.like(StringUtils.isNotBlank(bo.getRole()), ChatMessage::getRole, bo.getRole());
         lqw.like(StringUtils.isNotBlank(bo.getModelName()), ChatMessage::getModelName, bo.getModelName());
         return lqw;
     }

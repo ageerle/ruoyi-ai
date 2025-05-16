@@ -1,19 +1,14 @@
 package org.ruoyi.chat.service.chat.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.google.protobuf.ServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.ResponseBody;
-import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.factory.ChatServiceFactory;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.service.chat.ISseService;
-import org.ruoyi.chat.util.IpUtil;
 import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.config.LocalCache;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
@@ -26,15 +21,14 @@ import org.ruoyi.common.core.utils.DateUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.core.utils.file.MimeTypeUtils;
-import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.domain.bo.ChatSessionBo;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
-import org.ruoyi.service.IKnowledgeInfoService;
-import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.IChatSessionService;
+import org.ruoyi.service.IKnowledgeInfoService;
+import org.ruoyi.service.VectorStoreService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -49,10 +43,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author ageer
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -81,24 +77,20 @@ public class SseServiceImpl implements ISseService {
         try {
             // 构建消息列表
             buildChatMessageList(chatRequest);
-            if (!StpUtil.isLogin()) {
-                // 未登录用户限制对话次数
-                checkUnauthenticatedUserChatLimit(request);
-            }else {
-                LocalCache.CACHE.put("userId", chatCostService.getUserId());
-                chatRequest.setUserId(chatCostService.getUserId());
-                // 保存会话信息
-                if(chatRequest.getSessionId()==null){
-                    ChatSessionBo chatSessionBo = new ChatSessionBo();
-                    chatSessionBo.setUserId(chatCostService.getUserId());
-                    chatSessionBo.setSessionTitle(getFirst10Characters(chatRequest.getPrompt()));
-                    chatSessionBo.setSessionContent(chatRequest.getPrompt());
-                    chatSessionService.insertByBo(chatSessionBo);
-                    chatRequest.setSessionId(chatSessionBo.getId());
-                }
-                // 保存消息记录 并扣除费用
-                chatCostService.deductToken(chatRequest);
+
+            LocalCache.CACHE.put("userId", chatCostService.getUserId());
+            chatRequest.setUserId(chatCostService.getUserId());
+            // 保存会话信息
+            if(chatRequest.getSessionId()==null){
+                ChatSessionBo chatSessionBo = new ChatSessionBo();
+                chatSessionBo.setUserId(chatCostService.getUserId());
+                chatSessionBo.setSessionTitle(getFirst10Characters(chatRequest.getPrompt()));
+                chatSessionBo.setSessionContent(chatRequest.getPrompt());
+                chatSessionService.insertByBo(chatSessionBo);
+                chatRequest.setSessionId(chatSessionBo.getId());
             }
+            // 保存消息记录 并扣除费用
+            chatCostService.deductToken(chatRequest);
             // 根据模型分类调用不同的处理逻辑
             IChatService chatService = chatServiceFactory.getChatService(chatModelVo.getCategory());
             chatService.chat(chatRequest, sseEmitter);
@@ -124,33 +116,6 @@ public class SseServiceImpl implements ISseService {
             // 如果长度不足10，返回整个字符串
             return str;
         }
-    }
-
-    /**
-     * 检查未登录用户是否超过当日对话次数限制
-     *
-     * @param request 当前请求
-     * @throws ServiceException 如果当日免费次数已用完
-     */
-    public void checkUnauthenticatedUserChatLimit(HttpServletRequest request) throws ServiceException {
-
-            String clientIp = IpUtil.getClientIp(request);
-            // 访客每天默认只能对话5次
-            int timeWindowInSeconds = 5;
-            String redisKey = "clientIp:" + clientIp;
-            int count = 0;
-            // 检查Redis中的对话次数
-            if (RedisUtils.getCacheObject(redisKey) == null) {
-                // 缓存有效时间1天
-                RedisUtils.setCacheObject(redisKey, count, Duration.ofSeconds(86400));
-            } else {
-                count = RedisUtils.getCacheObject(redisKey);
-                if (count >= timeWindowInSeconds) {
-                    throw new ServiceException("当日免费次数已用完");
-                }
-                count++;
-                RedisUtils.setCacheObject(redisKey, count);
-            }
     }
 
     /**

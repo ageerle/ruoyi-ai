@@ -330,10 +330,11 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
       }
     }
   }
+
   /**
    * 第一步 定时 拆解PDF文件中的图片
    */
-  @Scheduled(fixedDelay = 15000) // 每3秒执行一次
+  //@Scheduled(fixedDelay = 15000) // 每3秒执行一次
   public void dealKnowledgeAttachPic() throws Exception {
     //处理 拆解PDF文件中的图片的记录
     List<KnowledgeAttach> knowledgeAttaches = attachMapper.selectList(
@@ -349,10 +350,11 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
       }
     }
   }
+
   /**
    * 第二步 定时 解析图片内容
    */
-  @Scheduled(fixedDelay = 15000)
+  //@Scheduled(fixedDelay = 15000)
   public void dealKnowledgeAttachPicAnys() throws Exception {
     //获取未处理的图片记录
     List<KnowledgeAttachPic> knowledgeAttachPics = picMapper.selectList(
@@ -369,7 +371,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
   /**
    * 第三步 定时 处理 附件上传后上传向量数据库
    */
-  @Scheduled(fixedDelay = 30000) // 每3秒执行一次
+  //@Scheduled(fixedDelay = 30000) // 每3秒执行一次
   public void dealKnowledgeAttachVector() throws Exception {
     //处理 需要上传向量数据库的记录
     List<KnowledgeAttach> knowledgeAttaches = attachMapper.selectList(
@@ -388,7 +390,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
   /**
    * 第四步 定时 处理 失败数据
    */
-  @Scheduled(fixedDelay = 30 * 60 * 1000)
+  //@Scheduled(fixedDelay = 30 * 60 * 1000)
   public void dealKnowledge40Status() throws Exception {
       //拆解PDF失败 重新设置状态
       attachMapper.update(new LambdaUpdateWrapper<KnowledgeAttach>()
