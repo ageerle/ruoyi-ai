@@ -10,6 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 获取所有Url配置
@@ -19,23 +20,24 @@ import java.util.regex.Pattern;
 @Data
 public class AllUrlHandler implements InitializingBean {
 
-    private static final Pattern PATTERN = Pattern.compile("\\{(.*?)\\}");
-
-    private List<String> urls = new ArrayList<>();
+    private List<String> urls = new ArrayList<>(256);
 
     @Override
     public void afterPropertiesSet() {
-        Set<String> set = new HashSet<>();
-        RequestMappingHandlerMapping mapping = SpringUtils.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
-        Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();
-        map.keySet().forEach(info -> {
-            // 获取注解上边的 path 替代 path variable 为 *
-            if(info.getPathPatternsCondition()!=null){
-                Objects.requireNonNull(info.getPathPatternsCondition().getPatterns())
-                    .forEach(url -> set.add(ReUtil.replaceAll(url.getPatternString(), PATTERN, "*")));
-            }
-        });
-        urls.addAll(set);
+        String name = "requestMappingHandlerMapping";
+        RequestMappingHandlerMapping mapping = SpringUtils.getBean(name, RequestMappingHandlerMapping.class);
+
+        Map<RequestMappingInfo, HandlerMethod> handlerMethods = mapping.getHandlerMethods();
+
+        Pattern pattern = Pattern.compile("\\{(.*?)\\}");
+
+        Set<String> handlerSet = handlerMethods.keySet().stream()
+                .flatMap(info -> info.getPatternsCondition().getPatterns().stream())
+                .collect(Collectors.toSet());
+
+        // 获取注解上边的 path 替代 path variable 为 *
+        handlerSet.stream().map(path -> ReUtil.replaceAll(path, pattern, "*"))
+                .forEach(item -> urls.add(item));
     }
 
 }
