@@ -155,7 +155,7 @@ INSERT INTO `chat_config` VALUES (1813506141979254785, 'mail', 'mailTitle', '【
 INSERT INTO `chat_config` VALUES (1818270017648070657, 'stripe', 'prompt', 'This system is for demonstration only and does not currently support this feature!', '提示语', 103, '2024-07-30 20:58:49', '1', '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1818270017966837761, 'stripe', 'enabled', 'true', '开启支付', 103, '2024-07-30 20:58:49', '1', '1', '2024-08-11 12:02:42', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1897610056458412050, 'weaviate', 'protocol', 'http', '协议', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
-INSERT INTO `chat_config` VALUES (1897610056458412051, 'weaviate', 'host', 'weaviate:8080', '地址', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
+INSERT INTO `chat_config` VALUES (1897610056458412051, 'weaviate', 'host', '127.0.0.1:6038', '地址', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1897610056458412052, 'weaviate', 'classname', 'LocalKnowledge', '分类名称', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1897610056458412053, 'milvus', 'host', '127.0.0.1', '地址', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
 INSERT INTO `chat_config` VALUES (1897610056458412054, 'milvus', 'port', '19530', '端口', 103, '2025-03-06 21:10:02', '1', '1', '2025-03-06 21:10:31', NULL, NULL, '0', NULL, 0);
