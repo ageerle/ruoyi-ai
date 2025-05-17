@@ -54,14 +54,18 @@ public class ChatCostServiceImpl implements IChatCostService {
         String modelName = chatRequest.getModel();
 
         ChatMessageBo chatMessageBo = new ChatMessageBo();
-        chatMessageBo.setSessionId(chatRequest.getSessionId());
+
+        if(chatRequest.getSessionId() == null){
+            Object sessionId = LocalCache.CACHE.get("sessionId");
+            chatRequest.setSessionId((Long) sessionId);
+        }
 
         Object userId = LocalCache.CACHE.get("userId");
-        if(userId!=null){
-            chatMessageBo.setUserId((Long) userId);
-        }else {
-            chatMessageBo.setUserId(getUserId());
-        }
+        chatMessageBo.setUserId((Long) userId);
+
+        chatMessageBo.setSessionId(chatRequest.getSessionId());
+        chatMessageBo.setContent(chatRequest.getPrompt());
+
         // 计算总token数
         ChatToken chatToken = chatTokenService.queryByUserId(chatMessageBo.getUserId(), modelName);
         if (chatToken == null) {
@@ -95,7 +99,7 @@ public class ChatCostServiceImpl implements IChatCostService {
                 deductUserBalance(chatMessageBo.getUserId(), numberCost);
                 chatMessageBo.setDeductCost(numberCost);
             }
-            chatMessageBo.setContent(chatRequest.getPrompt());
+
         } else {
             deductUserBalance(chatMessageBo.getUserId(), 0.0);
             chatMessageBo.setDeductCost(0d);

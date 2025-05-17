@@ -89,6 +89,7 @@ public class SseServiceImpl implements ISseService {
                 chatSessionService.insertByBo(chatSessionBo);
                 chatRequest.setSessionId(chatSessionBo.getId());
             }
+            LocalCache.CACHE.put("sessionId", chatRequest.getSessionId());
             // 保存消息记录 并扣除费用
             chatCostService.deductToken(chatRequest);
             // 根据模型分类调用不同的处理逻辑

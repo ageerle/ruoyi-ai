@@ -43,6 +43,7 @@ public class ChatMessageBo extends BaseEntity {
     /**
      * 会话id
      */
+    @NotBlank(message = "会话id不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long sessionId;
 
     /**
