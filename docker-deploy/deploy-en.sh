@@ -238,6 +238,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 rm -rf ${DEPLOY_DIR}/ruoyi-ai
                 echo "Cloning ruoyi-ai-backend repository..."
                 cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-ai
+                
+                # Prompt for branch selection
+                read -p "Enter branch name for ruoyi-ai repository [main]: " RUOYI_AI_BRANCH
+                RUOYI_AI_BRANCH="${RUOYI_AI_BRANCH:-main}"
+                echo "Checking out branch: ${RUOYI_AI_BRANCH}"
+                cd ${DEPLOY_DIR}/ruoyi-ai && git checkout ${RUOYI_AI_BRANCH}
+                cd ..
             ;;
             [Nn]* )
                 echo "Skipping clone operation."
@@ -249,6 +256,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
     else
         echo "Cloning ruoyi-ai-backend repository..."
         cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-ai
+        
+        # Prompt for branch selection
+        read -p "Enter branch name for ruoyi-ai repository [main]: " RUOYI_AI_BRANCH
+        RUOYI_AI_BRANCH="${RUOYI_AI_BRANCH:-main}"
+        echo "Checking out branch: ${RUOYI_AI_BRANCH}"
+        cd ${DEPLOY_DIR}/ruoyi-ai && git checkout ${RUOYI_AI_BRANCH}
+        cd ..
     fi
 
     # Clone ruoyi-ai-admin repositories
@@ -261,6 +275,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 rm -rf ${DEPLOY_DIR}/ruoyi-admin
                 echo "Cloning ruoyi-admin repository..."
                 cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-admin
+                
+                # Prompt for branch selection
+                read -p "Enter branch name for ruoyi-admin repository [main]: " RUOYI_ADMIN_BRANCH
+                RUOYI_ADMIN_BRANCH="${RUOYI_ADMIN_BRANCH:-main}"
+                echo "Checking out branch: ${RUOYI_ADMIN_BRANCH}"
+                cd ${DEPLOY_DIR}/ruoyi-admin && git checkout ${RUOYI_ADMIN_BRANCH}
+                cd ..
             ;;
             [Nn]* )
                 echo "Skipping clone operation."
@@ -272,6 +293,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
     else
         echo "Cloning ruoyi-ai-admin repository..."
         cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-admin
+        
+        # Prompt for branch selection
+        read -p "Enter branch name for ruoyi-admin repository [main]: " RUOYI_ADMIN_BRANCH
+        RUOYI_ADMIN_BRANCH="${RUOYI_ADMIN_BRANCH:-main}"
+        echo "Checking out branch: ${RUOYI_ADMIN_BRANCH}"
+        cd ${DEPLOY_DIR}/ruoyi-admin && git checkout ${RUOYI_ADMIN_BRANCH}
+        cd ..
     fi
 
     # Clone ruoyi-ai-web repositories
@@ -284,6 +312,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 rm -rf ${DEPLOY_DIR}/ruoyi-web
                 echo "Cloning ruoyi-ai-web repository..."
                 cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-web
+                
+                # Prompt for branch selection
+                read -p "Enter branch name for ruoyi-web repository [main]: " RUOYI_WEB_BRANCH
+                RUOYI_WEB_BRANCH="${RUOYI_WEB_BRANCH:-main}"
+                echo "Checking out branch: ${RUOYI_WEB_BRANCH}"
+                cd ${DEPLOY_DIR}/ruoyi-web && git checkout ${RUOYI_WEB_BRANCH}
+                cd ..
             ;;
             [Nn]* )
                 echo "Skipping clone operation."
@@ -295,6 +330,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
     else
         echo "Cloning ruoyi-ai-web repository..."
         cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-web
+        
+        # Prompt for branch selection
+        read -p "Enter branch name for ruoyi-web repository [main]: " RUOYI_WEB_BRANCH
+        RUOYI_WEB_BRANCH="${RUOYI_WEB_BRANCH:-main}"
+        echo "Checking out branch: ${RUOYI_WEB_BRANCH}"
+        cd ${DEPLOY_DIR}/ruoyi-web && git checkout ${RUOYI_WEB_BRANCH}
+        cd ..
     fi
 
     # Update application-prod.yml file

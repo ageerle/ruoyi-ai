@@ -238,6 +238,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 rm -rf ${DEPLOY_DIR}/ruoyi-ai
                 echo "正在克隆 ruoyi-ai-backend 仓库..."
                 cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-ai
+                
+                # 提示选择分支
+                read -p "请输入 ruoyi-ai 仓库的分支名称 [main]: " RUOYI_AI_BRANCH
+                RUOYI_AI_BRANCH="${RUOYI_AI_BRANCH:-main}"
+                echo "正在切换到分支: ${RUOYI_AI_BRANCH}"
+                cd ${DEPLOY_DIR}/ruoyi-ai && git checkout ${RUOYI_AI_BRANCH}
+                cd ..
             ;;
             [Nn]* )
                 echo "跳过克隆操作。"
@@ -249,6 +256,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
     else
         echo "正在克隆 ruoyi-ai-backend 仓库..."
         cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-ai
+        
+        # 提示选择分支
+        read -p "请输入 ruoyi-ai 仓库的分支名称 [main]: " RUOYI_AI_BRANCH
+        RUOYI_AI_BRANCH="${RUOYI_AI_BRANCH:-main}"
+        echo "正在切换到分支: ${RUOYI_AI_BRANCH}"
+        cd ${DEPLOY_DIR}/ruoyi-ai && git checkout ${RUOYI_AI_BRANCH}
+        cd ..
     fi
 
     # Clone ruoyi-ai-admin repositories
@@ -261,6 +275,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 rm -rf ${DEPLOY_DIR}/ruoyi-admin
                 echo "正在克隆 ruoyi-admin 仓库..."
                 cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-admin
+                
+                # 提示选择分支
+                read -p "请输入 ruoyi-admin 仓库的分支名称 [main]: " RUOYI_ADMIN_BRANCH
+                RUOYI_ADMIN_BRANCH="${RUOYI_ADMIN_BRANCH:-main}"
+                echo "正在切换到分支: ${RUOYI_ADMIN_BRANCH}"
+                cd ${DEPLOY_DIR}/ruoyi-admin && git checkout ${RUOYI_ADMIN_BRANCH}
+                cd ..
             ;;
             [Nn]* )
                 echo "跳过克隆操作。"
@@ -272,6 +293,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
     else
         echo "正在克隆 ruoyi-ai-admin 仓库..."
         cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-admin
+        
+        # 提示选择分支
+        read -p "请输入 ruoyi-admin 仓库的分支名称 [main]: " RUOYI_ADMIN_BRANCH
+        RUOYI_ADMIN_BRANCH="${RUOYI_ADMIN_BRANCH:-main}"
+        echo "正在切换到分支: ${RUOYI_ADMIN_BRANCH}"
+        cd ${DEPLOY_DIR}/ruoyi-admin && git checkout ${RUOYI_ADMIN_BRANCH}
+        cd ..
     fi
 
     # Clone ruoyi-ai-web repositories
@@ -284,6 +312,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 rm -rf ${DEPLOY_DIR}/ruoyi-web
                 echo "正在克隆 ruoyi-ai-web 仓库..."
                 cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-web
+                
+                # 提示选择分支
+                read -p "请输入 ruoyi-web 仓库的分支名称 [main]: " RUOYI_WEB_BRANCH
+                RUOYI_WEB_BRANCH="${RUOYI_WEB_BRANCH:-main}"
+                echo "正在切换到分支: ${RUOYI_WEB_BRANCH}"
+                cd ${DEPLOY_DIR}/ruoyi-web && git checkout ${RUOYI_WEB_BRANCH}
+                cd ..
             ;;
             [Nn]* )
                 echo "跳过克隆操作。"
@@ -295,6 +330,13 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
     else
         echo "正在克隆 ruoyi-ai-web 仓库..."
         cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-web
+        
+        # 提示选择分支
+        read -p "请输入 ruoyi-web 仓库的分支名称 [main]: " RUOYI_WEB_BRANCH
+        RUOYI_WEB_BRANCH="${RUOYI_WEB_BRANCH:-main}"
+        echo "正在切换到分支: ${RUOYI_WEB_BRANCH}"
+        cd ${DEPLOY_DIR}/ruoyi-web && git checkout ${RUOYI_WEB_BRANCH}
+        cd ..
     fi
 
     # 更新 application-prod.yml 文件
