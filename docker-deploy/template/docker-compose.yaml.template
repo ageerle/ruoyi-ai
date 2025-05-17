@@ -33,7 +33,7 @@ services:
       - "{{REDIS_PORT}}:6379"
     volumes:
       - ./data/redis:/data
-    command: redis-server --appendonly yes {{REDIS_COMMAND_ARGS}}
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
     restart: always
     networks:
       - ruoyi-net
