@@ -218,9 +218,9 @@ sed -i "s|{{TZ}}|$(escape_sed_replacement_string "${TZ}")|g" ${DEPLOY_DIR}/docke
 sed -i "s|{{ADMIN_PORT}}|$(escape_sed_replacement_string "${ADMIN_PORT}")|g" ${DEPLOY_DIR}/docker-compose.yaml
 sed -i "s|{{WEB_PORT}}|$(escape_sed_replacement_string "${WEB_PORT}")|g" ${DEPLOY_DIR}/docker-compose.yaml
 
-sed -i "s|ruoyi-ai-backend:latest|ruoyi-ai-backend:${RUOYI_AI_BRANCH}|g" ${DEPLOY_DIR}/docker-compose.yaml
-sed -i "s|ruoyi-ai-admin:latest|ruoyi-ai-admin:${RUOYI_ADMIN_BRANCH}|g" ${DEPLOY_DIR}/docker-compose.yaml
-sed -i "s|ruoyi-ai-web:latest|ruoyi-ai-web:${RUOYI_WEB_BRANCH}|g" ${DEPLOY_DIR}/docker-compose.yaml
+sed -i "s|ruoyi-ai-backend:latest|ruoyi-ai-backend:"${RUOYI_AI_BRANCH}"|g" ${DEPLOY_DIR}/docker-compose.yaml
+sed -i "s|ruoyi-ai-admin:latest|ruoyi-ai-admin:"${RUOYI_ADMIN_BRANCH}"|g" ${DEPLOY_DIR}/docker-compose.yaml
+sed -i "s|ruoyi-ai-web:latest|ruoyi-ai-web:"${RUOYI_WEB_BRANCH}"|g" ${DEPLOY_DIR}/docker-compose.yaml
 
 echo "Updated docker-compose.yaml file with your configurations."
 
@@ -450,7 +450,7 @@ EOF
     cd temp/
     unzip dist.zip -d dist
     rm -f dist.zip
-    docker build -t ruoyi-admin:${RUOYI_ADMIN_BRANCH} .
+    docker build -t ruoyi-ai-admin:${RUOYI_ADMIN_BRANCH} .
     cd ..
 
     echo "Building Ruoyi-AI Web Docker images..."
@@ -461,7 +461,7 @@ EOF
     cp Dockerfile temp/
     cp nginx.conf temp/
     cd temp/
-    docker build -t ruoyi-web:${RUOYI_WEB_BRANCH} .
+    docker build -t ruoyi-ai-web:${RUOYI_WEB_BRANCH} .
     cd ..
 else
     echo "Skipping image build process. Proceeding directly to deployment..."
