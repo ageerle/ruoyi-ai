@@ -459,6 +459,7 @@ EOF
     mkdir temp
     cp -pr ${DEPLOY_DIR}/ruoyi-web/dist temp/
     cp Dockerfile temp/
+    cp nginx.conf temp/
     cd temp/
     docker build -t ruoyi-web:${RUOYI_WEB_BRANCH} .
     cd ..
