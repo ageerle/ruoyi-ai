@@ -55,6 +55,9 @@
    ```bash
    ./deploy-cn.sh
    ```
+![image](https://github.com/user-attachments/assets/b0c59408-8195-4026-90d3-d5e6a1073894)
+
+![image](https://github.com/user-attachments/assets/e59b40be-d96e-4f33-a5e7-129340c2ffcd)
 
    英文界面部署脚本：
    
