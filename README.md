@@ -36,18 +36,48 @@
 
 ## 快速启动
 
-1. **克隆项目**
+1. 确认系统内已经安装好以下软件
+   docker
+   docker-compose
+   git
+   unzip
+
+2. **克隆项目**
    ```bash
-   git clone https://github.com/alanpeng/ruoyi-ai-docker-deploy
-   cd ruoyi-ai-docker-deploy
+   git clone https://github.com/ageerle/ruoyi-ai
+   cd ruoyi-ai/docker-deploy/one-step-script/
    ```
 
-2. **启动全套应用**
+3. **启动部署脚本**
+
+   中文界面部署脚本：
+
    ```bash
-   docker-compose up -d
+   ./deploy-cn.sh
+   ```
+![c383c5030bd6c2d0b577d5efb068137](https://github.com/user-attachments/assets/58f55889-f29c-47cf-ab32-8a098e3afadd)
+![ee04e0c99b9ae733c7ad89bf507ab65](https://github.com/user-attachments/assets/884af2ab-16a8-44b5-acef-712155568b50)
+![0c8006ea926b10fbada82b09084c5b5](https://github.com/user-attachments/assets/c7bd2a8d-b365-4734-922a-12d1ac28a8fe)
+
+   英文界面部署脚本：
+   
+   ```bash
+   ./deploy-en.sh
    ```
 
-3. **访问应用界面**
+4. 如果在执行部署脚本过程中不需要在本地重新构建编译服务软件包以及重新封装容器镜像，则需要在脚本交互提出以下问题时选择D按键进行直接部署，否则就会执行全新的编译构建及容器封装之后再执行部署：
+     ```
+     已将模板文件复制到部署目录。
+     正在使用您的配置更新 .env 文件...
+     已使用您的配置更新 .env 文件。
+     正在使用您的配置更新 docker-compose.yaml 文件...
+     已使用您的配置更新 docker-compose.yaml 文件。
+
+     === 构建或部署选项 ===
+     您想构建新镜像 (B) 还是直接使用现有镜像部署 (D)？[B/d]: 
+     ```
+
+5. **访问应用界面**
    - 用户界面：`http://your-server-ip:8081`
    - 管理员界面：`http://your-server-ip:8082`
 
