@@ -437,7 +437,7 @@ COPY ruoyi-admin.jar /app/ruoyi-admin.jar
 EXPOSE ${SERVER_PORT}
 ENTRYPOINT ["java","-jar","ruoyi-admin.jar","--spring.profiles.active=prod"]
 EOF
-    #docker build -t ruoyi-ai-backend:${RUOYI_AI_BRANCH} .
+    docker build -t ruoyi-ai-backend:${RUOYI_AI_BRANCH} .
     cd ..
 
     echo "Building Ruoyi-AI Admin Docker images..."
