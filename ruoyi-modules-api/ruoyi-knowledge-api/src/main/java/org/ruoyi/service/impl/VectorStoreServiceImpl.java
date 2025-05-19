@@ -131,7 +131,31 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         createSchema(kid,modelName);
         // 根据条件删除向量数据
         Filter simpleFilter = new IsEqualTo("kid", kid);
-        embeddingStore.removeAll(simpleFilter);
+        removeByFilter(simpleFilter);
+    }
+
+    public void removeByFilter(Filter filter) {
+        List<Float> dummyVector = new ArrayList<>();
+        // TODO 模型维度
+        int dimension = 1024;
+        for (int i = 0; i < dimension; i++) {
+            dummyVector.add(0.0f);
+        }
+        Embedding dummyEmbedding = Embedding.from(dummyVector);
+        EmbeddingSearchRequest request = EmbeddingSearchRequest.builder()
+                .queryEmbedding(dummyEmbedding)
+                .filter(filter)
+                .maxResults(10000)
+                .build();
+        // 搜索
+        List<String> idsToDelete = embeddingStore.search(request)
+                .matches().stream()
+                .map(EmbeddingMatch::embeddingId)
+                .collect(Collectors.toList());
+        // 删除
+        if (!idsToDelete.isEmpty()) {
+            embeddingStore.removeAll(idsToDelete);
+        }
     }
 
     @Override

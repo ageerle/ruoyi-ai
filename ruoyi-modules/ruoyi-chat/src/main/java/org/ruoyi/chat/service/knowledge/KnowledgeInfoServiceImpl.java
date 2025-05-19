@@ -405,4 +405,5 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
           .set(KnowledgeAttach::getVectorStatus, DealStatus.STATUS_10)
           .eq(KnowledgeAttach::getVectorStatus, DealStatus.STATUS_40));
   }
+    @Scheduled(fixedDelay = 180000) // 3分钟执行一次
 }
