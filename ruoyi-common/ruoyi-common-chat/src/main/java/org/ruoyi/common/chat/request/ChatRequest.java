@@ -68,6 +68,12 @@ public class ChatRequest {
     private String appId;
 
     /**
+     * 对话角色
+     */
+    private String role;
+
+
+    /**
      * 上下文的条数
      */
     private Integer contentNumber = 10;

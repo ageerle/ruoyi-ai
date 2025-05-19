@@ -12,8 +12,8 @@ import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
 import org.ruoyi.chat.service.chat.IChatCostService;
-import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
+import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
@@ -67,6 +67,8 @@ public class SSEEventSourceListener extends EventSourceListener {
                 emitter.complete();
                 // 扣除费用
                 ChatRequest chatRequest = new ChatRequest();
+                // 设置对话角色
+                chatRequest.setRole(Message.Role.ASSISTANT.getName());
                 chatRequest.setModel(modelName);
                 chatRequest.setPrompt(stringBuffer.toString());
                 chatCostService.deductToken(chatRequest);

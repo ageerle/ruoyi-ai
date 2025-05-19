@@ -5,14 +5,15 @@ import java.math.BigDecimal;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.domain.ChatMessage;
 
 import java.io.Serial;
 import java.io.Serializable;
-
-
+import java.util.Date;
 
 
 /**
@@ -81,6 +82,13 @@ public class ChatMessageVo implements Serializable {
      */
     @ExcelProperty(value = "备注")
     private String remark;
+
+
+    /**
+     * 创建时间
+     */
+    @ExcelProperty(value = "创建时间")
+    private Date createTime;
 
 
 }

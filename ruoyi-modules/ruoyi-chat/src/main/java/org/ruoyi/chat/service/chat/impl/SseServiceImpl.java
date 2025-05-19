@@ -90,6 +90,8 @@ public class SseServiceImpl implements ISseService {
                 chatRequest.setSessionId(chatSessionBo.getId());
             }
             LocalCache.CACHE.put("sessionId", chatRequest.getSessionId());
+            // 设置对话角色
+            chatRequest.setRole(Message.Role.USER.getName());
             // 保存消息记录 并扣除费用
             chatCostService.deductToken(chatRequest);
             // 根据模型分类调用不同的处理逻辑
