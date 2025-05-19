@@ -63,6 +63,9 @@ public class ChatCostServiceImpl implements IChatCostService {
         Object userId = LocalCache.CACHE.get("userId");
         chatMessageBo.setUserId((Long) userId);
 
+        // 设置对话角色
+        chatMessageBo.setRole(chatRequest.getRole());
+
         chatMessageBo.setSessionId(chatRequest.getSessionId());
         chatMessageBo.setContent(chatRequest.getPrompt());
 
