@@ -1,13 +1,11 @@
 package org.ruoyi.service.impl;
 
-import cn.hutool.core.util.RandomUtil;
 import com.google.protobuf.ServiceException;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
-import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
@@ -31,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 向量库管理
@@ -131,31 +130,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         createSchema(kid,modelName);
         // 根据条件删除向量数据
         Filter simpleFilter = new IsEqualTo("kid", kid);
-        removeByFilter(simpleFilter);
-    }
-
-    public void removeByFilter(Filter filter) {
-        List<Float> dummyVector = new ArrayList<>();
-        // TODO 模型维度
-        int dimension = 1024;
-        for (int i = 0; i < dimension; i++) {
-            dummyVector.add(0.0f);
-        }
-        Embedding dummyEmbedding = Embedding.from(dummyVector);
-        EmbeddingSearchRequest request = EmbeddingSearchRequest.builder()
-                .queryEmbedding(dummyEmbedding)
-                .filter(filter)
-                .maxResults(10000)
-                .build();
-        // 搜索
-        List<String> idsToDelete = embeddingStore.search(request)
-                .matches().stream()
-                .map(EmbeddingMatch::embeddingId)
-                .collect(Collectors.toList());
-        // 删除
-        if (!idsToDelete.isEmpty()) {
-            embeddingStore.removeAll(idsToDelete);
-        }
+        embeddingStore.removeAll(simpleFilter);
     }
 
     @Override
