@@ -5,10 +5,13 @@ import cn.hutool.captcha.AbstractCaptcha;
 import cn.hutool.captcha.generator.CodeGenerator;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.constant.GlobalConstants;
 import org.ruoyi.common.core.domain.R;
-import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
@@ -22,10 +25,6 @@ import org.ruoyi.common.web.config.properties.CaptchaProperties;
 import org.ruoyi.common.web.enums.CaptchaType;
 import org.ruoyi.system.domain.request.EmailRequest;
 import org.ruoyi.system.domain.vo.CaptchaVo;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -36,7 +35,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 验证码操作处理
@@ -90,18 +90,6 @@ public class CaptchaController {
         String key = GlobalConstants.CAPTCHA_CODE_KEY + emailRequest.getUsername();
         String code = RandomUtil.randomNumbers(4);
         RedisUtils.setCacheObject(key, code, Duration.ofMinutes(Constants.CAPTCHA_EXPIRATION));
-        // 检验邮箱后缀
-        String suffix = configService.getConfigValue("mail", "suffix");
-        String prompt = configService.getConfigValue("mail", "prompt");
-        if(StringUtils.isNotEmpty(suffix)){
-            // 动态的域名列表
-            String[] invalidDomains = suffix.split(",");
-            for (String domain : invalidDomains) {
-                if (emailRequest.getUsername().endsWith(domain)) {
-                    throw new ServiceException(prompt);
-                }
-            }
-        }
         // 自定义邮箱模板
         String model = configService.getConfigValue("mail", "mailModel");
         String mailTitle = configService.getConfigValue("mail", "mailTitle");
