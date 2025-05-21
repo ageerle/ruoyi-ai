@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
-
-message GiftIMPriority {
-  repeated uint64 queue_sizes_list = 1;
-  uint64 self_queue_priority = 2;
-  uint64 priority = 3;
-}

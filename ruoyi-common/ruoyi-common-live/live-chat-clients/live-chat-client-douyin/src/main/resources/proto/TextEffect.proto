@@ -1,9 +1,0 @@
-syntax = "proto3";
-import "TextEffectDetail.proto";
-
-option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
-
-message TextEffect {
-  TextEffectDetail portrait = 1;
-  TextEffectDetail landscape = 2;
-}

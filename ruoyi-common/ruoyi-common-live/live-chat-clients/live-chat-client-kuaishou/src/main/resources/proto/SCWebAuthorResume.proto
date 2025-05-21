@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-
-option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
-
-message SCWebAuthorResume {
-  uint64 time = 1;
-
-}

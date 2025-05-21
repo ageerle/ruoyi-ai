@@ -39,9 +39,7 @@
         <module>ruoyi-common-encrypt</module>
         <module>ruoyi-common-tenant</module>
         <module>ruoyi-common-chat</module>
-        <module>ruoyi-common-wechat</module>
         <module>ruoyi-common-pay</module>
-        <module>ruoyi-common-live</module>
     </modules>
 
 </project>

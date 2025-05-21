@@ -1,9 +1,0 @@
-syntax = "proto3";
-import "PatternRef.proto";
-
-option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
-
-message TextPieceGift {
-  uint64 gift_id = 1;
-  PatternRef name_ref = 2;
-}

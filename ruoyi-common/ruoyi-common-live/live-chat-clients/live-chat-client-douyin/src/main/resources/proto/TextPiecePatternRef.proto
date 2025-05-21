@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-option java_package = "tech.ordinaryroad.live.chat.client.douyin.protobuf.dto";
-
-message TextPiecePatternRef {
-  string key = 1;
-  string default_pattern = 2;
-}
