@@ -86,7 +86,8 @@ public class PdfMinerUFileLoader implements ResourceLoader {
                     content = document.text();
                     // 判断是否md文档
                     String fileType = FilenameUtils.getExtension(mdFilePath.getFileName().toString());
-                    if ("md".contains(fileType)) {
+                    //判断是否需要进行图片OCR识别
+                    if ("md".contains(fileType) && properties.getTransition().isEnableOcr()) {
                         // 如果是md文件，查找所有图片语法，如果是本地图片，替换成网络图片
                         StringBuffer sb = replaceImageUrl(content, mdFilePath);
                         content = sb.toString();
