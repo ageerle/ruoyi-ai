@@ -1,9 +1,0 @@
-syntax = "proto3";
-import "WebRedPackInfo.proto";
-
-option java_package = "tech.ordinaryroad.live.chat.client.kuaishou.protobuf";
-
-message SCWebCurrentRedPackFeed {
-  repeated WebRedPackInfo redPack = 1;
-
-}
