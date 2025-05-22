@@ -55,9 +55,10 @@
    ```bash
    ./deploy-cn.sh
    ```
-![c383c5030bd6c2d0b577d5efb068137](https://github.com/user-attachments/assets/58f55889-f29c-47cf-ab32-8a098e3afadd)
-![ee04e0c99b9ae733c7ad89bf507ab65](https://github.com/user-attachments/assets/884af2ab-16a8-44b5-acef-712155568b50)
-![0c8006ea926b10fbada82b09084c5b5](https://github.com/user-attachments/assets/c7bd2a8d-b365-4734-922a-12d1ac28a8fe)
+   按照脚本提示一步步操作,如果是一台新服务器,选择默认配置,直接回车即可。
+   <img src="image/deploy-01.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+
+   耐心等待安装完成...
 
    英文界面部署脚本：
    
@@ -316,16 +317,19 @@
 
 ### 附：技术讨论群
 
+#### 技术交流
+<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+ <img src="image/wx.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+</div>
+ 
+
 #### 进群学习
 🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
-
- <img src="image/小助手wx.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-
 🏠 qq：1603234088 （加人备注：ruoyi-ai）
 
-👏👏👏 ruoyi-ai官方交流2群（qq区）：1034554687 
+👏👏👏 ruoyi-ai官方交流群（qq区）
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-  <img src="image/QQ区-官方交流2群.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+  <img src="image/qq.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
 </div>
 

@@ -23,7 +23,7 @@ DEPLOY_DIR="${user_input:-${PWD}/ruoyi-ai-deploy}"
 if [ -d "$DEPLOY_DIR" ]; then
     echo "警告：目录 $DEPLOY_DIR 已存在！"
     read -p "您想删除它吗？[y/N]: " delete_choice
-    
+
     case "${delete_choice:-N}" in
         [Yy]* )
             echo "正在删除现有目录..."
@@ -235,8 +235,8 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 echo "正在删除现有目录..."
                 rm -rf ${DEPLOY_DIR}/ruoyi-ai
                 echo "正在克隆 ruoyi-ai-backend 仓库..."
-                cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-ai
-                
+                cd ${DEPLOY_DIR} && git clone https://gitee.com/ageerle/ruoyi-ai
+
                 # 提示选择分支
                 read -p "请输入 ruoyi-ai 仓库的分支名称 [main]: " RUOYI_AI_BRANCH
                 RUOYI_AI_BRANCH="${RUOYI_AI_BRANCH:-main}"
@@ -253,8 +253,8 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
         esac
     else
         echo "正在克隆 ruoyi-ai-backend 仓库..."
-        cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-ai
-        
+        cd ${DEPLOY_DIR} && git clone https://gitee.com/ageerle/ruoyi-ai
+
         # 提示选择分支
         read -p "请输入 ruoyi-ai 仓库的分支名称 [main]: " RUOYI_AI_BRANCH
         RUOYI_AI_BRANCH="${RUOYI_AI_BRANCH:-main}"
@@ -272,8 +272,8 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 echo "正在删除现有目录..."
                 rm -rf ${DEPLOY_DIR}/ruoyi-admin
                 echo "正在克隆 ruoyi-admin 仓库..."
-                cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-admin
-                
+                cd ${DEPLOY_DIR} && git clone https://gitee.com/ageerle/ruoyi-admin
+
                 # 提示选择分支
                 read -p "请输入 ruoyi-admin 仓库的分支名称 [main]: " RUOYI_ADMIN_BRANCH
                 RUOYI_ADMIN_BRANCH="${RUOYI_ADMIN_BRANCH:-main}"
@@ -290,8 +290,8 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
         esac
     else
         echo "正在克隆 ruoyi-ai-admin 仓库..."
-        cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-admin
-        
+        cd ${DEPLOY_DIR} && git clone https://gitee.com/ageerle/ruoyi-admin
+
         # 提示选择分支
         read -p "请输入 ruoyi-admin 仓库的分支名称 [main]: " RUOYI_ADMIN_BRANCH
         RUOYI_ADMIN_BRANCH="${RUOYI_ADMIN_BRANCH:-main}"
@@ -309,8 +309,8 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
                 echo "正在删除现有目录..."
                 rm -rf ${DEPLOY_DIR}/ruoyi-web
                 echo "正在克隆 ruoyi-ai-web 仓库..."
-                cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-web
-                
+                cd ${DEPLOY_DIR} && git clone https://gitee.com/ageerle/ruoyi-web
+
                 # 提示选择分支
                 read -p "请输入 ruoyi-web 仓库的分支名称 [main]: " RUOYI_WEB_BRANCH
                 RUOYI_WEB_BRANCH="${RUOYI_WEB_BRANCH:-main}"
@@ -327,8 +327,8 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
         esac
     else
         echo "正在克隆 ruoyi-ai-web 仓库..."
-        cd ${DEPLOY_DIR} && git clone https://github.com/ageerle/ruoyi-web
-        
+        cd ${DEPLOY_DIR} && git clone https://gitee.com/ageerle/ruoyi-web
+
         # 提示选择分支
         read -p "请输入 ruoyi-web 仓库的分支名称 [main]: " RUOYI_WEB_BRANCH
         RUOYI_WEB_BRANCH="${RUOYI_WEB_BRANCH:-main}"
@@ -359,7 +359,7 @@ if [[ "${BUILD_CHOICE}" == [Bb]* ]]; then
     # 更新 vite.config.mts 文件
     echo "正在使用您的配置更新 vite.config.mts 文件..."
     sed -i "s|http://127.0.0.1:6039|${FRONTEND_API_BASE_URL}|g" ${DEPLOY_DIR}/ruoyi-admin/apps/web-antd/vite.config.mts
-    
+
     # 更新 docker-compose.yaml 文件中的镜像标签
     echo "正在更新 docker-compose.yaml 文件中的镜像标签..."
     sed -i "s|ruoyi-ai-backend:latest|ruoyi-ai-backend:${RUOYI_AI_BRANCH}|g" ${DEPLOY_DIR}/docker-compose.yaml
@@ -469,17 +469,17 @@ EOF
     cd ..
 else
     echo "跳过镜像构建过程。正在使用现有镜像直接部署..."
-    
+
     # 提示输入分支名称用于镜像标签
     read -p "请输入 ruoyi-ai-backend 镜像的标签 [main]: " RUOYI_AI_BRANCH
     RUOYI_AI_BRANCH="${RUOYI_AI_BRANCH:-main}"
-    
+
     read -p "请输入 ruoyi-ai-admin 镜像的标签 [main]: " RUOYI_ADMIN_BRANCH
     RUOYI_ADMIN_BRANCH="${RUOYI_ADMIN_BRANCH:-main}"
-    
+
     read -p "请输入 ruoyi-ai-web 镜像的标签 [main]: " RUOYI_WEB_BRANCH
     RUOYI_WEB_BRANCH="${RUOYI_WEB_BRANCH:-main}"
-    
+
     # 更新 docker-compose.yaml 文件中的镜像标签
     echo "正在更新 docker-compose.yaml 文件中的镜像标签..."
     sed -i "s|ruoyi-ai-backend:latest|ruoyi-ai-backend:${RUOYI_AI_BRANCH}|g" ${DEPLOY_DIR}/docker-compose.yaml
