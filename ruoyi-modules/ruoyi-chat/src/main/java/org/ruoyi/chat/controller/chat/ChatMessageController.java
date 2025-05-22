@@ -75,8 +75,9 @@ public class ChatMessageController extends BaseController {
     @Log(title = "聊天消息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
-    public R<Void> add(@Validated(AddGroup.class) @RequestBody ChatMessageBo bo) {
-        return toAjax(chatMessageService.insertByBo(bo));
+    public R<Long> add(@Validated(AddGroup.class) @RequestBody ChatMessageBo bo) {
+        chatMessageService.insertByBo(bo);
+        return R.ok(bo.getId());
     }
 
     /**
