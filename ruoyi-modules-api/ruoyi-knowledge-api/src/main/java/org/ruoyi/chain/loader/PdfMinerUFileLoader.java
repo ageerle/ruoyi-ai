@@ -13,11 +13,7 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.ruoyi.chain.split.TextSplitter;
-import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.oss.core.OssClient;
@@ -26,19 +22,16 @@ import org.ruoyi.common.oss.factory.OssFactory;
 import org.ruoyi.config.properties.PdfProperties;
 import org.ruoyi.system.domain.SysOss;
 import org.ruoyi.system.mapper.SysOssMapper;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Base64;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,7 +49,19 @@ public class PdfMinerUFileLoader implements ResourceLoader {
     private final SysOssMapper sysOssMapper;
     // 预编译正则表达式
     private static final Pattern MD_IMAGE_PATTERN = Pattern.compile("!\\[(.*?)]\\((.*?)(\\s*=\\d+)?\\)");
-
+    // OCR图片识别线程池
+    private final ThreadPoolExecutor ocrExecutor = new ThreadPoolExecutor(
+            // 核心线程数
+            5,
+            // 最大线程数
+            10,
+            // 空闲线程存活时间
+            60L, TimeUnit.SECONDS,
+            // 任务队列容量
+            new LinkedBlockingQueue<>(100),
+            // 拒绝策略
+            new ThreadPoolExecutor.CallerRunsPolicy()
+    );
 
     @Override
     public String getContent(InputStream inputStream) {
@@ -99,9 +104,7 @@ public class PdfMinerUFileLoader implements ResourceLoader {
                 log.warn("未找到预期的 .md 文件");
             }
             return content;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
             if (tempPdf != null) {
@@ -146,7 +149,8 @@ public class PdfMinerUFileLoader implements ResourceLoader {
      */
     private static Path buildOutputPath() throws IOException {
         Path basePath = isWindows() ?
-                Paths.get(new File("").getCanonicalPath().substring(0, 3)).resolve("minerUOutPut") :
+                //  Windows C盘用户路径下 minerUOutPut，避免其他盘符权限问题
+                Paths.get(System.getProperty("user.home")).resolve("minerUOutPut") :
                 Paths.get("/var/minerUOutPut");
 
         if (!Files.exists(basePath)) {
@@ -243,70 +247,138 @@ public class PdfMinerUFileLoader implements ResourceLoader {
         return String.format("转换失败（退出码%d）| 预期文件：%s", exitCode, expectedMd);
     }
 
+
     /**
-     * 正则匹配图片语法
-     * @param content 文本内容
+     * 正则匹配图片语法,多线程进行处理
+     *
+     * @param content  文本内容
      * @param basePath 图片路径
      * @return
      */
-    private StringBuffer replaceImageUrl(String content, Path basePath)  {
-        // 正则表达式匹配md文件中的图片语法 ![alt text](image url)
+    private StringBuffer replaceImageUrl(String content, Path basePath) throws Exception {
+        List<ImageMatch> matches = new ArrayList<>();
         Matcher matcher = MD_IMAGE_PATTERN.matcher(content);
 
-        StringBuffer sb = new StringBuffer();
+        // 收集所有匹配的图片项
         while (matcher.find()) {
-            String imageUrl = matcher.group(2);
-            // 检查是否是本地图片路径
-            if (!imageUrl.startsWith("http")) {
-                // 获取图片完整路径，上传到Oss中
-                Path imagePath = basePath.getParent().resolve(imageUrl);
+            ImageMatch imgMatch = new ImageMatch();
+            imgMatch.altText = matcher.group(1);
+            imgMatch.imageUrl = matcher.group(2);
+            imgMatch.start = matcher.start();
+            imgMatch.end = matcher.end();
+            matches.add(imgMatch);
+        }
+
+        if (matches.isEmpty()) {
+            return new StringBuffer(content);
+        }
+
+        // 提交任务到线程池
+        List<Future<String>> futures = new ArrayList<>();
+        for (ImageMatch imgMatch : matches) {
+            // 为每个图片项创建独立任务
+            Future<String> future = ocrExecutor.submit(() -> processImage(imgMatch, basePath));
+            futures.add(future);
+        }
+
+        // 按原始顺序拼接结果
+        StringBuffer sb = new StringBuffer();
+        int previousEnd = 0;
+
+        for (int i = 0; i < matches.size(); i++) {
+            ImageMatch imgMatch = matches.get(i);
+            // 阻塞等待结果
+            String replacement = futures.get(i).get();
+
+            // 插入未匹配的原始文本和处理后的结果
+            sb.append(content.substring(previousEnd, imgMatch.start));
+            sb.append(replacement);
+            previousEnd = imgMatch.end;
+        }
+        // 添加剩余文本
+        sb.append(content.substring(previousEnd));
+        return sb;
+    }
+
+
+    /**
+     * 图片处理任务
+     *
+     * @param imgMatch 图片匹配结果
+     * @param basePath 本地图片路径
+     * @return
+     */
+    private String processImage(ImageMatch imgMatch, Path basePath) {
+        try {
+            if (!imgMatch.imageUrl.startsWith("http")) {
+                // 处理本地图片
+                Path imagePath = basePath.getParent().resolve(imgMatch.imageUrl).normalize();
+
                 if (!Files.exists(imagePath)) {
                     log.error("图片路径不存在: {}", imagePath);
+                    return String.format("![%s](%s)", imgMatch.altText, imgMatch.imageUrl);
                 }
-                // 获取原始文件名和后缀
-                String originalfileName = imagePath.getFileName().toString();
-                // 获取文件后缀
-                String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."),
-                        originalfileName.length());
-                // 读取文件字节流
+
+                // 文件后缀安全提取
+                String originalFileName = imagePath.getFileName().toString();
+                String suffix = "";
+                int lastDotIndex = originalFileName.lastIndexOf(".");
+                if (lastDotIndex != -1) {
+                    suffix = originalFileName.substring(lastDotIndex);
+                }
+
+                // 上传OSS
                 try (InputStream inputStream = Files.newInputStream(imagePath)) {
-                    // 使用 OssClient 直接上传字节流
                     OssClient storage = OssFactory.instance();
                     UploadResult uploadResult = storage.uploadSuffix(inputStream, suffix, FileUtils.getMimeType(suffix));
 
-                    // 构建 SysOss 对象并保存数据库记录
+                    // 保存数据库记录
                     SysOss sysOss = new SysOss();
                     sysOss.setUrl(uploadResult.getUrl());
                     sysOss.setFileSuffix(suffix);
                     sysOss.setFileName(uploadResult.getFilename());
-                    sysOss.setOriginalName(originalfileName);
+                    sysOss.setOriginalName(originalFileName);
                     sysOss.setService(storage.getConfigKey());
-
-                    // 插入数据库
                     sysOssMapper.insert(sysOss);
 
-                    // OCR 处理 & 替换图片链接
-                    String networkImageUrl = uploadResult.getUrl();
+                    // OCR处理
+                    String networkUrl = uploadResult.getUrl();
                     //⚠️ 注意：确保 URL 是公网可访问的，否则模型无法加载图片。
                     //另一种解决方案：使用base64 但是需要申请apikey , 使用demo会出现token超出长度问题。
-                    String imageUrlOCR = imageUrlOCR(networkImageUrl);
-                    matcher.appendReplacement(sb, "![" + matcher.group(1) + imageUrlOCR + "](" + networkImageUrl + ")");
-            } catch (IOException e) {
-                log.error("读取或上传图片失败", e);
-                matcher.appendReplacement(sb, matcher.group(0)); // 保留原图语法
-            }
+                    String ocrResult = safeImageUrlOCR(networkUrl);
+                    return String.format("![%s%s](%s)", imgMatch.altText, ocrResult, networkUrl);
+                }
             } else {
-                //多模态OCR识别图片内容
-                String imageUrlOCR = imageUrlOCR(imageUrl);
-                matcher.appendReplacement(sb, "![" + matcher.group(1) + imageUrlOCR + "](" + imageUrl + ")");
+                // 处理远程图片
+                String ocrResult = safeImageUrlOCR(imgMatch.imageUrl);
+                return String.format("![%s%s](%s)", imgMatch.altText, ocrResult, imgMatch.imageUrl);
             }
+        } catch (Exception e) {
+            log.error("图片处理失败: {}", imgMatch.imageUrl, e);
+            return String.format("![%s](%s)", imgMatch.altText, imgMatch.imageUrl);
         }
-        matcher.appendTail(sb);
-        return sb;
     }
 
     /**
+     * OCR调用
+     *
+     * @param imageUrl 图片URL
+     * @return
+     */
+    private String safeImageUrlOCR(String imageUrl) {
+        try {
+            return imageUrlOCR(imageUrl);
+        } catch (Exception e) {
+            log.warn("OCR处理失败: {}", imageUrl, e);
+            // OCR失败时返回空字符串
+            return "";
+        }
+    }
+
+
+    /**
      * 多模态OCR识别图片内容
+     *
      * @param imageUrl 图片URL
      * @return
      */
@@ -322,14 +394,16 @@ public class PdfMinerUFileLoader implements ResourceLoader {
                         "请按以下逻辑处理图片：\n" +
                                 "1. 文字检测：识别图中所有可见文字（包括水印/标签），若无文字则跳至步骤3\n" +
                                 "2. 文字处理：\n" +
-                                "   a. 按出现顺序完整提取文字（非中文立即翻译）\n" +
-                                "   b. 用20字内总结核心信息，禁止补充解释\n" +
+                                "   a. 对识别到的文字进行❗核心信息提炼\n" +
+                                "   b. ❗禁止直接输出原文内容\n" +
                                 "   c. 描述文字位置(如'顶部居中')、字体特征(颜色/大小)\n" +
                                 "3. 视觉描述：\n" +
-                                "   a. 客观说明主体对象、场景、色彩搭配与画面氛围\n" +
+                                "   a. 若无文字则用❗50字内简洁描述主体对象、场景、色彩搭配与画面氛围\n" +
+                                "   b. 若有文字则补充说明文字与画面的关系\n" +
                                 "4. 输出规则：\n" +
                                 "   - 最终输出为纯文本，格式：'[文字总结] 视觉描述 关键词：xx,xx'\n" +
-                                "   - 关键词从内容中提取3个最具代表性的名词"
+                                "   - 关键词从内容中提取3个最具代表性的名词\n" +
+                                "   - 无文字时格式：'[空] 简洁描述 关键词：xx,xx'"
                 ),
                 ImageContent.from(imageUrl)
         );
@@ -339,14 +413,26 @@ public class PdfMinerUFileLoader implements ResourceLoader {
     }
 
     /**
+     * 静态内部类保存图片匹配信息
+     */
+    private static class ImageMatch {
+        String altText; // 替换文本
+        String imageUrl; // 图片地址
+        int start; // 匹配起始位置
+        int end; // 匹配结束位置
+    }
+
+
+    /**
      * 清理输出目录
+     *
      * @param outputPath 输出目录
      */
     private static void cleanOutputDirectory(Path outputPath) {
         if (Files.exists(outputPath)) {
             try {
                 Files.walk(outputPath)
-                       // 按逆序删除（子目录先删）
+                        // 按逆序删除（子目录先删）
                         .sorted((p1, p2) -> -p1.compareTo(p2))
                         .forEach(path -> {
                             try {
