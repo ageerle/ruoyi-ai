@@ -36,11 +36,17 @@
 
 ## 快速启动
 
+### 拉取镜像(最低配置2H2G):
+   ```bash
+     script/docker/ruoyiai目录下执行: docker-compose up -d
+  ```
+
+### 通过脚本启动(最低配置4H4G以上):
 1. 确认系统内已经安装好以下软件
-   docker
-   docker-compose
-   git
-   unzip
+   - docker
+   - docker-compose
+   - git
+   - unzip
 
 2. **克隆项目**
    ```bash
