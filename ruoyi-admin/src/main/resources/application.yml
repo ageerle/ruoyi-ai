@@ -49,7 +49,7 @@ server:
 # 日志配置
 logging:
   level:
-    org.dromara: @logging.level@
+    org.ruoyi: @logging.level@
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
