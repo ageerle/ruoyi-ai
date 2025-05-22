@@ -41,7 +41,7 @@
      script/docker/ruoyiai目录下执行: docker-compose up -d
   ```
 
-### 通过脚本启动(最低配置4H4G以上):
+### 通过脚本启动(最低配置4H4G):
 1. 确认系统内已经安装好以下软件
    - docker
    - docker-compose
