@@ -59,7 +59,6 @@ public class ChatModelServiceImpl implements IChatModelService {
     }
 
     private LambdaQueryWrapper<ChatModel> buildQueryWrapper(ChatModelBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ChatModel> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getCategory()), ChatModel::getCategory, bo.getCategory());
         lqw.like(StringUtils.isNotBlank(bo.getModelName()), ChatModel::getModelName, bo.getModelName());
