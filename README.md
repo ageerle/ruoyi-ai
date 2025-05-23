@@ -114,8 +114,8 @@
 - 用户端：https://web.pandarobot.chat
 - 用户名: admin 密码：admin123
 - 管理端：https://admin.pandarobot.chat
-- 用户名: admin 密码：admin123
-- 温馨提醒：体验前需准备测试key在后台管理配置,体验完成记得删除key信息。
+- 温馨提醒：体验前需准备测试key在后台管理配置,体验完成记得删除key信息
+  体验商业版请联系小助手获取演示地址。
 
 ### 源码地址
 [1]github
@@ -325,15 +325,15 @@
 
 ### 附：技术讨论群
 
-#### 技术交流
+#### 技术交流（如需进群请添加小助手）
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
  <img src="image/wx.png" alt="drawing" style="width: 400px; height: 400px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
 </div>
  
 
 #### 进群学习
-🏠 wx：ruoyi-ai（加人备注：ruoyi-ai）
-🏠 qq：1603234088 （加人备注：ruoyi-ai）
+🏠 小助手wx：ruoyi-ai（加人备注：ruoyi-ai）
+🏠 小助手qq：1603234088 （加人备注：ruoyi-ai）
 
 👏👏👏 ruoyi-ai官方交流群（qq区）
 
