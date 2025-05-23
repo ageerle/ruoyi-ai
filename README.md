@@ -112,8 +112,10 @@
 
 ### 系统体验
 - 用户端：https://web.pandarobot.chat
+- 用户名: admin 密码：admin123
 - 管理端：https://admin.pandarobot.chat
 - 用户名: admin 密码：admin123
+- 温馨提醒：体验前需准备测试key在后台管理配置,体验完成记得删除key信息。
 
 ### 源码地址
 [1]github
