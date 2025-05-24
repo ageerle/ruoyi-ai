@@ -32,12 +32,6 @@
             <version>${zxing.version}</version>
         </dependency>
 
-
-        <dependency>
-            <groupId>com.stripe</groupId>
-            <artifactId>stripe-java</artifactId>
-            <version>${stripe.version}</version>
-        </dependency>
     </dependencies>
 
 </project>
