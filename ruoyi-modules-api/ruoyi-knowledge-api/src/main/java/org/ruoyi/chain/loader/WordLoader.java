@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.ruoyi.chain.loader.ResourceLoader;
 import org.ruoyi.chain.split.TextSplitter;
 import org.springframework.stereotype.Component;
 

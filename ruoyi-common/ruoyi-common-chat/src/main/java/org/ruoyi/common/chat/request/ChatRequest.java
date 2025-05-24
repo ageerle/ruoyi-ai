@@ -37,16 +37,6 @@ public class ChatRequest {
     private Boolean stream = Boolean.TRUE;
 
     /**
-     *  是否开启联网搜索(0关闭 1开启)
-     */
-    private Boolean search = Boolean.FALSE;
-
-    /**
-     *  是否开启mcp
-     */
-    private Boolean isMcp = Boolean.FALSE;
-
-    /**
      * 知识库id
      */
     private String kid;
@@ -55,7 +45,6 @@ public class ChatRequest {
      * 用户id
      */
     private Long userId;
-
 
     /**
      * 会话id
@@ -71,17 +60,5 @@ public class ChatRequest {
      * 对话角色
      */
     private String role;
-
-
-    /**
-     * 上下文的条数
-     */
-    private Integer contentNumber = 10;
-
-    /**
-     * 是否携带上下文
-     */
-    private Boolean usingContext = Boolean.TRUE;
-
 
 }

@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.ruoyi.chat.domain.dto.*;
 import org.ruoyi.chat.enums.ActionType;
 import org.ruoyi.chat.service.chat.IChatCostService;
@@ -50,17 +49,17 @@ public class SubmitController {
             type -> {
                 switch (type) {
                     case UP_SAMPLE:
-                        chatCostService.taskDeduct("mj","enlarge", NumberUtils.toDouble(mjOkHttpUtil.getKey("upsample"), 0.3));
+                        chatCostService.taskDeduct("mj","enlarge", 0.0);
                         break;
                     case IN_PAINT:
                         // 局部重绘已经扣费,不执行任何操作
                         break;
                     default:
-                        chatCostService.taskDeduct("mj","change", NumberUtils.toDouble(mjOkHttpUtil.getKey("change"), 0.3));
+                        chatCostService.taskDeduct("mj","change", 0.0);
                         break;
                 }
             },
-            () -> chatCostService.taskDeduct("mj","change", NumberUtils.toDouble(mjOkHttpUtil.getKey("change"), 0.3))
+            () -> chatCostService.taskDeduct("mj","change", 0.0)
         );
 
         String jsonStr = JSONUtil.toJsonStr(changeDTO);
@@ -81,7 +80,7 @@ public class SubmitController {
     @ApiOperation(value = "提交图生图、混图任务")
     @PostMapping("/blend")
     public String blend(@RequestBody SubmitBlendDTO blendDTO) {
-        chatCostService.taskDeduct("mj","blend", NumberUtils.toDouble(mjOkHttpUtil.getKey("blend"), 0.3));
+        chatCostService.taskDeduct("mj","blend", 0.0);
         String jsonStr = JSONUtil.toJsonStr(blendDTO);
         String url = "mj/submit/blend";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -91,7 +90,7 @@ public class SubmitController {
     @ApiOperation(value = "提交图生文任务")
     @PostMapping("/describe")
     public String describe(@RequestBody SubmitDescribeDTO describeDTO) {
-        chatCostService.taskDeduct("mj","describe", NumberUtils.toDouble(mjOkHttpUtil.getKey("describe"), 0.1));
+        chatCostService.taskDeduct("mj","describe",0.0);
         String jsonStr = JSONUtil.toJsonStr(describeDTO);
         String url = "mj/submit/describe";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -101,7 +100,7 @@ public class SubmitController {
     @ApiOperation(value = "提交文生图任务")
     @PostMapping("/imagine")
     public String imagine(@RequestBody SubmitImagineDTO imagineDTO) {
-        chatCostService.taskDeduct("mj",imagineDTO.getPrompt(), NumberUtils.toDouble(mjOkHttpUtil.getKey("imagine"), 0.3));
+        chatCostService.taskDeduct("mj",imagineDTO.getPrompt(), 0.0);
         String jsonStr = JSONUtil.toJsonStr(imagineDTO);
         String url = "mj/submit/imagine";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -111,7 +110,7 @@ public class SubmitController {
     @ApiOperation(value = "提交局部重绘任务")
     @PostMapping("/modal")
     public String modal(@RequestBody SubmitModalDTO submitModalDTO) {
-        chatCostService.taskDeduct("mj","repaint ", NumberUtils.toDouble(mjOkHttpUtil.getKey("inpaint"), 0.1));
+        chatCostService.taskDeduct("mj","repaint ", 0.0);
         String jsonStr = JSONUtil.toJsonStr(submitModalDTO);
         String url = "mj/submit/modal";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -121,7 +120,7 @@ public class SubmitController {
     @ApiOperation(value = "提交提示词分析任务")
     @PostMapping("/shorten")
     public String shorten(@RequestBody SubmitShortenDTO submitShortenDTO) {
-        chatCostService.taskDeduct("mj","shorten", NumberUtils.toDouble(mjOkHttpUtil.getKey("shorten"), 0.1));
+        chatCostService.taskDeduct("mj","shorten", 0.0);
         String jsonStr = JSONUtil.toJsonStr(submitShortenDTO);
         String url = "mj/submit/shorten";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);

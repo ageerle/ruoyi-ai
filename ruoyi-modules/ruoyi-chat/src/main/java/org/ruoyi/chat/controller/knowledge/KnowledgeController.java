@@ -1,12 +1,9 @@
 package org.ruoyi.chat.controller.knowledge;
 
 import cn.dev33.satoken.stp.StpUtil;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
@@ -17,7 +14,6 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.domain.PdfFileContentResult;
 import org.ruoyi.domain.bo.KnowledgeAttachBo;
 import org.ruoyi.domain.bo.KnowledgeFragmentBo;
 import org.ruoyi.domain.bo.KnowledgeInfoBo;
@@ -28,7 +24,6 @@ import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.service.IKnowledgeAttachService;
 import org.ruoyi.service.IKnowledgeFragmentService;
 import org.ruoyi.service.IKnowledgeInfoService;
-import org.ruoyi.service.PdfImageExtractService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,8 +46,6 @@ public class KnowledgeController extends BaseController {
   private final IKnowledgeAttachService attachService;
 
   private final IKnowledgeFragmentService fragmentService;
-
-//  private final PdfImageExtractService pdfImageExtractService;
 
   /**
    * 根据用户信息查询本地知识库
@@ -164,17 +157,4 @@ public class KnowledgeController extends BaseController {
     return attachService.translationByFile(file, targetLanguage);
   }
 
-  /**
-   * 提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回
-   *
-   * @param file PDF文件
-   * @return 文件名称和图片内容
-   */
-//  @PostMapping("/extract-images")
-//  @Operation(summary = "提取PDF中的图片并调用大模型,识别图片内容并返回", description = "提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回")
-//  public R<List<PdfFileContentResult>> extractImages(
-//      @RequestPart("file") MultipartFile file
-//  ) throws IOException {
-//    return R.ok(pdfImageExtractService.extractImages(file));
-//  }
 }

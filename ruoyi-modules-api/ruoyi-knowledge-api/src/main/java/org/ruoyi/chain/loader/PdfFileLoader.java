@@ -3,7 +3,6 @@ package org.ruoyi.chain.loader;
 import lombok.AllArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
-import org.ruoyi.chain.loader.ResourceLoader;
 import org.ruoyi.chain.split.TextSplitter;
 import org.springframework.stereotype.Component;
 

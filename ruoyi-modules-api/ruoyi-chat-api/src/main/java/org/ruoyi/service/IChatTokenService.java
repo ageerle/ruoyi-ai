@@ -1,6 +1,6 @@
 package org.ruoyi.service;
 
-import org.ruoyi.domain.ChatToken;
+import org.ruoyi.domain.ChatUsageToken;
 
 /**
  * 聊天消息Service接口
@@ -13,7 +13,7 @@ public interface IChatTokenService {
     /**
      * 查询用户token
      */
-    ChatToken queryByUserId(Long userId, String modelName);
+    ChatUsageToken queryByUserId(Long userId, String modelName);
 
     /**
      * 清空用户token
@@ -23,6 +23,6 @@ public interface IChatTokenService {
     /**
      * 修改用户token
      */
-    void editToken(ChatToken chatToken);
+    void editToken(ChatUsageToken chatToken);
 
 }

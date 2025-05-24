@@ -2,7 +2,6 @@ package org.ruoyi.system.service;
 
 import cn.dev33.satoken.secure.BCrypt;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.constant.GlobalConstants;
 import org.ruoyi.common.core.domain.model.RegisterBody;
@@ -10,7 +9,6 @@ import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.core.exception.user.CaptchaException;
 import org.ruoyi.common.core.exception.user.CaptchaExpireException;
 import org.ruoyi.common.core.exception.user.UserException;
-import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.utils.MessageUtils;
 import org.ruoyi.common.core.utils.ServletUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
@@ -37,7 +35,6 @@ public class SysRegisterService {
 
     private final SysUserRoleMapper userRoleMapper;
 
-   // private final ConfigService configService;
     /**
      * 注册
      */
@@ -61,9 +58,7 @@ public class SysRegisterService {
         if (!userService.checkUserNameUnique(sysUser)) {
             throw new UserException("添加用户失败", username);
         }
-        // String configValue = configService.getConfigValue("mail", "amount");
-
-        sysUser.setUserBalance(NumberUtils.toDouble("configValue",1));
+        sysUser.setUserBalance(1.0);
         SysUser user = userService.registerUser(sysUser, tenantId);
         if (user == null) {
             throw new UserException("用户注册失败!");
@@ -105,7 +100,6 @@ public class SysRegisterService {
             throw new BaseException("验证码错误,请重试！");
         }
     }
-
 
     /**
      * 校验验证码

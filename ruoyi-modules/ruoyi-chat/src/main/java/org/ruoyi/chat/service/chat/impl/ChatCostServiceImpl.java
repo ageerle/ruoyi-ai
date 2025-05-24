@@ -13,7 +13,7 @@ import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.satoken.utils.LoginHelper;
-import org.ruoyi.domain.ChatToken;
+import org.ruoyi.domain.ChatUsageToken;
 import org.ruoyi.domain.bo.ChatMessageBo;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.IChatMessageService;
@@ -48,6 +48,9 @@ public class ChatCostServiceImpl implements IChatCostService {
      */
     @Override
     public void deductToken(ChatRequest chatRequest) {
+        if(chatRequest.getUserId()==null || chatRequest.getSessionId()==null){
+            return;
+        }
 
         int tokens = TikTokensUtil.tokens(chatRequest.getModel(), chatRequest.getPrompt());
 
@@ -55,24 +58,19 @@ public class ChatCostServiceImpl implements IChatCostService {
 
         ChatMessageBo chatMessageBo = new ChatMessageBo();
 
-        if(chatRequest.getSessionId() == null){
-            Object sessionId = LocalCache.CACHE.get("sessionId");
-            chatRequest.setSessionId((Long) sessionId);
-        }
-
-        Object userId = LocalCache.CACHE.get("userId");
-        chatMessageBo.setUserId((Long) userId);
-
+        // 设置用户id
+        chatMessageBo.setUserId(chatRequest.getUserId());
         // 设置对话角色
         chatMessageBo.setRole(chatRequest.getRole());
-
+        // 设置会话id
         chatMessageBo.setSessionId(chatRequest.getSessionId());
+        // 设置对话内容
         chatMessageBo.setContent(chatRequest.getPrompt());
 
         // 计算总token数
-        ChatToken chatToken = chatTokenService.queryByUserId(chatMessageBo.getUserId(), modelName);
+        ChatUsageToken chatToken = chatTokenService.queryByUserId(chatMessageBo.getUserId(), modelName);
         if (chatToken == null) {
-            chatToken = new ChatToken();
+            chatToken = new ChatUsageToken();
             chatToken.setToken(0);
         }
         int totalTokens = chatToken.getToken() + tokens;

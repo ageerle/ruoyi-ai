@@ -21,6 +21,7 @@ import org.ruoyi.common.core.utils.DateUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.core.utils.file.MimeTypeUtils;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.domain.bo.ChatSessionBo;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.vo.ChatModelVo;
@@ -77,23 +78,22 @@ public class SseServiceImpl implements ISseService {
         try {
             // 构建消息列表
             buildChatMessageList(chatRequest);
-
-            LocalCache.CACHE.put("userId", chatCostService.getUserId());
-            chatRequest.setUserId(chatCostService.getUserId());
-            // 保存会话信息
-            if(chatRequest.getSessionId()==null){
-                ChatSessionBo chatSessionBo = new ChatSessionBo();
-                chatSessionBo.setUserId(chatCostService.getUserId());
-                chatSessionBo.setSessionTitle(getFirst10Characters(chatRequest.getPrompt()));
-                chatSessionBo.setSessionContent(chatRequest.getPrompt());
-                chatSessionService.insertByBo(chatSessionBo);
-                chatRequest.setSessionId(chatSessionBo.getId());
-            }
-            LocalCache.CACHE.put("sessionId", chatRequest.getSessionId());
             // 设置对话角色
             chatRequest.setRole(Message.Role.USER.getName());
-            // 保存消息记录 并扣除费用
-            chatCostService.deductToken(chatRequest);
+
+            if(LoginHelper.isLogin()){
+                // 保存消息记录 并扣除费用
+                chatCostService.deductToken(chatRequest);
+                chatRequest.setUserId(chatCostService.getUserId());
+                if(chatRequest.getSessionId()==null){
+                    ChatSessionBo chatSessionBo = new ChatSessionBo();
+                    chatSessionBo.setUserId(chatCostService.getUserId());
+                    chatSessionBo.setSessionTitle(getFirst10Characters(chatRequest.getPrompt()));
+                    chatSessionBo.setSessionContent(chatRequest.getPrompt());
+                    chatSessionService.insertByBo(chatSessionBo);
+                    chatRequest.setSessionId(chatSessionBo.getId());
+                }
+            }
             // 根据模型分类调用不同的处理逻辑
             IChatService chatService = chatServiceFactory.getChatService(chatModelVo.getCategory());
             chatService.chat(chatRequest, sseEmitter);

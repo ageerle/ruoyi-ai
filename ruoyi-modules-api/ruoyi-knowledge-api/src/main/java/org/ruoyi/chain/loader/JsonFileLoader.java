@@ -1,7 +1,5 @@
 package org.ruoyi.chain.loader;
 
-import org.ruoyi.chain.loader.ResourceLoader;
-
 import java.io.InputStream;
 import java.util.List;
 

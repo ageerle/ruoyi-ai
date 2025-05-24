@@ -2,7 +2,6 @@ package org.ruoyi.chain.loader;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.chain.loader.ResourceLoader;
 import org.ruoyi.chain.split.TextSplitter;
 import org.springframework.stereotype.Component;
 

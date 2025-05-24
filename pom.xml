@@ -54,10 +54,6 @@
         <maven-compiler-plugin.verison>3.11.0</maven-compiler-plugin.verison>
         <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
         <flatten-maven-plugin.version>1.3.0</flatten-maven-plugin.version>
-        <weixin-java-miniapp.version>4.5.0</weixin-java-miniapp.version>
-        <weixin-java-pay.version>4.6.0</weixin-java-pay.version>
-        <weixin-java-cp.version>4.6.0</weixin-java-cp.version>
-        <weixin-java-cp.version>4.6.0</weixin-java-cp.version>
     </properties>
 
     <profiles>
@@ -336,13 +332,6 @@
                 <artifactId>ruoyi-generator</artifactId>
                 <version>${revision}</version>
             </dependency>
-
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-wechat</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 

@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import org.ruoyi.chat.service.chat.UserModelService;
+import org.ruoyi.chat.enums.DisplayType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.core.page.TableDataInfo;
@@ -37,8 +37,6 @@ public class ChatModelController extends BaseController {
 
     private final IChatModelService chatModelService;
 
-    private final UserModelService modelService;
-
     /**
      * 查询聊天模型列表
      */
@@ -53,7 +51,8 @@ public class ChatModelController extends BaseController {
      */
     @GetMapping("/modelList")
     public R<List<ChatModelVo>> modelList(ChatModelBo bo) {
-        return R.ok(modelService.modelList(bo));
+        bo.setModelShow(DisplayType.VISIBLE.getCode());
+        return R.ok(chatModelService.queryList(bo));
     }
 
     /**

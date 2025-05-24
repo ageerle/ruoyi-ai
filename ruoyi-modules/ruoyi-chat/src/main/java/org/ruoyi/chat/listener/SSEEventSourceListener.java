@@ -34,12 +34,19 @@ import java.util.Objects;
 @Component
 public class SSEEventSourceListener extends EventSourceListener {
 
+    private SseEmitter emitter;
+
+    private Long userId;
+
+    private Long sessionId;
+
     @Autowired(required = false)
-    public SSEEventSourceListener(SseEmitter emitter) {
+    public SSEEventSourceListener(SseEmitter emitter,Long userId,Long sessionId) {
         this.emitter = emitter;
+        this.userId = userId;
+        this.sessionId = sessionId;
     }
 
-    private SseEmitter emitter;
 
     private StringBuilder stringBuffer = new StringBuilder();
 
@@ -70,6 +77,8 @@ public class SSEEventSourceListener extends EventSourceListener {
                 // 设置对话角色
                 chatRequest.setRole(Message.Role.ASSISTANT.getName());
                 chatRequest.setModel(modelName);
+                chatRequest.setUserId(userId);
+                chatRequest.setSessionId(sessionId);
                 chatRequest.setPrompt(stringBuffer.toString());
                 chatCostService.deductToken(chatRequest);
                 return;

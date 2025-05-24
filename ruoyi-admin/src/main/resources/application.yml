@@ -120,6 +120,8 @@ sa-token:
 security:
   # 排除路径
   excludes:
+    # 获取模型信息
+    - /system/model/modelList
     # 支付回调
     - /pay/returnUrl
     - /pay/notifyUrl
@@ -128,7 +130,7 @@ security:
     # 重置密码
     - /auth/reset/password
     # 聊天接口
-    - /chat
+    - /chat/send
     # 静态资源
     - /*.html
     - /**/*.html

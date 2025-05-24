@@ -3,7 +3,6 @@ package org.ruoyi.chain.split;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.chain.split.TextSplitter;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.springframework.context.annotation.Lazy;

@@ -10,15 +10,6 @@ import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.files.UploadFileResponse;
 import org.ruoyi.common.chat.entity.whisper.WhisperResponse;
-import org.ruoyi.common.core.domain.R;
-import org.ruoyi.common.core.domain.model.LoginUser;
-import org.ruoyi.common.core.exception.base.BaseException;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.common.satoken.utils.LoginHelper;
-import org.ruoyi.domain.bo.ChatMessageBo;
-import org.ruoyi.domain.vo.ChatMessageVo;
-import org.ruoyi.service.IChatMessageService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -40,8 +31,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class ChatController {
 
     private final ISseService sseService;
-
-    private final IChatMessageService chatMessageService;
 
     /**
      * 聊天接口
@@ -82,23 +71,6 @@ public class ChatController {
     @ResponseBody
     public ResponseEntity<Resource> speech(@RequestBody TextToSpeech textToSpeech) {
         return sseService.textToSpeed(textToSpeech);
-    }
-
-
-    /**
-     * 聊天记录
-     */
-    @PostMapping("/chatList")
-    @ResponseBody
-    public R<TableDataInfo<ChatMessageVo>> list(@RequestBody @Valid ChatMessageBo chatRequest, @RequestBody PageQuery pageQuery) {
-        // 默认查询当前登录用户消息记录
-        LoginUser loginUser = LoginHelper.getLoginUser();
-        if (loginUser == null) {
-            throw new BaseException("用户未登录！");
-        }
-        chatRequest.setUserId(loginUser.getUserId());
-        TableDataInfo<ChatMessageVo> chatMessageVoTableDataInfo = chatMessageService.queryPageList(chatRequest, pageQuery);
-        return R.ok(chatMessageVoTableDataInfo);
     }
 
 }
