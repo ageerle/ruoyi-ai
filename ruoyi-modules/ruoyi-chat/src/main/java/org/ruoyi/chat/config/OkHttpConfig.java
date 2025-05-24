@@ -25,11 +25,13 @@ public class OkHttpConfig {
     public void init() {
         initializeOkHttpUtil("suno");
         initializeOkHttpUtil("luma");
-        initializeOkHttpUtil("ppt");
     }
 
     private void initializeOkHttpUtil(String modelName) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
+        if(chatModelVo==null){
+            return;
+        }
         OkHttpUtil okHttpUtil = new OkHttpUtil();
         okHttpUtil.setApiHost(chatModelVo.getApiHost());
         okHttpUtil.setApiKey(chatModelVo.getApiKey());

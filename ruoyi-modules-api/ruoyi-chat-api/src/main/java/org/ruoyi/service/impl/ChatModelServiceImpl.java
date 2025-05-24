@@ -120,8 +120,11 @@ public class ChatModelServiceImpl implements IChatModelService {
      */
     @Override
     public ChatModelVo selectModelByName(String modelName) {
-       return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, modelName));
+        return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, modelName));
     }
 
-
+    @Override
+    public ChatModel getPPT() {
+        return baseMapper.selectOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, "ppt"));
+    }
 }

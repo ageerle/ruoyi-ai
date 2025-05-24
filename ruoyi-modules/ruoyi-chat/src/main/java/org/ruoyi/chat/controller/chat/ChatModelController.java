@@ -10,6 +10,7 @@ import org.ruoyi.chat.enums.DisplayType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.domain.ChatModel;
 import org.ruoyi.domain.bo.ChatModelBo;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.IChatModelService;
@@ -53,6 +54,15 @@ public class ChatModelController extends BaseController {
     public R<List<ChatModelVo>> modelList(ChatModelBo bo) {
         bo.setModelShow(DisplayType.VISIBLE.getCode());
         return R.ok(chatModelService.queryList(bo));
+    }
+
+
+    /**
+     * 查询ppt模型信息
+     */
+    @GetMapping("/getPPT")
+    public R<ChatModel> getPPT() {
+        return R.ok(chatModelService.getPPT());
     }
 
     /**
