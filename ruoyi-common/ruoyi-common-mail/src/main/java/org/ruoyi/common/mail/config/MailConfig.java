@@ -25,10 +25,8 @@ public class MailConfig {
 
     @Bean
     public MailAccount mailAccount() {
-        if (account == null) {
-            account = new MailAccount();
-            updateMailAccount();
-        }
+        account = new MailAccount();
+        updateMailAccount();
         return account;
     }
 
