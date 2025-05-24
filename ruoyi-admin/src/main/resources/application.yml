@@ -49,7 +49,7 @@ server:
 # 日志配置
 logging:
   level:
-    org.dromara: @logging.level@
+    org.ruoyi: @logging.level@
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
@@ -290,26 +290,6 @@ websocket:
   path: '/resource/websocket'
   # 设置访问源地址
   allowedOrigins: '*'
-
-# 微信小程序配置信息
-wx:
-  miniapp:
-    configs:
-      - appid: # 你的appid
-        secret: # 你的secret
-        token: #微信小程序消息服务器配置的token
-        aesKey: #微信小程序消息服务器配置的EncodingAESKey
-        msgDataFormat: JSON
-
-  #  企业微信应用
-wechat:
-  cp:
-    corpId:
-    appConfigs:
-      - agentId:
-        secret: ''
-        token:   ''
-        aesKey: ''
 
 spring:
   ai:

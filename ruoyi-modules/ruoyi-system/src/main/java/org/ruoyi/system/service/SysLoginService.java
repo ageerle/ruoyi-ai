@@ -1,8 +1,6 @@
 package org.ruoyi.system.service;
 
-import cn.binarywang.wx.miniapp.api.WxMaService;
-import cn.binarywang.wx.miniapp.bean.WxMaJscode2SessionResult;
-import cn.binarywang.wx.miniapp.util.WxMaConfigHolder;
+
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
@@ -11,14 +9,13 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.chanjar.weixin.common.error.WxErrorException;
-import org.apache.commons.lang3.math.NumberUtils;
+
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.constant.GlobalConstants;
 import org.ruoyi.common.core.constant.TenantConstants;
 import org.ruoyi.common.core.domain.dto.RoleDTO;
 import org.ruoyi.common.core.domain.model.LoginUser;
-import org.ruoyi.common.core.domain.model.VisitorLoginBody;
+
 import org.ruoyi.common.core.enums.*;
 import org.ruoyi.common.core.exception.user.CaptchaException;
 import org.ruoyi.common.core.exception.user.CaptchaExpireException;
@@ -53,7 +50,6 @@ import java.util.function.Supplier;
 public class SysLoginService {
 
     private final SysUserMapper userMapper;
-    private final WxMaService wxMaService;
     private final ISysPermissionService permissionService;
     private final ISysTenantService tenantService;
 
@@ -62,19 +58,6 @@ public class SysLoginService {
     @Value("${user.password.lockTime}")
     private Integer lockTime;
 
-    /**
-     * 获取微信code
-     * @param xcxCode 获取xcxCode
-    */
-    public String getOpenidFromCode(String xcxCode) {
-        try {
-            WxMaJscode2SessionResult sessionInfo = wxMaService.getUserService().getSessionInfo(xcxCode);
-            return sessionInfo.getOpenid();
-        } catch (WxErrorException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
     /**
      * 登录验证
      *
@@ -131,31 +114,6 @@ public class SysLoginService {
         return StpUtil.getTokenValue();
     }
 
-    /**
-     * 微信小程序登录
-     *
-     * @param loginBody
-     * @return String
-     * @Date 2023/5/18
-     **/
-    public void visitorLogin(VisitorLoginBody loginBody) {
-        String openid = "";
-        // PC端游客登录
-        if (LoginUserType.PC.getCode().equals(loginBody.getType())) {
-            openid = loginBody.getCode();
-        } else {
-            // 小程序匿名登录
-            try {
-                WxMaJscode2SessionResult session = wxMaService.getUserService().getSessionInfo(loginBody.getCode());
-                openid = session.getOpenid();
-            } catch (WxErrorException e) {
-                log.error(e.getMessage(), e);
-            } finally {
-                // 清理ThreadLocal
-                WxMaConfigHolder.remove();
-            }
-        }
-    }
 
     /**
      * 退出登录
@@ -239,7 +197,6 @@ public class SysLoginService {
     }
 
     private SysUserVo loadUserByUsername(String tenantId, String username) {
-
         SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>().select(SysUser::getUserName, SysUser::getStatus).eq(TenantHelper.isEnable(), SysUser::getTenantId, tenantId).eq(SysUser::getUserName, username));
         if (ObjectUtil.isNull(user)) {
             log.info("登录用户：{} 不存在.", username);

@@ -10,7 +10,6 @@ import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.core.exception.user.CaptchaException;
 import org.ruoyi.common.core.exception.user.CaptchaExpireException;
 import org.ruoyi.common.core.exception.user.UserException;
-import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.utils.MessageUtils;
 import org.ruoyi.common.core.utils.ServletUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
@@ -37,13 +36,10 @@ public class SysRegisterService {
 
     private final SysUserRoleMapper userRoleMapper;
 
-   // private final ConfigService configService;
     /**
      * 注册
      */
     public void register(RegisterBody registerBody) {
-
-
         String tenantId = Constants.TENANT_ID;
         if(StringUtils.isNotBlank(registerBody.getTenantId())){
             tenantId = registerBody.getTenantId();
@@ -61,9 +57,7 @@ public class SysRegisterService {
         if (!userService.checkUserNameUnique(sysUser)) {
             throw new UserException("添加用户失败", username);
         }
-        // String configValue = configService.getConfigValue("mail", "amount");
-
-        sysUser.setUserBalance(NumberUtils.toDouble("configValue",1));
+        sysUser.setUserBalance(1.0);
         SysUser user = userService.registerUser(sysUser, tenantId);
         if (user == null) {
             throw new UserException("用户注册失败!");
