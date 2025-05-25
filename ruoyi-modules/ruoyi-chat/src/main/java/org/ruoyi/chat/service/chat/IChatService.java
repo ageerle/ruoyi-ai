@@ -3,6 +3,9 @@ package org.ruoyi.chat.service.chat;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+
 /**
  * 对话Service接口
  *
