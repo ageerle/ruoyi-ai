@@ -5,7 +5,6 @@ import com.coze.openapi.client.chat.model.ChatEvent;
 import com.coze.openapi.client.chat.model.ChatEventType;
 import com.coze.openapi.client.connversations.message.model.Message;
 import com.coze.openapi.service.auth.TokenAuth;
-import com.coze.openapi.service.config.Consts;
 import com.coze.openapi.service.service.CozeAPI;
 import io.reactivex.Flowable;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,6 @@ public class CozeServiceImpl implements IChatService {
     @Override
     public SseEmitter chat(ChatRequest chatRequest, SseEmitter emitter) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-
         TokenAuth authCli = new TokenAuth(chatModelVo.getApiKey());
         CozeAPI coze =
                 new CozeAPI.Builder()
@@ -49,7 +47,7 @@ public class CozeServiceImpl implements IChatService {
                 CreateChatReq.builder()
                         .botID(chatModelVo.getModelName())
                         .userID(chatRequest.getUserId().toString())
-                        .messages(Collections.singletonList(Message.buildUserQuestionText("What can you do?")))
+                        .messages(Collections.singletonList(Message.buildUserQuestionText(chatRequest.getPrompt())))
                         .build();
 
         Flowable<ChatEvent> resp = coze.chat().stream(req);
