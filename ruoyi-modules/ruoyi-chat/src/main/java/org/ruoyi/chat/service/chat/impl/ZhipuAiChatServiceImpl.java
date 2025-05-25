@@ -16,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -46,14 +44,14 @@ public class ZhipuAiChatServiceImpl  implements IChatService {
                 @SneakyThrows
                 @Override
                 public void onPartialResponse(String token) {
-                    System.out.println(token);
+                    //System.out.println(token);
                     emitter.send(token);
                 }
 
                 @SneakyThrows
                 @Override
                 public void onError(Throwable error) {
-                    System.out.println(error.getMessage());
+                   // System.out.println(error.getMessage());
                     emitter.send(error.getMessage());
                 }
 
