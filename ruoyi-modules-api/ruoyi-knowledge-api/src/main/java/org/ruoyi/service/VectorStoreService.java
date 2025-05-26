@@ -17,10 +17,7 @@ public interface VectorStoreService {
 
     void createSchema(String kid,String modelName);
 
-    void removeByKid(String kid,String modelName);
+    void removeById(String id,String modelName);
 
-    void removeByDocId(String kid,String docId,String modelName);
-
-    void removeByKidAndFid(String kid, String fid,String modelName);
 
 }

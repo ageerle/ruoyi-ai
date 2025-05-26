@@ -9,8 +9,6 @@ import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-import dev.langchain4j.store.embedding.filter.Filter;
-import dev.langchain4j.store.embedding.filter.comparison.IsEqualTo;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -22,9 +20,7 @@ import org.ruoyi.service.VectorStoreService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 向量库管理
@@ -40,6 +36,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
     private EmbeddingStore<TextSegment> embeddingStore;
 
+
     @Override
     public void createSchema(String kid, String modelName) {
         String protocol = configService.getConfigValue("weaviate", "protocol");
@@ -48,7 +45,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         embeddingStore = WeaviateEmbeddingStore.builder()
                 .scheme(protocol)
                 .host(host)
-                .objectClass(className + kid)
+                .objectClass(className+kid)
                 .scheme(protocol)
                 .avoidDups(true)
                 .consistencyLevel("ALL")
@@ -61,14 +58,9 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
                 storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
         List<String> chunkList = storeEmbeddingBo.getChunkList();
-        for (int i = 0; i < chunkList.size(); i++) {
-            Map<String, Object> dataSchema = new HashMap<>();
-            dataSchema.put("kid", storeEmbeddingBo.getKid());
-            dataSchema.put("docId", storeEmbeddingBo.getDocId());
-            dataSchema.put("fid", storeEmbeddingBo.getFids().get(i));
-            Embedding embedding = embeddingModel.embed(chunkList.get(i)).content();
-            TextSegment segment = TextSegment.from(chunkList.get(i));
-            segment.metadata().putAll(dataSchema);
+        for (String s : chunkList) {
+            Embedding embedding = embeddingModel.embed(s).content();
+            TextSegment segment = TextSegment.from(s);
             embeddingStore.add(embedding, segment);
         }
     }
@@ -78,13 +70,10 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         createSchema(queryVectorBo.getKid(), queryVectorBo.getVectorModelName());
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
                 queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
-        // Filter simpleFilter = new IsEqualTo("kid", queryVectorBo.getKid());
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         EmbeddingSearchRequest embeddingSearchRequest = EmbeddingSearchRequest.builder()
                 .queryEmbedding(queryEmbedding)
                 .maxResults(queryVectorBo.getMaxResults())
-                // 添加过滤条件
-                //       .filter(simpleFilter)
                 .build();
         List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(embeddingSearchRequest).matches();
         List<String> results = new ArrayList<>();
@@ -94,29 +83,10 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
 
     @Override
-    public void removeByKid(String kid, String modelName) {
-        createSchema(kid, modelName);
+    public void removeById(String id, String modelName) {
+        createSchema(id, modelName);
         // 根据条件删除向量数据
-        Filter simpleFilter = new IsEqualTo("kid", kid);
-        embeddingStore.removeAll(simpleFilter);
-    }
-
-    @Override
-    public void removeByDocId(String kid, String docId, String modelName) {
-        createSchema(kid, modelName);
-        // 根据条件删除向量数据
-        Filter simpleFilterByDocId = new IsEqualTo("docId", docId);
-        embeddingStore.removeAll(simpleFilterByDocId);
-    }
-
-    @Override
-    public void removeByKidAndFid(String kid, String fid, String modelName) {
-        createSchema(kid, modelName);
-        // 根据条件删除向量数据
-        Filter simpleFilterByKid = new IsEqualTo("kid", kid);
-        Filter simpleFilterFid = new IsEqualTo("fid", fid);
-        Filter simpleFilterByAnd = Filter.and(simpleFilterFid, simpleFilterByKid);
-        embeddingStore.removeAll(simpleFilterByAnd);
+        embeddingStore.remove(id);
     }
 
     /**
