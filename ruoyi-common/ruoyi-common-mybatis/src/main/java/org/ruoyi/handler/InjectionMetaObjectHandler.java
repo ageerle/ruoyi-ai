@@ -11,7 +11,6 @@ import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.core.domain.BaseEntity;
 
-
 import java.util.Date;
 
 /**

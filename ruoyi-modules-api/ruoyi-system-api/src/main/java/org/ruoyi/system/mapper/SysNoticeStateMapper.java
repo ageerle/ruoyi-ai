@@ -1,8 +1,8 @@
 package org.ruoyi.system.mapper;
 
+import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysNoticeState;
 import org.ruoyi.system.domain.vo.SysNoticeStateVo;
-import org.ruoyi.core.mapper.BaseMapperPlus;
 
 /**
  * 用户阅读状态Mapper接口

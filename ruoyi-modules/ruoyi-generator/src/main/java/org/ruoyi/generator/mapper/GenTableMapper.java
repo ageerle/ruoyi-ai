@@ -2,9 +2,9 @@ package org.ruoyi.generator.mapper;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Param;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.generator.domain.GenTable;
-import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 

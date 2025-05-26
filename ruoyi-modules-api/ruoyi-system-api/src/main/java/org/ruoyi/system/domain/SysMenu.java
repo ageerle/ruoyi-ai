@@ -3,12 +3,12 @@ package org.ruoyi.system.domain;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.domain.BaseEntity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.List;

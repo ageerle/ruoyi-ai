@@ -1,14 +1,14 @@
 package org.ruoyi.generator.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.RegExUtils;
+import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.generator.config.GenConfig;
 import org.ruoyi.generator.constant.GenConstants;
 import org.ruoyi.generator.domain.GenTable;
 import org.ruoyi.generator.domain.GenTableColumn;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.satoken.utils.LoginHelper;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.RegExUtils;
 
 import java.util.Arrays;
 

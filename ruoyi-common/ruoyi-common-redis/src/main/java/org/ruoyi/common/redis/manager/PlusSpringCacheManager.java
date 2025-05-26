@@ -15,11 +15,11 @@
  */
 package org.ruoyi.common.redis.manager;
 
-import org.ruoyi.common.redis.utils.RedisUtils;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.spring.cache.CacheConfig;
 import org.redisson.spring.cache.RedissonCache;
+import org.ruoyi.common.redis.utils.RedisUtils;
 import org.springframework.boot.convert.DurationStyle;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;

@@ -1,13 +1,15 @@
 package org.ruoyi.domain.bo;
 
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.domain.ChatPayOrder;
-import org.ruoyi.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
+import org.ruoyi.common.core.validate.AddGroup;
+import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.core.domain.BaseEntity;
+import org.ruoyi.domain.ChatPayOrder;
+
 import java.math.BigDecimal;
 
 /**

@@ -14,7 +14,6 @@ import org.apache.ibatis.logging.LogFactory;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StreamUtils;
 
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;

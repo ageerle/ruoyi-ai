@@ -1,28 +1,29 @@
 package org.ruoyi.chat.controller.chat;
 
-import java.util.List;
-
-import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.chat.enums.DisplayType;
+import org.ruoyi.common.core.domain.R;
+import org.ruoyi.common.core.validate.AddGroup;
+import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
+import org.ruoyi.common.log.annotation.Log;
+import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.web.core.BaseController;
+import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.ChatModel;
 import org.ruoyi.domain.bo.ChatModelBo;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.IChatModelService;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
-import org.ruoyi.common.log.annotation.Log;
-import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.common.core.domain.R;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.common.log.enums.BusinessType;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 聊天模型
@@ -41,7 +42,6 @@ public class ChatModelController extends BaseController {
     /**
      * 查询聊天模型列表
      */
-    @SaCheckPermission("system:model:list")
     @GetMapping("/list")
     public TableDataInfo<ChatModelVo> list(ChatModelBo bo, PageQuery pageQuery) {
         return chatModelService.queryPageList(bo, pageQuery);
@@ -68,7 +68,6 @@ public class ChatModelController extends BaseController {
     /**
      * 导出聊天模型列表
      */
-    @SaCheckPermission("system:model:export")
     @Log(title = "聊天模型", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(ChatModelBo bo, HttpServletResponse response) {
@@ -81,7 +80,6 @@ public class ChatModelController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("system:model:query")
     @GetMapping("/{id}")
     public R<ChatModelVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {

@@ -1,10 +1,10 @@
 package org.ruoyi.system.domain.bo;
 
-import org.ruoyi.core.domain.BaseEntity;
-import org.ruoyi.system.domain.SysOss;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.ruoyi.core.domain.BaseEntity;
+import org.ruoyi.system.domain.SysOss;
 
 /**
  * OSS对象存储分页查询对象 sys_oss

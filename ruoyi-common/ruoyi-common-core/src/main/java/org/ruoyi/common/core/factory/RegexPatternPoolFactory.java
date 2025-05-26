@@ -3,7 +3,6 @@ package org.ruoyi.common.core.factory;
 import cn.hutool.core.lang.PatternPool;
 import org.ruoyi.common.core.constant.RegexConstants;
 
-
 import java.util.regex.Pattern;
 
 /**

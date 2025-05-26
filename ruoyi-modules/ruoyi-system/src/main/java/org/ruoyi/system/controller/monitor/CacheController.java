@@ -1,11 +1,11 @@
 package org.ruoyi.system.controller.monitor;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import lombok.RequiredArgsConstructor;
+import org.redisson.spring.data.connection.RedissonConnectionFactory;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.system.domain.vo.CacheListInfoVo;
-import lombok.RequiredArgsConstructor;
-import org.redisson.spring.data.connection.RedissonConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

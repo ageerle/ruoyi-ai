@@ -1,13 +1,13 @@
 package org.ruoyi.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.core.domain.BaseEntity;
 
-import java.math.BigDecimal;
-
 import java.io.Serial;
+import java.math.BigDecimal;
 
 /**
  * 支付订单对象 chat_pay_order

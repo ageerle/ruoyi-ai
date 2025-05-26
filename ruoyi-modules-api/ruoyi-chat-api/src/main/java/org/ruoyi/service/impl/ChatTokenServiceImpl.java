@@ -3,7 +3,6 @@ package org.ruoyi.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
-import org.ruoyi.domain.ChatToken;
 import org.ruoyi.domain.ChatUsageToken;
 import org.ruoyi.mapper.ChatUsageTokenMapper;
 import org.ruoyi.service.IChatTokenService;

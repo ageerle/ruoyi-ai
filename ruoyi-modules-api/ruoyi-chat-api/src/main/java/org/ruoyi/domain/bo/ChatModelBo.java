@@ -1,14 +1,14 @@
 package org.ruoyi.domain.bo;
 
-import com.alibaba.excel.annotation.ExcelProperty;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.domain.ChatModel;
-import org.ruoyi.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
+import org.ruoyi.common.core.validate.AddGroup;
+import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.core.domain.BaseEntity;
+import org.ruoyi.domain.ChatModel;
 
 /**
  * 聊天模型业务对象 chat_model

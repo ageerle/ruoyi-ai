@@ -9,9 +9,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.common.core.xss.Xss;
-import org.ruoyi.core.domain.BaseEntity;
 import org.ruoyi.common.sensitive.annotation.Sensitive;
 import org.ruoyi.common.sensitive.core.SensitiveStrategy;
+import org.ruoyi.core.domain.BaseEntity;
 import org.ruoyi.system.domain.SysUser;
 
 /**

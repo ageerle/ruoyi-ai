@@ -1,8 +1,8 @@
 package org.ruoyi.generator.mapper;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
-import org.ruoyi.generator.domain.GenTableColumn;
 import org.ruoyi.core.mapper.BaseMapperPlus;
+import org.ruoyi.generator.domain.GenTableColumn;
 
 import java.util.List;
 

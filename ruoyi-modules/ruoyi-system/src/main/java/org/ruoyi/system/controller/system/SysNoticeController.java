@@ -1,17 +1,17 @@
 package org.ruoyi.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.system.domain.SysNotice;
 import org.ruoyi.system.domain.bo.SysNoticeBo;
 import org.ruoyi.system.domain.vo.SysNoticeVo;
 import org.ruoyi.system.service.ISysNoticeService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

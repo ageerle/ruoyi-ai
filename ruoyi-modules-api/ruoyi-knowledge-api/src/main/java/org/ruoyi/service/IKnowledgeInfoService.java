@@ -1,11 +1,11 @@
 package org.ruoyi.service;
 
 
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.KnowledgeInfoBo;
 import org.ruoyi.domain.bo.KnowledgeInfoUploadBo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
-import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.core.page.PageQuery;
 
 import java.util.Collection;
 import java.util.List;

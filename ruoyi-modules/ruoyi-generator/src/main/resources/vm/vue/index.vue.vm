@@ -258,19 +258,19 @@
 </template>
 
 <script setup name="${BusinessName}" lang="ts">
-    import {
-        add${BusinessName},
-            ${BusinessName}Form,
-        get${BusinessName},
-        list${BusinessName},
-            ${BusinessName}Query,
-        update${BusinessName},
-            ${BusinessName}VO
-    } from '@/api/';
-    import {ComponentInternalInstance} from 'vue';
-    import {ElForm} from 'element-plus';
+  import {
+    add${BusinessName},
+          ${BusinessName}Form,
+    get${BusinessName},
+    list${BusinessName},
+          ${BusinessName}Query,
+    update${BusinessName},
+          ${BusinessName}VO
+  } from '@/api/';
+  import {ComponentInternalInstance} from 'vue';
+  import {ElForm} from 'element-plus';
 
-    const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+  const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 #if(${dicts} != '')
 #set($dictsNoSymbol=$dicts.replace("'", ""))
 const { ${dictsNoSymbol} } = toRefs<any>(proxy?.useDict(${dicts}));

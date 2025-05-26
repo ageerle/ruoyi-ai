@@ -3,6 +3,7 @@ package org.ruoyi.system.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.helper.DataBaseHelper;
 import org.ruoyi.system.domain.SysDept;
@@ -10,7 +11,6 @@ import org.ruoyi.system.domain.SysRoleDept;
 import org.ruoyi.system.mapper.SysDeptMapper;
 import org.ruoyi.system.mapper.SysRoleDeptMapper;
 import org.ruoyi.system.service.ISysDataScopeService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

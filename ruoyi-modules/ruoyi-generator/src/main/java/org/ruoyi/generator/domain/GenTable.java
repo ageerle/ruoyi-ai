@@ -4,13 +4,13 @@ import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.ruoyi.generator.constant.GenConstants;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.core.domain.BaseEntity;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.core.domain.BaseEntity;
+import org.ruoyi.generator.constant.GenConstants;
 
 import java.util.List;
 

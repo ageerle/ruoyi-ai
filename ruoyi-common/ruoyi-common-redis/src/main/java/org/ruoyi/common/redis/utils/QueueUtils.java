@@ -2,8 +2,8 @@ package org.ruoyi.common.redis.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.ruoyi.common.core.utils.SpringUtils;
 import org.redisson.api.*;
+import org.ruoyi.common.core.utils.SpringUtils;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;

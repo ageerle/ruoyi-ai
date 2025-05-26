@@ -1,7 +1,6 @@
 package org.ruoyi.common.chat.sse;
 
 import lombok.extern.slf4j.Slf4j;
-
 import okhttp3.sse.EventSourceListener;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;

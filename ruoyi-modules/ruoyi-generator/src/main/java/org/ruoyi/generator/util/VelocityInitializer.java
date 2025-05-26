@@ -1,9 +1,9 @@
 package org.ruoyi.generator.util;
 
-import org.ruoyi.common.core.constant.Constants;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.velocity.app.Velocity;
+import org.ruoyi.common.core.constant.Constants;
 
 import java.util.Properties;
 

@@ -4,9 +4,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ClassPathResource;
 import cn.hutool.core.util.ObjectUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.lionsoul.ip2region.xdb.Searcher;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.utils.file.FileUtils;
-import org.lionsoul.ip2region.xdb.Searcher;
 
 import java.io.File;
 

@@ -3,11 +3,11 @@ package org.ruoyi.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.core.page.PageQuery;
-import lombok.RequiredArgsConstructor;
+import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.ChatSession;
 import org.ruoyi.domain.bo.ChatSessionBo;
 import org.ruoyi.domain.vo.ChatSessionVo;
@@ -15,9 +15,9 @@ import org.ruoyi.mapper.ChatSessionMapper;
 import org.ruoyi.service.IChatSessionService;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
 
 /**
  * 会话管理Service业务层处理

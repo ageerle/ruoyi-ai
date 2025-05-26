@@ -1,10 +1,5 @@
 package org.ruoyi.system.domain.bo;
 
-import org.ruoyi.common.core.constant.UserConstants;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.core.domain.BaseEntity;
-import org.ruoyi.system.domain.SysRole;
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +7,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.ruoyi.common.core.constant.UserConstants;
+import org.ruoyi.common.core.validate.AddGroup;
+import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.core.domain.BaseEntity;
+import org.ruoyi.system.domain.SysRole;
 
 /**
  * 角色信息业务对象 sys_role

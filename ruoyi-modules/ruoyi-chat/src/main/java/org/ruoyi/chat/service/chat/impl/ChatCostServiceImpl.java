@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.BillingType;
 import org.ruoyi.chat.enums.UserGradeType;
 import org.ruoyi.chat.service.chat.IChatCostService;
-import org.ruoyi.common.chat.config.LocalCache;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.chat.utils.TikTokensUtil;
 import org.ruoyi.common.core.domain.model.LoginUser;

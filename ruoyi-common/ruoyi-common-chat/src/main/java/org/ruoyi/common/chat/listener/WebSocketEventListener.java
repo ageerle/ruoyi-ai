@@ -7,9 +7,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
-import org.ruoyi.common.chat.constant.OpenAIConst;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
-import org.ruoyi.common.chat.entity.chat.Message;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -63,7 +61,7 @@ public class WebSocketEventListener extends EventSourceListener {
             delta = mapper.writeValueAsString(completionResponse.getChoices().get(0).getDelta());
         }catch (Exception e){
             log.error("转换失败{}",e.getMessage());
-        }   
+        }
         session.sendMessage(new TextMessage(delta));
     }
 

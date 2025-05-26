@@ -1,4 +1,4 @@
-import { defineConfig } from '@vben/vite-config';
+import {defineConfig} from '@vben/vite-config';
 
 // 自行取消注释来启用按需导入功能
 // import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers';

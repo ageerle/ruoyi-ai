@@ -11,7 +11,6 @@ import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.apache.ibatis.io.Resources;
-
 import org.ruoyi.annotation.DataColumn;
 import org.ruoyi.annotation.DataPermission;
 import org.ruoyi.common.core.domain.dto.RoleDTO;
@@ -23,7 +22,6 @@ import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.enums.DataScopeType;
 import org.ruoyi.helper.DataPermissionHelper;
-
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.core.io.Resource;

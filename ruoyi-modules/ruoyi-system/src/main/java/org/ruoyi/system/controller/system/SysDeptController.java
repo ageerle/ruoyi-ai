@@ -2,6 +2,7 @@ package org.ruoyi.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.convert.Convert;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.utils.StringUtils;
@@ -11,7 +12,6 @@ import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.system.domain.bo.SysDeptBo;
 import org.ruoyi.system.domain.vo.SysDeptVo;
 import org.ruoyi.system.service.ISysDeptService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

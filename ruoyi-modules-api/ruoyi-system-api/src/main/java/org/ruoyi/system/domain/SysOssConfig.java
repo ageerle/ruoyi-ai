@@ -2,9 +2,9 @@ package org.ruoyi.system.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.ruoyi.common.tenant.core.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.ruoyi.common.tenant.core.TenantEntity;
 
 /**
  * 对象存储配置对象 sys_oss_config

@@ -7,10 +7,10 @@ import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.EncodingType;
 import com.knuddels.jtokkit.api.ModelType;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
 import org.ruoyi.common.chat.entity.chat.FunctionCall;
 import org.ruoyi.common.chat.entity.chat.Message;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 

@@ -4,16 +4,16 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.ObjectUtil;
-import org.ruoyi.generator.constant.GenConstants;
-import org.ruoyi.generator.domain.GenTable;
-import org.ruoyi.generator.domain.GenTableColumn;
-import org.ruoyi.common.core.utils.DateUtils;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.json.utils.JsonUtils;
-import org.ruoyi.helper.DataBaseHelper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.velocity.VelocityContext;
+import org.ruoyi.common.core.utils.DateUtils;
+import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.json.utils.JsonUtils;
+import org.ruoyi.generator.constant.GenConstants;
+import org.ruoyi.generator.domain.GenTable;
+import org.ruoyi.generator.domain.GenTableColumn;
+import org.ruoyi.helper.DataBaseHelper;
 
 import java.util.*;
 

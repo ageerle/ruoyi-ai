@@ -2,21 +2,16 @@ package org.ruoyi.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.collection.CollUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.domain.R;
-import org.ruoyi.common.core.domain.model.EmailLoginBody;
-import org.ruoyi.common.core.domain.model.LoginBody;
-import org.ruoyi.common.core.domain.model.RegisterBody;
-import org.ruoyi.common.core.domain.model.SmsLoginBody;
-import org.ruoyi.common.core.domain.model.VisitorLoginBody;
+import org.ruoyi.common.core.domain.model.*;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.tenant.helper.TenantHelper;
-
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.ruoyi.system.domain.bo.SysTenantBo;
 import org.ruoyi.system.domain.vo.LoginTenantVo;
 import org.ruoyi.system.domain.vo.LoginVo;

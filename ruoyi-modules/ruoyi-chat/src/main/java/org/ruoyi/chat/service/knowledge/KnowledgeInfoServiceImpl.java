@@ -1,7 +1,6 @@
 package org.ruoyi.chat.service.knowledge;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -16,14 +15,12 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.KnowledgeAttach;
-import org.ruoyi.domain.KnowledgeAttachPic;
 import org.ruoyi.domain.KnowledgeFragment;
 import org.ruoyi.domain.KnowledgeInfo;
 import org.ruoyi.domain.bo.KnowledgeInfoBo;
 import org.ruoyi.domain.bo.KnowledgeInfoUploadBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.domain.vo.ChatModelVo;
-import org.ruoyi.domain.vo.KnowledgeAttachVo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
 import org.ruoyi.mapper.KnowledgeAttachMapper;
 import org.ruoyi.mapper.KnowledgeFragmentMapper;
@@ -40,7 +37,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 /**

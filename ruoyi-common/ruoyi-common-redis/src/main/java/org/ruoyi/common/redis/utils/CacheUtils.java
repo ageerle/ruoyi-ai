@@ -1,9 +1,9 @@
 package org.ruoyi.common.redis.utils;
 
-import org.ruoyi.common.core.utils.SpringUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.redisson.api.RMap;
+import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 

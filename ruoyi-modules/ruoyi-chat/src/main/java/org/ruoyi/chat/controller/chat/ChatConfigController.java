@@ -1,27 +1,27 @@
 package org.ruoyi.chat.controller.chat;
 
-import java.util.List;
-
-import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
+import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.service.ConfigService;
+import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
+import org.ruoyi.common.log.annotation.Log;
+import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.web.core.BaseController;
+import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.ChatConfigBo;
 import org.ruoyi.system.domain.vo.ChatConfigVo;
 import org.ruoyi.system.service.IChatConfigService;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
-import org.ruoyi.common.log.annotation.Log;
-import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.common.core.domain.R;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.common.log.enums.BusinessType;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 配置信息

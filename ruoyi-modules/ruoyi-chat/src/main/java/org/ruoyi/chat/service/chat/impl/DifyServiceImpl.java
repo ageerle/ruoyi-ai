@@ -9,10 +9,8 @@ import io.github.imfangs.dify.client.event.MessageEndEvent;
 import io.github.imfangs.dify.client.event.MessageEvent;
 import io.github.imfangs.dify.client.model.DifyConfig;
 import io.github.imfangs.dify.client.model.chat.ChatMessage;
-
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.request.ChatRequest;

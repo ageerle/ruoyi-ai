@@ -2,12 +2,12 @@ package org.ruoyi.common.redis.config;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.ruoyi.common.redis.config.properties.RedissonProperties;
-import org.ruoyi.common.redis.handler.KeyPrefixHandler;
-import org.ruoyi.common.redis.manager.PlusSpringCacheManager;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.spring.starter.RedissonAutoConfigurationCustomizer;
+import org.ruoyi.common.redis.config.properties.RedissonProperties;
+import org.ruoyi.common.redis.handler.KeyPrefixHandler;
+import org.ruoyi.common.redis.manager.PlusSpringCacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

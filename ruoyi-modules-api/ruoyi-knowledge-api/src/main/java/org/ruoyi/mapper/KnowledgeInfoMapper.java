@@ -1,9 +1,9 @@
 package org.ruoyi.mapper;
 
 
+import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.domain.KnowledgeInfo;
 import org.ruoyi.domain.vo.KnowledgeInfoVo;
-import org.ruoyi.core.mapper.BaseMapperPlus;
 
 /**
  * 知识库Mapper接口
