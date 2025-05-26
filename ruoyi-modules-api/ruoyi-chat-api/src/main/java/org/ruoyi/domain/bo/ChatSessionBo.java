@@ -39,7 +39,6 @@ public class ChatSessionBo extends BaseEntity {
     /**
      * 会话内容
      */
-    @NotBlank(message = "会话内容不能为空", groups = { AddGroup.class, EditGroup.class })
     private String sessionContent;
 
     /**

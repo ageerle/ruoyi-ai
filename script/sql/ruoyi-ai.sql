@@ -1482,7 +1482,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, NULL, '1', 67.00, '00000', 103, 'admin', 'admin', 'sys_user', 'Free', 'ageerle@163.com', '15888888888', '0', 'https://ruoyi-ai-1254149996.cos.ap-guangzhou.myqcloud.com/2025/05/24/727370b029b648ea968977085da2b20f.jpg', NULL, '$2a$10$xcp.dGIBtE2FpZJ7B7GMxuEVYWVzO7v09L8mjp/lG4sdYMK4x4xcW', '0', '0', '127.0.0.1', '2025-05-24 17:23:15', NULL, 103, 1, '2023-05-14 15:19:39', 1, '2025-05-24 17:23:15', '管理员');
+INSERT INTO `sys_user` (`user_id`, `open_id`, `user_grade`, `user_balance`, `tenant_id`, `dept_id`, `user_name`, `nick_name`, `user_type`, `user_plan`, `email`, `phonenumber`, `sex`, `avatar`, `wx_avatar`, `password`, `status`, `del_flag`, `login_ip`, `login_date`, `domain_name`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (1, NULL, '1', 855.40, '00000', 103, 'admin', 'admin', 'sys_user', 'Free', 'ageerle@163.com', '15888888888', '0', 'https://ruoyi-ai-1254149996.cos.ap-guangzhou.myqcloud.com/2025/05/24/727370b029b648ea968977085da2b20f.jpg', NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-05-26 09:26:03', NULL, 103, 1, '2023-05-14 15:19:39', 1, '2025-05-26 09:26:03', '管理员');
 INSERT INTO `sys_user` VALUES (1905928435494330370, NULL, '1', 100.00, '000000', 103, 'ageerle@163.com', '熊猫助手', 'sys_user', 'Free', 'ageerle@163.com', '', '0', NULL, NULL, '$2a$10$8WO.FFcmu4L/DhzpfM4rbee0HRK6gIYIs2KsRXkc4ckjudbzchvPi', '0', '2', '', NULL, NULL, 103, 1, '2025-03-29 18:22:04', 1, '2025-03-31 10:15:11', '备用账号');
 
 -- ----------------------------
