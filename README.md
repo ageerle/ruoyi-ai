@@ -120,13 +120,11 @@
 [1]github
 - 前端服务-用户端: https://github.com/ageerle/ruoyi-web
 - 前端服务-管理端: https://github.com/ageerle/ruoyi-admin
-- 前端服务-小程序端: https://github.com/ageerle/ruoyi-uniapp
 - 后端服务：https://github.com/ageerle/ruoyi-ai
 
 [2]gitcode
 - 前端服务-用户端：https://gitcode.com/ageerle/ruoyi-web
 - 前端服务-管理端:  https://gitcode.com/ageerle/ruoyi-admin
-- 前端服务-小程序端:  https://gitcode.com/ageerle/ruoyi-uniapp
 - 后端服务：https://gitcode.com/ageerle/ruoyi-ai
 
 ### 配套文档
@@ -135,7 +133,7 @@
 
 ### 核心功能与技术亮点
 #### 1. 全栈式开源系统
-- 全套开源系统：提供完整的前端应用、后台管理以及小程序应用，基于MIT协议，开箱即用。
+- 全套开源系统：提供完整的前端应用、后台管理,基于MIT协议，开箱即用。
 #### 2. 本地化 RAG 方案
 -  基于 **Langchain4j** 框架，支持 Milvus/Weaviate/Qdrant 向量库，结合 BGE-large-zh-v1.5 本地向量化模型 实现高效文档检索与知识库构建。
 -  支持 本地 LLM 接入，结合私有知识库实现安全可控的问答系统，避免依赖云端服务的隐私风险。
