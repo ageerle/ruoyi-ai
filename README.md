@@ -112,9 +112,9 @@
 
 ### 系统体验
 - 用户端：https://web.pandarobot.chat
-- 演示账号: admin 密码：admin123
-- 管理端：https://admin.pandarobot.chat
 - 演示账号: demo 密码：demo123
+- 管理端：https://admin.pandarobot.chat
+- 演示账号: admin 密码：admin123
 - 商业版：体验商业版请联系下方小助手获取演示地址（预计6月份上线）。
 
 ### 源码地址
