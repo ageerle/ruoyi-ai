@@ -493,9 +493,9 @@ cp -pr ${SCRIPT_DIR}/mysql-init ${DEPLOY_DIR}/
 
 # 使用配置值更新 SQL 文件
 echo "正在更新 SQL 配置值..."
-sed -i "s|'weaviate', 'host', '127.0.0.1:6038'|'weaviate', 'host', 'weaviate:8080'|g" ${DEPLOY_DIR}/mysql-init/ruoyi-ai.sql
-sed -i "s|'weaviate', 'protocol', 'http'|'weaviate', 'protocol', '${WEAVIATE_PROTOCOL}'|g" ${DEPLOY_DIR}/mysql-init/ruoyi-ai.sql
-sed -i "s|'weaviate', 'classname', 'LocalKnowledge'|'weaviate', 'classname', '${WEAVIATE_CLASSNAME}'|g" ${DEPLOY_DIR}/mysql-init/ruoyi-ai.sql
+sed -i "s|'weaviate', 'host', '127.0.0.1:6038'|'weaviate', 'host', 'weaviate:8080'|g" ${DEPLOY_DIR}/mysql-init/01_ruoyi-ai.sql
+sed -i "s|'weaviate', 'protocol', 'http'|'weaviate', 'protocol', '${WEAVIATE_PROTOCOL}'|g" ${DEPLOY_DIR}/mysql-init/01_ruoyi-ai.sql
+sed -i "s|'weaviate', 'classname', 'LocalKnowledge'|'weaviate', 'classname', '${WEAVIATE_CLASSNAME}'|g" ${DEPLOY_DIR}/mysql-init/01_ruoyi-ai.sql
 
 # 使用 Docker Compose 部署
 echo "正在使用 Docker Compose 进行部署..."
