@@ -38,7 +38,7 @@
 
 ### 拉取镜像(最低配置2H2G):
    ```bash
-     script/docker/ruoyiai目录下执行: docker-compose up -d
+     script/deploy/deploy目录下执行: docker-compose up -d
   ```
 
 ### 通过脚本启动(最低配置4H4G):
@@ -51,7 +51,7 @@
 2. **克隆项目**
    ```bash
    git clone https://github.com/ageerle/ruoyi-ai
-   cd ruoyi-ai/docker-deploy/one-step-script/
+   cd ruoyi-ai/script/deploy/one-step-script
    ```
 
 3. **启动部署脚本**
@@ -112,9 +112,9 @@
 
 ### 系统体验
 - 用户端：https://web.pandarobot.chat
+- 演示账号: admin 密码：admin123
 - 管理端：https://admin.pandarobot.chat
-- 用户名: admin 密码：admin123
-- 温馨提醒：体验前需准备测试key在后台管理配置,体验完成记得删除key信息。
+- 演示账号: demo 密码：demo123
 - 商业版：体验商业版请联系下方小助手获取演示地址（预计6月份上线）。
 
 ### 源码地址
