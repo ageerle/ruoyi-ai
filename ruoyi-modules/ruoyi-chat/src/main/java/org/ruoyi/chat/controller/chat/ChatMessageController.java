@@ -40,7 +40,6 @@ public class ChatMessageController extends BaseController {
     /**
      * 查询聊天消息列表
      */
-    @SaCheckPermission("system:message:list")
     @GetMapping("/list")
     public TableDataInfo<ChatMessageVo> list(ChatMessageBo bo, PageQuery pageQuery) {
         return chatMessageService.queryPageList(bo, pageQuery);
@@ -49,7 +48,6 @@ public class ChatMessageController extends BaseController {
     /**
      * 导出聊天消息列表
      */
-    @SaCheckPermission("system:message:export")
     @Log(title = "聊天消息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(ChatMessageBo bo, HttpServletResponse response) {
@@ -62,7 +60,6 @@ public class ChatMessageController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("system:message:query")
     @GetMapping("/{id}")
     public R<ChatMessageVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {
@@ -72,7 +69,6 @@ public class ChatMessageController extends BaseController {
     /**
      * 新增聊天消息
      */
-    @SaCheckPermission("system:message:add")
     @Log(title = "聊天消息", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -84,7 +80,6 @@ public class ChatMessageController extends BaseController {
     /**
      * 修改聊天消息
      */
-    @SaCheckPermission("system:message:edit")
     @Log(title = "聊天消息", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -97,7 +92,6 @@ public class ChatMessageController extends BaseController {
      *
      * @param ids 主键串
      */
-    @SaCheckPermission("system:message:remove")
     @Log(title = "聊天消息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")

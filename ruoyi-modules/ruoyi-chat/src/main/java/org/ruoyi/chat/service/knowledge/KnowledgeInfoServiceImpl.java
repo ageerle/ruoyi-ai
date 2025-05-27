@@ -177,13 +177,11 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
   @Transactional(rollbackFor = Exception.class)
   public void removeKnowledge(String id) {
     Map<String,Object> map = new HashMap<>();
-    map.put("kid",id);
-    List<KnowledgeInfoVo> knowledgeInfoList = baseMapper.selectVoByMap(map);
-    check(knowledgeInfoList);
-    // 删除向量库信息
-//    knowledgeInfoList.forEach(knowledgeInfoVo -> {
-//      vectorStoreService.removeByKid(String.valueOf(knowledgeInfoVo.getId()),knowledgeInfoVo.getVectorModelName());
-//    });
+    KnowledgeInfo knowledgeInfo = baseMapper.selectById(id);
+    check(knowledgeInfo);
+    map.put("kid",knowledgeInfo.getKid());
+    // 删除向量数据
+    vectorStoreService.removeById(String.valueOf(knowledgeInfo.getId()),knowledgeInfo.getVectorModelName());
     // 删除附件和知识片段
     fragmentMapper.deleteByMap(map);
     attachMapper.deleteByMap(map);
@@ -256,14 +254,12 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
   /**
    * 检查用户是否有删除知识库权限
    *
-   * @param knowledgeInfoList 知识库列表
+   * @param knowledgeInfo 知识库
    */
-  public void check(List<KnowledgeInfoVo> knowledgeInfoList) {
+  public void check( KnowledgeInfo knowledgeInfo) {
     LoginUser loginUser = LoginHelper.getLoginUser();
-    for (KnowledgeInfoVo knowledgeInfoVo : knowledgeInfoList) {
-      if (!knowledgeInfoVo.getUid().equals(loginUser.getUserId())) {
-        throw new SecurityException("权限不足");
-      }
+    if (!knowledgeInfo.getUid().equals(loginUser.getUserId())) {
+      throw new SecurityException("权限不足");
     }
   }
 
