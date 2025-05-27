@@ -94,7 +94,9 @@ public class ChatModelServiceImpl implements IChatModelService {
     @Override
     public Boolean updateByBo(ChatModelBo bo) {
         ChatModel update = MapstructUtils.convert(bo, ChatModel.class);
-        validEntityBeforeSave(update);
+        if (update != null) {
+            validEntityBeforeSave(update);
+        }
         return baseMapper.updateById(update) > 0;
     }
 
@@ -102,7 +104,11 @@ public class ChatModelServiceImpl implements IChatModelService {
      * 保存前的数据校验
      */
     private void validEntityBeforeSave(ChatModel entity){
-        //TODO 做一些数据校验,如唯一约束
+        // 判断是否包含*号
+        if (entity.getApiKey().contains("*")) {
+            // 重新设置key信息
+            entity.setApiKey(baseMapper.selectById(entity.getId()).getApiKey());
+        }
     }
 
     /**
