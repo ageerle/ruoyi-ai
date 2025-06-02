@@ -125,7 +125,16 @@ public class SseServiceImpl implements ISseService {
      */
     private void buildChatMessageList(ChatRequest chatRequest){
         String sysPrompt;
-        chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+        // 矫正模型名称 如果是gpt-image 则查询image类型模型 获取模型名称
+        if(chatRequest.getModel().equals("gpt-image")) {
+            chatModelVo = chatModelService.selectModelByCategory("image");
+            if (chatModelVo == null) {
+                log.error("未找到image类型的模型配置");
+                throw new IllegalStateException("未找到image类型的模型配置");
+            }//            chatRequest.setModel(chatModelVo.getModelName());
+        }else{
+            chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+        }
         // 获取对话消息列表
         List<Message> messages = chatRequest.getMessages();
         // 查询向量库相关信息加入到上下文

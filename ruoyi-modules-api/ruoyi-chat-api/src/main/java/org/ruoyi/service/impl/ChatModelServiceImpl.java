@@ -129,6 +129,13 @@ public class ChatModelServiceImpl implements IChatModelService {
     public ChatModelVo selectModelByName(String modelName) {
         return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, modelName));
     }
+    /**
+     * 通过模型分类获取模型信息
+     */
+    @Override
+    public ChatModelVo selectModelByCategory(String  category) {
+        return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getCategory, category));
+    }
 
     @Override
     public ChatModel getPPT() {
