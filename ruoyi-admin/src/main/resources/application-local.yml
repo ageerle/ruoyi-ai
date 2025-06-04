@@ -107,5 +107,5 @@ pdf:
       key: sk-xxxx
 #百炼模型配置
 dashscope:
-  key: sk-0a4a86f3712b47ac825c1632319a8b1a
+  key: sk-xxxx
   model: qvq-max
