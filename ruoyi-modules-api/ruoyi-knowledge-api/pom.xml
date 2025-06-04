@@ -119,6 +119,12 @@
         <artifactId>ruoyi-system-api</artifactId>
       </dependency>
 
+      <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>dashscope-sdk-java</artifactId>
+        <version>2.19.0</version>
+      </dependency>
+
     </dependencies>
 
 </project>

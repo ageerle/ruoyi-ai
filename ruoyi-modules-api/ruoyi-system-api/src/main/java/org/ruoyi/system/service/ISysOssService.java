@@ -32,6 +32,15 @@ public interface ISysOssService {
 
   String downloadByByte(Long ossId) throws IOException;
 
+  String downloadToTempPath(Long ossId) throws IOException;
+
   Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
+  /**
+   * 根据文件路径删除文件
+   *
+   * @param filePath 文件路径
+   * @return 是否删除成功
+   */
+  boolean deleteFile(String filePath);
 }

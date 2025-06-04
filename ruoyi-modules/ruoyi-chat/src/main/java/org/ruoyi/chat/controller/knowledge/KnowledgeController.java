@@ -52,7 +52,7 @@ public class KnowledgeController extends BaseController {
 
   private final IKnowledgeFragmentService fragmentService;
 
-//  private final PdfImageExtractService pdfImageExtractService;
+  private final PdfImageExtractService pdfImageExtractService;
 
   /**
    * 根据用户信息查询本地知识库
@@ -170,11 +170,11 @@ public class KnowledgeController extends BaseController {
    * @param file PDF文件
    * @return 文件名称和图片内容
    */
-//  @PostMapping("/extract-images")
-//  @Operation(summary = "提取PDF中的图片并调用大模型,识别图片内容并返回", description = "提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回")
-//  public R<List<PdfFileContentResult>> extractImages(
-//      @RequestPart("file") MultipartFile file
-//  ) throws IOException {
-//    return R.ok(pdfImageExtractService.extractImages(file));
-//  }
+  @PostMapping("/extract-images")
+  @Operation(summary = "提取PDF中的图片并调用大模型,识别图片内容并返回", description = "提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回")
+  public R<List<PdfFileContentResult>> extractImages(
+  ) throws IOException {
+    return R.ok(pdfImageExtractService
+        .dealFileContent4Dashscope("https://hnzuoran02-1327573163.cos.ap-nanjing.myqcloud.com/crmebimage/public/content/2025/06/04/e115264eb22f423ea0b211709361c29f071avy39ez.jpg"));
+  }
 }

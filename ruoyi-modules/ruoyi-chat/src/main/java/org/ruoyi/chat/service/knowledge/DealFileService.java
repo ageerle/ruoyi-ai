@@ -26,6 +26,7 @@ import org.ruoyi.mapper.KnowledgeAttachPicMapper;
 import org.ruoyi.mapper.KnowledgeFragmentMapper;
 import org.ruoyi.mapper.KnowledgeInfoMapper;
 import org.ruoyi.service.IChatModelService;
+import org.ruoyi.service.PdfImageExtractService;
 import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.impl.PdfImageExtractServiceImpl;
 import org.ruoyi.system.domain.vo.SysOssVo;
@@ -64,17 +65,9 @@ public class DealFileService {
 
   private final ISysOssService ossService;
 
-//  private final PdfImageExtractService pdfImageExtractService;
+  private final PdfImageExtractService pdfImageExtractService;
 
   private final KnowledgeAttachPicMapper picMapper;
-
-  @Value("${pdf.extract.service.url}")
-  private String serviceUrl;
-  @Value("${pdf.extract.ai-api.url}")
-  private String aiApiUrl;
-  @Value("${pdf.extract.ai-api.key}")
-  private String aiApiKey;
-
 
   @Async
   public void dealVectorStatus(KnowledgeAttach attachItem) throws Exception {
@@ -169,8 +162,6 @@ public class DealFileService {
       //获取oss文件
       MultipartFile multipartFile = ossService.downloadByFile(attachItem.getOssId());
       //拆解出图片ZIP
-      PdfImageExtractServiceImpl pdfImageExtractService = new PdfImageExtractServiceImpl(serviceUrl,
-          aiApiUrl, aiApiKey);
       byte[] pngs = pdfImageExtractService.extractImages(multipartFile, "png", true);
       //解压zip，得到图片文件
       MultipartFile[] multipartFiles = ZipUtils.unzipToMultipartFiles(pngs);
@@ -236,6 +227,7 @@ public class DealFileService {
 
   @Async
   public void dealPicAnysStatus(KnowledgeAttachPic picItem) throws Exception {
+    String filePath = null;
     try {
       //锁定数据 更改 getPicAnysStatus 到进行中
       if (picMapper.update(new LambdaUpdateWrapper<KnowledgeAttachPic>()
@@ -247,13 +239,10 @@ public class DealFileService {
       }
       SysOssVo ossVo = ossService.getById(picItem.getOssId());
       if (ObjectUtil.isNotEmpty(ossVo)) {
-        String fileStr = ossService.downloadByByte(picItem.getOssId());
+        filePath = ossService.downloadToTempPath(picItem.getOssId());
         //调用第三方 分析图片内容
-        PdfImageExtractServiceImpl pdfImageExtractService = new PdfImageExtractServiceImpl(
-            serviceUrl,
-            aiApiUrl, aiApiKey);
-        List<PdfFileContentResult> pdfFileContentResults = pdfImageExtractService.dealFileContent(
-            new String[]{fileStr});
+        List<PdfFileContentResult> pdfFileContentResults = pdfImageExtractService.dealFileContent4DashscopeBase64(
+          filePath);
         if (ObjectUtil.isNotEmpty(pdfFileContentResults)) {
           for (PdfFileContentResult resultItem : pdfFileContentResults) {
             //图片解析内容回写到pic表
@@ -302,6 +291,11 @@ public class DealFileService {
           .eq(KnowledgeAttachPic::getPicAnysStatus, DealStatus.STATUS_20)
           .eq(KnowledgeAttachPic::getId, picItem.getId()));
       throw new RuntimeException(e);
+    } finally {
+      //无论成功还是失败，都要删除临时文件
+      if (ObjectUtil.isNotEmpty(filePath)) {
+        ossService.deleteFile(filePath);
+      }
     }
   }
 
@@ -349,35 +343,32 @@ public class DealFileService {
     return null;
   }
 
-  public static String parseContent(String jsonString) {
+  public static String parseContent(String content) {
     try {
-      // 创建ObjectMapper实例
+      // 首先尝试作为JSON解析
       ObjectMapper objectMapper = new ObjectMapper();
+      JsonNode rootNode = objectMapper.readTree(content);
 
-      // 解析JSON字符串
-      JsonNode rootNode = objectMapper.readTree(jsonString);
-
-      // 获取choices数组的第一个元素
+      // 如果是JSON格式，按原有逻辑处理
       JsonNode choicesNode = rootNode.get("choices");
       if (choicesNode != null && choicesNode.isArray() && choicesNode.size() > 0) {
-        // 获取第一个choice
         JsonNode firstChoice = choicesNode.get(0);
-
-        // 获取message节点
         JsonNode messageNode = firstChoice.get("message");
         if (messageNode != null) {
-          // 获取content字段的值
           JsonNode contentNode = messageNode.get("content");
           if (contentNode != null) {
             return contentNode.asText();
           }
         }
+        return "无法找到content内容";
       }
-
-      return "无法找到content内容";
+      
+      // 如果不是预期的JSON格式，直接返回原始内容
+      return content;
+      
     } catch (Exception e) {
-      e.printStackTrace();
-      return "解析JSON时发生错误: " + e.getMessage();
+      // 如果解析JSON失败，说明是普通文本，直接返回
+      return content;
     }
   }
 

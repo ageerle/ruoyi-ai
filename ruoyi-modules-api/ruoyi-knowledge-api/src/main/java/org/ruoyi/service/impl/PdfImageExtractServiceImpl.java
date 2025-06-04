@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
@@ -14,10 +13,11 @@ import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.ruoyi.common.core.domain.R;
 import org.ruoyi.domain.PdfFileContentResult;
+import org.ruoyi.service.DashscopeService;
 import org.ruoyi.service.PdfImageExtractService;
 import org.ruoyi.utils.ZipUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,19 +25,20 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * PDF图片提取服务实现类
  */
-//@Service
+@Service
 @Slf4j
 @Data
-@AllArgsConstructor
-//public class PdfImageExtractServiceImpl implements PdfImageExtractService {
-public class PdfImageExtractServiceImpl  {
+public class PdfImageExtractServiceImpl implements PdfImageExtractService {
 
-//  @Value("${pdf.extract.service.url}")
+  @Value("${pdf.extract.service.url}")
   private String serviceUrl;
-//  @Value("${pdf.extract.ai-api.url}")
+  @Value("${pdf.extract.ai-api.url}")
   private String aiApiUrl;
-//  @Value("${pdf.extract.ai-api.key}")
+  @Value("${pdf.extract.ai-api.key}")
   private String aiApiKey;
+
+  @Autowired
+  private DashscopeService dashscopeService;
 
   private final OkHttpClient client = new Builder()
       .connectTimeout(100, TimeUnit.SECONDS)
@@ -48,7 +49,7 @@ public class PdfImageExtractServiceImpl  {
 
   private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
-//  @Override
+  //  @Override
   public byte[] extractImages(MultipartFile pdfFile, String imageFormat, boolean allowDuplicates)
       throws IOException {
     // 构建multipart请求
@@ -135,7 +136,43 @@ public class PdfImageExtractServiceImpl  {
     return results;
   }
 
-//  @Override
+  /**
+   * 利用百炼接口处理文件内容
+   *
+   * @param imageUrl 传入图片地址
+   * @return 文件内容结果列表
+   * @throws IOException 如果API调用过程中发生错误
+   */
+  @Override
+  public List<PdfFileContentResult> dealFileContent4Dashscope(String imageUrl) throws IOException {
+    String qvq = dashscopeService.qvq(imageUrl);
+    // 构建结果列表
+    List<PdfFileContentResult> results = new ArrayList<>();
+    String filename = "image_" + System.currentTimeMillis();
+    results.add(new PdfFileContentResult(filename, qvq));
+    return results;
+  }
+
+  /**
+   * 利用百炼接口处理文件内容
+   *
+   * 视觉推理（QVQ）  使用本地文件（输入Base64编码或本地路径）
+   * @param localPath  图片文件的绝对路径
+   * @return
+   */
+  @Override
+  public List<PdfFileContentResult> dealFileContent4DashscopeBase64(String localPath) throws IOException {
+    String qvq = dashscopeService.qvq4LocalPath(localPath);
+    // 构建结果列表
+    List<PdfFileContentResult> results = new ArrayList<>();
+    String filename = "image_" + System.currentTimeMillis();
+    results.add(new PdfFileContentResult(filename, qvq));
+    return results;
+  }
+
+
+
+  //  @Override
   public List<PdfFileContentResult> extractImages(MultipartFile file) throws IOException {
     String format = "png";
     boolean allowDuplicates = true;

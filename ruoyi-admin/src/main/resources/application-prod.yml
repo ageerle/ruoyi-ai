@@ -180,3 +180,7 @@ pdf:
     ai-api:
       url: https://api.pandarobot.chat/v1/chat/completions
       key: sk-XXXXXX
+#百炼模型配置
+dashscope:
+  key: sk-XXXX
+  model: qvq-max
