@@ -131,7 +131,7 @@ public class SseServiceImpl implements ISseService {
             if (chatModelVo == null) {
                 log.error("未找到image类型的模型配置");
                 throw new IllegalStateException("未找到image类型的模型配置");
-            }//            chatRequest.setModel(chatModelVo.getModelName());
+            }
         }else{
             chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         }
