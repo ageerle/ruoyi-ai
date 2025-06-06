@@ -53,9 +53,13 @@ public interface IChatModelService {
      * 通过模型名称获取模型信息
      */
     ChatModelVo selectModelByName(String modelName);
-
+    /**
+     * 通过模型分类获取模型信息
+     */
+    ChatModelVo selectModelByCategory(String image);
     /**
      * 获取ppt模型信息
      */
     ChatModel getPPT();
+
 }

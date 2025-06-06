@@ -15,7 +15,9 @@ public enum ChatModeType {
 
     QIANWEN("qianwen", "通义千问"),
 
-    VECTOR("vector", "知识库向量模型");
+    VECTOR("vector", "知识库向量模型"),
+
+    IMAGE("image", "图片识别模型");
 
     private final String code;
     private final String description;

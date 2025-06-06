@@ -35,6 +35,8 @@ public class QianWenAiChatServiceImpl  implements IChatService {
                 .modelName(chatModelVo.getModelName())
                 .build();
 
+
+
         // 发送流式消息
         try {
             model.chat(chatRequest.getPrompt(), new StreamingChatResponseHandler() {

@@ -132,8 +132,8 @@ INSERT INTO `chat_model` VALUES (1828324413241466880, '000000', 'vector', 'quent
 INSERT INTO `chat_model` VALUES (1828324413241466881, '000000', 'vector', 'baai/bge-m3', 'baai/bge-m3', 0.01, '2', '1', NULL, 'https://api.ppinfra.com/v3/openai', 'sk-xx', NULL, 103, 1, '2024-08-27 14:51:23', 1, '2025-05-24 17:33:11', 'BGE-M3 是一款具备多维度能力的文本嵌入模型，可同时实现密集检索、多向量检索和稀疏检索三大核心功能。该模型设计上兼容超过100种语言，并支持从短句到长达8192词元的长文本等多种输入形式。在跨语言检索任务中，BGE-M3展现出显著优势，其性能在MIRACL、MKQA等国际基准测试中位居前列。此外，针对长文档检索场景，该模型在MLDR、NarritiveQA等数据集上的表现同样达到行业领先水平。');
 INSERT INTO `chat_model` VALUES (1859570229117022211, '000000', 'chat', 'deepseek/deepseek-v3-0324', 'deepseek/deepseek-v3-0324', 0.1, '1', '0', '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1, '2025-05-24 17:56:22', 'DeepSeek V3 0324 是深度求索（DeepSeek）团队旗舰级对话模型系列的最新版本，采用混合专家（Mixture-of-Experts, MoE）架构，参数量达685B参数。');
 INSERT INTO `chat_model` VALUES (1859570229117022212, '000000', 'chat', 'deepseek/deepseek-r1', 'deepseek/deepseek-r1', 0.1, '1', '0', '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1, '2025-05-24 17:56:14', 'DeepSeek R1是DeepSeek团队发布的最新开源模型，具备非常强悍的推理性能，尤其在数学、编程和推理任务上达到了与OpenAI的o1模型相当的水平。');
-INSERT INTO `chat_model` VALUES (1926215622017482754, '000000', 'chat', 'gpt-4o-mini', 'gpt-4o-mini', 0.1, '1', '0', NULL, 'https://api.pandarobot.chat/v1/chat/completions/', 'sk-xx', NULL, 103, 1, '2025-05-24 17:56:06', 1, '2025-05-24 17:56:06', 'gpt 多模态模型');
-INSERT INTO `chat_model` VALUES (1926215622017482755, '000000', 'chat', 'gpt-4-all', 'gpt-4-all', 0.5, '2', '0', NULL, 'https://api.pandarobot.chat/v1/chat/completions/', 'sk-xx', NULL, 103, 1, '2025-05-24 17:56:06', 1, '2025-05-24 17:59:21', 'gpt 逆向多模态模型');
+INSERT INTO `chat_model` VALUES (1930184891812147202, '000000', 'image', 'qwen/qwen2.5-vl-72b-instruct', 'qwen/qwen2.5-vl-72b-instruct', 0.003, '2', '0', NULL, 'https://api.ppinfra.com/v3/openai/chat/completions', 'xx', NULL, 103, 1, '2025-06-04 16:48:34', 1, '2025-06-04 16:48:34', '视觉模型');
+
 
 -- ----------------------------
 -- Table structure for chat_pay_order
