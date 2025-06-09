@@ -129,6 +129,7 @@ public class DealFileService {
           .eq(KnowledgeAttach::getVectorStatus, DealStatus.STATUS_20)
           .eq(KnowledgeAttach::getId, attachItem.getId()));
     } catch (Exception e) {
+      e.printStackTrace();
       //设置处理失败
       attachMapper.update(new LambdaUpdateWrapper<KnowledgeAttach>()
           .set(KnowledgeAttach::getVectorStatus, DealStatus.STATUS_40)

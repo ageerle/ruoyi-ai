@@ -28,9 +28,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class DashscopeServiceImpl implements DashscopeService {
 
-  private static StringBuilder reasoningContent = new StringBuilder();
-  private static StringBuilder finalContent = new StringBuilder();
-  private static boolean isFirstPrint = true;
+  private boolean isFirstPrint;
 
   @Value("${dashscope.model}")
   private String serviceModel;
@@ -67,11 +65,11 @@ public class DashscopeServiceImpl implements DashscopeService {
       Flowable<MultiModalConversationResult> result = conv.streamCall(
           param);
 
-      reasoningContent = new StringBuilder();
-      finalContent = new StringBuilder();
+      StringBuilder reasoningContent = new StringBuilder();
+      StringBuilder finalContent = new StringBuilder();
       isFirstPrint = true;
 
-      result.blockingForEach(DashscopeServiceImpl::handleGenerationResult);
+      result.blockingForEach(message -> handleGenerationResult(message, reasoningContent, finalContent));
 
       return finalContent.toString().replaceAll("[\n\r\s]", "");
     } catch (Exception e) {
@@ -106,11 +104,11 @@ public class DashscopeServiceImpl implements DashscopeService {
       Flowable<MultiModalConversationResult> result = conv.streamCall(
           param);
 
-      reasoningContent = new StringBuilder();
-      finalContent = new StringBuilder();
+      StringBuilder reasoningContent = new StringBuilder();
+      StringBuilder finalContent = new StringBuilder();
       isFirstPrint = true;
 
-      result.blockingForEach(DashscopeServiceImpl::handleGenerationResult);
+      result.blockingForEach(message -> handleGenerationResult(message, reasoningContent, finalContent));
 
       return finalContent.toString().replaceAll("[\n\r\s]", "");
     } catch (Exception e) {
@@ -120,30 +118,33 @@ public class DashscopeServiceImpl implements DashscopeService {
   }
 
 
-  private static void handleGenerationResult(MultiModalConversationResult message) {
-
+  private void handleGenerationResult(MultiModalConversationResult message, StringBuilder reasoningContent, StringBuilder finalContent) {
     String re = message.getOutput().getChoices().get(0).getMessage().getReasoningContent();
-    String reasoning = Objects.isNull(re) ? "" : re; // 默认值
+    String reasoning = Objects.isNull(re) ? "" : re;
 
     List<Map<String, Object>> content = message.getOutput().getChoices().get(0).getMessage()
         .getContent();
     if (!reasoning.isEmpty()) {
       reasoningContent.append(reasoning);
-      if (isFirstPrint) {
-        System.out.println("====================思考过程====================");
-        isFirstPrint = false;
-      }
-      System.out.print(reasoning);
     }
 
     if (Objects.nonNull(content) && !content.isEmpty()) {
       Object text = content.get(0).get("text");
       finalContent.append(text);
-      if (!isFirstPrint) {
-        System.out.println("\n====================完整回复====================");
-        isFirstPrint = true;
+    }
+
+    // 检查是否是最后一个响应
+    if (message.getOutput().getChoices().get(0).getFinishReason() != null) {
+      // 输出思考过程
+      if (reasoningContent.length() > 0) {
+        System.out.println("====================思考过程====================");
+        System.out.println(reasoningContent.toString());
       }
-      System.out.print(text);
+      // 输出完整回复
+      if (finalContent.length() > 0) {
+        System.out.println("====================完整回复====================");
+        System.out.println(finalContent.toString());
+      }
     }
   }
 }
