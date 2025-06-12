@@ -713,6 +713,12 @@ INSERT INTO `sys_menu` VALUES (1906674838461321219, '配置信息新增', 190667
 INSERT INTO `sys_menu` VALUES (1906674838461321220, '配置信息修改', 1906674838461321217, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:edit', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1906674838461321221, '配置信息删除', 1906674838461321217, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:remove', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1906674838461321222, '配置信息导出', 1906674838461321217, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:export', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1929170702299045890, '提示词模板', 1775500307898949634, '1', 'promptTemplate', 'system/promptTemplate/index', '', 1, 0, 'C', '0', '0', 'system:promptTemplate:list', 'fluent:prompt-16-filled', 103, 1, sysdate(), null, null, '提示词模板菜单');
+INSERT INTO `sys_menu` VALUES (1929170702299045891, '提示词模板查询', 1929170702299045890, '1',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:query',        '#', 103, 1, sysdate(), null, null, '');
+INSERT INTO `sys_menu` VALUES (1929170702299045892, '提示词模板新增', 1929170702299045890, '2',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:add',          '#', 103, 1, sysdate(), null, null, '');
+INSERT INTO `sys_menu` VALUES (1929170702299045893, '提示词模板修改', 1929170702299045890, '3',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:edit',         '#', 103, 1, sysdate(), null, null, '');
+INSERT INTO `sys_menu` VALUES (1929170702299045894, '提示词模板删除', 1929170702299045890, '4',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:remove',       '#', 103, 1, sysdate(), null, null, '');
+INSERT INTO `sys_menu` VALUES (1929170702299045895, '提示词模板导出', 1929170702299045890, '5',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:export',       '#', 103, 1, sysdate(), null, null, '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -2509,5 +2515,25 @@ INSERT INTO `sys_user_role` VALUES (1847910185208987649, 1);
 INSERT INTO `sys_user_role` VALUES (1871910972567822337, 1);
 INSERT INTO `sys_user_role` VALUES (1897620177094057985, 1);
 INSERT INTO `sys_user_role` VALUES (1925795787894333441, 1729685491108446210);
+
+# 提示词模板表
+DROP TABLE IF EXISTS `prompt_template`;
+CREATE TABLE prompt_template
+(
+    id               bigint auto_increment comment '主键'
+        primary key,
+    template_name    varchar(128) null comment '提示词模板名称',
+    template_content text         null comment '提示词模板内容',
+    category         varchar(16)  NULL COMMENT '提示词分类，knowledge 知识库类型，chat 对话类型，draw绘画类型 ...',
+    create_dept      bigint       null comment '创建部门',
+    create_by        bigint       null comment '创建者',
+    create_time      datetime     null comment '创建时间',
+    update_by        bigint       null comment '更新者',
+    update_time      datetime     null comment '更新时间',
+    remark           varchar(256) null comment '备注'
+) ENGINE = InnoDB
+  CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '提示词模板表'
+  ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
