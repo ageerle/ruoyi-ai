@@ -73,7 +73,7 @@ public class KnowledgeController extends BaseController {
   /**
    * 删除知识库
    */
-  @PostMapping("/remove/{id}")
+  @DeleteMapping("/remove/{id}")
   public R<String> remove(@PathVariable String id) {
     knowledgeInfoService.removeKnowledge(id);
     return R.ok("删除知识库成功!");
@@ -131,7 +131,7 @@ public class KnowledgeController extends BaseController {
   /**
    * 删除知识库附件
    */
-  @PostMapping("attach/remove/{kid}")
+  @DeleteMapping("attach/remove/{kid}")
   public R<Void> removeAttach(@NotEmpty(message = "主键不能为空")
   @PathVariable String kid) {
     attachService.removeKnowledgeAttach(kid);
