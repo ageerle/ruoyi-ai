@@ -153,69 +153,31 @@
 
 ### 任务规划演示
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; margin: 30px 0;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
 
 <!-- 任务1: 自动创建项目 -->
-<div style="background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%); padding: 20px; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); border: 1px solid #e1e8ed;">
-  <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">任务1: 自动创建项目</h3>
+<div style="text-align: center; padding: 15px; border-radius: 8px; background: #f8f9fa; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; margin-bottom: 15px;">自动创建项目</h3>
 
-  <a href="https://www.bilibili.com/video/BV1CgKuzFEt6/" target="_blank" style="display: block; position: relative;">
-    <img src="https://i0.hdslb.com/bfs/archive/bfd5b3e0b1c0f8e9a2e7c3d4b5a6f7890a1b2c3d.jpg" alt="自动创建项目演示" style="width: 100%; border-radius: 8px; transition: transform 0.3s ease;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-      <svg viewBox="0 0 24 24" width="40" height="40" style="fill: #fff;">
-        <path d="M8 5v14l11-7z"></path>
-      </svg>
-    </div>
-  </a>
-
-  <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-    <a href="https://www.bilibili.com/video/BV1CgKuzFEt6/" target="_blank" style="background: #3498db; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center;">
-      <svg viewBox="0 0 24 24" width="16" height="16" style="fill: white; margin-right: 5px;">
-        <path d="M8 5v14l11-7z"></path>
-      </svg>
+  <div style="margin-top: 10px;">
+    <a href="https://www.bilibili.com/video/BV1CgKuzFEt6" target="_blank" style="display: inline-block; background: #3498db; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500;">
       观看视频
-    </a>
-
-    <a href="https://www.bilibili.com/video/BV1CgKuzFEt6/" style="color: #3498db; text-decoration: none; font-size: 0.9em;">
-      <svg viewBox="0 0 24 24" width="16" height="16" style="fill: #3498db; margin-right: 5px; vertical-align: middle;">
-        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path>
-      </svg>
-      视频详情
     </a>
   </div>
 </div>
 
 <!-- 任务2: 生成旅游攻略 -->
-<div style="background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%); padding: 20px; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); border: 1px solid #e1e8ed;">
-  <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #e74c3c; padding-bottom: 10px;">任务2: 生成旅游攻略</h3>
-
-  <a href="https://www.bilibili.com/video/BV1kuKuzfERC/" target="_blank" style="display: block; position: relative;">
-    <img src="https://i0.hdslb.com/bfs/archive/bfd5b3e0b1c0f8e9a2e7c3d4b5a6f7890a1b2c3d.jpg" alt="生成旅游攻略演示" style="width: 100%; border-radius: 8px; transition: transform 0.3s ease;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-      <svg viewBox="0 0 24 24" width="40" height="40" style="fill: #fff;">
-        <path d="M8 5v14l11-7z"></path>
-      </svg>
-    </div>
-  </a>
-
-  <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-    <a href="https://www.bilibili.com/video/BV1kuKuzfERC/" target="_blank" style="background: #e74c3c; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center;">
-      <svg viewBox="0 0 24 24" width="16" height="16" style="fill: white; margin-right: 5px;">
-        <path d="M8 5v14l11-7z"></path>
-      </svg>
+<div style="text-align: center; padding: 15px; border-radius: 8px; background: #f8f9fa; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; margin-bottom: 15px;">生成旅游攻略</h3>
+  <div style="margin-top: 10px;">
+    <a href="https://www.bilibili.com/video/BV1kuKuzfERC" target="_blank" style="display: inline-block; background: #3498db; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500;">
       观看视频
-    </a>
-
-    <a href="https://www.bilibili.com/video/BV1kuKuzfERC/" style="color: #e74c3c; text-decoration: none; font-size: 0.9em;">
-      <svg viewBox="0 0 24 24" width="16" height="16" style="fill: #e74c3c; margin-right: 5px; vertical-align: middle;">
-        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path>
-      </svg>
-      视频详情
     </a>
   </div>
 </div>
 
 </div>
+
 
 #### mcp支持
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
