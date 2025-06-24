@@ -149,6 +149,18 @@
 
 ### 项目演示
 
+#### 任务规划
+<!-- 使用HTML5 video标签确保兼容性 -->
+<video controls width="80%">
+  <source src="video/task01.mp4" type="video/mp4">
+  您的浏览器不支持视频播放，请<a href="video/task01.mp4">点击下载</a>
+</video>
+
+<video controls width="80%">
+  <source src="video/task02.mp4" type="video/mp4">
+  您的浏览器不支持视频播放，请<a href="video/task02.mp4">点击下载</a>
+</video>
+
 #### mcp支持
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
   <img src="image/mcp-01.png" alt="drawing" style="width: 600px; height: 300px; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
