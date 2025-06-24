@@ -114,7 +114,7 @@
 - 演示账号: demo 密码：demo123
 - 管理端：https://admin.pandarobot.chat
 - 演示账号: admin 密码：admin123
-- 商业版：体验商业版请联系下方小助手获取演示地址（预计6月份上线）。
+
 
 ### 源码地址
 [1]github
@@ -284,13 +284,6 @@
 4. 推送到分支 (`git push origin feature/dev`)
 5. 打开拉取请求
 6. pr请提交到GitHub上，会定时同步到gitee
-
-#### 项目文档
-1. 项目文档基于vitepress构建
-2. 按照[如何参与开源项目](#如何参与开源项目)拉取https://github.com/ageerle/ruoyi-doc
-3. 安装依赖：npm install
-4. 启动项目：npm run docs:dev
-5. 主页路径：docs/guide/introduction/index.md
 
 ### 鸣谢
 - [chatgpt-java](https://github.com/Grt1228/chatgpt-java)
