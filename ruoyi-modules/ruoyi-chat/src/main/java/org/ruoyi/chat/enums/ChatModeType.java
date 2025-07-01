@@ -17,7 +17,9 @@ public enum ChatModeType {
 
     VECTOR("vector", "知识库向量模型"),
 
-    IMAGE("image", "图片识别模型");
+    IMAGE("image", "图片识别模型"),
+
+    FASTGPT("fastgpt", "FASTGPT");
 
     private final String code;
     private final String description;

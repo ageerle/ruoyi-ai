@@ -169,6 +169,7 @@ public class ChatCostServiceImpl implements IChatCostService {
     /**
      * 获取用户Id
      */
+    @Override
     public Long getUserId() {
         LoginUser loginUser = LoginHelper.getLoginUser();
         if (loginUser == null) {
