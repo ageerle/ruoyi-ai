@@ -179,13 +179,14 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     Map<String,Object> map = new HashMap<>();
     KnowledgeInfo knowledgeInfo = baseMapper.selectById(id);
     check(knowledgeInfo);
-    map.put("kid",knowledgeInfo.getKid());
+    map.put("kid",knowledgeInfo.getId());
     // 删除向量数据
     vectorStoreService.removeById(String.valueOf(knowledgeInfo.getId()),knowledgeInfo.getVectorModelName());
     // 删除附件和知识片段
     fragmentMapper.deleteByMap(map);
     attachMapper.deleteByMap(map);
     // 删除知识库
+    map.put("kid",knowledgeInfo.getKid());
     baseMapper.deleteByMap(map);
   }
 
