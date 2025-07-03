@@ -10,6 +10,9 @@ import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
+import io.weaviate.client.Config;
+import io.weaviate.client.WeaviateClient;
+import io.weaviate.client.base.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -83,10 +86,20 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
 
     @Override
-    public void removeById(String id, String modelName) {
-        createSchema(id, modelName);
-        // 根据条件删除向量数据
-        embeddingStore.remove(id);
+    @SneakyThrows
+    public void removeById(String id, String modelName)  {
+        String protocol = configService.getConfigValue("weaviate", "protocol");
+        String host = configService.getConfigValue("weaviate", "host");
+        String className = configService.getConfigValue("weaviate", "classname");
+        String finalClassName = className + id;
+        WeaviateClient client = new WeaviateClient(new Config(protocol, host));
+        Result<Boolean> result = client.schema().classDeleter().withClassName(finalClassName).run();
+        if (result.hasErrors()) {
+            log.error("失败删除向量: " + result.getError());
+            throw new ServiceException("失败删除向量数据!");
+        } else {
+            log.info("成功删除向量数据: " + result.getResult());
+        }
     }
 
     /**

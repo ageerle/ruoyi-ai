@@ -135,8 +135,9 @@
 #### 1. 全栈式开源系统
 - 全套开源系统：提供完整的前端应用、后台管理,基于MIT协议，开箱即用。
 #### 2. 本地化 RAG 方案
--  基于 **Langchain4j** 框架，支持 Milvus/Weaviate/Qdrant 向量库，结合 BGE-large-zh-v1.5 本地向量化模型 实现高效文档检索与知识库构建。
--  支持 本地 LLM 接入，结合私有知识库实现安全可控的问答系统，避免依赖云端服务的隐私风险。
+- 基于 **Langchain4j** 框架，支持 Milvus/Weaviate/Qdrant 向量库，结合 BGE-large-zh-v1.5 本地向量化模型 实现高效文档检索与知识库构建。
+- 支持 本地 LLM 接入，结合私有知识库实现安全可控的问答系统，避免依赖云端服务的隐私风险。
+- 支持 ollama、vLLm等平台部署模型。
 #### 3. 多模态 AI 引擎与工具集成
 -  智能对话：支持 OpenAI GPT-4、Azure、ChatGLM 等主流模型，内置 SSE/WebSocket 协议实现低延迟交互，兼容 **扣子**、**DIFY** 等平台 API 调用。
 -  **Spring AI MCP** 支持：通过注解快速定义本地工具，支持调用 MCP 广场 的海量 MCP Server 服务，扩展模型能力边界。
