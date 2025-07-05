@@ -1,6 +1,5 @@
 package org.ruoyi.chat.controller.chat;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -16,6 +15,7 @@ import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.ChatMessageBo;
+import org.ruoyi.domain.bo.ChatMessageForUniappBo;
 import org.ruoyi.domain.vo.ChatMessageVo;
 import org.ruoyi.service.IChatMessageService;
 import org.springframework.validation.annotation.Validated;
@@ -65,6 +65,37 @@ public class ChatMessageController extends BaseController {
                                      @PathVariable Long id) {
         return R.ok(chatMessageService.queryById(id));
     }
+
+
+
+    /**
+     * 查询聊天消息列表 uniapp
+     */
+    @GetMapping("/listForUniapp")
+    public TableDataInfo<ChatMessageVo> list(ChatMessageForUniappBo uniappBo, PageQuery pageQuery) {
+        ChatMessageBo bo = new ChatMessageBo();
+        bo.setUserId(uniappBo.getUserId());
+        bo.setSessionId(Long.parseLong(uniappBo.getUserId().toString() + "2024"));
+        return chatMessageService.queryPageList(bo, pageQuery);
+    }
+
+
+    /**
+     * 新增聊天消息 uniapp
+     */
+    @Log(title = "聊天消息", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
+    @PostMapping("/addForUniapp")
+    public R<Long> addForUniapp(@Validated(AddGroup.class) @RequestBody ChatMessageForUniappBo uniappBo) {
+        ChatMessageBo bo = new ChatMessageBo();
+        bo.setUserId(uniappBo.getUserId());
+        bo.setRole(uniappBo.getRole());
+        bo.setContent(uniappBo.getContent());
+        bo.setSessionId(Long.parseLong(uniappBo.getUserId().toString() + "2024"));
+        chatMessageService.insertByBo(bo);
+        return R.ok(uniappBo.getId());
+    }
+
 
     /**
      * 新增聊天消息
