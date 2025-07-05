@@ -1,6 +1,7 @@
 package org.ruoyi.chat.listener;
 
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.request.ChatRequest;
+import org.ruoyi.common.core.service.BaseContext;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +42,14 @@ public class SSEEventSourceListener extends EventSourceListener {
 
     private Long sessionId;
 
+    private String token;
+
     @Autowired(required = false)
-    public SSEEventSourceListener(SseEmitter emitter,Long userId,Long sessionId) {
+    public SSEEventSourceListener(SseEmitter emitter,Long userId,Long sessionId, String token) {
         this.emitter = emitter;
         this.userId = userId;
         this.sessionId = sessionId;
+        this.token = token;
     }
 
 
@@ -80,6 +85,8 @@ public class SSEEventSourceListener extends EventSourceListener {
                 chatRequest.setUserId(userId);
                 chatRequest.setSessionId(sessionId);
                 chatRequest.setPrompt(stringBuffer.toString());
+                // 记录会话token
+                BaseContext.setCurrentToken(token);
                 chatCostService.deductToken(chatRequest);
                 return;
             }

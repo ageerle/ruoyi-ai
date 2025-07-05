@@ -1,5 +1,6 @@
 package org.ruoyi.chat.service.chat.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.config.ChatConfig;
@@ -127,8 +128,10 @@ public class ImageServiceImpl implements IChatService {
         OpenAiStreamClient openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
         List<Message> messages = chatRequest.getMessages();
 
+        // 获取会话token
+        String token = StpUtil.getTokenValue();
         // 创建 SSE 事件源监听器
-        SSEEventSourceListener listener = new SSEEventSourceListener(emitter, chatRequest.getUserId(), chatRequest.getSessionId());
+        SSEEventSourceListener listener = new SSEEventSourceListener(emitter, chatRequest.getUserId(), chatRequest.getSessionId(), token);
 
         // 构建聊天完成请求
         ChatCompletion completion = ChatCompletion

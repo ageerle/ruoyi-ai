@@ -1,5 +1,6 @@
 package org.ruoyi.chat.service.chat.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import io.modelcontextprotocol.client.McpSyncClient;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.config.ChatConfig;
@@ -56,7 +57,8 @@ public class OpenAIServiceImpl implements IChatService {
             Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
             messages.add(userMessage);
         }
-        SSEEventSourceListener listener = new SSEEventSourceListener(emitter,chatRequest.getUserId(),chatRequest.getSessionId());
+        String token = StpUtil.getTokenValue();
+        SSEEventSourceListener listener = new SSEEventSourceListener(emitter,chatRequest.getUserId(),chatRequest.getSessionId(), token);
         ChatCompletion completion = ChatCompletion
                 .builder()
                 .messages(messages)
