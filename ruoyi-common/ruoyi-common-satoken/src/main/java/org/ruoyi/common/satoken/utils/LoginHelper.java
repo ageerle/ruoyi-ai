@@ -10,15 +10,12 @@ import cn.hutool.core.util.ObjectUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.formula.functions.T;
 import org.ruoyi.common.core.constant.TenantConstants;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.enums.DeviceType;
 import org.ruoyi.common.core.enums.UserType;
-import org.ruoyi.common.redis.utils.RedisUtils;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
