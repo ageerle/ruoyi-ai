@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: springAI-alibaba-copilot
+  ai:
+    openai:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: xx
+      chat:
+        options:
+          model: qwen-plus
+server:
+  port: 8080
+
+app:
+  # 工作目录配置
+  workspace:
+    # 使用 ${file.separator} 或让 Java 代码处理路径拼接
+    root-directory: ${user.dir}/workspace  # 改为使用正斜杠，Java会自动转换
+    max-file-size: 10485760  # 10MB
+    allowed-extensions:
+      - .txt
+      - .md
+      - .java
+      - .js
+      - .ts
+      - .json
+      - .xml
+      - .yml
+      - .yaml
+      - .properties
+      - .html
+      - .css
+      - .sql
+
+  # 浏览器自动打开配置
+  browser:
+    # 是否启用项目启动后自动打开浏览器
+    auto-open: true
+    # 要打开的URL，默认为项目首页
+    url: http://localhost:${server.port:8080}
+    # 启动后延迟打开时间（秒）
+    delay-seconds: 2
+
+  # 安全配置
+  security:
+    approval-mode: DEFAULT  # DEFAULT, AUTO_EDIT, YOLO
+    dangerous-commands:
+      - rm
+      - del
+      - format
+      - fdisk
+      - mkfs
+
+  # 工具配置
+  tools:
+    read-file:
+      enabled: true
+      max-lines-per-read: 1000
+    write-file:
+      enabled: true
+      backup-enabled: true
+    edit-file:
+      enabled: true
+      diff-context-lines: 3
+    list-directory:
+      enabled: true
+      max-depth: 5
+    shell:
+      enabled: true
+      timeout-seconds: 30
+
+logging:
+  level:
+    com.example.demo: DEBUG
+    com.example.demo.tools: INFO
+    com.example.demo.controller: INFO
+    com.example.demo.service: INFO
+    com.example.demo.config: DEBUG
+    # 禁用 Spring AI 默认工具调用日志，使用我们的自定义日志
+    org.springframework.ai.model.tool.DefaultToolCallingManager: WARN
+    org.springframework.ai.tool.method.MethodToolCallback: WARN
+    org.springframework.ai: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/copilot-file-ops.log

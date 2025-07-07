@@ -1,0 +1,591 @@
+/* SpringAI Alibaba Copilot - 主样式文件 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 1200px;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.header h1 {
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.header p {
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.chat-area {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #eee;
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+.message {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.message.user > div {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.message.assistant > div {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 18px 18px 18px 4px;
+}
+
+.message > div {
+    max-width: 70%;
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.message-role {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    opacity: 0.8;
+}
+
+.message-content {
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.message-content pre {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    overflow-x: auto;
+    font-size: 13px;
+}
+
+.message-content code {
+    background: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+.input-area {
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 10px;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    outline: none;
+    font-size: 14px;
+}
+
+.input-area input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.input-area button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.input-area button:first-of-type {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.input-area button:first-of-type:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.clear-btn {
+    background: #f8f9fa;
+    color: #666;
+    border: 1px solid #ddd;
+}
+
+.clear-btn:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+.input-area button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.sidebar {
+    flex: 1;
+    padding: 20px;
+    background: #f8f9fa;
+    overflow-y: auto;
+}
+
+.sidebar h3 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 16px;
+}
+
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 30px;
+}
+
+.quick-action {
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 13px;
+    color: #333;
+}
+
+.quick-action:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.status {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+}
+
+.status.success {
+    background: #28a745;
+}
+
+.status.error {
+    background: #dc3545;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 工具日志容器样式 */
+.tool-log-container {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    margin: 15px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.tool-log-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 12px 16px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tool-log-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.connection-status {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: #e9ecef;
+    color: #666;
+}
+
+.connection-status.connected {
+    background: #d4edda;
+    color: #155724;
+}
+
+.connection-status.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.connection-status.completed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.tool-log-content {
+    padding: 16px;
+}
+
+.tool-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.tool-card.running {
+    border-left: 4px solid #ffc107;
+    background: #fff8e1;
+}
+
+.tool-card.success {
+    border-left: 4px solid #28a745;
+    background: #f8fff9;
+}
+
+.tool-card.error {
+    border-left: 4px solid #dc3545;
+    background: #fff5f5;
+}
+
+.tool-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.tool-icon {
+    font-size: 16px;
+}
+
+.tool-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.tool-status {
+    margin-left: auto;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #e9ecef;
+    color: #666;
+}
+
+.tool-status.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.tool-status.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.tool-file {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.tool-message {
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.tool-time {
+    font-size: 11px;
+    color: #888;
+}
+
+/* 等待状态卡片样式 */
+.tool-log-container.waiting {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+    border: 2px dashed #4285f4;
+    animation: waitingPulse 2s ease-in-out infinite;
+}
+
+.waiting-message {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #e3e3e3;
+    border-top: 3px solid #4285f4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 12px;
+}
+
+.waiting-text {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #4285f4;
+}
+
+.waiting-hint {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.4;
+}
+
+.connection-status.connecting {
+    color: #4285f4;
+    animation: blink 1.5s ease-in-out infinite;
+}
+
+/* 改进加载状态样式 */
+.loading.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+/* 动画定义 */
+@keyframes waitingPulse {
+    0%, 100% {
+        border-color: #4285f4;
+        box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.3);
+    }
+    50% {
+        border-color: #34a853;
+        box-shadow: 0 0 0 8px rgba(66, 133, 244, 0);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        height: 90vh;
+    }
+
+    .main-content {
+        flex-direction: column;
+    }
+
+    .chat-area {
+        border-right: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    .sidebar {
+        max-height: 200px;
+    }
+
+    .message > div {
+        max-width: 85%;
+    }
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+    .header p {
+        font-size: 12px;
+    }
+
+    .input-area {
+        padding: 15px;
+    }
+
+    .input-area input {
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+
+    .quick-action {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .waiting-message {
+        padding: 15px;
+    }
+
+    .waiting-text {
+        font-size: 13px;
+    }
+
+    .waiting-hint {
+        font-size: 11px;
+    }
+
+    .tool-log-container {
+        margin: 10px 0;
+    }
+
+    .tool-log-content {
+        padding: 12px;
+    }
+
+    .tool-card {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+}
+
+/* 流式消息样式 */
+.message.streaming {
+    position: relative;
+}
+
+.stream-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.5;
+}
+
+.stream-indicator {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.typing-indicator span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #007bff;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes typing {
+    0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.stream-indicator .error {
+    color: #dc3545;
+    font-size: 12px;
+    font-style: italic;
+}
