@@ -1,0 +1,20 @@
+This is a sample file in the workspace directory.
+You can ask the AI to:
+
+1. Read this file
+2. Edit this content
+3. Create new files
+4. List directory contents
+5. Create complete projects
+
+Try asking:
+- "Read the sample.txt file"
+- "Add a new section to sample.txt about AI capabilities"
+- "Create a simple Java project structure"
+- "List all files in the workspace"
+
+The AI can perform continuous operations like:
+1. First checking what exists
+2. Then creating new content
+3. Finally verifying the results
+
