@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.common.core.service.BaseContext;
 import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.core.domain.BaseEntity;
@@ -91,7 +92,8 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
     private LoginUser getLoginUser() {
         LoginUser loginUser;
         try {
-            loginUser = LoginHelper.getLoginUser();
+            String token = BaseContext.getCurrentToken();
+            loginUser = LoginHelper.getLoginUser(token);
         } catch (Exception e) {
             log.warn("自动注入警告 => 用户未登录");
             return null;

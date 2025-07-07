@@ -493,6 +493,16 @@ INSERT INTO `sys_dict_data` VALUES (1776109853377916929, '000000', 0, '次数计
 INSERT INTO `sys_dict_data` VALUES (1780264338471858177, '000000', 0, '未支付', '1', 'pay_state', '', 'info', 'N', '0', 103, 1, '2024-04-16 23:57:49', 1, '2024-04-16 23:58:29', '');
 INSERT INTO `sys_dict_data` VALUES (1780264431589601282, '000000', 2, '已支付', '2', 'pay_state', '', 'success', 'N', '0', 103, 1, '2024-04-16 23:58:11', 1, '2024-04-16 23:58:21', '');
 INSERT INTO `sys_dict_data` VALUES (1933094189606670338, '000000', 0, '知识库', 'vector', 'prompt_template_type', null, '', 'N', '0', 103, 1, '2025-06-12 17:29:05', 1, '2025-06-12 17:29:05', null);
+INSERT INTO `sys_dict_data` VALUES (1938226101050925057, '000000', 1, '中转模型-chat', 'chat', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:21:28', 1, '2025-06-26 21:22:26', null);
+INSERT INTO `sys_dict_data` VALUES (1938226833825193985, '000000', 1, '本地部署模型-ollama', 'ollama', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:24:22', 1, '2025-06-26 21:24:22', null);
+INSERT INTO `sys_dict_data` VALUES (1938226919661625345, '000000', 1, 'DIFY-dify', 'dify', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:24:43', 1, '2025-06-26 21:24:43', null);
+INSERT INTO `sys_dict_data` VALUES (1938226981422751746, '000000', 1, '扣子-coze', 'coze', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:24:58', 1, '2025-06-26 21:24:58', null);
+INSERT INTO `sys_dict_data` VALUES (1938227034350673922, '000000', 1, '智谱清言-zhipu', 'zhipu', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:25:10', 1, '2025-06-26 21:25:10', null);
+INSERT INTO `sys_dict_data` VALUES (1938227086750113793, '000000', 1, '深度求索-deepseek', 'deepseek', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:25:23', 1, '2025-06-26 21:25:23', null);
+INSERT INTO `sys_dict_data` VALUES (1938227141741633537, '000000', 1, '通义千问-qianwen', 'qianwen', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:25:36', 1, '2025-06-26 21:25:36', null);
+INSERT INTO `sys_dict_data` VALUES (1938227191834206209, '000000', 1, '知识库向量模型-vector', 'vector', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:25:48', 1, '2025-06-26 21:25:48', null);
+INSERT INTO `sys_dict_data` VALUES (1938227249417805826, '000000', 1, '图片识别模型-image', 'image', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-06-26 21:26:01', 1, '2025-06-26 21:26:01', null);
+INSERT INTO `sys_dict_data` VALUES (1940594785010503681, '000000', 1, 'FASTGPT-fastgpt', 'fastgpt', 'chat_model_category', null, '', 'N', '0', 103, 1, '2025-07-03 10:13:46', 1, '2025-07-03 10:13:46', null);
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -537,7 +547,8 @@ INSERT INTO `sys_dict_type` VALUES (1775756736895438849, '000000', '用户等级
 INSERT INTO `sys_dict_type` VALUES (1776109665045278721, '000000', '模型计费方式', 'sys_model_billing', '0', 103, 1, '2024-04-05 12:48:37', 1, '2024-04-08 11:22:18', '模型计费方式');
 INSERT INTO `sys_dict_type` VALUES (1780263881368219649, '000000', '支付状态', 'pay_state', '0', 103, 1, '2024-04-16 23:56:00', 1, '2025-03-29 15:21:57', '支付状态');
 INSERT INTO `sys_dict_type` VALUES (1904565568803217409, '000000', '状态类型', 'status_type', '0', 103, 1, '2025-03-26 00:06:31', 1, '2025-03-26 00:06:31', NULL);
-INSERT INTO `sys_dict_type` VALUES (1933093946274123777, '000000', '提示词模板分类', 'prompt_template_type', '0', 103, 1, '2025-06-12 17:28:07', 1, '2025-06-12 17:28:07', null);
+INSERT INTO `sys_dict_type` VALUES (1933093946274123777, '000000', '提示词模板分类', 'prompt_template_type', '0', 103, 1, '2025-06-12 17:28:07', 1, '2025-06-12 17:28:07', '提示词模板类型');
+INSERT INTO `sys_dict_type` VALUES (1938225899023884289, '000000', '模型分类', 'chat_model_category', '0', 103, 1, '2025-06-26 21:20:39', 1, '2025-06-26 21:20:39', '模型分类');
 
 
 -- ----------------------------

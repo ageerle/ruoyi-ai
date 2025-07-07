@@ -9,6 +9,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.constant.TenantConstants;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.common.core.domain.model.LoginUser;
@@ -29,6 +30,7 @@ import java.util.Set;
  *
  * @author Lion Li
  */
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LoginHelper {
 
@@ -80,6 +82,15 @@ public class LoginHelper {
             SaHolder.getStorage().set(LOGIN_USER_KEY, loginUser);
         };
         return loginUser;
+    }
+
+
+    public static <T extends LoginUser> T getLoginUser(String token) {
+        SaSession session = StpUtil.getTokenSessionByToken(token);
+        if (ObjectUtil.isNull(session)) {
+            return null;
+        }
+        return (T) session.get(LOGIN_USER_KEY);
     }
 
     /**
