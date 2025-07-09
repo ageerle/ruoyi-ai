@@ -117,6 +117,7 @@
 ## 🌐 生态伙伴
 
 - [PPIO 派欧云](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - 提供高性价比的 GPU 算力和模型 API 服务
+- [优云智算](https://passport.compshare.cn/register?referral_code=9iYZFxdKdGyEtuZfW4tWHI) - 万卡规模RTX40系显卡、一键体验各类热门优质镜像。
 
 ## 💬 社区交流
 
