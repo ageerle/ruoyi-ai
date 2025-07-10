@@ -322,4 +322,19 @@ public class SysUserController extends BaseController {
         return R.ok(trees);
     }
 
+
+    /**
+     * 根据部门ID统计用户数量 /system/user/list/dept/
+     *
+     * @param deptId 部门ID
+     */ 
+    @SaCheckPermission("system:user:list:dept")
+    @GetMapping("/list/dept/{deptId}")
+    public R<List<SysUserVo>> countUsersByDept(@PathVariable Long deptId) {
+        SysUserBo user = new SysUserBo();
+        user.setDeptId(deptId);
+        List<SysUserVo> userList = userService.selectUserList(user);
+        return R.ok(userList);
+    }
+
 }
