@@ -63,7 +63,7 @@
 | 项目介绍 | GitHub 仓库 | Gitee 仓库 |
 |:--------:|:----------:|:----------:|
 | 前端简化版 | [ruoyi-element-ai](https://github.com/element-plus-x/ruoyi-element-ai) | [ruoyi-element-ai](https://gitee.com/he-jiayue/ruoyi-element-ai) |
-| 智能编码助手 | [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) | - |
+
 
 
 
@@ -107,7 +107,7 @@
 
 感谢以下优秀的开源项目为本项目提供支持：
 
-- [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) - 基于Spring AI的智能编码助手，集成MCP工具协议，支持项目分析和代码生成
+- [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) - 基于spring-ai-alibaba 的智能编码助手
 - [Spring AI](https://spring.io/projects/spring-ai) - Spring 官方 AI 集成框架
 - [Langchain4j](https://github.com/langchain4j/langchain4j) - 强大的 Java LLM 开发框架
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - 成熟的企业级快速开发框架
@@ -117,7 +117,7 @@
 ## 🌐 生态伙伴
 
 - [PPIO 派欧云](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - 提供高性价比的 GPU 算力和模型 API 服务
-- [优云智算](https://passport.compshare.cn/register?referral_code=9iYZFxdKdGyEtuZfW4tWHI) - 万卡规模RTX40系显卡、一键体验各类热门优质镜像。
+- [优云智算](https://www.compshare.cn/?ytag=GPU_YY-gh_ruoyi) - 万卡RTX40系GPU+海内外主流模型API服务，秒级响应，按量计费，新客免费用。
 
 ## 💬 社区交流
 

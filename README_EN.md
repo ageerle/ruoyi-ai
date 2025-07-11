@@ -65,7 +65,7 @@
 | Project Description | GitHub Repository | Gitee Repository |
 |:-------------------:|:-----------------:|:----------------:|
 | Simplified Frontend | [ruoyi-element-ai](https://github.com/element-plus-x/ruoyi-element-ai) | [ruoyi-element-ai](https://gitee.com/he-jiayue/ruoyi-element-ai) |
-| Intelligent Coding Assistant | [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) | - |
+
 
 ## 🛠️ Tech Stack
 
@@ -108,7 +108,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Special thanks to these amazing open source projects:
 
-- [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) - Intelligent coding assistant based on Spring AI with MCP protocol integration for project analysis and code generation
+- [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) - Intelligent coding assistant based on spring-ai-alibaba with MCP protocol integration for project analysis and code generation
 - [Spring AI](https://spring.io/projects/spring-ai) - Spring's AI integration framework
 - [Langchain4j](https://github.com/langchain4j/langchain4j) - Java LLM framework
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - Enterprise development framework
