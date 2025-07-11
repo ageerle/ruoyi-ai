@@ -160,7 +160,7 @@ public class SysTenantServiceImpl implements ISysTenantService {
         userMapper.insert(user);
         //新增系统用户后，默认当前用户为部门的负责人
         SysDept sd = new SysDept();
-        sd.setLeader(user.getUserId());
+        sd.setLeader(String.valueOf(user.getUserId()));
         sd.setDeptId(deptId);
         deptMapper.updateById(sd);
 
