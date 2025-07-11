@@ -3,6 +3,7 @@ package org.ruoyi.service.impl;
 import com.google.protobuf.ServiceException;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.http.client.jdk.JdkHttpClientBuilder;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
@@ -22,8 +23,10 @@ import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.service.VectorStoreService;
 import org.springframework.stereotype.Service;
 
+import java.net.http.HttpClient;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 向量库管理
@@ -56,34 +59,35 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     }
 
     @Override
-    public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        createSchema(storeEmbeddingBo.getKid(), storeEmbeddingBo.getVectorModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
-                storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
-        List<String> chunkList = storeEmbeddingBo.getChunkList();
-        for (String s : chunkList) {
-            Embedding embedding = embeddingModel.embed(s).content();
-            TextSegment segment = TextSegment.from(s);
-            embeddingStore.add(embedding, segment);
+    public void storeEmbeddings(StoreEmbeddingBo bo) {
+        createSchema(bo.getKid(), bo.getVectorModelName());
+
+        EmbeddingConfig config = new EmbeddingConfig(bo.getEmbeddingModelName(), bo.getApiKey(), bo.getBaseUrl());
+        EmbeddingModel embeddingModel = getEmbeddingModelFromConfig(config, false);
+
+        for (String chunk : bo.getChunkList()) {
+            Embedding embedding = safeEmbed(embeddingModel, chunk, config);
+            embeddingStore.add(embedding, TextSegment.from(chunk));
         }
     }
 
     @Override
-    public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        createSchema(queryVectorBo.getKid(), queryVectorBo.getVectorModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
-                queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
-        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
-        EmbeddingSearchRequest embeddingSearchRequest = EmbeddingSearchRequest.builder()
-                .queryEmbedding(queryEmbedding)
-                .maxResults(queryVectorBo.getMaxResults())
-                .build();
-        List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(embeddingSearchRequest).matches();
-        List<String> results = new ArrayList<>();
-        matches.forEach(embeddingMatch -> results.add(embeddingMatch.embedded().text()));
-        return results;
-    }
+    public List<String> getQueryVector(QueryVectorBo bo) {
+        createSchema(bo.getKid(), bo.getVectorModelName());
 
+        EmbeddingConfig config = new EmbeddingConfig(bo.getEmbeddingModelName(), bo.getApiKey(), bo.getBaseUrl());
+        EmbeddingModel embeddingModel = getEmbeddingModelFromConfig(config, false);
+        Embedding queryEmbedding = safeEmbed(embeddingModel, bo.getQuery(), config);
+
+        EmbeddingSearchRequest request = EmbeddingSearchRequest.builder()
+                .queryEmbedding(queryEmbedding)
+                .maxResults(bo.getMaxResults())
+                .build();
+
+        return embeddingStore.search(request).matches().stream()
+                .map(match -> match.embedded().text())
+                .collect(Collectors.toList());
+    }
 
     @Override
     @SneakyThrows
@@ -102,27 +106,49 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         }
     }
 
-    /**
-     * 获取向量模型
-     */
+    private Embedding safeEmbed(EmbeddingModel model, String input, EmbeddingConfig config) {
+        try {
+            return model.embed(input).content();
+        } catch (Exception e) {
+            log.warn("Embedding 请求失败，尝试降级为 HTTP/1.1，modelName: {}", config.modelName());
+            EmbeddingModel fallbackModel = getEmbeddingModelFromConfig(config, true);
+            return fallbackModel.embed(input).content();
+        }
+    }
+
+    private EmbeddingModel getEmbeddingModelFromConfig(EmbeddingConfig config, boolean forceHttp1) {
+        return getEmbeddingModel(config.modelName(), config.apiKey(), config.baseUrl(), forceHttp1);
+    }
+
     @SneakyThrows
-    public EmbeddingModel getEmbeddingModel(String modelName, String apiKey, String baseUrl) {
-        EmbeddingModel embeddingModel;
+    public EmbeddingModel getEmbeddingModel(String modelName, String apiKey, String baseUrl, boolean forceHttp1) {
+        JdkHttpClientBuilder jdkHttpClientBuilder = null;
+
+        if (forceHttp1) {
+            java.net.http.HttpClient.Builder httpClientBuilder = java.net.http.HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1);
+            jdkHttpClientBuilder = new JdkHttpClientBuilder().httpClientBuilder(httpClientBuilder);
+        }
+
         if ("quentinz/bge-large-zh-v1.5".equals(modelName)) {
-            embeddingModel = OllamaEmbeddingModel.builder()
+            var builder = OllamaEmbeddingModel.builder()
                     .baseUrl(baseUrl)
-                    .modelName(modelName)
-                    .build();
-        } else if ("baai/bge-m3".equals(modelName)) {
-            embeddingModel = OpenAiEmbeddingModel.builder()
+                    .modelName(modelName);
+            if (jdkHttpClientBuilder != null) builder.httpClientBuilder(jdkHttpClientBuilder);
+            return builder.build();
+        } else {
+            var builder = OpenAiEmbeddingModel.builder()
                     .apiKey(apiKey)
                     .baseUrl(baseUrl)
-                    .modelName(modelName)
-                    .build();
-        } else {
-            throw new ServiceException("未找到对应向量化模型!");
+                    .modelName(modelName);
+            if (jdkHttpClientBuilder != null) builder.httpClientBuilder(jdkHttpClientBuilder);
+            return builder.build();
         }
-        return embeddingModel;
     }
+
+    /**
+     * 封装 embedding 模型配置
+     */
+    private record EmbeddingConfig(String modelName, String apiKey, String baseUrl) {}
 
 }
