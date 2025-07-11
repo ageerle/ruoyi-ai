@@ -48,7 +48,10 @@ public class ChatMessageServiceImpl implements IChatMessageService {
         if(!LoginHelper.isLogin()){
             return TableDataInfo.build();
         }
-        bo.setUserId(LoginHelper.getUserId());
+        // 只有非管理员才自动设置为自己的 ID
+        if (!LoginHelper.isSuperAdmin()) {
+            bo.setUserId(LoginHelper.getUserId());
+        }
         LambdaQueryWrapper<ChatMessage> lqw = buildQueryWrapper(bo);
         Page<ChatMessageVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
