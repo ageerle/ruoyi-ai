@@ -81,6 +81,26 @@ public class SseServiceImpl implements ISseService {
             chatRequest.setRole(Message.Role.USER.getName());
 
             if(LoginHelper.isLogin()){
+
+				// 设置用户id
+                chatRequest.setUserId(LoginHelper.getUserId());
+
+
+                //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
+                //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
+                //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
+                {
+                    // 设置会话id
+                    if (chatRequest.getUuid() == null){
+                        //暂时随机生成会话id
+                        chatRequest.setSessionId(System.currentTimeMillis());
+                    }else{
+                        //这里或许需要修改一下，这里应该用uuid 或者 前端传递 sessionId
+                        chatRequest.setSessionId(chatRequest.getUuid());
+                    }
+                }
+
+
                 // 保存消息记录 并扣除费用
                 chatCostService.deductToken(chatRequest);
                 chatRequest.setUserId(chatCostService.getUserId());
