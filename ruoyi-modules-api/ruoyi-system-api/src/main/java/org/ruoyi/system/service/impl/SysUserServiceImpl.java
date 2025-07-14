@@ -450,11 +450,14 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
      */
     private void insertUserPost(SysUserBo user, boolean clear) {
         Long[] posts = user.getPostIds();
+        // 修复：用户原本绑定了岗位,若想要取消所有的岗位,没有进行逻辑实现
+        // 原因：当用户取消所有岗位的时候, 传入的posts是空的,所以不进行操作
+        // 解决：先进行清空,后再进行处理逻辑
+        if (clear) {
+            // 删除用户与岗位关联
+            userPostMapper.delete(new LambdaQueryWrapper<SysUserPost>().eq(SysUserPost::getUserId, user.getUserId()));
+        }
         if (ArrayUtil.isNotEmpty(posts)) {
-            if (clear) {
-                // 删除用户与岗位关联
-                userPostMapper.delete(new LambdaQueryWrapper<SysUserPost>().eq(SysUserPost::getUserId, user.getUserId()));
-            }
             // 新增用户与岗位管理
             List<SysUserPost> list = StreamUtils.toList(List.of(posts), postId -> {
                 SysUserPost up = new SysUserPost();
@@ -474,6 +477,13 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
      * @param clear   清除已存在的关联数据
      */
     private void insertUserRole(Long userId, Long[] roleIds, boolean clear) {
+        // 修复：用户原本绑定了角色,若想要取消所有的角色,没有进行逻辑实现
+        // 原因：当用户取消所有角色的时候, 传入的roleIds是空的,所以不进行操作
+        // 解决：先进行清空,后再进行处理逻辑
+        if (clear) {
+            // 删除用户与角色关联
+            userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
+        }
         if (ArrayUtil.isNotEmpty(roleIds)) {
             // 判断是否具有此角色的操作权限
             List<SysRoleVo> roles = roleMapper.selectRoleList(new LambdaQueryWrapper<>());
@@ -487,10 +497,6 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
             List<Long> canDoRoleList = StreamUtils.filter(List.of(roleIds), roleList::contains);
             if (CollUtil.isEmpty(canDoRoleList)) {
                 throw new ServiceException("没有权限访问角色的数据");
-            }
-            if (clear) {
-                // 删除用户与角色关联
-                userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
             }
             // 新增用户与角色管理
             List<SysUserRole> list = StreamUtils.toList(canDoRoleList, roleId -> {
