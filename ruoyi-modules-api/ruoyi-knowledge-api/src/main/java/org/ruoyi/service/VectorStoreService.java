@@ -19,5 +19,7 @@ public interface VectorStoreService {
 
     void removeById(String id,String modelName);
 
+    void removeByDocId(String docId, String kid);
 
+    void removeByFid(String fid, String kid);
 }
