@@ -61,4 +61,10 @@ public class ChatRequest {
      */
     private String role;
 
+
+    /**
+     * 对话id(每个聊天窗口都不一样)
+     */
+    private Long uuid;
+
 }
