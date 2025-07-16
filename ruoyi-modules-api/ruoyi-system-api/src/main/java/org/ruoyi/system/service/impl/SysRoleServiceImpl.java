@@ -439,6 +439,10 @@ public class SysRoleServiceImpl implements ISysRoleService {
         if (CollUtil.isEmpty(keys)) {
             return;
         }
+        // 修复：请求地址'/system/role/authUser/selectAll',发生未知异常:cn.dev33.satoken.exception.NotWebContextException: 非Web上下文无法获取Request
+        // 原因：LoginHelper.getLoginUser(); 由于是并行的方式，上下文出现不一致的情况
+        // 解决：只需要把用户信息拿到外面来即可
+        LoginUser loginUser = LoginHelper.getLoginUser();
         // 角色关联的在线用户量过大会导致redis阻塞卡顿 谨慎操作
         keys.forEach(key -> {
             String token = StringUtils.substringAfterLast(key, ":");
@@ -447,7 +451,6 @@ public class SysRoleServiceImpl implements ISysRoleService {
                 return;
             }
             // LoginUser loginUser = LoginHelper.getLoginUser(token);
-            LoginUser loginUser = LoginHelper.getLoginUser();
             if (loginUser.getRoles().stream().anyMatch(r -> r.getRoleId().equals(roleId))) {
                 try {
                     StpUtil.logoutByTokenValue(token);
