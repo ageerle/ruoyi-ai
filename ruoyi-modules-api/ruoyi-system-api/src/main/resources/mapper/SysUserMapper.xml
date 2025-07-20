@@ -44,6 +44,8 @@
                u.create_by,
                u.create_time,
                u.remark,
+               u.krole_group_type,
+               u.krole_group_ids,
                d.dept_id,
                d.parent_id,
                d.ancestors,
@@ -58,50 +60,99 @@
                r.data_scope,
                r.status as role_status
         from sys_user u
-            left join sys_dept d on u.dept_id = d.dept_id
-            left join sys_user_role sur on u.user_id = sur.user_id
-            left join sys_role r on r.role_id = sur.role_id
+                 left join sys_dept d on u.dept_id = d.dept_id
+                 left join sys_user_role sur on u.user_id = sur.user_id
+                 left join sys_role r on r.role_id = sur.role_id
     </sql>
 
     <update id="updateXcxUser">
         update sys_user
         set nick_name = #{nickName},
             wx_avatar = #{wxAvatar}
-            WHERE user_id = #{userId}
+        WHERE user_id = #{userId}
     </update>
 
     <select id="selectPageUserList" resultMap="SysUserResult">
-        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex,u.user_balance,u.user_grade,u.domain_name,
-            u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader
+        select u.user_id,
+               u.dept_id,
+               u.nick_name,
+               u.user_name,
+               u.email,
+               u.avatar,
+               u.phonenumber,
+               u.sex,
+               u.user_balance,
+               u.user_grade,
+               u.domain_name,
+               u.status,
+               u.del_flag,
+               u.login_ip,
+               u.login_date,
+               u.create_by,
+               u.create_time,
+               u.remark,
+               d.dept_name,
+               d.leader
         from sys_user u
-            left join sys_dept d on u.dept_id = d.dept_id
-        ${ew.getCustomSqlSegment}
+                 left join sys_dept d on u.dept_id = d.dept_id
+            ${ew.getCustomSqlSegment}
     </select>
 
     <select id="selectUserList" resultMap="SysUserResult">
-        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex,u.user_grade,u.user_balance,
-            u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader
+        select u.user_id,
+               u.dept_id,
+               u.nick_name,
+               u.user_name,
+               u.email,
+               u.avatar,
+               u.phonenumber,
+               u.sex,
+               u.user_grade,
+               u.user_balance,
+               u.status,
+               u.del_flag,
+               u.login_ip,
+               u.login_date,
+               u.create_by,
+               u.create_time,
+               u.remark,
+               d.dept_name,
+               d.leader
         from sys_user u
-            left join sys_dept d on u.dept_id = d.dept_id
-        ${ew.getCustomSqlSegment}
+                 left join sys_dept d on u.dept_id = d.dept_id
+            ${ew.getCustomSqlSegment}
     </select>
 
     <select id="selectAllocatedList" resultMap="SysUserResult">
-        select distinct u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.phonenumber, u.status, u.create_time
+        select distinct u.user_id,
+                        u.dept_id,
+                        u.user_name,
+                        u.nick_name,
+                        u.email,
+                        u.phonenumber,
+                        u.status,
+                        u.create_time
         from sys_user u
-             left join sys_dept d on u.dept_id = d.dept_id
-             left join sys_user_role sur on u.user_id = sur.user_id
-             left join sys_role r on r.role_id = sur.role_id
-        ${ew.getCustomSqlSegment}
+                 left join sys_dept d on u.dept_id = d.dept_id
+                 left join sys_user_role sur on u.user_id = sur.user_id
+                 left join sys_role r on r.role_id = sur.role_id
+            ${ew.getCustomSqlSegment}
     </select>
 
     <select id="selectUnallocatedList" resultMap="SysUserResult">
-        select distinct u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.phonenumber, u.status, u.create_time
+        select distinct u.user_id,
+                        u.dept_id,
+                        u.user_name,
+                        u.nick_name,
+                        u.email,
+                        u.phonenumber,
+                        u.status,
+                        u.create_time
         from sys_user u
-             left join sys_dept d on u.dept_id = d.dept_id
-             left join sys_user_role sur on u.user_id = sur.user_id
-             left join sys_role r on r.role_id = sur.role_id
-        ${ew.getCustomSqlSegment}
+                 left join sys_dept d on u.dept_id = d.dept_id
+                 left join sys_user_role sur on u.user_id = sur.user_id
+                 left join sys_role r on r.role_id = sur.role_id
+            ${ew.getCustomSqlSegment}
     </select>
 
     <select id="selectUserByUserName" parameterType="String" resultMap="SysUserResult">

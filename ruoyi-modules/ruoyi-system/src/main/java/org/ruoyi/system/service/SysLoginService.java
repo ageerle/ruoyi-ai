@@ -124,7 +124,7 @@ public class SysLoginService {
                 TenantHelper.clearDynamic();
             }
             StpUtil.logout();
-            if (loginUser !=null) {
+            if (loginUser != null) {
                 recordLogininfor(loginUser.getTenantId(), loginUser.getUsername(), Constants.LOGOUT, MessageUtils.message("user.logout.success"));
             }
         } catch (NotLoginException ignored) {
@@ -251,6 +251,8 @@ public class SysLoginService {
         loginUser.setUsername(user.getUserName());
         loginUser.setAvatar(user.getAvatar());
         loginUser.setUserType(user.getUserType());
+        loginUser.setKroleGroupIds(user.getKroleGroupIds());
+        loginUser.setKroleGroupType(user.getKroleGroupType());
         loginUser.setMenuPermission(permissionService.getMenuPermission(user.getUserId()));
         loginUser.setRolePermission(permissionService.getRolePermission(user.getUserId()));
         loginUser.setDeptName(ObjectUtil.isNull(user.getDept()) ? "" : user.getDept().getDeptName());
