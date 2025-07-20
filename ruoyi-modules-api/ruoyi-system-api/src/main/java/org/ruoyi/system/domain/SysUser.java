@@ -76,9 +76,9 @@ public class SysUser extends TenantEntity {
      * 密码
      */
     @TableField(
-        insertStrategy = FieldStrategy.NOT_EMPTY,
-        updateStrategy = FieldStrategy.NOT_EMPTY,
-        whereStrategy = FieldStrategy.NOT_EMPTY
+            insertStrategy = FieldStrategy.NOT_EMPTY,
+            updateStrategy = FieldStrategy.NOT_EMPTY,
+            whereStrategy = FieldStrategy.NOT_EMPTY
     )
     private String password;
 
@@ -113,13 +113,19 @@ public class SysUser extends TenantEntity {
      */
     private String remark;
 
-    /** 普通用户的标识,对当前开发者帐号唯一。一个openid对应一个公众号或小程序 */
+    /**
+     * 普通用户的标识,对当前开发者帐号唯一。一个openid对应一个公众号或小程序
+     */
     private String openId;
 
-    /** 用户余额 */
+    /**
+     * 用户余额
+     */
     private Double userBalance;
 
-    /** 用户等级 */
+    /**
+     * 用户等级
+     */
     private String userGrade;
 
     public SysUser(Long userId) {
@@ -129,5 +135,15 @@ public class SysUser extends TenantEntity {
     public boolean isSuperAdmin() {
         return UserConstants.SUPER_ADMIN_ID.equals(this.userId);
     }
+
+    /**
+     * 知识库角色组类型（role/roleGroup）
+     */
+    private String kroleGroupType;
+
+    /**
+     * 知识库角色组id（role/roleGroup）
+     */
+    private String kroleGroupIds;
 
 }

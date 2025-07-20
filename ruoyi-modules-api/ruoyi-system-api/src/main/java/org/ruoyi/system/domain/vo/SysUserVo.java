@@ -147,9 +147,23 @@ public class SysUserVo implements Serializable {
      */
     private Long roleId;
 
-    /** 用户等级 */
+    /**
+     * 用户等级
+     */
     private String userGrade;
 
-    /** 用户余额 */
+    /**
+     * 用户余额
+     */
     private Double userBalance;
+
+    /**
+     * 知识库角色组类型（role/roleGroup）
+     */
+    private String kroleGroupType;
+
+    /**
+     * 知识库角色组id（role/roleGroup）
+     */
+    private String kroleGroupIds;
 }

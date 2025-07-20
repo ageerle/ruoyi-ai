@@ -118,6 +118,16 @@ public class LoginUser implements Serializable {
     private Long roleId;
 
     /**
+     * 关联角色类型
+     */
+    private String kroleGroupType;
+
+    /**
+     * 关联角色id
+     */
+    private String kroleGroupIds;
+
+    /**
      * 获取登录id
      */
     public String getLoginId() {
