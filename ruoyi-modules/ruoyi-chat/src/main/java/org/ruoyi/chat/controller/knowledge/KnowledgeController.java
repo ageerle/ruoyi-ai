@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.chat.config.KnowledgeRoleConfig;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.validate.AddGroup;
@@ -49,6 +50,8 @@ public class KnowledgeController extends BaseController {
 
     private final IKnowledgeFragmentService fragmentService;
 
+    private final KnowledgeRoleConfig knowledgeRoleConfig;
+
     /**
      * 根据用户信息查询本地知识库
      */
@@ -72,11 +75,11 @@ public class KnowledgeController extends BaseController {
         LoginUser loginUser = LoginHelper.getLoginUser();
 
         // 管理员跳过权限
-        if (!loginUser.getUserId().equals(1L)) {
-            return knowledgeInfoService.queryPageListByRole(pageQuery);
-        } else {
+        if (loginUser.getUserId().equals(1L) || !knowledgeRoleConfig.getEnable()) {
             bo.setUid(LoginHelper.getUserId());
             return knowledgeInfoService.queryPageList(bo, pageQuery);
+        } else {
+            return knowledgeInfoService.queryPageListByRole(pageQuery);
         }
     }
 
