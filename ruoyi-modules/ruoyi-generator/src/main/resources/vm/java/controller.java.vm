@@ -39,21 +39,21 @@ public class ${ClassName}Controller extends BaseController {
 
     private final I${ClassName}Service ${className}Service;
 
-    /**
-     * 查询${functionName}列表
-     */
-    @SaCheckPermission("${permissionPrefix}:list")
-    @GetMapping("/list")
-#if($table.crud || $table.sub)
+/**
+ * 查询${functionName}列表
+ */
+@SaCheckPermission("${permissionPrefix}:list")
+@GetMapping("/list")
+    #if($table.crud || $table.sub)
     public TableDataInfo<${ClassName}Vo> list(${ClassName}Bo bo, PageQuery pageQuery) {
         return ${className}Service.queryPageList(bo, pageQuery);
     }
-#elseif($table.tree)
-    public R<List<${ClassName}Vo>> list(${ClassName}Bo bo) {
-        List<${ClassName}Vo> list = ${className}Service.queryList(bo);
-        return R.ok(list);
-    }
-#end
+    #elseif($table.tree)
+        public R<List<${ClassName}Vo>> list(${ClassName}Bo bo) {
+            List<${ClassName}Vo> list = ${className}Service.queryList(bo);
+            return R.ok(list);
+        }
+    #end
 
     /**
      * 导出${functionName}列表

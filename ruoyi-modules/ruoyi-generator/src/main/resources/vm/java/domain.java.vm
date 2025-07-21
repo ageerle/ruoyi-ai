@@ -1,20 +1,20 @@
 package ${packageName}.domain;
 
-#foreach ($column in $columns)
-#if($column.javaField=='tenantId')
-#set($IsTenant=1)
-#end
-#end
-#if($IsTenant==1)
-import core.tenant.common.org.ruoyi.TenantEntity;
-#else
-#end
+    #foreach ($column in $columns)
+        #if($column.javaField=='tenantId')
+            #set($IsTenant=1)
+        #end
+    #end
+    #if($IsTenant==1)
+    import core.tenant.common.org.ruoyi.TenantEntity;
+    #else
+    #end
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-#foreach ($import in $importList)
-import ${import};
-#end
+    #foreach ($import in $importList)
+    import ${import};
+    #end
 
 import java.io.Serial;
 
@@ -25,35 +25,35 @@ import java.io.Serial;
  * @date ${datetime}
  */
 #if($IsTenant==1)
-#set($Entity="TenantEntity")
+    #set($Entity="TenantEntity")
 #else
-#set($Entity="BaseEntity")
+    #set($Entity="BaseEntity")
 #end
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("${tableName}")
 public class ${ClassName} extends ${Entity} {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+@Serial
+private static final long serialVersionUID=1L;
 
 #foreach ($column in $columns)
-#if(!$table.isSuperColumn($column.javaField))
+    #if(!$table.isSuperColumn($column.javaField))
     /**
      * $column.columnComment
      */
-#if($column.javaField=='delFlag')
-    @TableLogic
-#end
-#if($column.javaField=='version')
-    @Version
-#end
-#if($column.isPk==1)
-    @TableId(value = "$column.columnName")
-#end
+        #if($column.javaField=='delFlag')
+        @TableLogic
+        #end
+        #if($column.javaField=='version')
+        @Version
+        #end
+        #if($column.isPk==1)
+        @TableId(value = "$column.columnName")
+        #end
     private $column.javaType $column.javaField;
 
-#end
+    #end
 #end
 
 }
