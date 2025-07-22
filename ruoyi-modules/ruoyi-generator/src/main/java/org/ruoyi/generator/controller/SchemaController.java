@@ -16,6 +16,7 @@ import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.generator.domain.bo.SchemaBo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.service.ISchemaService;
+import org.ruoyi.helper.DataBaseHelper;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,8 +58,7 @@ public class SchemaController extends BaseController {
      */
     @SaCheckPermission("dev:schema:query")
     @GetMapping("/{id}")
-    public R<SchemaVo> getInfo(@NotNull(message = "主键不能为空")
-                               @PathVariable Long id) {
+    public R<SchemaVo> getInfo(@NotNull(message = "主键不能为空") @PathVariable Long id) {
         return R.ok(schemaService.queryById(id));
     }
 
@@ -92,8 +92,16 @@ public class SchemaController extends BaseController {
     @SaCheckPermission("dev:schema:remove")
     @Log(title = "数据模型", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
-    public R<Void> remove(@NotEmpty(message = "主键不能为空")
-                          @PathVariable Long[] ids) {
+    public R<Void> remove(@NotEmpty(message = "主键不能为空") @PathVariable Long[] ids) {
         return toAjax(schemaService.deleteWithValidByIds(List.of(ids), true));
+    }
+
+    /**
+     * 查询数据源表名
+     */
+    @SaCheckPermission("dev:schema:getTableNameList")
+    @GetMapping(value = "/getDataNames")
+    public R<Object> getCurrentDataSourceTableNameList() {
+        return R.ok(DataBaseHelper.getCurrentDataSourceTableNameList());
     }
 }

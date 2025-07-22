@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 数据模型字段Service业务层处理
@@ -53,15 +54,17 @@ public class SchemaFieldServiceImpl implements ISchemaFieldService {
      */
     @Override
     public TableDataInfo<SchemaFieldVo> queryPageList(SchemaFieldBo bo, PageQuery pageQuery) {
+        if (Objects.isNull(bo.getSchemaId())) {
+            return TableDataInfo.build();
+        }
         LambdaQueryWrapper<SchemaField> lqw = buildQueryWrapper(bo);
         Page<SchemaFieldVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
 
     private LambdaQueryWrapper<SchemaField> buildQueryWrapper(SchemaFieldBo bo) {
-
         LambdaQueryWrapper<SchemaField> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getSchemaId() != null, SchemaField::getSchemaId, bo.getSchemaId());
+        lqw.eq(SchemaField::getSchemaId, bo.getSchemaId());
         lqw.like(StringUtils.isNotBlank(bo.getName()), SchemaField::getName, bo.getName());
         lqw.eq(StringUtils.isNotBlank(bo.getCode()), SchemaField::getCode, bo.getCode());
         lqw.eq(StringUtils.isNotBlank(bo.getType()), SchemaField::getType, bo.getType());

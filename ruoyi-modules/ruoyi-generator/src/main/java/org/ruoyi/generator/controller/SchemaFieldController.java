@@ -32,15 +32,14 @@ import java.util.List;
  * 数据模型字段
  *
  * @author ruoyi
- */
-@Validated
+ */@Validated
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/dev/schemaField")
 public class SchemaFieldController extends BaseController {
 
     private final ISchemaFieldService schemaFieldService;
-
+    
     /**
      * 查询数据模型字段列表
      */

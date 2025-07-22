@@ -78,4 +78,28 @@ public class DataBaseHelper {
     public static List<String> getDataSourceNameList() {
         return new ArrayList<>(DS.getDataSources().keySet());
     }
+
+    /**
+     * 获取当前连接的所有表名称
+     */
+    public static List<String> getCurrentDataSourceTableNameList() {
+        DataSource dataSource = DS.determineDataSource();
+        List<String> tableNames = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData metaData = conn.getMetaData();
+            String catalog = conn.getCatalog();
+            String schema = conn.getSchema();
+            
+            // 获取所有表名
+            try (var resultSet = metaData.getTables(catalog, schema, "%", new String[]{"TABLE"})) {
+                while (resultSet.next()) {
+                    String tableName = resultSet.getString("TABLE_NAME");
+                    tableNames.add(tableName);
+                }
+            }
+        } catch (SQLException e) {
+            throw new ServiceException("获取表名称失败: " + e.getMessage());
+        }
+        return tableNames;
+    }
 }

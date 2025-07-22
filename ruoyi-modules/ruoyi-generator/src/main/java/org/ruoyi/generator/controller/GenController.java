@@ -58,13 +58,4 @@ public class GenController extends BaseController {
         response.setContentType("application/octet-stream; charset=UTF-8");
         IoUtil.write(response.getOutputStream(), false, data);
     }
-
-    /**
-     * 查询数据源名称列表
-     */
-    @SaCheckPermission("tool:gen:list")
-    @GetMapping(value = "/getDataNames")
-    public R<Object> getCurrentDataSourceNameList() {
-        return R.ok(DataBaseHelper.getDataSourceNameList());
-    }
 }
