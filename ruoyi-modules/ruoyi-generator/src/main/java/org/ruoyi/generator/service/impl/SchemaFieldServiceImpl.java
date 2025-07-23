@@ -16,9 +16,10 @@ import org.ruoyi.generator.domain.vo.SchemaFieldVo;
 import org.ruoyi.generator.domain.vo.SchemaGroupVo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.mapper.SchemaFieldMapper;
-import org.ruoyi.generator.service.ISchemaFieldService;
-import org.ruoyi.generator.service.ISchemaGroupService;
-import org.ruoyi.generator.service.ISchemaService;
+import org.ruoyi.generator.service.SchemaFieldService;
+import org.ruoyi.generator.service.SchemaGroupService;
+import org.ruoyi.generator.service.SchemaService;
+import org.ruoyi.helper.DataBaseHelper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -35,11 +36,11 @@ import java.util.Objects;
  */
 @RequiredArgsConstructor
 @Service
-public class SchemaFieldServiceImpl implements ISchemaFieldService {
+public class SchemaFieldServiceImpl implements SchemaFieldService {
 
     private final SchemaFieldMapper baseMapper;
-    private final ISchemaService schemaService;
-    private final ISchemaGroupService schemaGroupService;
+    private final SchemaService schemaService;
+    private final SchemaGroupService schemaGroupService;
 
     /**
      * 查询数据模型字段
@@ -222,6 +223,75 @@ public class SchemaFieldServiceImpl implements ISchemaFieldService {
         return result;
     }
 
+    @Override
+    public boolean batchInsertFieldsByTableName(Long schemaId, String tableName) {
+        try {
+            // 获取表的字段信息
+            List<Map<String, Object>> columnInfos = DataBaseHelper.getTableColumnInfo(tableName);
+            if (CollUtil.isEmpty(columnInfos)) {
+                return false;
+            }
+            // 检查是否已存在字段数据
+            List<SchemaFieldVo> existingFields = queryListBySchemaId(schemaId);
+            if (CollUtil.isNotEmpty(existingFields)) {
+                // 如果已存在字段，则不重复插入
+                return true;
+            }
+            // 转换为 SchemaField 对象并批量插入
+            List<SchemaField> fieldsToInsert = new ArrayList<>();
+            int sort = 1;
+            for (Map<String, Object> columnInfo : columnInfos) {
+                SchemaField field = new SchemaField();
+                field.setSchemaId(schemaId);
+                field.setName((String) columnInfo.get("columnComment"));
+                field.setCode((String) columnInfo.get("columnName"));
+                field.setType((String) columnInfo.get("dataType"));
+                field.setLength(Integer.valueOf(String.valueOf(columnInfo.get("columnSize"))));
+                field.setIsPk((Boolean) columnInfo.get("isPrimaryKey") ? "1" : "0");
+                field.setIsRequired(!(Boolean) columnInfo.get("isNullable") ? "1" : "0");
+                field.setIsInsert("1");
+                field.setIsEdit("1");
+                field.setIsList("1");
+                field.setIsQuery("1");
+                field.setQueryType("EQ");
+                field.setHtmlType(getDefaultHtmlType((String) columnInfo.get("dataType")));
+                field.setSort(sort++);
+                field.setStatus("0");
+                // 如果字段名为空，使用字段代码作为名称
+                if (StringUtils.isBlank(field.getName())) {
+                    field.setName(field.getCode());
+                }
+                fieldsToInsert.add(field);
+            }
+            // 批量插入
+            fieldsToInsert.forEach(baseMapper::insert);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 根据数据库类型获取默认的HTML类型
+     */
+    private String getDefaultHtmlType(String dbType) {
+        if (StringUtils.isBlank(dbType)) {
+            return "input";
+        }
+
+        String type = dbType.toLowerCase();
+        if (type.contains("text") || type.contains("longtext")) {
+            return "textarea";
+        } else if (type.contains("date") || type.contains("time")) {
+            return "datetime";
+        } else if (type.contains("bit") || type.contains("boolean")) {
+            return "radio";
+        } else {
+            return "input";
+        }
+    }
+
     /**
      * 转换为驼峰命名
      */
@@ -286,4 +356,6 @@ public class SchemaFieldServiceImpl implements ISchemaFieldService {
             default -> "input";
         };
     }
+
+
 }

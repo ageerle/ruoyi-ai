@@ -15,7 +15,7 @@ import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.generator.domain.bo.SchemaFieldBo;
 import org.ruoyi.generator.domain.vo.SchemaFieldVo;
-import org.ruoyi.generator.service.ISchemaFieldService;
+import org.ruoyi.generator.service.SchemaFieldService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,14 +32,15 @@ import java.util.List;
  * 数据模型字段
  *
  * @author ruoyi
- */@Validated
+ */
+@Validated
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/dev/schemaField")
 public class SchemaFieldController extends BaseController {
 
-    private final ISchemaFieldService schemaFieldService;
-    
+    private final SchemaFieldService schemaFieldService;
+
     /**
      * 查询数据模型字段列表
      */
@@ -116,8 +117,7 @@ public class SchemaFieldController extends BaseController {
      */
     @SaCheckPermission("dev:schemaField:list")
     @GetMapping("/listBySchemaId/{schemaId}")
-    public R<List<SchemaFieldVo>> listBySchemaId(@NotNull(message = "模型ID不能为空")
-                                                 @PathVariable Long schemaId) {
+    public R<List<SchemaFieldVo>> listBySchemaId(@NotNull(message = "模型ID不能为空") @PathVariable Long schemaId) {
         return R.ok(schemaFieldService.queryListBySchemaId(schemaId));
     }
 

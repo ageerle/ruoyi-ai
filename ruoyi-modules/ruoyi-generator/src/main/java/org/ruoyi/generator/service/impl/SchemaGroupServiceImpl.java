@@ -12,7 +12,7 @@ import org.ruoyi.generator.domain.SchemaGroup;
 import org.ruoyi.generator.domain.bo.SchemaGroupBo;
 import org.ruoyi.generator.domain.vo.SchemaGroupVo;
 import org.ruoyi.generator.mapper.SchemaGroupMapper;
-import org.ruoyi.generator.service.ISchemaGroupService;
+import org.ruoyi.generator.service.SchemaGroupService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -25,7 +25,7 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Service
-public class SchemaGroupServiceImpl implements ISchemaGroupService {
+public class SchemaGroupServiceImpl implements SchemaGroupService {
 
     private final SchemaGroupMapper baseMapper;
 

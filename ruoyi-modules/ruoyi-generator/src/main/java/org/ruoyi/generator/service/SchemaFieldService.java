@@ -14,7 +14,7 @@ import java.util.List;
  * @author ruoyi
  * @date 2024-01-01
  */
-public interface ISchemaFieldService {
+public interface SchemaFieldService {
 
     /**
      * 查询数据模型字段
@@ -56,4 +56,10 @@ public interface ISchemaFieldService {
      */
     Object getMetaDataByTableName(String tableName);
 
+    /**
+     * @param schemaId
+     * @param tableName
+     * @return
+     */
+    boolean batchInsertFieldsByTableName(Long schemaId, String tableName);
 }

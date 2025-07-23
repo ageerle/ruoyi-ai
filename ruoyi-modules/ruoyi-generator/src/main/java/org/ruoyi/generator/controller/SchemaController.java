@@ -15,7 +15,7 @@ import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.generator.domain.bo.SchemaBo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
-import org.ruoyi.generator.service.ISchemaService;
+import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.helper.DataBaseHelper;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,7 +40,7 @@ import java.util.List;
 @RequestMapping("/dev/schema")
 public class SchemaController extends BaseController {
 
-    private final ISchemaService schemaService;
+    private final SchemaService schemaService;
 
     /**
      * 查询数据模型列表

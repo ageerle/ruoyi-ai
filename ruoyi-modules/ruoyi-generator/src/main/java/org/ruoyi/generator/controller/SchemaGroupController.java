@@ -15,7 +15,7 @@ import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.generator.domain.bo.SchemaGroupBo;
 import org.ruoyi.generator.domain.vo.SchemaGroupVo;
-import org.ruoyi.generator.service.ISchemaGroupService;
+import org.ruoyi.generator.service.SchemaGroupService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +39,7 @@ import java.util.List;
 @RequestMapping("/dev/schemaGroup")
 public class SchemaGroupController extends BaseController {
 
-    private final ISchemaGroupService schemaGroupService;
+    private final SchemaGroupService schemaGroupService;
 
     /**
      * 查询数据模型分组列表

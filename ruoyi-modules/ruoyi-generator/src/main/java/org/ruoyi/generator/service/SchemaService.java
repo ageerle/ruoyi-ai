@@ -15,7 +15,7 @@ import java.util.List;
  * @author ruoyi
  * @date 2024-01-01
  */
-public interface ISchemaService {
+public interface SchemaService {
 
     /**
      * 查询数据模型

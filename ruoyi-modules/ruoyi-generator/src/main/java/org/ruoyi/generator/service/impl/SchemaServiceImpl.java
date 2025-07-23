@@ -11,8 +11,10 @@ import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.generator.domain.Schema;
 import org.ruoyi.generator.domain.bo.SchemaBo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
+import org.ruoyi.generator.event.SchemaAddedEvent;
 import org.ruoyi.generator.mapper.SchemaMapper;
-import org.ruoyi.generator.service.ISchemaService;
+import org.ruoyi.generator.service.SchemaService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -25,9 +27,10 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Service
-public class SchemaServiceImpl implements ISchemaService {
+public class SchemaServiceImpl implements SchemaService {
 
     private final SchemaMapper baseMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 查询数据模型
@@ -77,6 +80,11 @@ public class SchemaServiceImpl implements ISchemaService {
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setId(add.getId());
+
+            // 发布数据模型添加事件，由事件监听器处理字段插入
+            if (StringUtils.isNotBlank(bo.getTableName())) {
+                eventPublisher.publishEvent(new SchemaAddedEvent(this, add.getId(), bo.getTableName()));
+            }
         }
         return flag;
     }
