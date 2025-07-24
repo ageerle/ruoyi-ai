@@ -34,6 +34,11 @@ public class SchemaFieldVo implements Serializable {
     private Long schemaId;
 
     /**
+     * 模型名称
+     */
+    private String schemaName;
+
+    /**
      * 字段名称
      */
     private String name;

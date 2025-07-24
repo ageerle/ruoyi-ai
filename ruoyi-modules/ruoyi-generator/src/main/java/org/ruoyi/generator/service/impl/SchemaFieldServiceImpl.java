@@ -180,6 +180,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         result.put("tableName", schema.getTableName());
         result.put("tableComment", schema.getComment());
         result.put("className", toCamelCase(schema.getTableName(), true));
+        // result.put("className", StrUtil.toCamelCase(schema.getTableName()));
         result.put("tableCamelName", StrUtil.toCamelCase(schema.getTableName()));
         result.put("functionName", schema.getName());
         result.put("schemaName", schema.getName());
@@ -194,7 +195,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
             Map<String, Object> pkColumn = new HashMap<>();
             pkColumn.put("columnName", pkField.getCode());
             pkColumn.put("columnComment", pkField.getName());
-            pkColumn.put("javaField", toCamelCase(pkField.getCode(), false));
+            pkColumn.put("javaField", StrUtil.toCamelCase(pkField.getCode()));
             pkColumn.put("javaType", getJavaType(pkField.getType()));
             result.put("pkColumn", pkColumn);
         }
@@ -205,16 +206,17 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
             Map<String, Object> column = new HashMap<>();
             column.put("columnName", field.getCode());
             column.put("columnComment", field.getName());
-            column.put("javaField", toCamelCase(field.getCode(), false));
+            column.put("javaField", StrUtil.toCamelCase(field.getCode()));
             column.put("javaType", getJavaType(field.getType()));
             column.put("htmlType", field.getHtmlType());
-            column.put("isPk", "1".equals(field.getIsPk()));
-            column.put("isRequired", "1".equals(field.getIsRequired()));
-            column.put("isInsert", "1".equals(field.getIsInsert()));
-            column.put("isEdit", "1".equals(field.getIsEdit()));
-            column.put("isList", "1".equals(field.getIsList()));
-            column.put("isQuery", "1".equals(field.getIsQuery()));
-            column.put("component", getComponentType(field.getHtmlType()));
+            column.put("isPk", field.getIsPk());
+            column.put("isRequired", field.getIsRequired());
+            column.put("isInsert", field.getIsInsert());
+            column.put("isEdit", field.getIsEdit());
+            column.put("isList", field.getIsList());
+            column.put("isQuery", field.getIsQuery());
+            column.put("component", getComponentType(field.getHtmlType(), field.getQueryType()));
+            column.put("queryType", field.getQueryType());
             column.put("remark", field.getRemark());
             columns.add(column);
         }
@@ -231,8 +233,11 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
             if (CollUtil.isEmpty(columnInfos)) {
                 return false;
             }
+            LambdaQueryWrapper<SchemaField> lqw = Wrappers.lambdaQuery();
+            lqw.eq(SchemaField::getSchemaName, tableName);
+            lqw.eq(SchemaField::getStatus, "0");
             // 检查是否已存在字段数据
-            List<SchemaFieldVo> existingFields = queryListBySchemaId(schemaId);
+            List<SchemaFieldVo> existingFields = baseMapper.selectVoList(lqw);
             if (CollUtil.isNotEmpty(existingFields)) {
                 // 如果已存在字段，则不重复插入
                 return true;
@@ -243,8 +248,9 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
             for (Map<String, Object> columnInfo : columnInfos) {
                 SchemaField field = new SchemaField();
                 field.setSchemaId(schemaId);
+                field.setSchemaName(tableName);
                 field.setName((String) columnInfo.get("columnComment"));
-                field.setCode((String) columnInfo.get("columnName"));
+                field.setCode(StrUtil.toCamelCase((String) columnInfo.get("columnName")));
                 field.setType((String) columnInfo.get("dataType"));
                 field.setLength(Integer.valueOf(String.valueOf(columnInfo.get("columnSize"))));
                 field.setIsPk((Boolean) columnInfo.get("isPrimaryKey") ? "1" : "0");
@@ -283,8 +289,12 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         String type = dbType.toLowerCase();
         if (type.contains("text") || type.contains("longtext")) {
             return "textarea";
-        } else if (type.contains("date") || type.contains("time")) {
+        } else if ("datetime".equals(type) || "timestamp".equals(type)) {
             return "datetime";
+        } else if ("date".equals(type)) {
+            return "date";
+        } else if ("time".equals(type)) {
+            return "time";
         } else if (type.contains("bit") || type.contains("boolean")) {
             return "radio";
         } else {
@@ -341,19 +351,28 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
     /**
      * 获取组件类型
      */
-    private String getComponentType(String htmlType) {
+    private String getComponentType(String htmlType, String queryType) {
         if (StringUtils.isBlank(htmlType)) {
-            return "input";
+            return "Input";
+        }
+
+        // 如果是范围查询且为日期时间类型，使用 RangePicker
+        if ("BETWEEN".equals(queryType) && 
+            ("datetime".equals(htmlType) || "date".equals(htmlType) || "time".equals(htmlType))) {
+            return "RangePicker";
         }
 
         return switch (htmlType) {
-            case "textarea" -> "textarea";
-            case "select" -> "select";
-            case "radio" -> "radio";
-            case "checkbox" -> "checkbox";
-            case "datetime" -> "datetime";
-            case "date" -> "date";
-            default -> "input";
+            case "textarea" -> "Textarea";
+            case "select" -> "Select";
+            case "radio" -> "RadioGroup";
+            case "checkbox" -> "CheckboxGroup";
+            case "datetime", "date" -> "DatePicker";
+            case "time" -> "TimePicker";
+            case "imageUpload" -> "ImageUpload";
+            case "fileUpload" -> "FileUpload";
+            case "editor" -> "Editor";
+            default -> "Input";
         };
     }
 

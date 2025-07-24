@@ -34,6 +34,12 @@ public class SchemaFieldBo extends BaseEntity {
     private Long schemaId;
 
     /**
+     * 模型名称
+     */
+    @NotNull(message = "模型名称不能为空", groups = {AddGroup.class, EditGroup.class})
+    private String schemaName;
+
+    /**
      * 字段名称
      */
     @NotBlank(message = "字段名称不能为空", groups = {AddGroup.class, EditGroup.class})

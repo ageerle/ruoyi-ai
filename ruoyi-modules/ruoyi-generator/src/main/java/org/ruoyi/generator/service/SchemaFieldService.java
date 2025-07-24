@@ -57,9 +57,10 @@ public interface SchemaFieldService {
     Object getMetaDataByTableName(String tableName);
 
     /**
-     * @param schemaId
-     * @param tableName
-     * @return
+     * 根据表名批量插入字段
+     *
+     * @param schemaId  模型ID
+     * @param tableName 表名
      */
     boolean batchInsertFieldsByTableName(Long schemaId, String tableName);
 }
