@@ -7,13 +7,10 @@ package org.ruoyi.generator.service;
  */
 public interface IGenTableService {
 
-
     /**
-     * 批量生成代码（下载方式）
+     * 基于表名称批量生成代码到classpath路径
      *
-     * @param tableIds 表数组
-     * @return 数据
+     * @param tableName 表名称数组
      */
-    byte[] downloadCode(String[] tableIds);
-
+    void generateCodeToClasspathByTableNames(String tableName);
 }

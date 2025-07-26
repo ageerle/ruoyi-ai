@@ -63,4 +63,12 @@ public interface SchemaFieldService {
      * @param tableName 表名
      */
     boolean batchInsertFieldsByTableName(Long schemaId, String tableName);
+
+    /**
+     * 根据表名称查询字段列表
+     *
+     * @param tableName 表名称
+     * @return 字段列表
+     */
+    List<SchemaFieldVo> queryListByTableName(String tableName);
 }

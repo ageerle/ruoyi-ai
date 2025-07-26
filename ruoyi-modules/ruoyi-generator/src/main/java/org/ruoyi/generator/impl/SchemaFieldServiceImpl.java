@@ -1,4 +1,4 @@
-package org.ruoyi.generator.service.impl;
+package org.ruoyi.generator.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
@@ -10,15 +10,15 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.generator.service.SchemaFieldService;
+import org.ruoyi.generator.service.SchemaGroupService;
+import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.generator.domain.SchemaField;
 import org.ruoyi.generator.domain.bo.SchemaFieldBo;
 import org.ruoyi.generator.domain.vo.SchemaFieldVo;
 import org.ruoyi.generator.domain.vo.SchemaGroupVo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.mapper.SchemaFieldMapper;
-import org.ruoyi.generator.service.SchemaFieldService;
-import org.ruoyi.generator.service.SchemaGroupService;
-import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.helper.DataBaseHelper;
 import org.springframework.stereotype.Service;
 
@@ -152,6 +152,20 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         lqw.eq(SchemaField::getStatus, "0"); // 只查询正常状态的字段
         lqw.orderByAsc(SchemaField::getSort);
         return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 根据表名称查询字段列表
+     */
+    @Override
+    public List<SchemaFieldVo> queryListByTableName(String tableName) {
+        // 先根据表名查询Schema
+        SchemaVo schema = schemaService.queryByTableName(tableName);
+        if (schema == null) {
+            return new ArrayList<>();
+        }
+        // 再根据Schema ID查询字段列表
+        return queryListBySchemaId(schema.getId());
     }
 
     /**

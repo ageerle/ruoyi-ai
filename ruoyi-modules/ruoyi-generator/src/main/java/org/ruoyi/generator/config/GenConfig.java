@@ -58,8 +58,16 @@ public class GenConfig {
         GenConfig.autoRemovePre = autoRemovePre;
     }
 
+    public static boolean getAutoRemovePre() {
+        return autoRemovePre;
+    }
+
     @Value("${tablePrefix}")
     public void setTablePrefix(String tablePrefix) {
         GenConfig.tablePrefix = tablePrefix;
+    }
+
+    public static String getTablePrefix() {
+        return tablePrefix;
     }
 }

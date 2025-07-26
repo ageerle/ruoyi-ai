@@ -1,4 +1,4 @@
-package org.ruoyi.generator.service.impl;
+package org.ruoyi.generator.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;

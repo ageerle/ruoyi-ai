@@ -120,14 +120,4 @@ public class SchemaFieldController extends BaseController {
     public R<List<SchemaFieldVo>> listBySchemaId(@NotNull(message = "模型ID不能为空") @PathVariable Long schemaId) {
         return R.ok(schemaFieldService.queryListBySchemaId(schemaId));
     }
-
-    /**
-     * 根据表名获取代码生成元数据
-     *
-     * @param tableName 表名
-     */
-    @GetMapping("/getByTableName")
-    public R<Object> getByTableName(@NotNull(message = "表名不能为空") String tableName) {
-        return R.ok(schemaFieldService.getMetaDataByTableName(tableName));
-    }
 }

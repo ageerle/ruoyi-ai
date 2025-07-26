@@ -1,4 +1,4 @@
-package org.ruoyi.generator.service.impl;
+package org.ruoyi.generator.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -8,12 +8,12 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.generator.domain.Schema;
 import org.ruoyi.generator.domain.bo.SchemaBo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.event.SchemaAddedEvent;
 import org.ruoyi.generator.mapper.SchemaMapper;
-import org.ruoyi.generator.service.SchemaService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
