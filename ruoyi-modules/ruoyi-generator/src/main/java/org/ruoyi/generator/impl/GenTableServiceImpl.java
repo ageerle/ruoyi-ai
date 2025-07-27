@@ -256,15 +256,6 @@ public class GenTableServiceImpl implements IGenTableService {
             
             // 添加readConverterExp方法
             column.put("readConverterExp", new Object() {
-                public String readConverterExp() {
-                    // 从字段注释中提取转换表达式
-                    String comment = field.getName();
-                    if (StrUtil.isNotBlank(comment) && comment.contains("（") && comment.contains("）")) {
-                        String exp = comment.substring(comment.indexOf("（") + 1, comment.indexOf("）"));
-                        return exp.replace("，", ",").replace(" ", "");
-                    }
-                    return "";
-                }
             });
             
             // 根据Java类型添加相应的导入
@@ -357,7 +348,7 @@ public class GenTableServiceImpl implements IGenTableService {
         }
         
         String className = toCamelCase(baseClassName, true);   // 首字母大写，如：SysRole
-        String classname = toCamelCase(baseClassName, false);  // 首字母小写，如：sysRole
+        // 首字母小写，如：sysRole
         String moduleName = getModuleName(packageName);
         String javaPath = "src/main/java/";
         String mybatisPath = "src/main/resources/mapper/";
