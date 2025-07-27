@@ -133,10 +133,9 @@ security:
     - /chat/send
     # 文件上传
     - /chat/upload
-    # 数据模型分组选择接口
-    - /dev/schemaGroup/select
     # 代码生成调用
-    - /dev/schemaField/getByTableName
+    - /tool/gen/getByTableName
+    - /tool/gen/batchGenCode
     # 静态资源
     - /*.html
     - /**/*.html
