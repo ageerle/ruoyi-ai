@@ -195,92 +195,6 @@ CREATE TABLE `chat_usage_token`  (
                                      PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户token使用详情' ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Records of chat_usage_token
--- ----------------------------
-
--- ----------------------------
--- Table structure for gen_table
--- ----------------------------
-DROP TABLE IF EXISTS `gen_table`;
-CREATE TABLE `gen_table`  (
-                              `table_id` bigint(20) NOT NULL COMMENT '编号',
-                              `table_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表名称',
-                              `table_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表描述',
-                              `sub_table_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关联子表的表名',
-                              `sub_table_fk_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表关联的外键名',
-                              `class_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '实体类名称',
-                              `tpl_category` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'crud' COMMENT '使用的模板（crud单表操作 tree树表操作）',
-                              `package_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成包路径',
-                              `module_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成模块名',
-                              `business_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成业务名',
-                              `function_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成功能名',
-                              `function_author` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成功能作者',
-                              `gen_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '生成代码方式（0zip压缩包 1自定义路径）',
-                              `gen_path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '/' COMMENT '生成路径（不填默认项目路径）',
-                              `options` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
-                              `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                              `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                              `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                              `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                              `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                              `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-                              PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of gen_table
--- ----------------------------
-
--- ----------------------------
--- Table structure for gen_table_column
--- ----------------------------
-DROP TABLE IF EXISTS `gen_table_column`;
-CREATE TABLE `gen_table_column`  (
-                                     `column_id` bigint(20) NOT NULL COMMENT '编号',
-                                     `table_id` bigint(20) NULL DEFAULT NULL COMMENT '归属表编号',
-                                     `column_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列名称',
-                                     `column_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列描述',
-                                     `column_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '列类型',
-                                     `java_type` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'JAVA类型',
-                                     `java_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'JAVA字段名',
-                                     `is_pk` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否主键（1是）',
-                                     `is_increment` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否自增（1是）',
-                                     `is_required` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否必填（1是）',
-                                     `is_insert` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为插入字段（1是）',
-                                     `is_edit` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否编辑字段（1是）',
-                                     `is_list` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否列表字段（1是）',
-                                     `is_query` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否查询字段（1是）',
-                                     `query_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'EQ' COMMENT '查询方式（等于、不等于、大于、小于、范围）',
-                                     `html_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '显示类型（文本框、文本域、下拉框、复选框、单选框、日期控件）',
-                                     `dict_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
-                                     `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
-                                     `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-                                     `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-                                     `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                     `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-                                     `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                     PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of gen_table_column
--- ----------------------------
-INSERT INTO `gen_table_column` VALUES (1906673888229167105, 1906673887579049985, 'id', '主键', 'bigint(20)', 'Integer', 'id', '1', '1', '1', '0', '1', '1', '0', 'EQ', 'input', '', 1, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167106, 1906673887579049985, 'category', '配置类型', 'varchar(255)', 'String', 'category', '0', '0', '1', '0', '0', '1', '1', 'EQ', 'input', '', 2, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167107, 1906673887579049985, 'config_name', '配置名称', 'varchar(255)', 'String', 'configName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167108, 1906673887579049985, 'config_value', '配置值', 'text', 'String', 'configValue', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'textarea', '', 4, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167109, 1906673887579049985, 'config_dict', '说明', 'varchar(255)', 'String', 'configDict', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167110, 1906673887579049985, 'create_dept', '创建部门', 'bigint(20)', 'Long', 'createDept', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 6, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167111, 1906673887579049985, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'datetime', '', 7, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167112, 1906673887579049985, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 8, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167113, 1906673887579049985, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 9, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167114, 1906673887579049985, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'datetime', '', 10, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167115, 1906673887579049985, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '1', '1', '1', '1', '0', 'EQ', 'textarea', '', 11, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888229167116, 1906673887579049985, 'version', '版本', 'int(11)', 'Long', 'version', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 12, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888292081665, 1906673887579049985, 'del_flag', '删除标志（0代表存在 1代表删除）', 'char(1)', 'String', 'delFlag', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 13, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888292081666, 1906673887579049985, 'update_ip', '更新IP', 'varchar(128)', 'String', 'updateIp', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 14, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
-INSERT INTO `gen_table_column` VALUES (1906673888292081667, 1906673887579049985, 'tenant_id', '租户Id', 'bigint(20)', 'Long', 'tenantId', '0', '0', '1', '0', '0', '0', '0', 'EQ', 'input', '', 15, 103, 1, '2025-03-31 19:44:14', 1, '2025-05-23 09:13:04');
 
 -- ----------------------------
 -- Table structure for knowledge_attach
@@ -719,8 +633,6 @@ INSERT INTO `sys_menu` VALUES (1780255628576018437, '支付订单删除', 178025
 INSERT INTO `sys_menu` VALUES (1780255628576018438, '支付订单导出', 1780255628576018433, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:export', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1843281231381852162, '文件管理', 1775500307898949634, 20, 'file', 'system/oss/index', NULL, 1, 0, 'C', '0', '0', NULL, 'material-symbols-light:folder', 103, 1, '2024-10-07 21:24:27', 1, '2024-12-27 23:03:04', '');
 INSERT INTO `sys_menu` VALUES (1898286496441393153, '知识库管理', 1775500307898949634, 10, 'knowledgeBase', 'system/knowledgeBase/index', NULL, 1, 0, 'C', '0', '0', '', 'garden:knowledge-base-26', 103, 1, '2025-03-08 16:15:44', 1, '2025-03-10 00:21:26', '');
-INSERT INTO `sys_menu` VALUES (1906199640746344450, '系统工具', 0, 10, 'tool', '', NULL, 1, 0, 'M', '0', '0', NULL, 'carbon:tool-kit', 103, 1, '2025-03-30 12:19:44', 1, '2025-03-30 12:21:56', '');
-INSERT INTO `sys_menu` VALUES (1906200030325882882, '代码生成', 1906199640746344450, 2, 'gen', 'tool/gen/index', NULL, 1, 0, 'C', '0', '0', 'tool:gen:list', 'tabler:code', 103, 1, '2025-03-30 12:21:17', 1, '2025-03-30 12:21:17', '');
 INSERT INTO `sys_menu` VALUES (1906674838461321217, '配置信息', 1775500307898949634, 13, 'configurationManage', 'system/configurationManage/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'mdi:archive-cog-outline', 103, 1, '2025-03-31 19:48:48', 1, '2025-03-31 19:59:58', '配置信息菜单');
 INSERT INTO `sys_menu` VALUES (1906674838461321218, '配置信息查询', 1906674838461321217, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:query', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1906674838461321219, '配置信息新增', 1906674838461321217, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:add', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
@@ -733,6 +645,33 @@ INSERT INTO `sys_menu` VALUES (1929170702299045892, '提示词模板新增', 192
 INSERT INTO `sys_menu` VALUES (1929170702299045893, '提示词模板修改', 1929170702299045890, '3',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:edit',         '#', 103, 1, sysdate(), null, null, '');
 INSERT INTO `sys_menu` VALUES (1929170702299045894, '提示词模板删除', 1929170702299045890, '4',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:remove',       '#', 103, 1, sysdate(), null, null, '');
 INSERT INTO `sys_menu` VALUES (1929170702299045895, '提示词模板导出', 1929170702299045890, '5',  '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:export',       '#', 103, 1, sysdate(), null, null, '');
+
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES  (2000, '在线开发', 0, 20, 'dev', '', '', 1, 0, 'M', '0', '0', '', 'carbon:development', 103, 1, '2025-07-11 19:38:05', 1, '2025-07-11 19:43:03', '在线开发目录');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES  (1944213468857495553, '模型分组', 2000, 1, 'schemaGroup', 'dev/schemaGroup/index', null, 1, 0, 'C', '0', '0', null, '#', 103, 1, '2025-07-13 09:53:07', 1, '2025-07-13 09:54:45', '模型分组菜单');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES  (1944229086906281985, '数据模型', 2000, 2, 'schema', 'dev/schema/index', null, 1, 0, 'C', '0', '0', null, '#', 103, 1, '2025-07-13 10:55:11', null, '2025-07-13 10:55:11', '数据模型菜单');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES  (1946466176918249473, '模型字段管理', 2000, 3, 'schemaField', 'dev/schemaField/index', null, 1, 0, 'C', '0', '0', null, '#', 103, 1, '2025-07-19 15:04:35', null, '2025-07-19 15:04:35', '模型字段管理菜单');
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944213468857495554, '模型分组查询', 1944213468857495553, 1, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaGroup:list', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944213468857495555, '模型分组新增', 1944213468857495553, 2, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaGroup:add', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944213468857495556, '模型分组修改', 1944213468857495553, 3, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaGroup:edit', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944213468857495557, '模型分组删除', 1944213468857495553, 4, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaGroup:remove', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944229086906281986, '模型数据查询', 1944229086906281985, 1, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schema:list', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944229086906281987, '模型数据新增', 1944229086906281985, 2, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schema:add', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944229086906281988, '模型数据修改', 1944229086906281985, 3, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schema:edit', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1944229086906281989, '模型数据删除', 1944229086906281985, 4, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schema:remove', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1946466176918249474, '模型字段管理查询', 1946466176918249473, 1, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaField:list', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1946466176918249475, '模型字段管理新增', 1946466176918249473, 2, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaField:add', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1946466176918249476, '模型字段管理修改', 1946466176918249473, 3, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaField:edit', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1946466176918249477, '模型字段管理删除', 1946466176918249473, 4, '#', '', null, 1, 0, 'F', '0', '0', 'dev:schemaField:remove', '#', 103, 1, '2025-06-24 19:06:58', null, null, '');
+
+
+
+
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -2549,5 +2488,153 @@ CREATE TABLE prompt_template
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '提示词模板表'
   ROW_FORMAT = Dynamic;
+
+
+DROP TABLE IF EXISTS `dev_schema_field`;
+create table dev_schema_field
+(
+    id            bigint auto_increment comment '主键'
+        primary key,
+    schema_id     bigint                        null comment '模型ID',
+    schema_name   varchar(64)                   null comment '模型名称',
+    name          varchar(100)                  null comment '字段名称',
+    code          varchar(100)                  null comment '字段编码',
+    type          varchar(50)                   null comment '字段类型',
+    comment       varchar(500)                  null comment '字段注释',
+    is_pk         char         default '0'      null comment '是否主键（0否 1是）',
+    is_required   char         default '0'      null comment '是否必填（0否 1是）',
+    is_unique     char         default '0'      null comment '是否唯一（0否 1是）',
+    default_value varchar(200)                  null comment '默认值',
+    length        int                           null comment '字段长度',
+    scale         int                           null comment '小数位数',
+    sort          int                           null comment '排序',
+    status        char         default '0'      null comment '状态（0正常 1停用）',
+    extend_json   text                          null comment '扩展配置',
+    remark        varchar(500)                  null comment '备注',
+    del_flag      char         default '0'      null comment '删除标志（0代表存在 2代表删除）',
+    tenant_id     varchar(20)  default '000000' null comment '租户编号',
+    create_dept   bigint                        null comment '创建部门',
+    create_by     bigint                        null comment '创建者',
+    create_time   datetime                      null comment '创建时间',
+    update_by     bigint                        null comment '更新者',
+    update_time   datetime                      null comment '更新时间',
+    is_list       char         default '1'      null comment '是否列表显示（0否 1是）',
+    is_query      char         default '1'      null comment '是否查询字段（0否 1是）',
+    is_insert     char         default '1'      null comment '是否插入字段（0否 1是）',
+    is_edit       char         default '1'      null comment '是否编辑字段（0否 1是）',
+    query_type    varchar(200) default      	null comment '查询方式（EQ等于、NE不等于、GT大于、LT小于、LIKE模糊、BETWEEN范围）',
+    html_type     varchar(200) default 'input'  null comment '显示类型（input输入框、textarea文本域、select下拉框、checkbox复选框、radio单选框、datetime日期控件、image图片上传、upload文件上传、editor富文本编辑器）',
+    dict_type     varchar(200) default ''       null comment '字典类型',
+    constraint fk_schema_field_schema
+        foreign key (schema_id) references dev_schema (id)
+            on delete cascade
+) comment '数据模型字段表';
+
+create index idx_html_type
+    on dev_schema_field (html_type);
+
+create index idx_is_list
+    on dev_schema_field (is_list);
+
+create index idx_is_query
+    on dev_schema_field (is_query);
+
+create index idx_query_type
+    on dev_schema_field (query_type);
+
+create index idx_schema_field_code
+    on dev_schema_field (code);
+
+create index idx_schema_field_schema_id
+    on dev_schema_field (schema_id);
+
+create index idx_schema_field_status
+    on dev_schema_field (status);
+
+create index idx_schema_field_tenant
+    on dev_schema_field (tenant_id);
+
+
+DROP TABLE IF EXISTS `dev_schema`;
+create table dev_schema
+(
+    id               bigint auto_increment comment '主键'
+        primary key,
+    schema_group_id  bigint                       null comment '分组ID',
+    name             varchar(100)                 null comment '模型名称',
+    code             varchar(100)                 null comment '模型编码',
+    table_name       varchar(100)                 null comment '表名',
+    comment          varchar(500)                 null comment '表注释',
+    engine           varchar(50) default 'InnoDB' null comment '存储引擎',
+    list_keys        text                         null comment '列表字段',
+    search_form_keys text                         null comment '搜索表单字段',
+    designer         longtext                     null comment '表单设计',
+    status           char        default '0'      null comment '状态（0正常 1停用）',
+    sort             int                          null comment '排序',
+    remark           varchar(500)                 null comment '备注',
+    del_flag         char        default '0'      null comment '删除标志（0代表存在 2代表删除）',
+    tenant_id        varchar(20) default '000000' null comment '租户编号',
+    create_dept      bigint                       null comment '创建部门',
+    create_by        bigint                       null comment '创建者',
+    create_time      datetime                     null comment '创建时间',
+    update_by        bigint                       null comment '更新者',
+    update_time      datetime                     null comment '更新时间',
+    constraint fk_schema_group
+        foreign key (schema_group_id) references dev_schema_group (id)
+            on delete set null
+)
+    comment '数据模型表';
+
+create index idx_schema_code
+    on dev_schema (code);
+
+create index idx_schema_group_id
+    on dev_schema (schema_group_id);
+
+create index idx_schema_status
+    on dev_schema (status);
+
+create index idx_schema_table_name
+    on dev_schema (table_name);
+
+create index idx_schema_tenant
+    on dev_schema (tenant_id);
+
+
+DROP TABLE IF EXISTS `dev_schema_group`;
+create table dev_schema_group
+(
+    id          bigint auto_increment comment '主键'
+        primary key,
+    name        varchar(100)                 null comment '分组名称',
+    code        varchar(100)                 null comment '分组编码',
+    icon        varchar(100)                 null comment '图标',
+    sort        int                          null comment '排序',
+    status      char        default '0'      null comment '状态（0正常 1停用）',
+    remark      varchar(500)                 null comment '备注',
+    del_flag    char        default '0'      null comment '删除标志（0代表存在 2代表删除）',
+    tenant_id   varchar(20) default '000000' null comment '租户编号',
+    create_dept bigint                       null comment '创建部门',
+    create_by   bigint                       null comment '创建者',
+    create_time datetime                     null comment '创建时间',
+    update_by   bigint                       null comment '更新者',
+    update_time datetime                     null comment '更新时间'
+)
+    comment '数据模型分组表';
+
+create index idx_schema_group_code
+    on dev_schema_group (code);
+
+create index idx_schema_group_status
+    on dev_schema_group (status);
+
+create index idx_schema_group_tenant
+    on dev_schema_group (tenant_id);
+
+
+INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944240213530648567, '系统管理', 'system', 'eos-icons:system-group', 2, '0', '系统默认分组', '0', '000000', null, null, '2025-07-13 11:37:28', 1, '2025-07-13 18:42:48');
+INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944240213530648577, '运营管理', 'operator', 'icon-park-outline:appointment', 1, '0', null, '0', '000000', null, null, '2025-07-13 11:39:24', 1, '2025-07-13 18:42:31');
+INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944346023254429697, '在线开发', 'dev', 'carbon:development', 3, '0', null, '0', '000000', null, null, '2025-07-13 18:39:51', 1, '2025-07-13 18:42:07');
+
 
 SET FOREIGN_KEY_CHECKS = 1;
