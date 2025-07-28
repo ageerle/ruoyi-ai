@@ -133,6 +133,9 @@ security:
     - /chat/send
     # 文件上传
     - /chat/upload
+    # 代码生成调用
+    - /tool/gen/getByTableName
+    - /tool/gen/batchGenCode
     # 静态资源
     - /*.html
     - /**/*.html
@@ -185,7 +188,7 @@ mybatis-plus:
     # 更详细的日志输出 会有性能损耗 org.apache.ibatis.logging.stdout.StdOutImpl
     # 关闭日志记录 (可单纯使用 p6spy 分析) org.apache.ibatis.logging.nologging.NoLoggingImpl
     # 默认日志输出 org.apache.ibatis.logging.slf4j.Slf4jImpl
-    logImpl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    logImpl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     # 是否打印 Logo banner
     banner: true
