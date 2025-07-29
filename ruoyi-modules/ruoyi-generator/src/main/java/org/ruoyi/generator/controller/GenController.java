@@ -8,6 +8,7 @@ import org.ruoyi.generator.service.IGenTableService;
 import org.ruoyi.generator.service.SchemaFieldService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,8 +41,8 @@ public class GenController extends BaseController {
      *
      * @param tableNameStr 表名
      */
-    @GetMapping("/batchGenCode")
-    public R<String> batchGenCode(String tableNameStr) {
+    @GetMapping("/batchGenCode/{tableNameStr}")
+    public R<String> batchGenCode(@PathVariable("tableNameStr") String tableNameStr) {
         genTableService.generateCodeToClasspathByTableNames(tableNameStr);
         return R.ok("代码生成成功");
     }
