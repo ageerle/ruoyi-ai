@@ -289,24 +289,12 @@ public class GenTableServiceImpl implements IGenTableService {
       */
      private void addImportForJavaType(String javaType, Set<String> importList) {
          switch (javaType) {
-             case "BigDecimal":
-                 importList.add("java.math.BigDecimal");
-                 break;
-             case "Date":
-                 importList.add("java.util.Date");
-                 break;
-             case "LocalDateTime":
-                 importList.add("java.time.LocalDateTime");
-                 break;
-             case "LocalDate":
-                 importList.add("java.time.LocalDate");
-                 break;
-             case "LocalTime":
-                 importList.add("java.time.LocalTime");
-                 break;
-             default:
-                 // 基本类型不需要导入
-                 break;
+             case "BigDecimal" -> importList.add("java.math.BigDecimal");
+             case "Date" -> importList.add("java.util.Date");
+             case "LocalDateTime" -> importList.add("java.time.LocalDateTime");
+             case "LocalDate" -> importList.add("java.time.LocalDate");
+             case "LocalTime" -> importList.add("java.time.LocalTime");
+             default -> {}
          }
      }
 
