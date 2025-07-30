@@ -41,8 +41,8 @@ public class GenController extends BaseController {
      *
      * @param tableNameStr 表名
      */
-    @GetMapping("/batchGenCode/{tableNameStr}")
-    public R<String> batchGenCode(@PathVariable("tableNameStr") String tableNameStr) {
+    @GetMapping("/batchGenCode")
+    public R<String> batchGenCode(@NotNull(message = "表名不能为空") String tableNameStr) {
         genTableService.generateCodeToClasspathByTableNames(tableNameStr);
         return R.ok("代码生成成功");
     }
