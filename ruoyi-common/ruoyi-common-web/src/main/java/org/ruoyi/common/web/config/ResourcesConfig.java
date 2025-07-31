@@ -1,6 +1,9 @@
 package org.ruoyi.common.web.config;
 
+
+import org.ruoyi.common.web.interceptor.DemoModeInterceptor;
 import org.ruoyi.common.web.interceptor.PlusWebInvokeTimeInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,10 +21,35 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @AutoConfiguration
 public class ResourcesConfig implements WebMvcConfigurer {
 
+    @Autowired(required = false)
+    private DemoModeInterceptor demoModeInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 全局访问性能拦截
         registry.addInterceptor(new PlusWebInvokeTimeInterceptor());
+
+        // 演示模式拦截器
+        if (demoModeInterceptor != null) {
+            registry.addInterceptor(demoModeInterceptor)
+                    .addPathPatterns("/**")  // 拦截所有路径
+                    .excludePathPatterns(
+                        // 排除静态资源
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/fonts/**",
+                        "/favicon.ico",
+                        // 排除错误页面
+                        "/error",
+                        // 排除API文档
+                        "/*/api-docs/**",
+                        "/swagger-ui/**",
+                        "/webjars/**",
+                        // 排除监控端点
+                        "/actuator/**"
+                    );
+        }
     }
 
     @Override

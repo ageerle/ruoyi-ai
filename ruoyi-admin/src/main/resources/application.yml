@@ -2,15 +2,13 @@
 # 项目相关配置
 ruoyi:
   # 名称
-  name: "ruoyi"
+  name: "ruoyi-ai"
   # 版本
   version: ${revision}
   # 版权年份
   copyrightYear: 2025
   # 实例演示开关
-  demoEnabled: true
-  # 获取ip地址开关
-  addressEnabled: false
+  demoEnabled: false
 
 captcha:
   enable: false
