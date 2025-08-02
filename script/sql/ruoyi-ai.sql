@@ -1438,6 +1438,11 @@ CREATE TABLE `sys_user`  (
                              PRIMARY KEY (`user_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
 
+-- 用户表添加字段
+ALTER TABLE sys_user
+    ADD COLUMN `krole_group_type` VARCHAR(50) COMMENT '关联知识库角色/角色组',
+ADD COLUMN `krole_group_ids` TEXT COMMENT '关联知识库角色/角色组id';
+
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
@@ -2636,5 +2641,61 @@ INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_fl
 INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944240213530648577, '运营管理', 'operator', 'icon-park-outline:appointment', 1, '0', null, '0', '000000', null, null, '2025-07-13 11:39:24', 1, '2025-07-13 18:42:31');
 INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944346023254429697, '在线开发', 'dev', 'carbon:development', 3, '0', null, '0', '000000', null, null, '2025-07-13 18:39:51', 1, '2025-07-13 18:42:07');
 
+
+
+
+
+-- ----------------------------
+-- Table structure for knowledge_role
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_role`;
+CREATE TABLE `knowledge_role`  (
+                                   `id` bigint NOT NULL COMMENT '知识库角色id',
+                                   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库角色name',
+                                   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+                                   `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                                   `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+                                   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                                   `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                                   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+                                   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+                                   `group_id` bigint NULL DEFAULT NULL COMMENT '知识库角色组id',
+                                   PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库角色表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for knowledge_role_group
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_role_group`;
+CREATE TABLE `knowledge_role_group`  (
+                                         `id` bigint NOT NULL COMMENT '知识库角色组id',
+                                         `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库角色组name',
+                                         `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+                                         `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                                         `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+                                         `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                                         `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                                         `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+                                         `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+                                         PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库角色组表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for knowledge_role_relation
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_role_relation`;
+CREATE TABLE `knowledge_role_relation`  (
+                                            `id` bigint NOT NULL COMMENT 'id',
+                                            `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+                                            `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                                            `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+                                            `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                                            `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                                            `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+                                            `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+                                            `knowledge_role_id` bigint NULL DEFAULT NULL COMMENT '知识库角色id',
+                                            `knowledge_id` bigint NULL DEFAULT NULL COMMENT '知识库id',
+                                            PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库角色与知识库关联表' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;
