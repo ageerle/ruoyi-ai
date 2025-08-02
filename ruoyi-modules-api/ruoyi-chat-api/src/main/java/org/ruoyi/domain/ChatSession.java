@@ -1,5 +1,6 @@
 package org.ruoyi.domain;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -47,6 +48,9 @@ public class ChatSession extends BaseEntity {
      * 备注
      */
     private String remark;
-
+    /**
+     * 会话id
+     */
+    private String conversationId;
 
 }

@@ -1,5 +1,6 @@
 package org.ruoyi.domain.bo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -44,6 +45,9 @@ public class ChatSessionBo extends BaseEntity {
      * 备注
      */
     private String remark;
-
+    /**
+     * 会话id
+     */
+    private String conversationId;
 
 }

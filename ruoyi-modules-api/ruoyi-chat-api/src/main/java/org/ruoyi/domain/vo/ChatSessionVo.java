@@ -61,6 +61,11 @@ public class ChatSessionVo implements Serializable {
     @ExcelProperty(value = "创建时间")
     private String createTime;
 
+    /**
+     * 会话id
+     */
+    @ExcelProperty(value = "会话id")
+    private String conversationId;
 
 
 }
