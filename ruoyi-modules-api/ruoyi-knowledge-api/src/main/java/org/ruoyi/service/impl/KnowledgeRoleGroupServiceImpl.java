@@ -8,16 +8,19 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.domain.KnowledgeRole;
 import org.ruoyi.domain.KnowledgeRoleGroup;
 import org.ruoyi.domain.bo.KnowledgeRoleGroupBo;
 import org.ruoyi.domain.vo.KnowledgeRoleGroupVo;
 import org.ruoyi.mapper.KnowledgeRoleGroupMapper;
+import org.ruoyi.mapper.KnowledgeRoleMapper;
 import org.ruoyi.service.IKnowledgeRoleGroupService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 知识库角色组Service业务层处理
@@ -30,6 +33,8 @@ import java.util.Map;
 public class KnowledgeRoleGroupServiceImpl implements IKnowledgeRoleGroupService {
 
     private final KnowledgeRoleGroupMapper baseMapper;
+    private final KnowledgeRoleMapper knowledgeRoleMapper;
+    private final KnowledgeRoleServiceImpl knowledgeRoleServiceImpl;
 
     /**
      * 查询知识库角色组
@@ -104,6 +109,13 @@ public class KnowledgeRoleGroupServiceImpl implements IKnowledgeRoleGroupService
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
+
+        // 查询role表
+        LambdaQueryWrapper<KnowledgeRole> lqwState = Wrappers.lambdaQuery();
+        lqwState.in(KnowledgeRole::getGroupId, ids);
+        List<KnowledgeRole> knowledgeRoles = knowledgeRoleMapper.selectList();
+        knowledgeRoleServiceImpl.deleteWithValidByIds(knowledgeRoles.stream().map(KnowledgeRole::getId).collect(Collectors.toList()), true);
+
         return baseMapper.deleteBatchIds(ids) > 0;
     }
 }
