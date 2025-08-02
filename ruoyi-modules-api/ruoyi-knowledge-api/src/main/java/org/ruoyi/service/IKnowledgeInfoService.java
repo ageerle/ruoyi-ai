@@ -31,6 +31,11 @@ public interface IKnowledgeInfoService {
     /**
      * 查询知识库列表
      */
+    TableDataInfo<KnowledgeInfoVo> queryPageListByRole(PageQuery pageQuery);
+
+    /**
+     * 查询知识库列表
+     */
     List<KnowledgeInfoVo> queryList(KnowledgeInfoBo bo);
 
     /**
