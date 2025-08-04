@@ -26,6 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.Objects;
+
 /**
  * dify 聊天管理
  *
@@ -65,7 +67,7 @@ public class DifyServiceImpl implements IChatService {
 
         // 获取conversationId
         ChatSessionVo sessionInfo = chatSessionService.queryById(chatRequest.getSessionId());
-        if (StrUtil.isNotBlank(sessionInfo.getConversationId())) {
+        if (Objects.nonNull(sessionInfo) && StrUtil.isNotBlank(sessionInfo.getConversationId())) {
             message.setConversationId(sessionInfo.getConversationId());
         }
 

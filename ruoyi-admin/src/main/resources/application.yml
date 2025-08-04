@@ -162,7 +162,7 @@ tenant:
     - sys_user_role
 
 knowledge-role:
-  enable: false
+  enable: true
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
