@@ -71,4 +71,14 @@ public interface SchemaFieldService {
      * @return 字段列表
      */
     List<SchemaFieldVo> queryListByTableName(String tableName);
+
+
+    /**
+     * 校验并根据数据模型ID批量删除数据模型字段信息
+     *
+     * @param schemaIds 数据模型ID列表
+     * @param isValid   是否校验
+     * @return 结果
+     */
+    Boolean deleteWithValidBySchemaIds(Collection<Long> schemaIds, Boolean isValid);
 }

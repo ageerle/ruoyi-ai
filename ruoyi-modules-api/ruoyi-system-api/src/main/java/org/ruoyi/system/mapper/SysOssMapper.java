@@ -1,5 +1,6 @@
 package org.ruoyi.system.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysOss;
 import org.ruoyi.system.domain.vo.SysOssVo;
@@ -9,5 +10,6 @@ import org.ruoyi.system.domain.vo.SysOssVo;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysOssMapper extends BaseMapperPlus<SysOss, SysOssVo> {
 }

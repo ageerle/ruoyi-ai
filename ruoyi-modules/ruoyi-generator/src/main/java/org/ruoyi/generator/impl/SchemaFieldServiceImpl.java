@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 数据模型字段Service业务层处理
@@ -166,6 +167,21 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         }
         // 再根据Schema ID查询字段列表
         return queryListBySchemaId(schema.getId());
+    }
+
+    @Override
+    public Boolean deleteWithValidBySchemaIds(Collection<Long> schemaIds, Boolean isValid) {
+        if (isValid) {
+            //TODO 做一些业务上的校验,判断是否需要校验
+        }
+        // 先根据Schema ID查询字段列表
+        List<SchemaField> fields = baseMapper.selectList(Wrappers.lambdaQuery(SchemaField.class)
+                .eq(SchemaField::getSchemaId, schemaIds));
+        if (CollUtil.isEmpty(fields)) {
+            return false;
+        }
+        // 再根据字段ID删除
+        return deleteWithValidByIds(fields.stream().map(SchemaField::getId).collect(Collectors.toList()), false);
     }
 
     /**
@@ -371,8 +387,8 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         }
 
         // 如果是范围查询且为日期时间类型，使用 RangePicker
-        if ("BETWEEN".equals(queryType) && 
-            ("datetime".equals(htmlType) || "date".equals(htmlType) || "time".equals(htmlType))) {
+        if ("BETWEEN".equals(queryType) &&
+                ("datetime".equals(htmlType) || "date".equals(htmlType) || "time".equals(htmlType))) {
             return "RangePicker";
         }
 

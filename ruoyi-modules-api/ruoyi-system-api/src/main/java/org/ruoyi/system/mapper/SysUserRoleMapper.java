@@ -1,5 +1,6 @@
 package org.ruoyi.system.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysUserRole;
 
@@ -10,6 +11,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysUserRoleMapper extends BaseMapperPlus<SysUserRole, SysUserRole> {
 
     List<Long> selectUserIdsByRoleId(Long roleId);

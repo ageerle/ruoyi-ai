@@ -1,5 +1,6 @@
 package org.ruoyi.system.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysPost;
 import org.ruoyi.system.domain.vo.SysPostVo;
@@ -11,6 +12,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysPostMapper extends BaseMapperPlus<SysPost, SysPostVo> {
 
     /**

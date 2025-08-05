@@ -3,6 +3,7 @@ package org.ruoyi.system.mapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.core.mapper.BaseMapperPlus;
@@ -16,6 +17,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysMenuMapper extends BaseMapperPlus<SysMenu, SysMenuVo> {
 
     /**

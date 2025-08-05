@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruoyi.annotation.DataColumn;
 import org.ruoyi.annotation.DataPermission;
@@ -19,6 +20,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
 
     @DataPermission({

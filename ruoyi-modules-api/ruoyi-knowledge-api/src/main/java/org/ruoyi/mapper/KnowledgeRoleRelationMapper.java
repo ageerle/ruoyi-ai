@@ -1,6 +1,7 @@
 package org.ruoyi.mapper;
 
 import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.ruoyi.core.mapper.BaseMapperPlus;
@@ -15,6 +16,7 @@ import java.util.List;
  * @author ageerle
  * @date 2025-07-19
  */
+@Mapper
 public interface KnowledgeRoleRelationMapper extends BaseMapperPlus<KnowledgeRoleRelation, KnowledgeRoleRelationVo> {
     @Select("SELECT knowledge_id FROM knowledge_role_relation WHERE knowledge_role_id = #{knowledgeRoleId}")
     List<Long> selectKnowledgeIdsByRoleId(@Param("knowledgeRoleId") Long knowledgeRoleId);

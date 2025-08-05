@@ -1,8 +1,8 @@
 package org.ruoyi.generator.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.velocity.Template;
@@ -10,11 +10,11 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.generator.config.GenConfig;
+import org.ruoyi.generator.domain.vo.SchemaFieldVo;
+import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.service.IGenTableService;
 import org.ruoyi.generator.service.SchemaFieldService;
 import org.ruoyi.generator.service.SchemaService;
-import org.ruoyi.generator.domain.vo.SchemaFieldVo;
-import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.util.VelocityInitializer;
 import org.ruoyi.generator.util.VelocityUtils;
 import org.springframework.stereotype.Service;
@@ -42,7 +42,6 @@ import java.util.Set;
 @Service
 public class GenTableServiceImpl implements IGenTableService {
 
-    private final IdentifierGenerator identifierGenerator;
     private final SchemaService schemaService;
     private final SchemaFieldService schemaFieldService;
 
@@ -177,7 +176,7 @@ public class GenTableServiceImpl implements IGenTableService {
         // 生成菜单ID
         List<Long> menuIds = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            menuIds.add(identifierGenerator.nextId(null).longValue());
+            menuIds.add(IdUtil.getSnowflakeNextId());
         }
         context.put("menuIds", menuIds);
         

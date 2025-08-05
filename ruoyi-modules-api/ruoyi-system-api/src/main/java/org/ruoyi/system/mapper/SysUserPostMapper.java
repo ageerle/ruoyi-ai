@@ -1,5 +1,6 @@
 package org.ruoyi.system.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysUserPost;
 
@@ -8,6 +9,7 @@ import org.ruoyi.system.domain.SysUserPost;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysUserPostMapper extends BaseMapperPlus<SysUserPost, SysUserPost> {
 
 }

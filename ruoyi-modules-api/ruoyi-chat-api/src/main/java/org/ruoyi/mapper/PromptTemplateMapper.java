@@ -1,6 +1,6 @@
 package org.ruoyi.mapper;
 
-import org.mapstruct.Mapper;
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.domain.PromptTemplate;
 import org.ruoyi.domain.vo.PromptTemplateVo;
@@ -11,6 +11,7 @@ import org.ruoyi.domain.vo.PromptTemplateVo;
  * @author evo
  * @date 2025-06-12
  */
+@Mapper
 public interface PromptTemplateMapper extends BaseMapperPlus<PromptTemplate, PromptTemplateVo> {
 
 }

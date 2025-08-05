@@ -1,5 +1,6 @@
 package org.ruoyi.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.domain.KnowledgeRoleGroup;
 import org.ruoyi.domain.vo.KnowledgeRoleGroupVo;
@@ -10,6 +11,7 @@ import org.ruoyi.domain.vo.KnowledgeRoleGroupVo;
  * @author ageerle
  * @date 2025-07-19
  */
+@Mapper
 public interface KnowledgeRoleGroupMapper extends BaseMapperPlus<KnowledgeRoleGroup, KnowledgeRoleGroupVo> {
 
 }

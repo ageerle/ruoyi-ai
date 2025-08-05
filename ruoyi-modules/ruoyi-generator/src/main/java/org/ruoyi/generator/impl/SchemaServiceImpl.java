@@ -8,6 +8,7 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.generator.event.SchemaDeletedEvent;
 import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.generator.domain.Schema;
 import org.ruoyi.generator.domain.bo.SchemaBo;
@@ -114,7 +115,9 @@ public class SchemaServiceImpl implements SchemaService {
         if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
-        return baseMapper.deleteBatchIds(ids) > 0;
+        baseMapper.deleteBatchIds(ids);
+        eventPublisher.publishEvent(new SchemaDeletedEvent(this, ids));
+        return true;
     }
 
     /**

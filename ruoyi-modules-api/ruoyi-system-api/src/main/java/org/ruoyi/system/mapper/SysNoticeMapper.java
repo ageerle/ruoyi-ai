@@ -1,5 +1,6 @@
 package org.ruoyi.system.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysNotice;
 import org.ruoyi.system.domain.vo.SysNoticeVo;
@@ -9,6 +10,7 @@ import org.ruoyi.system.domain.vo.SysNoticeVo;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysNoticeMapper extends BaseMapperPlus<SysNotice, SysNoticeVo> {
 
 }
