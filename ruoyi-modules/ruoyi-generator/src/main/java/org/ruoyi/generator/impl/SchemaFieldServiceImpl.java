@@ -175,8 +175,9 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         // 先根据Schema ID查询字段列表
-        List<SchemaField> fields = baseMapper.selectList(Wrappers.lambdaQuery(SchemaField.class)
-                .eq(SchemaField::getSchemaId, schemaIds));
+        LambdaQueryWrapper<SchemaField> queryWrapper = Wrappers.lambdaQuery(SchemaField.class);
+        queryWrapper.in(SchemaField::getSchemaId, schemaIds);
+        List<SchemaField> fields = baseMapper.selectList(queryWrapper);
         if (CollUtil.isEmpty(fields)) {
             return false;
         }
