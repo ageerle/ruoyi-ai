@@ -1,5 +1,6 @@
 package org.ruoyi.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.domain.ChatSession;
 import org.ruoyi.domain.vo.ChatSessionVo;
@@ -10,6 +11,7 @@ import org.ruoyi.domain.vo.ChatSessionVo;
  * @author ageerle
  * @date 2025-05-03
  */
+@Mapper
 public interface ChatSessionMapper extends BaseMapperPlus<ChatSession, ChatSessionVo> {
 
 }

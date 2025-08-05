@@ -1,6 +1,7 @@
 package org.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.core.constant.UserConstants;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysDictData;
@@ -13,6 +14,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysDictDataMapper extends BaseMapperPlus<SysDictData, SysDictDataVo> {
 
     default List<SysDictDataVo> selectDictDataByType(String dictType) {

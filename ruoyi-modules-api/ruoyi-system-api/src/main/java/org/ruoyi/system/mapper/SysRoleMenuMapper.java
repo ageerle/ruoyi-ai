@@ -1,5 +1,6 @@
 package org.ruoyi.system.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.system.domain.SysRoleMenu;
 
@@ -8,6 +9,7 @@ import org.ruoyi.system.domain.SysRoleMenu;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysRoleMenuMapper extends BaseMapperPlus<SysRoleMenu, SysRoleMenu> {
 
 }

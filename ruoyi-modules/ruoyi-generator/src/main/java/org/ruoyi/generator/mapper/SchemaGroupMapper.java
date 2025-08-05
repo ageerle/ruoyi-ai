@@ -1,5 +1,6 @@
 package org.ruoyi.generator.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.core.mapper.BaseMapperPlus;
 import org.ruoyi.generator.domain.SchemaGroup;
 import org.ruoyi.generator.domain.vo.SchemaGroupVo;
@@ -10,6 +11,7 @@ import org.ruoyi.generator.domain.vo.SchemaGroupVo;
  * @author ruoyi
  * @date 2024-01-01
  */
+@Mapper
 public interface SchemaGroupMapper extends BaseMapperPlus<SchemaGroup, SchemaGroupVo> {
 
 }

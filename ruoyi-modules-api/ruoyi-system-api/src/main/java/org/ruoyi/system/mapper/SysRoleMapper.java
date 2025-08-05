@@ -3,6 +3,7 @@ package org.ruoyi.system.mapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruoyi.annotation.DataColumn;
 import org.ruoyi.annotation.DataPermission;
@@ -17,6 +18,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysRoleMapper extends BaseMapperPlus<SysRole, SysRoleVo> {
 
     @DataPermission({

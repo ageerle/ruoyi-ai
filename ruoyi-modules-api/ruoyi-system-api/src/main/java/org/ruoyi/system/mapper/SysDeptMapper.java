@@ -2,6 +2,7 @@ package org.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruoyi.annotation.DataColumn;
 import org.ruoyi.annotation.DataPermission;
@@ -16,6 +17,7 @@ import java.util.List;
  *
  * @author Lion Li
  */
+@Mapper
 public interface SysDeptMapper extends BaseMapperPlus<SysDept, SysDeptVo> {
 
     /**
