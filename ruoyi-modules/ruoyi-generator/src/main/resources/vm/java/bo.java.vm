@@ -9,6 +9,8 @@ import jakarta.validation.constraints.*;
 #foreach ($import in $importList)
 import ${import};
 import java.io.Serializable;
+import org.ruoyi.common.core.validate.AddGroup;
+import org.ruoyi.common.core.validate.EditGroup;
 #end
 
 /**
