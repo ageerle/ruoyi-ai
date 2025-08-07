@@ -69,6 +69,7 @@ public class GenTableServiceImpl implements IGenTableService {
             log.warn("Schema不存在，表名: {}", tableName);
             return;
         }
+
         // 查询Schema字段信息
         List<SchemaFieldVo> fields = schemaFieldService.queryListByTableName(tableName);
         if (CollUtil.isEmpty(fields)) {
