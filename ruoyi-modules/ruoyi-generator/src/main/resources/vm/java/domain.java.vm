@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
     import ${import};
     #end
 
-import java.io.Serial;
+import org.ruoyi.core.domain.BaseEntity;
 
 /**
  * ${functionName}对象 ${tableName}
@@ -34,8 +34,6 @@ import java.io.Serial;
 @TableName("${tableName}")
 public class ${ClassName} extends ${Entity} {
 
-@Serial
-private static final long serialVersionUID=1L;
 
 #foreach ($column in $columns)
     #if(!$table.isSuperColumn($column.javaField))

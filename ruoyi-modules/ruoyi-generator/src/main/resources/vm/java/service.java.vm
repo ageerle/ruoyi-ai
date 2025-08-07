@@ -1,6 +1,5 @@
 package ${packageName}.service;
 
-import ${packageName}.domain.${ClassName};
 import ${packageName}.domain.vo.${ClassName}Vo;
 import ${packageName}.domain.bo.${ClassName}Bo;
     #if($table.crud || $table.sub)
@@ -17,7 +16,7 @@ import java.util.List;
  * @author ${author}
  * @date ${datetime}
  */
-public interface I${ClassName}Service {
+public interface ${ClassName}Service {
 
     /**
      * 查询${functionName}

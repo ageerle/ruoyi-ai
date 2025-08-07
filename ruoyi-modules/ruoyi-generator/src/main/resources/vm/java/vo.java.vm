@@ -6,13 +6,9 @@ package ${packageName}.domain.vo;
 import ${packageName}.domain.${ClassName};
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import annotation.excel.common.org.ruoyi.ExcelDictFormat;
-import convert.excel.common.org.ruoyi.ExcelDictConvert;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.Date;
 
 
@@ -26,9 +22,6 @@ import java.util.Date;
 @ExcelIgnoreUnannotated
 @AutoMapper(target = ${ClassName}.class)
 public class ${ClassName}Vo implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     #foreach ($column in $columns)
         #if($column.list)

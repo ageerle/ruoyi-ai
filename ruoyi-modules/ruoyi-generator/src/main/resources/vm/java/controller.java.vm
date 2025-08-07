@@ -8,7 +8,7 @@ import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
-import annotation.idempotent.common.org.ruoyi.RepeatSubmit;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
@@ -16,10 +16,10 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.log.enums.BusinessType;
-import utils.excel.common.org.ruoyi.ExcelUtil;
+import org.ruoyi.common.excel.utils.ExcelUtil;
 import ${packageName}.domain.vo.${ClassName}Vo;
 import ${packageName}.domain.bo.${ClassName}Bo;
-import ${packageName}.service.I${ClassName}Service;
+import ${packageName}.service.${ClassName}Service;
 #if($table.crud || $table.sub)
 import org.ruoyi.core.page.TableDataInfo;
 #elseif($table.tree)
@@ -37,7 +37,7 @@ import org.ruoyi.core.page.TableDataInfo;
 @RequestMapping("/${moduleName}/${businessName}")
 public class ${ClassName}Controller extends BaseController {
 
-    private final I${ClassName}Service ${className}Service;
+    private final ${ClassName}Service ${className}Service;
 
 /**
  * 查询${functionName}列表

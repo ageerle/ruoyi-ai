@@ -14,7 +14,8 @@ import ${packageName}.domain.bo.${ClassName}Bo;
 import ${packageName}.domain.vo.${ClassName}Vo;
 import ${packageName}.domain.${ClassName};
 import ${packageName}.mapper.${ClassName}Mapper;
-import ${packageName}.service.I${ClassName}Service;
+import ${packageName}.service.${ClassName}Service;
+import org.ruoyi.common.core.utils.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ import java.util.Collection;
  */
 @RequiredArgsConstructor
 @Service
-public class ${ClassName}ServiceImpl implements I${ClassName}Service {
+public class ${ClassName}ServiceImpl implements ${ClassName}Service {
 
     private final ${ClassName}Mapper baseMapper;
 
@@ -62,7 +63,6 @@ public class ${ClassName}ServiceImpl implements I${ClassName}Service {
     }
 
     private LambdaQueryWrapper<${ClassName}> buildQueryWrapper(${ClassName}Bo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<${ClassName}> lqw = Wrappers.lambdaQuery();
         #foreach($column in $columns)
             #if($column.query)
