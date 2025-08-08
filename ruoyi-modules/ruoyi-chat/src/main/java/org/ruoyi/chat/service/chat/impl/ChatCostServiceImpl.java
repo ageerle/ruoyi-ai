@@ -3,7 +3,10 @@ package org.ruoyi.chat.service.chat.impl;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.ruoyi.chat.enums.BillingType;
+import org.ruoyi.chat.event.ChatMessageCreatedEvent;
 import org.ruoyi.chat.enums.UserGradeType;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.common.chat.request.ChatRequest;
@@ -20,6 +23,7 @@ import org.ruoyi.service.IChatModelService;
 import org.ruoyi.service.IChatTokenService;
 import org.ruoyi.system.domain.SysUser;
 import org.ruoyi.system.mapper.SysUserMapper;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 
@@ -42,106 +46,97 @@ public class ChatCostServiceImpl implements IChatCostService {
 
     private final IChatModelService chatModelService;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     /**
-     * 扣除用户余额
+     * 扣除用户余额（仅计费与累计，不保存消息）
      */
     @Override
     public void deductToken(ChatRequest chatRequest) {
-
-
-        if(chatRequest.getUserId()==null || chatRequest.getSessionId()==null){
+        if (chatRequest.getUserId() == null || chatRequest.getSessionId() == null) {
             return;
         }
 
-
         int tokens = TikTokensUtil.tokens(chatRequest.getModel(), chatRequest.getPrompt());
-
-        System.out.println("deductToken->本次提交token数       : "+tokens);
+        log.debug("deductToken->本次提交token数: {}", tokens);
 
         String modelName = chatRequest.getModel();
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
+        BigDecimal unitPrice = BigDecimal.valueOf(chatModelVo.getModelPrice());
 
-        ChatMessageBo chatMessageBo = new ChatMessageBo();
+        // 按次计费：每次调用都直接扣费，不累计token
+        if (BillingType.TIMES.getCode().equals(chatModelVo.getModelType())) {
+            BigDecimal numberCost = unitPrice.setScale(2, RoundingMode.HALF_UP);
+            deductUserBalance(chatRequest.getUserId(), numberCost.doubleValue());
+            log.debug("deductToken->按次数扣费，费用: {}，模型: {}", numberCost, modelName);
+            return;
+        }
 
-        // 设置用户id
-        chatMessageBo.setUserId(chatRequest.getUserId());
-        // 设置会话id
-        chatMessageBo.setSessionId(chatRequest.getSessionId());
-
-        // 设置对话角色
-        chatMessageBo.setRole(chatRequest.getRole());
-
-        // 设置对话内容
-        chatMessageBo.setContent(chatRequest.getPrompt());
-
-        // 设置模型名字
-        chatMessageBo.setModelName(chatRequest.getModel());
+        // 按token计费：累加并按阈值批量扣费，保留余数
+        final int threshold = 100;
 
         // 获得记录的累计token数
-        ChatUsageToken chatToken = chatTokenService.queryByUserId(chatMessageBo.getUserId(), modelName);
-
-
+        ChatUsageToken chatToken = chatTokenService.queryByUserId(chatRequest.getUserId(), modelName);
         if (chatToken == null) {
             chatToken = new ChatUsageToken();
             chatToken.setToken(0);
         }
 
-        // 计算总token数
-        int totalTokens = chatToken.getToken() + tokens;
+        int previousUnpaid = chatToken.getToken();
+        int totalTokens = previousUnpaid + tokens;
+        log.debug("deductToken->未付费token数: {}，本次累计后总数: {}", previousUnpaid, totalTokens);
 
-        //当前未付费token
-        int token = chatToken.getToken();
+        int billable = (totalTokens / threshold) * threshold; // 可计费整批token数
+        int remainder = totalTokens - billable;               // 结算后保留的余数
 
-        System.out.println("deductToken->未付费的token数       : "+token);
-        System.out.println("deductToken->本次提交+未付费token数 : "+totalTokens);
-
-
-        //扣费核心逻辑（总token大于100就要对未结清的token进行扣费）
-        if (totalTokens >= 100) {// 如果总token数大于等于100,进行费用扣除
-
-            ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
-            double cost = chatModelVo.getModelPrice();
-            if (BillingType.TIMES.getCode().equals(chatModelVo.getModelType())) {
-                // 按次数扣费
-                deductUserBalance(chatMessageBo.getUserId(), cost);
-                chatMessageBo.setDeductCost(cost);
-            }else {
-                // 按token扣费
-                Double numberCost = totalTokens * cost;
-                System.out.println("deductToken->按token扣费 计算token数量: "+totalTokens);
-                System.out.println("deductToken->按token扣费 每token的价格: "+cost);
-
-                deductUserBalance(chatMessageBo.getUserId(), numberCost);
-                chatMessageBo.setDeductCost(numberCost);
-
-                // 保存剩余tokens
-                chatToken.setModelName(modelName);
-                chatToken.setUserId(chatMessageBo.getUserId());
-                chatToken.setToken(0);//因为判断大于100token直接全部计算扣除了所以这里直接=0就可以了
-                chatTokenService.editToken(chatToken);
-            }
-
-
-
+        if (billable > 0) {
+            BigDecimal numberCost = unitPrice
+                .multiply(BigDecimal.valueOf(billable))
+                .setScale(2, RoundingMode.HALF_UP);
+            log.debug("deductToken->按token扣费，结算token数量: {}，单价: {}，费用: {}", billable, unitPrice, numberCost);
+            deductUserBalance(chatRequest.getUserId(), numberCost.doubleValue());
         } else {
-            //不满100Token,不需要进行扣费啊啊啊
-            //deductUserBalance(chatMessageBo.getUserId(), 0.0);
-            chatMessageBo.setDeductCost(0d);
-            chatMessageBo.setRemark("不满100Token,计入下一次!");
-            System.out.println("deductToken->不满100Token,计入下一次!");
-            chatToken.setToken(totalTokens);
-            chatToken.setModelName(chatMessageBo.getModelName());
-            chatToken.setUserId(chatMessageBo.getUserId());
-            chatTokenService.editToken(chatToken);
+            log.debug("deductToken->未达到计费阈值({})，累积到下次", threshold);
         }
 
+        // 保存剩余tokens（保留余数）
+        chatToken.setModelName(modelName);
+        chatToken.setUserId(chatRequest.getUserId());
+        chatToken.setToken(remainder);
+        chatTokenService.editToken(chatToken);
+    }
 
+    /**
+     * 保存聊天消息记录（不进行计费）
+     */
+    @Override
+    public void saveMessage(ChatRequest chatRequest) {
+        if (chatRequest.getUserId() == null || chatRequest.getSessionId() == null) {
+            return;
+        }
+        ChatMessageBo chatMessageBo = new ChatMessageBo();
+        chatMessageBo.setUserId(chatRequest.getUserId());
+        chatMessageBo.setSessionId(chatRequest.getSessionId());
+        chatMessageBo.setRole(chatRequest.getRole());
+        chatMessageBo.setContent(chatRequest.getPrompt());
+        chatMessageBo.setModelName(chatRequest.getModel());
 
+    
 
-        // 保存消息记录
         chatMessageService.insertByBo(chatMessageBo);
+    }
 
-        System.out.println("deductToken->chatMessageService.insertByBo(: "+chatMessageBo);
-        System.out.println("----------------------------------------");
+
+
+    @Override
+    public void publishBillingEvent(ChatRequest chatRequest) {
+        eventPublisher.publishEvent(new ChatMessageCreatedEvent(
+            chatRequest.getUserId(),
+            chatRequest.getSessionId(),
+            chatRequest.getModel(),
+            chatRequest.getRole(),
+            chatRequest.getPrompt()
+        ));
     }
 
     /**
@@ -158,22 +153,26 @@ public class ChatCostServiceImpl implements IChatCostService {
             return;
         }
 
-        Double userBalance = sysUser.getUserBalance();
+        BigDecimal userBalance = BigDecimal.valueOf(sysUser.getUserBalance() == null ? 0D : sysUser.getUserBalance())
+            .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal cost = BigDecimal.valueOf(numberCost == null ? 0D : numberCost)
+            .setScale(2, RoundingMode.HALF_UP);
 
+        log.debug("deductUserBalance->准备扣除: {}，当前余额: {}", cost, userBalance);
 
-        System.out.println("deductUserBalance->准备扣除：numberCost: "+numberCost);
-        System.out.println("deductUserBalance->剩余金额：userBalance: "+userBalance);
-
-
-        if (userBalance < numberCost || userBalance == 0) {
+        if (userBalance.compareTo(cost) < 0 || userBalance.compareTo(BigDecimal.ZERO) == 0) {
             throw new ServiceException("余额不足, 请充值");
         }
 
-
+        BigDecimal newBalance = userBalance.subtract(cost);
+        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+            newBalance = BigDecimal.ZERO;
+        }
+        newBalance = newBalance.setScale(2, RoundingMode.HALF_UP);
 
         sysUserMapper.update(null,
             new LambdaUpdateWrapper<SysUser>()
-                .set(SysUser::getUserBalance, Math.max(userBalance - numberCost, 0))
+                .set(SysUser::getUserBalance, newBalance.doubleValue())
                 .eq(SysUser::getUserId, userId));
     }
 

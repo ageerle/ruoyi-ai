@@ -111,7 +111,9 @@ public class DifyServiceImpl implements IChatService {
                     chatRequestResponse.setUserId(chatRequest.getUserId());
                     chatRequestResponse.setSessionId(chatRequest.getSessionId());
                     chatRequestResponse.setPrompt(respMessage.toString());
-                    chatCostService.deductToken(chatRequestResponse);
+                    // 先保存助手消息，再发布异步计费事件
+                    chatCostService.saveMessage(chatRequestResponse);
+                    chatCostService.publishBillingEvent(chatRequestResponse);
                 }
 
                 @Override

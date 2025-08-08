@@ -20,6 +20,22 @@ public interface IChatCostService {
     void deductToken(ChatRequest chatRequest);
 
     /**
+     * 保存聊天消息记录（不进行计费）
+     *
+     * @param chatRequest 对话信息
+     */
+    void saveMessage(ChatRequest chatRequest);
+
+
+
+    /**
+     * 仅发布异步计费事件（不做入库）
+     *
+     * @param chatRequest 对话信息
+     */
+    void publishBillingEvent(ChatRequest chatRequest);
+
+    /**
      * 直接扣除用户的余额
      *
      */
