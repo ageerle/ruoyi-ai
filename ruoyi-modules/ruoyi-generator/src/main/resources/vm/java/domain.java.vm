@@ -1,22 +1,10 @@
 package ${packageName}.domain;
 
-    #foreach ($column in $columns)
-        #if($column.javaField=='tenantId')
-            #set($IsTenant=1)
-        #end
-    #end
-    #if($IsTenant==1)
-    import core.tenant.common.org.ruoyi.TenantEntity;
-    #else
-    #end
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-    #foreach ($import in $importList)
-    import ${import};
-    #end
-
-import org.ruoyi.core.domain.BaseEntity;
+#foreach ($import in $importList)
+import ${import};
+#end
 
 /**
  * ${functionName}对象 ${tableName}
@@ -24,15 +12,9 @@ import org.ruoyi.core.domain.BaseEntity;
  * @author ${author}
  * @date ${datetime}
  */
-#if($IsTenant==1)
-    #set($Entity="TenantEntity")
-#else
-    #set($Entity="BaseEntity")
-#end
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("${tableName}")
-public class ${ClassName} extends ${Entity} {
+public class ${ClassName} implements Serializable {
 
 
 #foreach ($column in $columns)
