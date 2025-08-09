@@ -363,6 +363,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         }
 
         String type = dbType.toLowerCase();
+
         if (Objects.equals(type,"int")|| type.contains("tinyint") || type.contains("smallint")) {
             return "Integer";
         } else if (type.contains("bigint")) {
