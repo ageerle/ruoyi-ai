@@ -25,11 +25,11 @@ import org.ruoyi.common.core.validate.EditGroup;
 public class ${ClassName}Bo implements Serializable {
 
 #foreach ($column in $columns)
-    #if(!$table.isSuperColumn($column.javaField) && ($column.isPk || $column.query || $column.insert || $column.edit))
+    #if($column.isPk || $column.query || $column.insert || $column.edit|| $column.required)
         /**
          * $column.columnComment
          */
-        #if($column.insert && $column.edit)
+        #if(($column.insert && $column.edit) || $column.required)
             #set($Group="AddGroup.class, EditGroup.class")
         #elseif($column.insert)
             #set($Group="AddGroup.class")

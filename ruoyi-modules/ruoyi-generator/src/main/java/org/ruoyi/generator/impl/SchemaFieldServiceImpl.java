@@ -211,7 +211,6 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         result.put("tableName", schema.getTableName());
         result.put("tableComment", schema.getComment());
         result.put("className", toCamelCase(schema.getTableName(), true));
-        // result.put("className", StrUtil.toCamelCase(schema.getTableName()));
         result.put("tableCamelName", StrUtil.toCamelCase(schema.getTableName()));
         result.put("functionName", schema.getName());
         result.put("schemaName", schema.getName());
@@ -363,16 +362,15 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         }
 
         String type = dbType.toLowerCase();
-        if (type.contains("int") || type.contains("tinyint") || type.contains("smallint")) {
+        if (StrUtil.equalsAny(type, "int", "tinyint", "smallint")) {
             return "Integer";
-        } else if (type.contains("bigint")) {
+        } else if (StrUtil.equalsAny(type, "bigint")) {
             return "Long";
-        } else if (type.contains("decimal") || type.contains("numeric") || type.contains("float") || type.contains(
-                "double")) {
+        } else if (StrUtil.equalsAny(type, "decimal", "numeric", "float", "double")) {
             return "BigDecimal";
-        } else if (type.contains("date") || type.contains("time")) {
+        } else if (StrUtil.equalsAny(type, "date", "datetime","timestamp")) {
             return "Date";
-        } else if (type.contains("bit") || type.contains("boolean")) {
+        } else if (StrUtil.equalsAny(type, "bit", "boolean")) {
             return "Boolean";
         } else {
             return "String";
