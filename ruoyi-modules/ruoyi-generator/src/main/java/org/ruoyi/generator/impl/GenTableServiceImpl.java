@@ -129,17 +129,17 @@ public class GenTableServiceImpl implements IGenTableService {
      */
     private VelocityContext prepareSchemaContext(SchemaVo schema, List<SchemaFieldVo> fields) {
         VelocityContext context = new VelocityContext();
-        
+
         // 从配置文件读取基本配置
         String packageName = GenConfig.getPackageName();
         String author = GenConfig.getAuthor();
         String tablePrefix = GenConfig.getTablePrefix();
         boolean autoRemovePre = GenConfig.getAutoRemovePre();
-        
+
         // 处理表名和类名
         String tableName = schema.getTableName();
         String baseClassName = schema.getTableName();
-        
+
         // 自动去除表前缀
         if (autoRemovePre && StrUtil.isNotBlank(tablePrefix)) {
             String[] prefixes = tablePrefix.split(",");
@@ -150,12 +150,12 @@ public class GenTableServiceImpl implements IGenTableService {
                 }
             }
         }
-        
+
         String className = toCamelCase(baseClassName, true);  // 首字母大写的类名，如：SysRole
         String classname = toCamelCase(baseClassName, false); // 首字母小写的类名，如：sysRole
         String businessName = toCamelCase(baseClassName, false);
         String moduleName = getModuleName(packageName);
-        
+
         // 基本信息
         context.put("tableName", tableName);
         context.put("tableComment", schema.getComment());
@@ -169,18 +169,18 @@ public class GenTableServiceImpl implements IGenTableService {
         context.put("packageName", packageName);
         context.put("moduleName", moduleName);
         context.put("businessName", businessName);
-        
+
         // 权限相关
         context.put("permissionPrefix", moduleName + ":" + businessName);
         context.put("parentMenuId", "2000");  // 默认父菜单ID，可配置
-        
+
         // 生成菜单ID
         List<Long> menuIds = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
             menuIds.add(IdUtil.getSnowflakeNextId());
         }
         context.put("menuIds", menuIds);
-        
+
         // 创建table对象，包含menuIds等信息和方法
         Map<String, Object> table = new HashMap<>();
         table.put("menuIds", menuIds);
@@ -189,29 +189,19 @@ public class GenTableServiceImpl implements IGenTableService {
         table.put("className", className);
         table.put("classname", classname);
         table.put("functionName", schema.getName());
-        
+
         // 添加表类型属性（默认为crud类型）
         table.put("crud", true);
         table.put("sub", false);
         table.put("tree", false);
-        
-        // 添加isSuperColumn方法
-        table.put("isSuperColumn", new Object() {
-            public boolean isSuperColumn(String javaField) {
-                // 定义超类字段（BaseEntity中的字段）
-                return "createBy".equals(javaField) || "createTime".equals(javaField) 
-                    || "updateBy".equals(javaField) || "updateTime".equals(javaField)
-                    || "remark".equals(javaField) || "tenantId".equals(javaField);
-            }
-        });
-        
+
         context.put("table", table);
-        
+
         // 处理字段信息
         List<Map<String, Object>> columns = new ArrayList<>();
         Map<String, Object> pkColumn = null;
         Set<String> importList = new HashSet<>();
-        
+
         // 添加基础导入
         importList.add("java.io.Serializable");
 
@@ -219,7 +209,7 @@ public class GenTableServiceImpl implements IGenTableService {
             Map<String, Object> column = new HashMap<>();
             String javaType = getJavaType(field.getType());
             String javaField = StrUtil.toCamelCase(field.getCode());
-            
+
             column.put("columnName", field.getCode());
             column.put("columnComment", field.getName());
             column.put("comment", field.getName());  // 添加comment别名
@@ -227,7 +217,7 @@ public class GenTableServiceImpl implements IGenTableService {
             column.put("javaType", javaType);
             column.put("javaField", javaField);
             column.put("capJavaField", toCamelCase(field.getCode(), true));
-            
+
             // 布尔值属性（兼容两种格式）
             boolean isPk = "1".equals(field.getIsPk());
             boolean isRequired = "1".equals(field.getIsRequired());
@@ -235,7 +225,7 @@ public class GenTableServiceImpl implements IGenTableService {
             boolean isEdit = "1".equals(field.getIsEdit());
             boolean isList = "1".equals(field.getIsList());
             boolean isQuery = "1".equals(field.getIsQuery());
-            
+
             column.put("isPk", isPk ? 1 : 0);
             column.put("pk", isPk);  // 添加pk别名
             column.put("isRequired", isRequired);
@@ -248,27 +238,27 @@ public class GenTableServiceImpl implements IGenTableService {
             column.put("list", isList);  // 添加list别名
             column.put("isQuery", isQuery);
             column.put("query", isQuery);  // 添加query别名
-            
+
             column.put("queryType", field.getQueryType());
             column.put("htmlType", field.getHtmlType());
             column.put("dictType", field.getDictType());
             column.put("sort", field.getSort());
-            
+
             // 添加readConverterExp方法
             column.put("readConverterExp", new Object() {
             });
-            
+
             // 根据Java类型添加相应的导入
             addImportForJavaType(javaType, importList);
-            
+
             columns.add(column);
-            
+
             // 设置主键列
             if (isPk) {
                 pkColumn = column;
             }
         }
-        
+
         // 如果没有主键，使用第一个字段作为主键
         if (pkColumn == null && !columns.isEmpty()) {
             pkColumn = columns.get(0);
@@ -276,27 +266,28 @@ public class GenTableServiceImpl implements IGenTableService {
             pkColumn.put("isPk", 1);
             pkColumn.put("pk", true);
         }
-        
+
         context.put("columns", columns);
         context.put("pkColumn", pkColumn);
         context.put("importList", new ArrayList<>(importList));
-        
+
         return context;
     }
-    
+
     /**
-      * 根据Java类型添加相应的导入
-      */
-     private void addImportForJavaType(String javaType, Set<String> importList) {
-         switch (javaType) {
-             case "BigDecimal" -> importList.add("java.math.BigDecimal");
-             case "Date" -> importList.add("java.util.Date");
-             case "LocalDateTime" -> importList.add("java.time.LocalDateTime");
-             case "LocalDate" -> importList.add("java.time.LocalDate");
-             case "LocalTime" -> importList.add("java.time.LocalTime");
-             default -> {}
-         }
-     }
+     * 根据Java类型添加相应的导入
+     */
+    private void addImportForJavaType(String javaType, Set<String> importList) {
+        switch (javaType) {
+            case "BigDecimal" -> importList.add("java.math.BigDecimal");
+            case "Date" -> importList.add("java.util.Date");
+            case "LocalDateTime" -> importList.add("java.time.LocalDateTime");
+            case "LocalDate" -> importList.add("java.time.LocalDate");
+            case "LocalTime" -> importList.add("java.time.LocalTime");
+            default -> {
+            }
+        }
+    }
 
     /**
      * 从包名中提取模块名
@@ -320,10 +311,10 @@ public class GenTableServiceImpl implements IGenTableService {
         String packageName = GenConfig.getPackageName();
         String tablePrefix = GenConfig.getTablePrefix();
         boolean autoRemovePre = GenConfig.getAutoRemovePre();
-        
+
         // 处理类名
         String baseClassName = schema.getTableName();
-        
+
         // 自动去除表前缀
         if (autoRemovePre && StrUtil.isNotBlank(tablePrefix)) {
             String[] prefixes = tablePrefix.split(",");
@@ -334,13 +325,13 @@ public class GenTableServiceImpl implements IGenTableService {
                 }
             }
         }
-        
+
         String className = toCamelCase(baseClassName, true);   // 首字母大写，如：SysRole
         // 首字母小写，如：sysRole
         String moduleName = getModuleName(packageName);
         String javaPath = "src/main/java/";
         String mybatisPath = "src/main/resources/mapper/";
-        
+
         if (template.contains("domain.java.vm")) {
             return javaPath + packageName.replace(".", "/") + "/domain/" + className + ".java";
         } else if (template.contains("mapper.java.vm")) {
@@ -413,16 +404,17 @@ public class GenTableServiceImpl implements IGenTableService {
             return "String";
         }
         String type = dbType.toLowerCase();
-        if (type.contains("int") || type.contains("tinyint") || type.contains("smallint")) {
+        if (StrUtil.equalsAny(type, "int", "tinyint")) {
             return "Integer";
-        } else if (type.contains("bigint")) {
+        } else if (StrUtil.equalsAny(type, "bigint")) {
             return "Long";
-        } else if (type.contains("decimal") || type.contains("numeric") || type.contains("float") || type.contains(
-                "double")) {
+        } else if (StrUtil.equalsAny(type, "decimal", "numeric", "float", "double")) {
             return "BigDecimal";
-        } else if (type.contains("date") || type.contains("time")) {
-            return "Date";
-        } else if (type.contains("bit") || type.contains("boolean")) {
+        } else if (StrUtil.equalsAny(type, "date")) {
+            return "LocalDate";
+        } else if (StrUtil.equalsAny(type, "datetime", "timestamp")) {
+            return "LocalDateTime";
+        } else if (StrUtil.equalsAny(type, "bit", "boolean")) {
             return "Boolean";
         } else {
             return "String";
