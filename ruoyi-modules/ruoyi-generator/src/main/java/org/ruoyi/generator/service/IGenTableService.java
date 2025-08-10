@@ -13,4 +13,12 @@ public interface IGenTableService {
      * @param tableName 表名称数组
      */
     void generateCodeToClasspathByTableNames(String tableName);
+
+    /**
+     * 生成前端文件
+     *
+     * @param workPath    执行命令路径
+     * @param previewCode 执行生成前端文件命令
+     */
+    void generateFrontendTemplateFiles(String workPath, String previewCode);
 }
