@@ -95,6 +95,7 @@ public class GenTableServiceImpl implements IGenTableService {
             log.warn("Schema不存在，表名: {}", tableName);
             return;
         }
+
         // 查询Schema字段信息
         List<SchemaFieldVo> fields = schemaFieldService.queryListByTableName(tableName);
         if (CollUtil.isEmpty(fields)) {
@@ -219,16 +220,6 @@ public class GenTableServiceImpl implements IGenTableService {
         table.put("crud", true);
         table.put("sub", false);
         table.put("tree", false);
-
-        // 添加isSuperColumn方法
-        table.put("isSuperColumn", new Object() {
-            public boolean isSuperColumn(String javaField) {
-                // 定义超类字段（BaseEntity中的字段）
-                return "createBy".equals(javaField) || "createTime".equals(javaField)
-                        || "updateBy".equals(javaField) || "updateTime".equals(javaField)
-                        || "remark".equals(javaField) || "tenantId".equals(javaField);
-            }
-        });
 
         context.put("table", table);
 
@@ -439,16 +430,17 @@ public class GenTableServiceImpl implements IGenTableService {
             return "String";
         }
         String type = dbType.toLowerCase();
-        if (type.contains("int") || type.contains("tinyint") || type.contains("smallint")) {
+        if (StrUtil.equalsAny(type, "int", "tinyint")) {
             return "Integer";
-        } else if (type.contains("bigint")) {
+        } else if (StrUtil.equalsAny(type, "bigint")) {
             return "Long";
-        } else if (type.contains("decimal") || type.contains("numeric") || type.contains("float") || type.contains(
-                "double")) {
+        } else if (StrUtil.equalsAny(type, "decimal", "numeric", "float", "double")) {
             return "BigDecimal";
-        } else if (type.contains("date") || type.contains("time")) {
-            return "Date";
-        } else if (type.contains("bit") || type.contains("boolean")) {
+        } else if (StrUtil.equalsAny(type, "date")) {
+            return "LocalDate";
+        } else if (StrUtil.equalsAny(type, "datetime", "timestamp")) {
+            return "LocalDateTime";
+        } else if (StrUtil.equalsAny(type, "bit", "boolean")) {
             return "Boolean";
         } else {
             return "String";
