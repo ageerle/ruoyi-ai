@@ -19,18 +19,9 @@ import org.ruoyi.generator.util.VelocityInitializer;
 import org.ruoyi.generator.util.VelocityUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 业务 服务层实现
@@ -56,6 +47,41 @@ public class GenTableServiceImpl implements IGenTableService {
             generateSchemaCodeToClasspathByTableName(tableName);
         } catch (Exception e) {
             throw new RuntimeException("基于表名称生成代码失败", e);
+        }
+    }
+
+    @Override
+    public void generateFrontendTemplateFiles(String workPath, String previewCode) {
+        String os = System.getProperty("os.name").toLowerCase();
+
+        ProcessBuilder builder;
+        if (os.contains("win")) {
+            // Windows下用 cmd /c 执行 previewCode
+            builder = new ProcessBuilder("cmd.exe", "/c", previewCode);
+        } else {
+            // macOS/Linux 用 bash -c 执行 previewCode
+            builder = new ProcessBuilder("bash", "-c", previewCode);
+        }
+
+        // 设置工作目录
+        builder.directory(new File(workPath));
+        builder.redirectErrorStream(true);
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(
+                        builder.start().getInputStream(),
+                        StandardCharsets.UTF_8
+                )
+        )) {
+            String line;
+            log.info("执行结果：");
+            while ((line = reader.readLine()) != null) {
+                log.info(line);
+            }
+
+        } catch (Exception e) {
+            log.error("生成前端代码出错", e);
+            throw new RuntimeException("生成前端代码失败", e);
         }
     }
 
