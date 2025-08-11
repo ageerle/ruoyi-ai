@@ -53,6 +53,7 @@ public class SchemaGroupController extends BaseController {
     /**
      * 获取数据模型分组选择列表
      */
+    @SaCheckPermission("dev:schemaGroup:select")
     @GetMapping("/select")
     public R<List<SchemaGroupVo>> select() {
         SchemaGroupBo bo = new SchemaGroupBo();

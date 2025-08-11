@@ -8,7 +8,10 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.generator.domain.SchemaGroup;
+import org.ruoyi.generator.domain.vo.SchemaGroupVo;
 import org.ruoyi.generator.event.SchemaDeletedEvent;
+import org.ruoyi.generator.service.SchemaGroupService;
 import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.generator.domain.Schema;
 import org.ruoyi.generator.domain.bo.SchemaBo;
@@ -20,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 数据模型Service业务层处理
@@ -31,6 +36,7 @@ import java.util.List;
 public class SchemaServiceImpl implements SchemaService {
 
     private final SchemaMapper baseMapper;
+    private final SchemaGroupService schemaGroupService;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -64,10 +70,7 @@ public class SchemaServiceImpl implements SchemaService {
         LambdaQueryWrapper<Schema> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getSchemaGroupId() != null, Schema::getSchemaGroupId, bo.getSchemaGroupId());
         lqw.like(StringUtils.isNotBlank(bo.getName()), Schema::getName, bo.getName());
-        lqw.eq(StringUtils.isNotBlank(bo.getCode()), Schema::getCode, bo.getCode());
         lqw.eq(StringUtils.isNotBlank(bo.getTableName()), Schema::getTableName, bo.getTableName());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), Schema::getStatus, bo.getStatus());
-        lqw.orderByAsc(Schema::getSort);
         return lqw;
     }
 
@@ -76,15 +79,18 @@ public class SchemaServiceImpl implements SchemaService {
      */
     @Override
     public Boolean insertByBo(SchemaBo bo) {
-        Schema add = MapstructUtils.convert(bo, Schema.class);
-        validEntityBeforeSave(add);
-        boolean flag = baseMapper.insert(add) > 0;
+        Schema schema = MapstructUtils.convert(bo, Schema.class);
+        Long schemaGroupId = bo.getSchemaGroupId();
+        SchemaGroupVo schemaGroupVo = schemaGroupService.queryById(schemaGroupId);
+        if (Objects.nonNull(schemaGroupVo)) {
+            schema.setCode(schemaGroupVo.getCode());
+        }
+        boolean flag = baseMapper.insert(schema) > 0;
         if (flag) {
-            bo.setId(add.getId());
-
+            bo.setId(schema.getId());
             // 发布数据模型添加事件，由事件监听器处理字段插入
             if (StringUtils.isNotBlank(bo.getTableName())) {
-                eventPublisher.publishEvent(new SchemaAddedEvent(this, add.getId(), bo.getTableName()));
+                eventPublisher.publishEvent(new SchemaAddedEvent(this, schema.getId(), bo.getTableName()));
             }
         }
         return flag;
@@ -96,15 +102,7 @@ public class SchemaServiceImpl implements SchemaService {
     @Override
     public Boolean updateByBo(SchemaBo bo) {
         Schema update = MapstructUtils.convert(bo, Schema.class);
-        validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
-    }
-
-    /**
-     * 保存前的数据校验
-     */
-    private void validEntityBeforeSave(Schema entity) {
-        //TODO 做一些数据校验,如唯一约束
     }
 
     /**
@@ -127,8 +125,6 @@ public class SchemaServiceImpl implements SchemaService {
     public SchemaVo queryByTableName(String tableName) {
         LambdaQueryWrapper<Schema> lqw = Wrappers.lambdaQuery();
         lqw.eq(Schema::getTableName, tableName);
-        // 只查询正常状态的模型
-        lqw.eq(Schema::getStatus, "0");
         return baseMapper.selectVoOne(lqw);
     }
 }

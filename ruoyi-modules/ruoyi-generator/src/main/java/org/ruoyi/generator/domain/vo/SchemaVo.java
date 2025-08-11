@@ -19,9 +19,6 @@ import java.util.Date;
 @AutoMapper(target = Schema.class)
 public class SchemaVo implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
-
     /**
      * 主键
      */

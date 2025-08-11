@@ -4,11 +4,11 @@ import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.core.domain.BaseEntity;
 import org.ruoyi.generator.domain.SchemaField;
+
+import java.io.Serializable;
 
 /**
  * 数据模型字段业务对象 SchemaFieldBo
@@ -17,9 +17,8 @@ import org.ruoyi.generator.domain.SchemaField;
  * @date 2024-01-01
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @AutoMapper(target = SchemaField.class, reverseConvertGenerate = false)
-public class SchemaFieldBo extends BaseEntity {
+public class SchemaFieldBo implements Serializable {
 
     /**
      * 主键
@@ -36,7 +35,7 @@ public class SchemaFieldBo extends BaseEntity {
     /**
      * 模型名称
      */
-    @NotNull(message = "模型名称不能为空", groups = {AddGroup.class, EditGroup.class})
+    // @NotNull(message = "模型名称不能为空", groups = {AddGroup.class, EditGroup.class})
     private String schemaName;
 
     /**
@@ -130,16 +129,6 @@ public class SchemaFieldBo extends BaseEntity {
      * 字典类型
      */
     private String dictType;
-
-    /**
-     * 状态
-     */
-    private String status;
-
-    /**
-     * 扩展JSON
-     */
-    private String extendJson;
 
     /**
      * 备注

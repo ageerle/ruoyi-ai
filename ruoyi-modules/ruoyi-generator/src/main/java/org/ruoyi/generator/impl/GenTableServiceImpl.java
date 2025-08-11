@@ -11,9 +11,11 @@ import org.apache.velocity.app.Velocity;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.generator.config.GenConfig;
 import org.ruoyi.generator.domain.vo.SchemaFieldVo;
+import org.ruoyi.generator.domain.vo.SchemaGroupVo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.service.IGenTableService;
 import org.ruoyi.generator.service.SchemaFieldService;
+import org.ruoyi.generator.service.SchemaGroupService;
 import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.generator.util.VelocityInitializer;
 import org.ruoyi.generator.util.VelocityUtils;
@@ -44,6 +46,7 @@ public class GenTableServiceImpl implements IGenTableService {
 
     private final SchemaService schemaService;
     private final SchemaFieldService schemaFieldService;
+    private final SchemaGroupService schemaGroupService;
 
     /**
      * 基于表名称批量生成代码到classpath路径
@@ -137,6 +140,8 @@ public class GenTableServiceImpl implements IGenTableService {
         boolean autoRemovePre = GenConfig.getAutoRemovePre();
 
         // 处理表名和类名
+        Long schemaGroupId = schema.getSchemaGroupId();
+        SchemaGroupVo schemaGroupVo = schemaGroupService.queryById(schemaGroupId);
         String tableName = schema.getTableName();
         String baseClassName = schema.getTableName();
 
@@ -154,7 +159,7 @@ public class GenTableServiceImpl implements IGenTableService {
         String className = toCamelCase(baseClassName, true);  // 首字母大写的类名，如：SysRole
         String classname = toCamelCase(baseClassName, false); // 首字母小写的类名，如：sysRole
         String businessName = toCamelCase(baseClassName, false);
-        String moduleName = getModuleName(packageName);
+        String moduleName = schemaGroupVo.getCode();
 
         // 基本信息
         context.put("tableName", tableName);
