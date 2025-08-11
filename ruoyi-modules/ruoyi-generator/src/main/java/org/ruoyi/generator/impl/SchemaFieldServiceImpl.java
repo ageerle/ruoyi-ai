@@ -79,7 +79,6 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         lqw.eq(StringUtils.isNotBlank(bo.getQueryType()), SchemaField::getQueryType, bo.getQueryType());
         lqw.eq(StringUtils.isNotBlank(bo.getHtmlType()), SchemaField::getHtmlType, bo.getHtmlType());
         lqw.like(StringUtils.isNotBlank(bo.getDictType()), SchemaField::getDictType, bo.getDictType());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SchemaField::getStatus, bo.getStatus());
         lqw.orderByAsc(SchemaField::getSort);
         return lqw;
     }
@@ -150,7 +149,6 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
     public List<SchemaFieldVo> queryListBySchemaId(Long schemaId) {
         LambdaQueryWrapper<SchemaField> lqw = Wrappers.lambdaQuery();
         lqw.eq(SchemaField::getSchemaId, schemaId);
-        lqw.eq(SchemaField::getStatus, "0"); // 只查询正常状态的字段
         lqw.orderByAsc(SchemaField::getSort);
         return baseMapper.selectVoList(lqw);
     }
@@ -264,8 +262,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
                 return false;
             }
             LambdaQueryWrapper<SchemaField> lqw = Wrappers.lambdaQuery();
-            lqw.eq(SchemaField::getSchemaName, tableName);
-            lqw.eq(SchemaField::getStatus, "0");
+            lqw.eq(SchemaField::getSchemaId, schemaId);
             // 检查是否已存在字段数据
             List<SchemaFieldVo> existingFields = baseMapper.selectVoList(lqw);
             if (CollUtil.isNotEmpty(existingFields)) {
@@ -279,20 +276,26 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
                 SchemaField field = new SchemaField();
                 field.setSchemaId(schemaId);
                 field.setSchemaName(tableName);
+                field.setDefaultValue((String) columnInfo.get("columnDefault"));
+                field.setComment((String) columnInfo.get("columnComment"));
                 field.setName((String) columnInfo.get("columnComment"));
                 field.setCode(StrUtil.toCamelCase((String) columnInfo.get("columnName")));
                 field.setType((String) columnInfo.get("dataType"));
                 field.setLength(Integer.valueOf(String.valueOf(columnInfo.get("columnSize"))));
                 field.setIsPk((Boolean) columnInfo.get("isPrimaryKey") ? "1" : "0");
                 field.setIsRequired(!(Boolean) columnInfo.get("isNullable") ? "1" : "0");
-                field.setIsInsert("1");
-                field.setIsEdit("1");
+                if ("1".equals(field.getIsPk())) {
+                    field.setIsInsert("0");
+                    field.setIsEdit("0");
+                }else {
+                    field.setIsInsert("1");
+                    field.setIsEdit("1");
+                }
                 field.setIsList("1");
                 field.setIsQuery("1");
                 field.setQueryType("EQ");
                 field.setHtmlType(getDefaultHtmlType((String) columnInfo.get("dataType")));
                 field.setSort(sort++);
-                field.setStatus("0");
                 // 如果字段名为空，使用字段代码作为名称
                 if (StringUtils.isBlank(field.getName())) {
                     field.setName(field.getCode());
