@@ -49,6 +49,8 @@ public class McpInfo extends BaseEntity {
      */
     private String arguments;
 
+    private String description;
+
     /**
      * Env
      */

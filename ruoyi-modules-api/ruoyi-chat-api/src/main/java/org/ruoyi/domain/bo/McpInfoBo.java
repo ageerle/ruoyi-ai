@@ -44,8 +44,8 @@ public class McpInfoBo implements Serializable {
          * Args
          */
     private String arguments;
-
-        /**
+    private String description;
+    /**
          * Env
          */
     private String env;

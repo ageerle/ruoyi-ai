@@ -14,7 +14,7 @@ import java.io.Serializable;
 /**
  * MCP视图对象 mcp_info
  *
- * @author ageerle
+ * @author jiyi
  * @date Sat Aug 09 16:50:58 CST 2025
  */
 @Data
@@ -47,7 +47,8 @@ public class McpInfoVo implements Serializable {
              */
             @ExcelProperty(value = "Args")
         private String arguments;
-
+    @ExcelProperty(value = "Description")
+    private String description;
             /**
              * Env
              */

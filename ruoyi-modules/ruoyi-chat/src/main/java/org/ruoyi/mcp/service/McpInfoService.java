@@ -2,8 +2,12 @@ package org.ruoyi.mcp.service;
 
     import org.ruoyi.core.page.TableDataInfo;
     import org.ruoyi.core.page.PageQuery;
+    import org.ruoyi.domain.McpInfo;
     import org.ruoyi.domain.bo.McpInfoBo;
     import org.ruoyi.domain.vo.McpInfoVo;
+    import org.ruoyi.mcp.config.McpConfig;
+    import org.ruoyi.mcp.config.McpServerConfig;
+    import org.ruoyi.mcp.domain.McpInfoRequest;
 
     import java.util.Collection;
 import java.util.List;
@@ -45,4 +49,20 @@ public interface McpInfoService {
      * 校验并批量删除MCP信息
      */
     Boolean deleteWithValidByIds(Collection<Integer> ids, Boolean isValid);
+
+    McpServerConfig getToolConfigByName(String serverName);
+
+    McpConfig getAllActiveMcpConfig();
+
+    List<String> getActiveServerNames();
+
+    McpInfo saveToolConfig(McpInfoRequest request);
+
+    boolean deleteToolConfig(String serverName);
+
+    boolean updateToolStatus(String serverName, Boolean status);
+
+    boolean enableTool(String serverName);
+
+    boolean disableTool(String serverName);
 }

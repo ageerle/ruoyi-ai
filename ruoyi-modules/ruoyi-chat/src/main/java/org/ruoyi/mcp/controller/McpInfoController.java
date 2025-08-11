@@ -1,13 +1,18 @@
 package org.ruoyi.mcp.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import org.ruoyi.domain.McpInfo;
 import org.ruoyi.domain.bo.McpInfoBo;
 import org.ruoyi.domain.vo.McpInfoVo;
+import org.ruoyi.mcp.config.McpConfig;
+import org.ruoyi.mcp.config.McpServerConfig;
+import org.ruoyi.mcp.domain.McpInfoRequest;
 import org.ruoyi.mcp.service.McpInfoService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
@@ -102,5 +107,56 @@ public class McpInfoController extends BaseController {
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Integer[] mcpIds) {
         return toAjax(mcpInfoService.deleteWithValidByIds(List.of(mcpIds), true));
+    }
+
+    /**
+     * 添加或更新 MCP 工具
+     */
+    @PostMapping("/tools")
+    public R<McpInfo> saveToolConfig(@RequestBody McpInfoRequest request) {
+        return R.ok(mcpInfoService.saveToolConfig(request));
+    }
+
+    /**
+     * 获取所有活跃服务器名称
+     */
+    @GetMapping("/tools/names")
+    public R<List<String>> getActiveServerNames() {
+        return R.ok(mcpInfoService.getActiveServerNames());
+    }
+
+    /**
+     * 根据名称获取工具配置
+     */
+    @GetMapping("/tools/{serverName}")
+    public R<McpServerConfig> getToolConfig(@PathVariable String serverName) {
+        return R.ok(mcpInfoService.getToolConfigByName(serverName));
+    }
+
+    /**
+     * 启用工具
+     */
+    @PostMapping("/tools/{serverName}/enable")
+    public Map<String, Object> enableTool(@PathVariable String serverName) {
+        boolean success = mcpInfoService.enableTool(serverName);
+        return Map.of("success", success);
+    }
+
+    /**
+     * 禁用工具
+     */
+    @PostMapping("/tools/{serverName}/disable")
+    public Map<String, Object> disableTool(@PathVariable String serverName) {
+        boolean success = mcpInfoService.disableTool(serverName);
+        return Map.of("success", success);
+    }
+
+    /**
+     * 删除工具
+     */
+    @DeleteMapping("/tools/{serverName}")
+    public Map<String, Object> deleteTool(@PathVariable String serverName) {
+        boolean success = mcpInfoService.deleteToolConfig(serverName);
+        return Map.of("success", success);
     }
 }
