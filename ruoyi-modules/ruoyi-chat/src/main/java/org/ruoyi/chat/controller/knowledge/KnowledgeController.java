@@ -27,10 +27,18 @@ import org.ruoyi.service.IKnowledgeAttachService;
 import org.ruoyi.service.IKnowledgeFragmentService;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 知识库管理
@@ -60,7 +68,9 @@ public class KnowledgeController extends BaseController {
         if (!StpUtil.isLogin()) {
             throw new SecurityException("请先去登录!");
         }
-        bo.setUid(LoginHelper.getUserId());
+        if (!Objects.equals(LoginHelper.getUserId(), 1L)) {
+            bo.setUid(LoginHelper.getUserId());
+        }
         return knowledgeInfoService.queryPageList(bo, pageQuery);
     }
 
@@ -72,13 +82,15 @@ public class KnowledgeController extends BaseController {
         if (!StpUtil.isLogin()) {
             throw new SecurityException("请先去登录!");
         }
-        LoginUser loginUser = LoginHelper.getLoginUser();
 
         // 管理员跳过权限
-        if (loginUser.getUserId().equals(1L) || !knowledgeRoleConfig.getEnable()) {
+        if (Objects.equals(LoginHelper.getUserId(), 1L)) {
+            return knowledgeInfoService.queryPageList(bo, pageQuery);
+        } else if (!knowledgeRoleConfig.getEnable()) {
             bo.setUid(LoginHelper.getUserId());
             return knowledgeInfoService.queryPageList(bo, pageQuery);
         } else {
+            // TODO 自己创建的知识库+角色分配的知识库
             return knowledgeInfoService.queryPageListByRole(pageQuery);
         }
     }

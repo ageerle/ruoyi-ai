@@ -1,13 +1,14 @@
 package org.ruoyi.generator.domain;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.ruoyi.core.domain.BaseEntity;
 
-import java.io.Serial;
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 数据模型对象 dev_schema
@@ -16,12 +17,9 @@ import java.io.Serial;
  * @date 2024-01-01
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("dev_schema")
-public class Schema extends BaseEntity {
+public class Schema implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     /**
      * 主键
@@ -50,41 +48,6 @@ public class Schema extends BaseEntity {
     private String tableName;
 
     /**
-     * 表注释
-     */
-    private String comment;
-
-    /**
-     * 存储引擎
-     */
-    private String engine;
-
-    /**
-     * 列表字段
-     */
-    private String listKeys;
-
-    /**
-     * 搜索表单字段
-     */
-    private String searchFormKeys;
-
-    /**
-     * 表单设计
-     */
-    private String designer;
-
-    /**
-     * 状态
-     */
-    private String status;
-
-    /**
-     * 排序
-     */
-    private Integer sort;
-
-    /**
      * 备注
      */
     private String remark;
@@ -96,8 +59,33 @@ public class Schema extends BaseEntity {
     private String delFlag;
 
     /**
-     * 租户编号
+     * 创建部门
      */
-    private String tenantId;
+    @TableField(fill = FieldFill.INSERT)
+    private Long createDept;
+
+    /**
+     * 创建者
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private Long createBy;
+
+    /**
+     * 创建时间
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private Date createTime;
+
+    /**
+     * 更新者
+     */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private Long updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private Date updateTime;
 
 }

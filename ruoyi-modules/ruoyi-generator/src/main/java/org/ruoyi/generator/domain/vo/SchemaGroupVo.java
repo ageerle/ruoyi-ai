@@ -4,7 +4,6 @@ import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.generator.domain.SchemaGroup;
 
-import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -17,9 +16,6 @@ import java.util.Date;
 @Data
 @AutoMapper(target = SchemaGroup.class)
 public class SchemaGroupVo implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     /**
      * 主键
@@ -45,11 +41,6 @@ public class SchemaGroupVo implements Serializable {
      * 排序
      */
     private Integer sort;
-
-    /**
-     * 状态
-     */
-    private String status;
 
     /**
      * 备注

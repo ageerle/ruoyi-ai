@@ -1,13 +1,14 @@
 package org.ruoyi.generator.domain;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.ruoyi.core.domain.BaseEntity;
 
-import java.io.Serial;
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 数据模型字段对象 dev_schema_field
@@ -16,12 +17,8 @@ import java.io.Serial;
  * @date 2024-01-01
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("dev_schema_field")
-public class SchemaField extends BaseEntity {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
+public class SchemaField implements Serializable {
 
     /**
      * 主键
@@ -129,15 +126,6 @@ public class SchemaField extends BaseEntity {
      */
     private String dictType;
 
-    /**
-     * 状态
-     */
-    private String status;
-
-    /**
-     * 扩展JSON
-     */
-    private String extendJson;
 
     /**
      * 备注
@@ -151,8 +139,33 @@ public class SchemaField extends BaseEntity {
     private String delFlag;
 
     /**
-     * 租户编号
+     * 创建部门
      */
-    private String tenantId;
+    @TableField(fill = FieldFill.INSERT)
+    private Long createDept;
+
+    /**
+     * 创建者
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private Long createBy;
+
+    /**
+     * 创建时间
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private Date createTime;
+
+    /**
+     * 更新者
+     */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private Long updateBy;
+
+    /**
+     * 更新时间
+     */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private Date updateTime;
 
 }
