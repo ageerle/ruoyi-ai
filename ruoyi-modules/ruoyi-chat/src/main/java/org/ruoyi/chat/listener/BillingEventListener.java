@@ -7,6 +7,7 @@ import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.context.event.EventListener;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -18,8 +19,10 @@ public class BillingEventListener {
     private final IChatCostService chatCostService;
 
     @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
     public void onChatMessageCreated(ChatMessageCreatedEvent event) {
+        log.debug("BillingEventListener->接收到计费事件，用户ID: {}，会话ID: {}，模型: {}", 
+                  event.getUserId(), event.getSessionId(), event.getModelName());
         try {
             ChatRequest chatRequest = new ChatRequest();
             chatRequest.setUserId(event.getUserId());
@@ -28,9 +31,17 @@ public class BillingEventListener {
             chatRequest.setRole(event.getRole());
             chatRequest.setPrompt(event.getContent());
             // 异步执行计费累计与扣费
+            log.debug("BillingEventListener->开始执行计费逻辑");
             chatCostService.deductToken(chatRequest);
+            log.debug("BillingEventListener->计费逻辑执行完成");
         } catch (Exception ex) {
-            log.error("BillingEventListener onChatMessageCreated error", ex);
+            // 由于已有预检查，这里的异常主要是系统异常（数据库连接等）
+            // 记录错误但不中断异步线程
+            log.error("BillingEventListener->异步计费异常，用户ID: {}，模型: {}，错误: {}", 
+                      event.getUserId(), event.getModelName(), ex.getMessage(), ex);
+            
+            // TODO: 可以考虑加入重试机制或者错误通知机制
+            // 例如：发送到死信队列，或者通知运维人员
         }
     }
 }
