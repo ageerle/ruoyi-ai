@@ -101,8 +101,9 @@ public class SseServiceImpl implements ISseService {
                 }
 
 
-                // 保存消息记录 并扣除费用
-                chatCostService.deductToken(chatRequest);
+                // 先保存消息，再发布异步计费事件
+                chatCostService.saveMessage(chatRequest);
+                chatCostService.publishBillingEvent(chatRequest);
                 chatRequest.setUserId(chatCostService.getUserId());
                 if(chatRequest.getSessionId()==null){
                     ChatSessionBo chatSessionBo = new ChatSessionBo();
