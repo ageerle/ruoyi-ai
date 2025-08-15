@@ -45,7 +45,7 @@
                u.create_time,
                u.remark,
                u.krole_group_type,
-               u.krole_group_ids,
+               u.krole_group_id,
                d.dept_id,
                d.parent_id,
                d.ancestors,
