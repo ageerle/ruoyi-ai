@@ -6,9 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.ruoyi.generator.domain.SchemaField;
 
-import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * 数据模型字段视图对象 SchemaFieldVo
@@ -19,9 +17,6 @@ import java.util.Date;
 @Data
 @AutoMapper(target = SchemaField.class)
 public class SchemaFieldVo implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     /**
      * 主键
@@ -137,24 +132,7 @@ public class SchemaFieldVo implements Serializable {
     private String dictType;
 
     /**
-     * 状态
-     */
-    @Schema(description = "状态")
-    private String status;
-
-    /**
-     * 扩展JSON
-     */
-    private String extendJson;
-
-    /**
      * 备注
      */
     private String remark;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
-
 }

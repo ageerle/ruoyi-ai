@@ -60,9 +60,6 @@ public class SchemaGroupServiceImpl implements SchemaGroupService {
         LambdaQueryWrapper<SchemaGroup> lqw = Wrappers.lambdaQuery();
         lqw.like(StringUtils.isNotBlank(bo.getName()), SchemaGroup::getName, bo.getName());
         lqw.eq(StringUtils.isNotBlank(bo.getCode()), SchemaGroup::getCode, bo.getCode());
-        lqw.eq(bo.getSort() != null, SchemaGroup::getSort, bo.getSort());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SchemaGroup::getStatus, bo.getStatus());
-        lqw.orderByAsc(SchemaGroup::getSort);
         return lqw;
     }
 
@@ -102,9 +99,6 @@ public class SchemaGroupServiceImpl implements SchemaGroupService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if (isValid) {
-            //TODO 做一些业务上的校验,判断是否需要校验
-        }
-        return baseMapper.deleteBatchIds(ids) > 0;
+        return baseMapper.deleteByIds(ids) > 0;
     }
 }

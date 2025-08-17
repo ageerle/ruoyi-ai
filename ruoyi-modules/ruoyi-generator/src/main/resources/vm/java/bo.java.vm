@@ -25,26 +25,28 @@ import org.ruoyi.common.core.validate.EditGroup;
 public class ${ClassName}Bo implements Serializable {
 
 #foreach ($column in $columns)
-    #if(!$table.isSuperColumn($column.javaField) && ($column.isPk || $column.query || $column.insert || $column.edit))
-        /**
-         * $column.columnComment
-         */
-        #if($column.insert && $column.edit)
-            #set($Group="AddGroup.class, EditGroup.class")
-        #elseif($column.insert)
-            #set($Group="AddGroup.class")
-        #elseif($column.edit)
-            #set($Group="EditGroup.class")
-        #end
-        #if($column.required)
-            #if($column.javaType == 'String')
-            @NotBlank(message = "$column.columnComment不能为空", groups = { $Group })
-            #else
-            @NotNull(message = "$column.columnComment不能为空", groups = { $Group })
-            #end
-        #end
+    #if($column.isPk)
     private $column.javaType $column.javaField;
 
+    #elseif($column.insert || $column.edit)
+    /**
+     * $column.columnComment
+     */
+    #if($column.insert && $column.edit)
+        #set($Group="AddGroup.class, EditGroup.class")
+    #elseif($column.insert)
+        #set($Group="AddGroup.class")
+    #elseif($column.edit)
+        #set($Group="EditGroup.class")
+    #end
+    #if($column.required)
+    #if($column.javaType == 'String')
+    @NotBlank(message = "$column.columnComment不能为空", groups = { $Group })
+    #else
+    @NotNull(message = "$column.columnComment不能为空", groups = { $Group })
+    #end
+    #end
+    private $column.javaType $column.javaField;
     #end
 #end
 

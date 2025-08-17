@@ -79,7 +79,6 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         lqw.eq(StringUtils.isNotBlank(bo.getQueryType()), SchemaField::getQueryType, bo.getQueryType());
         lqw.eq(StringUtils.isNotBlank(bo.getHtmlType()), SchemaField::getHtmlType, bo.getHtmlType());
         lqw.like(StringUtils.isNotBlank(bo.getDictType()), SchemaField::getDictType, bo.getDictType());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SchemaField::getStatus, bo.getStatus());
         lqw.orderByAsc(SchemaField::getSort);
         return lqw;
     }
@@ -150,7 +149,6 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
     public List<SchemaFieldVo> queryListBySchemaId(Long schemaId) {
         LambdaQueryWrapper<SchemaField> lqw = Wrappers.lambdaQuery();
         lqw.eq(SchemaField::getSchemaId, schemaId);
-        lqw.eq(SchemaField::getStatus, "0"); // 只查询正常状态的字段
         lqw.orderByAsc(SchemaField::getSort);
         return baseMapper.selectVoList(lqw);
     }
@@ -209,9 +207,9 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         Map<String, Object> result = new HashMap<>();
         result.put("schemaGroupCode", schemaGroupVo.getCode());
         result.put("tableName", schema.getTableName());
+        result.put("dictType",schema.getDictType());
         result.put("tableComment", schema.getComment());
         result.put("className", toCamelCase(schema.getTableName(), true));
-        // result.put("className", StrUtil.toCamelCase(schema.getTableName()));
         result.put("tableCamelName", StrUtil.toCamelCase(schema.getTableName()));
         result.put("functionName", schema.getName());
         result.put("schemaName", schema.getName());
@@ -225,6 +223,8 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         if (pkField != null) {
             Map<String, Object> pkColumn = new HashMap<>();
             pkColumn.put("columnName", pkField.getCode());
+            pkColumn.put("dictType", pkField.getDictType());
+
             pkColumn.put("columnComment", pkField.getName());
             pkColumn.put("javaField", StrUtil.toCamelCase(pkField.getCode()));
             pkColumn.put("javaType", getJavaType(pkField.getType()));
@@ -236,6 +236,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         for (SchemaFieldVo field : fields) {
             Map<String, Object> column = new HashMap<>();
             column.put("columnName", field.getCode());
+            column.put("dictType", field.getDictType());
             column.put("columnComment", field.getName());
             column.put("javaField", StrUtil.toCamelCase(field.getCode()));
             column.put("javaType", getJavaType(field.getType()));
@@ -265,8 +266,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
                 return false;
             }
             LambdaQueryWrapper<SchemaField> lqw = Wrappers.lambdaQuery();
-            lqw.eq(SchemaField::getSchemaName, tableName);
-            lqw.eq(SchemaField::getStatus, "0");
+            lqw.eq(SchemaField::getSchemaId, schemaId);
             // 检查是否已存在字段数据
             List<SchemaFieldVo> existingFields = baseMapper.selectVoList(lqw);
             if (CollUtil.isNotEmpty(existingFields)) {
@@ -280,20 +280,27 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
                 SchemaField field = new SchemaField();
                 field.setSchemaId(schemaId);
                 field.setSchemaName(tableName);
+                field.setDefaultValue((String) columnInfo.get("columnDefault"));
+                field.setComment((String) columnInfo.get("columnComment"));
                 field.setName((String) columnInfo.get("columnComment"));
+                field.setDictType(StrUtil.toCamelCase((String) columnInfo.get("dictType")));
                 field.setCode(StrUtil.toCamelCase((String) columnInfo.get("columnName")));
                 field.setType((String) columnInfo.get("dataType"));
                 field.setLength(Integer.valueOf(String.valueOf(columnInfo.get("columnSize"))));
                 field.setIsPk((Boolean) columnInfo.get("isPrimaryKey") ? "1" : "0");
                 field.setIsRequired(!(Boolean) columnInfo.get("isNullable") ? "1" : "0");
-                field.setIsInsert("1");
-                field.setIsEdit("1");
+                if ("1".equals(field.getIsPk())) {
+                    field.setIsInsert("0");
+                    field.setIsEdit("0");
+                }else {
+                    field.setIsInsert("1");
+                    field.setIsEdit("1");
+                }
                 field.setIsList("1");
                 field.setIsQuery("1");
                 field.setQueryType("EQ");
                 field.setHtmlType(getDefaultHtmlType((String) columnInfo.get("dataType")));
                 field.setSort(sort++);
-                field.setStatus("0");
                 // 如果字段名为空，使用字段代码作为名称
                 if (StringUtils.isBlank(field.getName())) {
                     field.setName(field.getCode());
@@ -363,16 +370,15 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         }
 
         String type = dbType.toLowerCase();
-        if (Objects.equals(type,"int")|| type.contains("tinyint") || type.contains("smallint")) {
+        if (StrUtil.equalsAny(type, "int", "tinyint", "smallint")) {
             return "Integer";
-        } else if (type.contains("bigint")) {
+        } else if (StrUtil.equalsAny(type, "bigint")) {
             return "Long";
-        } else if (type.contains("decimal") || type.contains("numeric") || type.contains("float") || type.contains(
-                "double")) {
+        } else if (StrUtil.equalsAny(type, "decimal", "numeric", "float", "double")) {
             return "BigDecimal";
-        } else if (type.contains("date") || type.contains("time")) {
+        } else if (StrUtil.equalsAny(type, "date", "datetime","timestamp")) {
             return "Date";
-        } else if (type.contains("bit") || type.contains("boolean")) {
+        } else if (StrUtil.equalsAny(type, "bit", "boolean")) {
             return "Boolean";
         } else {
             return "String";
