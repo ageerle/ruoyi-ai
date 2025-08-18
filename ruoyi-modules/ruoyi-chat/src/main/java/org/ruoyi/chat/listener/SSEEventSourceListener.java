@@ -87,7 +87,9 @@ public class SSEEventSourceListener extends EventSourceListener {
                 chatRequest.setPrompt(stringBuffer.toString());
                 // 记录会话token
                 BaseContext.setCurrentToken(token);
-                chatCostService.deductToken(chatRequest);
+                // 先保存助手消息，再发布异步计费事件
+                chatCostService.saveMessage(chatRequest);
+                chatCostService.publishBillingEvent(chatRequest);
                 return;
             }
 
