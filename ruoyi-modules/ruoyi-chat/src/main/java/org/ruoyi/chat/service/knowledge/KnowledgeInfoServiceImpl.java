@@ -89,7 +89,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      * 根据知识库角色查询知识库列表
      */
     @Override
-    public TableDataInfo<KnowledgeInfoVo> queryPageListByRole(PageQuery pageQuery) {
+    public TableDataInfo<KnowledgeInfoVo> queryPageListByRole(KnowledgeInfoBo bo, PageQuery pageQuery) {
         // 查询用户关联角色
         LoginUser loginUser = LoginHelper.getLoginUser();
         if (StringUtils.isEmpty(loginUser.getKroleGroupIds()) || StringUtils.isEmpty(loginUser.getKroleGroupType())) {
@@ -122,8 +122,15 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             return new TableDataInfo<>();
         }
 
-        LambdaQueryWrapper<KnowledgeInfo> lqw = Wrappers.lambdaQuery();
-        lqw.in(KnowledgeInfo::getId, knowledgeRoleRelations.stream().map(KnowledgeRoleRelation::getKnowledgeId).filter(Objects::nonNull).collect(Collectors.toList()));
+        LambdaQueryWrapper<KnowledgeInfo> lqw = buildQueryWrapper(bo);
+        // 在查询用户创建的知识库条件下，拼接角色分配知识库
+        lqw.or(q -> q.in(
+                KnowledgeInfo::getId,
+                knowledgeRoleRelations.stream()
+                        .map(KnowledgeRoleRelation::getKnowledgeId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList())
+        ));
         Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }

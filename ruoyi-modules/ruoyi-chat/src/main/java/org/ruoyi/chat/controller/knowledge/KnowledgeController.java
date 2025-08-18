@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.chat.config.KnowledgeRoleConfig;
 import org.ruoyi.common.core.domain.R;
-import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.log.annotation.Log;
@@ -27,14 +26,7 @@ import org.ruoyi.service.IKnowledgeAttachService;
 import org.ruoyi.service.IKnowledgeFragmentService;
 import org.ruoyi.service.IKnowledgeInfoService;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -90,8 +82,8 @@ public class KnowledgeController extends BaseController {
             bo.setUid(LoginHelper.getUserId());
             return knowledgeInfoService.queryPageList(bo, pageQuery);
         } else {
-            // TODO 自己创建的知识库+角色分配的知识库
-            return knowledgeInfoService.queryPageListByRole(pageQuery);
+            bo.setUid(LoginHelper.getUserId());
+            return knowledgeInfoService.queryPageListByRole(bo, pageQuery);
         }
     }
 
