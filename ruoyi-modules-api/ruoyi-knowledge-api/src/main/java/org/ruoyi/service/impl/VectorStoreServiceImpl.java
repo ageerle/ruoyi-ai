@@ -42,7 +42,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
     private final ConfigService configService;
 
-    private EmbeddingStore<TextSegment> embeddingStore;
+//    private EmbeddingStore<TextSegment> embeddingStore;
     private WeaviateClient client;
 
 
@@ -82,14 +82,14 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 log.info("Schema 创建成功: {}", className);
             }
         }
-        embeddingStore = WeaviateEmbeddingStore.builder()
-                .scheme(protocol)
-                .host(host)
-                .objectClass(className)
-                .scheme(protocol)
-                .avoidDups(true)
-                .consistencyLevel("ALL")
-                .build();
+//        embeddingStore = WeaviateEmbeddingStore.builder()
+//                .scheme(protocol)
+//                .host(host)
+//                .objectClass(className)
+//                .scheme(protocol)
+//                .avoidDups(true)
+//                .consistencyLevel("ALL")
+//                .build();
     }
 
     @Override
@@ -148,7 +148,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         String graphQLQuery = String.format(
                 "{\n" +
                         "  Get {\n" +
-                        "    %s(nearVector: {vector: [%s], certainty: %f} limit: %d) {\n" +
+                        "    %s(nearVector: {vector: [%s]} limit: %d) {\n" +
                         "      text\n" +
                         "      fid\n" +
                         "      kid\n" +
