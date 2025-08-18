@@ -76,6 +76,11 @@ public class ChatModel extends BaseEntity {
     private String apiKey;
 
     /**
+     * 优先级
+     */
+    private Integer priority;
+
+    /**
      * 备注
      */
     private String remark;

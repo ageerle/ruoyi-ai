@@ -75,6 +75,11 @@ public class ChatModelBo extends BaseEntity {
     private String apiHost;
 
     /**
+     * 优先级
+     */
+    private Integer priority;
+
+    /**
      * 密钥
      */
     @NotBlank(message = "密钥不能为空", groups = { AddGroup.class, EditGroup.class })

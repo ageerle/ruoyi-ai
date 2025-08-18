@@ -57,6 +57,12 @@ public interface IChatModelService {
      * 通过模型分类获取模型信息
      */
     ChatModelVo selectModelByCategory(String image);
+    
+    /**
+     * 通过模型分类获取优先级最高的模型信息
+     */
+    ChatModelVo selectModelByCategoryWithHighestPriority(String category);
+    
     /**
      * 获取ppt模型信息
      */
