@@ -136,6 +136,19 @@ public class ChatModelServiceImpl implements IChatModelService {
     public ChatModelVo selectModelByCategory(String  category) {
         return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getCategory, category));
     }
+    
+    /**
+     * 通过模型分类获取优先级最高的模型信息
+     */
+    @Override
+    public ChatModelVo selectModelByCategoryWithHighestPriority(String category) {
+        return baseMapper.selectVoOne(
+            Wrappers.<ChatModel>lambdaQuery()
+                .eq(ChatModel::getCategory, category)
+                .orderByDesc(ChatModel::getPriority)
+                .last("LIMIT 1")
+        );
+    }
 
     @Override
     public ChatModel getPPT() {
