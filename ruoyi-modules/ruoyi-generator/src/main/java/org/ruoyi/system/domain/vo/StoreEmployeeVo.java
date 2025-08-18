@@ -2,7 +2,9 @@ package org.ruoyi.system.domain.vo;
 
     import java.time.LocalDateTime;
     import java.io.Serializable;
-import org.ruoyi.system.domain.StoreEmployee;
+    import org.ruoyi.common.excel.annotation.ExcelDictFormat;
+    import org.ruoyi.common.excel.convert.ExcelDictConvert;
+    import org.ruoyi.system.domain.StoreEmployee;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
