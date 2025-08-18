@@ -2496,11 +2496,56 @@ CREATE TABLE prompt_template
   ROW_FORMAT = Dynamic;
 
 
+DROP TABLE IF EXISTS `dev_schema_group`;
+create table dev_schema_group
+(
+    id          bigint auto_increment comment '主键' primary key,
+    name        varchar(100)                 null comment '分组名称',
+    code        varchar(100)                 null comment '分组编码',
+    icon        varchar(100)                 null comment '图标',
+    remark      varchar(500)                 null comment '备注',
+    del_flag    char        default '0'      null comment '删除标志（0代表存在 2代表删除）',
+    create_dept bigint                       null comment '创建部门',
+    create_by   bigint                       null comment '创建者',
+    create_time datetime                     null comment '创建时间',
+    update_by   bigint                       null comment '更新者',
+    update_time datetime                     null comment '更新时间'
+) ENGINE = InnoDB
+  CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '数据模型分组表';
+
+INSERT INTO dev_schema_group (id, name, code, icon, remark, del_flag,  create_dept, create_by, create_time, update_by, update_time) VALUES
+(1944240213530648567, '系统管理', 'system', 'eos-icons:system-group', '系统默认分组', '0', null, null, '2025-07-13 11:37:28', 1, '2025-07-13 18:42:48');
+INSERT INTO dev_schema_group (id, name, code, icon, remark, del_flag,  create_dept, create_by, create_time, update_by, update_time) VALUES
+(1944240213530648577, '运营管理', 'operator', 'icon-park-outline:appointment', '运营管理', '0', null, null, '2025-07-13 11:39:24', 1, '2025-07-13 18:42:31');
+INSERT INTO dev_schema_group (id, name, code, icon, remark, del_flag,  create_dept, create_by, create_time, update_by, update_time) VALUES
+(1944346023254429697, '在线开发', 'dev', 'carbon:development', '在线开发', '0', null, null, '2025-07-13 18:39:51', 1, '2025-07-13 18:42:07');
+
+
+
+DROP TABLE IF EXISTS `dev_schema`;
+create table dev_schema
+(
+    id               bigint auto_increment comment '主键' primary key,
+    schema_group_id  bigint                       null comment '分组ID',
+    name             varchar(100)                 null comment '模型名称',
+    code             varchar(100)                 null comment '模型编码',
+    table_name       varchar(100)                 null comment '表名',
+    remark           varchar(500)                 null comment '备注',
+    del_flag         char        default '0'      null comment '删除标志（0代表存在 2代表删除）',
+    create_dept      bigint                       null comment '创建部门',
+    create_by        bigint                       null comment '创建者',
+    create_time      datetime                     null comment '创建时间',
+    update_by        bigint                       null comment '更新者',
+    update_time      datetime                     null comment '更新时间'
+) ENGINE = InnoDB
+  CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '数据模型表';
+
 DROP TABLE IF EXISTS `dev_schema_field`;
 create table dev_schema_field
 (
-    id            bigint auto_increment comment '主键'
-        primary key,
+    id            bigint auto_increment comment '主键' primary key,
     schema_id     bigint                        null comment '模型ID',
     schema_name   varchar(64)                   null comment '模型名称',
     name          varchar(100)                  null comment '字段名称',
@@ -2513,17 +2558,6 @@ create table dev_schema_field
     default_value varchar(200)                  null comment '默认值',
     length        int                           null comment '字段长度',
     scale         int                           null comment '小数位数',
-    sort          int                           null comment '排序',
-    status        char         default '0'      null comment '状态（0正常 1停用）',
-    extend_json   text                          null comment '扩展配置',
-    remark        varchar(500)                  null comment '备注',
-    del_flag      char         default '0'      null comment '删除标志（0代表存在 2代表删除）',
-    tenant_id     varchar(20)  default '000000' null comment '租户编号',
-    create_dept   bigint                        null comment '创建部门',
-    create_by     bigint                        null comment '创建者',
-    create_time   datetime                      null comment '创建时间',
-    update_by     bigint                        null comment '更新者',
-    update_time   datetime                      null comment '更新时间',
     is_list       char         default '1'      null comment '是否列表显示（0否 1是）',
     is_query      char         default '1'      null comment '是否查询字段（0否 1是）',
     is_insert     char         default '1'      null comment '是否插入字段（0否 1是）',
@@ -2531,125 +2565,23 @@ create table dev_schema_field
     query_type    varchar(200) default      	null comment '查询方式（EQ等于、NE不等于、GT大于、LT小于、LIKE模糊、BETWEEN范围）',
     html_type     varchar(200) default 'input'  null comment '显示类型（input输入框、textarea文本域、select下拉框、checkbox复选框、radio单选框、datetime日期控件、image图片上传、upload文件上传、editor富文本编辑器）',
     dict_type     varchar(200) default ''       null comment '字典类型',
-    constraint fk_schema_field_schema
-        foreign key (schema_id) references dev_schema (id)
-            on delete cascade
-) comment '数据模型字段表';
-
-create index idx_html_type
-    on dev_schema_field (html_type);
-
-create index idx_is_list
-    on dev_schema_field (is_list);
-
-create index idx_is_query
-    on dev_schema_field (is_query);
-
-create index idx_query_type
-    on dev_schema_field (query_type);
-
-create index idx_schema_field_code
-    on dev_schema_field (code);
-
-create index idx_schema_field_schema_id
-    on dev_schema_field (schema_id);
-
-create index idx_schema_field_status
-    on dev_schema_field (status);
-
-create index idx_schema_field_tenant
-    on dev_schema_field (tenant_id);
+    sort          int                           null comment '排序',
+    del_flag      char         default '0'      null comment '删除标志（0代表存在 2代表删除）',
+    create_dept   bigint                        null comment '创建部门',
+    create_by     bigint                        null comment '创建者',
+    create_time   datetime                      null comment '创建时间',
+    update_by     bigint                        null comment '更新者',
+    update_time   datetime                      null comment '更新时间',
+    remark        varchar(500)                  null comment '备注'
+) ENGINE = InnoDB
+  CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '数据模型字段表';
 
 
-DROP TABLE IF EXISTS `dev_schema`;
-create table dev_schema
-(
-    id               bigint auto_increment comment '主键'
-        primary key,
-    schema_group_id  bigint                       null comment '分组ID',
-    name             varchar(100)                 null comment '模型名称',
-    code             varchar(100)                 null comment '模型编码',
-    table_name       varchar(100)                 null comment '表名',
-    comment          varchar(500)                 null comment '表注释',
-    engine           varchar(50) default 'InnoDB' null comment '存储引擎',
-    list_keys        text                         null comment '列表字段',
-    search_form_keys text                         null comment '搜索表单字段',
-    designer         longtext                     null comment '表单设计',
-    status           char        default '0'      null comment '状态（0正常 1停用）',
-    sort             int                          null comment '排序',
-    remark           varchar(500)                 null comment '备注',
-    del_flag         char        default '0'      null comment '删除标志（0代表存在 2代表删除）',
-    tenant_id        varchar(20) default '000000' null comment '租户编号',
-    create_dept      bigint                       null comment '创建部门',
-    create_by        bigint                       null comment '创建者',
-    create_time      datetime                     null comment '创建时间',
-    update_by        bigint                       null comment '更新者',
-    update_time      datetime                     null comment '更新时间',
-    constraint fk_schema_group
-        foreign key (schema_group_id) references dev_schema_group (id)
-            on delete set null
-)
-    comment '数据模型表';
-
-create index idx_schema_code
-    on dev_schema (code);
-
-create index idx_schema_group_id
-    on dev_schema (schema_group_id);
-
-create index idx_schema_status
-    on dev_schema (status);
-
-create index idx_schema_table_name
-    on dev_schema (table_name);
-
-create index idx_schema_tenant
-    on dev_schema (tenant_id);
-
-
-DROP TABLE IF EXISTS `dev_schema_group`;
-create table dev_schema_group
-(
-    id          bigint auto_increment comment '主键'
-        primary key,
-    name        varchar(100)                 null comment '分组名称',
-    code        varchar(100)                 null comment '分组编码',
-    icon        varchar(100)                 null comment '图标',
-    sort        int                          null comment '排序',
-    status      char        default '0'      null comment '状态（0正常 1停用）',
-    remark      varchar(500)                 null comment '备注',
-    del_flag    char        default '0'      null comment '删除标志（0代表存在 2代表删除）',
-    tenant_id   varchar(20) default '000000' null comment '租户编号',
-    create_dept bigint                       null comment '创建部门',
-    create_by   bigint                       null comment '创建者',
-    create_time datetime                     null comment '创建时间',
-    update_by   bigint                       null comment '更新者',
-    update_time datetime                     null comment '更新时间'
-)
-    comment '数据模型分组表';
-
-create index idx_schema_group_code
-    on dev_schema_group (code);
-
-create index idx_schema_group_status
-    on dev_schema_group (status);
-
-create index idx_schema_group_tenant
-    on dev_schema_group (tenant_id);
-
-
-INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944240213530648567, '系统管理', 'system', 'eos-icons:system-group', 2, '0', '系统默认分组', '0', '000000', null, null, '2025-07-13 11:37:28', 1, '2025-07-13 18:42:48');
-INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944240213530648577, '运营管理', 'operator', 'icon-park-outline:appointment', 1, '0', null, '0', '000000', null, null, '2025-07-13 11:39:24', 1, '2025-07-13 18:42:31');
-INSERT INTO dev_schema_group (id, name, code, icon, sort, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time) VALUES (1944346023254429697, '在线开发', 'dev', 'carbon:development', 3, '0', null, '0', '000000', null, null, '2025-07-13 18:39:51', 1, '2025-07-13 18:42:07');
-
-
-
-
-
+DROP TABLE IF EXISTS `knowledge_role`;
 -- ----------------------------
 -- Table structure for knowledge_role
 -- ----------------------------
-DROP TABLE IF EXISTS `knowledge_role`;
 CREATE TABLE `knowledge_role`  (
                                    `id` bigint NOT NULL COMMENT '知识库角色id',
                                    `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库角色name',
@@ -2664,10 +2596,10 @@ CREATE TABLE `knowledge_role`  (
                                    PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库角色表' ROW_FORMAT = DYNAMIC;
 
+DROP TABLE IF EXISTS `knowledge_role_group`;
 -- ----------------------------
 -- Table structure for knowledge_role_group
 -- ----------------------------
-DROP TABLE IF EXISTS `knowledge_role_group`;
 CREATE TABLE `knowledge_role_group`  (
                                          `id` bigint NOT NULL COMMENT '知识库角色组id',
                                          `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库角色组name',
