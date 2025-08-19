@@ -128,8 +128,8 @@ public class ImageServiceImpl implements IChatService {
         OpenAiStreamClient openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
         List<Message> messages = chatRequest.getMessages();
 
-        // 获取会话token
-        String token = StpUtil.getTokenValue();
+        // 获取会话token（从入口透传，避免非Web线程取值报错）
+        String token = chatRequest.getToken();
         // 创建 SSE 事件源监听器
         SSEEventSourceListener listener = new SSEEventSourceListener(emitter, chatRequest.getUserId(), chatRequest.getSessionId(), token);
 

@@ -58,7 +58,7 @@ public class OpenAIServiceImpl implements IChatService {
             Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
             messages.add(userMessage);
         }
-        String token = StpUtil.getTokenValue();
+        String token = chatRequest.getToken();
         SSEEventSourceListener listener = new SSEEventSourceListener(emitter,chatRequest.getUserId(),chatRequest.getSessionId(), token);
         ChatCompletion completion = ChatCompletion
                 .builder()

@@ -47,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import cn.dev33.satoken.stp.StpUtil;
 
 /**
  * @author ageer
@@ -77,6 +78,12 @@ public class SseServiceImpl implements ISseService {
     public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
         SseEmitter sseEmitter = new SseEmitter(0L);
         try {
+            // 记录当前会话令牌，供异步线程使用
+            try {
+                chatRequest.setToken(StpUtil.getTokenValue());
+            } catch (Exception ignore) {
+                // 保底：无token场景下忽略
+            }
             // 构建消息列表
             buildChatMessageList(chatRequest);
             // 设置对话角色
