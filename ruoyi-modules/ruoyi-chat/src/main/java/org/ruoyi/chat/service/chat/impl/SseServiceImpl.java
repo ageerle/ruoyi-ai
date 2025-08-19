@@ -126,26 +126,31 @@ public class SseServiceImpl implements ISseService {
             // 自动选择模型并获取对应的聊天服务
             IChatService chatService = autoSelectModelAndGetService(chatRequest);
 
-            // 统一重试与降级：封装启动逻辑，并通过ThreadLocal传递失败回调
-            ChatModelVo currentModel = this.chatModelVo;
-            String currentCategory = currentModel.getCategory();
-            ChatRetryHelper.executeWithRetry(
-                currentModel,
-                currentCategory,
-                chatModelService,
-                sseEmitter,
-                (modelForTry, onFailure) -> {
-                    // 替换请求中的模型名称
-                    chatRequest.setModel(modelForTry.getModelName());
-                    // 以 emitter 实例为唯一键注册失败回调
-                    RetryNotifier.setFailureCallback(sseEmitter, onFailure);
-                    try {
-                        autoSelectServiceByCategoryAndInvoke(chatRequest, sseEmitter, modelForTry.getCategory());
-                    } finally {
-                        // 不在此处清理，待下游结束/失败时清理
+            // 仅当 autoSelectModel = true 时，才启用重试与降级
+            if (Boolean.TRUE.equals(chatRequest.getAutoSelectModel())) {
+                ChatModelVo currentModel = this.chatModelVo;
+                String currentCategory = currentModel.getCategory();
+                ChatRetryHelper.executeWithRetry(
+                    currentModel,
+                    currentCategory,
+                    chatModelService,
+                    sseEmitter,
+                    (modelForTry, onFailure) -> {
+                        // 替换请求中的模型名称
+                        chatRequest.setModel(modelForTry.getModelName());
+                        // 以 emitter 实例为唯一键注册失败回调
+                        RetryNotifier.setFailureCallback(sseEmitter, onFailure);
+                        try {
+                            autoSelectServiceByCategoryAndInvoke(chatRequest, sseEmitter, modelForTry.getCategory());
+                        } finally {
+                            // 不在此处清理，待下游结束/失败时清理
+                        }
                     }
-                }
-            );
+                );
+            } else {
+                // 不重试不降级，直接调用
+                chatService.chat(chatRequest, sseEmitter);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(),e);
             SSEUtil.sendErrorEvent(sseEmitter,e.getMessage());
