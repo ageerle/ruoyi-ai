@@ -25,6 +25,6 @@ public class SSEUtil {
         } catch (IOException e) {
             log.error("SSE发送失败: {}", e.getMessage());
         }
-        sseEmitter.complete();
+        // 不立即关闭，由上层策略决定是否继续重试或降级
     }
 }

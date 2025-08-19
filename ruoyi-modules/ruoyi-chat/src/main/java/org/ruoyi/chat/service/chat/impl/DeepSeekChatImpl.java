@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import org.ruoyi.chat.support.RetryNotifier;
 /**
  * deepseek
  */
@@ -57,11 +58,15 @@ public class DeepSeekChatImpl  implements IChatService {
                 @Override
                 public void onError(Throwable error) {
                     System.err.println("错误: " + error.getMessage());
+                    // 通知上层失败，进入重试/降级
+                    RetryNotifier.notifyFailure(chatRequest.getSessionId());
                 }
             });
 
         } catch (Exception e) {
             log.error("deepseek请求失败：{}", e.getMessage());
+            // 同步异常直接通知失败
+            RetryNotifier.notifyFailure(chatRequest.getSessionId());
         }
 
         return emitter;
