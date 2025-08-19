@@ -113,24 +113,24 @@ public class DifyServiceImpl implements IChatService {
                     chatRequestResponse.setSessionId(chatRequest.getSessionId());
                     chatRequestResponse.setPrompt(respMessage.toString());
                     chatCostService.deductToken(chatRequestResponse);
-                    RetryNotifier.clear(chatRequest.getSessionId());
+                    RetryNotifier.clear(emitter);
                 }
 
                 @Override
                 public void onError(ErrorEvent event) {
                     System.err.println("错误: " + event.getMessage());
-                    RetryNotifier.notifyFailure(chatRequest.getSessionId());
+                    RetryNotifier.notifyFailure(emitter);
                 }
 
                 @Override
                 public void onException(Throwable throwable) {
                     System.err.println("异常: " + throwable.getMessage());
-                    RetryNotifier.notifyFailure(chatRequest.getSessionId());
+                    RetryNotifier.notifyFailure(emitter);
                 }
             });
         } catch (Exception e) {
             log.error("dify请求失败：{}", e.getMessage());
-            RetryNotifier.notifyFailure(chatRequest.getSessionId());
+            RetryNotifier.notifyFailure(emitter);
         }
 
         return emitter;

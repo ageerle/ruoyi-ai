@@ -67,15 +67,15 @@ public class OllamaServiceImpl implements IChatService {
                         emitter.send(substr);
                     } catch (IOException e) {
                         SSEUtil.sendErrorEvent(emitter, e.getMessage());
-                        RetryNotifier.notifyFailure(chatRequest.getSessionId());
+                        RetryNotifier.notifyFailure(emitter);
                     }
                 };
                 api.chat(requestModel, streamHandler);
                 emitter.complete();
-                RetryNotifier.clear(chatRequest.getSessionId());
+                RetryNotifier.clear(emitter);
             } catch (Exception e) {
                 SSEUtil.sendErrorEvent(emitter, e.getMessage());
-                RetryNotifier.notifyFailure(chatRequest.getSessionId());
+                RetryNotifier.notifyFailure(emitter);
             }
         });
 

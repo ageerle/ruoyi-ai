@@ -64,12 +64,12 @@ public class CozeServiceImpl implements IChatService {
                             if (ChatEventType.CONVERSATION_CHAT_COMPLETED.equals(event.getEvent())) {
                                 emitter.complete();
                                 log.info("Token usage: {}", event.getChat().getUsage().getTokenCount());
-                                RetryNotifier.clear(chatRequest.getSessionId());
+                                RetryNotifier.clear(emitter);
                             }
                         }
                 );
             } catch (Exception ex) {
-                RetryNotifier.notifyFailure(chatRequest.getSessionId());
+                RetryNotifier.notifyFailure(emitter);
             } finally {
                 coze.shutdownExecutor();
             }

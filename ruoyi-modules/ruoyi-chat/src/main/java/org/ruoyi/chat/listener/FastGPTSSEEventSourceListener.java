@@ -48,9 +48,7 @@ public class FastGPTSSEEventSourceListener extends EventSourceListener {
             if ("flowResponses".equals(type)){
                 emitter.send(data);
                 emitter.complete();
-                if (sessionId != null) {
-                    RetryNotifier.clear(sessionId);
-                }
+                RetryNotifier.clear(emitter);
             } else {
                 emitter.send(data);
             }
@@ -68,26 +66,20 @@ public class FastGPTSSEEventSourceListener extends EventSourceListener {
     @SneakyThrows
     public void onFailure(EventSource eventSource, Throwable t, Response response) {
         if (Objects.isNull(response)) {
-            if (sessionId != null) {
-                SSEUtil.sendErrorEvent(emitter, t != null ? t.getMessage() : "SSE连接失败");
-                RetryNotifier.notifyFailure(sessionId);
-            }
+            SSEUtil.sendErrorEvent(emitter, t != null ? t.getMessage() : "SSE连接失败");
+            RetryNotifier.notifyFailure(emitter);
             return;
         }
         ResponseBody body = response.body();
         if (Objects.nonNull(body)) {
             String msg = body.string();
             log.error("FastGPT  sse连接异常data：{}，异常：{}", msg, t);
-            if (sessionId != null) {
-                SSEUtil.sendErrorEvent(emitter, msg);
-                RetryNotifier.notifyFailure(sessionId);
-            }
+            SSEUtil.sendErrorEvent(emitter, msg);
+            RetryNotifier.notifyFailure(emitter);
         } else {
             log.error("FastGPT sse连接异常data：{}，异常：{}", response, t);
-            if (sessionId != null) {
-                SSEUtil.sendErrorEvent(emitter, String.valueOf(response));
-                RetryNotifier.notifyFailure(sessionId);
-            }
+            SSEUtil.sendErrorEvent(emitter, String.valueOf(response));
+            RetryNotifier.notifyFailure(emitter);
         }
         eventSource.cancel();
     }

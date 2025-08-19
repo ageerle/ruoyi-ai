@@ -51,18 +51,18 @@ public class QianWenAiChatServiceImpl  implements IChatService {
                 public void onCompleteResponse(ChatResponse completeResponse) {
                     emitter.complete();
                     log.info("消息结束，完整消息ID: {}", completeResponse);
-                    org.ruoyi.chat.support.RetryNotifier.clear(chatRequest.getSessionId());
+                    org.ruoyi.chat.support.RetryNotifier.clear(emitter);
                 }
 
                 @Override
                 public void onError(Throwable error) {
                     error.printStackTrace();
-                    org.ruoyi.chat.support.RetryNotifier.notifyFailure(chatRequest.getSessionId());
+                    org.ruoyi.chat.support.RetryNotifier.notifyFailure(emitter);
                 }
             });
         } catch (Exception e) {
             log.error("千问请求失败：{}", e.getMessage());
-            org.ruoyi.chat.support.RetryNotifier.notifyFailure(chatRequest.getSessionId());
+            org.ruoyi.chat.support.RetryNotifier.notifyFailure(emitter);
         }
 
         return emitter;

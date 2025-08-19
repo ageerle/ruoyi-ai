@@ -69,8 +69,8 @@ public class OpenAIServiceImpl implements IChatService {
         try {
             openAiStreamClient.streamChatCompletion(completion, listener);
         } catch (Exception ex) {
-            // 同步异常也触发失败回调，按会话维度
-            RetryNotifier.notifyFailure(chatRequest.getSessionId());
+            // 同步异常也触发失败回调（以 emitter 为键）
+            RetryNotifier.notifyFailure(emitter);
             throw ex;
         }
         return emitter;
