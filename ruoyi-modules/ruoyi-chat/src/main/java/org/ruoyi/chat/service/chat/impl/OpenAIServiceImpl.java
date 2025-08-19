@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import org.ruoyi.chat.support.RetryNotifier;
 
 
 /**
@@ -65,7 +66,13 @@ public class OpenAIServiceImpl implements IChatService {
                 .model(chatRequest.getModel())
                 .stream(true)
                 .build();
-        openAiStreamClient.streamChatCompletion(completion, listener);
+        try {
+            openAiStreamClient.streamChatCompletion(completion, listener);
+        } catch (Exception ex) {
+            // 同步异常也触发失败回调，按会话维度
+            RetryNotifier.notifyFailure(chatRequest.getSessionId());
+            throw ex;
+        }
         return emitter;
     }
 

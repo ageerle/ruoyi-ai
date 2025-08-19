@@ -9,6 +9,8 @@ import org.ruoyi.chat.factory.ChatServiceFactory;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.service.chat.ISseService;
+import org.ruoyi.chat.support.ChatRetryHelper;
+import org.ruoyi.chat.support.RetryNotifier;
 import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.chat.Message;
@@ -116,7 +118,27 @@ public class SseServiceImpl implements ISseService {
             }
             // 自动选择模型并获取对应的聊天服务
             IChatService chatService = autoSelectModelAndGetService(chatRequest);
-            chatService.chat(chatRequest, sseEmitter);
+
+            // 统一重试与降级：封装启动逻辑，并通过ThreadLocal传递失败回调
+            ChatModelVo currentModel = this.chatModelVo;
+            String currentCategory = currentModel.getCategory();
+            ChatRetryHelper.executeWithRetry(
+                currentModel,
+                currentCategory,
+                chatModelService,
+                sseEmitter,
+                (modelForTry, onFailure) -> {
+                    // 替换请求中的模型名称
+                    chatRequest.setModel(modelForTry.getModelName());
+                    // 将回调注册到ThreadLocal，供底层SSE失败时触发
+                    RetryNotifier.setFailureCallback(chatRequest.getSessionId(), onFailure);
+                    try {
+                        autoSelectServiceByCategoryAndInvoke(chatRequest, sseEmitter, modelForTry.getCategory());
+                    } finally {
+                        // 不在此处清理，待下游结束/失败时清理
+                    }
+                }
+            );
         } catch (Exception e) {
             log.error(e.getMessage(),e);
             SSEUtil.sendErrorEvent(sseEmitter,e.getMessage());
@@ -148,6 +170,14 @@ public class SseServiceImpl implements ISseService {
             log.error("模型选择和服务获取失败: {}", e.getMessage(), e);
             throw new IllegalStateException("模型选择和服务获取失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 根据给定分类获取服务并发起调用（避免在降级时重复选择模型）
+     */
+    private void autoSelectServiceByCategoryAndInvoke(ChatRequest chatRequest, SseEmitter sseEmitter, String category) {
+        IChatService service = chatServiceFactory.getChatService(category);
+        service.chat(chatRequest, sseEmitter);
     }
     
     /**

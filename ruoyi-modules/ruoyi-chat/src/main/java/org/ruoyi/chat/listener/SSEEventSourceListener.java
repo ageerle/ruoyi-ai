@@ -21,6 +21,8 @@ import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.ruoyi.chat.util.SSEUtil;
+import org.ruoyi.chat.support.RetryNotifier;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Objects;
@@ -77,6 +79,8 @@ public class SSEEventSourceListener extends EventSourceListener {
             if ("[DONE]".equals(data)) {
                 //成功响应
                 emitter.complete();
+                // 清理失败回调
+                RetryNotifier.clear(sessionId);
                 // 扣除费用
                 ChatRequest chatRequest = new ChatRequest();
                 // 设置对话角色
@@ -115,20 +119,31 @@ public class SSEEventSourceListener extends EventSourceListener {
     @Override
     public void onClosed(EventSource eventSource) {
         log.info("OpenAI关闭sse连接...");
+        // 清理失败回调
+        RetryNotifier.clear(sessionId);
     }
 
     @SneakyThrows
     @Override
     public void onFailure(EventSource eventSource, Throwable t, Response response) {
         if (Objects.isNull(response)) {
+            // 透传错误到前端
+            SSEUtil.sendErrorEvent(emitter, t != null ? t.getMessage() : "SSE连接失败");
+            // 通知重试
+            RetryNotifier.notifyFailure(sessionId);
             return;
         }
         ResponseBody body = response.body();
         if (Objects.nonNull(body)) {
-            log.error("OpenAI  sse连接异常data：{}，异常：{}", body.string(), t);
+            String msg = body.string();
+            log.error("OpenAI  sse连接异常data：{}，异常：{}", msg, t);
+            SSEUtil.sendErrorEvent(emitter, msg);
         } else {
             log.error("OpenAI  sse连接异常data：{}，异常：{}", response, t);
+            SSEUtil.sendErrorEvent(emitter, String.valueOf(response));
         }
+        // 通知重试
+        RetryNotifier.notifyFailure(sessionId);
         eventSource.cancel();
     }
 
