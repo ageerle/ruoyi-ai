@@ -25,6 +25,7 @@ import org.ruoyi.service.IChatSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.ruoyi.chat.support.ChatServiceHelper;
 
 import java.util.Objects;
 import org.ruoyi.chat.support.RetryNotifier;
@@ -119,18 +120,18 @@ public class DifyServiceImpl implements IChatService {
                 @Override
                 public void onError(ErrorEvent event) {
                     System.err.println("错误: " + event.getMessage());
-                    RetryNotifier.notifyFailure(emitter);
+                    ChatServiceHelper.onStreamError(emitter, event.getMessage());
                 }
 
                 @Override
                 public void onException(Throwable throwable) {
                     System.err.println("异常: " + throwable.getMessage());
-                    RetryNotifier.notifyFailure(emitter);
+                    ChatServiceHelper.onStreamError(emitter, throwable.getMessage());
                 }
             });
         } catch (Exception e) {
             log.error("dify请求失败：{}", e.getMessage());
-            RetryNotifier.notifyFailure(emitter);
+            ChatServiceHelper.onStreamError(emitter, e.getMessage());
         }
 
         return emitter;

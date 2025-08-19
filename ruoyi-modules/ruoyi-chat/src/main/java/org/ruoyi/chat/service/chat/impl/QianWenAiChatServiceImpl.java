@@ -14,6 +14,7 @@ import org.ruoyi.service.IChatModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.ruoyi.chat.support.ChatServiceHelper;
 
 
 /**
@@ -57,12 +58,12 @@ public class QianWenAiChatServiceImpl  implements IChatService {
                 @Override
                 public void onError(Throwable error) {
                     error.printStackTrace();
-                    org.ruoyi.chat.support.RetryNotifier.notifyFailure(emitter);
+                    ChatServiceHelper.onStreamError(emitter, error.getMessage());
                 }
             });
         } catch (Exception e) {
             log.error("千问请求失败：{}", e.getMessage());
-            org.ruoyi.chat.support.RetryNotifier.notifyFailure(emitter);
+            ChatServiceHelper.onStreamError(emitter, e.getMessage());
         }
 
         return emitter;
