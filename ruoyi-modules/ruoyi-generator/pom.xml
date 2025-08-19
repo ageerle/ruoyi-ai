@@ -48,6 +48,10 @@
             <groupId>org.apache.velocity</groupId>
             <artifactId>velocity-engine-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-excel</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

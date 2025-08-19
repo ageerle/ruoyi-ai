@@ -207,6 +207,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         Map<String, Object> result = new HashMap<>();
         result.put("schemaGroupCode", schemaGroupVo.getCode());
         result.put("tableName", schema.getTableName());
+        result.put("dictType",schema.getDictType());
         result.put("tableComment", schema.getComment());
         result.put("className", toCamelCase(schema.getTableName(), true));
         result.put("tableCamelName", StrUtil.toCamelCase(schema.getTableName()));
@@ -222,6 +223,8 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         if (pkField != null) {
             Map<String, Object> pkColumn = new HashMap<>();
             pkColumn.put("columnName", pkField.getCode());
+            pkColumn.put("dictType", pkField.getDictType());
+
             pkColumn.put("columnComment", pkField.getName());
             pkColumn.put("javaField", StrUtil.toCamelCase(pkField.getCode()));
             pkColumn.put("javaType", getJavaType(pkField.getType()));
@@ -233,6 +236,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         for (SchemaFieldVo field : fields) {
             Map<String, Object> column = new HashMap<>();
             column.put("columnName", field.getCode());
+            column.put("dictType", field.getDictType());
             column.put("columnComment", field.getName());
             column.put("javaField", StrUtil.toCamelCase(field.getCode()));
             column.put("javaType", getJavaType(field.getType()));
@@ -279,6 +283,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
                 field.setDefaultValue((String) columnInfo.get("columnDefault"));
                 field.setComment((String) columnInfo.get("columnComment"));
                 field.setName((String) columnInfo.get("columnComment"));
+                field.setDictType(StrUtil.toCamelCase((String) columnInfo.get("dictType")));
                 field.setCode(StrUtil.toCamelCase((String) columnInfo.get("columnName")));
                 field.setType((String) columnInfo.get("dataType"));
                 field.setLength(Integer.valueOf(String.valueOf(columnInfo.get("columnSize"))));

@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.CacheConstants;
 import org.ruoyi.common.core.constant.CacheNames;
+import org.ruoyi.common.core.constant.HttpStatus;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.DictService;
 import org.ruoyi.common.core.utils.MapstructUtils;
@@ -50,6 +51,18 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
     private final SysDictTypeMapper baseMapper;
     private final SysDictDataMapper dictDataMapper;
 
+    @Override
+    public TableDataInfo<SysDictTypeVo> selectAll(SysDictTypeBo dictType) {
+        LambdaQueryWrapper<SysDictType> lqw = buildQueryWrapper(dictType);
+        // 2. 查询所有数据（不分页）
+        List<SysDictTypeVo> list = baseMapper.selectVoList(lqw);
+        TableDataInfo<SysDictTypeVo> rspData = new TableDataInfo<>();
+        rspData.setCode(HttpStatus.SUCCESS);  // 200
+        rspData.setMsg("查询成功");
+        rspData.setRows(list);
+        rspData.setTotal(list.size());  // 总数为列表大小
+        return rspData;
+    }
     @Override
     public TableDataInfo<SysDictTypeVo> selectPageDictTypeList(SysDictTypeBo dictType, PageQuery pageQuery) {
         LambdaQueryWrapper<SysDictType> lqw = buildQueryWrapper(dictType);

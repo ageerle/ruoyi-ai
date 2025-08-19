@@ -249,7 +249,7 @@ public class GenTableServiceImpl implements IGenTableService {
             column.put("javaField", javaField);
             column.put("capJavaField", toCamelCase(field.getCode(), true));
 
-            // 布尔值属性（兼容两种格式）
+            // 布尔值dictType属性（兼容两种格式）
             boolean isPk = "1".equals(field.getIsPk());
             boolean isRequired = "1".equals(field.getIsRequired());
             boolean isInsert = "1".equals(field.getIsInsert());

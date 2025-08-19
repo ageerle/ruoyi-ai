@@ -29,7 +29,7 @@ public class ${ClassName} implements Serializable {
         @Version
         #end
         #if($column.isPk==1)
-        @TableId(value = "$column.columnName")
+        @TableId(value = "${column.columnName}", type = IdType.AUTO)
         #end
     private $column.javaType $column.javaField;
 

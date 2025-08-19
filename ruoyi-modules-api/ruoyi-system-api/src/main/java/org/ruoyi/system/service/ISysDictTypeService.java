@@ -16,6 +16,15 @@ import java.util.List;
 public interface ISysDictTypeService {
 
 
+
+/**
+ * Select all dictionary types based on the specified conditions
+ *
+ * @param dictType The business object containing query conditions for dictionary types
+ * @return TableDataInfo containing a list of SysDictTypeVo objects that match the query criteria
+ */
+    TableDataInfo<SysDictTypeVo> selectAll(SysDictTypeBo dictType);
+
     TableDataInfo<SysDictTypeVo> selectPageDictTypeList(SysDictTypeBo dictType, PageQuery pageQuery);
 
     /**

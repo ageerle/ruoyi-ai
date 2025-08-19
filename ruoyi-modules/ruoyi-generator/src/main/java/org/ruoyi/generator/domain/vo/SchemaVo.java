@@ -43,6 +43,11 @@ public class SchemaVo implements Serializable {
      * 表名
      */
     private String tableName;
+    /**
+     * 字典
+     */
+    private String dictType;
+
 
     /**
      * 表注释
