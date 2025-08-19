@@ -137,8 +137,8 @@ public class SseServiceImpl implements ISseService {
                 (modelForTry, onFailure) -> {
                     // 替换请求中的模型名称
                     chatRequest.setModel(modelForTry.getModelName());
-                    // 将回调注册到ThreadLocal，供底层SSE失败时触发
-                    RetryNotifier.setFailureCallback(chatRequest.getSessionId(), onFailure);
+                    // 以 emitter 实例为唯一键注册失败回调
+                    RetryNotifier.setFailureCallback(sseEmitter, onFailure);
                     try {
                         autoSelectServiceByCategoryAndInvoke(chatRequest, sseEmitter, modelForTry.getCategory());
                     } finally {

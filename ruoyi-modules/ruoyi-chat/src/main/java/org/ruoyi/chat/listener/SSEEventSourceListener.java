@@ -79,8 +79,8 @@ public class SSEEventSourceListener extends EventSourceListener {
             if ("[DONE]".equals(data)) {
                 //成功响应
                 emitter.complete();
-                // 清理失败回调
-                RetryNotifier.clear(sessionId);
+                // 清理失败回调（以 emitter 为键）
+                RetryNotifier.clear(emitter);
                 // 扣除费用
                 ChatRequest chatRequest = new ChatRequest();
                 // 设置对话角色
@@ -120,7 +120,7 @@ public class SSEEventSourceListener extends EventSourceListener {
     public void onClosed(EventSource eventSource) {
         log.info("OpenAI关闭sse连接...");
         // 清理失败回调
-        RetryNotifier.clear(sessionId);
+        RetryNotifier.clear(emitter);
     }
 
     @SneakyThrows
@@ -129,8 +129,8 @@ public class SSEEventSourceListener extends EventSourceListener {
         if (Objects.isNull(response)) {
             // 透传错误到前端
             SSEUtil.sendErrorEvent(emitter, t != null ? t.getMessage() : "SSE连接失败");
-            // 通知重试
-            RetryNotifier.notifyFailure(sessionId);
+            // 通知重试（以 emitter 为键）
+            RetryNotifier.notifyFailure(emitter);
             return;
         }
         ResponseBody body = response.body();
@@ -143,7 +143,7 @@ public class SSEEventSourceListener extends EventSourceListener {
             SSEUtil.sendErrorEvent(emitter, String.valueOf(response));
         }
         // 通知重试
-        RetryNotifier.notifyFailure(sessionId);
+        RetryNotifier.notifyFailure(emitter);
         eventSource.cancel();
     }
 
