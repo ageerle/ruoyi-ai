@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.ruoyi.chat.support.RetryNotifier;
 
 
 /**
@@ -66,12 +67,15 @@ public class OllamaServiceImpl implements IChatService {
                         emitter.send(substr);
                     } catch (IOException e) {
                         SSEUtil.sendErrorEvent(emitter, e.getMessage());
+                        RetryNotifier.notifyFailure(chatRequest.getSessionId());
                     }
                 };
                 api.chat(requestModel, streamHandler);
                 emitter.complete();
+                RetryNotifier.clear(chatRequest.getSessionId());
             } catch (Exception e) {
                 SSEUtil.sendErrorEvent(emitter, e.getMessage());
+                RetryNotifier.notifyFailure(chatRequest.getSessionId());
             }
         });
 

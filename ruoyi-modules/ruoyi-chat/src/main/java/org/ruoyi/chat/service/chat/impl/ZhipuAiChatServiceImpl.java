@@ -51,14 +51,16 @@ public class ZhipuAiChatServiceImpl  implements IChatService {
                 @SneakyThrows
                 @Override
                 public void onError(Throwable error) {
-                   // System.out.println(error.getMessage());
+                    // 透传错误并触发重试
                     emitter.send(error.getMessage());
+                    org.ruoyi.chat.support.RetryNotifier.notifyFailure(chatRequest.getSessionId());
                 }
 
                 @Override
                 public void onCompleteResponse(ChatResponse response) {
                     emitter.complete();
                     log.info("消息结束，完整消息ID: {}", response.aiMessage());
+                    org.ruoyi.chat.support.RetryNotifier.clear(chatRequest.getSessionId());
                 }
             };
 
@@ -71,6 +73,7 @@ public class ZhipuAiChatServiceImpl  implements IChatService {
             model.chat(chatRequest.getPrompt(), handler);
         } catch (Exception e) {
             log.error("智谱清言请求失败：{}", e.getMessage());
+            org.ruoyi.chat.support.RetryNotifier.notifyFailure(chatRequest.getSessionId());
         }
 
         return emitter;

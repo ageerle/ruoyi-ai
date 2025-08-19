@@ -33,7 +33,7 @@ public class FastGPTServiceImpl implements IChatService {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         OpenAiStreamClient openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
         List<Message> messages = chatRequest.getMessages();
-        FastGPTSSEEventSourceListener listener = new FastGPTSSEEventSourceListener(emitter);
+        FastGPTSSEEventSourceListener listener = new FastGPTSSEEventSourceListener(emitter, chatRequest.getSessionId());
         FastGPTChatCompletion completion = FastGPTChatCompletion
                 .builder()
                 .messages(messages)
@@ -41,7 +41,12 @@ public class FastGPTServiceImpl implements IChatService {
                 .detail(true)
                 .stream(true)
                 .build();
-        openAiStreamClient.streamChatCompletion(completion, listener);
+        try {
+            openAiStreamClient.streamChatCompletion(completion, listener);
+        } catch (Exception ex) {
+            org.ruoyi.chat.support.RetryNotifier.notifyFailure(chatRequest.getSessionId());
+            throw ex;
+        }
         return emitter;
     }
 
