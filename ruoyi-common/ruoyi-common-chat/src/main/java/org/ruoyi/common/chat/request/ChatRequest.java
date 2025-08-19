@@ -77,4 +77,9 @@ public class ChatRequest {
      */
     private Boolean autoSelectModel;
 
+    /**
+     * 会话令牌（为避免在非Web线程中获取Request，入口处注入）
+     */
+    private String token;
+
 }
