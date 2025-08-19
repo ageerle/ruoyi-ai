@@ -32,6 +32,14 @@ public class SysDictTypeController extends BaseController {
     private final ISysDictTypeService dictTypeService;
 
     /**
+     * 查询所有字典类型列表
+     */
+
+    @GetMapping("/all")
+    public TableDataInfo<SysDictTypeVo> all(SysDictTypeBo dictType, PageQuery pageQuery) {
+        return dictTypeService.selectAll(dictType);
+    }
+    /**
      * 查询字典类型列表
      */
     @SaCheckPermission("system:dict:list")
