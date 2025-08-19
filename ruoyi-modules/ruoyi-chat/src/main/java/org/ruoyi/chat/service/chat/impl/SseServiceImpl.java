@@ -129,23 +129,20 @@ public class SseServiceImpl implements ISseService {
      */
     private IChatService autoSelectModelAndGetService(ChatRequest chatRequest) {
         try {
-            // 处理特殊模型类型
-            if ("gpt-image".equals(chatRequest.getModel())) {
+            if (Boolean.TRUE.equals(chatRequest.getHasAttachment())) {
                 chatModelVo = selectModelByCategory("image");
-                return chatServiceFactory.getChatService(chatModelVo.getCategory());
+            } else if (Boolean.TRUE.equals(chatRequest.getAutoSelectModel())) {
+                chatModelVo = selectModelByCategory("chat");
+            } else {
+                chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
             }
             
-            // 根据模型名称获取模型分类，然后获取该分类下优先级最高的模型
-            ChatModelVo tempModel = chatModelService.selectModelByName(chatRequest.getModel());
-            if (tempModel == null) {
+            if (chatModelVo == null) {
                 throw new IllegalStateException("未找到模型名称：" + chatRequest.getModel());
             }
             
-            chatModelVo = selectModelByCategory(tempModel.getCategory());
-            
             // 直接返回对应的聊天服务
             return chatServiceFactory.getChatService(chatModelVo.getCategory());
-            
         } catch (Exception e) {
             log.error("模型选择和服务获取失败: {}", e.getMessage(), e);
             throw new IllegalStateException("模型选择和服务获取失败: " + e.getMessage());
