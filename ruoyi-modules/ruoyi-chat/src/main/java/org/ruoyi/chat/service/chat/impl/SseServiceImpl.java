@@ -140,7 +140,8 @@ public class SseServiceImpl implements ISseService {
             if (chatModelVo == null) {
                 throw new IllegalStateException("未找到模型名称：" + chatRequest.getModel());
             }
-            
+            // 自动设置请求参数中的模型名称
+            chatRequest.setModel(chatModelVo.getModelName());
             // 直接返回对应的聊天服务
             return chatServiceFactory.getChatService(chatModelVo.getCategory());
         } catch (Exception e) {
