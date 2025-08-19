@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Objects;
+import org.ruoyi.chat.support.RetryNotifier;
+import org.ruoyi.chat.util.SSEUtil;
 
 @Slf4j
 @Component
@@ -21,10 +23,16 @@ import java.util.Objects;
 public class FastGPTSSEEventSourceListener extends EventSourceListener {
 
     private SseEmitter emitter;
+    private Long sessionId;
 
     @Autowired(required = false)
     public FastGPTSSEEventSourceListener(SseEmitter emitter) {
         this.emitter = emitter;
+    }
+
+    public FastGPTSSEEventSourceListener(SseEmitter emitter, Long sessionId) {
+        this.emitter = emitter;
+        this.sessionId = sessionId;
     }
 
     @Override
@@ -40,6 +48,9 @@ public class FastGPTSSEEventSourceListener extends EventSourceListener {
             if ("flowResponses".equals(type)){
                 emitter.send(data);
                 emitter.complete();
+                if (sessionId != null) {
+                    RetryNotifier.clear(sessionId);
+                }
             } else {
                 emitter.send(data);
             }
@@ -57,13 +68,26 @@ public class FastGPTSSEEventSourceListener extends EventSourceListener {
     @SneakyThrows
     public void onFailure(EventSource eventSource, Throwable t, Response response) {
         if (Objects.isNull(response)) {
+            if (sessionId != null) {
+                SSEUtil.sendErrorEvent(emitter, t != null ? t.getMessage() : "SSE连接失败");
+                RetryNotifier.notifyFailure(sessionId);
+            }
             return;
         }
         ResponseBody body = response.body();
         if (Objects.nonNull(body)) {
-            log.error("FastGPT  sse连接异常data：{}，异常：{}", body.string(), t);
+            String msg = body.string();
+            log.error("FastGPT  sse连接异常data：{}，异常：{}", msg, t);
+            if (sessionId != null) {
+                SSEUtil.sendErrorEvent(emitter, msg);
+                RetryNotifier.notifyFailure(sessionId);
+            }
         } else {
             log.error("FastGPT sse连接异常data：{}，异常：{}", response, t);
+            if (sessionId != null) {
+                SSEUtil.sendErrorEvent(emitter, String.valueOf(response));
+                RetryNotifier.notifyFailure(sessionId);
+            }
         }
         eventSource.cancel();
     }

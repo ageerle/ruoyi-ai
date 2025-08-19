@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Objects;
+import org.ruoyi.chat.support.RetryNotifier;
 
 /**
  * dify 聊天管理
@@ -112,20 +113,24 @@ public class DifyServiceImpl implements IChatService {
                     chatRequestResponse.setSessionId(chatRequest.getSessionId());
                     chatRequestResponse.setPrompt(respMessage.toString());
                     chatCostService.deductToken(chatRequestResponse);
+                    RetryNotifier.clear(chatRequest.getSessionId());
                 }
 
                 @Override
                 public void onError(ErrorEvent event) {
                     System.err.println("错误: " + event.getMessage());
+                    RetryNotifier.notifyFailure(chatRequest.getSessionId());
                 }
 
                 @Override
                 public void onException(Throwable throwable) {
                     System.err.println("异常: " + throwable.getMessage());
+                    RetryNotifier.notifyFailure(chatRequest.getSessionId());
                 }
             });
         } catch (Exception e) {
             log.error("dify请求失败：{}", e.getMessage());
+            RetryNotifier.notifyFailure(chatRequest.getSessionId());
         }
 
         return emitter;
