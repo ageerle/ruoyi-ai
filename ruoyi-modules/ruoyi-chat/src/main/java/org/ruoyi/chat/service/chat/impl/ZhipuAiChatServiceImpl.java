@@ -15,6 +15,7 @@ import org.ruoyi.service.IChatModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.ruoyi.chat.support.ChatServiceHelper;
 
 
 
@@ -51,9 +52,7 @@ public class ZhipuAiChatServiceImpl  implements IChatService {
                 @SneakyThrows
                 @Override
                 public void onError(Throwable error) {
-                    // 透传错误并触发重试（以 emitter 为键）
-                    emitter.send(error.getMessage());
-                    org.ruoyi.chat.support.RetryNotifier.notifyFailure(emitter);
+                    ChatServiceHelper.onStreamError(emitter, error.getMessage());
                 }
 
                 @Override
@@ -73,7 +72,7 @@ public class ZhipuAiChatServiceImpl  implements IChatService {
             model.chat(chatRequest.getPrompt(), handler);
         } catch (Exception e) {
             log.error("智谱清言请求失败：{}", e.getMessage());
-            org.ruoyi.chat.support.RetryNotifier.notifyFailure(emitter);
+            ChatServiceHelper.onStreamError(emitter, e.getMessage());
         }
 
         return emitter;

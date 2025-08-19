@@ -39,6 +39,13 @@ public class RetryNotifier {
             cb.run();
         }
     }
+
+    public static boolean hasCallback(Object emitterLike) {
+        if (emitterLike == null) {
+            return false;
+        }
+        return FAILURE_CALLBACKS.containsKey(keyOf(emitterLike));
+    }
 }
 
 

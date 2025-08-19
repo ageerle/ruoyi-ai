@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.ruoyi.chat.support.RetryNotifier;
+import org.ruoyi.chat.support.ChatServiceHelper;
 
 /**
  * 扣子聊天管理
@@ -69,7 +70,7 @@ public class CozeServiceImpl implements IChatService {
                         }
                 );
             } catch (Exception ex) {
-                RetryNotifier.notifyFailure(emitter);
+                ChatServiceHelper.onStreamError(emitter, ex.getMessage());
             } finally {
                 coze.shutdownExecutor();
             }

@@ -1,12 +1,12 @@
 package org.ruoyi.chat.service.chat.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import io.modelcontextprotocol.client.McpSyncClient;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.config.ChatConfig;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.listener.SSEEventSourceListener;
 import org.ruoyi.chat.service.chat.IChatService;
+import org.ruoyi.chat.support.ChatServiceHelper;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
-import org.ruoyi.chat.support.RetryNotifier;
 
 
 /**
@@ -58,8 +57,7 @@ public class OpenAIServiceImpl implements IChatService {
             Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
             messages.add(userMessage);
         }
-        String token = chatRequest.getToken();
-        SSEEventSourceListener listener = new SSEEventSourceListener(emitter,chatRequest.getUserId(),chatRequest.getSessionId(), token);
+        SSEEventSourceListener listener = ChatServiceHelper.createOpenAiListener(emitter, chatRequest);
         ChatCompletion completion = ChatCompletion
                 .builder()
                 .messages(messages)
@@ -69,8 +67,7 @@ public class OpenAIServiceImpl implements IChatService {
         try {
             openAiStreamClient.streamChatCompletion(completion, listener);
         } catch (Exception ex) {
-            // 同步异常也触发失败回调（以 emitter 为键）
-            RetryNotifier.notifyFailure(emitter);
+            ChatServiceHelper.onStreamError(emitter, ex.getMessage());
             throw ex;
         }
         return emitter;

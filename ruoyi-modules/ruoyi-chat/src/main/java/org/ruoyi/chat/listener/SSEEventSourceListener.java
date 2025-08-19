@@ -46,12 +46,15 @@ public class SSEEventSourceListener extends EventSourceListener {
 
     private String token;
 
+    private boolean retryEnabled;
+
     @Autowired(required = false)
-    public SSEEventSourceListener(SseEmitter emitter,Long userId,Long sessionId, String token) {
+    public SSEEventSourceListener(SseEmitter emitter,Long userId,Long sessionId, String token, boolean retryEnabled) {
         this.emitter = emitter;
         this.userId = userId;
         this.sessionId = sessionId;
         this.token = token;
+        this.retryEnabled = retryEnabled;
     }
 
 
@@ -129,8 +132,12 @@ public class SSEEventSourceListener extends EventSourceListener {
         if (Objects.isNull(response)) {
             // 透传错误到前端
             SSEUtil.sendErrorEvent(emitter, t != null ? t.getMessage() : "SSE连接失败");
-            // 通知重试（以 emitter 为键）
-            RetryNotifier.notifyFailure(emitter);
+            if (retryEnabled) {
+                // 通知重试（以 emitter 为键）
+                RetryNotifier.notifyFailure(emitter);
+            } else {
+                emitter.complete();
+            }
             return;
         }
         ResponseBody body = response.body();
@@ -142,8 +149,12 @@ public class SSEEventSourceListener extends EventSourceListener {
             log.error("OpenAI  sse连接异常data：{}，异常：{}", response, t);
             SSEUtil.sendErrorEvent(emitter, String.valueOf(response));
         }
-        // 通知重试
-        RetryNotifier.notifyFailure(emitter);
+        if (retryEnabled) {
+            // 通知重试
+            RetryNotifier.notifyFailure(emitter);
+        } else {
+            emitter.complete();
+        }
         eventSource.cancel();
     }
 
