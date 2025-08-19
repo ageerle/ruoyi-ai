@@ -67,4 +67,14 @@ public class ChatRequest {
      */
     private Long uuid;
 
+    /**
+     * 是否有附件
+     */
+    private Boolean hasAttachment;
+
+    /**
+     * 是否自动切换模型
+     */
+    private Boolean autoSelectModel;
+
 }
