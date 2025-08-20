@@ -9,13 +9,13 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatService;
+import org.ruoyi.chat.support.ChatServiceHelper;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.IChatModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 /**
  * deepseek
  */
@@ -57,11 +57,14 @@ public class DeepSeekChatImpl  implements IChatService {
                 @Override
                 public void onError(Throwable error) {
                     System.err.println("错误: " + error.getMessage());
+                    ChatServiceHelper.onStreamError(emitter, error.getMessage());
                 }
             });
 
         } catch (Exception e) {
             log.error("deepseek请求失败：{}", e.getMessage());
+            // 同步异常直接通知失败
+            ChatServiceHelper.onStreamError(emitter, e.getMessage());
         }
 
         return emitter;

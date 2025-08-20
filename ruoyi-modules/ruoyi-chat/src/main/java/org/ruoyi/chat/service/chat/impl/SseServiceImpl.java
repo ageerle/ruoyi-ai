@@ -9,6 +9,8 @@ import org.ruoyi.chat.factory.ChatServiceFactory;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.service.chat.ISseService;
+import org.ruoyi.chat.support.ChatRetryHelper;
+import org.ruoyi.chat.support.RetryNotifier;
 import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.entity.Tts.TextToSpeech;
 import org.ruoyi.common.chat.entity.chat.Message;
@@ -45,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import cn.dev33.satoken.stp.StpUtil;
 
 /**
  * @author ageer
@@ -75,6 +78,12 @@ public class SseServiceImpl implements ISseService {
     public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
         SseEmitter sseEmitter = new SseEmitter(0L);
         try {
+            // 记录当前会话令牌，供异步线程使用
+            try {
+                chatRequest.setToken(StpUtil.getTokenValue());
+            } catch (Exception ignore) {
+                // 保底：无token场景下忽略
+            }
             // 构建消息列表
             buildChatMessageList(chatRequest);
             // 设置对话角色
@@ -113,14 +122,84 @@ public class SseServiceImpl implements ISseService {
                     chatRequest.setSessionId(chatSessionBo.getId());
                 }
             }
-            // 根据模型分类调用不同的处理逻辑
-            IChatService chatService = chatServiceFactory.getChatService(chatModelVo.getCategory());
-            chatService.chat(chatRequest, sseEmitter);
+            // 自动选择模型并获取对应的聊天服务
+            IChatService chatService = autoSelectModelAndGetService(chatRequest);
+
+            // 仅当 autoSelectModel = true 时，才启用重试与降级
+            if (Boolean.TRUE.equals(chatRequest.getAutoSelectModel())) {
+                ChatModelVo currentModel = this.chatModelVo;
+                String currentCategory = currentModel.getCategory();
+                ChatRetryHelper.executeWithRetry(
+                    currentModel,
+                    currentCategory,
+                    chatModelService,
+                    sseEmitter,
+                    (modelForTry, onFailure) -> {
+                        // 替换请求中的模型名称
+                        chatRequest.setModel(modelForTry.getModelName());
+                        // 以 emitter 实例为唯一键注册失败回调
+                        RetryNotifier.setFailureCallback(sseEmitter, onFailure);
+                        try {
+                            autoSelectServiceByCategoryAndInvoke(chatRequest, sseEmitter, modelForTry.getCategory());
+                        } finally {
+                            // 不在此处清理，待下游结束/失败时清理
+                        }
+                    }
+                );
+            } else {
+                // 不重试不降级，直接调用
+                chatService.chat(chatRequest, sseEmitter);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(),e);
             SSEUtil.sendErrorEvent(sseEmitter,e.getMessage());
         }
         return sseEmitter;
+    }
+
+    /**
+     * 自动选择模型并获取对应的聊天服务
+     */
+    private IChatService autoSelectModelAndGetService(ChatRequest chatRequest) {
+        try {
+            if (Boolean.TRUE.equals(chatRequest.getHasAttachment())) {
+                chatModelVo = selectModelByCategory("image");
+            } else if (Boolean.TRUE.equals(chatRequest.getAutoSelectModel())) {
+                chatModelVo = selectModelByCategory("chat");
+            } else {
+                chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+            }
+            
+            if (chatModelVo == null) {
+                throw new IllegalStateException("未找到模型名称：" + chatRequest.getModel());
+            }
+            // 自动设置请求参数中的模型名称
+            chatRequest.setModel(chatModelVo.getModelName());
+            // 直接返回对应的聊天服务
+            return chatServiceFactory.getChatService(chatModelVo.getCategory());
+        } catch (Exception e) {
+            log.error("模型选择和服务获取失败: {}", e.getMessage(), e);
+            throw new IllegalStateException("模型选择和服务获取失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 根据给定分类获取服务并发起调用（避免在降级时重复选择模型）
+     */
+    private void autoSelectServiceByCategoryAndInvoke(ChatRequest chatRequest, SseEmitter sseEmitter, String category) {
+        IChatService service = chatServiceFactory.getChatService(category);
+        service.chat(chatRequest, sseEmitter);
+    }
+    
+    /**
+     * 根据分类选择优先级最高的模型
+     */
+    private ChatModelVo selectModelByCategory(String category) {
+        ChatModelVo model = chatModelService.selectModelByCategoryWithHighestPriority(category);
+        if (model == null) {
+            throw new IllegalStateException("未找到" + category + "分类的模型配置");
+        }
+        return model;
     }
 
     /**
@@ -144,66 +223,20 @@ public class SseServiceImpl implements ISseService {
      *  构建消息列表
      */
     private void buildChatMessageList(ChatRequest chatRequest){
-        String sysPrompt;
-        // 矫正模型名称 如果是gpt-image 则查询image类型模型 获取模型名称
-        if(chatRequest.getModel().equals("gpt-image")) {
-            chatModelVo = chatModelService.selectModelByCategory("image");
-            if (chatModelVo == null) {
-                log.error("未找到image类型的模型配置");
-                throw new IllegalStateException("未找到image类型的模型配置");
-            }
-        }else{
-            chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-        }
-        // 获取对话消息列表
         List<Message> messages = chatRequest.getMessages();
-        // 查询向量库相关信息加入到上下文
-        if(StringUtils.isNotEmpty(chatRequest.getKid())){
-            List<Message> knMessages = new ArrayList<>();
-            String content = messages.get(messages.size() - 1).getContent().toString();
-            // 通过kid查询知识库信息
-            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKid()));
-            // 查询向量模型配置信息
-            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
-
-            QueryVectorBo queryVectorBo = new QueryVectorBo();
-            queryVectorBo.setQuery(content);
-            queryVectorBo.setKid(chatRequest.getKid());
-            queryVectorBo.setApiKey(chatModel.getApiKey());
-            queryVectorBo.setBaseUrl(chatModel.getApiHost());
-            queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
-            queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
-            queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
-            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
-            for (String prompt : nearestList) {
-                Message userMessage = Message.builder().content(prompt).role(Message.Role.USER).build();
-                knMessages.add(userMessage);
-            }
-            messages.addAll(knMessages);
-            // 设置知识库系统提示词
-            sysPrompt = knowledgeInfoVo.getSystemPrompt();
-            if(StringUtils.isEmpty(sysPrompt)){
-                sysPrompt ="###角色设定\n" +
-                        "你是一个智能知识助手，专注于利用上下文中的信息来提供准确和相关的回答。\n" +
-                        "###指令\n" +
-                        "当用户的问题与上下文知识匹配时，利用上下文信息进行回答。如果问题与上下文不匹配，运用自身的推理能力生成合适的回答。\n" +
-                        "###限制\n" +
-                        "确保回答清晰简洁，避免提供不必要的细节。始终保持语气友好" +
-                        "当前时间："+ DateUtils.getDate();
-            }
-        }else {
-            sysPrompt = chatModelVo.getSystemPrompt();
-            if(StringUtils.isEmpty(sysPrompt)){
-                sysPrompt ="你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
-                        "当前时间："+ DateUtils.getDate()+
-                        "#注意：回复之前注意结合上下文和工具返回内容进行回复。";
-            }
-        }
-        // 设置系统默认提示词
-        Message sysMessage = Message.builder().content(sysPrompt).role(Message.Role.SYSTEM).build();
-        messages.add(0,sysMessage);
-
+        
+        // 处理知识库相关逻辑
+        String sysPrompt = processKnowledgeBase(chatRequest, messages);
+        
+        // 设置系统提示词
+        Message sysMessage = Message.builder()
+                .content(sysPrompt)
+                .role(Message.Role.SYSTEM)
+                .build();
+        messages.add(0, sysMessage);
+        
         chatRequest.setSysPrompt(sysPrompt);
+        
         // 用户对话内容
         String chatString = null;
         // 获取用户对话信息
@@ -212,11 +245,112 @@ public class SseServiceImpl implements ISseService {
             if (CollectionUtil.isNotEmpty(listContent)) {
                 chatString = listContent.get(0).toString();
             }
-        } else if (content instanceof String) {
-            chatString = (String) content;
+        } else {
+            chatString = content.toString();
         }
-        // 设置对话信息
         chatRequest.setPrompt(chatString);
+    }
+    
+    /**
+     * 处理知识库相关逻辑
+     */
+    private String processKnowledgeBase(ChatRequest chatRequest, List<Message> messages) {
+        if (StringUtils.isEmpty(chatRequest.getKid())) {
+            return getDefaultSystemPrompt();
+        }
+        
+        try {
+            // 查询知识库信息
+            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKid()));
+            if (knowledgeInfoVo == null) {
+                log.warn("知识库信息不存在，kid: {}", chatRequest.getKid());
+                return getDefaultSystemPrompt();
+            }
+            
+            // 查询向量模型配置信息
+            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
+            if (chatModel == null) {
+                log.warn("向量模型配置不存在，模型名称: {}", knowledgeInfoVo.getEmbeddingModelName());
+                return getDefaultSystemPrompt();
+            }
+            
+            // 构建向量查询参数
+            QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
+            
+            // 获取向量查询结果
+            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
+            
+            // 添加知识库消息到上下文
+            addKnowledgeMessages(messages, nearestList);
+            
+            // 返回知识库系统提示词
+            return getKnowledgeSystemPrompt(knowledgeInfoVo);
+            
+        } catch (Exception e) {
+            log.error("处理知识库信息失败: {}", e.getMessage(), e);
+            return getDefaultSystemPrompt();
+        }
+    }
+    
+    /**
+     * 构建向量查询参数
+     */
+    private QueryVectorBo buildQueryVectorBo(ChatRequest chatRequest, KnowledgeInfoVo knowledgeInfoVo, ChatModelVo chatModel) {
+        String content = chatRequest.getMessages().get(chatRequest.getMessages().size() - 1).getContent().toString();
+        
+        QueryVectorBo queryVectorBo = new QueryVectorBo();
+        queryVectorBo.setQuery(content);
+        queryVectorBo.setKid(chatRequest.getKid());
+        queryVectorBo.setApiKey(chatModel.getApiKey());
+        queryVectorBo.setBaseUrl(chatModel.getApiHost());
+        queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
+        queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
+        queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
+        
+        return queryVectorBo;
+    }
+    
+    /**
+     * 添加知识库消息到上下文
+     */
+    private void addKnowledgeMessages(List<Message> messages, List<String> nearestList) {
+        for (String prompt : nearestList) {
+            Message userMessage = Message.builder()
+                    .content(prompt)
+                    .role(Message.Role.USER)
+                    .build();
+            messages.add(userMessage);
+        }
+    }
+    
+    /**
+     * 获取知识库系统提示词
+     */
+    private String getKnowledgeSystemPrompt(KnowledgeInfoVo knowledgeInfoVo) {
+        String sysPrompt = knowledgeInfoVo.getSystemPrompt();
+        if (StringUtils.isEmpty(sysPrompt)) {
+            sysPrompt = "###角色设定\n" +
+                    "你是一个智能知识助手，专注于利用上下文中的信息来提供准确和相关的回答。\n" +
+                    "###指令\n" +
+                    "当用户的问题与上下文知识匹配时，利用上下文信息进行回答。如果问题与上下文不匹配，运用自身的推理能力生成合适的回答。\n" +
+                    "###限制\n" +
+                    "确保回答清晰简洁，避免提供不必要的细节。始终保持语气友好\n" +
+                    "当前时间：" + DateUtils.getDate();
+        }
+        return sysPrompt;
+    }
+    
+    /**
+     * 获取默认系统提示词
+     */
+    private String getDefaultSystemPrompt() {
+        String sysPrompt = chatModelVo != null ? chatModelVo.getSystemPrompt() : null;
+        if (StringUtils.isEmpty(sysPrompt)) {
+            sysPrompt = "你是一个由RuoYI-AI开发的人工智能助手，名字叫熊猫助手。你擅长中英文对话，能够理解并处理各种问题，提供安全、有帮助、准确的回答。" +
+                    "当前时间：" + DateUtils.getDate() +
+                    "#注意：回复之前注意结合上下文和工具返回内容进行回复。";
+        }
+        return sysPrompt;
     }
 
 

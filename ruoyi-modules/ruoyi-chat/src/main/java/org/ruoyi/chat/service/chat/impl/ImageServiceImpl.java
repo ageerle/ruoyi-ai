@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
+import org.ruoyi.chat.support.ChatServiceHelper;
 
 /**
  * 图片识别模型
@@ -128,10 +129,10 @@ public class ImageServiceImpl implements IChatService {
         OpenAiStreamClient openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
         List<Message> messages = chatRequest.getMessages();
 
-        // 获取会话token
-        String token = StpUtil.getTokenValue();
+        // 获取会话token（从入口透传，避免非Web线程取值报错）
+        String token = chatRequest.getToken();
         // 创建 SSE 事件源监听器
-        SSEEventSourceListener listener = new SSEEventSourceListener(emitter, chatRequest.getUserId(), chatRequest.getSessionId(), token);
+        SSEEventSourceListener listener = ChatServiceHelper.createOpenAiListener(emitter, chatRequest);
 
         // 构建聊天完成请求
         ChatCompletion completion = ChatCompletion
@@ -142,7 +143,12 @@ public class ImageServiceImpl implements IChatService {
                 .build();
 
         // 发起流式聊天完成请求
-        openAiStreamClient.streamChatCompletion(completion, listener);
+        try {
+            openAiStreamClient.streamChatCompletion(completion, listener);
+        } catch (Exception ex) {
+            ChatServiceHelper.onStreamError(emitter, ex.getMessage());
+            throw ex;
+        }
 
         return emitter;
     }

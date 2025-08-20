@@ -136,6 +136,33 @@ public class ChatModelServiceImpl implements IChatModelService {
     public ChatModelVo selectModelByCategory(String  category) {
         return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getCategory, category));
     }
+    
+    /**
+     * 通过模型分类获取优先级最高的模型信息
+     */
+    @Override
+    public ChatModelVo selectModelByCategoryWithHighestPriority(String category) {
+        return baseMapper.selectVoOne(
+            Wrappers.<ChatModel>lambdaQuery()
+                .eq(ChatModel::getCategory, category)
+                .orderByDesc(ChatModel::getPriority)
+                .last("LIMIT 1")
+        );
+    }
+
+    /**
+     * 在同一分类下，查找优先级小于当前优先级的最高优先级模型（用于降级）。
+     */
+    @Override
+    public ChatModelVo selectFallbackModelByCategoryAndLessPriority(String category, Integer currentPriority) {
+        return baseMapper.selectVoOne(
+            Wrappers.<ChatModel>lambdaQuery()
+                .eq(ChatModel::getCategory, category)
+                .lt(ChatModel::getPriority, currentPriority)
+                .orderByDesc(ChatModel::getPriority)
+                .last("LIMIT 1")
+        );
+    }
 
     @Override
     public ChatModel getPPT() {

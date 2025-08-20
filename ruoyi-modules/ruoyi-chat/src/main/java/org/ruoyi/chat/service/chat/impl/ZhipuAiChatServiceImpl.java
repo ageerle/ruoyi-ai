@@ -15,6 +15,7 @@ import org.ruoyi.service.IChatModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.ruoyi.chat.support.ChatServiceHelper;
 
 
 
@@ -51,14 +52,14 @@ public class ZhipuAiChatServiceImpl  implements IChatService {
                 @SneakyThrows
                 @Override
                 public void onError(Throwable error) {
-                   // System.out.println(error.getMessage());
-                    emitter.send(error.getMessage());
+                    ChatServiceHelper.onStreamError(emitter, error.getMessage());
                 }
 
                 @Override
                 public void onCompleteResponse(ChatResponse response) {
                     emitter.complete();
                     log.info("消息结束，完整消息ID: {}", response.aiMessage());
+                    org.ruoyi.chat.support.RetryNotifier.clear(emitter);
                 }
             };
 
@@ -71,6 +72,7 @@ public class ZhipuAiChatServiceImpl  implements IChatService {
             model.chat(chatRequest.getPrompt(), handler);
         } catch (Exception e) {
             log.error("智谱清言请求失败：{}", e.getMessage());
+            ChatServiceHelper.onStreamError(emitter, e.getMessage());
         }
 
         return emitter;

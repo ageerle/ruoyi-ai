@@ -20,6 +20,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.ruoyi.chat.support.RetryNotifier;
+import org.ruoyi.chat.support.ChatServiceHelper;
 
 /**
  * 扣子聊天管理
@@ -53,19 +55,25 @@ public class CozeServiceImpl implements IChatService {
         Flowable<ChatEvent> resp = coze.chat().stream(req);
         ExecutorService executor = Executors.newFixedThreadPool(10);
         executor.submit(() -> {
-            resp.blockingForEach(
-                    event -> {
-                        if (ChatEventType.CONVERSATION_MESSAGE_DELTA.equals(event.getEvent())) {
-                            emitter.send(event.getMessage().getContent());
-                            log.info("coze: {}", event.getMessage().getContent());
+            try {
+                resp.blockingForEach(
+                        event -> {
+                            if (ChatEventType.CONVERSATION_MESSAGE_DELTA.equals(event.getEvent())) {
+                                emitter.send(event.getMessage().getContent());
+                                log.info("coze: {}", event.getMessage().getContent());
+                            }
+                            if (ChatEventType.CONVERSATION_CHAT_COMPLETED.equals(event.getEvent())) {
+                                emitter.complete();
+                                log.info("Token usage: {}", event.getChat().getUsage().getTokenCount());
+                                RetryNotifier.clear(emitter);
+                            }
                         }
-                        if (ChatEventType.CONVERSATION_CHAT_COMPLETED.equals(event.getEvent())) {
-                            emitter.complete();
-                            log.info("Token usage: {}", event.getChat().getUsage().getTokenCount());
-                        }
-                    }
-            );
-            coze.shutdownExecutor();
+                );
+            } catch (Exception ex) {
+                ChatServiceHelper.onStreamError(emitter, ex.getMessage());
+            } finally {
+                coze.shutdownExecutor();
+            }
         });
 
 
