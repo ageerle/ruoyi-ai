@@ -46,4 +46,11 @@ public interface IPromptTemplateService {
      * 校验并批量删除提示词模板信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 根据分类查询提示词模板
+     *
+     * @param category 分类
+     */
+    PromptTemplateVo queryByCategory(String category);
 }

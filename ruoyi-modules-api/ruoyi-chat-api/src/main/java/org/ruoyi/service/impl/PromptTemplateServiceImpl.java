@@ -109,4 +109,13 @@ public class PromptTemplateServiceImpl implements IPromptTemplateService {
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
+
+    @Override
+    public PromptTemplateVo queryByCategory(String category) {
+        LambdaQueryWrapper<PromptTemplate> queryWrapper = Wrappers.lambdaQuery(PromptTemplate.class);
+        queryWrapper.eq(PromptTemplate::getCategory, category);
+        queryWrapper.orderByDesc(PromptTemplate::getUpdateTime);
+        queryWrapper.last("limit 1");
+        return baseMapper.selectVoOne(queryWrapper);
+    }
 }
