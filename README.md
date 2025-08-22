@@ -99,6 +99,10 @@
 
 > 💡 **小贴士**：建议将 PR 提交到 GitHub，我们会自动同步到其他代码托管平台
 
+<a href="https://openomy.com/ageerle/ruoyi-ai" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=ageerle/ruoyi-ai&chart=bubble&latestMonth=3" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
+</a>
+
 ## 📄 开源协议
 
 本项目采用 **MIT 开源协议**，详情请查看 [LICENSE](LICENSE) 文件。
