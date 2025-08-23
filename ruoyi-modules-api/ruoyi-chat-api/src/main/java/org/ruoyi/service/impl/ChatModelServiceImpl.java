@@ -36,7 +36,7 @@ public class ChatModelServiceImpl implements IChatModelService {
      * 查询聊天模型
      */
     @Override
-    public ChatModelVo queryById(Long id){
+    public ChatModelVo queryById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
@@ -103,7 +103,7 @@ public class ChatModelServiceImpl implements IChatModelService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ChatModel entity){
+    private void validEntityBeforeSave(ChatModel entity) {
         // 判断是否包含*号
         if (entity.getApiKey().contains("*")) {
             // 重新设置key信息
@@ -116,7 +116,7 @@ public class ChatModelServiceImpl implements IChatModelService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;
@@ -129,24 +129,25 @@ public class ChatModelServiceImpl implements IChatModelService {
     public ChatModelVo selectModelByName(String modelName) {
         return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, modelName));
     }
+
     /**
      * 通过模型分类获取模型信息
      */
     @Override
-    public ChatModelVo selectModelByCategory(String  category) {
+    public ChatModelVo selectModelByCategory(String category) {
         return baseMapper.selectVoOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getCategory, category));
     }
-    
+
     /**
      * 通过模型分类获取优先级最高的模型信息
      */
     @Override
     public ChatModelVo selectModelByCategoryWithHighestPriority(String category) {
         return baseMapper.selectVoOne(
-            Wrappers.<ChatModel>lambdaQuery()
-                .eq(ChatModel::getCategory, category)
-                .orderByDesc(ChatModel::getPriority)
-                .last("LIMIT 1")
+                Wrappers.<ChatModel>lambdaQuery()
+                        .eq(ChatModel::getCategory, category)
+                        .orderByDesc(ChatModel::getPriority),
+                false
         );
     }
 
@@ -156,11 +157,11 @@ public class ChatModelServiceImpl implements IChatModelService {
     @Override
     public ChatModelVo selectFallbackModelByCategoryAndLessPriority(String category, Integer currentPriority) {
         return baseMapper.selectVoOne(
-            Wrappers.<ChatModel>lambdaQuery()
-                .eq(ChatModel::getCategory, category)
-                .lt(ChatModel::getPriority, currentPriority)
-                .orderByDesc(ChatModel::getPriority)
-                .last("LIMIT 1")
+                Wrappers.<ChatModel>lambdaQuery()
+                        .eq(ChatModel::getCategory, category)
+                        .lt(ChatModel::getPriority, currentPriority)
+                        .orderByDesc(ChatModel::getPriority),
+                false
         );
     }
 

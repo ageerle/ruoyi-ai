@@ -23,10 +23,10 @@ public class ChatTokenServiceImpl implements IChatTokenService {
     @Override
     public ChatUsageToken queryByUserId(Long userId, String modelName) {
         return baseMapper.selectOne(
-            new LambdaQueryWrapper<ChatUsageToken>()
-                .eq(ChatUsageToken::getUserId, userId)
-                .eq(ChatUsageToken::getModelName, modelName)
-                .last("limit 1")
+                new LambdaQueryWrapper<ChatUsageToken>()
+                        .eq(ChatUsageToken::getUserId, userId)
+                        .eq(ChatUsageToken::getModelName, modelName),
+                false
         );
     }
 
@@ -35,7 +35,7 @@ public class ChatTokenServiceImpl implements IChatTokenService {
      *
      */
     @Override
-    public void resetToken(Long userId,String modelName) {
+    public void resetToken(Long userId, String modelName) {
         ChatUsageToken chatToken = queryByUserId(userId, modelName);
         chatToken.setToken(0);
         baseMapper.updateById(chatToken);
@@ -47,9 +47,9 @@ public class ChatTokenServiceImpl implements IChatTokenService {
      */
     @Override
     public void editToken(ChatUsageToken chatToken) {
-        if(chatToken.getId() == null){
+        if (chatToken.getId() == null) {
             baseMapper.insert(chatToken);
-        }else {
+        } else {
             baseMapper.updateById(chatToken);
         }
     }
