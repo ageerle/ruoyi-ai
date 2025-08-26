@@ -118,7 +118,7 @@ public class ImageServiceImpl implements IChatService {
     @Override
     public SseEmitter chat(ChatRequest chatRequest, SseEmitter emitter) {
         // 从数据库获取 image 类型的模型配置
-        ChatModelVo chatModelVo = chatModelService.selectModelByCategory(ChatModeType.IMAGE.getCode());
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         if (chatModelVo == null) {
             log.error("未找到 image 类型的模型配置");
             emitter.completeWithError(new IllegalStateException("未找到 image 类型的模型配置"));
