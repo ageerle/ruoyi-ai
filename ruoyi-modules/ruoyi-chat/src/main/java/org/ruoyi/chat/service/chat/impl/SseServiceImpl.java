@@ -104,16 +104,16 @@ public class SseServiceImpl implements ISseService {
                 //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
                 //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
                 //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
-//                {
-//                    // 设置会话id
-//                    if (chatRequest.getUuid() == null) {
-//                        //暂时随机生成会话id
-//                        chatRequest.setSessionId(System.currentTimeMillis());
-//                    } else {
-//                        //这里或许需要修改一下，这里应该用uuid 或者 前端传递 sessionId
-//                        chatRequest.setSessionId(chatRequest.getUuid());
-//                    }
-//                }
+                {
+                    // 设置会话id
+                    if (chatRequest.getUuid() == null) {
+                        //暂时随机生成会话id
+                        chatRequest.setSessionId(System.currentTimeMillis());
+                    } else {
+                        //这里或许需要修改一下，这里应该用uuid 或者 前端传递 sessionId
+                        chatRequest.setSessionId(chatRequest.getUuid());
+                    }
+                }
 
 
                 // 先保存消息，再发布异步计费事件
