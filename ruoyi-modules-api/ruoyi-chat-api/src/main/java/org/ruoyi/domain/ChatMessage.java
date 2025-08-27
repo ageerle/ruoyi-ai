@@ -69,5 +69,10 @@ public class ChatMessage extends BaseEntity {
      */
     private String remark;
 
+    /**
+     * 计费类型（1-token计费，2-次数计费，null-普通消息）
+     */
+    private String billingType;
+
 
 }

@@ -104,21 +104,21 @@ public class SseServiceImpl implements ISseService {
                 //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
                 //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
                 //待优化的地方 （这里请前端提交send的时候传递uuid进来或者sessionId）
-                {
-                    // 设置会话id
-                    if (chatRequest.getUuid() == null) {
-                        //暂时随机生成会话id
-                        chatRequest.setSessionId(System.currentTimeMillis());
-                    } else {
-                        //这里或许需要修改一下，这里应该用uuid 或者 前端传递 sessionId
-                        chatRequest.setSessionId(chatRequest.getUuid());
-                    }
-                }
+//                {
+//                    // 设置会话id
+//                    if (chatRequest.getUuid() == null) {
+//                        //暂时随机生成会话id
+//                        chatRequest.setSessionId(System.currentTimeMillis());
+//                    } else {
+//                        //这里或许需要修改一下，这里应该用uuid 或者 前端传递 sessionId
+//                        chatRequest.setSessionId(chatRequest.getUuid());
+//                    }
+//                }
 
 
                 // 先保存消息，再发布异步计费事件
                 chatCostService.saveMessage(chatRequest);
-                chatCostService.publishBillingEvent(chatRequest);
+
                 chatRequest.setUserId(chatCostService.getUserId());
                 if (chatRequest.getSessionId() == null) {
                     ChatSessionBo chatSessionBo = new ChatSessionBo();
@@ -131,7 +131,7 @@ public class SseServiceImpl implements ISseService {
             }
             // 自动选择模型并获取对应的聊天服务
             IChatService chatService = autoSelectModelAndGetService(chatRequest);
-
+            chatCostService.publishBillingEvent(chatRequest);
             // 仅当 autoSelectModel = true 时，才启用重试与降级
             if (Boolean.TRUE.equals(chatRequest.getAutoSelectModel())) {
                 ChatModelVo currentModel = this.chatModelVo;

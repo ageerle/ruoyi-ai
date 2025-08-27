@@ -80,7 +80,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             }
             
             // 记录账单消息
-            saveBillingRecord(chatRequest, tokens, numberCost.doubleValue(), "TIMES_BILLING");
+            saveBillingRecord(chatRequest, tokens, numberCost.doubleValue(), chatModelVo.getModelType());
             return;
         }
 
@@ -121,7 +121,7 @@ public class ChatCostServiceImpl implements IChatCostService {
                 log.debug("deductToken->扣费成功，更新余数: {}", remainder);
                 
                 // 记录账单消息
-                saveBillingRecord(chatRequest, billable, numberCost.doubleValue(), "TOKEN_BILLING");
+                saveBillingRecord(chatRequest, billable, numberCost.doubleValue(), chatModelVo.getModelType());
             } catch (ServiceException e) {
                 // 余额不足时，不更新token累计，保持原有累计数
                 log.warn("deductToken->余额不足，本次token累计保持不变: {}", totalTokens);
@@ -167,6 +167,19 @@ public class ChatCostServiceImpl implements IChatCostService {
         // 普通消息不涉及扣费，deductCost保持null
         chatMessageBo.setDeductCost(null);
         chatMessageBo.setRemark("用户消息");
+        
+        // 设置计费类型（根据模型配置获取计费类型）
+        try {
+            ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+            if (chatModelVo != null) {
+                chatMessageBo.setBillingType(chatModelVo.getModelType());
+            } else {
+                chatMessageBo.setBillingType(null); // 模型不存在时设为null
+            }
+        } catch (Exception e) {
+            log.warn("saveMessage->获取模型计费类型失败，设为null，模型: {}", chatRequest.getModel());
+            chatMessageBo.setBillingType(null);
+        }
 
         try {
             chatMessageService.insertByBo(chatMessageBo);
@@ -261,7 +274,7 @@ public class ChatCostServiceImpl implements IChatCostService {
     /**
      * 保存账单记录
      */
-    private void saveBillingRecord(ChatRequest chatRequest, int billedTokens, double cost, String billingType) {
+    private void saveBillingRecord(ChatRequest chatRequest, int billedTokens, double cost, String billingTypeCode) {
         try {
             ChatMessageBo billingMessage = new ChatMessageBo();
             billingMessage.setUserId(chatRequest.getUserId());
@@ -270,24 +283,45 @@ public class ChatCostServiceImpl implements IChatCostService {
             billingMessage.setModelName(chatRequest.getModel());
             billingMessage.setTotalTokens(billedTokens);
             billingMessage.setDeductCost(cost);
-            billingMessage.setRemark(billingType);
+            billingMessage.setRemark(getBillingTypeName(billingTypeCode));
             
-            // 构建账单消息内容
-            String content;
-            if ("TIMES_BILLING".equals(billingType)) {
-                content = String.format("按次计费：消耗 %d tokens，扣费 %.2f 元", billedTokens, cost);
-            } else {
-                content = String.format("按量计费：结算 %d tokens，扣费 %.2f 元", billedTokens, cost);
-            }
-            billingMessage.setContent(content);
+            // 设置计费类型和构建消息内容
+            setBillingTypeAndContent(billingMessage, billingTypeCode, billedTokens, cost);
             
             chatMessageService.insertByBo(billingMessage);
             log.debug("saveBillingRecord->保存账单记录成功，用户ID: {}, 计费类型: {}, 费用: {}", 
-                      chatRequest.getUserId(), billingType, cost);
+                      chatRequest.getUserId(), billingTypeCode, cost);
         } catch (Exception e) {
             log.error("saveBillingRecord->保存账单记录失败", e);
             // 账单记录失败不影响主流程，只记录错误日志
         }
+    }
+
+    /**
+     * 设置计费类型和构建消息内容
+     */
+    private void setBillingTypeAndContent(ChatMessageBo billingMessage, String billingTypeCode, int billedTokens, double cost) {
+        billingMessage.setBillingType(billingTypeCode);
+        
+        // 使用枚举获取计费类型并构建消息内容
+        BillingType billingType = BillingType.fromCode(billingTypeCode);
+        if (billingType != null) {
+            String content = switch (billingType) {
+                case TIMES -> String.format("%s：消耗 %d tokens，扣费 %.2f 元", billingType.getDescription(), billedTokens, cost);
+                case TOKEN -> String.format("%s：结算 %d tokens，扣费 %.2f 元", billingType.getDescription(), billedTokens, cost);
+            };
+            billingMessage.setContent(content);
+        } else {
+            billingMessage.setContent(String.format("系统计费：处理 %d tokens，扣费 %.2f 元", billedTokens, cost));
+        }
+    }
+
+    /**
+     * 获取计费类型名称（用于remark字段）
+     */
+    private String getBillingTypeName(String billingTypeCode) {
+        BillingType billingType = BillingType.fromCode(billingTypeCode);
+        return billingType != null ? billingType.getDescription() : "系统计费";
     }
 
     /**

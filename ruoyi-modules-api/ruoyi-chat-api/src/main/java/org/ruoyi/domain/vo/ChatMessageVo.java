@@ -4,6 +4,8 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.common.excel.annotation.ExcelDictFormat;
+import org.ruoyi.common.excel.convert.ExcelDictConvert;
 import org.ruoyi.domain.ChatMessage;
 
 import java.io.Serial;
@@ -74,6 +76,13 @@ public class ChatMessageVo implements Serializable {
     private String modelName;
 
     /**
+     * 计费类型（1-token计费，2-次数计费）
+     */
+    @ExcelProperty(value = "计费类型", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "sys_model_billing")
+    private String billingType;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")
@@ -85,6 +94,7 @@ public class ChatMessageVo implements Serializable {
      */
     @ExcelProperty(value = "创建时间")
     private Date createTime;
+
 
 
 }
