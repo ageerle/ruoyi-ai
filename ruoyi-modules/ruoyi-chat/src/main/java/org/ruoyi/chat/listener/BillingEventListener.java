@@ -30,6 +30,7 @@ public class BillingEventListener {
             chatRequest.setModel(event.getModelName());
             chatRequest.setRole(event.getRole());
             chatRequest.setPrompt(event.getContent());
+            chatRequest.setMessageId(event.getMessageId()); // 设置消息ID
             // 异步执行计费累计与扣费
             log.debug("BillingEventListener->开始执行计费逻辑");
             chatCostService.deductToken(chatRequest);

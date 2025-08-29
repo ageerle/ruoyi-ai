@@ -12,14 +12,16 @@ public class ChatMessageCreatedEvent extends ApplicationEvent {
     private final String modelName;
     private final String role;
     private final String content;
+    private final Long messageId;
 
-    public ChatMessageCreatedEvent(Long userId, Long sessionId, String modelName, String role, String content) {
+    public ChatMessageCreatedEvent(Long userId, Long sessionId, String modelName, String role, String content, Long messageId) {
         super(userId);
         this.userId = userId;
         this.sessionId = sessionId;
         this.modelName = modelName;
         this.role = role;
         this.content = content;
+        this.messageId = messageId;
     }
 
     public Long getUserId() { return userId; }
@@ -27,5 +29,6 @@ public class ChatMessageCreatedEvent extends ApplicationEvent {
     public String getModelName() { return modelName; }
     public String getRole() { return role; }
     public String getContent() { return content; }
+    public Long getMessageId() { return messageId; }
 }
 

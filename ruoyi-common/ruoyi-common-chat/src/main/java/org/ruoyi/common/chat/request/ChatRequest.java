@@ -82,4 +82,9 @@ public class ChatRequest {
      */
     private String token;
 
+    /**
+     * 消息ID（保存消息成功后设置，用于后续扣费更新）
+     */
+    private Long messageId;
+
 }
