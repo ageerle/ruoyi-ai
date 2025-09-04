@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 /**
  * 统一计费代理类
  * 自动处理所有ChatService的AI回复保存和计费逻辑
+ *
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -31,12 +32,12 @@ public class BillingChatServiceProxy implements IChatService {
         // 🔥 在AI回复开始前检查余额是否充足
         if (!chatCostService.checkBalanceSufficient(chatRequest)) {
             String errorMsg = "余额不足，无法使用AI服务，请充值后再试";
-            log.warn("余额不足阻止AI回复，用户ID: {}, 模型: {}", 
+            log.warn("余额不足阻止AI回复，用户ID: {}, 模型: {}",
                      chatRequest.getUserId(), chatRequest.getModel());
             throw new RuntimeException(errorMsg);
         }
 
-        log.debug("余额检查通过，开始AI回复，用户ID: {}, 模型: {}", 
+        log.debug("余额检查通过，开始AI回复，用户ID: {}, 模型: {}",
                   chatRequest.getUserId(), chatRequest.getModel());
 
         // 创建增强的SseEmitter，自动收集AI回复
