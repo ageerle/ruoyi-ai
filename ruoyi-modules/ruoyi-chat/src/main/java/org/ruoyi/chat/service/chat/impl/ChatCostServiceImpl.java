@@ -428,4 +428,29 @@ public class ChatCostServiceImpl implements IChatCostService {
         }
         return loginUser.getUserId();
     }
+
+    /**
+     * 检查用户余额是否足够支付预估费用
+     */
+    @Override
+    public boolean checkBalanceSufficient(ChatRequest chatRequest) {
+        if (chatRequest.getUserId() == null) {
+            log.warn("checkBalanceSufficient->用户ID为空，视为余额不足");
+            return false;
+        }
+
+        try {
+            // 重用现有的预检查逻辑，但不抛异常，只返回boolean
+            preCheckBalance(chatRequest);
+            return true; // 预检查通过，余额充足
+        } catch (ServiceException e) {
+            log.debug("checkBalanceSufficient->余额不足，用户ID: {}, 模型: {}, 错误: {}", 
+                      chatRequest.getUserId(), chatRequest.getModel(), e.getMessage());
+            return false; // 预检查失败，余额不足
+        } catch (Exception e) {
+            log.error("checkBalanceSufficient->检查余额时发生异常，用户ID: {}, 模型: {}", 
+                      chatRequest.getUserId(), chatRequest.getModel(), e);
+            return false; // 异常情况视为余额不足，保守处理
+        }
+    }
 }

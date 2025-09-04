@@ -61,4 +61,12 @@ public interface IChatCostService {
      * 获取登录用户id
      */
     Long getUserId();
+
+    /**
+     * 检查用户余额是否足够支付预估费用
+     * 
+     * @param chatRequest 对话信息
+     * @return true=余额充足，false=余额不足
+     */
+    boolean checkBalanceSufficient(ChatRequest chatRequest);
 }

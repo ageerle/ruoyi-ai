@@ -84,6 +84,8 @@ public class SSEEventSourceListener extends EventSourceListener {
                 emitter.complete();
                 // 清理失败回调（以 emitter 为键）
                 RetryNotifier.clear(emitter);
+                // 🔥 注释：AI回复的保存和计费已由BillingChatServiceProxy统一处理，此处代码已废弃
+                /*
                 // 扣除费用
                 ChatRequest chatRequest = new ChatRequest();
                 // 设置对话角色
@@ -97,6 +99,7 @@ public class SSEEventSourceListener extends EventSourceListener {
                 // 先保存助手消息，再发布异步计费事件
                 chatCostService.saveMessage(chatRequest);
                 chatCostService.publishBillingEvent(chatRequest);
+                */
                 return;
             }
 

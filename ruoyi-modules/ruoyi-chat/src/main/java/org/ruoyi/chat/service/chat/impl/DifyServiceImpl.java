@@ -110,12 +110,12 @@ public class DifyServiceImpl implements IChatService {
                     }
 
                     // 设置对话角色
-                    chatRequestResponse.setRole(Message.Role.ASSISTANT.getName());
-                    chatRequestResponse.setModel(chatRequest.getModel());
-                    chatRequestResponse.setUserId(chatRequest.getUserId());
-                    chatRequestResponse.setSessionId(chatRequest.getSessionId());
-                    chatRequestResponse.setPrompt(respMessage.toString());
-                    chatCostService.deductToken(chatRequestResponse);
+//                    chatRequestResponse.setRole(Message.Role.ASSISTANT.getName());
+//                    chatRequestResponse.setModel(chatRequest.getModel());
+//                    chatRequestResponse.setUserId(chatRequest.getUserId());
+//                    chatRequestResponse.setSessionId(chatRequest.getSessionId());
+//                    chatRequestResponse.setPrompt(respMessage.toString());
+//                    chatCostService.deductToken(chatRequestResponse);
                     RetryNotifier.clear(emitter);
                 }
 
