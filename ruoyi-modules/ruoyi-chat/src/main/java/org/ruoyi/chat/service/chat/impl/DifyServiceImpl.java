@@ -91,6 +91,8 @@ public class DifyServiceImpl implements IChatService {
                 public void onMessageEnd(MessageEndEvent event) {
                     emitter.complete();
                     log.info("消息结束，完整消息ID: {}", event.getMessageId());
+                    // 扣除费用
+                    ChatRequest chatRequestResponse = new ChatRequest();
                     // 更新conversationId
                     if (StrUtil.isBlank(sessionInfo.getConversationId())) {
                         String conversationId = event.getConversationId();
@@ -104,16 +106,16 @@ public class DifyServiceImpl implements IChatService {
                         chatSessionBo.setSessionContent(sessionInfo.getSessionContent());
                         chatSessionBo.setRemark(sessionInfo.getRemark());
                         chatSessionService.updateByBo(chatSessionBo);
+                        chatRequestResponse.setMessageId(chatSessionBo.getId());
                     }
-                    // 扣除费用
-                    ChatRequest chatRequestResponse = new ChatRequest();
+
                     // 设置对话角色
-                    chatRequestResponse.setRole(Message.Role.ASSISTANT.getName());
-                    chatRequestResponse.setModel(chatRequest.getModel());
-                    chatRequestResponse.setUserId(chatRequest.getUserId());
-                    chatRequestResponse.setSessionId(chatRequest.getSessionId());
-                    chatRequestResponse.setPrompt(respMessage.toString());
-                    chatCostService.deductToken(chatRequestResponse);
+//                    chatRequestResponse.setRole(Message.Role.ASSISTANT.getName());
+//                    chatRequestResponse.setModel(chatRequest.getModel());
+//                    chatRequestResponse.setUserId(chatRequest.getUserId());
+//                    chatRequestResponse.setSessionId(chatRequest.getSessionId());
+//                    chatRequestResponse.setPrompt(respMessage.toString());
+//                    chatCostService.deductToken(chatRequestResponse);
                     RetryNotifier.clear(emitter);
                 }
 

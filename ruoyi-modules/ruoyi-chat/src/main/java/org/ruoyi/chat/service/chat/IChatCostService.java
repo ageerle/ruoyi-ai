@@ -20,6 +20,22 @@ public interface IChatCostService {
     void deductToken(ChatRequest chatRequest);
 
     /**
+     * 保存聊天消息记录（不进行计费）
+     *
+     * @param chatRequest 对话信息
+     */
+    void saveMessage(ChatRequest chatRequest);
+
+
+
+    /**
+     * 仅发布异步计费事件（不做入库）
+     *
+     * @param chatRequest 对话信息
+     */
+    void publishBillingEvent(ChatRequest chatRequest);
+
+    /**
      * 直接扣除用户的余额
      *
      */
@@ -45,4 +61,12 @@ public interface IChatCostService {
      * 获取登录用户id
      */
     Long getUserId();
+
+    /**
+     * 检查用户余额是否足够支付预估费用
+     * 
+     * @param chatRequest 对话信息
+     * @return true=余额充足，false=余额不足
+     */
+    boolean checkBalanceSufficient(ChatRequest chatRequest);
 }

@@ -116,8 +116,7 @@ public class SseServiceImpl implements ISseService {
                 }
 
 
-                // 保存消息记录 并扣除费用
-                chatCostService.deductToken(chatRequest);
+
                 chatRequest.setUserId(chatCostService.getUserId());
                 if (chatRequest.getSessionId() == null) {
                     ChatSessionBo chatSessionBo = new ChatSessionBo();
@@ -127,11 +126,15 @@ public class SseServiceImpl implements ISseService {
                     chatSessionService.insertByBo(chatSessionBo);
                     chatRequest.setSessionId(chatSessionBo.getId());
                 }
+                
+                // 保存用户消息
+                chatCostService.saveMessage(chatRequest);
             }
             // 自动选择模型并获取对应的聊天服务
             IChatService chatService = autoSelectModelAndGetService(chatRequest);
 
-            // 仅当 autoSelectModel = true 时，才启用重试与降级
+            // 用户消息只保存不计费，AI回复由BillingChatServiceProxy自动处理计费
+            // chatCostService.publishBillingEvent(chatRequest); // 用户输入不计费
             if (Boolean.TRUE.equals(chatRequest.getAutoSelectModel())) {
                 ChatModelVo currentModel = this.chatModelVo;
                 String currentCategory = currentModel.getCategory();

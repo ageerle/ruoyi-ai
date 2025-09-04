@@ -75,5 +75,10 @@ public class ChatMessageBo extends BaseEntity {
     @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
     private String remark;
 
+    /**
+     * 计费类型（1-token计费，2-次数计费，null-普通消息）
+     */
+    private String billingType;
+
 
 }
