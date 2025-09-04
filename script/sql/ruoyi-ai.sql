@@ -2629,3 +2629,6 @@ CREATE TABLE `knowledge_role_relation`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识库角色与知识库关联表' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- 增加会话ID
+alter table chat_session add conversation_id varchar(32) null comment '会话ID';
