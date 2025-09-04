@@ -60,6 +60,23 @@ services:
     networks:
       - ruoyi-net
 
+  minio:
+    image: minio/minio
+    container_name: ruoyi-ai-minio
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    environment:
+      - MINIO_ACCESS_KEY=ruoyi
+      - MINIO_SECRET_KEY=ruoyi123
+    volumes:
+      - ./data/minio:/data
+      - ./data/minio-config:/root/.minio
+    command: server /data --console-address ":9090"
+    restart: always
+    networks:
+      - ruoyi-net
+
   ruoyi-backend:
     image: ruoyi-ai-backend:v2.0.5
     container_name: ruoyi-ai-backend
