@@ -61,7 +61,7 @@ public interface IKnowledgeInfoService {
     /**
      * 删除知识库
      */
-    void removeKnowledge(String id);
+    void removeKnowledge(String kid);
 
     /**
      * 上传附件
