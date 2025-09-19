@@ -185,4 +185,17 @@ public class KnowledgeController extends BaseController {
         return attachService.translationByFile(file, targetLanguage);
     }
 
+  /**
+   * 提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回
+   *
+   * @param file PDF文件
+   * @return 文件名称和图片内容
+   */
+  @PostMapping("/extract-images")
+  @Operation(summary = "提取PDF中的图片并调用大模型,识别图片内容并返回", description = "提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回")
+  public R<List<PdfFileContentResult>> extractImages(
+  ) throws IOException {
+    return R.ok(pdfImageExtractService
+        .dealFileContent4Dashscope("https://hnzuoran02-1327573163.cos.ap-nanjing.myqcloud.com/crmebimage/public/content/2025/06/04/e115264eb22f423ea0b211709361c29f071avy39ez.jpg"));
+  }
 }

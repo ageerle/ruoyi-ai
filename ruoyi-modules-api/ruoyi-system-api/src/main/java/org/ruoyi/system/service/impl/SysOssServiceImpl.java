@@ -209,4 +209,48 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     }
     return oss;
   }
+  @Override
+  public String downloadToTempPath(Long ossId) throws IOException {
+    SysOssVo sysOss = SpringUtils.getAopProxy(this).getById(ossId);
+    if (ObjectUtil.isNull(sysOss)) {
+      throw new ServiceException("文件数据不存在!");
+    }
+
+    OssClient storage = OssFactory.instance();
+    try (InputStream inputStream = storage.getObjectContent(sysOss.getUrl())) {
+      // 创建临时文件
+      String suffix = StringUtils.isNotEmpty(sysOss.getFileSuffix()) ? sysOss.getFileSuffix() : "";
+      java.io.File tempFile = java.io.File.createTempFile("download_", suffix);
+      // 确保临时文件在JVM退出时删除
+      tempFile.deleteOnExit();
+      // 将输入流内容写入临时文件
+      cn.hutool.core.io.FileUtil.writeFromStream(inputStream, tempFile);
+      // 返回临时文件的绝对路径
+      return tempFile.getAbsolutePath();
+    } catch (Exception e) {
+      throw new ServiceException(e.getMessage());
+    }
+  }
+  /**
+   * 根据文件路径删除文件
+   *
+   * @param filePath 文件路径
+   * @return 是否删除成功
+   */
+  @Override
+  public boolean deleteFile(String filePath) {
+    if (StringUtils.isEmpty(filePath)) {
+      return false;
+    }
+    
+    try {
+      java.io.File file = new java.io.File(filePath);
+      if (file.exists() && file.isFile()) {
+        return file.delete();
+      }
+      return false;
+    } catch (Exception e) {
+      throw new ServiceException("删除文件失败: " + e.getMessage());
+    }
+  }
 }
