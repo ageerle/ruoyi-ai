@@ -36,6 +36,8 @@ public class ResourceLoaderFactory {
             return new MarkDownFileLoader(markdownTextSplitter);
         }else if (FileType.isCodeFile(fileType)) {
             return new CodeFileLoader(codeTextSplitter);
+        } else if (FileType.isExcel(fileType)) {
+            return new ExcelFileLoader(excelTextSplitter);
         }else {
             return new TextFileLoader(characterTextSplitter);
         }

@@ -1,6 +1,7 @@
 package org.ruoyi.chat.controller.knowledge;
 
 import cn.dev33.satoken.stp.StpUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -29,6 +30,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
@@ -185,17 +187,4 @@ public class KnowledgeController extends BaseController {
         return attachService.translationByFile(file, targetLanguage);
     }
 
-  /**
-   * 提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回
-   *
-   * @param file PDF文件
-   * @return 文件名称和图片内容
-   */
-  @PostMapping("/extract-images")
-  @Operation(summary = "提取PDF中的图片并调用大模型,识别图片内容并返回", description = "提取PDF中的图片并调用gpt-4o-mini,识别图片内容并返回")
-  public R<List<PdfFileContentResult>> extractImages(
-  ) throws IOException {
-    return R.ok(pdfImageExtractService
-        .dealFileContent4Dashscope("https://hnzuoran02-1327573163.cos.ap-nanjing.myqcloud.com/crmebimage/public/content/2025/06/04/e115264eb22f423ea0b211709361c29f071avy39ez.jpg"));
-  }
 }
