@@ -102,9 +102,9 @@ public class KnowledgeController extends BaseController {
     /**
      * 删除知识库
      */
-    @PostMapping("/remove/{id}")
-    public R<String> remove(@PathVariable String id) {
-        knowledgeInfoService.removeKnowledge(id);
+    @PostMapping("/remove/{kid}")
+    public R<String> remove(@PathVariable String kid) {
+        knowledgeInfoService.removeKnowledge(kid);
         return R.ok("删除知识库成功!");
     }
 
