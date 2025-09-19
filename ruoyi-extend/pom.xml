@@ -15,6 +15,7 @@
 
     <modules>
         <module>ruoyi-mcp-server</module>
+        <module>ruoyi-ai-copilot</module>
     </modules>
 
 </project>

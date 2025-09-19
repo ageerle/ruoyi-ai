@@ -40,6 +40,8 @@
         <mapstruct-plus.lombok.version>0.2.0</mapstruct-plus.lombok.version>
         <lombok.version>1.18.26</lombok.version>
         <bouncycastle.version>1.72</bouncycastle.version>
+        <!-- Apache Commons Compress 版本 -->
+        <commons-compress.version>1.26.2</commons-compress.version>
         <!-- 离线IP地址定位库 -->
         <ip2region.version>2.7.0</ip2region.version>
         <!-- OSS 配置 -->
@@ -281,6 +283,13 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk15to18</artifactId>
                 <version>${bouncycastle.version}</version>
+            </dependency>
+
+            <!-- Apache Commons Compress -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
             </dependency>
 
             <dependency>
