@@ -92,6 +92,13 @@ pdf:
     ai-api:
       url: https://api.pandarobot.chat/v1/chat/completions
       key: sk-xxxx
+  transition:
+    # 是否开启mineru
+    enable-minerU: true
+    # mineru conda环境路径
+    conda-env-path: "F:\\ProgramData\\Computer\\Anaconda\\envs\\mineru"
+    # 是否开启图片OCR
+    enable-ocr: true
 #百炼模型配置
 dashscope:
   key: sk-xxxx
