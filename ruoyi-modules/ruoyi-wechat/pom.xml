@@ -27,6 +27,13 @@
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-system-api</artifactId>
         </dependency>
+
+        <!-- 企业微信SDK -->
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-cp</artifactId>
+            <version>4.4.0</version>
+        </dependency>
     </dependencies>
 
 </project>
