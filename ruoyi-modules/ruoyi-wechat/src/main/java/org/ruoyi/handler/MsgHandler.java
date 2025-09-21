@@ -8,7 +8,7 @@ import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 
 import org.ruoyi.builder.TextBuilder;
-import org.ruoyi.service.IChatVxService;
+//import org.ruoyi.service.IChatVxService;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -20,7 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MsgHandler extends AbstractHandler {
 
-    private final IChatVxService chatVxService;
+//    private final IChatVxService chatVxService;
 
     @Override
     public WxCpXmlOutMessage handle(WxCpXmlMessage wxMessage, Map<String, Object> context, WxCpService cpService,
@@ -34,8 +34,8 @@ public class MsgHandler extends AbstractHandler {
             //TODO 可以选择将消息保存到本地
         }
         //TODO 组装回复消息
-        String content = chatVxService.chat(wxMessage.getContent());
-
+//        String content = chatVxService.chat(wxMessage.getContent());
+        String content = "欢迎关注";
         return new TextBuilder().build(content, wxMessage, cpService);
 
     }
