@@ -8,6 +8,7 @@ import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 
 import org.ruoyi.builder.TextBuilder;
+
 import org.ruoyi.service.IChatVxService;
 import org.springframework.stereotype.Component;
 
