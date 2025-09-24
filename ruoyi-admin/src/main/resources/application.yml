@@ -144,6 +144,14 @@ security:
     # swagger 文档配置
     - /*/api-docs
     - /*/api-docs/**
+    - /v3/api-docs
+    - /v3/api-docs/**
+    - /swagger-ui.html
+    - /swagger-ui/**
+    - /doc.html
+    - /webjars/**
+    - /swagger-resources
+    - /swagger-resources/**
     # actuator 监控配置
     - /actuator
     - /actuator/**
