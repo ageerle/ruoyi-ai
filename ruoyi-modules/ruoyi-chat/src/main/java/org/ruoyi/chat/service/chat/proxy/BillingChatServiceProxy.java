@@ -34,7 +34,16 @@ public class BillingChatServiceProxy implements IChatService {
             String errorMsg = "余额不足，无法使用AI服务，请充值后再试";
             log.warn("余额不足阻止AI回复，用户ID: {}, 模型: {}",
                      chatRequest.getUserId(), chatRequest.getModel());
-            throw new RuntimeException(errorMsg);
+            try {
+                emitter.send(errorMsg);
+                emitter.complete();
+            } catch (IOException e) {
+                log.error("推送流异常，用户ID: {}, 模型: {}",
+                        chatRequest.getUserId(), chatRequest.getModel());
+                emitter.complete();
+                throw new RuntimeException(errorMsg);
+            }
+            return emitter;
         }
 
         log.debug("余额检查通过，开始AI回复，用户ID: {}, 模型: {}",
