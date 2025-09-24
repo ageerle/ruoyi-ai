@@ -1,7 +1,7 @@
 package org.ruoyi.chat.controller.tripartite;
 
 import cn.hutool.json.JSONUtil;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
@@ -28,7 +28,7 @@ public class LumaController {
     private final IChatCostService chatCostService;
 
 
-    @ApiOperation(value = "文生视频")
+    @Operation(summary = "文生视频")
     @PostMapping("/generations/")
     public String generateVideo(@RequestBody GenerateLuma generateLuma) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("luma");
@@ -40,7 +40,7 @@ public class LumaController {
         return okHttpUtil.executeRequest(request);
     }
 
-    @ApiOperation(value = "文生视频任务查询")
+    @Operation(summary = "文生视频任务查询")
     @GetMapping("/generations/{taskId}")
     public String getGenerationTask(@PathVariable String taskId) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("luma");

@@ -35,7 +35,17 @@ public class AllUrlHandler implements InitializingBean {
         Pattern pattern = Pattern.compile("\\{(.*?)\\}");
 
         Set<String> handlerSet = handlerMethods.keySet().stream()
-                .flatMap(info -> info.getPatternsCondition().getPatterns().stream())
+                .flatMap(info -> {
+                    // Spring 5 (AntPath) 风格
+                    if (info.getPatternsCondition() != null && info.getPatternsCondition().getPatterns() != null) {
+                        return info.getPatternsCondition().getPatterns().stream();
+                    }
+                    // Spring 6 (PathPattern) 风格
+                    if (info.getPathPatternsCondition() != null && info.getPathPatternsCondition().getPatterns() != null) {
+                        return info.getPathPatternsCondition().getPatterns().stream().map(p -> p.getPatternString());
+                    }
+                    return java.util.stream.Stream.<String>empty();
+                })
                 .collect(Collectors.toSet());
 
         // 获取注解上边的 path 替代 path variable 为 *

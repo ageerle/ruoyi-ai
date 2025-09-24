@@ -2,7 +2,7 @@ package org.ruoyi.chat.domain;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +14,7 @@ import java.util.Map;
 public class DomainObject implements Serializable {
 	@Getter
 	@Setter
-	@ApiModelProperty("ID")
+	@Schema(description = "ID")
 	protected String id;
 
 	@Setter
