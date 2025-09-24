@@ -146,6 +146,7 @@ security:
     - /*/api-docs/**
     - /v3/api-docs
     - /v3/api-docs/**
+    - /v3/api-docs/swagger-config
     - /swagger-ui.html
     - /swagger-ui/**
     - /doc.html
@@ -260,13 +261,17 @@ springdoc:
   group-configs:
     - group: 1.系统模块
       packages-to-scan: org.ruoyi.system
+    - group: 2.业务模块
+      packages-to-scan: org.ruoyi.chat
+knife4j:
+  enable: true
 
 # 防止XSS攻击
 xss:
   # 过滤开关
   enabled: true
   # 排除链接（多个用逗号分隔）
-  excludes: /system/notice
+  excludes: /system/notice,/v3/api-docs/**,/doc.html,/swagger-ui/**,/swagger-ui.html,/swagger-resources/**,/webjars/**,/druid/**,/actuator/**,/favicon.ico
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
 
@@ -298,6 +303,7 @@ management:
     logfile:
       external-file: ./logs/sys-console.log
 
+# websocket
 # websocket
 websocket:
   enabled: true
