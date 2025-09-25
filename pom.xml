@@ -42,6 +42,8 @@
         <bouncycastle.version>1.72</bouncycastle.version>
         <!-- Apache Commons Compress 版本 -->
         <commons-compress.version>1.26.2</commons-compress.version>
+        <!-- Apache Commons IO 版本 -->
+        <commons-io.version>2.17.0</commons-io.version>
         <!-- 离线IP地址定位库 -->
         <ip2region.version>2.7.0</ip2region.version>
         <!-- OSS 配置 -->
@@ -53,8 +55,8 @@
         <!-- 插件版本 -->
         <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
         <maven-war-plugin.version>3.2.2</maven-war-plugin.version>
-        <maven-compiler-plugin.verison>3.11.0</maven-compiler-plugin.verison>
-        <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
+        <maven-compiler-plugin.verison>3.14.0</maven-compiler-plugin.verison>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
         <flatten-maven-plugin.version>1.3.0</flatten-maven-plugin.version>
     </properties>
 
@@ -290,6 +292,13 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>${commons-compress.version}</version>
+            </dependency>
+
+            <!-- Apache Commons IO -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
             </dependency>
 
             <dependency>
