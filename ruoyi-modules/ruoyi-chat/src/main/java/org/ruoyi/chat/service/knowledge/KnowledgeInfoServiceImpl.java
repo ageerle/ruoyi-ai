@@ -216,7 +216,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             }
             baseMapper.insert(knowledgeInfo);
             if (knowledgeInfo != null) {
-                vectorStoreService.createSchema(String.valueOf(knowledgeInfo.getId()),
+                vectorStoreService.createSchema(knowledgeInfo.getVectorModelName(),String.valueOf(knowledgeInfo.getId()),
                         bo.getVectorModelName());
             }
         } else {
@@ -257,6 +257,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         knowledgeAttach.setDocType(fileName.substring(fileName.lastIndexOf(".") + 1));
         String content = "";
         ResourceLoader resourceLoader = resourceLoaderFactory.getLoaderByFileType(knowledgeAttach.getDocType());
+        // 文档分段入库
         List<String> fids = new ArrayList<>();
         try {
             content = resourceLoader.getContent(file.getInputStream());
@@ -264,6 +265,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             List<KnowledgeFragment> knowledgeFragmentList = new ArrayList<>();
             if (CollUtil.isNotEmpty(chunkList)) {
                 for (int i = 0; i < chunkList.size(); i++) {
+                    // 生成知识片段ID
                     String fid = RandomUtil.randomString(10);
                     fids.add(fid);
                     KnowledgeFragment knowledgeFragment = new KnowledgeFragment();
