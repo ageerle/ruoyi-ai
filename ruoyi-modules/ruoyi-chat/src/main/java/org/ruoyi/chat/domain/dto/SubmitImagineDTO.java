@@ -1,7 +1,6 @@
 package org.ruoyi.chat.domain.dto;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -9,17 +8,17 @@ import java.util.List;
 
 
 @Data
-@ApiModel("Imagine提交参数")
+@Schema(name = "Imagine提交参数")
 @EqualsAndHashCode(callSuper = true)
 public class SubmitImagineDTO extends BaseSubmitDTO {
 
-	@ApiModelProperty(value = "提示词", required = true, example = "Cat")
+	@Schema(description = "提示词", requiredMode = Schema.RequiredMode.REQUIRED, example = "Cat")
 	private String prompt;
 
-	@ApiModelProperty(value = "垫图base64数组")
+	@Schema(description = "垫图base64数组")
 	private List<String> base64Array;
 
-	@ApiModelProperty(hidden = true)
+	@Schema(hidden = true)
 	@Deprecated(since = "3.0", forRemoval = true)
 	private String base64;
 

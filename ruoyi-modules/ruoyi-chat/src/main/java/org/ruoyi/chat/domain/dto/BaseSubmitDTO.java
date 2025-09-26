@@ -1,6 +1,6 @@
 package org.ruoyi.chat.domain.dto;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,9 +8,9 @@ import lombok.Setter;
 @Setter
 public abstract class BaseSubmitDTO {
 
-	@ApiModelProperty("自定义参数")
+	@Schema(description = "自定义参数")
 	protected String state;
 
-	@ApiModelProperty("回调地址, 为空时使用全局notifyHook")
+	@Schema(description = "回调地址, 为空时使用全局notifyHook")
 	protected String notifyHook;
 }
