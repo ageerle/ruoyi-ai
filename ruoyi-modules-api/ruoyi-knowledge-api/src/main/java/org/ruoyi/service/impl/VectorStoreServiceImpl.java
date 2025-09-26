@@ -7,6 +7,7 @@ import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
+import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.weaviate.WeaviateEmbeddingStore;
 import io.weaviate.client.Config;
@@ -27,6 +28,8 @@ import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.service.VectorStoreService;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
 import java.util.*;
 
@@ -95,8 +98,9 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
         createSchema(storeEmbeddingBo.getKid(), storeEmbeddingBo.getVectorModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
-                storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
+        // 创建 embeddingModel
+        EmbeddingModel embeddingModel = new EmbeddingModelFactory().getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName());
+
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
         String kid = storeEmbeddingBo.getKid();
@@ -134,8 +138,9 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
         createSchema(queryVectorBo.getKid(), queryVectorBo.getVectorModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
-                queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
+        // 创建 embeddingModel
+        EmbeddingModel embeddingModel = new EmbeddingModelFactory().getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
+
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         float[] vector = queryEmbedding.vector();
         List<String> vectorStrings = new ArrayList<>();
@@ -247,7 +252,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     /**
      * 获取向量模型
      */
-    @SneakyThrows
+/*    @SneakyThrows
     public EmbeddingModel getEmbeddingModel(String modelName, String apiKey, String baseUrl) {
         EmbeddingModel embeddingModel;
         if ("quentinz/bge-large-zh-v1.5".equals(modelName)) {
@@ -265,6 +270,6 @@ public class VectorStoreServiceImpl implements VectorStoreService {
             throw new ServiceException("未找到对应向量化模型!");
         }
         return embeddingModel;
-    }
+    }*/
 
 }
