@@ -91,45 +91,66 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     public TableDataInfo<KnowledgeInfoVo> queryPageListByRole(KnowledgeInfoBo bo, PageQuery pageQuery) {
         // 查询用户关联角色
         LoginUser loginUser = LoginHelper.getLoginUser();
-        if (StringUtils.isEmpty(loginUser.getKroleGroupIds()) || StringUtils.isEmpty(loginUser.getKroleGroupType())) {
-            return new TableDataInfo<>();
-        }
-
-        // 角色/角色组id列表
-        List<String> groupIdList = Arrays.stream(loginUser.getKroleGroupIds().split(","))
-                .filter(StringUtils::isNotEmpty)
-                .toList();
-        List<KnowledgeRole> knowledgeRoles;
-        LambdaQueryWrapper<KnowledgeRole> roleLqw = Wrappers.lambdaQuery();
-        if ("role".equals(loginUser.getKroleGroupType())) {
-            roleLqw.in(KnowledgeRole::getId, groupIdList);
-        } else {
-            roleLqw.in(KnowledgeRole::getGroupId, groupIdList);
-        }
-        knowledgeRoles = knowledgeRoleMapper.selectList(roleLqw);
-
-        if (CollectionUtils.isEmpty(knowledgeRoles)) {
-            return new TableDataInfo<>();
-        }
-
-        // 查询知识库id列表
-        LambdaQueryWrapper<KnowledgeRoleRelation> relationLqw = Wrappers.lambdaQuery();
-        relationLqw.in(KnowledgeRoleRelation::getKnowledgeRoleId, knowledgeRoles.stream().map(KnowledgeRole::getId).filter(Objects::nonNull).collect(Collectors.toList()));
-        List<KnowledgeRoleRelation> knowledgeRoleRelations = knowledgeRoleRelationMapper.selectList(relationLqw);
-
-        if (CollectionUtils.isEmpty(knowledgeRoleRelations)) {
-            return new TableDataInfo<>();
-        }
-
+        
+        // 构建查询条件
         LambdaQueryWrapper<KnowledgeInfo> lqw = buildQueryWrapper(bo);
-        // 在查询用户创建的知识库条件下，拼接角色分配知识库
-        lqw.or(q -> q.in(
-                KnowledgeInfo::getId,
-                knowledgeRoleRelations.stream()
-                        .map(KnowledgeRoleRelation::getKnowledgeId)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList())
-        ));
+        
+        // 管理员用户直接查询所有数据
+        if (Objects.equals(loginUser.getUserId(), 1L)) {
+            Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+            return TableDataInfo.build(result);
+        }
+        
+        // 检查用户是否配置了角色信息
+        if (StringUtils.isNotEmpty(loginUser.getKroleGroupIds()) && StringUtils.isNotEmpty(loginUser.getKroleGroupType())) {
+            // 角色/角色组id列表
+            List<String> groupIdList = Arrays.stream(loginUser.getKroleGroupIds().split(","))
+                    .filter(StringUtils::isNotEmpty)
+                    .toList();
+            
+            // 查询用户关联的角色
+            List<KnowledgeRole> knowledgeRoles = new ArrayList<>();
+            LambdaQueryWrapper<KnowledgeRole> roleLqw = Wrappers.lambdaQuery();
+            if ("role".equals(loginUser.getKroleGroupType())) {
+                roleLqw.in(KnowledgeRole::getId, groupIdList);
+            } else {
+                roleLqw.in(KnowledgeRole::getGroupId, groupIdList);
+            }
+            knowledgeRoles = knowledgeRoleMapper.selectList(roleLqw);
+
+            // 如果用户有关联角色
+            if (!CollectionUtils.isEmpty(knowledgeRoles)) {
+                // 查询这些角色关联的知识库
+                LambdaQueryWrapper<KnowledgeRoleRelation> relationLqw = Wrappers.lambdaQuery();
+                relationLqw.in(KnowledgeRoleRelation::getKnowledgeRoleId, 
+                    knowledgeRoles.stream().map(KnowledgeRole::getId).filter(Objects::nonNull).collect(Collectors.toList()));
+                List<KnowledgeRoleRelation> knowledgeRoleRelations = knowledgeRoleRelationMapper.selectList(relationLqw);
+
+                // 如果角色关联了知识库
+                if (!CollectionUtils.isEmpty(knowledgeRoleRelations)) {
+                    // 查询用户自己的知识库和角色分配的知识库
+                    lqw.and(q -> q.eq(KnowledgeInfo::getUid, loginUser.getUserId())
+                            .or()
+                            .in(KnowledgeInfo::getId,
+                                    knowledgeRoleRelations.stream()
+                                            .map(KnowledgeRoleRelation::getKnowledgeId)
+                                            .filter(Objects::nonNull)
+                                            .collect(Collectors.toList())
+                            )
+                    );
+                } else {
+                    // 用户没有关联任何知识库，只显示自己的
+                    lqw.eq(KnowledgeInfo::getUid, loginUser.getUserId());
+                }
+            } else {
+                // 用户没有关联角色，只显示自己的
+                lqw.eq(KnowledgeInfo::getUid, loginUser.getUserId());
+            }
+        } else {
+            // 用户没有配置角色信息，只显示自己的
+            lqw.eq(KnowledgeInfo::getUid, loginUser.getUserId());
+        }
+        
         Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
