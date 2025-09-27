@@ -240,9 +240,9 @@ springdoc:
   #    persistAuthorization: true
   info:
     # 标题
-    title: '标题：RuoYi-Vue-Plus多租户管理系统_接口文档'
+    title: '标题：ruoyi-ai 接口文档'
     # 描述
-    description: ' 用于管理集团旗下公司的人员信息,具体包括XXX,XXX模块...'
+    description: ''
     # 版本
     version: '版本号: ${ruoyi.version}'
     # 作者信息
