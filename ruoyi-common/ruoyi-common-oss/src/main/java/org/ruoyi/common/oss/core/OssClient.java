@@ -68,7 +68,7 @@ public class OssClient {
             }
             this.client = build.build();
 
-            createBucket();
+            // createBucket();
         } catch (Exception e) {
             if (e instanceof OssException) {
                 throw e;
