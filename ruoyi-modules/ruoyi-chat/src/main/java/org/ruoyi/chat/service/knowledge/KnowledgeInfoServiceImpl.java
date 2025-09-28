@@ -226,11 +226,12 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void removeKnowledge(String id) {
+    public void removeKnowledge(String kid) {
         Map<String, Object> map = new HashMap<>();
-        KnowledgeInfo knowledgeInfo = baseMapper.selectById(id);
+        KnowledgeInfo knowledgeInfo = baseMapper.selectByKid(kid);
+
         check(knowledgeInfo);
-        map.put("kid", knowledgeInfo.getId());
+        map.put("kid", knowledgeInfo.getKid());
         // 删除向量数据
         vectorStoreService.removeById(String.valueOf(knowledgeInfo.getId()), knowledgeInfo.getVectorModelName());
         // 删除附件和知识片段

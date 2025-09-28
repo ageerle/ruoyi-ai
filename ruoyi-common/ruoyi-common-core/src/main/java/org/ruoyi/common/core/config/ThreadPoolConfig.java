@@ -1,5 +1,6 @@
 package org.ruoyi.common.core.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.ruoyi.common.core.config.properties.ThreadPoolProperties;
 import org.ruoyi.common.core.utils.Threads;
@@ -18,6 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  *
  * @author Lion Li
  **/
+@Slf4j
 @AutoConfiguration
 @EnableConfigurationProperties(ThreadPoolProperties.class)
 public class ThreadPoolConfig {
@@ -43,7 +45,8 @@ public class ThreadPoolConfig {
      * 执行周期性或定时任务
      */
     @Bean(name = "scheduledExecutorService")
-    protected ScheduledExecutorService scheduledExecutorService() {
+    public ScheduledExecutorService scheduledExecutorService() {
+        log.info("====创建定时任务线程池====");
         return new ScheduledThreadPoolExecutor(core,
             new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build(),
             new ThreadPoolExecutor.CallerRunsPolicy()) {

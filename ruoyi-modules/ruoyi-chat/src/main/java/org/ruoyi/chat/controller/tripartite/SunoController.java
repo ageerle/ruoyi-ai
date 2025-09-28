@@ -1,7 +1,7 @@
 package org.ruoyi.chat.controller.tripartite;
 
 import cn.hutool.json.JSONUtil;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
@@ -29,7 +29,7 @@ public class SunoController {
     private final OkHttpConfig okHttpConfig;
     private final IChatCostService chatCostService;
 
-    @ApiOperation(value = "文生歌曲")
+    @Operation(summary = "文生歌曲")
     @PostMapping("/generate")
     public String generate(@RequestBody GenerateSuno generateSuno) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("suno");
@@ -42,7 +42,7 @@ public class SunoController {
         return okHttpUtil.executeRequest(request);
     }
 
-    @ApiOperation(value = "生成歌词")
+    @Operation(summary = "生成歌词")
     @PostMapping("/generate/lyrics/")
     public String generate(@RequestBody GenerateLyric generateLyric) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("suno");
@@ -53,7 +53,7 @@ public class SunoController {
     }
 
 
-    @ApiOperation(value = "查询歌词任务")
+    @Operation(summary = "查询歌词任务")
     @GetMapping("/lyrics/{taskId}")
     public String lyrics(@PathVariable String taskId) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("suno");
@@ -63,7 +63,7 @@ public class SunoController {
     }
 
 
-    @ApiOperation(value = "查询歌曲任务")
+    @Operation(summary = "查询歌曲任务")
     @GetMapping("/feed/{taskId}")
     public String feed(@PathVariable String taskId) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("suno");

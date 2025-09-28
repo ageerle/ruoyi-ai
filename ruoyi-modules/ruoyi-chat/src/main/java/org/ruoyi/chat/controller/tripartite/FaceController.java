@@ -1,8 +1,8 @@
 package org.ruoyi.chat.controller.tripartite;
 
 import cn.hutool.json.JSONUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author ageerle
  * @date 2025-05-03
  */
-@Api(tags = "任务查询")
+@Tag(name = "任务查询")
 @RestController
 @RequestMapping("/mj")
 @RequiredArgsConstructor
@@ -32,7 +32,7 @@ public class FaceController {
 
     private final MjOkHttpUtil mjOkHttpUtil;
 
-    @ApiOperation(value = "换脸")
+    @Operation(summary = "换脸")
     @PostMapping("/insight-face/swap")
     public String insightFace(@RequestBody InsightFace insightFace) {
         // 扣除接口费用并且保存消息记录

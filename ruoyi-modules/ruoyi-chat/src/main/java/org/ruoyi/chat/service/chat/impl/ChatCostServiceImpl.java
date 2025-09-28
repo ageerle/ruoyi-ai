@@ -435,8 +435,8 @@ public class ChatCostServiceImpl implements IChatCostService {
     @Override
     public boolean checkBalanceSufficient(ChatRequest chatRequest) {
         if (chatRequest.getUserId() == null) {
-            log.warn("checkBalanceSufficient->用户ID为空，视为余额不足");
-            return false;
+            log.warn("当前未登录");
+            return true;
         }
 
         try {

@@ -1,13 +1,13 @@
 package org.ruoyi.chat.domain.dto;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@ApiModel("局部重绘提交参数")
+@Schema(name = "局部重绘提交参数")
 public class SubmitModalDTO extends BaseSubmitDTO{
 
 	private String maskBase64;
