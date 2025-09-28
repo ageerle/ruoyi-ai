@@ -7,18 +7,15 @@
         <artifactId>ruoyi-ai</artifactId>
         <groupId>org.ruoyi</groupId>
         <version>${revision}</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>ruoyi-modules-api</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>ruoyi-asset-management-api</artifactId>
+    <packaging>jar</packaging>
 
-    <modules>
-        <module>ruoyi-chat-api</module>
-        <module>ruoyi-knowledge-api</module>
-        <module>ruoyi-system-api</module>
-        <module>ruoyi-asset-management-api</module>
-    </modules>
+    <description>
+        资产管理API模块
+    </description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -63,24 +60,31 @@
             <artifactId>ruoyi-common-translation</artifactId>
         </dependency>
 
-        <!-- 系统日志模块 -->
+        <!-- 日志模块 -->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
-        <!-- 对象存储模块 -->
+        <!-- 对象映射工具 -->
         <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-oss</artifactId>
+            <groupId>io.github.linpeilie</groupId>
+            <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- 参数校验 -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>
+
