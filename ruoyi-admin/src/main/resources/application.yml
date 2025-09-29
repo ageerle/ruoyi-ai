@@ -328,3 +328,17 @@ spring:
           servers-configuration: classpath:mcp-server.json
         request-timeout: 300s
 
+--- # 向量库配置
+vector-store:
+  # 向量存储类型 (weaviate/milvus)
+  type: weaviate
+  # Weaviate配置
+  weaviate:
+    protocol: http
+    host: 127.0.0.1:6038
+    classname: LocalKnowledge
+  # Milvus配置
+  milvus:
+    url: http://localhost:19530
+    collectionname: LocalKnowledge
+

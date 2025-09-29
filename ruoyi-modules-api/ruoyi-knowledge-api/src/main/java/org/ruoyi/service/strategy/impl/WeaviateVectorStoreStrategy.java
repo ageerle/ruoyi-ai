@@ -1,7 +1,7 @@
 package org.ruoyi.service.strategy.impl;
 
 import cn.hutool.json.JSONObject;
-import com.google.protobuf.ServiceException;
+import org.ruoyi.common.core.exception.ServiceException;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.weaviate.client.Config;
@@ -17,7 +17,7 @@ import io.weaviate.client.v1.schema.model.Schema;
 import io.weaviate.client.v1.schema.model.WeaviateClass;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.service.ConfigService;
+import org.ruoyi.common.core.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.service.strategy.AbstractVectorStoreStrategy;
@@ -35,8 +35,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     private WeaviateClient client;
 
-    public WeaviateVectorStoreStrategy(ConfigService configService) {
-        super(configService);
+    public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties) {
+        super(vectorStoreProperties);
     }
 
     @Override
@@ -46,9 +46,9 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void createSchema(String vectorModelName, String kid, String modelName) {
-        String protocol = configService.getConfigValue("weaviate", "protocol");
-        String host = configService.getConfigValue("weaviate", "host");
-        String className = configService.getConfigValue("weaviate", "classname") + kid;
+        String protocol = vectorStoreProperties.getWeaviate().getProtocol();
+        String host = vectorStoreProperties.getWeaviate().getHost();
+        String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
         // 创建 Weaviate 客户端
         client = new WeaviateClient(new Config(protocol, host));
         // 检查类是否存在，如果不存在就创建 schema
@@ -128,7 +128,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             vectorStrings.add(String.valueOf(v));
         }
         String vectorStr = String.join(",", vectorStrings);
-        String className = configService.getConfigValue("weaviate", "classname");
+        String className = vectorStoreProperties.getWeaviate().getClassname();
         
         // 构建 GraphQL 查询
         String graphQLQuery = String.format(
@@ -176,9 +176,9 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     @SneakyThrows
     public void removeById(String id, String modelName) {
-        String protocol = configService.getConfigValue("weaviate", "protocol");
-        String host = configService.getConfigValue("weaviate", "host");
-        String className = configService.getConfigValue("weaviate", "classname");
+        String protocol = vectorStoreProperties.getWeaviate().getProtocol();
+        String host = vectorStoreProperties.getWeaviate().getHost();
+        String className = vectorStoreProperties.getWeaviate().getClassname();
         String finalClassName = className + id;
         WeaviateClient client = new WeaviateClient(new Config(protocol, host));
         Result<Boolean> result = client.schema().classDeleter().withClassName(finalClassName).run();
@@ -192,7 +192,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void removeByDocId(String docId, String kid) {
-        String className = configService.getConfigValue("weaviate", "classname") + kid;
+        String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
         // 构建 Where 条件
         WhereFilter whereFilter = WhereFilter.builder()
                 .path("docId")
@@ -212,7 +212,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void removeByFid(String fid, String kid) {
-        String className = configService.getConfigValue("weaviate", "classname") + kid;
+        String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
         // 构建 Where 条件
         WhereFilter whereFilter = WhereFilter.builder()
                 .path("fid")

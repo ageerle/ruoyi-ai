@@ -1,6 +1,6 @@
 package org.ruoyi.service;
 
-import com.google.protobuf.ServiceException;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 

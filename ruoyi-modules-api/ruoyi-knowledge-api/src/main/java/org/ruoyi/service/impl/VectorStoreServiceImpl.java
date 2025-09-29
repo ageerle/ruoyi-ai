@@ -2,7 +2,6 @@ package org.ruoyi.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.service.VectorStoreService;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 向量库管理服务实现 - 使用策略模式
+ * 向量库服务实现
  *
  * @author ageer
  */
@@ -22,7 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VectorStoreServiceImpl implements VectorStoreService {
 
-    private final ConfigService configService;
     private final VectorStoreStrategyFactory strategyFactory;
 
 
@@ -30,11 +28,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
      * 获取当前配置的向量库策略
      */
     private VectorStoreStrategy getCurrentStrategy() {
-        String vectorStoreType = configService.getConfigValue("vector", "type");
-        if (vectorStoreType == null || vectorStoreType.trim().isEmpty()) {
-            vectorStoreType = "weaviate"; // 默认使用weaviate
-        }
-        return strategyFactory.getStrategy(vectorStoreType);
+        return strategyFactory.getStrategy();
     }
 
     @Override

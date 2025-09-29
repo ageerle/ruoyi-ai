@@ -1,30 +1,23 @@
 package org.ruoyi.service.strategy.impl;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.protobuf.ServiceException;
+import org.ruoyi.common.core.exception.ServiceException;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import io.milvus.v2.client.ConnectConfig;
-import io.milvus.v2.client.MilvusClientV2;
-import io.milvus.v2.common.DataType;
-import io.milvus.v2.common.IndexParam;
-import io.milvus.v2.service.collection.request.AddFieldReq;
-import io.milvus.v2.service.collection.request.CreateCollectionReq;
-import io.milvus.v2.service.collection.request.DescribeCollectionReq;
-import io.milvus.v2.service.collection.request.DropCollectionReq;
-import io.milvus.v2.service.collection.request.HasCollectionReq;
-import io.milvus.v2.service.collection.response.DescribeCollectionResp;
-import io.milvus.v2.service.vector.request.DeleteReq;
-import io.milvus.v2.service.vector.request.InsertReq;
-import io.milvus.v2.service.vector.request.SearchReq;
-import io.milvus.v2.service.vector.request.data.BaseVector;
-import io.milvus.v2.service.vector.request.data.FloatVec;
-import io.milvus.v2.service.vector.response.DeleteResp;
-import io.milvus.v2.service.vector.response.InsertResp;
-import io.milvus.v2.service.vector.response.SearchResp;
+import io.milvus.client.MilvusServiceClient;
+import io.milvus.common.clientenum.ConsistencyLevelEnum;
+import io.milvus.grpc.*;
+import io.milvus.param.*;
+import io.milvus.param.collection.*;
+import io.milvus.param.dml.DeleteParam;
+import io.milvus.param.dml.InsertParam;
+import io.milvus.param.dml.SearchParam;
+import io.milvus.param.index.CreateIndexParam;
+import io.milvus.param.index.DescribeIndexParam;
+import io.milvus.response.DescCollResponseWrapper;
+import io.milvus.response.SearchResultsWrapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.service.ConfigService;
+import org.ruoyi.common.core.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.service.strategy.AbstractVectorStoreStrategy;
@@ -41,105 +34,122 @@ import java.util.*;
 @Component
 public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
-    private MilvusClientV2 client;
-    
-    public MilvusVectorStoreStrategy(ConfigService configService) {
-        super(configService);
+    private MilvusServiceClient milvusClient;
+
+    public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties) {
+        super(vectorStoreProperties);
     }
 
     @Override
     public String getVectorStoreType() {
         return "milvus";
     }
-    
+
     @Override
     public void createSchema(String vectorModelName, String kid, String modelName) {
-        log.info("Milvus创建schema: vectorModelName={}, kid={}, modelName={}", vectorModelName, kid, modelName);
+        String url = vectorStoreProperties.getMilvus().getUrl();
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
         
-        // 1. 获取Milvus配置
-        String host = configService.getConfigValue("milvus", "url");
-        String collectionName = configService.getConfigValue("milvus", "collectionname") + kid;
-        
-        ConnectConfig config = ConnectConfig.builder()
-                .uri(host)
+        // 创建Milvus客户端连接
+        ConnectParam connectParam = ConnectParam.newBuilder()
+                .withUri(url)
                 .build();
-        client = new MilvusClientV2(config);
+        milvusClient = new MilvusServiceClient(connectParam);
 
-        // 2. 检查集合是否存在
-        HasCollectionReq hasCollectionReq = HasCollectionReq.builder()
-                .collectionName(collectionName)
+        // 检查集合是否存在
+        HasCollectionParam hasCollectionParam = HasCollectionParam.newBuilder()
+                .withCollectionName(collectionName)
                 .build();
         
-        Boolean hasCollection = client.hasCollection(hasCollectionReq);
+        R<Boolean> hasCollectionResponse = milvusClient.hasCollection(hasCollectionParam);
+        if (hasCollectionResponse.getStatus() != R.Status.Success.getCode()) {
+            log.error("检查集合是否存在失败: {}", hasCollectionResponse.getMessage());
+            return;
+        }
         
-        if (!hasCollection) {
-            // 3. 创建集合schema
-            CreateCollectionReq.CollectionSchema schema = CreateCollectionReq.CollectionSchema.builder()
-                    .build();
+        if (!hasCollectionResponse.getData()) {
+            // 创建字段
+            List<FieldType> fields = new ArrayList<>();
             
-            // 添加字段定义
-            schema.addField(AddFieldReq.builder()
-                    .fieldName("id")
-                    .dataType(DataType.Int64)
-                    .isPrimaryKey(true)
-                    .autoID(true)
+            // ID字段 (主键)
+            fields.add(FieldType.newBuilder()
+                    .withName("id")
+                    .withDataType(DataType.Int64)
+                    .withPrimaryKey(true)
+                    .withAutoID(true)
+                    .build());
+            
+            // 文本字段
+            fields.add(FieldType.newBuilder()
+                    .withName("text")
+                    .withDataType(DataType.VarChar)
+                    .withMaxLength(65535)
+                    .build());
+            
+            // fid字段
+            fields.add(FieldType.newBuilder()
+                    .withName("fid")
+                    .withDataType(DataType.VarChar)
+                    .withMaxLength(255)
+                    .build());
+            
+            // kid字段
+            fields.add(FieldType.newBuilder()
+                    .withName("kid")
+                    .withDataType(DataType.VarChar)
+                    .withMaxLength(255)
+                    .build());
+            
+            // docId字段
+            fields.add(FieldType.newBuilder()
+                    .withName("docId")
+                    .withDataType(DataType.VarChar)
+                    .withMaxLength(255)
+                    .build());
+            
+            // 向量字段
+            fields.add(FieldType.newBuilder()
+                    .withName("vector")
+                    .withDataType(DataType.FloatVector)
+                    .withDimension(1024) // 根据实际embedding维度调整
                     .build());
 
-            schema.addField(AddFieldReq.builder()
-                    .fieldName("text")
-                    .dataType(DataType.VarChar)
-                    .maxLength(65535)
-                    .build());
-
-            schema.addField(AddFieldReq.builder()
-                    .fieldName("fid")
-                    .dataType(DataType.VarChar)
-                    .maxLength(255)
-                    .build());
-
-            schema.addField(AddFieldReq.builder()
-                    .fieldName("kid")
-                    .dataType(DataType.VarChar)
-                    .maxLength(255)
-                    .build());
-
-            schema.addField(AddFieldReq.builder()
-                    .fieldName("docId")
-                    .dataType(DataType.VarChar)
-                    .maxLength(255)
-                    .build());
-
-            schema.addField(AddFieldReq.builder()
-                    .fieldName("vector")
-                    .dataType(DataType.FloatVector)
-                    .dimension(1024) // 根据实际embedding维度调整
-                    .build());
-
-            // 4. 创建索引参数
-            List<IndexParam> indexParams = new ArrayList<>();
-            indexParams.add(IndexParam.builder()
-                    .fieldName("vector")
-                    .indexType(IndexParam.IndexType.IVF_FLAT)
-                    .metricType(IndexParam.MetricType.L2)
-                    .extraParams(Map.of("nlist", 1024))
-                    .build());
-
-            // 5. 创建集合
-            CreateCollectionReq createCollectionReq = CreateCollectionReq.builder()
-                    .collectionName(collectionName)
-                    .collectionSchema(schema)
-                    .indexParams(indexParams)
+            // 创建集合
+            CreateCollectionParam createCollectionParam = CreateCollectionParam.newBuilder()
+                    .withCollectionName(collectionName)
+                    .withDescription("Knowledge base collection for " + kid)
+                    .withShardsNum(2)
+                    .withFieldTypes(fields)
                     .build();
 
-            client.createCollection(createCollectionReq);
-            log.info("Milvus集合创建成功: {}", collectionName);
+            R<RpcStatus> createCollectionResponse = milvusClient.createCollection(createCollectionParam);
+            if (createCollectionResponse.getStatus() != R.Status.Success.getCode()) {
+                log.error("创建集合失败: {}", createCollectionResponse.getMessage());
+                return;
+            }
+
+            // 创建索引
+            CreateIndexParam createIndexParam = CreateIndexParam.newBuilder()
+                    .withCollectionName(collectionName)
+                    .withFieldName("vector")
+                    .withIndexType(IndexType.IVF_FLAT)
+                    .withMetricType(MetricType.L2)
+                    .withExtraParam("{\"nlist\":1024}")
+                    .build();
+
+            R<RpcStatus> createIndexResponse = milvusClient.createIndex(createIndexParam);
+            if (createIndexResponse.getStatus() != R.Status.Success.getCode()) {
+                log.error("创建索引失败: {}", createIndexResponse.getMessage());
+            } else {
+                log.info("Milvus集合和索引创建成功: {}", collectionName);
+            }
         } else {
             log.info("Milvus集合已存在: {}", collectionName);
         }
     }
 
     @Override
-    public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) throws ServiceException {
+    public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
         createSchema(storeEmbeddingBo.getVectorModelName(), storeEmbeddingBo.getKid(), storeEmbeddingBo.getVectorModelName());
         
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
@@ -149,12 +159,13 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
         List<String> fidList = storeEmbeddingBo.getFids();
         String kid = storeEmbeddingBo.getKid();
         String docId = storeEmbeddingBo.getDocId();
-        String collectionName = configService.getConfigValue("milvus", "collectionname") + kid;
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
         
         log.info("Milvus向量存储条数记录: " + chunkList.size());
         long startTime = System.currentTimeMillis();
         
         // 准备批量插入数据
+        List<InsertParam.Field> fields = new ArrayList<>();
         List<String> textList = new ArrayList<>();
         List<String> fidListData = new ArrayList<>();
         List<String> kidList = new ArrayList<>();
@@ -178,31 +189,25 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
             vectorList.add(vector);
         }
         
-        // 构建插入数据
-        List<JsonObject> data = new ArrayList<>();
-        Gson gson = new Gson();
-        for (int i = 0; i < textList.size(); i++) {
-            JsonObject row = new JsonObject();
-            row.addProperty("text", textList.get(i));
-            row.addProperty("fid", fidListData.get(i));
-            row.addProperty("kid", kidList.get(i));
-            row.addProperty("docId", docIdList.get(i));
-            row.add("vector", gson.toJsonTree(vectorList.get(i)));
-            data.add(row);
-        }
+        // 构建字段数据
+        fields.add(new InsertParam.Field("text", textList));
+        fields.add(new InsertParam.Field("fid", fidListData));
+        fields.add(new InsertParam.Field("kid", kidList));
+        fields.add(new InsertParam.Field("docId", docIdList));
+        fields.add(new InsertParam.Field("vector", vectorList));
         
         // 执行插入
-        InsertReq insertReq = InsertReq.builder()
-                .collectionName(collectionName)
-                .data(data)
+        InsertParam insertParam = InsertParam.newBuilder()
+                .withCollectionName(collectionName)
+                .withFields(fields)
                 .build();
         
-        InsertResp insertResp = client.insert(insertReq);
-        if (insertResp.getInsertCnt() > 0) {
-            log.info("Milvus向量存储成功，插入条数: {}", insertResp.getInsertCnt());
-        } else {
-            log.error("Milvus向量存储失败");
+        R<MutationResult> insertResponse = milvusClient.insert(insertParam);
+        if (insertResponse.getStatus() != R.Status.Success.getCode()) {
+            log.error("Milvus向量存储失败: {}", insertResponse.getMessage());
             throw new ServiceException("Milvus向量存储失败");
+        } else {
+            log.info("Milvus向量存储成功，插入条数: {}", insertResponse.getData().getInsertCnt());
         }
         
         long endTime = System.currentTimeMillis();
@@ -217,99 +222,116 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
         
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
-        String collectionName = configService.getConfigValue("milvus", "collectionname") + queryVectorBo.getKid();
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + queryVectorBo.getKid();
         
         List<String> resultList = new ArrayList<>();
         
-        // 准备查询向量
-        List<BaseVector> searchVectors = new ArrayList<>();
-        float[] queryVectorArray = new float[queryEmbedding.vector().length];
-        for (int i = 0; i < queryEmbedding.vector().length; i++) {
-            queryVectorArray[i] = queryEmbedding.vector()[i];
-        }
-        searchVectors.add(new FloatVec(queryVectorArray));
+        // 加载集合到内存
+        LoadCollectionParam loadCollectionParam = LoadCollectionParam.newBuilder()
+                .withCollectionName(collectionName)
+                .build();
+        milvusClient.loadCollection(loadCollectionParam);
         
-        // 构建搜索请求
-        SearchReq searchReq = SearchReq.builder()
-                .collectionName(collectionName)
-                .data(searchVectors)
-                .topK(queryVectorBo.getMaxResults())
-                .outputFields(Arrays.asList("text", "fid", "kid", "docId"))
+        // 准备查询向量
+        List<List<Float>> searchVectors = new ArrayList<>();
+        List<Float> queryVector = new ArrayList<>();
+        for (float f : queryEmbedding.vector()) {
+            queryVector.add(f);
+        }
+        searchVectors.add(queryVector);
+        
+        // 构建搜索参数
+        SearchParam searchParam = SearchParam.newBuilder()
+                .withCollectionName(collectionName)
+                .withMetricType(MetricType.L2)
+                .withOutFields(Arrays.asList("text", "fid", "kid", "docId"))
+                .withTopK(queryVectorBo.getMaxResults())
+                .withVectors(searchVectors)
+                .withVectorFieldName("vector")
+                .withParams("{\"nprobe\":10}")
                 .build();
         
-        SearchResp searchResp = client.search(searchReq);
-        if (searchResp != null && searchResp.getSearchResults() != null) {
-            List<List<SearchResp.SearchResult>> searchResults = searchResp.getSearchResults();
+        R<SearchResults> searchResponse = milvusClient.search(searchParam);
+        if (searchResponse.getStatus() != R.Status.Success.getCode()) {
+            log.error("Milvus查询失败: {}", searchResponse.getMessage());
+            return resultList;
+        }
+        
+        SearchResultsWrapper wrapper = new SearchResultsWrapper(searchResponse.getData().getResults());
+        
+        // 遍历搜索结果
+        for (int i = 0; i < wrapper.getIDScore(0).size(); i++) {
+            SearchResultsWrapper.IDScore idScore = wrapper.getIDScore(0).get(i);
             
-            for (List<SearchResp.SearchResult> results : searchResults) {
-                for (SearchResp.SearchResult result : results) {
-                    Map<String, Object> entity = result.getEntity();
-                    String text = (String) entity.get("text");
-                    if (text != null) {
-                        resultList.add(text);
-                    }
+            // 获取text字段数据
+            List<?> textFieldData = wrapper.getFieldData("text", 0);
+            if (textFieldData != null && i < textFieldData.size()) {
+                Object textObj = textFieldData.get(i);
+                if (textObj != null) {
+                    resultList.add(textObj.toString());
+                    log.debug("找到相似文本，ID: {}, 距离: {}, 内容: {}", 
+                            idScore.getLongID(), idScore.getScore(), textObj.toString());
                 }
             }
-        } else {
-            log.error("Milvus查询失败或无结果");
         }
         
         return resultList;
     }
 
     @Override
-    public void removeById(String id, String modelName) throws ServiceException {
-        String collectionName = configService.getConfigValue("milvus", "collectionname") + id;
+    @SneakyThrows
+    public void removeById(String id, String modelName) {
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + id;
         
         // 删除整个集合
-        DropCollectionReq dropCollectionReq = DropCollectionReq.builder()
-                .collectionName(collectionName)
+        DropCollectionParam dropCollectionParam = DropCollectionParam.newBuilder()
+                .withCollectionName(collectionName)
                 .build();
         
-        try {
-            client.dropCollection(dropCollectionReq);
+        R<RpcStatus> dropResponse = milvusClient.dropCollection(dropCollectionParam);
+        if (dropResponse.getStatus() != R.Status.Success.getCode()) {
+            log.error("Milvus集合删除失败: {}", dropResponse.getMessage());
+            throw new ServiceException("Milvus集合删除失败");
+        } else {
             log.info("Milvus集合删除成功: {}", collectionName);
-        } catch (Exception e) {
-            log.error("Milvus集合删除失败: {}", e.getMessage());
-            throw new ServiceException("Milvus集合删除失败: " + e.getMessage());
         }
     }
 
     @Override
-    public void removeByDocId(String docId, String kid) throws ServiceException {
-        String collectionName = configService.getConfigValue("milvus", "collectionname") + kid;
+    public void removeByDocId(String docId, String kid) {
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
         
         String expr = "docId == \"" + docId + "\"";
-        DeleteReq deleteReq = DeleteReq.builder()
-                .collectionName(collectionName)
-                .filter(expr)
+        DeleteParam deleteParam = DeleteParam.newBuilder()
+                .withCollectionName(collectionName)
+                .withExpr(expr)
                 .build();
         
-        try {
-            DeleteResp deleteResp = client.delete(deleteReq);
-            log.info("Milvus成功删除 docId={} 的所有向量数据，删除条数: {}", docId, deleteResp.getDeleteCnt());
-        } catch (Exception e) {
-            log.error("Milvus删除失败: {}", e.getMessage());
-            throw new ServiceException(e.getMessage());
+        R<MutationResult> deleteResponse = milvusClient.delete(deleteParam);
+        if (deleteResponse.getStatus() != R.Status.Success.getCode()) {
+            log.error("Milvus删除失败: {}", deleteResponse.getMessage());
+            throw new ServiceException("Milvus删除失败");
+        } else {
+            log.info("Milvus成功删除 docId={} 的所有向量数据，删除条数: {}", docId, deleteResponse.getData().getDeleteCnt());
         }
     }
 
     @Override
-    public void removeByFid(String fid, String kid) throws ServiceException {
-        String collectionName = configService.getConfigValue("milvus", "collectionname") + kid;
+    public void removeByFid(String fid, String kid) {
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
         
         String expr = "fid == \"" + fid + "\"";
-        DeleteReq deleteReq = DeleteReq.builder()
-                .collectionName(collectionName)
-                .filter(expr)
+        DeleteParam deleteParam = DeleteParam.newBuilder()
+                .withCollectionName(collectionName)
+                .withExpr(expr)
                 .build();
         
-        try {
-            DeleteResp deleteResp = client.delete(deleteReq);
-            log.info("Milvus成功删除 fid={} 的所有向量数据，删除条数: {}", fid, deleteResp.getDeleteCnt());
-        } catch (Exception e) {
-            log.error("Milvus删除失败: {}", e.getMessage());
-            throw new ServiceException(e.getMessage());
+        R<MutationResult> deleteResponse = milvusClient.delete(deleteParam);
+        if (deleteResponse.getStatus() != R.Status.Success.getCode()) {
+            log.error("Milvus删除失败: {}", deleteResponse.getMessage());
+            throw new ServiceException("Milvus删除失败");
+        } else {
+            log.info("Milvus成功删除 fid={} 的所有向量数据，删除条数: {}", fid, deleteResponse.getData().getDeleteCnt());
         }
     }
 }

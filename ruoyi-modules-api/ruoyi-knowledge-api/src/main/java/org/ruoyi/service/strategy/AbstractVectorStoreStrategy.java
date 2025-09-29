@@ -1,13 +1,13 @@
 package org.ruoyi.service.strategy;
 
-import com.google.protobuf.ServiceException;
+import org.ruoyi.common.core.exception.ServiceException;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.service.ConfigService;
+import org.ruoyi.common.core.config.VectorStoreProperties;
 
 /**
  * 向量库策略抽象基类
@@ -19,7 +19,7 @@ import org.ruoyi.common.core.service.ConfigService;
 @RequiredArgsConstructor
 public abstract class AbstractVectorStoreStrategy implements VectorStoreStrategy {
 
-    protected final ConfigService configService;
+    protected final VectorStoreProperties vectorStoreProperties;
 
     /**
      * 获取向量模型
