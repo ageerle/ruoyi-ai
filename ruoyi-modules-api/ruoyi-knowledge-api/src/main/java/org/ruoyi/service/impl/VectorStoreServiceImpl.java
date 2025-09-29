@@ -7,6 +7,7 @@ import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.strategy.VectorStoreStrategy;
 import org.ruoyi.service.strategy.VectorStoreStrategyFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
  *
  * @author ageer
  */
+@Primary
 @Service
 @Slf4j
 @RequiredArgsConstructor
