@@ -31,7 +31,12 @@ public class QueryVectorBo {
     private String vectorModelName;
 
     /**
-     * 向量化模型名称
+     * 向量化模型ID
+     */
+    private Long embeddingModelId;
+
+    /**
+     * 向量化模型ID
      */
     private String embeddingModelName;
 

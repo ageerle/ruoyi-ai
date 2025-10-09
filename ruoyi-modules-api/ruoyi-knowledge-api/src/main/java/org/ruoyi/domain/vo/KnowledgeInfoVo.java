@@ -102,6 +102,11 @@ public class KnowledgeInfoVo implements Serializable {
     private String vectorModelName;
 
     /**
+     * 向量化模型id
+     */
+    private Long embeddingModelId;
+
+    /**
      * 向量化模型名称
      */
     private String embeddingModelName;

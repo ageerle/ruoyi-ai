@@ -92,7 +92,11 @@ public class KnowledgeInfoBo extends BaseEntity {
     /**
      * 向量化模型名称
      */
-    @NotBlank(message = "向量模型不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Long embeddingModelId;
+
+    /**
+     * 向量化模型名称
+     */
     private String embeddingModelName;
 
 
