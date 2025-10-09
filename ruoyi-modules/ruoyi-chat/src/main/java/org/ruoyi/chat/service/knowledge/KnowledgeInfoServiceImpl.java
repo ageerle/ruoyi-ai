@@ -290,7 +290,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
                 .eq(KnowledgeInfo::getId, kid));
 
         // 通过向量模型查询模型信息
-        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
+        ChatModelVo chatModelVo = chatModelService.queryById(knowledgeInfoVo.getEmbeddingModelId());
 
         StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
         storeEmbeddingBo.setKid(kid);
@@ -298,7 +298,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         storeEmbeddingBo.setFids(fids);
         storeEmbeddingBo.setChunkList(chunkList);
         storeEmbeddingBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
-        storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
+        storeEmbeddingBo.setEmbeddingModelId(knowledgeInfoVo.getEmbeddingModelId());
         storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
         storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
         vectorStoreService.storeEmbeddings(storeEmbeddingBo);
