@@ -103,6 +103,7 @@ INSERT INTO `aihuman_config` VALUES (13, '关爱老婆数字人（230108）', '2
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -129,10 +130,6 @@ CREATE TABLE `sys_dict_data`  (
                                   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '备注',
                                   PRIMARY KEY (`dict_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
-
-
-
-
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -183,8 +180,6 @@ INSERT INTO `sys_dict_data` VALUES (1971580207002615809, '000000', 0, '未发布
 INSERT INTO `sys_dict_data` VALUES (1971580286589534210, '000000', 1, '已发布', '1', 'aihuman_is_publish', NULL, '#00a89d', 'N', '0', NULL, NULL, '2025-09-26 22:19:05', 1, '2025-09-26 22:19:25', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
-
-
 
 
 SET NAMES utf8mb4;
@@ -238,7 +233,6 @@ INSERT INTO `sys_dict_type` VALUES (1938225899023884289, '000000', '模型分类
 INSERT INTO `sys_dict_type` VALUES (1971579935501123586, '000000', '发布状态', 'aihuman_is_publish', '0', NULL, NULL, '2025-09-26 22:17:41', NULL, '2025-09-26 22:17:41', '0 代表未发布，1代表发布');
 
 SET FOREIGN_KEY_CHECKS = 1;
-
 
 
 
@@ -396,8 +390,6 @@ INSERT INTO `sys_menu` VALUES (1971582278942666757, '交互数字人配置导出
 INSERT INTO `sys_menu` VALUES (1972543718952386561, 'Live2D数字人体验', 1971550631887237121, 10, 'aihumanPublish', 'aihuman/aihumanPublish/index', NULL, 1, 0, 'C', '0', '0', NULL, '#', NULL, NULL, '2025-09-29 14:07:25', 1, '2025-09-29 14:36:28', '');
 
 SET FOREIGN_KEY_CHECKS = 1;
-
-
 
 
 

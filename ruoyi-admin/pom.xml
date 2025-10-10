@@ -57,7 +57,6 @@
             <artifactId>ruoyi-generator</artifactId>
         </dependency>
 
-        <!-- 新添加的数字人模块 -->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-aihuman</artifactId>
