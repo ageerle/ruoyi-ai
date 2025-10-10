@@ -21,7 +21,11 @@
         <module>ruoyi-chat</module>
         <module>ruoyi-system</module>
         <module>ruoyi-generator</module>
-		 <module>ruoyi-wechat</module>
+        <module>ruoyi-wechat</module>
+
+        <!-- 新添加的数字人模块-->
+        <module>ruoyi-aihuman</module>
+
     </modules>
 
     <properties>

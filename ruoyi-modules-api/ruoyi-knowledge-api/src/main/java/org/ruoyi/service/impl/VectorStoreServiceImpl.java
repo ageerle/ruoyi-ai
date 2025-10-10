@@ -2,6 +2,7 @@ package org.ruoyi.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.service.VectorStoreService;
@@ -9,15 +10,14 @@ import org.ruoyi.service.strategy.VectorStoreStrategy;
 import org.ruoyi.service.strategy.VectorStoreStrategyFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * 向量库服务实现
+ * 向量库管理
  *
  * @author ageer
  */
-@Primary
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -42,7 +42,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        log.info("存储向量数据: kid={}, docId={}, 数据条数={}", 
+        log.info("存储向量数据: kid={}, docId={}, 数据条数={}",
                 storeEmbeddingBo.getKid(), storeEmbeddingBo.getDocId(), storeEmbeddingBo.getChunkList().size());
         VectorStoreStrategy strategy = getCurrentStrategy();
         strategy.storeEmbeddings(storeEmbeddingBo);
@@ -50,7 +50,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        log.info("查询向量数据: kid={}, query={}, maxResults={}", 
+        log.info("查询向量数据: kid={}, query={}, maxResults={}",
                 queryVectorBo.getKid(), queryVectorBo.getQuery(), queryVectorBo.getMaxResults());
         VectorStoreStrategy strategy = getCurrentStrategy();
         return strategy.getQueryVector(queryVectorBo);
