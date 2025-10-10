@@ -390,3 +390,6 @@ INSERT INTO `sys_menu` VALUES (1971582278942666757, '交互数字人配置导出
 INSERT INTO `sys_menu` VALUES (1972543718952386561, 'Live2D数字人体验', 1971550631887237121, 10, 'aihumanPublish', 'aihuman/aihumanPublish/index', NULL, 1, 0, 'C', '0', '0', NULL, '#', NULL, NULL, '2025-09-29 14:07:25', 1, '2025-09-29 14:36:28', '');
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+
