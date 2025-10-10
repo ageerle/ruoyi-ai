@@ -52,13 +52,13 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `aihuman_info`;
 CREATE TABLE `aihuman_info`  (
                                  `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-                                 `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '交互名称',
-                                 `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '交互内容',
+                                 `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '交互名称',
+                                 `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '交互内容',
                                  `create_time` datetime(0) DEFAULT NULL COMMENT '创建时间',
                                  `update_time` datetime(0) DEFAULT NULL COMMENT '更新时间',
-                                 `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+                                 `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
                                  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI人类交互信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'AI人类交互信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aihuman_info
