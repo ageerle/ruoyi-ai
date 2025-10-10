@@ -1,5 +1,6 @@
 package org.ruoyi.domain.bo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -85,6 +86,10 @@ public class ChatModelBo extends BaseEntity {
     @NotBlank(message = "密钥不能为空", groups = { AddGroup.class, EditGroup.class })
     private String apiKey;
 
+    /**
+     * 模型供应商
+     */
+    private String ProviderName;
 
     /**
      * 备注

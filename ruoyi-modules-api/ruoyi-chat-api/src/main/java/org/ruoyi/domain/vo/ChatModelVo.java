@@ -96,6 +96,12 @@ public class ChatModelVo implements Serializable {
     private Integer priority;
 
     /**
+     * 模型供应商
+     */
+    @ExcelProperty(value = "模型供应商")
+    private String ProviderName;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")
