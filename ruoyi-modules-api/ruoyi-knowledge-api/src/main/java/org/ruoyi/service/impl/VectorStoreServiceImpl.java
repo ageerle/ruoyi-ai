@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
  * @author ageer
  */
 @Service
+@Primary
 @Slf4j
 @RequiredArgsConstructor
 public class VectorStoreServiceImpl implements VectorStoreService {
