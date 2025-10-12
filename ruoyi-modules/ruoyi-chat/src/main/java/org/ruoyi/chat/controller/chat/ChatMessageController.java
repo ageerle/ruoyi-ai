@@ -46,6 +46,18 @@ public class ChatMessageController extends BaseController {
     }
 
     /**
+     * 根据会话ID查询聊天消息列表
+     */
+    @GetMapping("/listBySession/{sessionId}")
+    public TableDataInfo<ChatMessageVo> listBySession(@NotNull(message = "会话ID不能为空")
+                                                      @PathVariable Long sessionId,
+                                                      PageQuery pageQuery) {
+        ChatMessageBo bo = new ChatMessageBo();
+        bo.setSessionId(sessionId);
+        return chatMessageService.queryPageList(bo, pageQuery);
+    }
+
+    /**
      * 导出聊天消息列表
      */
     @Log(title = "聊天消息", businessType = BusinessType.EXPORT)

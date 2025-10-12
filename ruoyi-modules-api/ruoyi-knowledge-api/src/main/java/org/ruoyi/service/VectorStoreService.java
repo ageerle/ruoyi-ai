@@ -1,5 +1,6 @@
 package org.ruoyi.service;
 
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 
@@ -11,15 +12,15 @@ import java.util.List;
  */
 public interface VectorStoreService {
 
-    void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo);
+    void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) throws ServiceException;
 
     List<String> getQueryVector(QueryVectorBo queryVectorBo);
 
-    void createSchema(String kid,String modelName);
+    void createSchema(String vectorModelName, String kid,String modelName);
 
-    void removeById(String id,String modelName);
+    void removeById(String id,String modelName) throws ServiceException;
 
-    void removeByDocId(String docId, String kid);
+    void removeByDocId(String docId, String kid) throws ServiceException;
 
-    void removeByFid(String fid, String kid);
+    void removeByFid(String fid, String kid) throws ServiceException;
 }
