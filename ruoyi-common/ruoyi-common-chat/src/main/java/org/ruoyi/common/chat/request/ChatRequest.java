@@ -26,10 +26,17 @@ public class ChatRequest {
      */
     private String prompt;
 
+
     /**
      * 系统提示词
      */
     private String sysPrompt;
+
+
+    /**
+     * 消息id
+     */
+    private Long messageId;
 
     /**
      * 是否开启流式对话
