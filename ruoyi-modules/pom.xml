@@ -22,6 +22,7 @@
         <module>ruoyi-system</module>
         <module>ruoyi-generator</module>
 		 <module>ruoyi-wechat</module>
+        <module>ruoyi-workflow</module>
     </modules>
 
     <properties>
