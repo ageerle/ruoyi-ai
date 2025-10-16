@@ -12,7 +12,6 @@ import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
 import org.ruoyi.workflow.exception.WorkflowBaseException;
-import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.util.SpringUtil;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
@@ -23,7 +22,6 @@ import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.def.WfNodeIO;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
 import java.util.List;

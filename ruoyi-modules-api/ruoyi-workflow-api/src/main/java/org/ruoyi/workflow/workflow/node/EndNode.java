@@ -5,11 +5,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
-import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.workflow.*;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
 import java.util.List;

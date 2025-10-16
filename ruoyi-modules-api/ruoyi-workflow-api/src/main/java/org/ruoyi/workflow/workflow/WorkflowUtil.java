@@ -16,7 +16,6 @@ import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.data.NodeIODataContent;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +49,22 @@ public class WorkflowUtil {
         return result;
     }
 
+    public static String getHumanFeedbackTip(String nodeUuid, List<WorkflowNode> wfNodes) {
+        WorkflowNode wfNode = wfNodes.stream()
+                .filter(item -> item.getUuid().equals(nodeUuid))
+                .findFirst().orElse(null);
+        if (null == wfNode) {
+            return "";
+        }
+        String wfNodeNodeConfig = wfNode.getNodeConfig();
+        if (StrUtil.isBlank(wfNodeNodeConfig)) {
+            return "";
+        }
+        Map<String, Object> map = JsonUtil.toMap(wfNodeNodeConfig);
+        Object tip = map.getOrDefault("tip", "");
+        return String.valueOf(tip);
+    }
+
     public void streamingInvokeLLM(WfState wfState, WfNodeState state, WorkflowNode node, String modelPlatform,
                                    String modelName, List<UserMessage> msgs) {
         log.info("stream invoke, modelPlatform: {}, modelName: {}", modelPlatform, modelName);
@@ -72,7 +87,7 @@ public class WorkflowUtil {
         // 构建 ruoyi-ai 的 ChatRequest
         ChatRequest chatRequest = new ChatRequest();
         chatRequest.setModel(modelName);
-        
+
         List<Message> messages = new ArrayList<>();
         for (UserMessage userMsg : msgs) {
             Message message = new Message();
@@ -84,21 +99,5 @@ public class WorkflowUtil {
         // 使用工作流专用方法
         chatService.chat(chatRequest, streamingGenerator.handler());
         wfState.getNodeToStreamingGenerator().put(node.getUuid(), streamingGenerator);
-    }
-
-    public static String getHumanFeedbackTip(String nodeUuid, List<WorkflowNode> wfNodes) {
-        WorkflowNode wfNode = wfNodes.stream()
-                .filter(item -> item.getUuid().equals(nodeUuid))
-                .findFirst().orElse(null);
-        if (null == wfNode) {
-            return "";
-        }
-        String wfNodeNodeConfig = wfNode.getNodeConfig();
-        if (StrUtil.isBlank(wfNodeNodeConfig)) {
-            return "";
-        }
-        Map<String, Object> map = JsonUtil.toMap(wfNodeNodeConfig);
-        Object tip = map.getOrDefault("tip", "");
-        return String.valueOf(tip);
     }
 }
