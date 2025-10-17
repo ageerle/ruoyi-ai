@@ -237,8 +237,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             }
             baseMapper.insert(knowledgeInfo);
             if (knowledgeInfo != null) {
-                vectorStoreService.createSchema(knowledgeInfo.getVectorModelName(),String.valueOf(knowledgeInfo.getId()),
-                        bo.getVectorModelName());
+                vectorStoreService.createSchema(knowledgeInfo.getVectorModelName(),String.valueOf(knowledgeInfo.getId()));
             }
         } else {
             baseMapper.updateById(knowledgeInfo);
@@ -322,6 +321,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         storeEmbeddingBo.setChunkList(chunkList);
         storeEmbeddingBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
         storeEmbeddingBo.setEmbeddingModelId(knowledgeInfoVo.getEmbeddingModelId());
+        storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
         storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
         storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
         vectorStoreService.storeEmbeddings(storeEmbeddingBo);

@@ -45,7 +45,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     }
 
     @Override
-    public void createSchema(String vectorModelName, String kid, String modelName) {
+    public void createSchema(String vectorModelName, String kid) {
         String protocol = vectorStoreProperties.getWeaviate().getProtocol();
         String host = vectorStoreProperties.getWeaviate().getHost();
         String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
@@ -84,7 +84,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        createSchema(storeEmbeddingBo.getVectorModelName(), storeEmbeddingBo.getKid(), storeEmbeddingBo.getVectorModelName());
+        createSchema(storeEmbeddingBo.getVectorModelName(), storeEmbeddingBo.getKid());
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
                 storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
         List<String> chunkList = storeEmbeddingBo.getChunkList();
@@ -118,7 +118,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        createSchema(queryVectorBo.getVectorModelName(), queryVectorBo.getKid(), queryVectorBo.getVectorModelName());
+        createSchema(queryVectorBo.getVectorModelName(), queryVectorBo.getKid());
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
                 queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();

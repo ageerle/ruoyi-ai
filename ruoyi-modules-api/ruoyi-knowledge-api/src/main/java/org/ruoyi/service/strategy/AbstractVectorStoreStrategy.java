@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
+import org.ruoyi.common.core.utils.StringUtils;
 
 /**
  * 向量库策略抽象基类
@@ -36,6 +37,13 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreStrategy
             embeddingModel = OpenAiEmbeddingModel.builder()
                     .apiKey(apiKey)
                     .baseUrl(baseUrl)
+                    .modelName(modelName)
+                    .build();
+        } else if (StringUtils.isNotEmpty(modelName)){
+            embeddingModel = OpenAiEmbeddingModel.builder()
+                    .apiKey(apiKey)
+                    .baseUrl(baseUrl)
+                    .dimensions(2048)
                     .modelName(modelName)
                     .build();
         } else {

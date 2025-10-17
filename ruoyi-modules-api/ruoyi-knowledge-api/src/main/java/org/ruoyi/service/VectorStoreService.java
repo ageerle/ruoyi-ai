@@ -16,7 +16,7 @@ public interface VectorStoreService {
 
     List<String> getQueryVector(QueryVectorBo queryVectorBo);
 
-    void createSchema(String vectorModelName, String kid,String modelName);
+    void createSchema(String vectorModelName, String kid);
 
     void removeById(String id,String modelName) throws ServiceException;
 

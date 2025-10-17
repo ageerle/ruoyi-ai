@@ -46,7 +46,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     }
 
     @Override
-    public void createSchema(String vectorModelName, String kid, String modelName) {
+    public void createSchema(String vectorModelName, String kid) {
         String url = vectorStoreProperties.getMilvus().getUrl();
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
         
@@ -111,7 +111,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
             fields.add(FieldType.newBuilder()
                     .withName("vector")
                     .withDataType(DataType.FloatVector)
-                    .withDimension(1024) // 根据实际embedding维度调整
+                    .withDimension(2048) // 根据实际embedding维度调整
                     .build());
 
             // 创建集合
@@ -150,7 +150,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        createSchema(storeEmbeddingBo.getVectorModelName(), storeEmbeddingBo.getKid(), storeEmbeddingBo.getVectorModelName());
+        createSchema(storeEmbeddingBo.getVectorModelName(), storeEmbeddingBo.getKid());
         
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
                 storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
@@ -216,7 +216,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        createSchema(queryVectorBo.getVectorModelName(), queryVectorBo.getKid(), queryVectorBo.getVectorModelName());
+        createSchema(queryVectorBo.getVectorModelName(), queryVectorBo.getKid());
         
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
                 queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
@@ -243,6 +243,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
         // 构建搜索参数
         SearchParam searchParam = SearchParam.newBuilder()
                 .withCollectionName(collectionName)
+                // 匹配方法
                 .withMetricType(MetricType.L2)
                 .withOutFields(Arrays.asList("text", "fid", "kid", "docId"))
                 .withTopK(queryVectorBo.getMaxResults())
