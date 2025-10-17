@@ -17,7 +17,7 @@ public class VectorStoreProperties {
     /**
      * 向量库类型
      */
-    private String type = "weaviate";
+    private String type;
 
     /**
      * Weaviate配置
@@ -34,17 +34,17 @@ public class VectorStoreProperties {
         /**
          * 协议
          */
-        private String protocol = "http";
+        private String protocol;
 
         /**
          * 主机地址
          */
-        private String host = "localhost:8080";
+        private String host;
 
         /**
          * 类名
          */
-        private String classname = "Document";
+        private String classname;
     }
 
     @Data
@@ -52,11 +52,11 @@ public class VectorStoreProperties {
         /**
          * 连接URL
          */
-        private String url = "http://localhost:19530";
+        private String url;
 
         /**
          * 集合名称
          */
-        private String collectionname = "knowledge_base";
+        private String collectionname;
     }
 }

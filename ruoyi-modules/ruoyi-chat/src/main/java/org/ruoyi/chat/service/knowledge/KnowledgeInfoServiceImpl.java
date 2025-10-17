@@ -319,8 +319,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         storeEmbeddingBo.setDocId(docId);
         storeEmbeddingBo.setFids(fids);
         storeEmbeddingBo.setChunkList(chunkList);
-        storeEmbeddingBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
-        storeEmbeddingBo.setEmbeddingModelId(knowledgeInfoVo.getEmbeddingModelId());
+        storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModelName());
         storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
         storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
         storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());

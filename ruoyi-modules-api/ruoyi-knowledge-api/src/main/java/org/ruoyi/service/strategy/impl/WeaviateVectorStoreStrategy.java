@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Weaviate向量库策略实现
  *
- * @author ageer
+ * @author Yzm
  */
 @Slf4j
 @Component
@@ -84,7 +84,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        createSchema(storeEmbeddingBo.getVectorModelName(), storeEmbeddingBo.getKid());
+        createSchema(storeEmbeddingBo.getVectorStoreName(), storeEmbeddingBo.getKid());
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
                 storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
         List<String> chunkList = storeEmbeddingBo.getChunkList();

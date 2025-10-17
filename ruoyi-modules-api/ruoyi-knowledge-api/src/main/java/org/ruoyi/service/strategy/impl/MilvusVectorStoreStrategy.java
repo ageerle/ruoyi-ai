@@ -23,18 +23,37 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
+// 新增导入
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Milvus向量库策略实现
- *
- * @author Yzm
- */
 @Slf4j
 @Component
 public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties) {
         super(vectorStoreProperties);
+    }
+
+    // 缓存不同集合与 autoFlush 配置的 Milvus 连接
+    private final Map<String, EmbeddingStore<TextSegment>> storeCache = new ConcurrentHashMap<>();
+
+    private EmbeddingStore<TextSegment> getMilvusStore(String collectionName, boolean autoFlushOnInsert) {
+        String key = collectionName + "|" + autoFlushOnInsert;
+        return storeCache.computeIfAbsent(key, k ->
+                MilvusEmbeddingStore.builder()
+                        .uri(vectorStoreProperties.getMilvus().getUrl())
+                        .collectionName(collectionName)
+                        .dimension(2048)
+                        .indexType(IndexType.IVF_FLAT)
+                        .metricType(MetricType.L2)
+                        .autoFlushOnInsert(autoFlushOnInsert)
+                        .idFieldName("id")
+                        .textFieldName("text")
+                        .metadataFieldName("metadata")
+                        .vectorFieldName("vector")
+                        .build()
+        );
     }
 
     @Override
@@ -44,27 +63,14 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void createSchema(String vectorModelName, String kid) {
-        String url = vectorStoreProperties.getMilvus().getUrl();
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
-        MilvusEmbeddingStore store = MilvusEmbeddingStore.builder()
-                .uri(url)
-                .collectionName(collectionName)
-                .dimension(2048)
-                .indexType(IndexType.IVF_FLAT)
-                .metricType(MetricType.L2)
-                .autoFlushOnInsert(true)
-                .idFieldName("id")
-                .textFieldName("text")
-                .metadataFieldName("metadata")
-                .vectorFieldName("vector")
-                .build();
+        // 使用缓存获取连接以确保只初始化一次
+        EmbeddingStore<TextSegment> store = getMilvusStore(collectionName, true);
         log.info("Milvus集合初始化完成: {}", collectionName);
     }
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        createSchema(storeEmbeddingBo.getVectorModelName(), storeEmbeddingBo.getKid());
-
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
                 storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
 
@@ -77,57 +83,35 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
         log.info("Milvus向量存储条数记录: {}", chunkList.size());
         long startTime = System.currentTimeMillis();
 
-        EmbeddingStore<TextSegment> embeddingStore = MilvusEmbeddingStore.builder()
-                .uri(vectorStoreProperties.getMilvus().getUrl())
-                .collectionName(collectionName)
-                .dimension(2048)
-                .indexType(IndexType.IVF_FLAT)
-                .metricType(MetricType.L2)
-                .autoFlushOnInsert(false)
-                .idFieldName("id")
-                .textFieldName("text")
-                .metadataFieldName("metadata")
-                .vectorFieldName("vector")
-                .build();
+        // 复用连接，写入场景使用 autoFlush=false 以提升批量插入性能
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, false);
 
         IntStream.range(0, chunkList.size()).forEach(i -> {
             String text = chunkList.get(i);
             String fid = fidList.get(i);
-            Embedding embedding = embeddingModel.embed(text).content();
-            Metadata metadata = new Metadata()
-                    .put("fid", fid)
-                    .put("kid", kid)
-                    .put("docId", docId);
-            TextSegment segment = TextSegment.from(text, metadata);
-            embeddingStore.add(embedding, segment);
-        });
+            Metadata metadata = new Metadata();
+            metadata.put("fid", fid);
+            metadata.put("kid", kid);
+            metadata.put("docId", docId);
 
+            TextSegment textSegment = TextSegment.from(text, metadata);
+            Embedding embedding = embeddingModel.embed(text).content();
+            embeddingStore.add(embedding, textSegment);
+        });
         long endTime = System.currentTimeMillis();
         log.info("Milvus向量存储完成消耗时间：{}秒", (endTime - startTime) / 1000);
     }
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        createSchema(queryVectorBo.getVectorModelName(), queryVectorBo.getKid());
-
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
                 queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
 
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + queryVectorBo.getKid();
 
-        EmbeddingStore<TextSegment> embeddingStore = MilvusEmbeddingStore.builder()
-                .uri(vectorStoreProperties.getMilvus().getUrl())
-                .collectionName(collectionName)
-                .dimension(2048)
-                .indexType(IndexType.IVF_FLAT)
-                .metricType(MetricType.L2)
-                .autoFlushOnInsert(true)
-                .idFieldName("id")
-                .textFieldName("text")
-                .metadataFieldName("metadata")
-                .vectorFieldName("vector")
-                .build();
+        // 查询复用连接，autoFlush 对查询无影响，此处保持 true
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, true);
 
         List<String> resultList = new ArrayList<>();
         EmbeddingSearchRequest request = EmbeddingSearchRequest.builder()
@@ -147,40 +131,15 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     @SneakyThrows
     public void removeById(String id, String modelName) {
-        String url = vectorStoreProperties.getMilvus().getUrl();
-        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + id;
-        MilvusEmbeddingStore store = MilvusEmbeddingStore.builder()
-                .uri(url)
-                .collectionName(collectionName)
-                .dimension(2048)
-                .indexType(IndexType.IVF_FLAT)
-                .metricType(MetricType.L2)
-                .autoFlushOnInsert(true)
-                .idFieldName("id")
-                .textFieldName("text")
-                .metadataFieldName("metadata")
-                .vectorFieldName("vector")
-                .build();
-        // 修正：MilvusEmbeddingStore 的 dropCollection 需要传入集合名
-        store.dropCollection(collectionName);
-        log.info("Milvus集合删除成功: {}", collectionName);
+        // 注意：此处原逻辑使用 collectionname + id，保持现状
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(vectorStoreProperties.getMilvus().getCollectionname() + id, false);
+        embeddingStore.remove(id);
     }
 
     @Override
     public void removeByDocId(String docId, String kid) {
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
-        EmbeddingStore<TextSegment> embeddingStore = MilvusEmbeddingStore.builder()
-                .uri(vectorStoreProperties.getMilvus().getUrl())
-                .collectionName(collectionName)
-                .dimension(2048)
-                .indexType(IndexType.IVF_FLAT)
-                .metricType(MetricType.L2)
-                .autoFlushOnInsert(false)
-                .idFieldName("id")
-                .textFieldName("text")
-                .metadataFieldName("metadata")
-                .vectorFieldName("vector")
-                .build();
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, false);
         Filter filter = MetadataFilterBuilder.metadataKey("docId").isEqualTo(docId);
         embeddingStore.removeAll(filter);
         log.info("Milvus成功删除 docId={} 的所有向量数据", docId);
@@ -189,18 +148,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public void removeByFid(String fid, String kid) {
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
-        EmbeddingStore<TextSegment> embeddingStore = MilvusEmbeddingStore.builder()
-                .uri(vectorStoreProperties.getMilvus().getUrl())
-                .collectionName(collectionName)
-                .dimension(2048)
-                .indexType(IndexType.IVF_FLAT)
-                .metricType(MetricType.L2)
-                .autoFlushOnInsert(false)
-                .idFieldName("id")
-                .textFieldName("text")
-                .metadataFieldName("metadata")
-                .vectorFieldName("vector")
-                .build();
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, false);
         Filter filter = MetadataFilterBuilder.metadataKey("fid").isEqualTo(fid);
         embeddingStore.removeAll(filter);
         log.info("Milvus成功删除 fid={} 的所有向量数据", fid);
