@@ -46,7 +46,6 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     public void createSchema(String vectorModelName, String kid) {
         String url = vectorStoreProperties.getMilvus().getUrl();
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
-        // 使用 LangChain4j 的 MilvusEmbeddingStore 来确保集合存在（按需创建）
         MilvusEmbeddingStore store = MilvusEmbeddingStore.builder()
                 .uri(url)
                 .collectionName(collectionName)

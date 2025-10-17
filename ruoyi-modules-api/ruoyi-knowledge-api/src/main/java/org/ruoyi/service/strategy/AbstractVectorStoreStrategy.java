@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.service.VectorStoreService;
 
 /**
  * 向量库策略抽象基类
@@ -18,7 +19,7 @@ import org.ruoyi.common.core.utils.StringUtils;
  */
 @Slf4j
 @RequiredArgsConstructor
-public abstract class AbstractVectorStoreStrategy implements VectorStoreStrategy {
+public abstract class AbstractVectorStoreStrategy implements VectorStoreService {
 
     protected final VectorStoreProperties vectorStoreProperties;
 

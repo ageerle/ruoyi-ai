@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
 import org.ruoyi.service.strategy.impl.MilvusVectorStoreStrategy;
 import org.ruoyi.service.strategy.impl.WeaviateVectorStoreStrategy;
+import org.ruoyi.service.VectorStoreService;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -26,7 +27,7 @@ public class VectorStoreStrategyFactory {
     private final WeaviateVectorStoreStrategy weaviateStrategy;
     private final MilvusVectorStoreStrategy milvusStrategy;
 
-    private Map<String, VectorStoreStrategy> strategies;
+    private Map<String, VectorStoreService> strategies;
 
     @PostConstruct
     public void init() {
@@ -39,36 +40,18 @@ public class VectorStoreStrategyFactory {
     /**
      * 获取当前配置的向量库策略
      */
-    public VectorStoreStrategy getStrategy() {
+    public VectorStoreService getStrategy() {
         String vectorStoreType = vectorStoreProperties.getType();
         if (vectorStoreType == null || vectorStoreType.trim().isEmpty()) {
             vectorStoreType = "weaviate"; // 默认使用weaviate
         }
-        
-        VectorStoreStrategy strategy = strategies.get(vectorStoreType.toLowerCase());
+        VectorStoreService strategy = strategies.get(vectorStoreType.toLowerCase());
         if (strategy == null) {
             log.warn("未找到向量库策略: {}, 使用默认策略: weaviate", vectorStoreType);
             strategy = strategies.get("weaviate");
         }
-        
         log.debug("使用向量库策略: {}", vectorStoreType);
         return strategy;
     }
 
-    /**
-     * 根据类型获取向量库策略
-     */
-    public VectorStoreStrategy getStrategy(String type) {
-        if (type == null || type.trim().isEmpty()) {
-            return getStrategy();
-        }
-        
-        VectorStoreStrategy strategy = strategies.get(type.toLowerCase());
-        if (strategy == null) {
-            log.warn("未找到向量库策略: {}, 使用默认策略", type);
-            return getStrategy();
-        }
-        
-        return strategy;
-    }
 }
