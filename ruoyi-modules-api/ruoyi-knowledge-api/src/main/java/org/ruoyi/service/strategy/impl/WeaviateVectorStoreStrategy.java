@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
+import org.ruoyi.embedding.EmbeddingModelFactory;
 import org.ruoyi.service.strategy.AbstractVectorStoreStrategy;
 import org.springframework.stereotype.Component;
 import java.util.*;
@@ -35,8 +36,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     private WeaviateClient client;
 
-    public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties) {
-        super(vectorStoreProperties);
+    public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties, EmbeddingModelFactory embeddingModelFactory) {
+        super(vectorStoreProperties, embeddingModelFactory);
     }
 
     @Override
@@ -45,7 +46,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     }
 
     @Override
-    public void createSchema(String vectorModelName, String kid) {
+    public void createSchema(String kid, String embeddingModelName) {
         String protocol = vectorStoreProperties.getWeaviate().getProtocol();
         String host = vectorStoreProperties.getWeaviate().getHost();
         String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
@@ -84,9 +85,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        createSchema(storeEmbeddingBo.getVectorStoreName(), storeEmbeddingBo.getKid());
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
-                storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
+        createSchema(storeEmbeddingBo.getKid(),storeEmbeddingBo.getEmbeddingModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),  null);
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
         String kid = storeEmbeddingBo.getKid();
@@ -118,9 +118,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        createSchema(queryVectorBo.getVectorModelName(), queryVectorBo.getKid());
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
-                queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
+        createSchema(queryVectorBo.getKid(),queryVectorBo.getEmbeddingModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),null);
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         float[] vector = queryEmbedding.vector();
         List<String> vectorStrings = new ArrayList<>();

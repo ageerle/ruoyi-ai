@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.service.VectorStoreService;
+import org.ruoyi.embedding.EmbeddingModelFactory;
 
 /**
  * 向量库策略抽象基类
@@ -23,34 +24,14 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreService 
 
     protected final VectorStoreProperties vectorStoreProperties;
 
+    private final  EmbeddingModelFactory embeddingModelFactory;
+
     /**
      * 获取向量模型
      */
     @SneakyThrows
-    protected EmbeddingModel getEmbeddingModel(String modelName, String apiKey, String baseUrl) {
-        EmbeddingModel embeddingModel;
-        if ("quentinz/bge-large-zh-v1.5".equals(modelName)) {
-            embeddingModel = OllamaEmbeddingModel.builder()
-                    .baseUrl(baseUrl)
-                    .modelName(modelName)
-                    .build();
-        } else if ("baai/bge-m3".equals(modelName)) {
-            embeddingModel = OpenAiEmbeddingModel.builder()
-                    .apiKey(apiKey)
-                    .baseUrl(baseUrl)
-                    .modelName(modelName)
-                    .build();
-        } else if (StringUtils.isNotEmpty(modelName)){
-            embeddingModel = OpenAiEmbeddingModel.builder()
-                    .apiKey(apiKey)
-                    .baseUrl(baseUrl)
-                    .dimensions(2048)
-                    .modelName(modelName)
-                    .build();
-        } else {
-            throw new ServiceException("未找到对应向量化模型!");
-        }
-        return embeddingModel;
+    protected EmbeddingModel getEmbeddingModel(String modelName, Integer dimension) {
+        return embeddingModelFactory.createModel(modelName, dimension);
     }
 
     /**

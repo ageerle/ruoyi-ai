@@ -37,6 +37,7 @@ public class OpenAiEmbeddingProvider implements BaseEmbedModelService {
                 .baseUrl(chatModelVo.getApiHost())
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
+                .dimensions(chatModelVo.getDimension())
                 .build()
                 .embedAll(textSegments);
     }

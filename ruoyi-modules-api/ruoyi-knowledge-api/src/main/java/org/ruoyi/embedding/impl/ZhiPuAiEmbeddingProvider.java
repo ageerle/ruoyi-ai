@@ -37,6 +37,7 @@ public class ZhiPuAiEmbeddingProvider implements BaseEmbedModelService {
                 .baseUrl(chatModelVo.getApiHost())
                 .apiKey(chatModelVo.getApiKey())
                 .model(chatModelVo.getModelName())
+                .dimensions(chatModelVo.getDimension())
                 .build()
                 .embedAll(textSegments);
     }

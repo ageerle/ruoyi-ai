@@ -1,8 +1,8 @@
 package org.ruoyi.service.strategy.impl;
 
+import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
@@ -17,22 +17,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
+import org.ruoyi.embedding.EmbeddingModelFactory;
 import org.ruoyi.service.strategy.AbstractVectorStoreStrategy;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
-// 新增导入
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Component
 public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
-    public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties) {
-        super(vectorStoreProperties);
+
+    private final Integer DIMENSION = 2048;
+
+    public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties, EmbeddingModelFactory embeddingModelFactory) {
+        super(vectorStoreProperties, embeddingModelFactory);
     }
 
     // 缓存不同集合与 autoFlush 配置的 Milvus 连接
@@ -44,7 +47,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 MilvusEmbeddingStore.builder()
                         .uri(vectorStoreProperties.getMilvus().getUrl())
                         .collectionName(collectionName)
-                        .dimension(2048)
+                        .dimension(DIMENSION)
                         .indexType(IndexType.IVF_FLAT)
                         .metricType(MetricType.L2)
                         .autoFlushOnInsert(autoFlushOnInsert)
@@ -57,12 +60,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     }
 
     @Override
-    public String getVectorStoreType() {
-        return "milvus";
-    }
-
-    @Override
-    public void createSchema(String vectorModelName, String kid) {
+    public void createSchema(String kid, String modelName) {
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
         // 使用缓存获取连接以确保只初始化一次
         EmbeddingStore<TextSegment> store = getMilvusStore(collectionName, true);
@@ -71,8 +69,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),
-                storeEmbeddingBo.getApiKey(), storeEmbeddingBo.getBaseUrl());
+        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(), DIMENSION);
 
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
@@ -104,8 +101,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),
-                queryVectorBo.getApiKey(), queryVectorBo.getBaseUrl());
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(), DIMENSION);
 
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + queryVectorBo.getKid();
@@ -152,5 +148,10 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
         Filter filter = MetadataFilterBuilder.metadataKey("fid").isEqualTo(fid);
         embeddingStore.removeAll(filter);
         log.info("Milvus成功删除 fid={} 的所有向量数据", fid);
+    }
+
+    @Override
+    public String getVectorStoreType() {
+        return "milvus";
     }
 }

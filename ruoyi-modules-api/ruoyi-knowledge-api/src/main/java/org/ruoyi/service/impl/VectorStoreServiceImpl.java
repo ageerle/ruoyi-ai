@@ -32,10 +32,9 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     }
 
     @Override
-    public void createSchema(String vectorModelName, String kid) {
-        log.info("创建向量库schema: vectorModelName={}, kid={}, modelName={}", vectorModelName, kid);
+    public void createSchema(String kid, String modelName) {
         VectorStoreService strategy = getCurrentStrategy();
-        strategy.createSchema(vectorModelName, kid);
+        strategy.createSchema(kid, modelName);
     }
 
     @Override
