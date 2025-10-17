@@ -6,7 +6,7 @@ import org.ruoyi.service.VectorStoreService;
  * 向量库策略接口
  * 继承VectorStoreService以避免重复定义相同的方法
  * 
- * @author ageer
+ * @author Yzm
  */
 public interface VectorStoreStrategy extends VectorStoreService {
     

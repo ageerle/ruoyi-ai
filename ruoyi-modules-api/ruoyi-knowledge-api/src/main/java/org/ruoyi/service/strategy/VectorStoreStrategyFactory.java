@@ -15,7 +15,7 @@ import java.util.Map;
  * 向量库策略工厂
  * 根据配置动态选择向量库实现
  *
- * @author ageer
+ * @author Yzm
  */
 @Slf4j
 @Component

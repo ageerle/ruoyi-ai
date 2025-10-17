@@ -80,6 +80,12 @@
             <version>2.6.4</version>
         </dependency>
 
+        <!-- LangChain4j Milvus Embedding Store -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-milvus</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>

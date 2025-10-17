@@ -14,7 +14,7 @@ import org.ruoyi.common.core.utils.StringUtils;
  * 向量库策略抽象基类
  * 提供公共的方法实现，如embedding模型获取等
  *
- * @author ageer
+ * @author Yzm
  */
 @Slf4j
 @RequiredArgsConstructor
