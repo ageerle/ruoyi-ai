@@ -30,6 +30,7 @@ public class OllamaEmbeddingProvider implements BaseEmbedModelService {
         return Set.of(ModalityType.TEXT);
     }
 
+    // ollama不能设置embedding维度，使用milvus时请注意！！创建向量表时需要先设定维度大小
     @Override
     public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
         return OllamaEmbeddingModel.builder()

@@ -71,6 +71,11 @@ public class ChatModelVo implements Serializable {
     private String modelShow;
 
     /**
+     * 模型维度
+     */
+    private Integer dimension;
+
+    /**
      * 系统提示词
      */
     @ExcelProperty(value = "系统提示词")

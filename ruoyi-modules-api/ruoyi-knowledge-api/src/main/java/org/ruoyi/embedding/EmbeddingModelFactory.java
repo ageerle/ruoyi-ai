@@ -27,20 +27,23 @@ public class EmbeddingModelFactory {
     private final IChatModelService chatModelService;
 
     // 模型缓存，使用ConcurrentHashMap保证线程安全
-    private final Map<Long, BaseEmbedModelService> modelCache = new ConcurrentHashMap<>();
+    private final Map<String, BaseEmbedModelService> modelCache = new ConcurrentHashMap<>();
 
     /**
      * 创建嵌入模型实例
      * 如果模型已存在于缓存中，则直接返回；否则创建新的实例
      *
-     * @param embeddingModelId 嵌入模型的唯一标识ID
-     * @return BaseEmbedModelService 嵌入模型服务实例
+     * @param embeddingModelName 嵌入模型名称
+     * @param  dimension 模型维度大小
      */
-    public BaseEmbedModelService createModel(Long embeddingModelId) {
-        return modelCache.computeIfAbsent(embeddingModelId, id -> {
-            ChatModelVo modelConfig = chatModelService.queryById(id);
+    public BaseEmbedModelService createModel(String embeddingModelName, Integer dimension) {
+        return modelCache.computeIfAbsent(embeddingModelName, name -> {
+            ChatModelVo modelConfig = chatModelService.selectModelByName(embeddingModelName);
             if (modelConfig == null) {
-                throw new IllegalArgumentException("未找到模型配置，ID=" + id);
+                throw new IllegalArgumentException("未找到模型配置，name=" + name);
+            }
+            if (modelConfig.getDimension() != null) {
+                modelConfig.setDimension(dimension);
             }
             return createModelInstance(modelConfig.getProviderName(), modelConfig);
         });
@@ -49,22 +52,22 @@ public class EmbeddingModelFactory {
     /**
      * 检查模型是否支持多模态
      *
-     * @param embeddingModelId 嵌入模型的唯一标识ID
+     * @param embeddingModelName 嵌入模型名称
      * @return boolean 如果模型支持多模态则返回true，否则返回false
      */
-    public boolean isMultimodalModel(Long embeddingModelId) {
-        return createModel(embeddingModelId) instanceof MultiModalEmbedModelService;
+    public boolean isMultimodalModel(String embeddingModelName) {
+        return createModel(embeddingModelName, null) instanceof MultiModalEmbedModelService;
     }
 
     /**
      * 创建多模态嵌入模型实例
      *
-     * @param tenantId 租户ID
+     * @param embeddingModelName 嵌入模型名称
      * @return MultiModalEmbedModelService 多模态嵌入模型服务实例
      * @throws IllegalArgumentException 当模型不支持多模态时抛出
      */
-    public MultiModalEmbedModelService createMultimodalModel(Long tenantId) {
-        BaseEmbedModelService model = createModel(tenantId);
+    public MultiModalEmbedModelService createMultimodalModel(String embeddingModelName) {
+        BaseEmbedModelService model = createModel(embeddingModelName, null);
         if (model instanceof MultiModalEmbedModelService) {
             return (MultiModalEmbedModelService) model;
         }

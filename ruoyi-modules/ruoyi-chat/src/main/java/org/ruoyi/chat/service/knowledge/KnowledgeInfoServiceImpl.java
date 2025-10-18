@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.chain.loader.ResourceLoader;
 import org.ruoyi.chain.loader.ResourceLoaderFactory;
+import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
@@ -237,8 +238,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             }
             baseMapper.insert(knowledgeInfo);
             if (knowledgeInfo != null) {
-                vectorStoreService.createSchema(knowledgeInfo.getVectorModelName(),String.valueOf(knowledgeInfo.getId()),
-                        bo.getVectorModelName());
+                vectorStoreService.createSchema(String.valueOf(knowledgeInfo.getId()), bo.getEmbeddingModelName());
             }
         } else {
             baseMapper.updateById(knowledgeInfo);
@@ -313,15 +313,18 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
                 .eq(KnowledgeInfo::getId, kid));
 
         // 通过向量模型查询模型信息
-        ChatModelVo chatModelVo = chatModelService.queryById(knowledgeInfoVo.getEmbeddingModelId());
-
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
+        // 未查到指定模型时，回退为向量分类最高优先级模型
+        if (chatModelVo == null) {
+            chatModelVo = chatModelService.selectModelByCategoryWithHighestPriority(ChatModeType.VECTOR.getCode());
+        }
         StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
         storeEmbeddingBo.setKid(kid);
         storeEmbeddingBo.setDocId(docId);
         storeEmbeddingBo.setFids(fids);
         storeEmbeddingBo.setChunkList(chunkList);
-        storeEmbeddingBo.setVectorModelName(knowledgeInfoVo.getVectorModelName());
-        storeEmbeddingBo.setEmbeddingModelId(knowledgeInfoVo.getEmbeddingModelId());
+        storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModelName());
+        storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
         storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
         storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
         vectorStoreService.storeEmbeddings(storeEmbeddingBo);
