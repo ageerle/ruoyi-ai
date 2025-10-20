@@ -92,35 +92,17 @@ public class DeepSeekChatImpl  implements IChatService {
                 .modelName(chatModelVo.getModelName())
                 .logRequests(true)
                 .logResponses(true)
-                .temperature(0.8)
+                .temperature(0.7)
                 .build();
 
         try {
             // 将 ruoyi-ai 的 ChatRequest 转换为 langchain4j 的格式
-            dev.langchain4j.model.chat.request.ChatRequest langchainRequest = convertToLangchainRequest(request);
-            chatModel.chat(langchainRequest, handler);
+            dev.langchain4j.model.chat.request.ChatRequest chatRequest = convertToLangchainRequest(request);
+            chatModel.chat(chatRequest, handler);
         } catch (Exception e) {
             log.error("workflow deepseek请求失败：{}", e.getMessage(), e);
             throw new RuntimeException("DeepSeek workflow chat failed: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * 转换请求格式
-     */
-    private dev.langchain4j.model.chat.request.ChatRequest convertToLangchainRequest(ChatRequest request) {
-        List<ChatMessage> messages = new ArrayList<>();
-        for (org.ruoyi.common.chat.entity.chat.Message msg : request.getMessages()) {
-            // 简单转换，您可以根据实际需求调整
-            if ("user".equals(msg.getRole())) {
-                messages.add(UserMessage.from(msg.getContent().toString()));
-            } else if ("system".equals(msg.getRole())) {
-                messages.add(SystemMessage.from(msg.getContent().toString()));
-            } else if ("assistant".equals(msg.getRole())) {
-                messages.add(AiMessage.from(msg.getContent().toString()));
-            }
-        }
-        return dev.langchain4j.model.chat.request.ChatRequest.builder().messages(messages).build();
     }
 
     @Override

@@ -35,10 +35,6 @@ public class JsonUtil {
         objectMapper.registerModules(LocalDateTimeUtil.getSimpleModule(), new JavaTimeModule(), new Jdk8Module());
     }
 
-    public static final ObjectMapper getObjectMapper() {
-        return objectMapper;
-    }
-
     public static String toJson(Object obj) {
         String resp = null;
         try {
@@ -63,20 +59,6 @@ public class JsonUtil {
             } catch (IOException ioe) {
                 log.error("JsonUtil getParser error", ioe);
             }
-        }
-        return null;
-    }
-
-    /**
-     * 创建JSON生成器的静态方法, 使用标准输出
-     *
-     * @return
-     */
-    private static JsonGenerator getGenerator(StringWriter sw) {
-        try {
-            return objectMapper.getFactory().createGenerator(sw);
-        } catch (IOException e) {
-            log.error("JsonUtil getGenerator error", e);
         }
         return null;
     }
@@ -152,15 +134,6 @@ public class JsonUtil {
         return result;
     }
 
-    public static <T> List<T> toList(String json, Class<T> clazz) {
-        try {
-            return objectMapper.readValue(json, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
-        } catch (JsonProcessingException e) {
-            log.error("反序列化失败", e);
-        }
-        return new ArrayList<>();
-    }
-
     public static Map<String, Object> toMap(Object obj) {
         try {
             return objectMapper.convertValue(obj, new TypeReference<HashMap<String, Object>>() {
@@ -176,10 +149,6 @@ public class JsonUtil {
 
     public static ObjectNode createObjectNode() {
         return objectMapper.createObjectNode();
-    }
-
-    public static ArrayNode createArrayNode() {
-        return objectMapper.createArrayNode();
     }
 
 }

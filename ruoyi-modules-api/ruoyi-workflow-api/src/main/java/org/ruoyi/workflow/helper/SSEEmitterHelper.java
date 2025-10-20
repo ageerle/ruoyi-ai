@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class SSEEmitterHelper {
 
-    private static final Cache<SseEmitter, Boolean> COMPLETED_SSE = CacheBuilder.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).build();
+    private static final Cache<SseEmitter, Boolean> COMPLETED_SSE = CacheBuilder.newBuilder()
+            .expireAfterWrite(10, TimeUnit.MINUTES).build();
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -41,8 +42,6 @@ public class SSEEmitterHelper {
         } else {
             sendPartial(sseEmitter, name, " " + content);
         }
-//            content = content.replaceAll("[\\r\\n]", "\ndata:");
-//            sendPartial(sseEmitter, name, " " + content);
     }
 
     public static void sendPartial(SseEmitter sseEmitter, String name, String msg) {
@@ -63,13 +62,6 @@ public class SSEEmitterHelper {
 
 
     public boolean checkOrComplete(User user, SseEmitter sseEmitter) {
-        //Check: rate limit
-        String requestTimesKey = MessageFormat.format(RedisKeyConstant.USER_REQUEST_TEXT_TIMES, user.getId());
-//        if (!rateLimitHelper.checkRequestTimes(requestTimesKey, LocalCache.TEXT_RATE_LIMIT_CONFIG)) {
-//            sendErrorAndComplete(user.getId(), sseEmitter, "访问太过频繁");
-//            return false;
-//        }
-
         //Check: If still waiting response
         String askingKey = MessageFormat.format(RedisKeyConstant.USER_ASKING, user.getId());
         String askingVal = stringRedisTemplate.opsForValue().get(askingKey);
@@ -125,7 +117,10 @@ public class SSEEmitterHelper {
             return;
         }
         try {
-            sseEmitter.send(SseEmitter.event().name(AdiConstant.SSEEventName.ERROR).data(Objects.toString(errorMsg, "")));
+            SseEmitter.SseEventBuilder event = SseEmitter.event();
+            event.name(AdiConstant.SSEEventName.ERROR);
+            event.data(Objects.toString(errorMsg, ""));
+            sseEmitter.send(event);
         } catch (IOException e) {
             log.warn("sendErrorAndComplete userId:{},errorMsg:{}", userId, errorMsg);
             throw new RuntimeException(e);

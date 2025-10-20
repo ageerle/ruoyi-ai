@@ -45,8 +45,8 @@ public class LLMAnswerNode extends AbstractWfNode {
         WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
         String modelName = nodeConfigObj.getModelName();
         String category = nodeConfigObj.getCategory();
-        List<UserMessage> userMessageList = List.of(UserMessage.from(prompt));
-        workflowUtil.streamingInvokeLLM(wfState, state, node, category, modelName, userMessageList);
+        List<UserMessage> systemMessage = List.of(UserMessage.from(prompt));
+        workflowUtil.streamingInvokeLLM(wfState, state, node, category, modelName, systemMessage);
         return new NodeProcessResult();
     }
 }

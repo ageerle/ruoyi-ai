@@ -1,10 +1,6 @@
 package org.ruoyi.chat.service.chat.impl;
 
 import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
@@ -19,9 +15,6 @@ import org.ruoyi.service.IChatModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -92,31 +85,12 @@ public class QianWenAiChatServiceImpl implements IChatService {
 
         try {
             // 将 ruoyi-ai 的 ChatRequest 转换为 langchain4j 的格式
-            dev.langchain4j.model.chat.request.ChatRequest langchainRequest = convertToLangchainRequest(request);
-            model.chat(langchainRequest, handler);
+            dev.langchain4j.model.chat.request.ChatRequest chatRequest = convertToLangchainRequest(request);
+            model.chat(chatRequest, handler);
         } catch (Exception e) {
             log.error("workflow 千问请求失败：{}", e.getMessage(), e);
             throw new RuntimeException("QianWen workflow chat failed: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * 转换请求格式
-     */
-    private dev.langchain4j.model.chat.request.ChatRequest convertToLangchainRequest(ChatRequest request) {
-        List<ChatMessage> messages = new ArrayList<>();
-        for (org.ruoyi.common.chat.entity.chat.Message msg : request.getMessages()) {
-            if ("user".equals(msg.getRole())) {
-                messages.add(UserMessage.from(msg.getContent().toString()));
-            } else if ("system".equals(msg.getRole())) {
-                messages.add(SystemMessage.from(msg.getContent().toString()));
-            } else if ("assistant".equals(msg.getRole())) {
-                messages.add(AiMessage.from(msg.getContent().toString()));
-            }
-        }
-        return dev.langchain4j.model.chat.request.ChatRequest.builder()
-                .messages(messages)
-                .build();
     }
 
     @Override

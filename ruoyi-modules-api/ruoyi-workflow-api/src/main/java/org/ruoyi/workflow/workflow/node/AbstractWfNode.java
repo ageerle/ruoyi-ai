@@ -1,5 +1,6 @@
 package org.ruoyi.workflow.workflow.node;
 
+import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.validation.ConstraintViolation;
 import lombok.Data;

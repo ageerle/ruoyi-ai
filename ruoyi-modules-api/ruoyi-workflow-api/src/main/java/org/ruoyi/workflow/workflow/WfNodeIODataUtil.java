@@ -1,6 +1,7 @@
 package org.ruoyi.workflow.workflow;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.collections4.CollectionUtils;
@@ -97,7 +98,6 @@ public class WfNodeIODataUtil {
         if (outputExist) {
             return result;
         }
-
         if (null != defaultInputName) {
             defaultInputName.setName(DEFAULT_OUTPUT_PARAM_NAME);
         } else if (null != txtExist) {
@@ -105,7 +105,7 @@ public class WfNodeIODataUtil {
         } else if (null != first) {
             first.setName(DEFAULT_OUTPUT_PARAM_NAME);
         }
-
+        result.add(inputs.get(0));
         return result;
     }
 

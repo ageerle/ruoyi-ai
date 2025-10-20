@@ -1,6 +1,7 @@
 package org.ruoyi.workflow.workflow;
 
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -25,6 +26,7 @@ import org.ruoyi.workflow.service.WorkflowRuntimeService;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.def.WfNodeIO;
+import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -187,12 +189,31 @@ public class WorkflowEngine {
 
             NodeProcessResult processResult = abstractWfNode.process((is) -> {
                 workflowRuntimeNodeService.updateInput(runtimeNodeDto.getId(), nodeState);
-                for (NodeIOData input : nodeState.getInputs()) {
+                List<NodeIOData> nodeIODataList = nodeState.getInputs();
+//                if (!wfNode.getWorkflowComponentId().equals(1L)) {
+//                    String inputConfig = wfNode.getInputConfig();
+//                    WfNodeInputConfig nodeInputConfig = NodeInputConfigTypeHandler.fillNodeInputConfig(inputConfig);
+//                    List<WfNodeParamRef> refInputs = nodeInputConfig.getRefInputs();
+//                    Set<String> nameSet = CollStreamUtil.toSet(refInputs, WfNodeParamRef::getNodeParamName);
+//                    if (CollUtil.isNotEmpty(nameSet)) {
+//                        nodeIODataList = nodeIODataList.stream().filter(item -> nameSet.contains(item.getName()))
+//                                .collect(Collectors.toList());
+//                    } else {
+//                        nodeIODataList = nodeIODataList.stream().filter(item -> item.getName().contains("input"))
+//                                .collect(Collectors.toList());
+//                    }
+//                }
+                for (NodeIOData input : nodeIODataList) {
+                    String inputConfig = wfNode.getInputConfig();
+                    WfNodeInputConfig nodeInputConfig = NodeInputConfigTypeHandler.fillNodeInputConfig(inputConfig);
+                    List<WfNodeParamRef> refInputs = nodeInputConfig.getRefInputs();
+                    if (CollUtil.isNotEmpty(refInputs) && "input".equals(input.getName())) {
+                        continue;
+                    }
                     SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_INPUT_" + wfNode.getUuid() + "]", JsonUtil.toJson(input));
                 }
             }, (is) -> {
                 workflowRuntimeNodeService.updateOutput(runtimeNodeDto.getId(), nodeState);
-
                 //并行节点内部的节点执行结束后，需要主动向客户端发送输出结果
                 String nodeUuid = wfNode.getUuid();
                 List<NodeIOData> nodeOutputs = nodeState.getOutputs();
@@ -229,7 +250,7 @@ public class WorkflowEngine {
             if (out instanceof StreamingOutput<WfNodeState> streamingOutput) {
                 String node = streamingOutput.node();
                 String chunk = streamingOutput.chunk();
-                log.info("node:{},chunk:{}", node, streamingOutput.chunk());
+                log.info("node:{},chunk:{}", node, chunk);
                 SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", chunk);
             } else {
                 AbstractWfNode abstractWfNode = wfState.getCompletedNodes().stream()

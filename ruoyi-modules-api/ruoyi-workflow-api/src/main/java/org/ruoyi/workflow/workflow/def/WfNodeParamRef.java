@@ -18,5 +18,6 @@ public class WfNodeParamRef implements Serializable {
     private String nodeUuid;
     @JsonProperty("node_param_name")
     private String nodeParamName;
+
     private String name;
 }
