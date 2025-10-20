@@ -113,11 +113,6 @@
             <artifactId>commons-compress</artifactId>
         </dependency>
 
-      <dependency>
-        <groupId>com.alibaba</groupId>
-        <artifactId>dashscope-sdk-java</artifactId>
-        <version>2.19.0</version>
-      </dependency>
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-chat-api</artifactId>
