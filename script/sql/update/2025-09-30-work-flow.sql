@@ -155,3 +155,8 @@ values (replace(uuid(), '-', ''), 'MailSend', '邮件发送', '发送邮件到�
 insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
 values (replace(uuid(), '-', ''), 'HttpRequest', 'Http请求',
         '通过Http协议发送请求，可将其他组件的输出作为参数，也可设置常量作为参数。', 10, true);
+
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1976160997656043521, '流程管理', 0, 1, 'flow', '', null, 1, 0, 'M', '0', '0', null, 'ph:user-fill', null, null, '2025-10-09 13:41:12', 1, '2025-10-20 20:59:25', '');
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark) VALUES (1976161221409579010, '工作流编排', 1976160997656043521, 0, 'workflow', 'workflow/index', null, 1, 0, 'C', '0', '0', null, 'ph:user-fill', null, null, '2025-10-09 13:42:05', 1, '2025-10-20 20:59:16', '');
+
