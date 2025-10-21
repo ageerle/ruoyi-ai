@@ -7,13 +7,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.dto.workflow.WfNodeDto;
 import org.ruoyi.workflow.entity.Workflow;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.ErrorEnum;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
-import org.ruoyi.workflow.exception.WorkflowBaseException;
 import org.ruoyi.workflow.mapper.WorkflowNodeMapper;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.util.MPPageUtil;
@@ -135,7 +135,7 @@ public class WorkflowNodeService extends ServiceImpl<WorkflowNodeMapper, Workflo
                 .orElse(null);
         if (null == component) {
             log.error("节点不存在,uuid:{},title:{}", workflowNode.getUuid(), workflowNode.getTitle());
-            throw new WorkflowBaseException(ErrorEnum.A_PARAMS_ERROR);
+            throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
         }
         if (component.getName().equals(WfComponentNameEnum.MAIL_SEND.getName())) {
 
@@ -162,7 +162,7 @@ public class WorkflowNodeService extends ServiceImpl<WorkflowNodeMapper, Workflo
                 .orElse(null);
         if (null == component) {
             log.error("节点不存在,uuid:{},title:{}", workflowNode.getUuid(), workflowNode.getTitle());
-            throw new WorkflowBaseException(ErrorEnum.A_PARAMS_ERROR);
+            throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
         }
         if (component.getName().equals(WfComponentNameEnum.MAIL_SEND.getName())) {
 //            MailSendNodeConfig mailSendNodeConfig = JsonUtil.fromJson(workflowNode.getNodeConfig(), MailSendNodeConfig.class);
@@ -189,7 +189,7 @@ public class WorkflowNodeService extends ServiceImpl<WorkflowNodeMapper, Workflo
             }
             if (!old.getWorkflowId().equals(workflowId)) {
                 log.error("节点不属于指定的工作流,删除失败,workflowId:{},node workflowId:{}", workflowId, workflowId);
-                throw new WorkflowBaseException(ErrorEnum.A_PARAMS_ERROR);
+                throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
             }
             if (workflowComponentService.getStartComponent().getId().equals(old.getWorkflowComponentId())) {
                 log.warn("开始节点不能删除,uuid:{}", old.getUuid());

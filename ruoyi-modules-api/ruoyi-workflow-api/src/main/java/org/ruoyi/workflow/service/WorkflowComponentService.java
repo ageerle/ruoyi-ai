@@ -7,11 +7,11 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.dto.workflow.WfComponentReq;
 import org.ruoyi.workflow.dto.workflow.WfComponentSearchReq;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.enums.ErrorEnum;
-import org.ruoyi.workflow.exception.WorkflowBaseException;
 import org.ruoyi.workflow.mapper.WorkflowComponentMapper;
 import org.ruoyi.workflow.util.PrivilegeUtil;
 import org.ruoyi.workflow.util.UuidUtil;
@@ -74,11 +74,18 @@ public class WorkflowComponentService extends ServiceImpl<WorkflowComponentMappe
 
     @CacheEvict(cacheNames = {WORKFLOW_COMPONENTS, WORKFLOW_COMPONENT_START_KEY})
     public void deleteByUuid(String uuid) {
+        WorkflowComponent component = PrivilegeUtil.checkAndGetByUuid(uuid, this.query(), ErrorEnum.A_WF_COMPONENT_NOT_FOUND);
         Integer refNodeCount = baseMapper.countRefNodes(uuid);
-        if (refNodeCount > 0) {
-            throw new WorkflowBaseException(C_WF_COMPONENT_DELETED_FAIL_BY_USED);
-        } else {
-//            PrivilegeUtil.checkAndDelete(uuid, this.query(), ChainWrappers.updateChain(baseMapper), ErrorEnum.A_WF_COMPONENT_NOT_FOUND);
+        if (refNodeCount != null && refNodeCount > 0) {
+            throw new BaseException(C_WF_COMPONENT_DELETED_FAIL_BY_USED.getInfo());
+        }
+        boolean updated = ChainWrappers.lambdaUpdateChain(baseMapper)
+                .eq(WorkflowComponent::getId, component.getId())
+                .set(WorkflowComponent::getIsDeleted, true)
+                .set(WorkflowComponent::getIsEnable, false)
+                .update();
+        if (!updated) {
+            throw new BaseException(ErrorEnum.A_WF_COMPONENT_NOT_FOUND.getInfo());
         }
     }
 
@@ -106,7 +113,7 @@ public class WorkflowComponentService extends ServiceImpl<WorkflowComponentMappe
         return components.stream()
                 .filter(component -> WfComponentNameEnum.START.getName().equals(component.getName()))
                 .findFirst()
-                .orElseThrow(() -> new WorkflowBaseException(ErrorEnum.B_WF_NODE_DEFINITION_NOT_FOUND));
+                .orElseThrow(() -> new BaseException(ErrorEnum.B_WF_NODE_DEFINITION_NOT_FOUND.getInfo()));
     }
 
     public WorkflowComponent getComponent(Long id) {
@@ -114,6 +121,6 @@ public class WorkflowComponentService extends ServiceImpl<WorkflowComponentMappe
         return components.stream()
                 .filter(component -> component.getId().equals(id))
                 .findFirst()
-                .orElseThrow(() -> new WorkflowBaseException(ErrorEnum.B_WF_NODE_DEFINITION_NOT_FOUND));
+                .orElseThrow(() -> new BaseException(ErrorEnum.B_WF_NODE_DEFINITION_NOT_FOUND.getInfo()));
     }
 }

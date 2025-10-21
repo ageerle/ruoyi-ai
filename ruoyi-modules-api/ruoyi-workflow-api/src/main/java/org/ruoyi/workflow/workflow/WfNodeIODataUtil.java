@@ -1,13 +1,12 @@
 package org.ruoyi.workflow.workflow;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.collections4.CollectionUtils;
+import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.enums.ErrorEnum;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
-import org.ruoyi.workflow.exception.WorkflowBaseException;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.data.NodeIODataFilesContent;
@@ -36,7 +35,7 @@ public class WfNodeIODataUtil {
         JsonNode nameObj = data.get("name");
         JsonNode content = data.get("content");
         if (null == nameObj || null == content) {
-            throw new WorkflowBaseException(ErrorEnum.A_PARAMS_ERROR);
+            throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
         }
         String name = nameObj.asText();
         Integer type = content.get("type").asInt();

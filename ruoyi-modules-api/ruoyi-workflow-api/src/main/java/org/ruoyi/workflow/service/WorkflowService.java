@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.ThreadContext;
 import org.ruoyi.workflow.dto.workflow.WfEdgeReq;
 import org.ruoyi.workflow.dto.workflow.WfNodeDto;
@@ -14,7 +15,6 @@ import org.ruoyi.workflow.dto.workflow.WorkflowUpdateReq;
 import org.ruoyi.workflow.entity.User;
 import org.ruoyi.workflow.entity.Workflow;
 import org.ruoyi.workflow.enums.ErrorEnum;
-import org.ruoyi.workflow.exception.WorkflowBaseException;
 import org.ruoyi.workflow.mapper.WorkflowMapper;
 import org.ruoyi.workflow.util.MPPageUtil;
 import org.ruoyi.workflow.util.PrivilegeUtil;
@@ -70,7 +70,7 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
 
     public WorkflowResp updateBaseInfo(String wfUuid, String title, String remark, Boolean isPublic) {
         if (StringUtils.isAnyBlank(wfUuid, title)) {
-            throw new WorkflowBaseException(ErrorEnum.A_PARAMS_ERROR);
+            throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
         }
         ChainWrappers.lambdaUpdateChain(baseMapper)
                 .eq(Workflow::getUuid, wfUuid)
@@ -108,7 +108,7 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
                 .last("limit 1")
                 .one();
         if (null == workflow) {
-            throw new WorkflowBaseException(ErrorEnum.A_WF_NOT_FOUND);
+            throw new BaseException(ErrorEnum.A_WF_NOT_FOUND.getInfo());
         }
         return workflow;
     }
@@ -160,7 +160,7 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
 
     public void enable(String uuid, Boolean enable) {
         if (null == enable) {
-            throw new WorkflowBaseException(ErrorEnum.A_PARAMS_ERROR);
+            throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
         }
         Workflow workflow = PrivilegeUtil.checkAndGetByUuid(uuid, this.query(), ErrorEnum.A_WF_NOT_FOUND);
         ChainWrappers.lambdaUpdateChain(baseMapper)

@@ -6,10 +6,10 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.dto.workflow.WfEdgeReq;
 import org.ruoyi.workflow.entity.WorkflowEdge;
 import org.ruoyi.workflow.enums.ErrorEnum;
-import org.ruoyi.workflow.exception.WorkflowBaseException;
 import org.ruoyi.workflow.mapper.WorkflowEdgeMapper;
 import org.ruoyi.workflow.util.MPPageUtil;
 import org.ruoyi.workflow.util.UuidUtil;
@@ -98,7 +98,7 @@ public class WorkflowEdgeService extends ServiceImpl<WorkflowEdgeMapper, Workflo
             WorkflowEdge old = self.getByUuid(uuid);
             if (null != old && !old.getWorkflowId().equals(workflowId)) {
                 log.error("该边不属于指定的工作流,删除失败,workflowId:{},node workflowId:{}", workflowId, workflowId);
-                throw new WorkflowBaseException(ErrorEnum.A_PARAMS_ERROR);
+                throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
             }
             ChainWrappers.lambdaUpdateChain(baseMapper)
                     .eq(WorkflowEdge::getWorkflowId, workflowId)

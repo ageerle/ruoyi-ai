@@ -3,8 +3,8 @@ package org.ruoyi.workflow.workflow;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.entity.*;
-import org.ruoyi.workflow.exception.WorkflowBaseException;
 import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.service.*;
 import org.springframework.context.annotation.Lazy;
@@ -87,7 +87,7 @@ public class WorkflowStarter {
         WorkflowEngine workflowEngine = InterruptedFlow.RUNTIME_TO_GRAPH.get(runtimeUuid);
         if (null == workflowEngine) {
             log.error("工作流恢复执行时失败,runtime:{}", runtimeUuid);
-            throw new WorkflowBaseException(A_WF_RESUME_FAIL);
+            throw new BaseException(A_WF_RESUME_FAIL.getInfo());
         }
         workflowEngine.resume(userInput);
     }

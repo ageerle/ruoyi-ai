@@ -1,6 +1,5 @@
 package org.ruoyi.workflow.workflow.node;
 
-import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.validation.ConstraintViolation;
 import lombok.Data;
@@ -8,11 +7,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
-import org.ruoyi.workflow.exception.WorkflowBaseException;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.util.SpringUtil;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
@@ -185,13 +184,13 @@ public abstract class AbstractWfNode {
         ObjectNode configObj = JsonUtil.toBean(node.getNodeConfig(), ObjectNode.class);
         if (configObj.isEmpty()) {
             log.error("node config is empty,node uuid:{}", state.getUuid());
-            throw new WorkflowBaseException(A_WF_NODE_CONFIG_NOT_FOUND);
+            throw new BaseException(A_WF_NODE_CONFIG_NOT_FOUND.getInfo());
         }
         log.info("node config:{}", configObj);
         T nodeConfig = JsonUtil.fromJson(configObj, clazz);
         if (null == nodeConfig) {
             log.warn("找不到节点的配置,node uuid:{}", state.getUuid());
-            throw new WorkflowBaseException(A_WF_NODE_CONFIG_ERROR);
+            throw new BaseException(A_WF_NODE_CONFIG_ERROR.getInfo());
         }
         boolean configValid = true;
         try {
@@ -206,7 +205,7 @@ public abstract class AbstractWfNode {
         }
         if (!configValid) {
             log.warn("节点配置错误,node uuid:{}", state.getUuid());
-            throw new WorkflowBaseException(A_WF_NODE_CONFIG_ERROR);
+            throw new BaseException(A_WF_NODE_CONFIG_ERROR.getInfo());
         }
         return nodeConfig;
     }
