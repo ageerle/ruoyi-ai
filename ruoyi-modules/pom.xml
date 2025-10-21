@@ -22,10 +22,9 @@
         <module>ruoyi-system</module>
         <module>ruoyi-generator</module>
         <module>ruoyi-wechat</module>
-
         <!-- 新添加的数字人模块-->
         <module>ruoyi-aihuman</module>
-
+        <module>ruoyi-workflow</module>
     </modules>
 
     <properties>
