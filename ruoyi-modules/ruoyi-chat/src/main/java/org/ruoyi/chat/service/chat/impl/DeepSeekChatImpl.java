@@ -4,6 +4,10 @@ package org.ruoyi.chat.service.chat.impl;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
@@ -34,6 +38,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
+import java.util.ArrayList;
+import java.util.List;
 /**
  * deepseek
  */
@@ -74,7 +81,7 @@ public class DeepSeekChatImpl  implements IChatService {
         try {
             // 构建消息列表，包含历史对话消息和当前用户消息
             List<ChatMessage> messages = new ArrayList<>();
-            
+
             // 添加历史对话消息
             if (chatRequest.getMessages() != null) {
                 for (Message message : chatRequest.getMessages()) {
@@ -82,7 +89,7 @@ public class DeepSeekChatImpl  implements IChatService {
                     if (message.getContent() == null || String.valueOf(message.getContent()).trim().isEmpty()) {
                         continue; // 跳过空消息
                     }
-                    
+
                     if (Message.Role.SYSTEM.getName().equals(message.getRole())) {
                         messages.add(new SystemMessage(String.valueOf(message.getContent())));
                     } else if (Message.Role.USER.getName().equals(message.getRole())) {
@@ -92,7 +99,7 @@ public class DeepSeekChatImpl  implements IChatService {
                     }
                 }
             }
-            
+
             // 添加当前用户消息
             messages.add(new UserMessage(chatRequest.getPrompt()));
 
@@ -128,6 +135,34 @@ public class DeepSeekChatImpl  implements IChatService {
     }
 
     /**
+     * 工作流场景：支持 langchain4j handler
+     */
+    @Override
+    public void chat(ChatRequest request, StreamingChatResponseHandler handler) {
+        log.info("workflow chat, model: {}", request.getModel());
+
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(request.getModel());
+
+        StreamingChatModel chatModel = OpenAiStreamingChatModel.builder()
+                .baseUrl(chatModelVo.getApiHost())
+                .apiKey(chatModelVo.getApiKey())
+                .modelName(chatModelVo.getModelName())
+                .logRequests(true)
+                .logResponses(true)
+                .temperature(0.7)
+                .build();
+
+        try {
+            // 将 ruoyi-ai 的 ChatRequest 转换为 langchain4j 的格式
+            dev.langchain4j.model.chat.request.ChatRequest chatRequest = convertToLangchainRequest(request);
+            chatModel.chat(chatRequest, handler);
+        } catch (Exception e) {
+            log.error("workflow deepseek请求失败：{}", e.getMessage(), e);
+            throw new RuntimeException("DeepSeek workflow chat failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * 处理启用深度思考的deepseek模型请求
      */
     private SseEmitter handleDeepSeekWithThinking(ChatRequest chatRequest, SseEmitter emitter, ChatModelVo chatModelVo) {
@@ -157,13 +192,13 @@ public class DeepSeekChatImpl  implements IChatService {
                     if (message.getContent() == null || String.valueOf(message.getContent()).trim().isEmpty()) {
                         continue; // 跳过空消息
                     }
-                    
+
                     // DeepSeek模型在深度思考模式下只接受user和assistant角色的消息
                     if (Message.Role.SYSTEM.getName().equals(message.getRole())) {
                         // 跳过系统消息
                         continue;
                     }
-                    
+
                     Map<String, Object> historyMessage = new HashMap<>();
                     historyMessage.put("role", message.getRole());
                     historyMessage.put("content", String.valueOf(message.getContent()));

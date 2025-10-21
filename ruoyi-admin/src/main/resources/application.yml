@@ -156,6 +156,8 @@ security:
     # actuator 监控配置
     - /actuator
     - /actuator/**
+    - /workflow/**
+    - /admin/workflow/**
 # 多租户配置
 tenant:
   # 是否开启
