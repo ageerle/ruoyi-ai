@@ -3,7 +3,7 @@ CREATE TABLE t_workflow
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
     uuid        VARCHAR(32)  NOT NULL DEFAULT '',
     title       VARCHAR(100) NOT NULL DEFAULT '',
-    remark      TEXT         NOT NULL DEFAULT '',
+    remark      TEXT         NOT NULL,
     user_id     BIGINT       NOT NULL DEFAULT 0,
     is_public   TINYINT(1) NOT NULL DEFAULT 0,
     is_enable   TINYINT(1) NOT NULL DEFAULT 1,
