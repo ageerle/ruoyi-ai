@@ -330,10 +330,12 @@ spring:
           servers-configuration: classpath:mcp-server.json
         request-timeout: 300s
 
---- # 向量库配置
+# 向量库配置
 vector-store:
-  # 向量存储类型 (weaviate/milvus)
+  # 向量存储类型 可选(weaviate/milvus)
+  # 如需修改向量库类型，请修改此配置值!
   type: weaviate
+
   # Weaviate配置
   weaviate:
     protocol: http
