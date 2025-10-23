@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.ruoyi</groupId>
+        <artifactId>ruoyi-modules</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>ruoyi-graph</artifactId>
+
+    <description>
+        知识图谱模块
+    </description>
+
+    <properties>
+        <langchain4j.version>1.0.0-beta4</langchain4j.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Langchain4j BOM 版本管理 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- 通用核心模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-redis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-doc</artifactId>
+        </dependency>
+
+        <!-- 知识库API模块 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-knowledge-api</artifactId>
+        </dependency>
+
+        <!-- Chat API模块（用于模型选择） -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-chat-api</artifactId>
+        </dependency>
+
+        <!-- Neo4j Driver -->
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+        </dependency>
+
+        <!-- Neo4j Cypher DSL -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-dsl</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-chat</artifactId>
+        </dependency>
+
+        <!-- Langchain4j 依赖（用于 DeepSeek 图谱构建） -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+        </dependency>
+
+    </dependencies>
+</project>

@@ -46,7 +46,7 @@ spring.data:
     # 端口，默认为6379
     port: 6379
     # 数据库索引
-    database: 0
+    database: 2
     # 密码(如没有密码请注释掉)
     # password: 123456
     # 连接超时时间
@@ -103,4 +103,55 @@ pdf:
 dashscope:
   key: sk-xxxx
   model: qvq-max
+
+--- # Neo4j 知识图谱配置
+neo4j:
+  uri: bolt://127.0.0.1:7687
+  username: neo4j
+  password: MySecurePass123!
+  database: neo4j
+  max-connection-pool-size: 50
+  connection-timeout-seconds: 30
+
+# 知识图谱配置
+knowledge:
+  graph:
+    # 是否启用知识图谱功能
+    enabled: true
+    # 图数据库类型: neo4j 或 apache-age
+    database-type: neo4j
+    # 是否自动创建索引
+    auto-create-index: true
+    # 批量处理大小
+    batch-size: 1000
+    # 最大重试次数
+    max-retry-count: 3
+
+    # 实体抽取配置
+    extraction:
+      # 置信度阈值（低于此值的实体将被过滤）
+      confidence-threshold: 0.7
+      # 最大实体数量（每个文档）
+      max-entities-per-doc: 100
+      # 最大关系数量（每个文档）
+      max-relations-per-doc: 200
+      # 文本分片大小（用于长文档）
+      chunk-size: 2000
+      # 分片重叠大小
+      chunk-overlap: 200
+
+    # 查询配置
+    query:
+      # 默认查询限制数量
+      default-limit: 100
+      # 最大查询限制数量
+      max-limit: 1000
+      # 路径查询最大深度
+      max-path-depth: 5
+      # 查询超时时间（秒）
+      timeout-seconds: 30
+      # 是否启用查询缓存
+      cache-enabled: true
+      # 缓存过期时间（分钟）
+      cache-expire-minutes: 60
 
