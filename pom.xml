@@ -366,6 +366,9 @@
                 <artifactId>langchain4j-community-neo4j</artifactId>
                 <version>${langchain4j-neo4j.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-aihuman</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -523,5 +526,3 @@
     </pluginRepositories>
 
 </project>
-
-
