@@ -75,6 +75,18 @@
         </dependency>
 
         <dependency>
+            <groupId>io.milvus</groupId>
+            <artifactId>milvus-sdk-java</artifactId>
+            <version>2.6.4</version>
+        </dependency>
+
+        <!-- LangChain4j Milvus Embedding Store -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-milvus</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
         </dependency>
@@ -101,11 +113,10 @@
             <artifactId>commons-compress</artifactId>
         </dependency>
 
-      <dependency>
-        <groupId>com.alibaba</groupId>
-        <artifactId>dashscope-sdk-java</artifactId>
-        <version>2.19.0</version>
-      </dependency>
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-chat-api</artifactId>
+        </dependency>
 
     </dependencies>
 

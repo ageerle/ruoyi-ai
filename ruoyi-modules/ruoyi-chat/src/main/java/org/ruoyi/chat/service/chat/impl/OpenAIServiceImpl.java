@@ -43,7 +43,7 @@ public class OpenAIServiceImpl implements IChatService {
         this.chatClient = chatClientBuilder
                 .defaultOptions(
                         OpenAiChatOptions.builder().model("gpt-4o-mini").build())
-                .defaultToolCallbacks(new SyncMcpToolCallbackProvider(mcpSyncClients))
+                .defaultTools(new SyncMcpToolCallbackProvider(mcpSyncClients))
                 .build();
     }
 

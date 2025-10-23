@@ -156,6 +156,8 @@ security:
     # actuator 监控配置
     - /actuator
     - /actuator/**
+    - /workflow/**
+    - /admin/workflow/**
 # 多租户配置
 tenant:
   # 是否开启
@@ -327,4 +329,20 @@ spring:
         stdio:
           servers-configuration: classpath:mcp-server.json
         request-timeout: 300s
+
+# 向量库配置
+vector-store:
+  # 向量存储类型 可选(weaviate/milvus)
+  # 如需修改向量库类型，请修改此配置值!
+  type: weaviate
+
+  # Weaviate配置
+  weaviate:
+    protocol: http
+    host: 127.0.0.1:6038
+    classname: LocalKnowledge
+  # Milvus配置
+  milvus:
+    url: http://localhost:19530
+    collectionname: LocalKnowledge
 

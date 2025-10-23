@@ -37,6 +37,8 @@ spring:
         connectionTestQuery: SELECT 1
         # 多久检查一次连接的活性
         keepaliveTime: 30000
+  mail:
+    username: xx
 
 --- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
 spring.data:
@@ -102,7 +104,15 @@ pdf:
 #百炼模型配置
 dashscope:
   key: sk-xxxx
-  model: qvq-max
+
+local:
+  images: xx
+
+
+
+  files: xx
+
+
 
 --- # Neo4j 知识图谱配置
 neo4j:

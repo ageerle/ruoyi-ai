@@ -110,7 +110,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             BigDecimal numberCost = unitPrice
                 .multiply(BigDecimal.valueOf(batches))
                 .setScale(2, RoundingMode.HALF_UP);
-            log.debug("deductToken->按token扣费，结算token数量: {}，批次数: {}，单价: {}，费用: {}", 
+            log.debug("deductToken->按token扣费，结算token数量: {}，批次数: {}，单价: {}，费用: {}",
                       billable, batches, unitPrice, numberCost);
 
             try {
@@ -137,7 +137,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             chatToken.setUserId(chatRequest.getUserId());
             chatToken.setToken(totalTokens);
             chatTokenService.editToken(chatToken);
-            
+
             // 虽未扣费，但要更新消息的基本信息（实际token数、计费类型等）
             updateMessageWithoutBilling(chatRequest, tokens, chatModelVo.getModelType());
         }
@@ -166,12 +166,6 @@ public class ChatCostServiceImpl implements IChatCostService {
         chatMessageBo.setRole(chatRequest.getRole());
         chatMessageBo.setContent(chatRequest.getPrompt().trim());
         chatMessageBo.setModelName(chatRequest.getModel());
-
-//        // 基础消息信息，计费相关数据（tokens、费用、计费类型等）在扣费时统一设置
-//        chatMessageBo.setTotalTokens(0);  // 初始设为0，扣费时更新
-//        chatMessageBo.setDeductCost(null);
-//        chatMessageBo.setBillingType(null);
-//        chatMessageBo.setRemark("用户消息");
 
         try {
             chatMessageService.insertByBo(chatMessageBo);
@@ -444,11 +438,11 @@ public class ChatCostServiceImpl implements IChatCostService {
             preCheckBalance(chatRequest);
             return true; // 预检查通过，余额充足
         } catch (ServiceException e) {
-            log.debug("checkBalanceSufficient->余额不足，用户ID: {}, 模型: {}, 错误: {}", 
+            log.debug("checkBalanceSufficient->余额不足，用户ID: {}, 模型: {}, 错误: {}",
                       chatRequest.getUserId(), chatRequest.getModel(), e.getMessage());
             return false; // 预检查失败，余额不足
         } catch (Exception e) {
-            log.error("checkBalanceSufficient->检查余额时发生异常，用户ID: {}, 模型: {}", 
+            log.error("checkBalanceSufficient->检查余额时发生异常，用户ID: {}, 模型: {}",
                       chatRequest.getUserId(), chatRequest.getModel(), e);
             return false; // 异常情况视为余额不足，保守处理
         }

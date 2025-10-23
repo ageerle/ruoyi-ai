@@ -32,9 +32,14 @@ public class StoreEmbeddingBo {
     private List<String> fids;
 
     /**
-     * 向量库模型名称
+     * 向量库名称
      */
-    private String vectorModelName;
+    private String vectorStoreName;
+
+    /**
+     * 向量化模型id
+     */
+    private Long embeddingModelId;
 
     /**
      * 向量化模型名称

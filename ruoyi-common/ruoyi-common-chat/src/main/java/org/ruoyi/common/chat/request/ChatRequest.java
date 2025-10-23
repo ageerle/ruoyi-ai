@@ -26,10 +26,17 @@ public class ChatRequest {
      */
     private String prompt;
 
+
     /**
      * 系统提示词
      */
     private String sysPrompt;
+
+
+    /**
+     * 消息id
+     */
+    private Long messageId;
 
     /**
      * 是否开启流式对话
@@ -73,6 +80,11 @@ public class ChatRequest {
     private Boolean hasAttachment;
 
     /**
+     * 是否启用深度思考
+     */
+    private Boolean enableThinking;
+
+    /**
      * 是否自动切换模型
      */
     private Boolean autoSelectModel;
@@ -81,10 +93,5 @@ public class ChatRequest {
      * 会话令牌（为避免在非Web线程中获取Request，入口处注入）
      */
     private String token;
-
-    /**
-     * 消息ID（保存消息成功后设置，用于后续扣费更新）
-     */
-    private Long messageId;
 
 }

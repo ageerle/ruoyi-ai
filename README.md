@@ -150,6 +150,13 @@
 <strong>QQ技术交流群</strong><br>
 <em>技术讨论</em>
 </td>
+
+<td align="center">
+<img width="200" height="200" alt="95e8b1b3baeadbd24650bfb974ca5a58" src="https://github.com/user-attachments/assets/2a346218-6388-484d-aa75-6e98942193f7" /><br>
+<strong>微信技术交流群</strong><br>
+<em>技术讨论</em>
+</td>
+
 </tr>
 </table>
 
