@@ -84,6 +84,17 @@ public class WorkflowController {
     }
 
     /**
+     * 获取当前用户可访问的工作流详情
+     *
+     * @param uuid 工作流唯一标识
+     * @return 工作流详情
+     */
+    @GetMapping("/{uuid}")
+    public R<WorkflowResp> getDetail(@PathVariable String uuid) {
+        return R.ok(workflowService.getDetail(uuid));
+    }
+
+    /**
      * 搜索公开工作流
      *
      * @param keyword     搜索关键词
@@ -96,6 +107,33 @@ public class WorkflowController {
                                               @NotNull @Min(1) Integer currentPage,
                                               @NotNull @Min(10) Integer pageSize) {
         return R.ok(workflowService.searchPublic(keyword, currentPage, pageSize));
+    }
+
+
+    /**
+     * 搜索公开工作流
+     *
+     * @param keyword     搜索关键词
+     * @param currentPage 当前页数
+     * @param pageSize    每页数量
+     * @return 工作流列表
+     */
+    @GetMapping("/search")
+    public R<Page<WorkflowResp>> search(@RequestParam(defaultValue = "") String keyword,
+                                              @NotNull @Min(1) Integer currentPage,
+                                              @NotNull @Min(10) Integer pageSize) {
+        return R.ok(workflowService.search(keyword, currentPage, pageSize));
+    }
+
+    /**
+     * 获取公开工作流详情
+     *
+     * @param uuid 工作流唯一标识
+     * @return 工作流详情
+     */
+    @GetMapping("/public/{uuid}")
+    public R<WorkflowResp> getPublicDetail(@PathVariable String uuid) {
+        return R.ok(workflowService.getPublicDetail(uuid));
     }
 
     @GetMapping("/public/operators")
