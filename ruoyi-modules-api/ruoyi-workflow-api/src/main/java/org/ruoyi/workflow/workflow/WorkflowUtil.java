@@ -123,14 +123,14 @@ public class WorkflowUtil {
         Set<String> nameSet = CollStreamUtil.toSet(refInputs, WfNodeParamRef::getName);
 
         userMessage.stream().filter(item -> nameSet.contains(item.getName()))
-                .map(item -> getMessage("role", item.getContent().getValue())).forEach(messages::add);
+                .map(item -> getMessage("user", item.getContent().getValue())).forEach(messages::add);
 
         if (CollUtil.isNotEmpty(messages)) {
             return;
         }
 
         userMessage.stream().filter(item -> "input".equals(item.getName()))
-                .map(item -> getMessage("role", item.getContent().getValue())).forEach(messages::add);
+                .map(item -> getMessage("user", item.getContent().getValue())).forEach(messages::add);
     }
 
     /**

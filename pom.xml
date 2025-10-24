@@ -50,6 +50,11 @@
         <aliyun.sms.version>2.0.23</aliyun.sms.version>
         <tencent.sms.version>3.1.687</tencent.sms.version>
 
+        <!-- Neo4j 相关版本 -->
+        <neo4j-driver.version>5.26.0</neo4j-driver.version>
+        <neo4j-cypher-dsl.version>2024.1.0</neo4j-cypher-dsl.version>
+        <langchain4j-neo4j.version>1.2.0-beta8</langchain4j-neo4j.version>
+
         <!-- 插件版本 -->
         <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
         <maven-war-plugin.version>3.2.2</maven-war-plugin.version>
@@ -337,6 +342,33 @@
 
             <dependency>
                 <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-graph</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- Neo4j Driver -->
+            <dependency>
+                <groupId>org.neo4j.driver</groupId>
+                <artifactId>neo4j-java-driver</artifactId>
+                <version>${neo4j-driver.version}</version>
+            </dependency>
+
+            <!-- Neo4j Cypher DSL -->
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-cypher-dsl</artifactId>
+                <version>${neo4j-cypher-dsl.version}</version>
+            </dependency>
+
+            <!-- Langchain4j Neo4j 扩展 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-community-neo4j</artifactId>
+                <version>${langchain4j-neo4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-aihuman</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -494,5 +526,3 @@
     </pluginRepositories>
 
 </project>
-
-
