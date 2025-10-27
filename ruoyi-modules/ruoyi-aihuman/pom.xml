@@ -18,6 +18,7 @@
 
     <properties>
         <easyexcel.version>3.2.1</easyexcel.version>
+        <jna.version>5.13.0</jna.version>
     </properties>
 
     <!-- 按照用户要求，不添加任何依赖 -->
@@ -70,5 +71,18 @@
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-excel</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+
     </dependencies>
 </project>
