@@ -120,40 +120,7 @@ insert into t_workflow_component(uuid, name, title, remark, is_enable)
 values (replace(uuid(), '-', ''), 'End', '结束', '流程由此结束', true);
 insert into t_workflow_component(uuid, name, title, remark, is_enable)
 values (replace(uuid(), '-', ''), 'Answer', '生成回答', '调用大语言模型回答问题', true);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'Dalle3', 'DALL-E 3 画图', '调用Dall-e-3生成图片', 11, false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'DocumentExtractor', '文档提取', '从文档中提取信息', 4, false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'KeywordExtractor', '关键词提取',
-        '从内容中提取关键词，Top N指定需要提取的关键词数量', 5, false);
-insert into t_workflow_component(uuid, name, title, remark, is_enable)
-values (replace(uuid(), '-', ''), 'KnowledgeRetrieval', '知识检索', '从知识库中检索信息，需选中知识库',
-        true);
-insert into t_workflow_component(uuid, name, title, remark, is_enable)
-values (replace(uuid(), '-', ''), 'Switcher', '条件分支', '根据设置的条件引导执行不同的流程', false);
-insert into t_workflow_component(uuid, name, title, remark, is_enable)
-values (replace(uuid(), '-', ''), 'Classifier', '内容归类',
-        '使用大语言模型对输入信息进行分析并归类，根据类别调用对应的下游节点', false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'Template', '模板转换',
-        '将多个变量合并成一个输出内容', 10, true);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'Google', 'Google搜索', '从Google中检索信息', 13, false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'FaqExtractor', '常见问题提取',
-        '从内容中提取出常见问题及对应的答案，Top N为提取的数量',
-        6, false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'Tongyiwanx', '通义万相-画图', '调用文生图模型生成图片', 12, false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'HumanFeedback', '人机交互',
-        '中断执行中的流程并等待用户的输入，用户输入后继续执行后续流程', 10, false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'MailSend', '邮件发送', '发送邮件到指定邮箱', 10, false);
-insert into t_workflow_component(uuid, name, title, remark, display_order, is_enable)
-values (replace(uuid(), '-', ''), 'HttpRequest', 'Http请求',
-        '通过Http协议发送请求，可将其他组件的输出作为参数，也可设置常量作为参数。', 10, false);
+
 
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache,
