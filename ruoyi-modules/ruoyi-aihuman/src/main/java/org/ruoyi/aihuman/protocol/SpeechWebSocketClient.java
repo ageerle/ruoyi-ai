@@ -1,4 +1,4 @@
-package com.speech.protocol;
+package org.ruoyi.aihuman.protocol;
 
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.client.WebSocketClient;

@@ -1,4 +1,4 @@
-package com.speech.protocol;
+package org.ruoyi.aihuman.protocol;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

@@ -1,10 +1,10 @@
-package com.speech.volcengine;
+package org.ruoyi.aihuman.volcengine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.speech.protocol.EventType;
-import com.speech.protocol.Message;
-import com.speech.protocol.MsgType;
-import com.speech.protocol.SpeechWebSocketClient;
+import org.ruoyi.aihuman.protocol.EventType;
+import org.ruoyi.aihuman.protocol.Message;
+import org.ruoyi.aihuman.protocol.MsgType;
+import org.ruoyi.aihuman.protocol.SpeechWebSocketClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
@@ -40,7 +40,7 @@ public class Bidirection {
         String accessToken = System.getProperty("accessToken", "fOHuq4R4dirMYiOruCU3Ek9q75zV0KVW");
         String resourceId = System.getProperty("resourceId", "seed-tts-2.0");
         String voice = System.getProperty("voice", "zh_female_vv_uranus_bigtts");
-        String text = System.getProperty("text", "你好呀！如果你有关于老婆相关的问题，比如怎么让她开心、怎么照顾她等，都可以跟我说哦，我会根据【马斯克·陈】提供的关爱老婆百事通里的信息给你分析和建议哒。");
+        String text = System.getProperty("text", "你好呀！我是AI合成的语音，很高兴认识你。");
         String encoding = System.getProperty("encoding", "mp3");
 
         if (appId.isEmpty() || accessToken.isEmpty()) {
