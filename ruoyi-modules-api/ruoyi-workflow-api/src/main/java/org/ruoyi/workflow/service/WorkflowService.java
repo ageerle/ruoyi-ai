@@ -93,6 +93,37 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         return changeWorkflowToDTO(workflow2);
     }
 
+    /**
+     * 获取当前用户可访问的工作流详情
+     *
+     * @param uuid 工作流唯一标识
+     * @return 工作流详情
+     */
+    public WorkflowResp getDetail(String uuid) {
+        Workflow workflow = PrivilegeUtil.checkAndGetByUuid(uuid, this.query(), ErrorEnum.A_WF_NOT_FOUND);
+        return changeWorkflowToDTO(workflow);
+    }
+
+    /**
+     * 获取公开工作流详情
+     *
+     * @param uuid 工作流唯一标识
+     * @return 工作流详情
+     */
+    public WorkflowResp getPublicDetail(String uuid) {
+        Workflow workflow = ChainWrappers.lambdaQueryChain(baseMapper)
+                .eq(Workflow::getUuid, uuid)
+                .eq(Workflow::getIsDeleted, false)
+                .eq(Workflow::getIsPublic, true)
+                .eq(Workflow::getIsEnable, true)
+                .last("limit 1")
+                .one();
+        if (null == workflow) {
+            throw new BaseException(ErrorEnum.A_WF_NOT_FOUND.getInfo());
+        }
+        return changeWorkflowToDTO(workflow);
+    }
+
     public Workflow getByUuid(String uuid) {
         return ChainWrappers.lambdaQueryChain(baseMapper)
                 .eq(Workflow::getUuid, uuid)
@@ -149,7 +180,24 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
             userIds.add(source.getUserId());
             return target;
         });
-        //  fillUserInfos(userIds, result.getRecords());
+        return result;
+    }
+
+
+    public Page<WorkflowResp> search(String keyword, Integer currentPage, Integer pageSize) {
+        Page<Workflow> page = ChainWrappers.lambdaQueryChain(baseMapper)
+                .eq(Workflow::getIsDeleted, false)
+                .eq(Workflow::getIsEnable, true)
+                .like(StringUtils.isNotBlank(keyword), Workflow::getTitle, keyword)
+                .orderByDesc(Workflow::getUpdateTime)
+                .page(new Page<>(currentPage, pageSize));
+        Page<WorkflowResp> result = new Page<>();
+        List<Long> userIds = new ArrayList<>();
+        MPPageUtil.convertToPage(page, result, WorkflowResp.class, (source, target) -> {
+            fillNodesAndEdges(target);
+            userIds.add(source.getUserId());
+            return target;
+        });
         return result;
     }
 
