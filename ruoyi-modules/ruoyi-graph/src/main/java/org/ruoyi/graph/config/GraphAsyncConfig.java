@@ -1,6 +1,7 @@
 package org.ruoyi.graph.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -18,6 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Slf4j
 @EnableAsync
 @Configuration
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphAsyncConfig {
 
     /**

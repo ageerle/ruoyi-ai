@@ -4,6 +4,7 @@ import lombok.Data;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Data
 @Configuration
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 @ConfigurationProperties(prefix = "neo4j")
 public class Neo4jConfig {
 

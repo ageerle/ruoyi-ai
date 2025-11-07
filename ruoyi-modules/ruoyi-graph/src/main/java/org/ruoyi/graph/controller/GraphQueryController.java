@@ -11,6 +11,7 @@ import org.ruoyi.graph.dto.GraphExtractionResult;
 import org.ruoyi.graph.service.IGraphExtractionService;
 import org.ruoyi.graph.service.IGraphRAGService;
 import org.ruoyi.graph.service.IGraphStoreService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/graph/query")
 @Tag(name = "图谱查询", description = "知识图谱查询相关接口")
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphQueryController extends BaseController {
 
     private final IGraphStoreService graphStoreService;

@@ -14,6 +14,7 @@ import org.ruoyi.graph.domain.GraphInstance;
 import org.ruoyi.graph.mapper.GraphInstanceMapper;
 import org.ruoyi.graph.service.IGraphInstanceService;
 import org.ruoyi.graph.service.IGraphStoreService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphInstanceServiceImpl implements IGraphInstanceService {
 
     private final GraphInstanceMapper graphInstanceMapper;

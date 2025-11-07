@@ -11,6 +11,7 @@ import org.ruoyi.graph.domain.GraphInstance;
 import org.ruoyi.graph.enums.GraphStatusEnum;
 import org.ruoyi.graph.service.IGraphBuildTaskService;
 import org.ruoyi.graph.service.IGraphInstanceService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/graph/instance")
 @Tag(name = "图谱实例管理", description = "知识图谱实例的创建、查询、更新、删除")
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphInstanceController extends BaseController {
 
     private final IGraphInstanceService graphInstanceService;
