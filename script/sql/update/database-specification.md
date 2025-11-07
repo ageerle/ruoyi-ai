@@ -152,11 +152,7 @@ mysql -u root -p database_name < script/sql/update/2024-07-13-chat-model-priorit
 
 1. 在 `script/sql/update/` 下添加增量SQL补丁
 2. 将变更同步更新到初始化文件 `script/sql/ruoyi-ai.sql`
-3. 同步更新Docker初始化文件 `script/deploy/deploy/mysql-init/ruoyi-ai.sql`
-
-**说明：** 确保三个文件的最终状态保持一致，新部署的环境和增量更新的环境数据库结构完全相同。
 
 ---
-
 > 
-> 最后更新时间：2025-09-17
+> 最后更新时间：2025-11-07

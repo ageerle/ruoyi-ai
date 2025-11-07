@@ -11,11 +11,60 @@
  Target Server Version : 50744 (5.7.44-log)
  File Encoding         : 65001
 
- Date: 17/09/2025 17:32:43
+ Date: 07/11/2025 16:49:54
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for aihuman_config
+-- ----------------------------
+DROP TABLE IF EXISTS `aihuman_config`;
+CREATE TABLE `aihuman_config`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `model_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `model_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+  `agent_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+  `create_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `status` int(11) NULL DEFAULT NULL,
+  `publish` int(11) NULL DEFAULT NULL,
+  `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `create_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `update_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of aihuman_config
+-- ----------------------------
+INSERT INTO `aihuman_config` VALUES (9, '关爱老婆数字人（梅朵）', '梅朵吉祥物', '/Live2D/models/梅朵吉祥物/梅朵吉祥物.model3.json', '{\n	\"Version\": 3,\n	\"FileReferences\": {\n		\"Moc\": \"梅朵吉祥物.moc3\",\n		\"Textures\": [\n			\"梅朵吉祥物.4096/texture_00.png\",\n			\"梅朵吉祥物.4096/texture_01.png\"\n		],\n		\"Physics\": \"梅朵吉祥物.physics3.json\",\n		\"DisplayInfo\": \"梅朵吉祥物.cdi3.json\",\n		\"MotionSync\": \"梅朵吉祥物.motionsync3.json\",\n		\"Expressions\": [\n			{\n				\"Name\": \"kaixin\",\n				\"File\": \"kaixin.exp3.json\"\n			},\n			{\n				\"Name\": \"maozi\",\n				\"File\": \"maozi.exp3.json\"\n			},\n			{\n				\"Name\": \"mouth open\",\n				\"File\": \"mouth open.exp3.json\"\n			},\n			{\n				\"Name\": \"shibai\",\n				\"File\": \"shibai.exp3.json\"\n			},\n			{\n				\"Name\": \"yinchen\",\n				\"File\": \"yinchen.exp3.json\"\n			}\n		],\n		\"Motions\": {\n			\"\": [\n				{\n					\"File\": \"mouth.motion3.json\"\n				}\n			]\n		}\n	},\n	\"Groups\": [\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"LipSync\",\n			\"Ids\": [\n				\"ParamMouthForm\",\n				\"ParamMouthOpenY\"\n			]\n		},\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"EyeBlink\",\n			\"Ids\": [\n				\"ParamEyeLOpen\",\n				\"ParamEyeROpen\"\n			]\n		}\n	],\n	\"HitAreas\": []\n}', '{\n    \"bot_id\": \"7504596188201746470\",\n    \"user_id\": \"7376476310010937396\",\n    \"stream\": true,\n    \"auto_save_history\": true\n}', '2025-09-29 16:36:46', '2025-09-29 16:36:46', 0, 1, NULL, NULL, '1');
+INSERT INTO `aihuman_config` VALUES (10, '关爱老婆数字人（K）', 'kei_vowels_pro', '/Live2D/models/kei_vowels_pro/kei_vowels_pro.model3.json', '{\n	\"Version\": 3,\n	\"FileReferences\": {\n		\"Moc\": \"kei_vowels_pro.moc3\",\n		\"Textures\": [\n			\"kei_vowels_pro.2048/texture_00.png\"\n		],\n		\"Physics\": \"kei_vowels_pro.physics3.json\",\n		\"DisplayInfo\": \"kei_vowels_pro.cdi3.json\",\n		\"MotionSync\": \"kei_vowels_pro.motionsync3.json\",\n		\"Motions\": {\n			\"\": [\n				{\n					\"File\": \"motions/01_kei_en.motion3.json\",\n					\"Sound\": \"sounds/01_kei_en.wav\",\n					\"MotionSync\": \"Vowels_CRI\"\n				},\n				{\n					\"File\": \"motions/01_kei_jp.motion3.json\",\n					\"Sound\": \"sounds/01_kei_jp.wav\",\n					\"MotionSync\": \"Vowels_CRI\"\n				},\n				{\n					\"File\": \"motions/01_kei_ko.motion3.json\",\n					\"Sound\": \"sounds/01_kei_ko.wav\",\n					\"MotionSync\": \"Vowels_CRI\"\n				},\n				{\n					\"File\": \"motions/01_kei_zh.motion3.json\",\n					\"Sound\": \"sounds/01_kei_zh.wav\",\n					\"MotionSync\": \"Vowels_CRI\"\n				}\n			]\n		}\n	},\n	\"Groups\": [\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"LipSync\",\n			\"Ids\": []\n		},\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"EyeBlink\",\n			\"Ids\": [\n				\"ParamEyeLOpen\",\n				\"ParamEyeROpen\"\n			]\n		}\n	],\n	\"HitAreas\": [\n		{\n			\"Id\": \"HitAreaHead\",\n			\"Name\": \"Head\"\n		}\n	]\n}', '3', '2025-09-29 16:35:27', '2025-09-29 16:35:27', 0, 1, NULL, NULL, '1');
+INSERT INTO `aihuman_config` VALUES (11, '关爱老婆数字人（March 7th）', 'March 7th', '/Live2D/models/March 7th/March 7th.model3.json', '{\n	\"Version\": 3,\n	\"FileReferences\": {\n		\"Moc\": \"March 7th.moc3\",\n		\"Textures\": [\n			\"March 7th.4096/texture_00.png\",\n			\"March 7th.4096/texture_01.png\"\n		],\n		\"Physics\": \"March 7th.physics3.json\",\n		\"DisplayInfo\": \"March 7th.cdi3.json\",\n		\"Expressions\": [\n			{\n				\"Name\": \"捂脸\",\n				\"File\": \"1.exp3.json\"\n			},\n			{\n				\"Name\": \"比耶\",\n				\"File\": \"2.exp3.json\"\n			},\n			{\n				\"Name\": \"照相\",\n				\"File\": \"3.exp3.json\"\n			},\n			{\n				\"Name\": \"脸红\",\n				\"File\": \"4.exp3.json\"\n			},\n			{\n				\"Name\": \"黑脸\",\n				\"File\": \"5.exp3.json\"\n			},\n			{\n				\"Name\": \"哭\",\n				\"File\": \"6.exp3.json\"\n			},\n			{\n				\"Name\": \"流汗\",\n				\"File\": \"7.exp3.json\"\n			},\n			{\n				\"Name\": \"星星\",\n				\"File\": \"8.exp3.json\"\n			}\n		]\n	},\n	\"Groups\": [\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"EyeBlink\",\n			\"Ids\": [\n				\"ParamEyeLOpen\",\n				\"ParamEyeROpen\"\n			]\n		},\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"LipSync\",\n			\"Ids\": [\n				\"ParamMouthOpenY\"\n			]\n		}\n	],\n	\"HitAreas\": []\n}', '3', '2025-09-29 21:09:26', '2025-09-29 21:09:28', 0, 1, NULL, NULL, NULL);
+INSERT INTO `aihuman_config` VALUES (12, '关爱老婆数字人（pachan）', 'pachan', '/Live2D/models/pachan/pachan.model3.json', '{\n	\"Version\": 3,\n	\"FileReferences\": {\n		\"Moc\": \"pachirisu anime girl - top half.moc3\",\n		\"Textures\": [\n			\"pachirisu anime girl - top half.4096/texture_00.png\"\n		],\n		\"Physics\": \"pachirisu anime girl - top half.physics3.json\",\n		\"DisplayInfo\": \"pachirisu anime girl - top half.cdi3.json\"\n	},\n	\"Groups\": [\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"EyeBlink\",\n			\"Ids\": []\n		},\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"LipSync\",\n			\"Ids\": []\n		}\n	]\n}', NULL, '2025-10-05 19:49:56', '2025-10-05 19:49:56', 0, 1, NULL, NULL, NULL);
+INSERT INTO `aihuman_config` VALUES (13, '关爱老婆数字人（230108）', '230108', '/Live2D/models/230108/230108.model3.json', '{\n	\"Version\": 3,\n	\"FileReferences\": {\n		\"Moc\": \"230108.moc3\",\n		\"Textures\": [\n			\"230108.4096/texture_00.png\"\n		],\n		\"Physics\": \"230108.physics3.json\",\n		\"DisplayInfo\": \"230108.cdi3.json\"\n	},\n	\"Groups\": [\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"LipSync\",\n			\"Ids\": [\n				\"ParamMouthOpenY\"\n			]\n		},\n		{\n			\"Target\": \"Parameter\",\n			\"Name\": \"EyeBlink\",\n			\"Ids\": [\n				\"ParamEyeLOpen\",\n				\"ParamEyeROpen\"\n			]\n		}\n	]\n}', NULL, '2025-10-06 19:28:20', '2025-10-06 19:28:23', 0, 1, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for aihuman_info
+-- ----------------------------
+DROP TABLE IF EXISTS `aihuman_info`;
+CREATE TABLE `aihuman_info`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '交互名称',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '交互内容',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'AI人类交互信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of aihuman_info
+-- ----------------------------
+INSERT INTO `aihuman_info` VALUES (1, '1', '1', '2025-09-26 18:02:00', '2025-09-26 18:02:02', '0');
 
 -- ----------------------------
 -- Table structure for chat_config
@@ -105,6 +154,7 @@ CREATE TABLE `chat_model`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `category` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型分类',
   `model_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型名称',
+  `provider_name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型供应商',
   `model_describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型描述',
   `model_price` double NULL DEFAULT NULL COMMENT '模型价格',
   `model_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计费类型',
@@ -126,15 +176,15 @@ CREATE TABLE `chat_model`  (
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
-INSERT INTO `chat_model` VALUES (1782792839548735490, '000000', 'chat', 'midjourney', 'midjourney', 0.5, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', NULL, 103, 1, '2024-04-23 23:25:10', 1, '2025-03-23 09:15:55', 'midjourney', 1);
-INSERT INTO `chat_model` VALUES (1782792839548735491, '000000', 'chat', 'suno', 'suno', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', NULL, 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:15', 'suno', 2);
-INSERT INTO `chat_model` VALUES (1782792839548735492, '000000', 'chat', 'luma', 'luma', 1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', NULL, 103, 1, '2024-04-23 23:25:10', 1, '2025-03-27 10:08:15', 'luma', 3);
-INSERT INTO `chat_model` VALUES (1782792839548735493, '000000', 'chat', 'ppt', 'ppt', 1.1, '2', '1', NULL, 'https://docmee.cn', 'sk-xx', NULL, 103, 1, '2025-01-10 23:25:10', 1, '2025-03-22 08:30:29', 'ppt', 4);
-INSERT INTO `chat_model` VALUES (1828324413241466880, '000000', 'vector', 'quentinz/bge-large-zh-v1.5', 'bge-large-zh-v1.5', 0, '2', '1', NULL, 'http://127.0.0.1:11434/', 'sk-xx', NULL, 103, 1, '2025-04-03 07:28:56', 1, '2025-05-24 17:25:57', 'bge-large-zh-v1.5', 1);
-INSERT INTO `chat_model` VALUES (1828324413241466881, '000000', 'vector', 'baai/bge-m3', 'baai/bge-m3', 0.01, '2', '1', NULL, 'https://api.ppinfra.com/v3/openai', 'sk-xx', NULL, 103, 1, '2024-08-27 14:51:23', 1, '2025-05-24 17:33:11', 'BGE-M3 是一款具备多维度能力的文本嵌入模型，可同时实现密集检索、多向量检索和稀疏检索三大核心功能。该模型设计上兼容超过100种语言，并支持从短句到长达8192词元的长文本等多种输入形式。在跨语言检索任务中，BGE-M3展现出显著优势，其性能在MIRACL、MKQA等国际基准测试中位居前列。此外，针对长文档检索场景，该模型在MLDR、NarritiveQA等数据集上的表现同样达到行业领先水平。', 2);
-INSERT INTO `chat_model` VALUES (1859570229117022211, '000000', 'chat', 'deepseek/deepseek-v3-0324', 'deepseek/deepseek-v3-0324', 0.1, '1', '0', '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1, '2025-05-24 17:56:22', 'DeepSeek V3 0324 是深度求索（DeepSeek）团队旗舰级对话模型系列的最新版本，采用混合专家（Mixture-of-Experts, MoE）架构，参数量达685B参数。', 5);
-INSERT INTO `chat_model` VALUES (1859570229117022212, '000000', 'chat', 'deepseek/deepseek-r1', 'deepseek/deepseek-r1', 0.1, '1', '0', '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1, '2025-05-24 17:56:14', 'DeepSeek R1是DeepSeek团队发布的最新开源模型，具备非常强悍的推理性能，尤其在数学、编程和推理任务上达到了与OpenAI的o1模型相当的水平。', 6);
-INSERT INTO `chat_model` VALUES (1930184891812147202, '000000', 'image', 'qwen/qwen2.5-vl-72b-instruct', 'qwen/qwen2.5-vl-72b-instruct', 0.003, '2', '0', NULL, 'https://api.ppinfra.com/v3/openai/chat/completions', 'xx', NULL, 103, 1, '2025-06-04 16:48:34', 1, '2025-06-04 16:48:34', '视觉模型', 1);
+INSERT INTO `chat_model` VALUES (1782792839548735490, '000000', 'chat', 'midjourney', NULL, 'midjourney', 0.5, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', NULL, 103, 1, '2024-04-23 23:25:10', 1, '2025-03-23 09:15:55', 'midjourney', 1);
+INSERT INTO `chat_model` VALUES (1782792839548735491, '000000', 'chat', 'suno', NULL, 'suno', 0.3, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', NULL, 103, 1, '2024-04-23 23:25:10', 1, '2024-12-27 22:29:15', 'suno', 2);
+INSERT INTO `chat_model` VALUES (1782792839548735492, '000000', 'chat', 'luma', NULL, 'luma', 1, '2', '1', NULL, 'https://api.pandarobot.chat/', 'sk-xx', NULL, 103, 1, '2024-04-23 23:25:10', 1, '2025-03-27 10:08:15', 'luma', 3);
+INSERT INTO `chat_model` VALUES (1782792839548735493, '000000', 'chat', 'ppt', NULL, 'ppt', 1.1, '2', '1', NULL, 'https://docmee.cn', 'sk-xx', NULL, 103, 1, '2025-01-10 23:25:10', 1, '2025-03-22 08:30:29', 'ppt', 4);
+INSERT INTO `chat_model` VALUES (1828324413241466880, '000000', 'vector', 'quentinz/bge-large-zh-v1.5', NULL, 'bge-large-zh-v1.5', 0, '2', '1', NULL, 'http://127.0.0.1:11434/', 'sk-xx', NULL, 103, 1, '2025-04-03 07:28:56', 1, '2025-05-24 17:25:57', 'bge-large-zh-v1.5', 1);
+INSERT INTO `chat_model` VALUES (1828324413241466881, '000000', 'vector', 'baai/bge-m3', NULL, 'baai/bge-m3', 0.01, '2', '1', NULL, 'https://api.ppinfra.com/v3/openai', 'sk-xx', NULL, 103, 1, '2024-08-27 14:51:23', 1, '2025-05-24 17:33:11', 'BGE-M3 是一款具备多维度能力的文本嵌入模型，可同时实现密集检索、多向量检索和稀疏检索三大核心功能。该模型设计上兼容超过100种语言，并支持从短句到长达8192词元的长文本等多种输入形式。在跨语言检索任务中，BGE-M3展现出显著优势，其性能在MIRACL、MKQA等国际基准测试中位居前列。此外，针对长文档检索场景，该模型在MLDR、NarritiveQA等数据集上的表现同样达到行业领先水平。', 2);
+INSERT INTO `chat_model` VALUES (1859570229117022211, '000000', 'chat', 'deepseek/deepseek-v3-0324', NULL, 'deepseek/deepseek-v3-0324', 0.1, '1', '0', '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1, '2025-05-24 17:56:22', 'DeepSeek V3 0324 是深度求索（DeepSeek）团队旗舰级对话模型系列的最新版本，采用混合专家（Mixture-of-Experts, MoE）架构，参数量达685B参数。', 5);
+INSERT INTO `chat_model` VALUES (1859570229117022212, '000000', 'chat', 'deepseek/deepseek-r1', NULL, 'deepseek/deepseek-r1', 0.1, '1', '0', '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1, '2025-05-24 17:56:14', 'DeepSeek R1是DeepSeek团队发布的最新开源模型，具备非常强悍的推理性能，尤其在数学、编程和推理任务上达到了与OpenAI的o1模型相当的水平。', 6);
+INSERT INTO `chat_model` VALUES (1930184891812147202, '000000', 'image', 'qwen/qwen2.5-vl-72b-instruct', NULL, 'qwen/qwen2.5-vl-72b-instruct', 0.003, '2', '0', NULL, 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2025-06-04 16:48:34', 1, '2025-06-04 16:48:34', '视觉模型', 1);
 
 -- ----------------------------
 -- Table structure for chat_pay_order
@@ -219,7 +269,7 @@ CREATE TABLE `dev_schema`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '数据模型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '数据模型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of dev_schema
@@ -259,7 +309,7 @@ CREATE TABLE `dev_schema_field`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '数据模型字段表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '数据模型字段表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of dev_schema_field
@@ -282,7 +332,7 @@ CREATE TABLE `dev_schema_group`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1944346023254429698 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '数据模型分组表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1944346023254429698 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '数据模型分组表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of dev_schema_group
@@ -290,6 +340,171 @@ CREATE TABLE `dev_schema_group`  (
 INSERT INTO `dev_schema_group` VALUES (1944240213530648567, '系统管理', 'system', 'eos-icons:system-group', '系统默认分组', '0', NULL, NULL, '2025-07-13 11:37:28', 1, '2025-07-13 18:42:48');
 INSERT INTO `dev_schema_group` VALUES (1944240213530648577, '运营管理', 'operator', 'icon-park-outline:appointment', '运营管理', '0', NULL, NULL, '2025-07-13 11:39:24', 1, '2025-07-13 18:42:31');
 INSERT INTO `dev_schema_group` VALUES (1944346023254429697, '在线开发', 'dev', 'carbon:development', '在线开发', '0', NULL, NULL, '2025-07-13 18:39:51', 1, '2025-07-13 18:42:07');
+
+-- ----------------------------
+-- Table structure for graph_build_task
+-- ----------------------------
+DROP TABLE IF EXISTS `graph_build_task`;
+CREATE TABLE `graph_build_task`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `task_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '任务UUID',
+  `graph_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '图谱UUID',
+  `knowledge_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库ID',
+  `doc_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文档ID（可选，null表示全量构建）',
+  `task_type` tinyint(2) NULL DEFAULT 1 COMMENT '任务类型：1全量构建、2增量更新、3重建',
+  `task_status` tinyint(2) NULL DEFAULT 1 COMMENT '任务状态：1待执行、2执行中、3成功、4失败',
+  `progress` int(3) NULL DEFAULT 0 COMMENT '进度百分比（0-100）',
+  `total_docs` int(11) NULL DEFAULT 0 COMMENT '总文档数',
+  `processed_docs` int(11) NULL DEFAULT 0 COMMENT '已处理文档数',
+  `extracted_entities` int(11) NULL DEFAULT 0 COMMENT '提取的实体数',
+  `extracted_relations` int(11) NULL DEFAULT 0 COMMENT '提取的关系数',
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
+  `result_summary` json NULL COMMENT '结果摘要(JSON格式)',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_task_uuid`(`task_uuid`) USING BTREE,
+  INDEX `idx_graph_uuid`(`graph_uuid`) USING BTREE,
+  INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
+  INDEX `idx_task_status`(`task_status`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '图谱构建任务表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of graph_build_task
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for graph_entity_type
+-- ----------------------------
+DROP TABLE IF EXISTS `graph_entity_type`;
+CREATE TABLE `graph_entity_type`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `type_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '实体类型名称',
+  `type_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '类型编码',
+  `description` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+  `color` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '#1890ff' COMMENT '可视化颜色',
+  `icon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图标',
+  `sort` int(4) NULL DEFAULT 0 COMMENT '显示顺序',
+  `is_enable` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用（0否 1是）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_type_code`(`type_code`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '图谱实体类型定义表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of graph_entity_type
+-- ----------------------------
+INSERT INTO `graph_entity_type` VALUES (1, '人物', 'PERSON', '人物实体，包括真实人物和虚拟角色', '#1890ff', 'user', 1, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_entity_type` VALUES (2, '机构', 'ORGANIZATION', '组织机构，包括公司、政府机构等', '#52c41a', 'bank', 2, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_entity_type` VALUES (3, '地点', 'LOCATION', '地理位置，包括国家、城市、地址等', '#fa8c16', 'environment', 3, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_entity_type` VALUES (4, '概念', 'CONCEPT', '抽象概念，包括理论、方法等', '#722ed1', 'bulb', 4, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_entity_type` VALUES (5, '事件', 'EVENT', '事件记录，包括历史事件、活动等', '#eb2f96', 'calendar', 5, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_entity_type` VALUES (6, '产品', 'PRODUCT', '产品或服务', '#13c2c2', 'shopping', 6, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_entity_type` VALUES (7, '技术', 'TECHNOLOGY', '技术或工具', '#2f54eb', 'tool', 7, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_entity_type` VALUES (8, '文档', 'DOCUMENT', '文档或资料', '#faad14', 'file-text', 8, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+
+-- ----------------------------
+-- Table structure for graph_query_history
+-- ----------------------------
+DROP TABLE IF EXISTS `graph_query_history`;
+CREATE TABLE `graph_query_history`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `query_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '查询UUID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `knowledge_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库ID',
+  `graph_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图谱UUID',
+  `query_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '查询文本',
+  `query_type` tinyint(2) NULL DEFAULT 1 COMMENT '查询类型：1实体查询、2关系查询、3路径查询、4混合查询',
+  `cypher_query` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '生成的Cypher查询',
+  `result_count` int(11) NULL DEFAULT 0 COMMENT '结果数量',
+  `response_time` int(11) NULL DEFAULT 0 COMMENT '响应时间(ms)',
+  `is_success` tinyint(1) NULL DEFAULT 1 COMMENT '是否成功（0否 1是）',
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_query_uuid`(`query_uuid`) USING BTREE,
+  INDEX `idx_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '图谱查询历史表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of graph_query_history
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for graph_relation_type
+-- ----------------------------
+DROP TABLE IF EXISTS `graph_relation_type`;
+CREATE TABLE `graph_relation_type`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `relation_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '关系名称',
+  `relation_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '关系编码',
+  `description` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+  `direction` tinyint(1) NULL DEFAULT 1 COMMENT '关系方向：0双向、1单向',
+  `style` json NULL COMMENT '可视化样式(JSON格式)',
+  `sort` int(4) NULL DEFAULT 0 COMMENT '显示顺序',
+  `is_enable` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用（0否 1是）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_relation_code`(`relation_code`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '图谱关系类型定义表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of graph_relation_type
+-- ----------------------------
+INSERT INTO `graph_relation_type` VALUES (1, '属于', 'BELONGS_TO', '隶属关系，表示从属或归属', 1, NULL, 1, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (2, '位于', 'LOCATED_IN', '地理位置关系', 1, NULL, 2, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (3, '相关', 'RELATED_TO', '一般关联关系', 0, NULL, 3, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (4, '导致', 'CAUSES', '因果关系', 1, NULL, 4, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (5, '包含', 'CONTAINS', '包含关系', 1, NULL, 5, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (6, '提及', 'MENTIONS', '文档提及实体的关系', 1, NULL, 6, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (7, '部分', 'PART_OF', '部分关系', 1, NULL, 7, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (8, '实例', 'INSTANCE_OF', '实例关系', 1, NULL, 8, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (9, '相似', 'SIMILAR_TO', '相似关系', 0, NULL, 9, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (10, '前序', 'PRECEDES', '时序关系', 1, NULL, 10, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (11, '工作于', 'WORKS_AT', '人物与机构的工作关系', 1, NULL, 11, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (12, '创建', 'CREATED_BY', '创建关系', 1, NULL, 12, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+INSERT INTO `graph_relation_type` VALUES (13, '使用', 'USES', '使用关系', 1, NULL, 13, 1, '', '2025-11-07 16:33:37', '', '2025-11-07 16:33:37', NULL);
+
+-- ----------------------------
+-- Table structure for graph_statistics
+-- ----------------------------
+DROP TABLE IF EXISTS `graph_statistics`;
+CREATE TABLE `graph_statistics`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `graph_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '图谱UUID',
+  `stat_date` date NOT NULL COMMENT '统计日期',
+  `total_nodes` int(11) NULL DEFAULT 0 COMMENT '总节点数',
+  `total_relationships` int(11) NULL DEFAULT 0 COMMENT '总关系数',
+  `node_type_distribution` json NULL COMMENT '节点类型分布(JSON格式)',
+  `relation_type_distribution` json NULL COMMENT '关系类型分布(JSON格式)',
+  `query_count` int(11) NULL DEFAULT 0 COMMENT '查询次数',
+  `avg_query_time` int(11) NULL DEFAULT 0 COMMENT '平均查询时间(ms)',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_graph_date`(`graph_uuid`, `stat_date`) USING BTREE,
+  INDEX `idx_stat_date`(`stat_date`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '图谱统计信息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of graph_statistics
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for knowledge_attach
@@ -321,6 +536,41 @@ CREATE TABLE `knowledge_attach`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for knowledge_base_graph_segment
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_base_graph_segment`;
+CREATE TABLE `knowledge_base_graph_segment`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `uuid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '片段UUID',
+  `kb_uuid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识库UUID',
+  `kb_item_uuid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库条目UUID',
+  `doc_uuid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文档UUID',
+  `segment_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '片段文本内容',
+  `chunk_index` int(11) NULL DEFAULT 0 COMMENT '片段索引（第几个片段）',
+  `total_chunks` int(11) NULL DEFAULT 1 COMMENT '总片段数',
+  `extraction_status` tinyint(4) NULL DEFAULT 0 COMMENT '抽取状态：0-待处理 1-处理中 2-已完成 3-失败',
+  `entity_count` int(11) NULL DEFAULT 0 COMMENT '抽取的实体数量',
+  `relation_count` int(11) NULL DEFAULT 0 COMMENT '抽取的关系数量',
+  `token_used` int(11) NULL DEFAULT 0 COMMENT '消耗的token数',
+  `error_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '错误信息',
+  `user_id` bigint(20) NULL DEFAULT NULL COMMENT '用户ID',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_uuid`(`uuid`) USING BTREE,
+  INDEX `idx_kb_uuid`(`kb_uuid`) USING BTREE,
+  INDEX `idx_kb_item_uuid`(`kb_item_uuid`) USING BTREE,
+  INDEX `idx_doc_uuid`(`doc_uuid`) USING BTREE,
+  INDEX `idx_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识图谱片段表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of knowledge_base_graph_segment
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for knowledge_fragment
 -- ----------------------------
 DROP TABLE IF EXISTS `knowledge_fragment`;
@@ -345,6 +595,40 @@ CREATE TABLE `knowledge_fragment`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for knowledge_graph_instance
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_graph_instance`;
+CREATE TABLE `knowledge_graph_instance`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `graph_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '图谱UUID',
+  `knowledge_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '关联knowledge_info.kid',
+  `graph_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '图谱名称',
+  `graph_status` tinyint(2) NULL DEFAULT 10 COMMENT '构建状态：10构建中、20已完成、30失败',
+  `node_count` int(11) NULL DEFAULT 0 COMMENT '节点数量',
+  `relationship_count` int(11) NULL DEFAULT 0 COMMENT '关系数量',
+  `config` json NULL COMMENT '图谱配置(JSON格式)',
+  `model_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'LLM模型名称',
+  `entity_types` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '实体类型（逗号分隔）',
+  `relation_types` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关系类型（逗号分隔）',
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_graph_uuid`(`graph_uuid`) USING BTREE,
+  INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
+  INDEX `idx_graph_status`(`graph_status`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识图谱实例表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of knowledge_graph_instance
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for knowledge_info
 -- ----------------------------
 DROP TABLE IF EXISTS `knowledge_info`;
@@ -362,6 +646,7 @@ CREATE TABLE `knowledge_info`  (
   `text_block_size` int(11) NULL DEFAULT NULL COMMENT '文本块大小',
   `vector_model_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '向量库',
   `embedding_model_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '向量模型',
+  `embedding_model_id` bigint(20) NULL DEFAULT NULL COMMENT '模型id',
   `system_prompt` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '系统提示词',
   `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
@@ -441,6 +726,33 @@ CREATE TABLE `knowledge_role_relation`  (
 -- ----------------------------
 -- Records of knowledge_role_relation
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for mcp_info
+-- ----------------------------
+DROP TABLE IF EXISTS `mcp_info`;
+CREATE TABLE `mcp_info`  (
+  `mcp_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `server_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '服务器名称',
+  `transport_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '链接方式',
+  `command` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '命令',
+  `arguments` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '参数',
+  `env` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '环境',
+  `status` tinyint(1) NULL DEFAULT NULL COMMENT '是否启用',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工具描述',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`mcp_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'mcp工具管理' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mcp_info
+-- ----------------------------
+INSERT INTO `mcp_info` VALUES (1, 'howtocook-mcp', 'STDIO', 'npx', '[\"-y\", \"howtocook-mcp\"]', NULL, 1, NULL, NULL, NULL, '2025-08-11 17:19:25', 1, '2025-08-11 18:24:22', NULL);
 
 -- ----------------------------
 -- Table structure for prompt_template
@@ -537,7 +849,7 @@ DROP TABLE IF EXISTS `sys_dict_data`;
 CREATE TABLE `sys_dict_data`  (
   `dict_code` bigint(20) NOT NULL COMMENT '字典编码',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `dict_sort` int(4) NULL DEFAULT 0 COMMENT '字典排序',
+  `dict_sort` int(11) NULL DEFAULT 0 COMMENT '字典排序',
   `dict_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典标签',
   `dict_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典键值',
   `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '字典类型',
@@ -599,6 +911,11 @@ INSERT INTO `sys_dict_data` VALUES (1938227141741633537, '000000', 1, '通义千
 INSERT INTO `sys_dict_data` VALUES (1938227191834206209, '000000', 1, '知识库向量模型-vector', 'vector', 'chat_model_category', NULL, '', 'N', '0', 103, 1, '2025-06-26 21:25:48', 1, '2025-06-26 21:25:48', NULL);
 INSERT INTO `sys_dict_data` VALUES (1938227249417805826, '000000', 1, '图片识别模型-image', 'image', 'chat_model_category', NULL, '', 'N', '0', 103, 1, '2025-06-26 21:26:01', 1, '2025-06-26 21:26:01', NULL);
 INSERT INTO `sys_dict_data` VALUES (1940594785010503681, '000000', 1, 'FASTGPT-fastgpt', 'fastgpt', 'chat_model_category', NULL, '', 'N', '0', 103, 1, '2025-07-03 10:13:46', 1, '2025-07-03 10:13:46', NULL);
+INSERT INTO `sys_dict_data` VALUES (1954098808913211393, '000000', 0, 'STDIO', 'STDIO', 'mcp_transport_type', NULL, '', 'N', '0', NULL, NULL, '2025-08-09 16:33:56', 1, '2025-08-09 16:34:19', NULL);
+INSERT INTO `sys_dict_data` VALUES (1954098960432443394, '000000', 1, 'SSE', 'SSE', 'mcp_transport_type', NULL, '', 'N', '0', NULL, NULL, '2025-08-09 16:34:32', NULL, '2025-08-09 16:34:32', NULL);
+INSERT INTO `sys_dict_data` VALUES (1954099421436784642, '000000', 2, 'HTTP', 'HTTP', 'mcp_transport_type', NULL, '', 'N', '0', NULL, NULL, '2025-08-09 16:36:22', NULL, '2025-08-09 16:36:22', NULL);
+INSERT INTO `sys_dict_data` VALUES (1971580207002615809, '000000', 0, '未发布', '0', 'aihuman_is_publish', NULL, '#949494', 'N', '0', NULL, NULL, '2025-09-26 22:18:46', NULL, '2025-09-26 22:18:46', NULL);
+INSERT INTO `sys_dict_data` VALUES (1971580286589534210, '000000', 1, '已发布', '1', 'aihuman_is_publish', NULL, '#00a89d', 'N', '0', NULL, NULL, '2025-09-26 22:19:05', 1, '2025-09-26 22:19:25', NULL);
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -645,6 +962,8 @@ INSERT INTO `sys_dict_type` VALUES (1780263881368219649, '000000', '支付状态
 INSERT INTO `sys_dict_type` VALUES (1904565568803217409, '000000', '状态类型', 'status_type', '0', 103, 1, '2025-03-26 00:06:31', 1, '2025-03-26 00:06:31', NULL);
 INSERT INTO `sys_dict_type` VALUES (1933093946274123777, '000000', '提示词模板分类', 'prompt_template_type', '0', 103, 1, '2025-06-12 17:28:07', 1, '2025-06-12 17:28:07', '提示词模板类型');
 INSERT INTO `sys_dict_type` VALUES (1938225899023884289, '000000', '模型分类', 'chat_model_category', '0', 103, 1, '2025-06-26 21:20:39', 1, '2025-06-26 21:20:39', '模型分类');
+INSERT INTO `sys_dict_type` VALUES (1954098639622713345, '000000', 'mcp链接方式', 'mcp_transport_type', '0', NULL, NULL, '2025-08-09 16:33:16', NULL, '2025-08-09 16:33:16', NULL);
+INSERT INTO `sys_dict_type` VALUES (1971579935501123586, '000000', '发布状态', 'aihuman_is_publish', '0', NULL, NULL, '2025-09-26 22:17:41', NULL, '2025-09-26 22:17:41', '0 代表未发布，1代表发布');
 
 -- ----------------------------
 -- Table structure for sys_file_info
@@ -735,7 +1054,7 @@ CREATE TABLE `sys_menu`  (
 -- ----------------------------
 -- Records of sys_menu
 -- ----------------------------
-INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 2, 'system', NULL, '', 1, 0, 'M', '0', '0', '', 'eos-icons:system-group', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-06 21:08:06', '系统管理目录');
+INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 5, 'system', '', '', 1, 0, 'M', '0', '0', '', 'eos-icons:system-group', 103, 1, '2023-05-14 15:19:39', 1, '2025-09-26 20:19:31', '系统管理目录');
 INSERT INTO `sys_menu` VALUES (100, '用户管理', 1775500307898949634, 1, 'user', 'operator/user/index', '', 1, 0, 'C', '0', '0', 'system:user:list', 'ph:user-fill', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:29:29', '用户管理菜单');
 INSERT INTO `sys_menu` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'ri:user-3-fill', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:04:59', '角色管理菜单');
 INSERT INTO `sys_menu` VALUES (102, '菜单管理', 1, 3, 'menu', 'system/menu/index', '', 1, 0, 'C', '0', '0', 'system:menu:list', 'typcn:th-menu-outline', 103, 1, '2023-05-14 15:19:39', 1, '2024-10-07 21:06:06', '菜单管理菜单');
@@ -795,7 +1114,7 @@ INSERT INTO `sys_menu` VALUES (1044, '登录删除', 501, 2, '#', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (1045, '日志导出', 501, 3, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:export', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1050, '账户解锁', 501, 4, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:unlock', '#', 103, 1, '2023-05-14 15:19:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000, '在线开发', 0, 20, 'dev', '', '', 1, 0, 'M', '0', '0', '', 'carbon:development', 103, 1, '2025-07-11 19:38:05', 1, '2025-07-11 19:43:03', '在线开发目录');
-INSERT INTO `sys_menu` VALUES (1775500307898949634, '运营管理', 0, 0, 'operate', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'icon-park-outline:appointment', 103, 1, '2024-04-03 20:27:15', 1, '2024-10-06 21:10:18', '');
+INSERT INTO `sys_menu` VALUES (1775500307898949634, '运营管理', 0, 3, 'operate', '', NULL, 1, 0, 'M', '0', '0', NULL, 'icon-park-outline:appointment', 103, 1, '2024-04-03 20:27:15', 1, '2025-09-26 20:19:38', '');
 INSERT INTO `sys_menu` VALUES (1775895273104068610, '系统模型', 1775500307898949634, 2, 'model', 'operator/model/index', NULL, 1, 0, 'C', '0', '0', 'system:model:list', 'ph:list-fill', 103, 1, '2024-04-05 12:00:38', 1, '2024-10-07 21:36:00', '系统模型菜单');
 INSERT INTO `sys_menu` VALUES (1775895273104068611, '系统模型查询', 1775895273104068610, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:query', '#', 103, 1, '2024-04-05 12:00:38', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1775895273104068612, '系统模型新增', 1775895273104068610, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:add', '#', 103, 1, '2024-04-05 12:00:38', NULL, NULL, '');
@@ -815,7 +1134,7 @@ INSERT INTO `sys_menu` VALUES (1780255628576018436, '支付订单修改', 178025
 INSERT INTO `sys_menu` VALUES (1780255628576018437, '支付订单删除', 1780255628576018433, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:remove', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1780255628576018438, '支付订单导出', 1780255628576018433, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:orders:export', '#', 103, 1, '2024-04-16 23:32:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1843281231381852162, '文件管理', 1775500307898949634, 20, 'file', 'operator/oss/index', NULL, 1, 0, 'C', '0', '0', NULL, 'material-symbols-light:folder', 103, 1, '2024-10-07 21:24:27', 1, '2024-12-27 23:03:04', '');
-INSERT INTO `sys_menu` VALUES (1898286496441393153, '知识库管理', 1775500307898949634, 10, 'knowledgeBase', 'operator/knowledgeBase/index', NULL, 1, 0, 'C', '0', '0', '', 'garden:knowledge-base-26', 103, 1, '2025-03-08 16:15:44', 1, '2025-03-10 00:21:26', '');
+INSERT INTO `sys_menu` VALUES (1898286496441393153, '知识管理', 1775500307898949634, 10, 'knowledgeBase', 'operator/knowledgeBase/index', NULL, 1, 0, 'C', '0', '0', '', 'garden:knowledge-base-26', 103, 1, '2025-03-08 16:15:44', 1, '2025-11-07 16:41:10', '');
 INSERT INTO `sys_menu` VALUES (1906674838461321217, '配置信息', 1775500307898949634, 13, 'configurationManage', 'operator/configurationManage/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'mdi:archive-cog-outline', 103, 1, '2025-03-31 19:48:48', 1, '2025-03-31 19:59:58', '配置信息菜单');
 INSERT INTO `sys_menu` VALUES (1906674838461321218, '配置信息查询', 1906674838461321217, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:query', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1906674838461321219, '配置信息新增', 1906674838461321217, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:config:add', '#', 103, 1, '2025-03-31 19:48:48', NULL, NULL, '');
@@ -828,22 +1147,51 @@ INSERT INTO `sys_menu` VALUES (1929170702299045892, '提示词模板新增', 192
 INSERT INTO `sys_menu` VALUES (1929170702299045893, '提示词模板修改', 1929170702299045890, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:edit', '#', 103, 1, '2025-09-17 16:43:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1929170702299045894, '提示词模板删除', 1929170702299045890, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:remove', '#', 103, 1, '2025-09-17 16:43:40', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1929170702299045895, '提示词模板导出', 1929170702299045890, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:promptTemplate:export', '#', 103, 1, '2025-09-17 16:43:40', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1944213468857495553, '模型分组', 2000, 1, 'schemaGroup', 'dev/schemaGroup/index', NULL, 1, 0, 'C', '0', '0', NULL, '#', 103, 1, '2025-07-13 09:53:07', 1, '2025-07-13 09:54:45', '模型分组菜单');
+INSERT INTO `sys_menu` VALUES (1944213468857495553, '模型分组', 2000, 1, 'schemaGroup', 'dev/schemaGroup/index', NULL, 1, 0, 'C', '0', '0', NULL, 'carbon:model-alt', 103, 1, '2025-07-13 09:53:07', 1, '2025-11-07 16:43:56', '模型分组菜单');
 INSERT INTO `sys_menu` VALUES (1944213468857495554, '模型分组查询', 1944213468857495553, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaGroup:list', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1944213468857495555, '模型分组新增', 1944213468857495553, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaGroup:add', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1944213468857495556, '模型分组修改', 1944213468857495553, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaGroup:edit', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1944213468857495557, '模型分组删除', 1944213468857495553, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaGroup:remove', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1944229086906281985, '数据模型', 2000, 2, 'schema', 'dev/schema/index', NULL, 1, 0, 'C', '0', '0', NULL, '#', 103, 1, '2025-07-13 10:55:11', NULL, '2025-07-13 10:55:11', '数据模型菜单');
+INSERT INTO `sys_menu` VALUES (1944229086906281985, '数据模型', 2000, 2, 'schema', 'dev/schema/index', NULL, 1, 0, 'C', '0', '0', NULL, 'carbon:model-alt', 103, 1, '2025-07-13 10:55:11', 1, '2025-11-07 16:44:01', '数据模型菜单');
 INSERT INTO `sys_menu` VALUES (1944229086906281986, '模型数据查询', 1944229086906281985, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schema:list', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1944229086906281987, '模型数据新增', 1944229086906281985, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schema:add', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1944229086906281988, '模型数据修改', 1944229086906281985, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schema:edit', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1944229086906281989, '模型数据删除', 1944229086906281985, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schema:remove', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1946466176918249473, '模型字段管理', 2000, 3, 'schemaField', 'dev/schemaField/index', NULL, 1, 0, 'C', '0', '0', NULL, '#', 103, 1, '2025-07-19 15:04:35', NULL, '2025-07-19 15:04:35', '模型字段管理菜单');
+INSERT INTO `sys_menu` VALUES (1946466176918249473, '模型字段管理', 2000, 3, 'schemaField', 'dev/schemaField/index', NULL, 1, 0, 'C', '0', '0', NULL, 'carbon:model-alt', 103, 1, '2025-07-19 15:04:35', 1, '2025-11-07 16:44:06', '模型字段管理菜单');
 INSERT INTO `sys_menu` VALUES (1946466176918249474, '模型字段管理查询', 1946466176918249473, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaField:list', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1946466176918249475, '模型字段管理新增', 1946466176918249473, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaField:add', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1946466176918249476, '模型字段管理修改', 1946466176918249473, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaField:edit', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1946466176918249477, '模型字段管理删除', 1946466176918249473, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'dev:schemaField:remove', '#', 103, 1, '2025-06-24 19:06:58', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (1946483381643743233, '知识库角色管理', 1775500307898949634, 12, 'knowledgeRole', 'operator/knowledgeRole/index', NULL, 1, 0, 'C', '0', '0', NULL, 'ri:user-3-fill', 103, 1, '2025-07-19 16:41:17', NULL, NULL, '知识库角色管理');
+INSERT INTO `sys_menu` VALUES (1946483381643743233, '知识角色', 1775500307898949634, 12, 'knowledgeRole', 'operator/knowledgeRole/index', NULL, 1, 0, 'C', '0', '0', NULL, 'ri:user-3-fill', 103, 1, '2025-07-19 16:41:17', 1, '2025-11-07 16:41:06', '知识库角色管理');
+INSERT INTO `sys_menu` VALUES (1950000000000000001, '图谱管理', 0, 15, 'graph', '', NULL, 1, 0, 'M', '0', '0', NULL, 'carbon:chart-relationship', 103, 1, '2025-11-07 16:33:47', 1, '2025-11-07 16:38:36', '知识图谱管理目录');
+INSERT INTO `sys_menu` VALUES (1950000000000000002, '图谱实例', 1950000000000000001, 1, 'graphInstance', 'operator/graphInstance/index', NULL, 1, 0, 'C', '0', '0', 'operator:graph:list', 'ant-design:node-index-outlined', 103, 1, '2025-11-07 16:33:47', 1, '2025-11-07 16:33:47', '图谱实例管理菜单');
+INSERT INTO `sys_menu` VALUES (1950000000000000003, '图谱实例查询', 1950000000000000002, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:query', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000004, '图谱实例新增', 1950000000000000002, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:add', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000005, '图谱实例编辑', 1950000000000000002, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:edit', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000006, '图谱实例删除', 1950000000000000002, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:remove', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000007, '图谱实例导出', 1950000000000000002, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:export', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000008, '图谱构建', 1950000000000000002, 6, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:build', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000009, '图谱重建', 1950000000000000002, 7, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:rebuild', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000010, '图谱可视化', 1950000000000000001, 2, 'graphVisualization', 'operator/graphVisualization/index', NULL, 1, 0, 'C', '0', '0', 'operator:graph:view', 'carbon:chart-network', 103, 1, '2025-11-07 16:33:47', 1, '2025-11-07 16:34:07', '图谱可视化菜单');
+INSERT INTO `sys_menu` VALUES (1950000000000000011, '图谱检索测试', 1950000000000000001, 3, 'graphRAG', 'operator/graphRAG/index', NULL, 1, 0, 'C', '0', '0', 'operator:graph:retrieve', 'carbon:search-advanced', 103, 1, '2025-11-07 16:33:47', 1, '2025-11-07 16:33:47', '图谱检索测试菜单');
+INSERT INTO `sys_menu` VALUES (1950000000000000012, '实体抽取', 1950000000000000011, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:extract', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1950000000000000013, '文本入库', 1950000000000000011, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:graph:ingest', '#', 103, 1, '2025-11-07 16:33:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1954103099019309056, '工具管理', 1775500307898949634, 1, 'mcpInfo', 'operator/mcpInfo/index', NULL, 1, 0, 'C', '0', '0', 'operator:mcpInfo:list', 'mynaui:tool-solid', 103, 1, '2025-11-07 16:33:02', 1, '2025-11-07 16:40:58', 'MCP菜单');
+INSERT INTO `sys_menu` VALUES (1954103099019309057, 'MCP查询', 1954103099019309056, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:mcpInfo:query', '#', 103, 1, '2025-11-07 16:33:02', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1954103099019309058, 'MCP新增', 1954103099019309056, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:mcpInfo:add', '#', 103, 1, '2025-11-07 16:33:02', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1954103099019309059, 'MCP修改', 1954103099019309056, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:mcpInfo:edit', '#', 103, 1, '2025-11-07 16:33:02', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1954103099019309060, 'MCP删除', 1954103099019309056, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:mcpInfo:remove', '#', 103, 1, '2025-11-07 16:33:02', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1954103099019309061, 'MCP导出', 1954103099019309056, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'operator:mcpInfo:export', '#', 103, 1, '2025-11-07 16:33:02', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1971550631887237121, '数字人管理', 0, 0, 'aihuman', '', NULL, 1, 0, 'M', '0', '0', NULL, 'mdi:account-cog', NULL, NULL, '2025-09-26 20:21:15', NULL, '2025-09-26 20:21:15', '');
+INSERT INTO `sys_menu` VALUES (1971582278942666752, '交互数字人配置', 1971550631887237121, 1, 'aihumanConfig', 'aihuman/aihumanConfig/index', NULL, 1, 0, 'C', '0', '0', 'aihuman:aihumanConfig:list', 'mdi:human-male', 103, 1, '2025-09-26 22:40:40', 1, '2025-11-07 16:43:07', '交互数字人配置菜单');
+INSERT INTO `sys_menu` VALUES (1971582278942666753, '交互数字人配置查询', 1971582278942666752, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'aihuman:aihumanConfig:query', '#', 103, 1, '2025-09-26 22:40:40', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1971582278942666754, '交互数字人配置新增', 1971582278942666752, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'aihuman:aihumanConfig:add', '#', 103, 1, '2025-09-26 22:40:40', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1971582278942666755, '交互数字人配置修改', 1971582278942666752, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'aihuman:aihumanConfig:edit', '#', 103, 1, '2025-09-26 22:40:40', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1971582278942666756, '交互数字人配置删除', 1971582278942666752, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'aihuman:aihumanConfig:remove', '#', 103, 1, '2025-09-26 22:40:40', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1971582278942666757, '交互数字人配置导出', 1971582278942666752, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'aihuman:aihumanConfig:export', '#', 103, 1, '2025-09-26 22:40:40', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1972543718952386561, 'Live2D数字人体验', 1971550631887237121, 10, 'aihumanPublish', 'aihuman/aihumanPublish/index', NULL, 1, 0, 'C', '0', '0', NULL, 'mdi:human-male', NULL, NULL, '2025-09-29 14:07:25', 1, '2025-11-07 16:43:13', '');
+INSERT INTO `sys_menu` VALUES (1976160997656043521, '流程管理', 0, 1, 'flow', '', NULL, 1, 0, 'M', '0', '0', NULL, 'ph:user-fill', NULL, NULL, '2025-10-09 13:41:12', 1, '2025-10-20 20:59:25', '');
+INSERT INTO `sys_menu` VALUES (1976161221409579010, '工作流编排', 1976160997656043521, 0, 'workflow', 'workflow/index', NULL, 1, 0, 'C', '0', '0', NULL, 'ph:user-fill', NULL, NULL, '2025-10-09 13:42:05', 1, '2025-10-20 20:59:16', '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -924,6 +1272,18 @@ CREATE TABLE `sys_oper_log`  (
 -- ----------------------------
 -- Records of sys_oper_log
 -- ----------------------------
+INSERT INTO `sys_oper_log` VALUES (1986714891724443649, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1950000000000000001\",\"parentId\":\"0\",\"menuName\":\"图谱管理\",\"orderNum\":15,\"path\":\"graph\",\"component\":\"\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"M\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"carbon:chart-relationship\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:38:36', 57);
+INSERT INTO `sys_oper_log` VALUES (1986714983667781634, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1954103099019309056\",\"parentId\":\"0\",\"menuName\":\"工具管理\",\"orderNum\":1,\"path\":\"mcpInfo\",\"component\":\"operator/mcpInfo/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"operator:mcpInfo:list\",\"icon\":\"#\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:38:58', 14);
+INSERT INTO `sys_oper_log` VALUES (1986715200836259841, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1954103099019309056\",\"parentId\":\"0\",\"menuName\":\"工具管理\",\"orderNum\":1,\"path\":\"mcpInfo\",\"component\":\"operator/mcpInfo/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"operator:mcpInfo:list\",\"icon\":\"qlementine-icons:tool-24\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:39:50', 11);
+INSERT INTO `sys_oper_log` VALUES (1986715370902704130, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1954103099019309056\",\"parentId\":\"1775500307898949634\",\"menuName\":\"工具管理\",\"orderNum\":1,\"path\":\"mcpInfo\",\"component\":\"operator/mcpInfo/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"operator:mcpInfo:list\",\"icon\":\"qlementine-icons:tool-24\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:40:30', 9);
+INSERT INTO `sys_oper_log` VALUES (1986715487760207873, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1954103099019309056\",\"parentId\":\"1775500307898949634\",\"menuName\":\"工具管理\",\"orderNum\":1,\"path\":\"mcpInfo\",\"component\":\"operator/mcpInfo/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"operator:mcpInfo:list\",\"icon\":\"mynaui:tool-solid\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:40:58', 11);
+INSERT INTO `sys_oper_log` VALUES (1986715519116824578, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1946483381643743233\",\"parentId\":\"1775500307898949634\",\"menuName\":\"知识角色\",\"orderNum\":12,\"path\":\"knowledgeRole\",\"component\":\"operator/knowledgeRole/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"ri:user-3-fill\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:41:06', 11);
+INSERT INTO `sys_oper_log` VALUES (1986715538016358402, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1898286496441393153\",\"parentId\":\"1775500307898949634\",\"menuName\":\"知识管理\",\"orderNum\":10,\"path\":\"knowledgeBase\",\"component\":\"operator/knowledgeBase/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"\",\"icon\":\"garden:knowledge-base-26\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:41:10', 10);
+INSERT INTO `sys_oper_log` VALUES (1986716028955447297, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1971582278942666752\",\"parentId\":\"1971550631887237121\",\"menuName\":\"交互数字人配置\",\"orderNum\":1,\"path\":\"aihumanConfig\",\"component\":\"aihuman/aihumanConfig/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"aihuman:aihumanConfig:list\",\"icon\":\"mdi:human-male\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:43:07', 14);
+INSERT INTO `sys_oper_log` VALUES (1986716052896534529, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1972543718952386561\",\"parentId\":\"1971550631887237121\",\"menuName\":\"Live2D数字人体验\",\"orderNum\":10,\"path\":\"aihumanPublish\",\"component\":\"aihuman/aihumanPublish/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"mdi:human-male\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:43:13', 10);
+INSERT INTO `sys_oper_log` VALUES (1986716232899284993, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1944213468857495553\",\"parentId\":\"2000\",\"menuName\":\"模型分组\",\"orderNum\":1,\"path\":\"schemaGroup\",\"component\":\"dev/schemaGroup/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"carbon:model-alt\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:43:56', 11);
+INSERT INTO `sys_oper_log` VALUES (1986716255061987330, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1944229086906281985\",\"parentId\":\"2000\",\"menuName\":\"数据模型\",\"orderNum\":2,\"path\":\"schema\",\"component\":\"dev/schema/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"carbon:model-alt\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:44:01', 10);
+INSERT INTO `sys_oper_log` VALUES (1986716273600811010, '00000', '菜单管理', 2, 'org.ruoyi.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '', '/system/menu', '127.0.0.1', '内网IP', '{\"menuId\":\"1946466176918249473\",\"parentId\":\"2000\",\"menuName\":\"模型字段管理\",\"orderNum\":3,\"path\":\"schemaField\",\"component\":\"dev/schemaField/index\",\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"carbon:model-alt\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, '', '2025-11-07 16:44:06', 9);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -984,7 +1344,7 @@ CREATE TABLE `sys_oss_config`  (
 INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'ruoyi', 'ruoyi123', 'ruoyi', '', '127.0.0.1:9000', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-26 16:25:55', NULL);
 INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'ruoyi', 'ruoyi123', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-05-23 14:31:40', NULL);
 INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'ruoyi', 'ruoyi123', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-03-13 13:13:04', NULL);
-INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'xx', 'xx', 'xxx', '', 'cos.ap-guangzhou.myqcloud.com', '', 'Y', 'ap-guangzhou', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-05-23 14:31:41', '');
+INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'ruoyi', 'ruoyi123', 'ruoyi', '', 'cos.ap-guangzhou.myqcloud.com', '', 'Y', 'ap-guangzhou', '1', '0', '', 103, 1, '2023-05-14 15:19:42', 1, '2025-05-23 14:31:41', '');
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -1548,7 +1908,6 @@ CREATE TABLE `sys_tenant`  (
 -- Records of sys_tenant
 -- ----------------------------
 INSERT INTO `sys_tenant` VALUES (1, '000000', '管理组', '15888888888', 'XXX有限公司', NULL, NULL, '多租户通用后台管理管理系统', NULL, NULL, NULL, NULL, -1, '0', '0', 103, 1, '2023-05-14 15:19:39', NULL, NULL);
-INSERT INTO `sys_tenant` VALUES (1729685490647072769, '911866', '测试', '11111111111', '5126', '', '', '', '', '', 1729685389795033090, NULL, 1, '0', '2', 103, 1, '2023-11-29 10:15:32', 1, '2023-11-29 10:15:32');
 
 -- ----------------------------
 -- Table structure for sys_tenant_package
@@ -1573,7 +1932,6 @@ CREATE TABLE `sys_tenant_package`  (
 -- ----------------------------
 -- Records of sys_tenant_package
 -- ----------------------------
-INSERT INTO `sys_tenant_package` VALUES (1729685389795033090, '测试', '1689205943360188417, 1689243466220355585, 1689201668374556674, 1689243465037561858', '', 1, '0', '2', 103, 1, '2023-11-29 10:15:08', 1, '2023-11-29 10:15:08');
 
 -- ----------------------------
 -- Table structure for sys_user
@@ -2642,5 +3000,155 @@ INSERT INTO `sys_user_role` VALUES (1847910185208987649, 1);
 INSERT INTO `sys_user_role` VALUES (1871910972567822337, 1);
 INSERT INTO `sys_user_role` VALUES (1897620177094057985, 1);
 INSERT INTO `sys_user_role` VALUES (1925795787894333441, 1729685491108446210);
+
+-- ----------------------------
+-- Table structure for t_workflow
+-- ----------------------------
+DROP TABLE IF EXISTS `t_workflow`;
+CREATE TABLE `t_workflow`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'uuid',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '标题',
+  `user_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '用户ID',
+  `is_public` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否公开',
+  `is_enable` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '备注',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除 默认0不删除',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 120 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流定义（用户定义的工作流）| Workflow Definition' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of t_workflow
+-- ----------------------------
+INSERT INTO `t_workflow` VALUES (119, '7c95c7892dd544788d90e49ce2fad966', '测试工作流', 1, 1, 1, '2025-11-07 16:44:41', '2025-11-07 16:44:41', '测试工作流', 0);
+
+-- ----------------------------
+-- Table structure for t_workflow_component
+-- ----------------------------
+DROP TABLE IF EXISTS `t_workflow_component`;
+CREATE TABLE `t_workflow_component`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `display_order` int(11) NOT NULL DEFAULT 0,
+  `is_enable` tinyint(1) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_display_order`(`display_order`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流组件库 | Workflow Component' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of t_workflow_component
+-- ----------------------------
+INSERT INTO `t_workflow_component` VALUES (17, '5cd68dccbbb411f0bb7840c2ba9a7fbc', 'Start', '开始', '流程由此开始', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0);
+INSERT INTO `t_workflow_component` VALUES (18, '5cd6ac69bbb411f0bb7840c2ba9a7fbc', 'End', '结束', '流程由此结束', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0);
+INSERT INTO `t_workflow_component` VALUES (19, '5cd6c8eabbb411f0bb7840c2ba9a7fbc', 'Answer', '生成回答', '调用大语言模型回答问题', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0);
+
+-- ----------------------------
+-- Table structure for t_workflow_edge
+-- ----------------------------
+DROP TABLE IF EXISTS `t_workflow_edge`;
+CREATE TABLE `t_workflow_edge`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '边唯一标识',
+  `workflow_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属工作流定义 id',
+  `source_node_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '起始节点 uuid',
+  `source_handle` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '起始锚点标识',
+  `target_node_uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '目标节点 uuid',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除：0 正常，1 已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_workflow_edge_workflow_id`(`workflow_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 199 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流定义的边 | Edge of Workflow Definition' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of t_workflow_edge
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for t_workflow_node
+-- ----------------------------
+DROP TABLE IF EXISTS `t_workflow_node`;
+CREATE TABLE `t_workflow_node`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '节点唯一标识',
+  `workflow_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属工作流定义 id',
+  `workflow_component_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '引用的组件 id',
+  `user_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '节点标题',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '节点备注',
+  `input_config` json NOT NULL COMMENT '输入参数模板，例：{\"params\":[{\"name\":\"user_define_param01\",\"type\":\"string\"}]}',
+  `node_config` json NULL COMMENT '节点执行配置，例：{\"params\":[{\"prompt\":\"Summarize the following content:{user_define_param01}\"}]}',
+  `position_x` double NOT NULL DEFAULT 0 COMMENT '画布 x 坐标',
+  `position_y` double NOT NULL DEFAULT 0 COMMENT '画布 y 坐标',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除：0 正常，1 已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_workflow_node_workflow_id`(`workflow_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 270 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流定义的节点 | Node of Workflow Definition' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of t_workflow_node
+-- ----------------------------
+INSERT INTO `t_workflow_node` VALUES (269, 'f4660cebe26b439f8264ad0111b56c85', 119, 17, 0, '开始', '用户输入', '{\"ref_inputs\": [], \"user_inputs\": [{\"name\": \"var_user_input\", \"type\": 1, \"uuid\": \"dc9590d781764ace943bf03b383e742b\", \"title\": \"用户输入\", \"required\": false, \"max_length\": 1000}]}', '{}', 0, 0, '2025-11-07 16:44:41', '2025-11-07 16:44:41', 0);
+
+-- ----------------------------
+-- Table structure for t_workflow_runtime
+-- ----------------------------
+DROP TABLE IF EXISTS `t_workflow_runtime`;
+CREATE TABLE `t_workflow_runtime`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '运行实例唯一标识',
+  `user_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '启动人',
+  `workflow_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '对应工作流定义 id',
+  `input` json NULL COMMENT '运行输入，例：{\"userInput01\":\"text01\",\"userInput02\":true,\"userInput03\":10,\"userInput04\":[\"selectedA\",\"selectedB\"],\"userInput05\":[\"https://a.com/a.xlsx\",\"https://a.com/b.png\"]}',
+  `output` json NULL COMMENT '运行输出，成功或失败的结果',
+  `status` smallint(6) NOT NULL DEFAULT 1 COMMENT '执行状态：1 就绪，2 执行中，3 成功，4 失败',
+  `status_remark` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '状态补充说明，如失败原因',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除：0 正常，1 已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_workflow_runtime_workflow_id`(`workflow_id`) USING BTREE,
+  INDEX `idx_workflow_runtime_user_id`(`user_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 297 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流实例（运行时）| Workflow Runtime' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of t_workflow_runtime
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for t_workflow_runtime_node
+-- ----------------------------
+DROP TABLE IF EXISTS `t_workflow_runtime_node`;
+CREATE TABLE `t_workflow_runtime_node`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `uuid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '节点运行实例唯一标识',
+  `user_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人',
+  `workflow_runtime_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属运行实例 id',
+  `node_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '对应工作流定义里的节点 id',
+  `input` json NULL COMMENT '节点本次输入数据',
+  `output` json NULL COMMENT '节点本次输出数据',
+  `status` smallint(6) NOT NULL DEFAULT 1 COMMENT '节点执行状态：1 进行中，2 失败，3 成功',
+  `status_remark` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '状态补充说明，如失败堆栈',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除：0 正常，1 已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_runtime_node_runtime_id`(`workflow_runtime_id`) USING BTREE,
+  INDEX `idx_runtime_node_node_id`(`node_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 805 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流实例（运行时）- 节点 | Workflow Runtime Node' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of t_workflow_runtime_node
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;
