@@ -13,7 +13,7 @@
 
 ### Enterprise-Grade AI Assistant Platform
 
-*Production-ready AI platform with deep integration of FastGPT, Coze, DIFY and advanced RAG technology*
+*Production-ready AI platform with deep integration of FastGPT, Coze, DIFY, featuring advanced RAG technology, knowledge graphs, digital humans, and AI workflow orchestration*
 
 **[📖 中文文档](README.md)** | **[📚 Documentation](https://doc.pandarobot.chat)** | **[🚀 Live Demo](https://web.pandarobot.chat)** | **[🐛 Report Bug](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Request Feature](https://github.com/ageerle/ruoyi-ai/issues)**
 
@@ -45,6 +45,12 @@
 - **AI Art Generation**: DALL·E-3, MidJourney, Stable Diffusion integration
 - **PPT Creation**: Automated slide generation from text input
 - **Multi-Modal Processing**: Text, image, and document understanding
+
+### 🧩 Knowledge Graph & Intelligent Orchestration
+- **Knowledge Graph Construction**: Automatically extract entities and relationships from documents and conversations to build visual knowledge networks
+- **AI Workflow Orchestration**: Visual workflow designer supporting complex AI task orchestration and automated execution
+- **Digital Human Interaction**: Integrated digital human avatars for more natural human-computer interaction
+- **Intelligent Reasoning Engine**: Knowledge graph-based intelligent reasoning and Q&A capabilities
 
 
 

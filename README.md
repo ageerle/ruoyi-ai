@@ -22,7 +22,7 @@
 
 ### 企业级AI助手平台
 
-*开箱即用的智能AI平台，深度集成 FastGPT、扣子(Coze)、DIFY 等主流AI平台，提供先进的RAG技术和多模型支持*
+*开箱即用的智能AI平台，深度集成 FastGPT、扣子(Coze)、DIFY 等主流AI平台，提供先进的RAG技术、知识图谱、数字人和AI流程编排能力*
 
 **[🇺🇸 English](README_EN.md)** | **[📖 使用文档](https://doc.pandarobot.chat)** | **[🚀 在线体验](https://web.pandarobot.chat)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
 
@@ -30,29 +30,35 @@
 
 ## ✨ 核心亮点
 
-### 🤖 智能AI引擎
+### 智能AI引擎
 - **多模型接入**：支持 OpenAI GPT-4、Azure、ChatGLM、通义千问、智谱AI 等主流模型
 - **AI平台集成**：深度集成 **FastGPT**、**扣子(Coze)**、**DIFY** 等主流AI应用平台
 - **Spring AI MCP 集成**：基于模型上下文协议，打造可扩展的AI工具生态系统
 - **实时流式对话**：采用 SSE/WebSocket 技术，提供丝滑的对话体验
 - **AI 编程助手**：内置智能代码分析和项目脚手架生成能力
 
-### 🌟 AI平台生态集成
+### AI平台生态集成
 - **FastGPT 深度集成**：原生支持 FastGPT API，包括知识库检索、工作流编排和上下文管理
 - **扣子(Coze) 官方SDK**：集成字节跳动扣子平台官方SDK，支持Bot对话和流式响应
 - **DIFY 完整兼容**：使用 DIFY Java Client，支持应用编排、工作流和知识库管理
 - **统一聊天接口**：提供统一的聊天服务接口，支持多平台无缝切换和负载均衡
 
-### 🧠 本地化RAG方案
+### 本地化RAG方案
 - **私有知识库**：基于 Langchain4j 框架 + BGE-large-zh-v1.5 中文向量模型
 - **多种向量库**：支持 Milvus、Weaviate、Qdrant 等主流向量数据库
 - **数据安全可控**：支持完全本地部署，保护企业数据隐私
 - **灵活模型部署**：兼容 Ollama、vLLM 等本地推理框架
 
-### 🎨 AI创作工具
+### AI创作工具
 - **AI 绘画创作**：深度集成 DALL·E-3、MidJourney、Stable Diffusion
 - **智能PPT生成**：一键将文本内容转换为精美演示文稿
 - **多模态理解**：支持文本、图片、文档等多种格式的智能处理
+
+### 知识图谱与智能编排
+- **知识图谱构建**：自动从文档和对话中提取实体关系，构建可视化知识网络
+- **AI 流程编排**：可视化工作流设计器，支持复杂AI任务的编排和自动化执行
+- **数字人交互**：集成数字人形象，提供更自然的人机交互体验
+- **智能推理引擎**：基于知识图谱的智能推理和问答能力
 
 
 
@@ -79,13 +85,13 @@
 
 ## 🛠️ 技术架构
 
-### 🏗️ 核心框架
+### 核心框架
 - **后端架构**：Spring Boot 3.4 + Spring AI + Langchain4j
 - **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate/Qdrant）
 - **前端技术**：Vue 3 + Vben Admin + Naive UI
 - **安全认证**：Sa-Token + JWT 双重保障
 
-### 🔧 系统组件
+### 系统组件
 - **文档处理**：PDF、Word、Excel 解析，图像智能分析
 - **实时通信**：WebSocket 实时通信，SSE 流式响应
 - **系统监控**：完善的日志体系、性能监控、服务健康检查
@@ -108,10 +114,6 @@
 5. **发起 Pull Request**
 
 > 💡 **小贴士**：建议将 PR 提交到 GitHub，我们会自动同步到其他代码托管平台
-
-<a href="https://openomy.com/ageerle/ruoyi-ai" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=ageerle/ruoyi-ai&chart=bubble&latestMonth=3" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
-</a>
 
 ## 📄 开源协议
 
@@ -148,12 +150,6 @@
 <td align="center">
 <img src="image/qq.png" alt="QQ群二维码" width="200" height="200"><br>
 <strong>QQ技术交流群</strong><br>
-<em>技术讨论</em>
-</td>
-
-<td align="center">
-<img width="200" height="200" alt="95e8b1b3baeadbd24650bfb974ca5a58" src="https://github.com/user-attachments/assets/e08fb61a-fd23-4b16-9d7e-85576f01cb10" /><br>
-<strong>微信技术交流群</strong><br>
 <em>技术讨论</em>
 </td>
 
