@@ -102,16 +102,7 @@ pdf:
     conda-env-path: "F:\\ProgramData\\Computer\\Anaconda\\envs\\mineru"
     # 是否开启图片OCR
     enable-ocr: true
-#百炼模型配置
-dashscope:
-  key: sk-xxxx
 
-local:
-  images: xx
-
-
-
-  files: xx
 
 
 
