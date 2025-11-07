@@ -65,7 +65,7 @@
 ## 🚀 快速体验
 
 ### 在线演示
-- **用户端体验**：[web.pandarobot.chat](https://web.pandarobot.chat) (账号：demo 密码：demo123)
+- **用户端体验**：[web.pandarobot.chat](https://web.pandarobot.chat) (账号：admin 密码：admin123)
 - **管理后台**：[admin.pandarobot.chat](https://admin.pandarobot.chat) (账号：admin 密码：admin123)
 
 ### 项目源码
