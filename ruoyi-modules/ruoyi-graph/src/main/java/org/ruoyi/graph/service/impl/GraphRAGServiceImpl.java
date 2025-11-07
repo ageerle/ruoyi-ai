@@ -13,6 +13,7 @@ import org.ruoyi.graph.dto.GraphExtractionResult;
 import org.ruoyi.graph.service.IGraphExtractionService;
 import org.ruoyi.graph.service.IGraphRAGService;
 import org.ruoyi.graph.service.IGraphStoreService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,6 +27,7 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphRAGServiceImpl implements IGraphRAGService {
 
     private final IGraphExtractionService graphExtractionService;

@@ -13,6 +13,7 @@ import org.ruoyi.graph.prompt.GraphExtractPrompt;
 import org.ruoyi.graph.service.IGraphExtractionService;
 import org.ruoyi.graph.service.llm.IGraphLLMService;
 import org.ruoyi.service.IChatModelService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphExtractionServiceImpl implements IGraphExtractionService {
 
     private final IChatModelService chatModelService;

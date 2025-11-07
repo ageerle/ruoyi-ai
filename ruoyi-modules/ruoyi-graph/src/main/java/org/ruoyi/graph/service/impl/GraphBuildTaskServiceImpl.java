@@ -17,6 +17,7 @@ import org.ruoyi.graph.service.IGraphBuildTaskService;
 import org.ruoyi.graph.service.IGraphInstanceService;
 import org.ruoyi.graph.service.IGraphRAGService;
 import org.ruoyi.service.IKnowledgeAttachService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
 
     private final GraphBuildTaskMapper taskMapper;
