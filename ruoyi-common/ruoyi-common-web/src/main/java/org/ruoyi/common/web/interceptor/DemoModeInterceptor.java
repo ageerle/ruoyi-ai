@@ -71,7 +71,7 @@ public class DemoModeInterceptor implements HandlerInterceptor {
         }
 
         // 排除查询操作（一些复杂查询使用POST）
-        if (requestURI.contains("/list") || requestURI.contains("/query")) {
+        if (requestURI.contains("/list") || requestURI.contains("/query") || requestURI.contains("/search")) {
             return true;
         }
 
@@ -91,10 +91,6 @@ public class DemoModeInterceptor implements HandlerInterceptor {
         }
 
         // 排除重置密码（用户自己的操作）
-        if (requestURI.contains("/auth/reset/password")) {
-            return true;
-        }
-
-        return false;
+        return requestURI.contains("/auth/reset/password");
     }
 }
