@@ -20,12 +20,10 @@ import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.data.NodeIODataContent;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.DEFAULT_OUTPUT_PARAM_NAME;
 
 @Slf4j
@@ -35,22 +33,48 @@ public class WorkflowUtil {
     @Resource
     private ChatServiceFactory chatServiceFactory;
 
-    @SuppressWarnings("unchecked")
     public static String renderTemplate(String template, List<NodeIOData> values) {
+        // 🔒 关键修复：如果 template 为 null，直接返回 null 或空字符串
+        if (template == null) {
+            return null; // 或 return ""; 根据业务需求
+        }
+
         String result = template;
+
+        // 防御 values 为 null
+        if (values == null) {
+            return result;
+        }
+
         for (NodeIOData next : values) {
+            if (next == null || next.getName() == null) {
+                continue;
+            }
+
             String name = next.getName();
             NodeIODataContent<?> dataContent = next.getContent();
-            if (dataContent.getType().equals(WfIODataTypeEnum.FILES.getValue())) {
-                List<String> value = (List<String>) dataContent.getValue();
-                result = result.replace("{" + name + "}", String.join(",", value));
-            } else if (dataContent.getType().equals(WfIODataTypeEnum.OPTIONS.getValue())) {
-                Map<String, Object> value = (Map<String, Object>) dataContent.getValue();
-                result = result.replace("{" + name + "}", value.toString());
-            } else {
-                result = result.replace("{" + name + "}", dataContent.getValue().toString());
+            if (dataContent == null || dataContent.getValue() == null) {
+                // 变量值为 null，替换为空字符串
+                result = result.replace("{" + name + "}", "");
+                continue;
             }
+
+            String replacement;
+            if (dataContent.getType().equals(WfIODataTypeEnum.FILES.getValue())) {
+                @SuppressWarnings("unchecked")
+                List<String> value = (List<String>) dataContent.getValue();
+                replacement = String.join(",", value);
+            } else if (dataContent.getType().equals(WfIODataTypeEnum.OPTIONS.getValue())) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> value = (Map<String, Object>) dataContent.getValue();
+                replacement = value.toString();
+            } else {
+                replacement = dataContent.getValue().toString();
+            }
+
+            result = result.replace("{" + name + "}", replacement);
         }
+
         return result;
     }
 
@@ -81,8 +105,15 @@ public class WorkflowUtil {
                 .mapResult(response -> {
                     String responseTxt = response.aiMessage().text();
                     log.info("llm response:{}", responseTxt);
-                    NodeIOData output = NodeIOData.createByText(DEFAULT_OUTPUT_PARAM_NAME, "", responseTxt);
-                    wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> item.getOutputs().add(output));
+                    
+                    // 传递所有输入数据 + 添加 LLM 输出
+                    wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> {
+                        List<NodeIOData> outputs = new ArrayList<>(item.getInputs());
+                        NodeIOData output = NodeIOData.createByText(DEFAULT_OUTPUT_PARAM_NAME, "", responseTxt);
+                        outputs.add(output);
+                        item.setOutputs(outputs);
+                    });
+                    
                     return Map.of("completeResult", response.aiMessage().text());
                 })
                 .startingNode(node.getUuid())
@@ -141,9 +172,10 @@ public class WorkflowUtil {
      * @return
      */
     private Message getMessage(String role, Object value) {
+        log.info("Creating message with role: {}, content: {}", role, value); // 🔥
         Message message = new Message();
-        message.setContent(String.valueOf(value));
         message.setRole(role);
+        message.setContent(value);
         return message;
     }
 
@@ -154,9 +186,13 @@ public class WorkflowUtil {
      * @param messages
      */
     private void addSystemMessage(List<UserMessage> systemMessage, List<Message> messages) {
+        log.info("addSystemMessage received: {}", systemMessage); // 🔥 加这一行
+
         if (CollUtil.isEmpty(systemMessage)) {
             return;
         }
-        systemMessage.stream().map(userMsg -> getMessage("system", userMsg.singleText())).forEach(messages::add);
+        systemMessage.stream()
+                .map(userMsg -> getMessage("system", userMsg.singleText()))
+                .forEach(messages::add);
     }
 }

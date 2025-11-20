@@ -21,4 +21,14 @@ public class NodeProcessResult {
      * 条件执行时使用
      */
     private String nextNodeUuid;
+
+    /**
+     * 是否发生错误
+     */
+    private boolean error = false;
+
+    /**
+     * 错误或提示信息
+     */
+    private String message;
 }

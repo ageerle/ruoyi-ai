@@ -166,17 +166,40 @@ public abstract class AbstractWfNode {
     protected abstract NodeProcessResult onProcess();
 
     protected String getFirstInputText() {
+        // 检查输入是否为空
+        if (state.getInputs() == null || state.getInputs().isEmpty()) {
+            log.warn("No inputs available for node: {}", state.getUuid());
+            return "";
+        }
+        
+        // 优先查找 output 参数（LLM 节点的输出）
+        Optional<String> outputParam = state.getInputs()
+                .stream()
+                .filter(item -> DEFAULT_OUTPUT_PARAM_NAME.equals(item.getName()))
+                .map(NodeIOData::valueToString)
+                .findFirst();
+        
+        if (outputParam.isPresent()) {
+            log.debug("Found output parameter for node: {}", state.getUuid());
+            return outputParam.get();
+        }
+        
+        // 如果没有 output，查找其他文本类型参数（排除 input）
         String firstInputText;
         if (state.getInputs().size() > 1) {
             firstInputText = state.getInputs()
                     .stream()
-                    .filter(item -> WfIODataTypeEnum.TEXT.getValue().equals(item.getContent().getType()) && !DEFAULT_INPUT_PARAM_NAME.equals(item.getName()))
+                    .filter(item -> WfIODataTypeEnum.TEXT.getValue().equals(item.getContent().getType()) 
+                            && !DEFAULT_INPUT_PARAM_NAME.equals(item.getName()))
                     .map(NodeIOData::valueToString)
                     .findFirst()
                     .orElse("");
         } else {
             firstInputText = state.getInputs().get(0).valueToString();
         }
+        
+        log.debug("Using first input text for node: {}, value: {}", state.getUuid(), 
+                firstInputText.length() > 50 ? firstInputText.substring(0, 50) + "..." : firstInputText);
         return firstInputText;
     }
 
