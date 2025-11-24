@@ -231,14 +231,20 @@ public class SwitcherNode extends AbstractWfNode {
     private String getValueFromInputs(String nodeUuid, String paramName, List<NodeIOData> inputs) {
         log.debug("从节点UUID '{}' 搜索参数 '{}'", nodeUuid, paramName);
         
+        String result = null;
+
         // 首先尝试从当前输入中查找
         log.debug("检查当前输入 (数量: {})", inputs.size());
         for (NodeIOData input : inputs) {
             log.debug("  - 输入: 名称='{}', 值='{}'", input.getName(), input.valueToString());
             if (paramName.equals(input.getName())) {
-                log.info("在当前输入中找到参数 '{}': '{}'", paramName, input.valueToString());
-                return input.valueToString();
+                result = input.valueToString();
             }
+        }
+        
+        if (result != null) {
+            log.info("在当前输入中找到参数 '{}': '{}'", paramName, result);
+            return result;
         }
 
         // 如果当前输入中没有，尝试从工作流状态中查找指定节点的输出
@@ -248,12 +254,25 @@ public class SwitcherNode extends AbstractWfNode {
             for (NodeIOData output : nodeOutputs) {
                 log.debug("  - 输出: 名称='{}', 值='{}'", output.getName(), output.valueToString());
                 if (paramName.equals(output.getName())) {
-                    log.info("在节点 '{}' 的输出中找到参数 '{}': '{}'", nodeUuid, paramName, output.valueToString());
-                    return output.valueToString();
+                    result = output.valueToString();
                 }
+            }
+            
+            if (result != null) {
+                log.info("在节点 '{}' 的输出中找到参数 '{}': '{}'", nodeUuid, paramName, result);
+                return result;
             }
         } else {
             log.debug("节点UUID为空，跳过工作流状态搜索");
+        }
+
+        // 特殊处理：如果找的是 'output' 但没找到，尝试找 'input'
+        if ("output".equals(paramName)) {
+            log.debug("未找到参数 'output'，尝试查找 'input'");
+            String inputValue = getValueFromInputs(nodeUuid, "input", inputs);
+            if (inputValue != null) {
+                return inputValue;
+            }
         }
 
         log.warn("在输入或节点 '{}' 的输出中未找到参数 '{}'", nodeUuid, paramName);
