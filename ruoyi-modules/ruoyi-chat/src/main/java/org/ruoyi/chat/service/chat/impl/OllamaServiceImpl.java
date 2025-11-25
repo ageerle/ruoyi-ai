@@ -1,5 +1,8 @@
 package org.ruoyi.chat.service.chat.impl;
 
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import io.github.ollama4j.OllamaAPI;
 import io.github.ollama4j.models.chat.OllamaChatMessage;
 import io.github.ollama4j.models.chat.OllamaChatMessageRole;
@@ -9,7 +12,8 @@ import io.github.ollama4j.models.generate.OllamaStreamHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatService;
-import org.ruoyi.chat.util.SSEUtil;
+import org.ruoyi.chat.support.ChatServiceHelper;
+import org.ruoyi.chat.support.RetryNotifier;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.domain.vo.ChatModelVo;
@@ -22,8 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.ruoyi.chat.support.RetryNotifier;
-import org.ruoyi.chat.support.ChatServiceHelper;
 
 
 /**
@@ -79,6 +81,30 @@ public class OllamaServiceImpl implements IChatService {
         });
 
         return emitter;
+    }
+
+    /**
+     * 工作流场景：支持 langchain4j handler
+     */
+    @Override
+    public void chat(ChatRequest request, StreamingChatResponseHandler handler) {
+        log.info("workflow chat, model: {}", request.getModel());
+
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(request.getModel());
+
+        StreamingChatModel model = OllamaStreamingChatModel.builder()
+                .baseUrl(chatModelVo.getApiHost() != null ? chatModelVo.getApiHost() : "http://localhost:11434")
+                .modelName(chatModelVo.getModelName())
+                .build();
+
+        try {
+            // 将 ruoyi-ai 的 ChatRequest 转换为 langchain4j 的格式
+            dev.langchain4j.model.chat.request.ChatRequest chatRequest = convertToLangchainRequest(request);
+            model.chat(chatRequest, handler);
+        } catch (Exception e) {
+            log.error("workflow ollama请求失败：{}", e.getMessage(), e);
+            throw new RuntimeException("ollama workflow chat failed: " + e.getMessage(), e);
+        }
     }
 
     @Override
