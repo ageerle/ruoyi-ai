@@ -2,108 +2,115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>SpringAI Alibaba Copilot</title>
-    <link rel="stylesheet" href="/css/main.css">
+    <link href="/css/main.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 SpringAI Alibaba 编码助手</h1>
-            <p>AI助手将分析您的需求，制定执行计划，并逐步完成任务</p>
-        </div>
+<div class="container">
+    <div class="header">
+        <h1>🤖 SpringAI Alibaba 编码助手</h1>
+        <p>AI助手将分析您的需求，制定执行计划，并逐步完成任务</p>
+    </div>
 
-        <div class="main-content">
-            <div class="chat-area">
-                <div class="messages" id="messages">
-                    <div class="message assistant">
-                        <div>
-                            <div class="message-role">Assistant</div>
-                            <div class="message-content">
-                                👋 Hello! I'm your AI file operations assistant. I can help you:
-                                <br><br>
-                                📁 <strong>Read files</strong> - View file contents with pagination support
-                                <br>✏️ <strong>Write files</strong> - Create new files or overwrite existing ones
-                                <br>🔧 <strong>Edit files</strong> - Make precise edits with diff preview
-                                <br>📋 <strong>List directories</strong> - Browse directory structure
-                                <br><br>
-                                Try asking me to create a simple project, read a file, or explore the workspace!
-                                <br><br>
-                                <em>Workspace: /workspace</em>
-                            </div>
+    <div class="main-content">
+        <div class="chat-area">
+            <div class="messages" id="messages">
+                <div class="message assistant">
+                    <div>
+                        <div class="message-role">Assistant</div>
+                        <div class="message-content">
+                            👋 Hello! I'm your AI file operations assistant. I can help you:
+                            <br><br>
+                            📁 <strong>Read files</strong> - View file contents with pagination support
+                            <br>✏️ <strong>Write files</strong> - Create new files or overwrite existing ones
+                            <br>🔧 <strong>Edit files</strong> - Make precise edits with diff preview
+                            <br>📋 <strong>List directories</strong> - Browse directory structure
+                            <br><br>
+                            Try asking me to create a simple project, read a file, or explore the workspace!
+                            <br><br>
+                            <em>Workspace: /workspace</em>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="loading" id="loading">
-                    <div>🤔 AI is thinking...</div>
+            <div class="loading" id="loading">
+                <div>🤔 AI is thinking...</div>
+            </div>
+
+            <div class="input-area">
+                <input id="messageInput" placeholder="Ask me to create files, read content, or manage your project..."
+                       type="text"/>
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+                <button class="clear-btn" id="clearBtn" onclick="clearHistory()">Clear</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h3>🚀 Quick Actions</h3>
+            <div class="quick-actions">
+                <div class="quick-action" onclick="quickAction('List the workspace directory')">
+                    📁 List workspace directory
                 </div>
-
-                <div class="input-area">
-                    <input type="text" id="messageInput" placeholder="Ask me to create files, read content, or manage your project..." />
-                    <button onclick="sendMessage()" id="sendBtn">Send</button>
-                    <button onclick="clearHistory()" class="clear-btn" id="clearBtn">Clear</button>
+                <div class="quick-action" onclick="quickAction('Create a simple Java Hello World project')">
+                    ☕ Create Java Hello World
+                </div>
+                <div class="quick-action" onclick="quickAction('Create a simple web project with HTML, CSS and JS')">
+                    🌐 Create web project
+                </div>
+                <div class="quick-action" onclick="quickAction('Create a README.md file for this project')">
+                    📝 Create README.md
+                </div>
+                <div class="quick-action"
+                     onclick="quickAction('Show me the structure of the current directory recursively')">
+                    🌳 Show directory tree
+                </div>
+                <div class="quick-action"
+                     onclick="quickAction('Create a simple Python script that prints hello world')">
+                    🐍 Create Python script
                 </div>
             </div>
 
-            <div class="sidebar">
-                <h3>🚀 Quick Actions</h3>
-                <div class="quick-actions">
-                    <div class="quick-action" onclick="quickAction('List the workspace directory')">
-                        📁 List workspace directory
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Create a simple Java Hello World project')">
-                        ☕ Create Java Hello World
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Create a simple web project with HTML, CSS and JS')">
-                        🌐 Create web project
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Create a README.md file for this project')">
-                        📝 Create README.md
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Show me the structure of the current directory recursively')">
-                        🌳 Show directory tree
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Create a simple Python script that prints hello world')">
-                        🐍 Create Python script
-                    </div>
+            <h3>🔄 Continuous Task Tests</h3>
+            <div class="quick-actions">
+                <div class="quick-action"
+                     onclick="quickAction('Create a complete React project with components, styles, and package.json')">
+                    ⚛️ Create React project
                 </div>
-
-                <h3>🔄 Continuous Task Tests</h3>
-                <div class="quick-actions">
-                    <div class="quick-action" onclick="quickAction('Create a complete React project with components, styles, and package.json')">
-                        ⚛️ Create React project
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Create a full-stack todo app with HTML, CSS, JavaScript frontend and Node.js backend')">
-                        📋 Create Todo App
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Create a Spring Boot REST API project with controller, service, and model classes')">
-                        🍃 Create Spring Boot API
-                    </div>
-                    <div class="quick-action" onclick="quickAction('Create a complete blog website with multiple HTML pages, CSS styles, and JavaScript functionality')">
-                        📰 Create Blog Website
-                    </div>
+                <div class="quick-action"
+                     onclick="quickAction('Create a full-stack todo app with HTML, CSS, JavaScript frontend and Node.js backend')">
+                    📋 Create Todo App
                 </div>
+                <div class="quick-action"
+                     onclick="quickAction('Create a Spring Boot REST API project with controller, service, and model classes')">
+                    🍃 Create Spring Boot API
+                </div>
+                <div class="quick-action"
+                     onclick="quickAction('Create a complete blog website with multiple HTML pages, CSS styles, and JavaScript functionality')">
+                    📰 Create Blog Website
+                </div>
+            </div>
 
-                <div id="status" class="status" style="display: none;"></div>
+            <div class="status" id="status" style="display: none;"></div>
 
-                <div style="margin-top: 30px;">
-                    <h3>💡 Tips</h3>
-                    <div style="font-size: 12px; color: #666; line-height: 1.4;">
-                        • Ask for step-by-step project creation<br>
-                        • Request file content before editing<br>
-                        • Use specific file paths<br>
-                        • Ask for directory structure first<br>
-                        • Try continuous operations
-                    </div>
+            <div style="margin-top: 30px;">
+                <h3>💡 Tips</h3>
+                <div style="font-size: 12px; color: #666; line-height: 1.4;">
+                    • Ask for step-by-step project creation<br>
+                    • Request file content before editing<br>
+                    • Use specific file paths<br>
+                    • Ask for directory structure first<br>
+                    • Try continuous operations
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- JavaScript文件引用 -->
-    <script src="/js/tool-log-display.js"></script>
-    <script src="/js/sse-manager.js"></script>
-    <script src="/js/main.js"></script>
+<!-- JavaScript文件引用 -->
+<script src="/js/tool-log-display.js"></script>
+<script src="/js/sse-manager.js"></script>
+<script src="/js/main.js"></script>
 </body>
 </html>

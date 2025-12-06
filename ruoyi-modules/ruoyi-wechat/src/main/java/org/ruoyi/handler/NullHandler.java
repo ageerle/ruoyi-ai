@@ -14,10 +14,10 @@ import java.util.Map;
 @Component
 public class NullHandler extends AbstractHandler {
 
-  @Override
-  public WxCpXmlOutMessage handle(WxCpXmlMessage wxMessage, Map<String, Object> context, WxCpService cpService,
-                                  WxSessionManager sessionManager) {
-    return null;
-  }
+    @Override
+    public WxCpXmlOutMessage handle(WxCpXmlMessage wxMessage, Map<String, Object> context, WxCpService cpService,
+                                    WxSessionManager sessionManager) {
+        return null;
+    }
 
 }

@@ -27,29 +27,29 @@ public class OpenAIGraphLLMServiceImpl implements IGraphLLMService {
     @Override
     public String extractGraph(String prompt, ChatModelVo chatModel) {
         log.info("OpenAI模型调用: model={}, apiHost={}, 提示词长度={}",
-            chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
+                chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
 
         try {
             // 创建 OpenAiStreamClient
             OpenAiStreamClient client = ChatConfig.createOpenAiStreamClient(
-                chatModel.getApiHost(),
-                chatModel.getApiKey()
+                    chatModel.getApiHost(),
+                    chatModel.getApiKey()
             );
 
             // 构建消息
             List<Message> messages = Collections.singletonList(
-                Message.builder()
-                    .role(Message.Role.USER)
-                    .content(prompt)
-                    .build()
+                    Message.builder()
+                            .role(Message.Role.USER)
+                            .content(prompt)
+                            .build()
             );
 
             // 构建请求（非流式，同步调用）
             ChatCompletion completion = ChatCompletion.builder()
-                .messages(messages)
-                .model(chatModel.getModelName())
-                .stream(false)  // 同步调用
-                .build();
+                    .messages(messages)
+                    .model(chatModel.getModelName())
+                    .stream(false)  // 同步调用
+                    .build();
 
             // 同步调用 LLM
             long startTime = System.currentTimeMillis();
@@ -59,7 +59,7 @@ public class OpenAIGraphLLMServiceImpl implements IGraphLLMService {
             // 提取响应文本
             Object content = response.getChoices().get(0).getMessage().getContent();
             String responseText = content != null ? content.toString() : "";
-            
+
             log.info("OpenAI模型响应成功: 耗时={}ms, 响应长度={}", duration, responseText.length());
 
             return responseText;

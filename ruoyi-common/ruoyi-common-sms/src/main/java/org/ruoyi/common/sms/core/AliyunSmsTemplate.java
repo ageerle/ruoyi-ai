@@ -29,12 +29,12 @@ public class AliyunSmsTemplate implements SmsTemplate {
     public AliyunSmsTemplate(SmsProperties smsProperties) {
         this.properties = smsProperties;
         Config config = new Config()
-            // 您的AccessKey ID
-            .setAccessKeyId(smsProperties.getAccessKeyId())
-            // 您的AccessKey Secret
-            .setAccessKeySecret(smsProperties.getAccessKeySecret())
-            // 访问的域名
-            .setEndpoint(smsProperties.getEndpoint());
+                // 您的AccessKey ID
+                .setAccessKeyId(smsProperties.getAccessKeyId())
+                // 您的AccessKey Secret
+                .setAccessKeySecret(smsProperties.getAccessKeySecret())
+                // 访问的域名
+                .setEndpoint(smsProperties.getEndpoint());
         this.client = new Client(config);
     }
 
@@ -47,17 +47,17 @@ public class AliyunSmsTemplate implements SmsTemplate {
             throw new SmsException("模板ID不能为空");
         }
         SendSmsRequest req = new SendSmsRequest()
-            .setPhoneNumbers(phones)
-            .setSignName(properties.getSignName())
-            .setTemplateCode(templateId)
-            .setTemplateParam(JsonUtils.toJsonString(param));
+                .setPhoneNumbers(phones)
+                .setSignName(properties.getSignName())
+                .setTemplateCode(templateId)
+                .setTemplateParam(JsonUtils.toJsonString(param));
         try {
             SendSmsResponse resp = client.sendSms(req);
             return SmsResult.builder()
-                .isSuccess("OK".equals(resp.getBody().getCode()))
-                .message(resp.getBody().getMessage())
-                .response(JsonUtils.toJsonString(resp))
-                .build();
+                    .isSuccess("OK".equals(resp.getBody().getCode()))
+                    .message(resp.getBody().getMessage())
+                    .response(JsonUtils.toJsonString(resp))
+                    .build();
         } catch (Exception e) {
             throw new SmsException(e.getMessage());
         }

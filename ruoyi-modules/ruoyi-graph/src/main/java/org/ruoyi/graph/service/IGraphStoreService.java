@@ -35,7 +35,7 @@ public interface IGraphStoreService {
     /**
      * 获取节点信息
      *
-     * @param nodeId 节点ID
+     * @param nodeId    节点ID
      * @param graphUuid 图谱UUID
      * @return 节点信息
      */
@@ -45,8 +45,8 @@ public interface IGraphStoreService {
      * 根据条件搜索节点
      *
      * @param graphUuid 图谱UUID
-     * @param label 节点标签（可选）
-     * @param limit 返回数量限制
+     * @param label     节点标签（可选）
+     * @param limit     返回数量限制
      * @return 节点列表
      */
     List<GraphVertex> searchVertices(String graphUuid, String label, Integer limit);
@@ -55,7 +55,7 @@ public interface IGraphStoreService {
      * 根据名称搜索节点
      *
      * @param graphUuid 图谱UUID
-     * @param name 节点名称
+     * @param name      节点名称
      * @return 节点列表
      */
     List<GraphVertex> searchVerticesByName(String graphUuid, String name);
@@ -90,8 +90,8 @@ public interface IGraphStoreService {
     /**
      * 删除节点
      *
-     * @param nodeId 节点ID
-     * @param graphUuid 图谱UUID
+     * @param nodeId       节点ID
+     * @param graphUuid    图谱UUID
      * @param includeEdges 是否同时删除相关关系
      * @return 是否成功
      */
@@ -118,7 +118,7 @@ public interface IGraphStoreService {
     /**
      * 获取关系信息
      *
-     * @param edgeId 关系ID
+     * @param edgeId    关系ID
      * @param graphUuid 图谱UUID
      * @return 关系信息
      */
@@ -127,10 +127,10 @@ public interface IGraphStoreService {
     /**
      * 搜索关系
      *
-     * @param graphUuid 图谱UUID
+     * @param graphUuid    图谱UUID
      * @param sourceNodeId 源节点ID（可选）
      * @param targetNodeId 目标节点ID（可选）
-     * @param limit 返回数量限制
+     * @param limit        返回数量限制
      * @return 关系列表
      */
     List<GraphEdge> searchEdges(String graphUuid, String sourceNodeId, String targetNodeId, Integer limit);
@@ -147,7 +147,7 @@ public interface IGraphStoreService {
     /**
      * 获取节点的所有关系
      *
-     * @param nodeId 节点ID
+     * @param nodeId    节点ID
      * @param graphUuid 图谱UUID
      * @param direction 方向: IN(入边), OUT(出边), BOTH(双向)
      * @return 关系列表
@@ -165,7 +165,7 @@ public interface IGraphStoreService {
     /**
      * 删除关系
      *
-     * @param edgeId 关系ID
+     * @param edgeId    关系ID
      * @param graphUuid 图谱UUID
      * @return 是否成功
      */
@@ -220,8 +220,8 @@ public interface IGraphStoreService {
      *
      * @param sourceNodeId 源节点ID
      * @param targetNodeId 目标节点ID
-     * @param graphUuid 图谱UUID
-     * @param maxDepth 最大深度
+     * @param graphUuid    图谱UUID
+     * @param maxDepth     最大深度
      * @return 路径列表
      */
     List<List<GraphVertex>> findPaths(String sourceNodeId, String targetNodeId, String graphUuid, Integer maxDepth);
@@ -239,9 +239,9 @@ public interface IGraphStoreService {
     /**
      * 查找节点的邻居节点
      *
-     * @param nodeId 节点ID
+     * @param nodeId    节点ID
      * @param graphUuid 图谱UUID
-     * @param depth 深度（几度关系）
+     * @param depth     深度（几度关系）
      * @return 邻居节点列表
      */
     List<GraphVertex> findNeighbors(String nodeId, String graphUuid, Integer depth);

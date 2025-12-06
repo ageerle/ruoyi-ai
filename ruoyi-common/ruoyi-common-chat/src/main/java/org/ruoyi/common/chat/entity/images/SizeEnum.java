@@ -6,10 +6,8 @@ import lombok.Getter;
 import java.io.Serializable;
 
 /**
- *  
- *
  * @author https:www.unfbx.com
- *  2023-02-15
+ * 2023-02-15
  */
 @Getter
 @AllArgsConstructor

@@ -33,9 +33,9 @@ public class SysDataScopeServiceImpl implements ISysDataScopeService {
     @Override
     public String getRoleCustom(Long roleId) {
         List<SysRoleDept> list = roleDeptMapper.selectList(
-            new LambdaQueryWrapper<SysRoleDept>()
-                .select(SysRoleDept::getDeptId)
-                .eq(SysRoleDept::getRoleId, roleId));
+                new LambdaQueryWrapper<SysRoleDept>()
+                        .select(SysRoleDept::getDeptId)
+                        .eq(SysRoleDept::getRoleId, roleId));
         if (CollUtil.isNotEmpty(list)) {
             return StreamUtils.join(list, rd -> Convert.toStr(rd.getDeptId()));
         }
@@ -55,13 +55,13 @@ public class SysDataScopeServiceImpl implements ISysDataScopeService {
     @Override
     public String getDeptAndChild(Long deptId) {
         List<SysDept> deptList = deptMapper.selectList(new LambdaQueryWrapper<SysDept>()
-            .select(SysDept::getDeptId)
-            .apply(DataBaseHelper.findInSet(deptId, "ancestors")));
+                .select(SysDept::getDeptId)
+                .apply(DataBaseHelper.findInSet(deptId, "ancestors")));
         List<Long> ids = StreamUtils.toList(deptList, SysDept::getDeptId);
         ids.add(deptId);
         List<SysDept> list = deptMapper.selectList(new LambdaQueryWrapper<SysDept>()
-            .select(SysDept::getDeptId)
-            .in(SysDept::getDeptId, ids));
+                .select(SysDept::getDeptId)
+                .in(SysDept::getDeptId, ids));
         if (CollUtil.isNotEmpty(list)) {
             return StreamUtils.join(list, d -> Convert.toStr(d.getDeptId()));
         }

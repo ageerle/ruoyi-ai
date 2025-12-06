@@ -26,14 +26,14 @@ public class SysNoticeBo extends BaseEntity {
     /**
      * 公告ID
      */
-    @NotNull(message = "公告ID不能为空", groups = { EditGroup.class })
+    @NotNull(message = "公告ID不能为空", groups = {EditGroup.class})
     private Long noticeId;
 
     /**
      * 公告标题
      */
     @Xss(message = "公告标题不能包含脚本字符")
-    @NotBlank(message = "公告标题不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "公告标题不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 50, message = "公告标题不能超过{max}个字符")
     private String noticeTitle;
 

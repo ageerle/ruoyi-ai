@@ -31,13 +31,11 @@ import java.util.List;
 @Slf4j
 public class OpenAIServiceImpl implements IChatService {
 
+    private final ChatClient chatClient;
     @Autowired
     private IChatModelService chatModelService;
-
     @Value("${spring.ai.mcp.client.enabled}")
     private Boolean enabled;
-
-    private final ChatClient chatClient;
 
     public OpenAIServiceImpl(ChatClient.Builder chatClientBuilder, List<McpSyncClient> mcpSyncClients) {
         this.chatClient = chatClientBuilder
@@ -48,13 +46,13 @@ public class OpenAIServiceImpl implements IChatService {
     }
 
     @Override
-    public SseEmitter chat(ChatRequest chatRequest,SseEmitter emitter) {
+    public SseEmitter chat(ChatRequest chatRequest, SseEmitter emitter) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         OpenAiStreamClient openAiStreamClient = ChatConfig.createOpenAiStreamClient(chatModelVo.getApiHost(), chatModelVo.getApiKey());
         List<Message> messages = chatRequest.getMessages();
         if (enabled) {
             String toolString = mcpChat(chatRequest.getPrompt());
-            Message userMessage = Message.builder().content("工具返回信息："+toolString).role(Message.Role.USER).build();
+            Message userMessage = Message.builder().content("工具返回信息：" + toolString).role(Message.Role.USER).build();
             messages.add(userMessage);
         }
         SSEEventSourceListener listener = ChatServiceHelper.createOpenAiListener(emitter, chatRequest);
@@ -73,7 +71,7 @@ public class OpenAIServiceImpl implements IChatService {
         return emitter;
     }
 
-    public String mcpChat(String prompt){
+    public String mcpChat(String prompt) {
         return this.chatClient.prompt(prompt).call().content();
     }
 

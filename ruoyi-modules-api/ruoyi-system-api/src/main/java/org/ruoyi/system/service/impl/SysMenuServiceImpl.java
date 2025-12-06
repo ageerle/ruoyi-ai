@@ -68,19 +68,19 @@ public class SysMenuServiceImpl implements ISysMenuService {
         // 管理员显示所有菜单信息
         if (LoginHelper.isSuperAdmin(userId)) {
             menuList = baseMapper.selectVoList(new LambdaQueryWrapper<SysMenu>()
-                .like(StringUtils.isNotBlank(menu.getMenuName()), SysMenu::getMenuName, menu.getMenuName())
-                .eq(StringUtils.isNotBlank(menu.getVisible()), SysMenu::getVisible, menu.getVisible())
-                .eq(StringUtils.isNotBlank(menu.getStatus()), SysMenu::getStatus, menu.getStatus())
-                .orderByAsc(SysMenu::getParentId)
-                .orderByAsc(SysMenu::getOrderNum));
+                    .like(StringUtils.isNotBlank(menu.getMenuName()), SysMenu::getMenuName, menu.getMenuName())
+                    .eq(StringUtils.isNotBlank(menu.getVisible()), SysMenu::getVisible, menu.getVisible())
+                    .eq(StringUtils.isNotBlank(menu.getStatus()), SysMenu::getStatus, menu.getStatus())
+                    .orderByAsc(SysMenu::getParentId)
+                    .orderByAsc(SysMenu::getOrderNum));
         } else {
             QueryWrapper<SysMenu> wrapper = Wrappers.query();
             wrapper.eq("sur.user_id", userId)
-                .like(StringUtils.isNotBlank(menu.getMenuName()), "m.menu_name", menu.getMenuName())
-                .eq(StringUtils.isNotBlank(menu.getVisible()), "m.visible", menu.getVisible())
-                .eq(StringUtils.isNotBlank(menu.getStatus()), "m.status", menu.getStatus())
-                .orderByAsc("m.parent_id")
-                .orderByAsc("m.order_num");
+                    .like(StringUtils.isNotBlank(menu.getMenuName()), "m.menu_name", menu.getMenuName())
+                    .eq(StringUtils.isNotBlank(menu.getVisible()), "m.visible", menu.getVisible())
+                    .eq(StringUtils.isNotBlank(menu.getStatus()), "m.status", menu.getStatus())
+                    .orderByAsc("m.parent_id")
+                    .orderByAsc("m.order_num");
             List<SysMenu> list = baseMapper.selectMenuListByUserId(wrapper);
             menuList = MapstructUtils.convert(list, SysMenuVo.class);
         }
@@ -169,11 +169,15 @@ public class SysMenuServiceImpl implements ISysMenuService {
         if (tenantPackage.getMenuCheckStrictly()) {
             parentIds = baseMapper.selectObjs(new LambdaQueryWrapper<SysMenu>()
                     .select(SysMenu::getParentId)
-                    .in(SysMenu::getMenuId, menuIds), x -> {return Convert.toLong(x);});
+                    .in(SysMenu::getMenuId, menuIds), x -> {
+                return Convert.toLong(x);
+            });
         }
         return baseMapper.selectObjs(new LambdaQueryWrapper<SysMenu>()
                 .in(SysMenu::getMenuId, menuIds)
-                .notIn(CollUtil.isNotEmpty(parentIds), SysMenu::getMenuId, parentIds), x -> {return Convert.toLong(x);});
+                .notIn(CollUtil.isNotEmpty(parentIds), SysMenu::getMenuId, parentIds), x -> {
+            return Convert.toLong(x);
+        });
     }
 
     /**
@@ -239,10 +243,10 @@ public class SysMenuServiceImpl implements ISysMenuService {
             return CollUtil.newArrayList();
         }
         return TreeBuildUtils.build(menus, (menu, tree) ->
-            tree.setId(menu.getMenuId())
-                .setParentId(menu.getParentId())
-                .setName(menu.getMenuName())
-                .setWeight(menu.getOrderNum()));
+                tree.setId(menu.getMenuId())
+                        .setParentId(menu.getParentId())
+                        .setName(menu.getMenuName())
+                        .setWeight(menu.getOrderNum()));
     }
 
     /**
@@ -322,9 +326,9 @@ public class SysMenuServiceImpl implements ISysMenuService {
     @Override
     public boolean checkMenuNameUnique(SysMenuBo menu) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysMenu>()
-            .eq(SysMenu::getMenuName, menu.getMenuName())
-            .eq(SysMenu::getParentId, menu.getParentId())
-            .ne(ObjectUtil.isNotNull(menu.getMenuId()), SysMenu::getMenuId, menu.getMenuId()));
+                .eq(SysMenu::getMenuName, menu.getMenuName())
+                .eq(SysMenu::getParentId, menu.getParentId())
+                .ne(ObjectUtil.isNotNull(menu.getMenuId()), SysMenu::getMenuId, menu.getMenuId()));
         return !exist;
     }
 

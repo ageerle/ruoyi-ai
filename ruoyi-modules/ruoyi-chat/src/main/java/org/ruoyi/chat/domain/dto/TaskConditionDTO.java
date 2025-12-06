@@ -10,7 +10,7 @@ import java.util.List;
 @Schema(name = "任务查询参数")
 public class TaskConditionDTO {
 
-	@ArraySchema(arraySchema = @Schema(description = "任务ID列表"), schema = @Schema(example = "1320098173412546"))
-	private List<String> ids;
+    @ArraySchema(arraySchema = @Schema(description = "任务ID列表"), schema = @Schema(example = "1320098173412546"))
+    private List<String> ids;
 
 }

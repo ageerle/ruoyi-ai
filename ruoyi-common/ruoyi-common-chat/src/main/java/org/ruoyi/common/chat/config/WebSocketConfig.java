@@ -39,10 +39,10 @@ public class WebSocketConfig {
         }
         // 返回一个WebSocketConfigurer对象，用于配置WebSocket
         return registry -> registry
-            // 添加WebSocket处理程序和拦截器到指定路径，设置允许的跨域来源
-            .addHandler(webSocketHandler, webSocketProperties.getPath())
-            .addInterceptors(handshakeInterceptor)
-            .setAllowedOrigins(webSocketProperties.getAllowedOrigins());
+                // 添加WebSocket处理程序和拦截器到指定路径，设置允许的跨域来源
+                .addHandler(webSocketHandler, webSocketProperties.getPath())
+                .addInterceptors(handshakeInterceptor)
+                .setAllowedOrigins(webSocketProperties.getAllowedOrigins());
     }
 
     @Bean

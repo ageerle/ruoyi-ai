@@ -17,7 +17,6 @@ public interface ISysNoticeService {
     TableDataInfo<SysNoticeVo> selectPageNoticeList(SysNoticeBo notice, PageQuery pageQuery);
 
 
-
     /**
      * 查询公告信息
      *

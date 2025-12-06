@@ -68,7 +68,7 @@ public class ChatConfigController extends BaseController {
     @SaCheckPermission("system:config:query")
     @GetMapping("/{id}")
     public R<ChatConfigVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Long id) {
+                                   @PathVariable Long id) {
         return R.ok(chatConfigService.queryById(id));
     }
 
@@ -81,9 +81,9 @@ public class ChatConfigController extends BaseController {
     @PostMapping("/saveOrUpdate")
     public R<Void> saveOrUpdate(@RequestBody List<ChatConfigBo> boList) {
         for (ChatConfigBo chatConfigBo : boList) {
-            if(chatConfigBo.getId() == null){
+            if (chatConfigBo.getId() == null) {
                 chatConfigService.insertByBo(chatConfigBo);
-            }else {
+            } else {
                 chatConfigService.updateByBo(chatConfigBo);
             }
         }
@@ -121,12 +121,11 @@ public class ChatConfigController extends BaseController {
      */
     @GetMapping(value = "/configKey/{configKey}")
     public R<String> getConfigKey(@PathVariable String configKey) {
-        return R.ok(configService.getConfigValue("sys",configKey));
+        return R.ok(configService.getConfigValue("sys", configKey));
     }
 
     /**
      * 查询系统参数
-     *
      */
     @GetMapping(value = "/sysConfigKey")
     public R<List<ChatConfigVo>> getSysConfigKey() {

@@ -3,11 +3,9 @@ package org.ruoyi.chat.service.chat.impl;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import org.ruoyi.chat.enums.BillingType;
-import org.ruoyi.chat.event.ChatMessageCreatedEvent;
 import org.ruoyi.chat.enums.UserGradeType;
+import org.ruoyi.chat.event.ChatMessageCreatedEvent;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.common.chat.utils.TikTokensUtil;
@@ -25,6 +23,9 @@ import org.ruoyi.system.domain.SysUser;
 import org.ruoyi.system.mapper.SysUserMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 
 /**
@@ -108,10 +109,10 @@ public class ChatCostServiceImpl implements IChatCostService {
             // 计算批次数：每1000个Token为一批，每批扣费单价
             int batches = billable / threshold;
             BigDecimal numberCost = unitPrice
-                .multiply(BigDecimal.valueOf(batches))
-                .setScale(2, RoundingMode.HALF_UP);
+                    .multiply(BigDecimal.valueOf(batches))
+                    .setScale(2, RoundingMode.HALF_UP);
             log.debug("deductToken->按token扣费，结算token数量: {}，批次数: {}，单价: {}，费用: {}",
-                      billable, batches, unitPrice, numberCost);
+                    billable, batches, unitPrice, numberCost);
 
             try {
                 // 先尝试扣费
@@ -172,7 +173,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             // 保存成功后，将生成的消息ID设置到ChatRequest中
             chatRequest.setMessageId(chatMessageBo.getId());
             log.debug("saveMessage->成功保存消息，消息ID: {}, 用户ID: {}, 会话ID: {}",
-                      chatMessageBo.getId(), chatRequest.getUserId(), chatRequest.getSessionId());
+                    chatMessageBo.getId(), chatRequest.getUserId(), chatRequest.getSessionId());
         } catch (Exception e) {
             log.error("saveMessage->保存消息失败", e);
             throw new ServiceException("保存消息失败");
@@ -180,28 +181,27 @@ public class ChatCostServiceImpl implements IChatCostService {
     }
 
 
-
     @Override
     public void publishBillingEvent(ChatRequest chatRequest) {
         log.debug("publishBillingEvent->发布计费事件，用户ID: {}，会话ID: {}，模型: {}",
-                  chatRequest.getUserId(), chatRequest.getSessionId(), chatRequest.getModel());
+                chatRequest.getUserId(), chatRequest.getSessionId(), chatRequest.getModel());
 
         // 预检查：评估可能的扣费金额，如果余额不足则直接抛异常
         try {
             preCheckBalance(chatRequest);
         } catch (ServiceException e) {
             log.warn("publishBillingEvent->预检查余额不足，用户ID: {}，模型: {}",
-                     chatRequest.getUserId(), chatRequest.getModel());
+                    chatRequest.getUserId(), chatRequest.getModel());
             throw e; // 直接抛出，阻止消息保存和对话继续
         }
 
         eventPublisher.publishEvent(new ChatMessageCreatedEvent(
-            chatRequest.getUserId(),
-            chatRequest.getSessionId(),
-            chatRequest.getModel(),
-            chatRequest.getRole(),
-            chatRequest.getPrompt(),
-            chatRequest.getMessageId()
+                chatRequest.getUserId(),
+                chatRequest.getSessionId(),
+                chatRequest.getModel(),
+                chatRequest.getRole(),
+                chatRequest.getPrompt(),
+                chatRequest.getMessageId()
         ));
         log.debug("publishBillingEvent->计费事件发布完成");
     }
@@ -237,8 +237,8 @@ public class ChatCostServiceImpl implements IChatCostService {
             // 计算批次数：每1000个Token为一批，每批扣费单价
             int batches = billable / threshold;
             BigDecimal numberCost = unitPrice
-                .multiply(BigDecimal.valueOf(batches))
-                .setScale(2, RoundingMode.HALF_UP);
+                    .multiply(BigDecimal.valueOf(batches))
+                    .setScale(2, RoundingMode.HALF_UP);
             checkUserBalanceWithoutDeduct(chatRequest.getUserId(), numberCost.doubleValue());
         }
     }
@@ -253,9 +253,9 @@ public class ChatCostServiceImpl implements IChatCostService {
         }
 
         BigDecimal userBalance = BigDecimal.valueOf(sysUser.getUserBalance() == null ? 0D : sysUser.getUserBalance())
-            .setScale(2, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
         BigDecimal cost = BigDecimal.valueOf(numberCost == null ? 0D : numberCost)
-            .setScale(2, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
 
         if (userBalance.compareTo(cost) < 0 || userBalance.compareTo(BigDecimal.ZERO) == 0) {
             throw new ServiceException("余额不足, 请充值。当前余额: " + userBalance + "，需要: " + cost);
@@ -283,7 +283,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             // 更新消息
             chatMessageService.updateByBo(updateMessage);
             log.debug("updateMessageWithoutBilling->更新消息基本信息成功，消息ID: {}, 实际tokens: {}, 计费类型: {}",
-                      chatRequest.getMessageId(), actualTokens, billingTypeCode);
+                    chatRequest.getMessageId(), actualTokens, billingTypeCode);
         } catch (Exception e) {
             log.error("updateMessageWithoutBilling->更新消息基本信息失败，消息ID: {}", chatRequest.getMessageId(), e);
             // 更新失败不影响主流程，只记录错误日志
@@ -318,7 +318,7 @@ public class ChatCostServiceImpl implements IChatCostService {
             // 更新消息
             chatMessageService.updateByBo(updateMessage);
             log.debug("updateMessageBilling->更新消息计费信息成功，消息ID: {}, 实际tokens: {}, 计费tokens: {}, 费用: {}",
-                      chatRequest.getMessageId(), actualTokens, billedTokens, cost);
+                    chatRequest.getMessageId(), actualTokens, billedTokens, cost);
         } catch (Exception e) {
             log.error("updateMessageBilling->更新消息计费信息失败，消息ID: {}", chatRequest.getMessageId(), e);
             // 更新失败不影响主流程，只记录错误日志
@@ -333,14 +333,15 @@ public class ChatCostServiceImpl implements IChatCostService {
         BillingType billingType = BillingType.fromCode(billingTypeCode);
         if (billingType != null) {
             return switch (billingType) {
-                case TIMES -> String.format("%s：消耗 %d tokens，扣费 %.2f 元", billingType.getDescription(), billedTokens, cost);
-                case TOKEN -> String.format("%s：结算 %d tokens，扣费 %.2f 元", billingType.getDescription(), billedTokens, cost);
+                case TIMES ->
+                        String.format("%s：消耗 %d tokens，扣费 %.2f 元", billingType.getDescription(), billedTokens, cost);
+                case TOKEN ->
+                        String.format("%s：结算 %d tokens，扣费 %.2f 元", billingType.getDescription(), billedTokens, cost);
             };
         } else {
             return String.format("系统计费：处理 %d tokens，扣费 %.2f 元", billedTokens, cost);
         }
     }
-
 
 
     /**
@@ -358,9 +359,9 @@ public class ChatCostServiceImpl implements IChatCostService {
         }
 
         BigDecimal userBalance = BigDecimal.valueOf(sysUser.getUserBalance() == null ? 0D : sysUser.getUserBalance())
-            .setScale(2, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
         BigDecimal cost = BigDecimal.valueOf(numberCost == null ? 0D : numberCost)
-            .setScale(2, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
 
         log.debug("deductUserBalance->准备扣除: {}，当前余额: {}", cost, userBalance);
 
@@ -375,16 +376,16 @@ public class ChatCostServiceImpl implements IChatCostService {
         newBalance = newBalance.setScale(2, RoundingMode.HALF_UP);
 
         sysUserMapper.update(null,
-            new LambdaUpdateWrapper<SysUser>()
-                .set(SysUser::getUserBalance, newBalance.doubleValue())
-                .eq(SysUser::getUserId, userId));
+                new LambdaUpdateWrapper<SysUser>()
+                        .set(SysUser::getUserBalance, newBalance.doubleValue())
+                        .eq(SysUser::getUserId, userId));
     }
 
     /**
      * 扣除任务费用
      */
     @Override
-    public void taskDeduct(String type,String prompt, double cost) {
+    public void taskDeduct(String type, String prompt, double cost) {
         // 判断用户是否付费
         checkUserGrade();
         // 扣除费用
@@ -406,7 +407,7 @@ public class ChatCostServiceImpl implements IChatCostService {
     @Override
     public void checkUserGrade() {
         SysUser sysUser = sysUserMapper.selectById(getUserId());
-        if(UserGradeType.UNPAID.getCode().equals(sysUser.getUserGrade())){
+        if (UserGradeType.UNPAID.getCode().equals(sysUser.getUserGrade())) {
             throw new BaseException("该模型仅限付费用户使用。请升级套餐，开启高效体验之旅！");
         }
     }
@@ -439,11 +440,11 @@ public class ChatCostServiceImpl implements IChatCostService {
             return true; // 预检查通过，余额充足
         } catch (ServiceException e) {
             log.debug("checkBalanceSufficient->余额不足，用户ID: {}, 模型: {}, 错误: {}",
-                      chatRequest.getUserId(), chatRequest.getModel(), e.getMessage());
+                    chatRequest.getUserId(), chatRequest.getModel(), e.getMessage());
             return false; // 预检查失败，余额不足
         } catch (Exception e) {
             log.error("checkBalanceSufficient->检查余额时发生异常，用户ID: {}, 模型: {}",
-                      chatRequest.getUserId(), chatRequest.getModel(), e);
+                    chatRequest.getUserId(), chatRequest.getModel(), e);
             return false; // 异常情况视为余额不足，保守处理
         }
     }

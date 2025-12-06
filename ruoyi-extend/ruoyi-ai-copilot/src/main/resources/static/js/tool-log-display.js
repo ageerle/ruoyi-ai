@@ -47,7 +47,7 @@ class ToolLogDisplay {
     addToolStart(logEvent) {
         // 移除等待状态卡片（如果存在）
         removeWaitingToolCard();
-        
+
         const toolCard = this.createToolCard(logEvent);
         const content = this.container.querySelector('.tool-log-content');
         content.appendChild(toolCard);

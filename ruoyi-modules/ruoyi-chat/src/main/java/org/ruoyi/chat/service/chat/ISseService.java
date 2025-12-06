@@ -21,15 +21,17 @@ public interface ISseService {
 
     /**
      * 客户端发送消息到服务端
+     *
      * @param chatRequest 请求对象
      */
     SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request);
 
     /**
      * 语音转文字
+     *
      * @param file 语音文件
      */
-   WhisperResponse speechToTextTranscriptionsV2(MultipartFile file);
+    WhisperResponse speechToTextTranscriptionsV2(MultipartFile file);
 
     /**
      * 文字转语音

@@ -47,8 +47,8 @@ public interface GraphBuildTaskMapper extends BaseMapper<GraphBuildTask> {
     /**
      * 更新任务进度
      *
-     * @param taskUuid 任务UUID
-     * @param progress 进度
+     * @param taskUuid      任务UUID
+     * @param progress      进度
      * @param processedDocs 已处理文档数
      * @return 影响行数
      */
@@ -58,7 +58,7 @@ public interface GraphBuildTaskMapper extends BaseMapper<GraphBuildTask> {
      * 更新任务状态
      *
      * @param taskUuid 任务UUID
-     * @param status 状态
+     * @param status   状态
      * @return 影响行数
      */
     int updateStatus(String taskUuid, Integer status);

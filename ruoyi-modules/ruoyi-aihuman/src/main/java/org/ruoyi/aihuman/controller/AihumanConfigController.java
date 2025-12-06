@@ -1,27 +1,28 @@
 package org.ruoyi.aihuman.controller;
 
-import java.util.List;
-
-import cn.dev33.satoken.annotation.SaIgnore;
-import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
-import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
-import org.ruoyi.common.log.annotation.Log;
-import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
+import cn.dev33.satoken.annotation.SaIgnore;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
+import org.ruoyi.aihuman.domain.bo.AihumanConfigBo;
+import org.ruoyi.aihuman.domain.vo.AihumanConfigVo;
+import org.ruoyi.aihuman.service.AihumanConfigService;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
-import org.ruoyi.aihuman.domain.vo.AihumanConfigVo;
-import org.ruoyi.aihuman.domain.bo.AihumanConfigBo;
-import org.ruoyi.aihuman.service.AihumanConfigService;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
+import org.ruoyi.common.log.annotation.Log;
+import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.web.core.BaseController;
+import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 交互数字人配置
@@ -41,11 +42,11 @@ public class AihumanConfigController extends BaseController {
 
     private final AihumanConfigService aihumanConfigService;
 
-/**
- * 查询交互数字人配置列表
- */
-@SaCheckPermission("aihuman:aihumanConfig:list")
-@GetMapping("/list")
+    /**
+     * 查询交互数字人配置列表
+     */
+    @SaCheckPermission("aihuman:aihumanConfig:list")
+    @GetMapping("/list")
     public TableDataInfo<AihumanConfigVo> list(AihumanConfigBo bo, PageQuery pageQuery) {
         return aihumanConfigService.queryPageList(bo, pageQuery);
     }
@@ -69,7 +70,7 @@ public class AihumanConfigController extends BaseController {
     @SaCheckPermission("aihuman:aihumanConfig:query")
     @GetMapping("/{id}")
     public R<AihumanConfigVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Integer id) {
+                                      @PathVariable Integer id) {
         return R.ok(aihumanConfigService.queryById(id));
     }
 

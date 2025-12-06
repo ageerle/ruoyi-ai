@@ -26,9 +26,8 @@ import java.util.concurrent.TimeUnit;
 @Component("bailianMultiModel")
 @Slf4j
 public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelService {
-    private ChatModelVo chatModelVo;
-
     private final OkHttpClient okHttpClient;
+    private ChatModelVo chatModelVo;
 
     /**
      * 构造函数，初始化HTTP客户端
@@ -44,6 +43,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 图像嵌入向量生成
+     *
      * @param imageDataUrl 图像数据的URL
      * @return 包含图像嵌入向量的Response对象
      */
@@ -54,6 +54,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 视频嵌入向量生成
+     *
      * @param videoDataUrl 视频数据的URL
      * @return 包含视频嵌入向量的Response对象
      */
@@ -65,6 +66,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
     /**
      * 多模态嵌入向量生成
      * 支持同时处理文本、图像和视频等多种模态的数据
+     *
      * @param input 包含多种模态输入的对象
      * @return 包含多模态嵌入向量的Response对象
      */
@@ -101,6 +103,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 配置模型参数
+     *
      * @param config 模型配置信息
      */
     @Override
@@ -110,6 +113,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 获取支持的模态类型
+     *
      * @return 支持的模态类型集合
      */
     @Override
@@ -119,6 +123,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 批量文本嵌入向量生成
+     *
      * @param textSegments 文本段列表
      * @return 包含所有文本嵌入向量的Response对象
      */
@@ -144,7 +149,8 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 单模态嵌入（图片/视频/单条文本）复用方法
-     * @param key 模态类型（image/video/text）
+     *
+     * @param key     模态类型（image/video/text）
      * @param dataUrl 数据URL
      * @return 包含嵌入向量的Response对象
      */
@@ -171,7 +177,8 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 构建请求对象
-     * @param contents 请求内容列表
+     *
+     * @param contents    请求内容列表
      * @param chatModelVo 模型配置信息
      * @return 构建好的请求对象
      */
@@ -182,7 +189,8 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 执行 HTTP 请求并解析响应
-     * @param request 请求对象
+     *
+     * @param request     请求对象
      * @param chatModelVo 模型配置信息
      * @return API响应对象
      * @throws IOException IO异常
@@ -212,6 +220,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 解析嵌入向量列表
+     *
      * @param responseBody API响应的JSON字符串
      * @return 嵌入向量响应对象
      * @throws IOException IO异常
@@ -223,6 +232,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 构建 API 请求内容 Map
+     *
      * @param input 多模态输入对象
      * @return 包含各种模态内容的Map列表
      */
@@ -247,6 +257,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
     /**
      * 将 API 原始响应解析为 LangChain4j 的 Response<Embedding>
+     *
      * @param resp API原始响应对象
      * @return 包含嵌入向量和token使用情况的Response对象
      */
@@ -272,7 +283,7 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
             tokenUsage = new TokenUsage(
                     resp.usage().input_tokens(),
                     resp.usage().image_tokens(),
-                    resp.usage().input_tokens() +resp.usage().image_tokens()
+                    resp.usage().input_tokens() + resp.usage().image_tokens()
             );
         }
 

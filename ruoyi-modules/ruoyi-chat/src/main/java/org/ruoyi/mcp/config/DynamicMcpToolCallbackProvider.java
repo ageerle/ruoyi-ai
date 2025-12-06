@@ -7,10 +7,13 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 动态MCP工具回调提供者
- *
+ * <p>
  * 这个类有大问题 ，没有测试！！！！！！！
  */
 @Component

@@ -18,29 +18,29 @@ import java.util.List;
  */
 public interface ISysOssService {
 
-  TableDataInfo<SysOssVo> queryPageList(SysOssBo sysOss, PageQuery pageQuery);
+    TableDataInfo<SysOssVo> queryPageList(SysOssBo sysOss, PageQuery pageQuery);
 
-  List<SysOssVo> listByIds(Collection<Long> ossIds);
+    List<SysOssVo> listByIds(Collection<Long> ossIds);
 
-  SysOssVo getById(Long ossId);
+    SysOssVo getById(Long ossId);
 
-  SysOssVo upload(MultipartFile file);
+    SysOssVo upload(MultipartFile file);
 
-  void download(Long ossId, HttpServletResponse response) throws IOException;
+    void download(Long ossId, HttpServletResponse response) throws IOException;
 
-  MultipartFile downloadByFile(Long ossId) throws IOException;
+    MultipartFile downloadByFile(Long ossId) throws IOException;
 
-  String downloadByByte(Long ossId) throws IOException;
+    String downloadByByte(Long ossId) throws IOException;
 
-  String downloadToTempPath(Long ossId) throws IOException;
+    String downloadToTempPath(Long ossId) throws IOException;
 
-  Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+    Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
-  /**
-   * 根据文件路径删除文件
-   *
-   * @param filePath 文件路径
-   * @return 是否删除成功
-   */
-  boolean deleteFile(String filePath);
+    /**
+     * 根据文件路径删除文件
+     *
+     * @param filePath 文件路径
+     * @return 是否删除成功
+     */
+    boolean deleteFile(String filePath);
 }

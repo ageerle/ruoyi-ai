@@ -17,7 +17,8 @@ public class WfNodeFactory {
         switch (WfComponentNameEnum.getByName(wfComponent.getName())) {
             case START -> wfNode = new StartNode(wfComponent, nodeDefinition, wfState, nodeState);
             case LLM_ANSWER -> wfNode = new LLMAnswerNode(wfComponent, nodeDefinition, wfState, nodeState);
-            case KEYWORD_EXTRACTOR -> wfNode = new KeywordExtractorNode(wfComponent, nodeDefinition, wfState, nodeState);
+            case KEYWORD_EXTRACTOR ->
+                    wfNode = new KeywordExtractorNode(wfComponent, nodeDefinition, wfState, nodeState);
             case END -> wfNode = new EndNode(wfComponent, nodeDefinition, wfState, nodeState);
             case MAIL_SEND -> wfNode = new MailSendNode(wfComponent, nodeDefinition, wfState, nodeState);
             case SWITCHER -> wfNode = new SwitcherNode(wfComponent, nodeDefinition, wfState, nodeState);

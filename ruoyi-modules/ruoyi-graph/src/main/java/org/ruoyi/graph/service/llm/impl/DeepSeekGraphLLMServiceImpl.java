@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * DeepSeek 图谱LLM服务实现
  * 支持 DeepSeek 系列模型
- * 
+ * <p>
  * 注意：使用 langchain4j 的 OpenAiStreamingChatModel，通过 CompletableFuture 转换为同步调用
  * 参考 DeepSeekChatImpl 的实现，但改为同步模式
  *
@@ -29,18 +29,18 @@ public class DeepSeekGraphLLMServiceImpl implements IGraphLLMService {
     @Override
     public String extractGraph(String prompt, ChatModelVo chatModel) {
         log.info("DeepSeek模型调用: model={}, apiHost={}, 提示词长度={}",
-            chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
+                chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
 
         try {
             // 使用 langchain4j 的 OpenAiStreamingChatModel（参考 DeepSeekChatImpl）
             StreamingChatModel streamingModel = OpenAiStreamingChatModel.builder()
-                .baseUrl(chatModel.getApiHost())
-                .apiKey(chatModel.getApiKey())
-                .modelName(chatModel.getModelName())
-                .temperature(0.8)
-                .logRequests(false)
-                .logResponses(false)
-                .build();
+                    .baseUrl(chatModel.getApiHost())
+                    .apiKey(chatModel.getApiKey())
+                    .modelName(chatModel.getModelName())
+                    .temperature(0.8)
+                    .logRequests(false)
+                    .logResponses(false)
+                    .build();
 
             // 用于收集完整响应
             StringBuilder fullResponse = new StringBuilder();

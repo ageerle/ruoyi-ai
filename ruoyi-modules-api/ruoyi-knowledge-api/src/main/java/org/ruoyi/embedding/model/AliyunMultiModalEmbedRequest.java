@@ -1,7 +1,7 @@
 package org.ruoyi.embedding.model;
 
-import org.ruoyi.common.json.utils.JsonUtils;
 import lombok.Data;
+import org.ruoyi.common.json.utils.JsonUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -15,14 +15,6 @@ import java.util.Map;
 public class AliyunMultiModalEmbedRequest {
     private String model;
     private Input input;
-
-    /**
-     * 表示输入数据的记录类(Record)
-     * 该类用于封装一个包含多个映射关系列表的输入数据结构
-     *
-     * @param contents 包含多个Map的列表，每个Map中存储String类型的键和Object类型的值
-     */
-    public record Input(List<Map<String, Object>> contents) { }
 
     /**
      * 创建请求对象
@@ -40,5 +32,14 @@ public class AliyunMultiModalEmbedRequest {
      */
     public String toJson() {
         return JsonUtils.toJsonString(this);
+    }
+
+    /**
+     * 表示输入数据的记录类(Record)
+     * 该类用于封装一个包含多个映射关系列表的输入数据结构
+     *
+     * @param contents 包含多个Map的列表，每个Map中存储String类型的键和Object类型的值
+     */
+    public record Input(List<Map<String, Object>> contents) {
     }
 }

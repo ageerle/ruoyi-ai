@@ -60,7 +60,7 @@ public class DefaultExcelListener<T> extends AnalysisEventListener<T> implements
             Integer rowIndex = excelDataConvertException.getRowIndex();
             Integer columnIndex = excelDataConvertException.getColumnIndex();
             errMsg = StrUtil.format("第{}行-第{}列-表头{}: 解析异常<br/>",
-                rowIndex + 1, columnIndex + 1, headMap.get(columnIndex));
+                    rowIndex + 1, columnIndex + 1, headMap.get(columnIndex));
             if (log.isDebugEnabled()) {
                 log.error(errMsg);
             }

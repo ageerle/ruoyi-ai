@@ -33,13 +33,12 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
 
     private final Integer DIMENSION = 2048;
+    // 缓存不同集合与 autoFlush 配置的 Milvus 连接
+    private final Map<String, EmbeddingStore<TextSegment>> storeCache = new ConcurrentHashMap<>();
 
     public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties, EmbeddingModelFactory embeddingModelFactory) {
         super(vectorStoreProperties, embeddingModelFactory);
     }
-
-    // 缓存不同集合与 autoFlush 配置的 Milvus 连接
-    private final Map<String, EmbeddingStore<TextSegment>> storeCache = new ConcurrentHashMap<>();
 
     private EmbeddingStore<TextSegment> getMilvusStore(String collectionName, boolean autoFlushOnInsert) {
         String key = collectionName + "|" + autoFlushOnInsert;

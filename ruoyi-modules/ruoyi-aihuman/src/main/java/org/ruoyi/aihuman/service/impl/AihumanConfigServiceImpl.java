@@ -1,23 +1,22 @@
 package org.ruoyi.aihuman.service.impl;
 
-import org.ruoyi.common.core.utils.MapstructUtils;
-    import org.ruoyi.core.page.TableDataInfo;
-    import org.ruoyi.core.page.PageQuery;
-    import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.ruoyi.aihuman.domain.AihumanConfig;
 import org.ruoyi.aihuman.domain.bo.AihumanConfigBo;
 import org.ruoyi.aihuman.domain.vo.AihumanConfigVo;
-import org.ruoyi.aihuman.domain.AihumanConfig;
 import org.ruoyi.aihuman.mapper.AihumanConfigMapper;
 import org.ruoyi.aihuman.service.AihumanConfigService;
+import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
+import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * 交互数字人配置Service业务层处理
@@ -39,15 +38,15 @@ public class AihumanConfigServiceImpl implements AihumanConfigService {
         return baseMapper.selectVoById(id);
     }
 
-        /**
-         * 查询交互数字人配置列表
-         */
-        @Override
-        public TableDataInfo<AihumanConfigVo> queryPageList(AihumanConfigBo bo, PageQuery pageQuery) {
-            LambdaQueryWrapper<AihumanConfig> lqw = buildQueryWrapper(bo);
-            Page<AihumanConfigVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-            return TableDataInfo.build(result);
-        }
+    /**
+     * 查询交互数字人配置列表
+     */
+    @Override
+    public TableDataInfo<AihumanConfigVo> queryPageList(AihumanConfigBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<AihumanConfig> lqw = buildQueryWrapper(bo);
+        Page<AihumanConfigVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
+    }
 
     /**
      * 查询交互数字人配置列表
@@ -60,15 +59,15 @@ public class AihumanConfigServiceImpl implements AihumanConfigService {
 
     private LambdaQueryWrapper<AihumanConfig> buildQueryWrapper(AihumanConfigBo bo) {
         LambdaQueryWrapper<AihumanConfig> lqw = Wrappers.lambdaQuery();
-                    lqw.eq(StringUtils.isNotBlank(bo.getName()), AihumanConfig::getName, bo.getName());
-                    lqw.eq(StringUtils.isNotBlank(bo.getModelName()), AihumanConfig::getModelName, bo.getModelName());
-                    lqw.eq(StringUtils.isNotBlank(bo.getModelPath()), AihumanConfig::getModelPath, bo.getModelPath());
-                    lqw.eq(StringUtils.isNotBlank(bo.getModelParams()), AihumanConfig::getModelParams, bo.getModelParams());
-                    lqw.eq(StringUtils.isNotBlank(bo.getAgentParams()), AihumanConfig::getAgentParams, bo.getAgentParams());
-                    lqw.eq(bo.getCreateTime() != null, AihumanConfig::getCreateTime, bo.getCreateTime());
-                    lqw.eq(bo.getUpdateTime() != null, AihumanConfig::getUpdateTime, bo.getUpdateTime());
-                    lqw.eq(bo.getStatus() != null, AihumanConfig::getStatus, bo.getStatus());
-                    lqw.eq(bo.getPublish() != null, AihumanConfig::getPublish, bo.getPublish());
+        lqw.eq(StringUtils.isNotBlank(bo.getName()), AihumanConfig::getName, bo.getName());
+        lqw.eq(StringUtils.isNotBlank(bo.getModelName()), AihumanConfig::getModelName, bo.getModelName());
+        lqw.eq(StringUtils.isNotBlank(bo.getModelPath()), AihumanConfig::getModelPath, bo.getModelPath());
+        lqw.eq(StringUtils.isNotBlank(bo.getModelParams()), AihumanConfig::getModelParams, bo.getModelParams());
+        lqw.eq(StringUtils.isNotBlank(bo.getAgentParams()), AihumanConfig::getAgentParams, bo.getAgentParams());
+        lqw.eq(bo.getCreateTime() != null, AihumanConfig::getCreateTime, bo.getCreateTime());
+        lqw.eq(bo.getUpdateTime() != null, AihumanConfig::getUpdateTime, bo.getUpdateTime());
+        lqw.eq(bo.getStatus() != null, AihumanConfig::getStatus, bo.getStatus());
+        lqw.eq(bo.getPublish() != null, AihumanConfig::getPublish, bo.getPublish());
         return lqw;
     }
 
@@ -77,7 +76,7 @@ public class AihumanConfigServiceImpl implements AihumanConfigService {
      */
     @Override
     public Boolean insertByBo(AihumanConfigBo bo) {
-        AihumanConfig add = MapstructUtils.convert(bo, AihumanConfig. class);
+        AihumanConfig add = MapstructUtils.convert(bo, AihumanConfig.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -91,7 +90,7 @@ public class AihumanConfigServiceImpl implements AihumanConfigService {
      */
     @Override
     public Boolean updateByBo(AihumanConfigBo bo) {
-        AihumanConfig update = MapstructUtils.convert(bo, AihumanConfig. class);
+        AihumanConfig update = MapstructUtils.convert(bo, AihumanConfig.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }

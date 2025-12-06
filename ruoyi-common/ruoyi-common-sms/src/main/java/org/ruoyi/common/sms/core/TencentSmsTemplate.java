@@ -64,9 +64,9 @@ public class TencentSmsTemplate implements SmsTemplate {
         try {
             SendSmsResponse resp = client.SendSms(req);
             SmsResult.SmsResultBuilder builder = SmsResult.builder()
-                .isSuccess(true)
-                .message("send success")
-                .response(JsonUtils.toJsonString(resp));
+                    .isSuccess(true)
+                    .message("send success")
+                    .response(JsonUtils.toJsonString(resp));
             for (SendStatus sendStatus : resp.getSendStatusSet()) {
                 if (!"Ok".equals(sendStatus.getCode())) {
                     builder.isSuccess(false).message(sendStatus.getMessage());

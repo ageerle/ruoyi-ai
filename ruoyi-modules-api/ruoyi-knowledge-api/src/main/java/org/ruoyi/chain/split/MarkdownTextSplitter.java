@@ -9,7 +9,7 @@ import java.util.List;
 @Component
 @AllArgsConstructor
 @Slf4j
-public class MarkdownTextSplitter implements TextSplitter{
+public class MarkdownTextSplitter implements TextSplitter {
     @Override
     public List<String> split(String content, String kid) {
         return null;

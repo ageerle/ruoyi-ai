@@ -10,7 +10,6 @@ import java.io.Serial;
 import java.io.Serializable;
 
 
-
 /**
  * 会话管理视图对象 chat_session
  *

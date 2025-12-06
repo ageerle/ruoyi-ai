@@ -31,12 +31,12 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
 
     public ReadFileTool(AppProperties appProperties) {
         super(
-            "read_file",
-            "ReadFile",
-            "Reads and returns the content of a specified file from the local filesystem. " +
-            "Handles text files and supports pagination for large files. " +
-            "Always use absolute paths within the workspace directory.",
-            createSchema()
+                "read_file",
+                "ReadFile",
+                "Reads and returns the content of a specified file from the local filesystem. " +
+                        "Handles text files and supports pagination for large files. " +
+                        "Always use absolute paths within the workspace directory.",
+                createSchema()
         );
         this.appProperties = appProperties;
         this.rootDirectory = appProperties.getWorkspace().getRootDirectory();
@@ -52,21 +52,21 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
 
     private static JsonSchema createSchema() {
         return JsonSchema.object()
-            .addProperty("absolute_path", JsonSchema.string(
-                "MUST be an absolute path to the file to read. Path must be within the workspace directory (" + 
-                getWorkspaceBasePath() + "). " +
-                getPathExample("project/src/main.java") + ". " +
-                "Relative paths are NOT allowed."
-            ))
-            .addProperty("offset", JsonSchema.integer(
-                "Optional: For text files, the 0-based line number to start reading from. " +
-                "Requires 'limit' to be set. Use for paginating through large files."
-            ).minimum(0))
-            .addProperty("limit", JsonSchema.integer(
-                "Optional: For text files, the number of lines to read from the offset. " +
-                "Use for paginating through large files."
-            ).minimum(1))
-            .required("absolute_path");
+                .addProperty("absolute_path", JsonSchema.string(
+                        "MUST be an absolute path to the file to read. Path must be within the workspace directory (" +
+                                getWorkspaceBasePath() + "). " +
+                                getPathExample("project/src/main.java") + ". " +
+                                "Relative paths are NOT allowed."
+                ))
+                .addProperty("offset", JsonSchema.integer(
+                        "Optional: For text files, the 0-based line number to start reading from. " +
+                                "Requires 'limit' to be set. Use for paginating through large files."
+                ).minimum(0))
+                .addProperty("limit", JsonSchema.integer(
+                        "Optional: For text files, the number of lines to read from the offset. " +
+                                "Use for paginating through large files."
+                ).minimum(1))
+                .required("absolute_path");
     }
 
     @Override
@@ -115,7 +115,7 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
     @Tool(name = "read_file", description = "Reads and returns the content of a specified file from the local filesystem")
     public String readFile(String absolutePath, Integer offset, Integer limit) {
         long callId = executionLogger.logToolStart("read_file", "读取文件内容",
-            String.format("文件路径=%s, 偏移量=%s, 限制行数=%s", absolutePath, offset, limit));
+                String.format("文件路径=%s, 偏移量=%s, 限制行数=%s", absolutePath, offset, limit));
         long startTime = System.currentTimeMillis();
 
         try {
@@ -135,7 +135,7 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
             }
 
             executionLogger.logFileOperation(callId, "读取文件", absolutePath,
-                offset != null ? String.format("分页读取: 偏移=%d, 限制=%d", offset, limit) : "完整读取");
+                    offset != null ? String.format("分页读取: 偏移=%d, 限制=%d", offset, limit) : "完整读取");
 
             // Execute the tool
             ToolResult result = execute(params).join();
@@ -178,14 +178,14 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
                 long fileSize = Files.size(filePath);
                 if (fileSize > appProperties.getWorkspace().getMaxFileSize()) {
                     return ToolResult.error("File too large: " + fileSize + " bytes. Maximum allowed: " +
-                        appProperties.getWorkspace().getMaxFileSize() + " bytes");
+                            appProperties.getWorkspace().getMaxFileSize() + " bytes");
                 }
 
                 // 检查文件扩展名
                 String fileName = filePath.getFileName().toString();
                 if (!isAllowedFileType(fileName)) {
                     return ToolResult.error("File type not allowed: " + fileName +
-                        ". Allowed extensions: " + appProperties.getWorkspace().getAllowedExtensions());
+                            ". Allowed extensions: " + appProperties.getWorkspace().getAllowedExtensions());
                 }
 
                 // 读取文件
@@ -211,7 +211,7 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
 
         long lineCount = content.lines().count();
         String displayMessage = String.format("Read file: %s (%d lines, %d bytes)",
-            relativePath, lineCount, content.getBytes(StandardCharsets.UTF_8).length);
+                relativePath, lineCount, content.getBytes(StandardCharsets.UTF_8).length);
 
         return ToolResult.success(content, displayMessage);
     }
@@ -229,7 +229,7 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
 
         String relativePath = getRelativePath(filePath);
         String displayMessage = String.format("Read file: %s (lines %d-%d of %d total)",
-            relativePath, offset + 1, endIndex, allLines.size());
+                relativePath, offset + 1, endIndex, allLines.size());
 
         return ToolResult.success(content, displayMessage);
     }
@@ -255,7 +255,7 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
     private boolean isAllowedFileType(String fileName) {
         List<String> allowedExtensions = appProperties.getWorkspace().getAllowedExtensions();
         return allowedExtensions.stream()
-            .anyMatch(ext -> fileName.toLowerCase().endsWith(ext.toLowerCase()));
+                .anyMatch(ext -> fileName.toLowerCase().endsWith(ext.toLowerCase()));
     }
 
     private String getRelativePath(Path filePath) {
@@ -278,7 +278,8 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
         private Integer limit;
 
         // 构造器
-        public ReadFileParams() {}
+        public ReadFileParams() {
+        }
 
         public ReadFileParams(String absolutePath) {
             this.absolutePath = absolutePath;
@@ -291,19 +292,34 @@ public class ReadFileTool extends BaseTool<ReadFileTool.ReadFileParams> {
         }
 
         // Getters and Setters
-        public String getAbsolutePath() { return absolutePath; }
-        public void setAbsolutePath(String absolutePath) { this.absolutePath = absolutePath; }
+        public String getAbsolutePath() {
+            return absolutePath;
+        }
 
-        public Integer getOffset() { return offset; }
-        public void setOffset(Integer offset) { this.offset = offset; }
+        public void setAbsolutePath(String absolutePath) {
+            this.absolutePath = absolutePath;
+        }
 
-        public Integer getLimit() { return limit; }
-        public void setLimit(Integer limit) { this.limit = limit; }
+        public Integer getOffset() {
+            return offset;
+        }
+
+        public void setOffset(Integer offset) {
+            this.offset = offset;
+        }
+
+        public Integer getLimit() {
+            return limit;
+        }
+
+        public void setLimit(Integer limit) {
+            this.limit = limit;
+        }
 
         @Override
         public String toString() {
             return String.format("ReadFileParams{path='%s', offset=%d, limit=%d}",
-                absolutePath, offset, limit);
+                    absolutePath, offset, limit);
         }
     }
 }

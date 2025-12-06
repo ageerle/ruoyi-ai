@@ -18,9 +18,9 @@ import java.util.stream.Collectors;
  */
 @Component
 public class SchemaValidator {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(SchemaValidator.class);
-    
+
     private final ObjectMapper objectMapper;
     private final JsonSchemaFactory schemaFactory;
 
@@ -33,7 +33,7 @@ public class SchemaValidator {
      * Validate data against schema
      *
      * @param schema JSON Schema definition
-     * @param data Data to validate
+     * @param data   Data to validate
      * @return Validation error message, null means validation passed
      */
     public String validate(JsonSchema schema, Object data) {
@@ -58,12 +58,12 @@ public class SchemaValidator {
                 return null; // Validation passed
             } else {
                 String errorMessage = errors.stream()
-                    .map(ValidationMessage::getMessage)
-                    .collect(Collectors.joining("; "));
+                        .map(ValidationMessage::getMessage)
+                        .collect(Collectors.joining("; "));
                 logger.warn("Schema validation failed: {}", errorMessage);
                 return errorMessage;
             }
-            
+
         } catch (Exception e) {
             String errorMessage = "Schema validation error: " + e.getMessage();
             logger.error(errorMessage, e);
@@ -94,10 +94,10 @@ public class SchemaValidator {
             if (!(data instanceof java.util.Map)) {
                 return "Expected object type for required field validation";
             }
-            
+
             @SuppressWarnings("unchecked")
             java.util.Map<String, Object> dataMap = (java.util.Map<String, Object>) data;
-            
+
             for (String requiredField : schema.getRequiredFields()) {
                 if (!dataMap.containsKey(requiredField) || dataMap.get(requiredField) == null) {
                     return "Missing required field: " + requiredField;
@@ -123,12 +123,12 @@ public class SchemaValidator {
         if (expectedType.equals(actualType)) {
             return true;
         }
-        
+
         // Number type compatibility
         if ("number".equals(expectedType) && "integer".equals(actualType)) {
             return true;
         }
-        
+
         return false;
     }
 }

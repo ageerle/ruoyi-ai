@@ -1,7 +1,6 @@
 package org.ruoyi.common.core.manager;
 
 import jakarta.annotation.PreDestroy;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.Threads;
 import org.springframework.beans.factory.annotation.Autowired;

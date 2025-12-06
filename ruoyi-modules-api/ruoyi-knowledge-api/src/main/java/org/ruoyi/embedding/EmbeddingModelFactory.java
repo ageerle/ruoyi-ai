@@ -34,7 +34,7 @@ public class EmbeddingModelFactory {
      * 如果模型已存在于缓存中，则直接返回；否则创建新的实例
      *
      * @param embeddingModelName 嵌入模型名称
-     * @param  dimension 模型维度大小
+     * @param dimension          模型维度大小
      */
     public BaseEmbedModelService createModel(String embeddingModelName, Integer dimension) {
         return modelCache.computeIfAbsent(embeddingModelName, name -> {
@@ -81,7 +81,7 @@ public class EmbeddingModelFactory {
      * @param embeddingModelId 嵌入模型的唯一标识ID
      */
     public void refreshModel(Long embeddingModelId) {
-    // 从模型缓存中移除指定ID的模型
+        // 从模型缓存中移除指定ID的模型
         modelCache.remove(embeddingModelId);
     }
 
@@ -100,7 +100,7 @@ public class EmbeddingModelFactory {
      * 根据提供的工厂名称和配置信息创建并配置模型实例
      *
      * @param factory 工厂名称，用于标识模型类型
-     * @param config 模型配置信息
+     * @param config  模型配置信息
      * @return BaseEmbedModelService 配置好的模型实例
      * @throws IllegalArgumentException 当无法获取指定的模型实例时抛出
      */

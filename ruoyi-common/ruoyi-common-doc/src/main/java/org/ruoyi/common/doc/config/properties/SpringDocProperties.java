@@ -56,7 +56,7 @@ public class SpringDocProperties {
      * </p>
      *
      * @see io.swagger.v3.oas.models.info.Info
-     *
+     * <p>
      * 为了 springboot 自动生产配置提示信息，所以这里复制一个类出来
      */
     @Data

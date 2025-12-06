@@ -13,12 +13,14 @@ import java.util.Set;
 public interface BaseEmbedModelService extends EmbeddingModel {
     /**
      * 根据配置信息配置嵌入模型
+     *
      * @param config 包含模型配置信息的 ChatModelVo 对象
      */
     void configure(ChatModelVo config);
 
     /**
      * 获取当前嵌入模型支持的所有模态类型
+     *
      * @return 返回支持的模态类型集合
      */
     Set<ModalityType> getSupportedModalities();

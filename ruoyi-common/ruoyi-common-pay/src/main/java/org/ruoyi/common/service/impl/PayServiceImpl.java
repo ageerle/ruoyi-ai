@@ -14,6 +14,7 @@ import java.util.Map;
 
 /**
  * 支付服务
+ *
  * @author Admin
  */
 @Service
@@ -28,8 +29,8 @@ public class PayServiceImpl implements PayService {
         String out_trade_no = orderNo, sign = "";
         //封装请求参数
         String mdString = "clientip=" + clientIp + "&device=" + payConfig.getDevice() + "&money=" + money + "&name=" + name + "&" +
-            "notify_url=" + payConfig.getNotify_url() + "&out_trade_no=" + out_trade_no + "&pid=" + payConfig.getPid() + "&return_url=" + payConfig.getReturn_url() +
-            "&type=" + payConfig.getType() + payConfig.getKey();
+                "notify_url=" + payConfig.getNotify_url() + "&out_trade_no=" + out_trade_no + "&pid=" + payConfig.getPid() + "&return_url=" + payConfig.getReturn_url() +
+                "&type=" + payConfig.getType() + payConfig.getKey();
         sign = MD5Util.GetMD5Code(mdString);
         Map<String, Object> map = new HashMap<>(10);
         map.put("clientip", clientIp);
@@ -44,7 +45,7 @@ public class PayServiceImpl implements PayService {
         map.put("type", payConfig.getType());
         map.put("sign", sign);
         String body = HttpUtil.post(payConfig.getPayUrl(), map);
-        log.info("支付返回信息：{},配置信息: {}",body,payConfig);
+        log.info("支付返回信息：{},配置信息: {}", body, payConfig);
         JSONObject jsonObject = new JSONObject(body);
         return (String) jsonObject.get("qrcode");
     }

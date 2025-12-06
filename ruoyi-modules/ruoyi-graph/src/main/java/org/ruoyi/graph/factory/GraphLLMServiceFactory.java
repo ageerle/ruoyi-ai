@@ -21,23 +21,23 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 public class GraphLLMServiceFactory implements ApplicationContextAware {
-    
+
     private final Map<String, IGraphLLMService> llmServiceMap = new ConcurrentHashMap<>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         // 初始化时收集所有 IGraphLLMService 的实现
         Map<String, IGraphLLMService> serviceMap = applicationContext.getBeansOfType(IGraphLLMService.class);
-        
+
         for (IGraphLLMService service : serviceMap.values()) {
             if (service != null) {
                 String category = service.getCategory();
                 llmServiceMap.put(category, service);
-                log.info("注册图谱LLM服务: category={}, service={}", 
-                    category, service.getClass().getSimpleName());
+                log.info("注册图谱LLM服务: category={}, service={}",
+                        category, service.getClass().getSimpleName());
             }
         }
-        
+
         log.info("图谱LLM服务工厂初始化完成，共注册 {} 个服务", llmServiceMap.size());
     }
 
@@ -50,13 +50,13 @@ public class GraphLLMServiceFactory implements ApplicationContextAware {
      */
     public IGraphLLMService getLLMService(String category) {
         IGraphLLMService service = llmServiceMap.get(category);
-        
+
         if (service == null) {
             log.error("不支持的模型类别: {}, 可用类别: {}", category, llmServiceMap.keySet());
-            throw new IllegalArgumentException("不支持的模型类别: " + category + 
-                ", 可用类别: " + llmServiceMap.keySet());
+            throw new IllegalArgumentException("不支持的模型类别: " + category +
+                    ", 可用类别: " + llmServiceMap.keySet());
         }
-        
+
         return service;
     }
 

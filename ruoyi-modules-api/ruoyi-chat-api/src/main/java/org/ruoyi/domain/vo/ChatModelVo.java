@@ -13,7 +13,6 @@ import java.io.Serial;
 import java.io.Serializable;
 
 
-
 /**
  * 聊天模型视图对象 chat_model
  *

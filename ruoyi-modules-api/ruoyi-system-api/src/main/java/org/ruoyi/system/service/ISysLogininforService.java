@@ -46,5 +46,5 @@ public interface ISysLogininforService {
      */
     void cleanLogininfor();
 
-  void recordLogininfor(LogininforEvent logininforEvent);
+    void recordLogininfor(LogininforEvent logininforEvent);
 }

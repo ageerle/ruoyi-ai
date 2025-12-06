@@ -10,8 +10,6 @@ import java.io.Serial;
 import java.io.Serializable;
 
 
-
-
 /**
  * 用户token使用详情视图对象 chat_usage_token
  *

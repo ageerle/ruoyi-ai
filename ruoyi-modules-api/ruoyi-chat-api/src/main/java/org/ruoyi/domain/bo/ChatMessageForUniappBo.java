@@ -1,16 +1,10 @@
 package org.ruoyi.domain.bo;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.core.domain.BaseEntity;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -29,19 +23,19 @@ public class ChatMessageForUniappBo implements Serializable {
     /**
      * 主键
      */
-    @NotNull(message = "主键不能为空", groups = { EditGroup.class })
+    @NotNull(message = "主键不能为空", groups = {EditGroup.class})
     private Long id;
 
     /**
      * 用户id
      */
-    @NotNull(message = "用户id不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "用户id不能为空", groups = {AddGroup.class, EditGroup.class})
     private Long userId;
 
     /**
      * 消息内容
      */
-    @NotBlank(message = "消息内容不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "消息内容不能为空", groups = {AddGroup.class, EditGroup.class})
     private String content;
 
     /**
@@ -67,7 +61,7 @@ public class ChatMessageForUniappBo implements Serializable {
     /**
      * 模型名称
      */
-    private String modelName ;
+    private String modelName;
 
 
     /**
@@ -110,7 +104,6 @@ public class ChatMessageForUniappBo implements Serializable {
      * 请求参数
      */
     private Map<String, Object> params = new HashMap<>();
-
 
 
 }

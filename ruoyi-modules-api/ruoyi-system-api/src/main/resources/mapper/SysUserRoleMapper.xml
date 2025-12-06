@@ -5,9 +5,10 @@
 <mapper namespace="org.ruoyi.system.mapper.SysUserRoleMapper">
 
     <select id="selectUserIdsByRoleId" resultType="Long">
-        select u.user_id from sys_user u
-        inner join sys_user_role sur
-            on u.user_id = sur.user_id and sur.role_id = #{roleId}
+        select u.user_id
+        from sys_user u
+                 inner join sys_user_role sur
+                            on u.user_id = sur.user_id and sur.role_id = #{roleId}
     </select>
 
 </mapper>

@@ -36,7 +36,7 @@ public class ChatMessageServiceImpl implements IChatMessageService {
      * 查询聊天消息
      */
     @Override
-    public ChatMessageVo queryById(Long id){
+    public ChatMessageVo queryById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
@@ -45,7 +45,7 @@ public class ChatMessageServiceImpl implements IChatMessageService {
      */
     @Override
     public TableDataInfo<ChatMessageVo> queryPageList(ChatMessageBo bo, PageQuery pageQuery) {
-        if(!LoginHelper.isLogin()){
+        if (!LoginHelper.isLogin()) {
             return TableDataInfo.build();
         }
         // 只有非管理员才自动设置为自己的 ID
@@ -104,7 +104,7 @@ public class ChatMessageServiceImpl implements IChatMessageService {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ChatMessage entity){
+    private void validEntityBeforeSave(ChatMessage entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 
@@ -113,7 +113,7 @@ public class ChatMessageServiceImpl implements IChatMessageService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;

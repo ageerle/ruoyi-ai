@@ -5,8 +5,9 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+
 /**
- *  方法参数类，扩展参数可以继承Parameters自己实现
+ * 方法参数类，扩展参数可以继承Parameters自己实现
  * 参考：
  * <pre>
  * {
@@ -21,8 +22,9 @@ import java.util.List;
  *     "required": ["location"]
  * }
  * </pre>
+ *
  * @author https:www.unfbx.com
- * @since  2023-06-14
+ * @since 2023-06-14
  */
 @Data
 @Builder

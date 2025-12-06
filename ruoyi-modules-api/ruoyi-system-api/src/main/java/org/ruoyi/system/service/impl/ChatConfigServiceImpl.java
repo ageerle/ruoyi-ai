@@ -36,12 +36,12 @@ public class ChatConfigServiceImpl implements ConfigService, IChatConfigService 
     /**
      * 根据配置类型和配置key获取值
      *
-     * @param category 分类
+     * @param category  分类
      * @param configKey key名称
      * @return
      */
     @Override
-    public String getConfigValue(String category,String configKey) {
+    public String getConfigValue(String category, String configKey) {
         ChatConfigBo bo = new ChatConfigBo();
         bo.setCategory(category);
         bo.setConfigName(configKey);
@@ -54,7 +54,7 @@ public class ChatConfigServiceImpl implements ConfigService, IChatConfigService 
      * 查询配置信息
      */
     @Override
-    public ChatConfigVo queryById(Long id){
+    public ChatConfigVo queryById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
@@ -114,7 +114,7 @@ public class ChatConfigServiceImpl implements ConfigService, IChatConfigService 
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ChatConfig entity){
+    private void validEntityBeforeSave(ChatConfig entity) {
         //TODO 做一些数据校验,如唯一约束
     }
 
@@ -123,7 +123,7 @@ public class ChatConfigServiceImpl implements ConfigService, IChatConfigService 
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteBatchIds(ids) > 0;

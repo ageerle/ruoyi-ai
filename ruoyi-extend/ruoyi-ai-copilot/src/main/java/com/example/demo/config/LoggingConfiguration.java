@@ -16,9 +16,9 @@ import java.time.format.DateTimeFormatter;
  */
 @Configuration
 public class LoggingConfiguration {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(LoggingConfiguration.class);
-    
+
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
         // 确保日志目录存在
@@ -29,7 +29,7 @@ public class LoggingConfiguration {
                 logger.info("📁 创建日志目录: {}", logsDir.getAbsolutePath());
             }
         }
-        
+
         // 记录应用启动信息
         String startTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         logger.info("🎉 ========================================");

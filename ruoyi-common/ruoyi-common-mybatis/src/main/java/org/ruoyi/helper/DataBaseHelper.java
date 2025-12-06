@@ -92,7 +92,7 @@ public class DataBaseHelper {
             DatabaseMetaData metaData = conn.getMetaData();
             String catalog = conn.getCatalog();
             String schema = conn.getSchema();
-            
+
             // 获取所有表名
             try (var resultSet = metaData.getTables(catalog, schema, "%", new String[]{"TABLE"})) {
                 while (resultSet.next()) {
@@ -115,12 +115,12 @@ public class DataBaseHelper {
     public static List<Map<String, Object>> getTableColumnInfo(String tableName) {
         DataSource dataSource = DS.determineDataSource();
         List<Map<String, Object>> columns = new ArrayList<>();
-        
+
         try (Connection conn = dataSource.getConnection()) {
             DatabaseMetaData metaData = conn.getMetaData();
             String catalog = conn.getCatalog();
             String schema = conn.getSchema();
-            
+
             // 获取表字段信息
             try (ResultSet resultSet = metaData.getColumns(catalog, schema, tableName, "%")) {
                 while (resultSet.next()) {
@@ -131,33 +131,33 @@ public class DataBaseHelper {
                     column.put("columnSize", resultSet.getInt("COLUMN_SIZE"));
                     column.put("isNullable", "YES".equals(resultSet.getString("IS_NULLABLE")));
                     column.put("ordinalPosition", resultSet.getInt("ORDINAL_POSITION"));
-                    
+
                     // 设置默认值
                     String defaultValue = resultSet.getString("COLUMN_DEF");
                     column.put("columnDefault", defaultValue);
-                    
+
                     columns.add(column);
                 }
             }
-            
+
             // 获取主键信息
             try (ResultSet pkResultSet = metaData.getPrimaryKeys(catalog, schema, tableName)) {
                 List<String> primaryKeys = new ArrayList<>();
                 while (pkResultSet.next()) {
                     primaryKeys.add(pkResultSet.getString("COLUMN_NAME"));
                 }
-                
+
                 // 标记主键字段
                 for (Map<String, Object> column : columns) {
                     String columnName = (String) column.get("columnName");
                     column.put("isPrimaryKey", primaryKeys.contains(columnName));
                 }
             }
-            
+
         } catch (SQLException e) {
             throw new ServiceException("获取表字段信息失败: " + e.getMessage());
         }
-        
+
         return columns;
     }
 }

@@ -61,12 +61,12 @@ public class Neo4jConfig {
     @Bean
     public Driver neo4jDriver() {
         return GraphDatabase.driver(
-            uri,
-            AuthTokens.basic(username, password),
-            org.neo4j.driver.Config.builder()
-                .withMaxConnectionPoolSize(maxConnectionPoolSize)
-                .withConnectionTimeout(connectionTimeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
-                .build()
+                uri,
+                AuthTokens.basic(username, password),
+                org.neo4j.driver.Config.builder()
+                        .withMaxConnectionPoolSize(maxConnectionPoolSize)
+                        .withConnectionTimeout(connectionTimeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+                        .build()
         );
     }
 }

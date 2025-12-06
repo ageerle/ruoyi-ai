@@ -104,8 +104,8 @@ public class SysPostServiceImpl implements ISysPostService {
     @Override
     public boolean checkPostNameUnique(SysPostBo post) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysPost>()
-            .eq(SysPost::getPostName, post.getPostName())
-            .ne(ObjectUtil.isNotNull(post.getPostId()), SysPost::getPostId, post.getPostId()));
+                .eq(SysPost::getPostName, post.getPostName())
+                .ne(ObjectUtil.isNotNull(post.getPostId()), SysPost::getPostId, post.getPostId()));
         return !exist;
     }
 
@@ -118,8 +118,8 @@ public class SysPostServiceImpl implements ISysPostService {
     @Override
     public boolean checkPostCodeUnique(SysPostBo post) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysPost>()
-            .eq(SysPost::getPostCode, post.getPostCode())
-            .ne(ObjectUtil.isNotNull(post.getPostId()), SysPost::getPostId, post.getPostId()));
+                .eq(SysPost::getPostCode, post.getPostCode())
+                .ne(ObjectUtil.isNotNull(post.getPostId()), SysPost::getPostId, post.getPostId()));
         return !exist;
     }
 

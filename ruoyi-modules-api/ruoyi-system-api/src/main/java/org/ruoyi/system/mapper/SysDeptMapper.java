@@ -27,12 +27,12 @@ public interface SysDeptMapper extends BaseMapperPlus<SysDept, SysDeptVo> {
      * @return 部门信息集合
      */
     @DataPermission({
-        @DataColumn(key = "deptName", value = "dept_id")
+            @DataColumn(key = "deptName", value = "dept_id")
     })
     List<SysDeptVo> selectDeptList(@Param(Constants.WRAPPER) Wrapper<SysDept> queryWrapper);
 
     @DataPermission({
-        @DataColumn(key = "deptName", value = "dept_id")
+            @DataColumn(key = "deptName", value = "dept_id")
     })
     SysDeptVo selectDeptById(Long deptId);
 

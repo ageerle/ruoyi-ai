@@ -19,7 +19,7 @@ import org.ruoyi.common.chat.openai.plugin.PluginParam;
 import java.util.Objects;
 
 /**
- *   插件开发返回信息收集sse监听器
+ * 插件开发返回信息收集sse监听器
  *
  * @author https:www.unfbx.com
  * 2023-08-18
@@ -30,21 +30,10 @@ public abstract class PluginListener<R extends PluginParam, T> extends EventSour
      * openAi插件构建的参数
      */
     private String arguments = "";
-
-    /**
-     * 获取openAi插件构建的参数
-     *
-     * @return arguments
-     */
-    private String getArguments() {
-        return this.arguments;
-    }
-
     private OpenAiStreamClient client;
     private EventSourceListener eventSourceListener;
     private PluginAbstract<R, T> plugin;
     private ChatCompletion chatCompletion;
-
     /**
      * 构造方法必备四个元素
      *
@@ -58,6 +47,15 @@ public abstract class PluginListener<R extends PluginParam, T> extends EventSour
         this.eventSourceListener = eventSourceListener;
         this.plugin = plugin;
         this.chatCompletion = chatCompletion;
+    }
+
+    /**
+     * 获取openAi插件构建的参数
+     *
+     * @return arguments
+     */
+    private String getArguments() {
+        return this.arguments;
     }
 
     /**

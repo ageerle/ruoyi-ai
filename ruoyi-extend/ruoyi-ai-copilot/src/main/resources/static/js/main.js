@@ -12,7 +12,7 @@ const loading = document.getElementById('loading');
 const status = document.getElementById('status');
 
 // 全局错误处理
-window.addEventListener('error', function(event) {
+window.addEventListener('error', function (event) {
     console.error('Global JavaScript error:', event.error);
     if (event.error && event.error.message && event.error.message.includes('userMessage')) {
         console.error('Detected userMessage error, this might be a variable scope issue');
@@ -40,7 +40,7 @@ async function sendMessage() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({message: message})
         });
 
         const data = await response.json();
@@ -104,7 +104,7 @@ function quickAction(message) {
 // 清除历史
 async function clearHistory() {
     try {
-        await fetch('/api/chat/clear', { method: 'POST' });
+        await fetch('/api/chat/clear', {method: 'POST'});
         messagesContainer.innerHTML = '';
         showStatus('History cleared', 'success');
     } catch (error) {
@@ -232,61 +232,61 @@ function handleStreamResponse(userMessage) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userMessage })
+        body: JSON.stringify({message: userMessage})
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
 
-        function readStream() {
-            return reader.read().then(({ done, value }) => {
-                if (done) {
-                    console.log('✅ 流式响应完成');
-                    streamIndicator.style.display = 'none';
-                    streamContainer.classList.remove('streaming');
-                    showStatus('流式对话完成', 'success');
-                    return;
-                }
-
-                const chunk = decoder.decode(value, { stream: true });
-                console.log('📨 收到流式数据块:', chunk);
-
-                // 处理SSE格式的数据
-                const lines = chunk.split('\n');
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.substring(6);
-                        if (data === '[DONE]') {
-                            console.log('✅ 流式响应完成');
-                            streamIndicator.style.display = 'none';
-                            streamContainer.classList.remove('streaming');
-                            showStatus('流式对话完成', 'success');
-                            return;
-                        }
-
-                        // 追加内容
-                        fullContent += data;
-                        streamContent.textContent = fullContent;
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            function readStream() {
+                return reader.read().then(({done, value}) => {
+                    if (done) {
+                        console.log('✅ 流式响应完成');
+                        streamIndicator.style.display = 'none';
+                        streamContainer.classList.remove('streaming');
+                        showStatus('流式对话完成', 'success');
+                        return;
                     }
-                }
 
-                return readStream();
-            });
-        }
+                    const chunk = decoder.decode(value, {stream: true});
+                    console.log('📨 收到流式数据块:', chunk);
 
-        return readStream();
-    })
-    .catch(error => {
-        console.error('❌ 流式响应错误:', error);
-        const errorMessage = error && error.message ? error.message : 'Unknown stream error';
-        streamIndicator.innerHTML = '<span class="error">连接错误: ' + errorMessage + '</span>';
-        showStatus('流式对话连接错误: ' + errorMessage, 'error');
-    });
+                    // 处理SSE格式的数据
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.substring(6);
+                            if (data === '[DONE]') {
+                                console.log('✅ 流式响应完成');
+                                streamIndicator.style.display = 'none';
+                                streamContainer.classList.remove('streaming');
+                                showStatus('流式对话完成', 'success');
+                                return;
+                            }
+
+                            // 追加内容
+                            fullContent += data;
+                            streamContent.textContent = fullContent;
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                    }
+
+                    return readStream();
+                });
+            }
+
+            return readStream();
+        })
+        .catch(error => {
+            console.error('❌ 流式响应错误:', error);
+            const errorMessage = error && error.message ? error.message : 'Unknown stream error';
+            streamIndicator.innerHTML = '<span class="error">连接错误: ' + errorMessage + '</span>';
+            showStatus('流式对话连接错误: ' + errorMessage, 'error');
+        });
 }
 
 // 移除等待状态卡片
@@ -298,7 +298,7 @@ function removeWaitingToolCard() {
 }
 
 // 事件监听器
-messageInput.addEventListener('keypress', function(e) {
+messageInput.addEventListener('keypress', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
@@ -320,7 +320,7 @@ function debugVariables() {
 }
 
 // 页面加载完成后聚焦输入框
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     messageInput.focus();
 
     // 确保函数在全局作用域中可用

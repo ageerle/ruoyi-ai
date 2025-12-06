@@ -15,7 +15,7 @@ import org.ruoyi.common.chat.entity.chat.Message;
 import java.util.*;
 
 /**
- *  token计算工具类
+ * token计算工具类
  *
  * @author https:www.unfbx.com
  * @since 2023-04-04
@@ -152,7 +152,7 @@ public class TikTokensUtil {
         }
         Encoding enc = getEncoding(modelName);
         if (Objects.isNull(enc)) {
-            log.warn("[{}]模型不存在或者暂不支持计算tokens，直接返回tokens==0",modelName);
+            log.warn("[{}]模型不存在或者暂不支持计算tokens，直接返回tokens==0", modelName);
             return new ArrayList<>();
         }
         return enc.encode(text);
@@ -184,25 +184,25 @@ public class TikTokensUtil {
         int tokensPerMessage = 0;
         int tokensPerName = 0;
         if (modelName.equals(ChatCompletion.Model.GPT_3_5_TURBO_0613.getName())
-            || modelName.equals(ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
-            || modelName.equals(ChatCompletion.Model.GPT_4_0613.getName())
-            || modelName.equals(ChatCompletion.Model.GPT_4_32K_0613.getName())
-            || modelName.equals(ChatCompletion.Model.GPT_4_1106_PREVIEW.getName())
-            || modelName.equals(ChatCompletion.Model.GPT_4_VISION_PREVIEW.getName())
+                || modelName.equals(ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                || modelName.equals(ChatCompletion.Model.GPT_4_0613.getName())
+                || modelName.equals(ChatCompletion.Model.GPT_4_32K_0613.getName())
+                || modelName.equals(ChatCompletion.Model.GPT_4_1106_PREVIEW.getName())
+                || modelName.equals(ChatCompletion.Model.GPT_4_VISION_PREVIEW.getName())
         ) {
             tokensPerMessage = 3;
             tokensPerName = 1;
-        }else if(modelName.contains(ChatCompletion.Model.GPT_3_5_TURBO.getName())){
+        } else if (modelName.contains(ChatCompletion.Model.GPT_3_5_TURBO.getName())) {
             //"gpt-3.5-turbo" in model:
             log.warn("Warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613.");
             tokensPerMessage = 3;
             tokensPerName = 1;
-        }else if(modelName.contains(ChatCompletion.Model.GPT_4.getName())){
+        } else if (modelName.contains(ChatCompletion.Model.GPT_4.getName())) {
             log.warn("Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.");
             tokensPerMessage = 3;
             tokensPerName = 1;
-        }else {
-            log.warn("不支持的model {} 按gpt4计算tokens",modelName);
+        } else {
+            log.warn("不支持的model {} 按gpt4计算tokens", modelName);
             tokensPerMessage = 3;
             tokensPerName = 1;
         }

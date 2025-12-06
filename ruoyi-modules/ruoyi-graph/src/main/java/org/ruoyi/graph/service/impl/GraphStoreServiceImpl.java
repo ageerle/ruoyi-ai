@@ -43,23 +43,23 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public boolean addVertex(GraphVertex vertex) {
         try (Session session = neo4jDriver.session()) {
             String cypher = "CREATE (n:" + vertex.getLabel() + " {" +
-                "id: $id, " +
-                "name: $name, " +
-                "description: $description, " +
-                "knowledgeId: $knowledgeId, " +
-                "docIds: $docIds, " +
-                "properties: $properties, " +
-                "confidence: $confidence" +
-                "}) RETURN n";
+                    "id: $id, " +
+                    "name: $name, " +
+                    "description: $description, " +
+                    "knowledgeId: $knowledgeId, " +
+                    "docIds: $docIds, " +
+                    "properties: $properties, " +
+                    "confidence: $confidence" +
+                    "}) RETURN n";
 
             Result result = session.run(cypher, parameters(
-                "id", vertex.getNodeId(),  // ⭐ 修复：使用 nodeId 而不是 id
-                "name", vertex.getName(),
-                "description", vertex.getDescription(),
-                "knowledgeId", vertex.getKnowledgeId(),
-                "docIds", vertex.getDocIds(),
-                "properties", vertex.getProperties(),
-                "confidence", vertex.getConfidence()
+                    "id", vertex.getNodeId(),  // ⭐ 修复：使用 nodeId 而不是 id
+                    "name", vertex.getName(),
+                    "description", vertex.getDescription(),
+                    "knowledgeId", vertex.getKnowledgeId(),
+                    "docIds", vertex.getDocIds(),
+                    "properties", vertex.getProperties(),
+                    "confidence", vertex.getConfidence()
             ));
 
             return result.hasNext();
@@ -82,25 +82,25 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             // 分批处理
             for (int i = 0; i < vertices.size(); i += batchSize) {
                 List<GraphVertex> batch = vertices.subList(
-                    i, Math.min(i + batchSize, vertices.size())
+                        i, Math.min(i + batchSize, vertices.size())
                 );
 
                 successCount += session.writeTransaction(tx -> {
                     int count = 0;
                     for (GraphVertex vertex : batch) {
                         String cypher = "CREATE (n:" + vertex.getLabel() + " {" +
-                            "id: $id, name: $name, description: $description, " +
-                            "knowledgeId: $knowledgeId, docIds: $docIds, " +
-                            "properties: $properties, confidence: $confidence})";
+                                "id: $id, name: $name, description: $description, " +
+                                "knowledgeId: $knowledgeId, docIds: $docIds, " +
+                                "properties: $properties, confidence: $confidence})";
 
                         tx.run(cypher, parameters(
-                            "id", vertex.getNodeId(),  // ⭐ 修复：使用 nodeId 而不是 id
-                            "name", vertex.getName(),
-                            "description", vertex.getDescription(),
-                            "knowledgeId", vertex.getKnowledgeId(),
-                            "docIds", vertex.getDocIds(),
-                            "properties", vertex.getProperties(),
-                            "confidence", vertex.getConfidence()
+                                "id", vertex.getNodeId(),  // ⭐ 修复：使用 nodeId 而不是 id
+                                "name", vertex.getName(),
+                                "description", vertex.getDescription(),
+                                "knowledgeId", vertex.getKnowledgeId(),
+                                "docIds", vertex.getDocIds(),
+                                "properties", vertex.getProperties(),
+                                "confidence", vertex.getConfidence()
                         ));
                         count++;
                     }
@@ -120,8 +120,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             String cypher = "MATCH (n) WHERE n.id = $nodeId AND n.knowledgeId = $graphUuid RETURN n";
 
             Result result = session.run(cypher, parameters(
-                "nodeId", nodeId,
-                "graphUuid", graphUuid
+                    "nodeId", nodeId,
+                    "graphUuid", graphUuid
             ));
 
             if (result.hasNext()) {
@@ -157,8 +157,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             Result result = session.run(cypher.toString(), params);
 
             return result.stream()
-                .map(record -> nodeToVertex(record.get("n").asNode()))
-                .collect(Collectors.toList());
+                    .map(record -> nodeToVertex(record.get("n").asNode()))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("搜索节点失败: graphUuid={}, label={}", graphUuid, label, e);
             return Collections.emptyList();
@@ -171,13 +171,13 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             String cypher = "MATCH (n) WHERE n.knowledgeId = $graphUuid AND n.name CONTAINS $name RETURN n";
 
             Result result = session.run(cypher, parameters(
-                "graphUuid", graphUuid,
-                "name", name
+                    "graphUuid", graphUuid,
+                    "name", name
             ));
 
             return result.stream()
-                .map(record -> nodeToVertex(record.get("n").asNode()))
-                .collect(Collectors.toList());
+                    .map(record -> nodeToVertex(record.get("n").asNode()))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("按名称搜索节点失败: graphUuid={}, name={}", graphUuid, name, e);
             return Collections.emptyList();
@@ -196,13 +196,13 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
 
             if (knowledgeId != null && !knowledgeId.isEmpty()) {
                 cypher = "MATCH (n {knowledgeId: $knowledgeId}) " +
-                    "WHERE n.name CONTAINS $keyword " +
-                    "RETURN n LIMIT $limit";
+                        "WHERE n.name CONTAINS $keyword " +
+                        "RETURN n LIMIT $limit";
                 params.put("knowledgeId", knowledgeId);
             } else {
                 cypher = "MATCH (n) " +
-                    "WHERE n.name CONTAINS $keyword " +
-                    "RETURN n LIMIT $limit";
+                        "WHERE n.name CONTAINS $keyword " +
+                        "RETURN n LIMIT $limit";
             }
 
             Result result = session.run(cypher, params);
@@ -224,17 +224,17 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public boolean updateVertex(GraphVertex vertex) {
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH (n {id: $id, knowledgeId: $knowledgeId}) " +
-                "SET n.name = $name, n.description = $description, " +
-                "n.properties = $properties, n.confidence = $confidence " +
-                "RETURN n";
+                    "SET n.name = $name, n.description = $description, " +
+                    "n.properties = $properties, n.confidence = $confidence " +
+                    "RETURN n";
 
             Result result = session.run(cypher, parameters(
-                "id", vertex.getId(),
-                "knowledgeId", vertex.getKnowledgeId(),
-                "name", vertex.getName(),
-                "description", vertex.getDescription(),
-                "properties", vertex.getProperties(),
-                "confidence", vertex.getConfidence()
+                    "id", vertex.getId(),
+                    "knowledgeId", vertex.getKnowledgeId(),
+                    "name", vertex.getName(),
+                    "description", vertex.getDescription(),
+                    "properties", vertex.getProperties(),
+                    "confidence", vertex.getConfidence()
             ));
 
             return result.hasNext();
@@ -255,8 +255,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             }
 
             session.run(cypher, parameters(
-                "nodeId", nodeId,
-                "graphUuid", graphUuid
+                    "nodeId", nodeId,
+                    "graphUuid", graphUuid
             ));
 
             return true;
@@ -272,22 +272,22 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public boolean addEdge(GraphEdge edge) {
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH (s {id: $startNodeId, knowledgeId: $knowledgeId}) " +
-                "MATCH (t {id: $endNodeId, knowledgeId: $knowledgeId}) " +
-                "CREATE (s)-[r:" + edge.getLabel() + " {" +
-                "id: $id, description: $description, weight: $weight, " +
-                "docIds: $docIds, properties: $properties, confidence: $confidence" +
-                "}]->(t) RETURN r";
+                    "MATCH (t {id: $endNodeId, knowledgeId: $knowledgeId}) " +
+                    "CREATE (s)-[r:" + edge.getLabel() + " {" +
+                    "id: $id, description: $description, weight: $weight, " +
+                    "docIds: $docIds, properties: $properties, confidence: $confidence" +
+                    "}]->(t) RETURN r";
 
             Result result = session.run(cypher, parameters(
-                "startNodeId", edge.getSourceNodeId(),
-                "endNodeId", edge.getTargetNodeId(),
-                "knowledgeId", edge.getKnowledgeId(),
-                "id", edge.getEdgeId(),
-                "description", edge.getDescription(),
-                "weight", edge.getWeight(),
-                "docIds", edge.getDocIds(),
-                "properties", edge.getProperties(),
-                "confidence", edge.getConfidence()
+                    "startNodeId", edge.getSourceNodeId(),
+                    "endNodeId", edge.getTargetNodeId(),
+                    "knowledgeId", edge.getKnowledgeId(),
+                    "id", edge.getEdgeId(),
+                    "description", edge.getDescription(),
+                    "weight", edge.getWeight(),
+                    "docIds", edge.getDocIds(),
+                    "properties", edge.getProperties(),
+                    "confidence", edge.getConfidence()
             ));
 
             return result.hasNext();
@@ -311,46 +311,46 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
         try (Session session = neo4jDriver.session()) {
             for (int i = 0; i < edges.size(); i += batchSize) {
                 List<GraphEdge> batch = edges.subList(
-                    i, Math.min(i + batchSize, edges.size())
+                        i, Math.min(i + batchSize, edges.size())
                 );
 
                 int batchIndex = i / batchSize + 1;
-                log.debug("处理第 {}/{} 批，本批 {} 个关系", 
-                    batchIndex, (edges.size() + batchSize - 1) / batchSize, batch.size());
+                log.debug("处理第 {}/{} 批，本批 {} 个关系",
+                        batchIndex, (edges.size() + batchSize - 1) / batchSize, batch.size());
 
                 successCount += session.writeTransaction(tx -> {
                     int count = 0;
                     for (GraphEdge edge : batch) {
                         try {
                             String cypher = "MATCH (s {id: $startNodeId, knowledgeId: $knowledgeId}) " +
-                                "MATCH (t {id: $endNodeId, knowledgeId: $knowledgeId}) " +
-                                "CREATE (s)-[r:" + edge.getLabel() + " {" +
-                                "id: $id, knowledgeId: $knowledgeId, description: $description, weight: $weight, " +
-                                "docIds: $docIds, properties: $properties, confidence: $confidence" +
-                                "}]->(t)";
+                                    "MATCH (t {id: $endNodeId, knowledgeId: $knowledgeId}) " +
+                                    "CREATE (s)-[r:" + edge.getLabel() + " {" +
+                                    "id: $id, knowledgeId: $knowledgeId, description: $description, weight: $weight, " +
+                                    "docIds: $docIds, properties: $properties, confidence: $confidence" +
+                                    "}]->(t)";
 
                             Result result = tx.run(cypher, parameters(
-                                "startNodeId", edge.getSourceNodeId(),
-                                "endNodeId", edge.getTargetNodeId(),
-                                "knowledgeId", edge.getKnowledgeId(),
-                                "id", edge.getEdgeId(),
-                                "description", edge.getDescription(),
-                                "weight", edge.getWeight(),
-                                "docIds", edge.getDocIds(),
-                                "properties", edge.getProperties(),
-                                "confidence", edge.getConfidence()
+                                    "startNodeId", edge.getSourceNodeId(),
+                                    "endNodeId", edge.getTargetNodeId(),
+                                    "knowledgeId", edge.getKnowledgeId(),
+                                    "id", edge.getEdgeId(),
+                                    "description", edge.getDescription(),
+                                    "weight", edge.getWeight(),
+                                    "docIds", edge.getDocIds(),
+                                    "properties", edge.getProperties(),
+                                    "confidence", edge.getConfidence()
                             ));
 
                             // ⭐ 检查是否真的创建了关系
                             if (result.consume().counters().relationshipsCreated() > 0) {
                                 count++;
                             } else {
-                                log.warn("⚠️ 关系创建失败（节点未找到）: {} -> {} (knowledgeId: {})", 
-                                    edge.getSourceNodeId(), edge.getTargetNodeId(), edge.getKnowledgeId());
+                                log.warn("⚠️ 关系创建失败（节点未找到）: {} -> {} (knowledgeId: {})",
+                                        edge.getSourceNodeId(), edge.getTargetNodeId(), edge.getKnowledgeId());
                             }
                         } catch (Exception e) {
-                            log.error("❌ 添加单个关系失败: {} -> {}, 错误: {}", 
-                                edge.getSourceNodeId(), edge.getTargetNodeId(), e.getMessage());
+                            log.error("❌ 添加单个关系失败: {} -> {}, 错误: {}",
+                                    edge.getSourceNodeId(), edge.getTargetNodeId(), e.getMessage());
                         }
                     }
                     return count;
@@ -362,7 +362,7 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
 
         failedCount = edges.size() - successCount;
         log.info("✅ 关系添加完成: 成功 {}/{}, 失败 {}", successCount, edges.size(), failedCount);
-        
+
         if (failedCount > 0) {
             log.warn("⚠️ 有 {} 个关系添加失败，可能原因：", failedCount);
             log.warn("   1. 源节点或目标节点不存在");
@@ -377,20 +377,20 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public GraphEdge getEdge(String edgeId, String graphUuid) {
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH (s)-[r]->(t) " +
-                "WHERE r.id = $edgeId AND r.knowledgeId = $graphUuid " +
-                "RETURN s, r, t";
+                    "WHERE r.id = $edgeId AND r.knowledgeId = $graphUuid " +
+                    "RETURN s, r, t";
 
             Result result = session.run(cypher, parameters(
-                "edgeId", edgeId,
-                "graphUuid", graphUuid
+                    "edgeId", edgeId,
+                    "graphUuid", graphUuid
             ));
 
             if (result.hasNext()) {
                 Record record = result.single();
                 return relationshipToEdge(
-                    record.get("s").asNode(),
-                    record.get("r").asRelationship(),
-                    record.get("t").asNode()
+                        record.get("s").asNode(),
+                        record.get("r").asRelationship(),
+                        record.get("t").asNode()
                 );
             }
             return null;
@@ -428,12 +428,12 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             Result result = session.run(cypher.toString(), params);
 
             return result.stream()
-                .map(record -> relationshipToEdge(
-                    record.get("s").asNode(),
-                    record.get("r").asRelationship(),
-                    record.get("t").asNode()
-                ))
-                .collect(Collectors.toList());
+                    .map(record -> relationshipToEdge(
+                            record.get("s").asNode(),
+                            record.get("r").asRelationship(),
+                            record.get("t").asNode()
+                    ))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("搜索关系失败: graphUuid={}", graphUuid, e);
             return Collections.emptyList();
@@ -458,17 +458,17 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             }
 
             Result result = session.run(cypher, parameters(
-                "nodeId", nodeId,
-                "graphUuid", graphUuid
+                    "nodeId", nodeId,
+                    "graphUuid", graphUuid
             ));
 
             return result.stream()
-                .map(record -> relationshipToEdge(
-                    record.get("s").asNode(),
-                    record.get("r").asRelationship(),
-                    record.get("t").asNode()
-                ))
-                .collect(Collectors.toList());
+                    .map(record -> relationshipToEdge(
+                            record.get("s").asNode(),
+                            record.get("r").asRelationship(),
+                            record.get("t").asNode()
+                    ))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("获取节点关系失败: nodeId={}, graphUuid={}", nodeId, graphUuid, e);
             return Collections.emptyList();
@@ -479,17 +479,17 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public boolean updateEdge(GraphEdge edge) {
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH ()-[r {id: $id, knowledgeId: $knowledgeId}]->() " +
-                "SET r.description = $description, r.weight = $weight, " +
-                "r.properties = $properties, r.confidence = $confidence " +
-                "RETURN r";
+                    "SET r.description = $description, r.weight = $weight, " +
+                    "r.properties = $properties, r.confidence = $confidence " +
+                    "RETURN r";
 
             Result result = session.run(cypher, parameters(
-                "id", edge.getEdgeId(),
-                "knowledgeId", edge.getKnowledgeId(),
-                "description", edge.getDescription(),
-                "weight", edge.getWeight(),
-                "properties", edge.getProperties(),
-                "confidence", edge.getConfidence()
+                    "id", edge.getEdgeId(),
+                    "knowledgeId", edge.getKnowledgeId(),
+                    "description", edge.getDescription(),
+                    "weight", edge.getWeight(),
+                    "properties", edge.getProperties(),
+                    "confidence", edge.getConfidence()
             ));
 
             return result.hasNext();
@@ -505,8 +505,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             String cypher = "MATCH ()-[r {id: $edgeId, knowledgeId: $graphUuid}]->() DELETE r";
 
             session.run(cypher, parameters(
-                "edgeId", edgeId,
-                "graphUuid", graphUuid
+                    "edgeId", edgeId,
+                    "graphUuid", graphUuid
             ));
 
             return true;
@@ -525,7 +525,7 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             session.run("CREATE INDEX entity_id_index IF NOT EXISTS FOR (n:Entity) ON (n.id)");
             session.run("CREATE INDEX entity_knowledge_id_index IF NOT EXISTS FOR (n:Entity) ON (n.knowledgeId)");
             session.run("CREATE INDEX entity_name_index IF NOT EXISTS FOR (n:Entity) ON (n.name)");
-            
+
             // 为关系也创建索引
             session.run("CREATE INDEX relation_id_index IF NOT EXISTS FOR ()-[r:RELATION]-() ON (r.id)");
             session.run("CREATE INDEX relation_type_index IF NOT EXISTS FOR ()-[r:RELATION]-() ON (r.type)");
@@ -560,15 +560,15 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
         try (Session session = neo4jDriver.session()) {
             // 统计节点数
             Result nodeResult = session.run(
-                "MATCH (n {knowledgeId: $graphUuid}) RETURN count(n) as count",
-                parameters("graphUuid", graphUuid)
+                    "MATCH (n {knowledgeId: $graphUuid}) RETURN count(n) as count",
+                    parameters("graphUuid", graphUuid)
             );
             stats.put("nodeCount", nodeResult.single().get("count").asInt());
 
             // 统计关系数
             Result relResult = session.run(
-                "MATCH ()-[r {knowledgeId: $graphUuid}]->() RETURN count(r) as count",
-                parameters("graphUuid", graphUuid)
+                    "MATCH ()-[r {knowledgeId: $graphUuid}]->() RETURN count(r) as count",
+                    parameters("graphUuid", graphUuid)
             );
             stats.put("relationshipCount", relResult.single().get("count").asInt());
 
@@ -585,20 +585,20 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public List<List<GraphVertex>> findPaths(String sourceNodeId, String targetNodeId, String graphUuid, Integer maxDepth) {
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH path = (s {id: $sourceNodeId, knowledgeId: $graphUuid})" +
-                "-[*1.." + (maxDepth != null ? maxDepth : 5) + "]->" +
-                "(t {id: $targetNodeId, knowledgeId: $graphUuid}) " +
-                "RETURN nodes(path) as path LIMIT 10";
+                    "-[*1.." + (maxDepth != null ? maxDepth : 5) + "]->" +
+                    "(t {id: $targetNodeId, knowledgeId: $graphUuid}) " +
+                    "RETURN nodes(path) as path LIMIT 10";
 
             Result result = session.run(cypher, parameters(
-                "sourceNodeId", sourceNodeId,
-                "targetNodeId", targetNodeId,
-                "graphUuid", graphUuid
+                    "sourceNodeId", sourceNodeId,
+                    "targetNodeId", targetNodeId,
+                    "graphUuid", graphUuid
             ));
 
             List<List<GraphVertex>> paths = new ArrayList<>();
             result.stream().forEach(record -> {
                 List<GraphVertex> path = record.get("path").asList(
-                    value -> nodeToVertex(value.asNode())
+                        value -> nodeToVertex(value.asNode())
                 );
                 paths.add(path);
             });
@@ -614,17 +614,17 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public List<GraphVertex> findNeighbors(String nodeId, String graphUuid, Integer depth) {
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH (s {id: $nodeId, knowledgeId: $graphUuid})" +
-                "-[*1.." + (depth != null ? depth : 1) + "]-(neighbor) " +
-                "RETURN DISTINCT neighbor";
+                    "-[*1.." + (depth != null ? depth : 1) + "]-(neighbor) " +
+                    "RETURN DISTINCT neighbor";
 
             Result result = session.run(cypher, parameters(
-                "nodeId", nodeId,
-                "graphUuid", graphUuid
+                    "nodeId", nodeId,
+                    "graphUuid", graphUuid
             ));
 
             return result.stream()
-                .map(record -> nodeToVertex(record.get("neighbor").asNode()))
-                .collect(Collectors.toList());
+                    .map(record -> nodeToVertex(record.get("neighbor").asNode()))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("查找邻居节点失败: nodeId={}, graphUuid={}", nodeId, graphUuid, e);
             return Collections.emptyList();
@@ -637,8 +637,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             Result result = session.run(cypher, params != null ? params : Collections.emptyMap());
 
             return result.stream()
-                .map(Record::asMap)
-                .collect(Collectors.toList());
+                    .map(Record::asMap)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("执行Cypher查询失败: {}", cypher, e);
             return Collections.emptyList();
@@ -713,11 +713,11 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
 
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH (n {knowledgeId: $knowledgeId}) " +
-                "RETURN n LIMIT $limit";
+                    "RETURN n LIMIT $limit";
 
             Result result = session.run(cypher, parameters(
-                "knowledgeId", knowledgeId,
-                "limit", limit
+                    "knowledgeId", knowledgeId,
+                    "limit", limit
             ));
 
             result.stream().forEach(record -> {
@@ -740,14 +740,14 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
         try (Session session = neo4jDriver.session()) {
             // ⭐ 修复：通过节点的 knowledgeId 过滤关系，兼容旧数据
             String cypher = "MATCH (s {knowledgeId: $knowledgeId})-[r]->(t {knowledgeId: $knowledgeId}) " +
-                "RETURN s, r, t LIMIT $limit";
+                    "RETURN s, r, t LIMIT $limit";
 
             log.info("🔍 开始查询关系 - knowledgeId: {}, limit: {}", knowledgeId, limit);
             log.debug("执行Cypher: {}", cypher);
 
             Result result = session.run(cypher, parameters(
-                "knowledgeId", knowledgeId,
-                "limit", limit
+                    "knowledgeId", knowledgeId,
+                    "limit", limit
             ));
 
             int count = 0;
@@ -756,19 +756,19 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
                 Node source = record.get("s").asNode();
                 Relationship rel = record.get("r").asRelationship();
                 Node target = record.get("t").asNode();
-                
+
                 // 调试：打印关系详情
                 if (count < 3) {  // 只打印前3个
-                    log.debug("关系#{} - 类型: {}, 起点: {} ({}), 终点: {} ({})", 
-                        count + 1,
-                        rel.type(),
-                        source.get("name").asString(),
-                        source.get("id").asString(),
-                        target.get("name").asString(),
-                        target.get("id").asString()
+                    log.debug("关系#{} - 类型: {}, 起点: {} ({}), 终点: {} ({})",
+                            count + 1,
+                            rel.type(),
+                            source.get("name").asString(),
+                            source.get("id").asString(),
+                            target.get("name").asString(),
+                            target.get("id").asString()
                     );
                 }
-                
+
                 edges.add(relationshipToEdge(source, rel, target));
                 count++;
             }
@@ -785,7 +785,7 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
     public boolean deleteByKnowledgeId(String knowledgeId) {
         try (Session session = neo4jDriver.session()) {
             log.info("🗑️ 开始删除知识库图谱数据，knowledgeId: {}", knowledgeId);
-            
+
             // ⭐ 先删除关系（通过节点的knowledgeId过滤，兼容旧数据）
             String deleteRelsQuery = "MATCH (s {knowledgeId: $knowledgeId})-[r]->(t {knowledgeId: $knowledgeId}) DELETE r";
             Result relResult = session.run(deleteRelsQuery, parameters("knowledgeId", knowledgeId));
@@ -798,8 +798,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             int deletedNodes = nodeResult.consume().counters().nodesDeleted();
             log.info("✅ 删除了 {} 个节点", deletedNodes);
 
-            log.info("✅ 删除知识库图谱数据成功，knowledgeId: {}, 节点: {}, 关系: {}", 
-                knowledgeId, deletedNodes, deletedRels);
+            log.info("✅ 删除知识库图谱数据成功，knowledgeId: {}, 节点: {}, 关系: {}",
+                    knowledgeId, deletedNodes, deletedRels);
             return true;
         } catch (Exception e) {
             log.error("❌ 删除知识库图谱数据失败，knowledgeId: {}", knowledgeId, e);
@@ -834,8 +834,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
 
             // 统计节点类型分布
             String labelQuery = "MATCH (n {knowledgeId: $knowledgeId}) " +
-                "RETURN labels(n)[0] as label, count(*) as count " +
-                "ORDER BY count DESC LIMIT 10";
+                    "RETURN labels(n)[0] as label, count(*) as count " +
+                    "ORDER BY count DESC LIMIT 10";
             Result labelResult = session.run(labelQuery, parameters("knowledgeId", knowledgeId));
 
             Map<String, Integer> labelDistribution = new HashMap<>();
@@ -847,8 +847,8 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
             stats.put("labelDistribution", labelDistribution);
             stats.put("entityTypes", labelDistribution);  // ⭐ 前端需要的字段
 
-            log.info("📊 获取图谱统计信息: knowledgeId={}, 节点={}, 关系={}, 类型={}", 
-                knowledgeId, nodeCount, relCount, labelDistribution.size());
+            log.info("📊 获取图谱统计信息: knowledgeId={}, 节点={}, 关系={}, 类型={}",
+                    knowledgeId, nodeCount, relCount, labelDistribution.size());
             return stats;
         } catch (Exception e) {
             log.error("❌ 获取统计信息失败: knowledgeId={}", knowledgeId, e);
@@ -868,11 +868,11 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
 
             if (knowledgeId != null && !knowledgeId.isEmpty()) {
                 cypher = "MATCH (n {id: $nodeId, knowledgeId: $knowledgeId})-[]-(neighbor {knowledgeId: $knowledgeId}) " +
-                    "RETURN DISTINCT neighbor LIMIT $limit";
+                        "RETURN DISTINCT neighbor LIMIT $limit";
                 params.put("knowledgeId", knowledgeId);
             } else {
                 cypher = "MATCH (n {id: $nodeId})-[]-(neighbor) " +
-                    "RETURN DISTINCT neighbor LIMIT $limit";
+                        "RETURN DISTINCT neighbor LIMIT $limit";
             }
 
             Result result = session.run(cypher, params);
@@ -896,12 +896,12 @@ public class GraphStoreServiceImpl implements IGraphStoreService {
 
         try (Session session = neo4jDriver.session()) {
             String cypher = "MATCH path = (start {id: $startNodeId})-[*1.." + maxDepth + "]-(end {id: $endNodeId}) " +
-                "RETURN nodes(path) as pathNodes " +
-                "LIMIT 10";
+                    "RETURN nodes(path) as pathNodes " +
+                    "LIMIT 10";
 
             Result result = session.run(cypher, parameters(
-                "startNodeId", startNodeId,
-                "endNodeId", endNodeId
+                    "startNodeId", startNodeId,
+                    "endNodeId", endNodeId
             ));
 
             result.stream().forEach(record -> {

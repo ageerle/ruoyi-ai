@@ -1,14 +1,15 @@
 package org.ruoyi.mcp.service.impl;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.ruoyi.common.core.utils.MapstructUtils;
-    import org.ruoyi.core.page.TableDataInfo;
-    import org.ruoyi.core.page.PageQuery;
-    import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.common.core.utils.MapstructUtils;
+import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.McpInfo;
 import org.ruoyi.domain.bo.McpInfoBo;
 import org.ruoyi.domain.vo.McpInfoVo;
@@ -18,8 +19,6 @@ import org.ruoyi.mcp.config.McpServerConfig;
 import org.ruoyi.mcp.domain.McpInfoRequest;
 import org.ruoyi.mcp.service.McpInfoService;
 import org.springframework.stereotype.Service;
-
-import org.ruoyi.common.core.utils.StringUtils;
 
 import java.util.*;
 
@@ -35,6 +34,7 @@ public class McpInfoServiceImpl implements McpInfoService {
 
     private final McpInfoMapper baseMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
      * 查询MCP
      */
@@ -43,15 +43,15 @@ public class McpInfoServiceImpl implements McpInfoService {
         return baseMapper.selectVoById(mcpId);
     }
 
-        /**
-         * 查询MCP列表
-         */
-        @Override
-        public TableDataInfo<McpInfoVo> queryPageList(McpInfoBo bo, PageQuery pageQuery) {
-            LambdaQueryWrapper<McpInfo> lqw = buildQueryWrapper(bo);
-            Page<McpInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-            return TableDataInfo.build(result);
-        }
+    /**
+     * 查询MCP列表
+     */
+    @Override
+    public TableDataInfo<McpInfoVo> queryPageList(McpInfoBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<McpInfo> lqw = buildQueryWrapper(bo);
+        Page<McpInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
+    }
 
     /**
      * 查询MCP列表
@@ -64,10 +64,10 @@ public class McpInfoServiceImpl implements McpInfoService {
 
     private LambdaQueryWrapper<McpInfo> buildQueryWrapper(McpInfoBo bo) {
         LambdaQueryWrapper<McpInfo> lqw = Wrappers.lambdaQuery();
-                    lqw.like(StringUtils.isNotBlank(bo.getServerName()), McpInfo::getServerName, bo.getServerName());
-                    lqw.eq(StringUtils.isNotBlank(bo.getTransportType()), McpInfo::getTransportType, bo.getTransportType());
-                    lqw.eq(StringUtils.isNotBlank(bo.getCommand()), McpInfo::getCommand, bo.getCommand());
-                    lqw.eq(bo.getStatus() != null, McpInfo::getStatus, bo.getStatus());
+        lqw.like(StringUtils.isNotBlank(bo.getServerName()), McpInfo::getServerName, bo.getServerName());
+        lqw.eq(StringUtils.isNotBlank(bo.getTransportType()), McpInfo::getTransportType, bo.getTransportType());
+        lqw.eq(StringUtils.isNotBlank(bo.getCommand()), McpInfo::getCommand, bo.getCommand());
+        lqw.eq(bo.getStatus() != null, McpInfo::getStatus, bo.getStatus());
         return lqw;
     }
 
@@ -76,7 +76,7 @@ public class McpInfoServiceImpl implements McpInfoService {
      */
     @Override
     public Boolean insertByBo(McpInfoBo bo) {
-        McpInfo add = MapstructUtils.convert(bo, McpInfo. class);
+        McpInfo add = MapstructUtils.convert(bo, McpInfo.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -90,7 +90,7 @@ public class McpInfoServiceImpl implements McpInfoService {
      */
     @Override
     public Boolean updateByBo(McpInfoBo bo) {
-        McpInfo update = MapstructUtils.convert(bo, McpInfo. class);
+        McpInfo update = MapstructUtils.convert(bo, McpInfo.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -228,7 +228,8 @@ public class McpInfoServiceImpl implements McpInfoService {
         try {
             // 解析 args
             if (tool.getArguments() != null && !tool.getArguments().isEmpty()) {
-                List<String> args = objectMapper.readValue(tool.getArguments(), new TypeReference<List<String>>() {});
+                List<String> args = objectMapper.readValue(tool.getArguments(), new TypeReference<List<String>>() {
+                });
                 config.setArgs(args);
             } else {
                 config.setArgs(new ArrayList<>());
@@ -236,7 +237,8 @@ public class McpInfoServiceImpl implements McpInfoService {
 
             // 解析 env
             if (tool.getEnv() != null && !tool.getEnv().isEmpty()) {
-                Map<String, String> env = objectMapper.readValue(tool.getEnv(), new TypeReference<Map<String, String>>() {});
+                Map<String, String> env = objectMapper.readValue(tool.getEnv(), new TypeReference<Map<String, String>>() {
+                });
                 config.setEnv(env);
             } else {
                 config.setEnv(new HashMap<>());

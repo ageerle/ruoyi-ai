@@ -43,7 +43,7 @@ public class GraphInstance extends BaseEntity {
      * 图谱名称
      */
     private String graphName;
-    
+
     /**
      * 图谱实例名称（前端使用，不映射到数据库）
      */
@@ -69,17 +69,17 @@ public class GraphInstance extends BaseEntity {
      * 图谱配置(JSON格式)
      */
     private String config;
-    
+
     /**
      * LLM模型名称
      */
     private String modelName;
-    
+
     /**
      * 实体类型（逗号分隔）
      */
     private String entityTypes;
-    
+
     /**
      * 关系类型（逗号分隔）
      */
@@ -94,19 +94,19 @@ public class GraphInstance extends BaseEntity {
      * 删除标志（0代表存在 1代表删除）
      */
     private String delFlag;
-    
+
     /**
      * 备注
      */
     private String remark;
-    
+
     /**
      * 获取实例名称（兼容前端）
      */
     public String getInstanceName() {
         return instanceName != null ? instanceName : graphName;
     }
-    
+
     /**
      * 设置实例名称（同步到graphName）
      */

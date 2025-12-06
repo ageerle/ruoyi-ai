@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * date 2025/5/10
  */
 @Component
-public class ChatServiceFactory  implements ApplicationContextAware {
+public class ChatServiceFactory implements ApplicationContextAware {
     private final Map<String, IChatService> chatServiceMap = new ConcurrentHashMap<>();
     private IChatCostService chatCostService;
 
@@ -26,7 +26,7 @@ public class ChatServiceFactory  implements ApplicationContextAware {
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         // 获取计费服务
         this.chatCostService = applicationContext.getBean(IChatCostService.class);
-        
+
         // 初始化时收集所有IChatService的实现
         Map<String, IChatService> serviceMap = applicationContext.getBeansOfType(IChatService.class);
         for (IChatService service : serviceMap.values()) {

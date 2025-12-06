@@ -34,59 +34,59 @@ public enum ProjectType {
 
     // Unknown type
     UNKNOWN("Unknown", "", "Unknown project type");
-    
+
     private final String displayName;
     private final String keyFile;
     private final String description;
-    
+
     ProjectType(String displayName, String keyFile, String description) {
         this.displayName = displayName;
         this.keyFile = keyFile;
         this.description = description;
     }
-    
+
     public String getDisplayName() {
         return displayName;
     }
-    
+
     public String getKeyFile() {
         return keyFile;
     }
-    
+
     public String getDescription() {
         return description;
     }
-    
+
     /**
      * Check if it's a Java project
      */
     public boolean isJavaProject() {
         return this == JAVA_MAVEN || this == JAVA_GRADLE || this == SPRING_BOOT;
     }
-    
+
     /**
      * Check if it's a JavaScript project
      */
     public boolean isJavaScriptProject() {
-        return this == NODE_JS || this == REACT || this == VUE || 
-               this == ANGULAR || this == NEXT_JS;
+        return this == NODE_JS || this == REACT || this == VUE ||
+                this == ANGULAR || this == NEXT_JS;
     }
-    
+
     /**
      * Check if it's a Python project
      */
     public boolean isPythonProject() {
         return this == PYTHON || this == DJANGO || this == FLASK || this == FASTAPI;
     }
-    
+
     /**
      * Check if it's a Web project
      */
     public boolean isWebProject() {
-        return isJavaScriptProject() || this == HTML_STATIC || 
-               this == DJANGO || this == FLASK || this == FASTAPI || this == SPRING_BOOT;
+        return isJavaScriptProject() || this == HTML_STATIC ||
+                this == DJANGO || this == FLASK || this == FASTAPI || this == SPRING_BOOT;
     }
-    
+
     /**
      * Get the primary programming language of the project
      */
@@ -94,17 +94,23 @@ public enum ProjectType {
         if (isJavaProject()) return "Java";
         if (isJavaScriptProject()) return "JavaScript";
         if (isPythonProject()) return "Python";
-        
+
         switch (this) {
-            case DOTNET: return "C#";
-            case GO: return "Go";
-            case RUST: return "Rust";
-            case PHP: return "PHP";
-            case HTML_STATIC: return "HTML";
-            default: return "Unknown";
+            case DOTNET:
+                return "C#";
+            case GO:
+                return "Go";
+            case RUST:
+                return "Rust";
+            case PHP:
+                return "PHP";
+            case HTML_STATIC:
+                return "HTML";
+            default:
+                return "Unknown";
         }
     }
-    
+
     /**
      * Get the recommended package manager
      */

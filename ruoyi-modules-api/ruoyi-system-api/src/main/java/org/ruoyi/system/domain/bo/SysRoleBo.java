@@ -28,27 +28,27 @@ public class SysRoleBo extends BaseEntity {
     /**
      * 角色ID
      */
-    @NotNull(message = "角色ID不能为空", groups = { EditGroup.class })
+    @NotNull(message = "角色ID不能为空", groups = {EditGroup.class})
     private Long roleId;
 
     /**
      * 角色名称
      */
-    @NotBlank(message = "角色名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "角色名称不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 30, message = "角色名称长度不能超过{max}个字符")
     private String roleName;
 
     /**
      * 角色权限字符串
      */
-    @NotBlank(message = "角色权限字符串不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "角色权限字符串不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 100, message = "权限字符长度不能超过{max}个字符")
     private String roleKey;
 
     /**
      * 显示顺序
      */
-    @NotNull(message = "显示顺序不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "显示顺序不能为空", groups = {AddGroup.class, EditGroup.class})
     private Integer roleSort;
 
     /**

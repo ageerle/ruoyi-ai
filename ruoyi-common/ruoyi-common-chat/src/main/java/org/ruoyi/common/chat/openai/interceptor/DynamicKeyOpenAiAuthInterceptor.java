@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- *  动态处理key的鉴权拦截器
+ * 动态处理key的鉴权拦截器
  *
  * @author https:www.unfbx.com
  * @since 2023-04-25
@@ -35,7 +35,6 @@ public class DynamicKeyOpenAiAuthInterceptor extends OpenAiAuthInterceptor {
 
     /**
      * 请求头处理
-     *
      */
     public DynamicKeyOpenAiAuthInterceptor() {
         this.setWarringConfig(null);

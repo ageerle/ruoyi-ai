@@ -74,10 +74,9 @@ public class ChatMessageController extends BaseController {
      */
     @GetMapping("/{id}")
     public R<ChatMessageVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Long id) {
+                                    @PathVariable Long id) {
         return R.ok(chatMessageService.queryById(id));
     }
-
 
 
     /**

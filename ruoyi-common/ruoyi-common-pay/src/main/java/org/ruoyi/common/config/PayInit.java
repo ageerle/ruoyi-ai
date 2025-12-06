@@ -40,7 +40,7 @@ public class PayInit {
         payConfig.setReturn_url(getKey("return_url"));
     }
 
-    public String getKey(String key){
+    public String getKey(String key) {
         return configService.getConfigValue("pay", key);
     }
 

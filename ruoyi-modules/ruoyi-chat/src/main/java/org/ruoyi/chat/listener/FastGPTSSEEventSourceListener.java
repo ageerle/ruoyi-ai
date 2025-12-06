@@ -1,6 +1,5 @@
 package org.ruoyi.chat.listener;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -9,13 +8,13 @@ import okhttp3.ResponseBody;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
+import org.ruoyi.chat.support.RetryNotifier;
+import org.ruoyi.chat.util.SSEUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Objects;
-import org.ruoyi.chat.support.RetryNotifier;
-import org.ruoyi.chat.util.SSEUtil;
 
 @Slf4j
 @Component
@@ -45,7 +44,7 @@ public class FastGPTSSEEventSourceListener extends EventSourceListener {
         try {
             log.debug("事件类型为: {}", type);
             log.debug("事件数据为: {}", data);
-            if ("flowResponses".equals(type)){
+            if ("flowResponses".equals(type)) {
                 emitter.send(data);
                 emitter.complete();
                 RetryNotifier.clear(emitter);

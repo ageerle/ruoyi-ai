@@ -26,47 +26,40 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ContinuousConversationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ContinuousConversationService.class);
-    
-    private final ChatClient chatClient;
-    private final NextSpeakerService nextSpeakerService;
-
-    @Autowired
-    private LogStreamService logStreamService;
-    
     // 最大轮数限制，防止无限循环
     private static final int MAX_TURNS = 20;
-
     // 单轮对话超时时间（毫秒）
     private static final long TURN_TIMEOUT_MS = 60_000; // 60秒
-
     // 总对话超时时间（毫秒）
     private static final long TOTAL_TIMEOUT_MS = 10 * 60_000; // 10分钟
-    
     // 继续对话的提示语
     private static final String[] CONTINUE_PROMPTS = {
-        "Continue with the next steps to complete the task.",
-        "Please proceed with the remaining work.",
-        "What's the next step? Please continue.",
-        "Keep going with the task.",
-        "Continue the implementation."
+            "Continue with the next steps to complete the task.",
+            "Please proceed with the remaining work.",
+            "What's the next step? Please continue.",
+            "Keep going with the task.",
+            "Continue the implementation."
     };
-
-    // 在现有的ContinuousConversationService中添加以下改进
-    
+    private final ChatClient chatClient;
+    private final NextSpeakerService nextSpeakerService;
     // 添加依赖注入
     private final TaskSummaryService taskSummaryService;
+
+    // 在现有的ContinuousConversationService中添加以下改进
     private final Map<String, TaskStatus> taskStatusMap = new ConcurrentHashMap<>();
     private final Map<String, ConversationResult> conversationResults = new ConcurrentHashMap<>();
-    
+    @Autowired
+    private LogStreamService logStreamService;
+
     // 修改构造函数
-    public ContinuousConversationService(ChatClient chatClient, 
-                                   NextSpeakerService nextSpeakerService,
-                                   TaskSummaryService taskSummaryService) {
+    public ContinuousConversationService(ChatClient chatClient,
+                                         NextSpeakerService nextSpeakerService,
+                                         TaskSummaryService taskSummaryService) {
         this.chatClient = chatClient;
         this.nextSpeakerService = nextSpeakerService;
         this.taskSummaryService = taskSummaryService;
     }
-    
+
     // 添加任务状态管理方法
     public TaskStatus getTaskStatus(String taskId) {
         return taskStatusMap.get(taskId);
@@ -81,7 +74,7 @@ public class ContinuousConversationService {
     private void storeConversationResult(String taskId, ConversationResult result) {
         conversationResults.put(taskId, result);
     }
-    
+
     public String startTask(String initialMessage) {
         String taskId = UUID.randomUUID().toString();
         TaskStatus status = new TaskStatus(taskId);
@@ -108,37 +101,37 @@ public class ContinuousConversationService {
 
         // 明确的简单对话模式 - 不需要工具
         String[] simplePatterns = {
-            "你好", "hello", "hi", "嗨", "哈喽",
-            "谢谢", "thank you", "thanks", "感谢",
-            "再见", "goodbye", "bye", "拜拜",
-            "好的", "ok", "okay", "行", "可以",
-            "不用了", "算了", "没事", "不需要",
-            "怎么样", "如何", "什么意思", "是什么",
-            "介绍一下", "解释一下", "说明一下"
+                "你好", "hello", "hi", "嗨", "哈喽",
+                "谢谢", "thank you", "thanks", "感谢",
+                "再见", "goodbye", "bye", "拜拜",
+                "好的", "ok", "okay", "行", "可以",
+                "不用了", "算了", "没事", "不需要",
+                "怎么样", "如何", "什么意思", "是什么",
+                "介绍一下", "解释一下", "说明一下"
         };
 
         // 检查是否是简单问候或确认
         for (String pattern : simplePatterns) {
             if (lowerMessage.equals(pattern) ||
-                (lowerMessage.length() <= 10 && lowerMessage.contains(pattern))) {
+                    (lowerMessage.length() <= 10 && lowerMessage.contains(pattern))) {
                 return false;
             }
         }
 
         // 明确需要工具的关键词
         String[] toolRequiredPatterns = {
-            "创建", "create", "新建", "生成", "建立",
-            "编辑", "edit", "修改", "更新", "改变",
-            "删除", "delete", "移除", "清除",
-            "文件", "file", "目录", "folder", "项目", "project",
-            "代码", "code", "程序", "script", "函数", "function",
-            "分析", "analyze", "检查", "查看", "读取", "read",
-            "写入", "write", "保存", "save",
-            "搜索", "search", "查找", "find",
-            "下载", "download", "获取", "fetch",
-            "安装", "install", "配置", "config",
-            "运行", "run", "执行", "execute",
-            "测试", "test", "调试", "debug"
+                "创建", "create", "新建", "生成", "建立",
+                "编辑", "edit", "修改", "更新", "改变",
+                "删除", "delete", "移除", "清除",
+                "文件", "file", "目录", "folder", "项目", "project",
+                "代码", "code", "程序", "script", "函数", "function",
+                "分析", "analyze", "检查", "查看", "读取", "read",
+                "写入", "write", "保存", "save",
+                "搜索", "search", "查找", "find",
+                "下载", "download", "获取", "fetch",
+                "安装", "install", "配置", "config",
+                "运行", "run", "执行", "execute",
+                "测试", "test", "调试", "debug"
         };
 
         // 检查是否包含工具相关关键词
@@ -156,9 +149,9 @@ public class ContinuousConversationService {
 
         // 包含路径、URL、代码片段等的消息
         if (lowerMessage.contains("/") || lowerMessage.contains("\\") ||
-            lowerMessage.contains("http") || lowerMessage.contains("www") ||
-            lowerMessage.contains("{") || lowerMessage.contains("}") ||
-            lowerMessage.contains("<") || lowerMessage.contains(">")) {
+                lowerMessage.contains("http") || lowerMessage.contains("www") ||
+                lowerMessage.contains("{") || lowerMessage.contains("}") ||
+                lowerMessage.contains("<") || lowerMessage.contains(">")) {
             return true;
         }
 
@@ -166,7 +159,7 @@ public class ContinuousConversationService {
         // 这样可以避免不必要的工具准备状态显示
         return false;
     }
-    
+
     // 修改executeContinuousConversation方法
     public ConversationResult executeContinuousConversation(String taskId, String initialMessage, List<Message> conversationHistory) {
         TaskStatus taskStatus = taskStatusMap.get(taskId);
@@ -239,7 +232,7 @@ public class ContinuousConversationService {
 
                         // 更新任务状态 - 显示当前响应的简短摘要
                         String responseSummary = responseText.length() > 100 ?
-                            responseText.substring(0, 100) + "..." : responseText;
+                                responseText.substring(0, 100) + "..." : responseText;
                         taskStatus.setCurrentAction(String.format("第 %d 轮完成: %s", turnCount, responseSummary));
                     }
 
@@ -280,24 +273,24 @@ public class ContinuousConversationService {
 
             long totalDuration = System.currentTimeMillis() - conversationStartTime;
             logger.info("Continuous conversation completed after {} turns in {}ms. Stop reason: {}",
-                turnCount, totalDuration, stopReason);
+                    turnCount, totalDuration, stopReason);
 
             // 创建结果对象
             ConversationResult result = new ConversationResult(
-                fullResponse.toString(),
-                turnResponses,
-                workingHistory,
-                turnCount,
-                turnCount >= MAX_TURNS,
-                stopReason,
-                totalDuration
+                    fullResponse.toString(),
+                    turnResponses,
+                    workingHistory,
+                    turnCount,
+                    turnCount >= MAX_TURNS,
+                    stopReason,
+                    totalDuration
             );
 
             // 更新任务状态为完成
             taskStatus.setStatus("COMPLETED");
             taskStatus.setCurrentAction("对话完成");
             String summary = String.format("对话完成，共 %d 轮，耗时 %.1f 秒",
-                turnCount, totalDuration / 1000.0);
+                    turnCount, totalDuration / 1000.0);
             if (stopReason != null) {
                 summary += "，停止原因: " + stopReason;
             }
@@ -334,9 +327,9 @@ public class ContinuousConversationService {
 
             // 调用AI（这里可以添加超时控制，但Spring AI目前不直接支持）
             ChatResponse response = chatClient.prompt()
-                .messages(conversationHistory)
-                .call()
-                .chatResponse();
+                    .messages(conversationHistory)
+                    .call()
+                    .chatResponse();
 
             // 处理响应
             Generation generation = response.getResult();
@@ -345,7 +338,7 @@ public class ContinuousConversationService {
 
             long turnDuration = System.currentTimeMillis() - turnStartTime;
             logger.debug("Turn {} completed in {}ms, response length: {} characters",
-                turnNumber, turnDuration, responseText != null ? responseText.length() : 0);
+                    turnNumber, turnDuration, responseText != null ? responseText.length() : 0);
 
             return new TurnResult(true, responseText, null);
 
@@ -393,7 +386,7 @@ public class ContinuousConversationService {
         // 只有在不确定的情况下才使用智能判断服务（包含LLM调用）
         try {
             NextSpeakerService.NextSpeakerResponse nextSpeaker =
-                nextSpeakerService.checkNextSpeaker(conversationHistory);
+                    nextSpeakerService.checkNextSpeaker(conversationHistory);
 
             long duration = System.currentTimeMillis() - startTime;
             logger.debug("Next speaker check completed in {}ms, result: {}", duration, nextSpeaker);
@@ -417,25 +410,25 @@ public class ContinuousConversationService {
         // 如果是前几轮且包含工具调用成功的标志，很可能需要继续
         if (turnCount <= 10) {
             String[] toolCallIndicators = {
-                "successfully created",
-                "successfully updated",
-                "file created",
-                "file updated",
-                "✅",
-                "created file",
-                "updated file",
-                "next, i'll",
-                "now i'll",
-                "let me create",
-                "let me edit"
+                    "successfully created",
+                    "successfully updated",
+                    "file created",
+                    "file updated",
+                    "✅",
+                    "created file",
+                    "updated file",
+                    "next, i'll",
+                    "now i'll",
+                    "let me create",
+                    "let me edit"
             };
 
             for (String indicator : toolCallIndicators) {
                 if (lowerResponse.contains(indicator)) {
                     // 但如果同时包含明确的完成信号，则不继续
                     String[] completionSignals = {
-                        "all files created", "project complete", "setup complete",
-                        "everything is ready", "task completed", "all done"
+                            "all files created", "project complete", "setup complete",
+                            "everything is ready", "task completed", "all done"
                     };
 
                     boolean hasCompletionSignal = false;
@@ -478,9 +471,17 @@ public class ContinuousConversationService {
             this.errorMessage = errorMessage;
         }
 
-        public boolean isSuccess() { return success; }
-        public String getResponse() { return response; }
-        public String getErrorMessage() { return errorMessage; }
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getResponse() {
+            return response;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
     }
 
     /**
@@ -496,8 +497,8 @@ public class ContinuousConversationService {
         private final long totalDurationMs;
 
         public ConversationResult(String fullResponse, List<String> turnResponses,
-                                List<Message> finalHistory, int totalTurns, boolean reachedMaxTurns,
-                                String stopReason, long totalDurationMs) {
+                                  List<Message> finalHistory, int totalTurns, boolean reachedMaxTurns,
+                                  String stopReason, long totalDurationMs) {
             this.fullResponse = fullResponse;
             this.turnResponses = turnResponses;
             this.finalHistory = finalHistory;
@@ -507,12 +508,32 @@ public class ContinuousConversationService {
             this.totalDurationMs = totalDurationMs;
         }
 
-        public String getFullResponse() { return fullResponse; }
-        public List<String> getTurnResponses() { return turnResponses; }
-        public List<Message> getFinalHistory() { return finalHistory; }
-        public int getTotalTurns() { return totalTurns; }
-        public boolean isReachedMaxTurns() { return reachedMaxTurns; }
-        public String getStopReason() { return stopReason; }
-        public long getTotalDurationMs() { return totalDurationMs; }
+        public String getFullResponse() {
+            return fullResponse;
+        }
+
+        public List<String> getTurnResponses() {
+            return turnResponses;
+        }
+
+        public List<Message> getFinalHistory() {
+            return finalHistory;
+        }
+
+        public int getTotalTurns() {
+            return totalTurns;
+        }
+
+        public boolean isReachedMaxTurns() {
+            return reachedMaxTurns;
+        }
+
+        public String getStopReason() {
+            return stopReason;
+        }
+
+        public long getTotalDurationMs() {
+            return totalDurationMs;
+        }
     }
 }

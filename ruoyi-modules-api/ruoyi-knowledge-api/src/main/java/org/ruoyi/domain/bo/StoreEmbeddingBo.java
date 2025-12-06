@@ -6,6 +6,7 @@ import java.util.List;
 
 /**
  * 保存向量所需参数
+ *
  * @author ageer
  */
 @Data

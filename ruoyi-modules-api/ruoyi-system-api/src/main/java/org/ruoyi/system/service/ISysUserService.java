@@ -53,9 +53,9 @@ public interface ISysUserService {
     /**
      * 通过OpenId查询用户
      *
-     * @Date 2023/5/18
      * @param openId
      * @return SysUserVo
+     * @Date 2023/5/18
      **/
     SysUserVo selectUserByOpenId(String openId);
 
@@ -140,10 +140,10 @@ public interface ISysUserService {
     /**
      * 注册用户信息
      *
-     * @Date 2023/5/18
      * @param user
      * @param tenantId
      * @return SysUser
+     * @Date 2023/5/18
      **/
     SysUser registerUser(SysUserBo user, String tenantId);
 
@@ -159,7 +159,6 @@ public interface ISysUserService {
      * 小程序 - 修改用户信息
      *
      * @param user 用户信息
-     *
      */
     SysUserVo updateXcxUser(SysUserBo user);
 
@@ -208,7 +207,6 @@ public interface ISysUserService {
      */
 
     int resetUserPwd(Long userId, String password);
-
 
 
     /**

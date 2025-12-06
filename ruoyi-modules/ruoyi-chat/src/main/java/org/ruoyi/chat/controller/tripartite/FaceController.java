@@ -36,7 +36,7 @@ public class FaceController {
     @PostMapping("/insight-face/swap")
     public String insightFace(@RequestBody InsightFace insightFace) {
         // 扣除接口费用并且保存消息记录
-        chatCostService.taskDeduct("mj","Face Changing", 0.0);
+        chatCostService.taskDeduct("mj", "Face Changing", 0.0);
         // 创建请求体（这里使用JSON作为媒体类型）
         String insightFaceJson = JSONUtil.toJsonStr(insightFace);
         String url = "mj/insight-face/swap";

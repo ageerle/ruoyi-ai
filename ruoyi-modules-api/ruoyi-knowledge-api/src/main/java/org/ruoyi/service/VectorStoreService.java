@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * 向量库管理
+ *
  * @author ageer
  */
 public interface VectorStoreService {
@@ -18,7 +19,7 @@ public interface VectorStoreService {
 
     void createSchema(String kid, String embeddingModelName);
 
-    void removeById(String id,String modelName) throws ServiceException;
+    void removeById(String id, String modelName) throws ServiceException;
 
     void removeByDocId(String docId, String kid) throws ServiceException;
 

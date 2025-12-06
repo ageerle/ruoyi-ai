@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PdfFileLoader implements ResourceLoader {
     private final TextSplitter characterTextSplitter;
+
     @Override
     public String getContent(InputStream inputStream) {
         PDDocument document = null;

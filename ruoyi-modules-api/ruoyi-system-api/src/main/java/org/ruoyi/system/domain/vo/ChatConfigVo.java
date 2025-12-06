@@ -18,7 +18,7 @@ import java.io.Serializable;
  */
 @Data
 @ExcelIgnoreUnannotated
-        @AutoMapper(target = ChatConfig.class)
+@AutoMapper(target = ChatConfig.class)
 public class ChatConfigVo implements Serializable {
 
     @Serial

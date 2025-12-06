@@ -26,7 +26,7 @@ public class SysMenuBo extends BaseEntity {
     /**
      * 菜单ID
      */
-    @NotNull(message = "菜单ID不能为空", groups = { EditGroup.class })
+    @NotNull(message = "菜单ID不能为空", groups = {EditGroup.class})
     private Long menuId;
 
     /**
@@ -37,14 +37,14 @@ public class SysMenuBo extends BaseEntity {
     /**
      * 菜单名称
      */
-    @NotBlank(message = "菜单名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "菜单名称不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 50, message = "菜单名称长度不能超过{max}个字符")
     private String menuName;
 
     /**
      * 显示顺序
      */
-    @NotNull(message = "显示顺序不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "显示顺序不能为空", groups = {AddGroup.class, EditGroup.class})
     private Integer orderNum;
 
     /**
@@ -77,7 +77,7 @@ public class SysMenuBo extends BaseEntity {
     /**
      * 菜单类型（M目录 C菜单 F按钮）
      */
-    @NotBlank(message = "菜单类型不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "菜单类型不能为空", groups = {AddGroup.class, EditGroup.class})
     private String menuType;
 
     /**

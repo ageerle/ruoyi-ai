@@ -134,6 +134,14 @@ public class SysUserBo extends BaseEntity {
      * 用户余额
      */
     private Double userBalance;
+    /**
+     * 知识库角色组类型（role/roleGroup）
+     */
+    private String kroleGroupType;
+    /**
+     * 知识库角色组id（role/roleGroup）
+     */
+    private String kroleGroupIds;
 
     public SysUserBo(Long userId) {
         this.userId = userId;
@@ -142,15 +150,5 @@ public class SysUserBo extends BaseEntity {
     public boolean isSuperAdmin() {
         return UserConstants.SUPER_ADMIN_ID.equals(this.userId);
     }
-
-    /**
-     * 知识库角色组类型（role/roleGroup）
-     */
-    private String kroleGroupType;
-
-    /**
-     * 知识库角色组id（role/roleGroup）
-     */
-    private String kroleGroupIds;
 
 }

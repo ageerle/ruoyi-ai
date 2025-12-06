@@ -55,6 +55,7 @@ public class SysLogininforController extends BaseController {
 
     /**
      * 批量删除登录日志
+     *
      * @param infoIds 日志ids
      */
     @SaCheckPermission("monitor:logininfor:remove")

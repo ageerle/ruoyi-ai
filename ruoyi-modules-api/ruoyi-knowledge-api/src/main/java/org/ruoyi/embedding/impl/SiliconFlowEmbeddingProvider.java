@@ -1,11 +1,7 @@
 package org.ruoyi.embedding.impl;
 
 
-import org.ruoyi.embedding.BaseEmbedModelService;
-import org.ruoyi.embedding.model.ModalityType;
 import org.springframework.stereotype.Component;
-
-import java.util.Set;
 
 /**
  * @Author: Robust_H

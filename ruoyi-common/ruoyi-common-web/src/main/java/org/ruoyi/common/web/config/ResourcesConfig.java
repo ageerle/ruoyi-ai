@@ -34,20 +34,20 @@ public class ResourcesConfig implements WebMvcConfigurer {
             registry.addInterceptor(demoModeInterceptor)
                     .addPathPatterns("/**")  // 拦截所有路径
                     .excludePathPatterns(
-                        // 排除静态资源
-                        "/css/**",
-                        "/js/**",
-                        "/images/**",
-                        "/fonts/**",
-                        "/favicon.ico",
-                        // 排除错误页面
-                        "/error",
-                        // 排除API文档
-                        "/*/api-docs/**",
-                        "/swagger-ui/**",
-                        "/webjars/**",
-                        // 排除监控端点
-                        "/actuator/**"
+                            // 排除静态资源
+                            "/css/**",
+                            "/js/**",
+                            "/images/**",
+                            "/fonts/**",
+                            "/favicon.ico",
+                            // 排除错误页面
+                            "/error",
+                            // 排除API文档
+                            "/*/api-docs/**",
+                            "/swagger-ui/**",
+                            "/webjars/**",
+                            // 排除监控端点
+                            "/actuator/**"
                     );
         }
     }

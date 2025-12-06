@@ -52,7 +52,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- *   open ai 客户端
+ * open ai 客户端
  *
  * @author https:www.unfbx.com
  * 2023-02-28
@@ -63,31 +63,27 @@ import java.util.concurrent.TimeUnit;
 @Setter
 public class OpenAiStreamClient {
 
+    private static final String DONE_SIGNAL = "[DONE]";
     @NotNull
     private List<String> apiKey;
     /**
      * 自定义api host使用builder的方式构造client
      */
     private String apiHost;
-
     /**
      * 自定义url 兼容多个平台
      */
     private String apiUrl;
-
     /**
      * 自定义的okHttpClient
      * 如果不自定义 ，就是用sdk默认的OkHttpClient实例
      */
     private OkHttpClient okHttpClient;
-
     /**
      * api key的获取策略
      */
     private KeyStrategyFunction<List<String>, String> keyStrategy;
-
     private OpenAiApi openAiApi;
-
     /**
      * 自定义鉴权处理拦截器<br/>
      * 可以不设置，默认实现：DefaultOpenAiAuthInterceptor <br/>
@@ -97,8 +93,6 @@ public class OpenAiStreamClient {
      * @see DefaultOpenAiAuthInterceptor
      */
     private OpenAiAuthInterceptor authInterceptor;
-
-    private static final String DONE_SIGNAL = "[DONE]";
 
     /**
      * 构造实例对象
@@ -139,9 +133,9 @@ public class OpenAiStreamClient {
         } else {
             //自定义的okhttpClient  需要增加api keys
             builder.okHttpClient = builder.okHttpClient
-                .newBuilder()
-                .addInterceptor(authInterceptor)
-                .build();
+                    .newBuilder()
+                    .addInterceptor(authInterceptor)
+                    .build();
         }
         okHttpClient = builder.okHttpClient;
         if (apiHost.endsWith("/")) {
@@ -156,6 +150,15 @@ public class OpenAiStreamClient {
     }
 
     /**
+     * 构造
+     *
+     * @return Builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
      * 创建默认的OkHttpClient
      */
     private OkHttpClient okHttpClient() {
@@ -165,15 +168,14 @@ public class OpenAiStreamClient {
         this.authInterceptor.setApiKey(this.apiKey);
         this.authInterceptor.setKeyStrategy(this.keyStrategy);
         OkHttpClient okHttpClient = new OkHttpClient
-            .Builder()
-            .addInterceptor(this.authInterceptor)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(50, TimeUnit.SECONDS)
-            .readTimeout(50, TimeUnit.SECONDS)
-            .build();
+                .Builder()
+                .addInterceptor(this.authInterceptor)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(50, TimeUnit.SECONDS)
+                .readTimeout(50, TimeUnit.SECONDS)
+                .build();
         return okHttpClient;
     }
-
 
     /**
      * 流式输出，最新版的GPT-3.5 chat completion 更加贴近官方网站的问答模型
@@ -191,9 +193,9 @@ public class OpenAiStreamClient {
             ObjectMapper mapper = new ObjectMapper();
             String requestBody = mapper.writeValueAsString(chatCompletion);
             Request request = new Request.Builder()
-                .url(this.apiHost)
-                .post(RequestBody.create(MediaType.parse(ContentType.JSON.getValue()), requestBody))
-                .build();
+                    .url(this.apiHost)
+                    .post(RequestBody.create(MediaType.parse(ContentType.JSON.getValue()), requestBody))
+                    .build();
             factory.newEventSource(request, eventSourceListener);
         } catch (Exception e) {
             log.error("请求参数解析异常：{}", e.getMessage());
@@ -238,7 +240,6 @@ public class OpenAiStreamClient {
         this.streamChatCompletion(chatCompletion, pluginEventSourceListener);
     }
 
-
     /**
      * 插件问答简易版
      * 默认取messages最后一个元素构建插件对话
@@ -254,7 +255,6 @@ public class OpenAiStreamClient {
         PluginListener pluginEventSourceListener = new DefaultPluginListener(this, eventSourceListener, plugin, chatCompletion);
         this.streamChatCompletionWithPlugin(chatCompletion, eventSourceListener, pluginEventSourceListener, plugin);
     }
-
 
     /**
      * 插件问答简易版
@@ -286,7 +286,6 @@ public class OpenAiStreamClient {
         ChatCompletion chatCompletion = ChatCompletion.builder().messages(messages).model(model).build();
         this.streamChatCompletionWithPlugin(chatCompletion, eventSourceListener, plugin);
     }
-
 
     /**
      * 根据描述生成图片
@@ -457,6 +456,7 @@ public class OpenAiStreamClient {
         Transcriptions transcriptions = Transcriptions.builder().build();
         return this.speechToTextTranscriptions(file, transcriptions);
     }
+
     /**
      * 文本转语音（异步）
      *
@@ -475,12 +475,12 @@ public class OpenAiStreamClient {
      * @param textToSpeech 参数
      * @since 1.1.3
      */
-    public ResponseBody textToSpeech(TextToSpeech textToSpeech){
+    public ResponseBody textToSpeech(TextToSpeech textToSpeech) {
         try {
             Call<ResponseBody> responseBody = this.openAiApi.textToSpeech(textToSpeech);
             return responseBody.execute().body();
         } catch (IOException e) {
-            throw new BaseException("文本转语音（同步）失败: "+e.getMessage());
+            throw new BaseException("文本转语音（同步）失败: " + e.getMessage());
         }
     }
 
@@ -508,13 +508,13 @@ public class OpenAiStreamClient {
 
         // 创建请求对象
         Request request = new Request.Builder()
-            .url(url)
-            .build();
+                .url(url)
+                .build();
         // 发送请求并处理响应
         try {
             return client.newCall(request).execute().body();
         } catch (IOException e) {
-            throw new BaseException("语音克隆失败！{}",e.getMessage());
+            throw new BaseException("语音克隆失败！{}", e.getMessage());
         }
     }
 
@@ -600,16 +600,6 @@ public class OpenAiStreamClient {
     public <R extends PluginParam, T> ChatCompletionResponse chatCompletionWithPlugin(List<Message> messages, String model, PluginAbstract<R, T> plugin) {
         ChatCompletion chatCompletion = ChatCompletion.builder().messages(messages).model(model).build();
         return this.chatCompletionWithPlugin(chatCompletion, plugin);
-    }
-
-
-    /**
-     * 构造
-     *
-     * @return Builder
-     */
-    public static Builder builder() {
-        return new Builder();
     }
 
     public static final class Builder {
