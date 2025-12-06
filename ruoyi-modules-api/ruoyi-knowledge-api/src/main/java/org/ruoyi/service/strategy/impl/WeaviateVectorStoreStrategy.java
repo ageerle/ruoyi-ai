@@ -1,7 +1,6 @@
 package org.ruoyi.service.strategy.impl;
 
 import cn.hutool.json.JSONObject;
-import org.ruoyi.common.core.exception.ServiceException;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.weaviate.client.Config;
@@ -18,12 +17,17 @@ import io.weaviate.client.v1.schema.model.WeaviateClass;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
 import org.ruoyi.embedding.EmbeddingModelFactory;
 import org.ruoyi.service.strategy.AbstractVectorStoreStrategy;
 import org.springframework.stereotype.Component;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Weaviate向量库策略实现
@@ -85,8 +89,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
-        createSchema(storeEmbeddingBo.getKid(),storeEmbeddingBo.getEmbeddingModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(),  null);
+        createSchema(storeEmbeddingBo.getKid(), storeEmbeddingBo.getEmbeddingModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(), null);
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
         String kid = storeEmbeddingBo.getKid();
@@ -115,11 +119,10 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     }
 
 
-
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
-        createSchema(queryVectorBo.getKid(),queryVectorBo.getEmbeddingModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(),null);
+        createSchema(queryVectorBo.getKid(), queryVectorBo.getEmbeddingModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(), null);
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         float[] vector = queryEmbedding.vector();
         List<String> vectorStrings = new ArrayList<>();
@@ -128,7 +131,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         }
         String vectorStr = String.join(",", vectorStrings);
         String className = vectorStoreProperties.getWeaviate().getClassname();
-        
+
         // 构建 GraphQL 查询
         String graphQLQuery = String.format(
                 "{\n" +

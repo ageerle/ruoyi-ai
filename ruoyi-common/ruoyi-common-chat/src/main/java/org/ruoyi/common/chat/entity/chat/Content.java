@@ -6,7 +6,6 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- *
  * @author https://www.unfbx.com
  * @since 1.1.2
  * 2023-11-10

@@ -63,6 +63,7 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         rspData.setTotal(list.size());  // 总数为列表大小
         return rspData;
     }
+
     @Override
     public TableDataInfo<SysDictTypeVo> selectPageDictTypeList(SysDictTypeBo dictType, PageQuery pageQuery) {
         LambdaQueryWrapper<SysDictType> lqw = buildQueryWrapper(dictType);
@@ -89,7 +90,7 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         lqw.like(StringUtils.isNotBlank(bo.getDictType()), SysDictType::getDictType, bo.getDictType());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SysDictType::getStatus, bo.getStatus());
         lqw.between(params.get("beginTime") != null && params.get("endTime") != null,
-            SysDictType::getCreateTime, params.get("beginTime"), params.get("endTime"));
+                SysDictType::getCreateTime, params.get("beginTime"), params.get("endTime"));
         return lqw;
     }
 
@@ -109,7 +110,7 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
      * @param dictType 字典类型
      * @return 字典数据集合信息
      */
-   // @Cacheable(cacheNames = CacheNames.SYS_DICT, key = "#dictType")
+    // @Cacheable(cacheNames = CacheNames.SYS_DICT, key = "#dictType")
     @Override
     public List<SysDictDataVo> selectDictDataByType(String dictType) {
         List<SysDictDataVo> dictDatas = dictDataMapper.selectDictDataByType(dictType);
@@ -152,7 +153,7 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         for (Long dictId : dictIds) {
             SysDictType dictType = baseMapper.selectById(dictId);
             if (dictDataMapper.exists(new LambdaQueryWrapper<SysDictData>()
-                .eq(SysDictData::getDictType, dictType.getDictType()))) {
+                    .eq(SysDictData::getDictType, dictType.getDictType()))) {
                 throw new ServiceException(String.format("%1$s已分配,不能删除", dictType.getDictName()));
             }
             CacheUtils.evict(CacheNames.SYS_DICT, dictType.getDictType());
@@ -198,8 +199,8 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         SysDictType dict = MapstructUtils.convert(bo, SysDictType.class);
         SysDictType oldDict = baseMapper.selectById(dict.getDictId());
         dictDataMapper.update(null, new LambdaUpdateWrapper<SysDictData>()
-            .set(SysDictData::getDictType, dict.getDictType())
-            .eq(SysDictData::getDictType, oldDict.getDictType()));
+                .set(SysDictData::getDictType, dict.getDictType())
+                .eq(SysDictData::getDictType, oldDict.getDictType()));
         int row = baseMapper.updateById(dict);
         if (row > 0) {
             CacheUtils.evict(CacheNames.SYS_DICT, oldDict.getDictType());
@@ -217,8 +218,8 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
     @Override
     public boolean checkDictTypeUnique(SysDictTypeBo dictType) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysDictType>()
-            .eq(SysDictType::getDictType, dictType.getDictType())
-            .ne(ObjectUtil.isNotNull(dictType.getDictId()), SysDictType::getDictId, dictType.getDictId()));
+                .eq(SysDictType::getDictType, dictType.getDictType())
+                .ne(ObjectUtil.isNotNull(dictType.getDictId()), SysDictType::getDictId, dictType.getDictId()));
         return !exist;
     }
 
@@ -243,8 +244,8 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         Map<String, String> map = StreamUtils.toMap(datas, SysDictDataVo::getDictValue, SysDictDataVo::getDictLabel);
         if (StringUtils.containsAny(dictValue, separator)) {
             return Arrays.stream(dictValue.split(separator))
-                .map(v -> map.getOrDefault(v, StringUtils.EMPTY))
-                .collect(Collectors.joining(separator));
+                    .map(v -> map.getOrDefault(v, StringUtils.EMPTY))
+                    .collect(Collectors.joining(separator));
         } else {
             return map.getOrDefault(dictValue, StringUtils.EMPTY);
         }
@@ -271,8 +272,8 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService 
         Map<String, String> map = StreamUtils.toMap(datas, SysDictDataVo::getDictLabel, SysDictDataVo::getDictValue);
         if (StringUtils.containsAny(dictLabel, separator)) {
             return Arrays.stream(dictLabel.split(separator))
-                .map(l -> map.getOrDefault(l, StringUtils.EMPTY))
-                .collect(Collectors.joining(separator));
+                    .map(l -> map.getOrDefault(l, StringUtils.EMPTY))
+                    .collect(Collectors.joining(separator));
         } else {
             return map.getOrDefault(dictLabel, StringUtils.EMPTY);
         }

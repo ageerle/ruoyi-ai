@@ -69,6 +69,10 @@ public abstract class PluginAbstract<R extends PluginParam, T> {
         setParameters();
     }
 
+    public abstract T func(R args);
+
+    public abstract String content(T t);
+
     @Data
     public static class Arg {
         private String name;
@@ -81,8 +85,4 @@ public abstract class PluginAbstract<R extends PluginParam, T> {
         @JsonIgnore
         private boolean required;
     }
-
-    public abstract T func(R args);
-
-    public abstract String content(T t);
 }

@@ -9,6 +9,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class SubmitDescribeDTO extends BaseSubmitDTO {
 
-	@Schema(description = "图片base64", requiredMode = Schema.RequiredMode.REQUIRED, example = "data:image/png;base64,xxx")
-	private String base64;
+    @Schema(description = "图片base64", requiredMode = Schema.RequiredMode.REQUIRED, example = "data:image/png;base64,xxx")
+    private String base64;
 }

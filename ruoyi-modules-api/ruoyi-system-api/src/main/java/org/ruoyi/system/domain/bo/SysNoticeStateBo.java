@@ -24,31 +24,31 @@ public class SysNoticeStateBo extends BaseEntity {
     /**
      * ID
      */
-    @NotNull(message = "ID不能为空", groups = { EditGroup.class })
+    @NotNull(message = "ID不能为空", groups = {EditGroup.class})
     private Long id;
 
     /**
      * 用户ID
      */
-    @NotNull(message = "用户ID不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "用户ID不能为空", groups = {AddGroup.class, EditGroup.class})
     private Long userId;
 
     /**
      * 公告ID
      */
-    @NotNull(message = "公告ID不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "公告ID不能为空", groups = {AddGroup.class, EditGroup.class})
     private Long noticeId;
 
     /**
      * 阅读状态（0未读 1已读）
      */
-    @NotBlank(message = "阅读状态（0未读 1已读）不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "阅读状态（0未读 1已读）不能为空", groups = {AddGroup.class, EditGroup.class})
     private String readStatus;
 
     /**
      * 备注
      */
-    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "备注不能为空", groups = {AddGroup.class, EditGroup.class})
     private String remark;
 
 

@@ -9,6 +9,6 @@ import org.springframework.stereotype.Component;
  * @Description: 阿里百炼基础嵌入模型（兼容openai）
  */
 @Component("alibailian")
-public class AliBaiLianBaseEmbedProvider extends OpenAiEmbeddingProvider{
+public class AliBaiLianBaseEmbedProvider extends OpenAiEmbeddingProvider {
 
 }

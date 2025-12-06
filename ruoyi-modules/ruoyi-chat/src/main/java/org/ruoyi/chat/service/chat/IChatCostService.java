@@ -27,7 +27,6 @@ public interface IChatCostService {
     void saveMessage(ChatRequest chatRequest);
 
 
-
     /**
      * 仅发布异步计费事件（不做入库）
      *
@@ -37,7 +36,6 @@ public interface IChatCostService {
 
     /**
      * 直接扣除用户的余额
-     *
      */
     void deductUserBalance(Long userId, Double numberCost);
 
@@ -45,11 +43,11 @@ public interface IChatCostService {
     /**
      * 扣除任务费用并且保存记录
      *
-     * @param type 任务类型
+     * @param type   任务类型
      * @param prompt 任务描述
-     * @param cost 扣除费用
+     * @param cost   扣除费用
      */
-    void taskDeduct(String type,String prompt, double cost);
+    void taskDeduct(String type, String prompt, double cost);
 
 
     /**
@@ -64,7 +62,7 @@ public interface IChatCostService {
 
     /**
      * 检查用户余额是否足够支付预估费用
-     * 
+     *
      * @param chatRequest 对话信息
      * @return true=余额充足，false=余额不足
      */

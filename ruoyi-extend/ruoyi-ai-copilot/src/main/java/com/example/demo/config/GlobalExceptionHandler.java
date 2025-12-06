@@ -25,13 +25,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({TimeoutException.class, AsyncRequestTimeoutException.class})
     public ResponseEntity<ErrorResponse> handleTimeoutException(Exception e, WebRequest request) {
         logger.error("Request timeout occurred", e);
-        
+
         ErrorResponse errorResponse = new ErrorResponse(
-            "TIMEOUT_ERROR",
-            "Request timed out. The operation took too long to complete.",
-            "Please try again with a simpler request or check your network connection."
+                "TIMEOUT_ERROR",
+                "Request timed out. The operation took too long to complete.",
+                "Please try again with a simpler request or check your network connection."
         );
-        
+
         return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).body(errorResponse);
     }
 
@@ -41,24 +41,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException e, WebRequest request) {
         logger.error("Runtime exception occurred", e);
-        
+
         // 检查是否是AI调用相关的异常
         String message = e.getMessage();
         if (message != null && (message.contains("tool") || message.contains("function") || message.contains("AI"))) {
             ErrorResponse errorResponse = new ErrorResponse(
-                "AI_TOOL_ERROR",
-                "An error occurred during AI tool execution: " + message,
-                "The AI encountered an issue while processing your request. Please try rephrasing your request or try again."
+                    "AI_TOOL_ERROR",
+                    "An error occurred during AI tool execution: " + message,
+                    "The AI encountered an issue while processing your request. Please try rephrasing your request or try again."
             );
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-        
+
         ErrorResponse errorResponse = new ErrorResponse(
-            "RUNTIME_ERROR",
-            "An unexpected error occurred: " + message,
-            "Please try again. If the problem persists, contact support."
+                "RUNTIME_ERROR",
+                "An unexpected error occurred: " + message,
+                "Please try again. If the problem persists, contact support."
         );
-        
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
@@ -68,13 +68,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception e, WebRequest request) {
         logger.error("Unexpected exception occurred", e);
-        
+
         ErrorResponse errorResponse = new ErrorResponse(
-            "INTERNAL_ERROR",
-            "An internal server error occurred",
-            "Something went wrong on our end. Please try again later."
+                "INTERNAL_ERROR",
+                "An internal server error occurred",
+                "Something went wrong on our end. Please try again later."
         );
-        
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
@@ -95,16 +95,36 @@ public class GlobalExceptionHandler {
         }
 
         // Getters and setters
-        public String getErrorCode() { return errorCode; }
-        public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
+        public String getErrorCode() {
+            return errorCode;
+        }
 
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
+        public void setErrorCode(String errorCode) {
+            this.errorCode = errorCode;
+        }
 
-        public String getSuggestion() { return suggestion; }
-        public void setSuggestion(String suggestion) { this.suggestion = suggestion; }
+        public String getMessage() {
+            return message;
+        }
 
-        public long getTimestamp() { return timestamp; }
-        public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public String getSuggestion() {
+            return suggestion;
+        }
+
+        public void setSuggestion(String suggestion) {
+            this.suggestion = suggestion;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
+        }
     }
 }

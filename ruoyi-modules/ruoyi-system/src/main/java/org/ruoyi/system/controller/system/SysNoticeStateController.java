@@ -61,7 +61,7 @@ public class SysNoticeStateController extends BaseController {
      */
     @GetMapping("/{id}")
     public R<SysNoticeStateVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Long id) {
+                                       @PathVariable Long id) {
         return R.ok(sysNoticeStateService.queryById(id));
     }
 

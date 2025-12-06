@@ -1,12 +1,8 @@
 package org.ruoyi.chain.split;
 
-import jakarta.annotation.Resource;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.domain.vo.KnowledgeInfoVo;
-import org.ruoyi.service.IKnowledgeInfoService;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -16,7 +12,7 @@ import java.util.List;
 @Component
 @AllArgsConstructor
 @Slf4j
-public class ExcelTextSplitter implements TextSplitter{
+public class ExcelTextSplitter implements TextSplitter {
 
 
     @Override

@@ -7,9 +7,10 @@ import org.ruoyi.mcp.config.McpServerConfig;
 import org.ruoyi.mcp.domain.McpInfoRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Set;
 
 @Service
@@ -39,7 +40,7 @@ public class McpToolManagementService {
                 System.out.println("Starting MCP server: " + serverName);
                 System.out.println("Starting MCP serverConfig: " + serverConfig);
                 // 启动 MCP 服务器进程
-                boolean started = mcpProcessManager.startMcpServer(serverName,serverConfig);
+                boolean started = mcpProcessManager.startMcpServer(serverName, serverConfig);
 
                 if (started) {
                     successCount++;

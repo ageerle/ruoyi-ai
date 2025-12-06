@@ -19,7 +19,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 
 /**
- *  聊天管理
+ * 聊天管理
  *
  * @author ageerle@163.com
  * @date 2023-03-01
@@ -38,7 +38,7 @@ public class ChatController {
     @PostMapping("/send")
     @ResponseBody
     public SseEmitter sseChat(@RequestBody @Valid ChatRequest chatRequest, HttpServletRequest request) {
-        return sseService.sseChat(chatRequest,request);
+        return sseService.sseChat(chatRequest, request);
     }
 
     /**

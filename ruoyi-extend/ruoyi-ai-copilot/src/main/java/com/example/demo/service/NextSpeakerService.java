@@ -22,7 +22,32 @@ import java.util.List;
 public class NextSpeakerService {
 
     private static final Logger logger = LoggerFactory.getLogger(NextSpeakerService.class);
-    
+    private static final String CHECK_PROMPT = """
+            Analyze *only* the content and structure of your immediately preceding response (your last turn in the conversation history).
+            Based *strictly* on that response, determine who should logically speak next: the 'user' or the 'model' (you).
+
+            **Decision Rules (apply in order):**
+            1. **Model Continues:** If your last response explicitly states an immediate next action *you* intend to take
+               (e.g., "Next, I will...", "Now I'll process...", "Moving on to analyze...", "Let me create...", "I'll now...",
+               indicates an intended tool call that didn't execute), OR if the response seems clearly incomplete
+               (cut off mid-thought without a natural conclusion), then the **'model'** should speak next.
+            2. **Question to User:** If your last response ends with a direct question specifically addressed *to the user*,
+               then the **'user'** should speak next.
+            3. **Waiting for User:** If your last response completed a thought, statement, or task *and* does not meet
+               the criteria for Rule 1 (Model Continues) or Rule 2 (Question to User), it implies a pause expecting
+               user input or reaction. In this case, the **'user'** should speak next.
+
+            **Output Format:**
+            Respond *only* in JSON format. Do not include any text outside the JSON structure.
+            """;
+    // 简化版本的检查提示，用于减少LLM调用开销
+    private static final String SIMPLIFIED_CHECK_PROMPT = """
+            Based on your last response, who should speak next: 'user' or 'model'?
+            Rules: If you stated a next action or response is incomplete -> 'model'.
+            If you asked user a question -> 'user'.
+            If task completed -> 'user'.
+            Respond in JSON: {"next_speaker": "user/model", "reasoning": "brief reason"}
+            """;
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
 
@@ -30,34 +55,6 @@ public class NextSpeakerService {
         this.chatModel = chatModel;
         this.objectMapper = new ObjectMapper();
     }
-
-    private static final String CHECK_PROMPT = """
-        Analyze *only* the content and structure of your immediately preceding response (your last turn in the conversation history).
-        Based *strictly* on that response, determine who should logically speak next: the 'user' or the 'model' (you).
-
-        **Decision Rules (apply in order):**
-        1. **Model Continues:** If your last response explicitly states an immediate next action *you* intend to take
-           (e.g., "Next, I will...", "Now I'll process...", "Moving on to analyze...", "Let me create...", "I'll now...",
-           indicates an intended tool call that didn't execute), OR if the response seems clearly incomplete
-           (cut off mid-thought without a natural conclusion), then the **'model'** should speak next.
-        2. **Question to User:** If your last response ends with a direct question specifically addressed *to the user*,
-           then the **'user'** should speak next.
-        3. **Waiting for User:** If your last response completed a thought, statement, or task *and* does not meet
-           the criteria for Rule 1 (Model Continues) or Rule 2 (Question to User), it implies a pause expecting
-           user input or reaction. In this case, the **'user'** should speak next.
-
-        **Output Format:**
-        Respond *only* in JSON format. Do not include any text outside the JSON structure.
-        """;
-
-    // 简化版本的检查提示，用于减少LLM调用开销
-    private static final String SIMPLIFIED_CHECK_PROMPT = """
-        Based on your last response, who should speak next: 'user' or 'model'?
-        Rules: If you stated a next action or response is incomplete -> 'model'.
-        If you asked user a question -> 'user'.
-        If task completed -> 'user'.
-        Respond in JSON: {"next_speaker": "user/model", "reasoning": "brief reason"}
-        """;
 
     /**
      * 判断下一步应该由谁发言 - 优化版本，添加快速路径
@@ -115,15 +112,15 @@ public class NextSpeakerService {
 
         // 明确的停止信号 - 直接返回user
         String[] definiteStopSignals = {
-            "task completed successfully",
-            "all files created successfully",
-            "project setup complete",
-            "website is ready",
-            "application is ready",
-            "everything is ready",
-            "setup is complete",
-            "all tasks completed",
-            "work is complete"
+                "task completed successfully",
+                "all files created successfully",
+                "project setup complete",
+                "website is ready",
+                "application is ready",
+                "everything is ready",
+                "setup is complete",
+                "all tasks completed",
+                "work is complete"
         };
 
         for (String signal : definiteStopSignals) {
@@ -134,17 +131,17 @@ public class NextSpeakerService {
 
         // 明确的继续信号 - 直接返回model
         String[] definiteContinueSignals = {
-            "next, i will",
-            "now i will",
-            "let me create",
-            "let me edit",
-            "let me update",
-            "i'll create",
-            "i'll edit",
-            "i'll update",
-            "moving on to",
-            "proceeding to",
-            "next step is to"
+                "next, i will",
+                "now i will",
+                "let me create",
+                "let me edit",
+                "let me update",
+                "i'll create",
+                "i'll edit",
+                "i'll update",
+                "moving on to",
+                "proceeding to",
+                "next step is to"
         };
 
         for (String signal : definiteContinueSignals) {
@@ -205,8 +202,8 @@ public class NextSpeakerService {
      */
     private boolean containsCompletionSignal(String lowerContent) {
         String[] completionSignals = {
-            "all done", "complete", "finished", "ready", "that's it",
-            "we're done", "task complete", "project complete"
+                "all done", "complete", "finished", "ready", "that's it",
+                "we're done", "task complete", "project complete"
         };
 
         for (String signal : completionSignals) {
@@ -222,15 +219,15 @@ public class NextSpeakerService {
      */
     private boolean containsUserQuestion(String lowerContent) {
         String[] userQuestionPatterns = {
-            "what would you like",
-            "what do you want",
-            "would you like me to",
-            "do you want me to",
-            "should i",
-            "would you prefer",
-            "any preferences",
-            "what's next",
-            "what should i do next"
+                "what would you like",
+                "what do you want",
+                "would you like me to",
+                "do you want me to",
+                "should i",
+                "would you prefer",
+                "any preferences",
+                "what's next",
+                "what should i do next"
         };
 
         for (String pattern : userQuestionPatterns) {
@@ -250,39 +247,39 @@ public class NextSpeakerService {
 
             // 创建用于判断的对话历史 - 简化版本
             List<Message> checkMessages = recentHistory.stream()
-                .map(msg -> {
-                    if (msg instanceof UserMessage) {
-                        // 截断过长的用户消息
-                        String text = msg.getText();
-                        if (text.length() > 500) {
-                            text = text.substring(0, 500) + "...";
+                    .map(msg -> {
+                        if (msg instanceof UserMessage) {
+                            // 截断过长的用户消息
+                            String text = msg.getText();
+                            if (text.length() > 500) {
+                                text = text.substring(0, 500) + "...";
+                            }
+                            return new UserMessage(text);
+                        } else if (msg instanceof AssistantMessage) {
+                            // 截断过长的助手消息
+                            String text = msg.getText();
+                            if (text.length() > 500) {
+                                text = text.substring(0, 500) + "...";
+                            }
+                            return new AssistantMessage(text);
                         }
-                        return new UserMessage(text);
-                    } else if (msg instanceof AssistantMessage) {
-                        // 截断过长的助手消息
-                        String text = msg.getText();
-                        if (text.length() > 500) {
-                            text = text.substring(0, 500) + "...";
-                        }
-                        return new AssistantMessage(text);
-                    }
-                    return msg;
-                })
-                .collect(java.util.stream.Collectors.toList());
+                        return msg;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
 
             // 添加简化的检查提示
             checkMessages.add(new UserMessage(SIMPLIFIED_CHECK_PROMPT));
 
             // 使用输出转换器
             BeanOutputConverter<NextSpeakerResponse> outputConverter =
-                new BeanOutputConverter<>(NextSpeakerResponse.class);
+                    new BeanOutputConverter<>(NextSpeakerResponse.class);
 
             // 调用LLM - 这里可以考虑添加超时，但Spring AI目前不直接支持
             ChatResponse response = ChatClient.create(chatModel)
-                .prompt()
-                .messages(checkMessages)
-                .call()
-                .chatResponse();
+                    .prompt()
+                    .messages(checkMessages)
+                    .call()
+                    .chatResponse();
 
             long duration = System.currentTimeMillis() - startTime;
             logger.debug("LLM check completed in {}ms", duration);
@@ -318,8 +315,8 @@ public class NextSpeakerService {
     private NextSpeakerResponse parseManually(String responseText) {
         try {
             // 简单的手动解析
-            if (responseText.toLowerCase().contains("\"next_speaker\"") && 
-                responseText.toLowerCase().contains("\"model\"")) {
+            if (responseText.toLowerCase().contains("\"next_speaker\"") &&
+                    responseText.toLowerCase().contains("\"model\"")) {
                 return new NextSpeakerResponse("model", "Parsed manually - model should continue");
             }
             return new NextSpeakerResponse("user", "Parsed manually - user should speak");
@@ -340,13 +337,13 @@ public class NextSpeakerService {
 
         // 优先检查明确的停止指示词 - 扩展版本
         String[] stopIndicators = {
-            "completed", "finished", "done", "ready", "all set", "task complete",
-            "project complete", "successfully created all", "that's it", "we're done",
-            "everything is ready", "all files created", "project is ready",
-            "task completed successfully", "all tasks completed", "work is complete",
-            "implementation complete", "setup complete", "configuration complete",
-            "files have been created", "project has been set up", "website is ready",
-            "application is ready", "all necessary files", "setup is complete"
+                "completed", "finished", "done", "ready", "all set", "task complete",
+                "project complete", "successfully created all", "that's it", "we're done",
+                "everything is ready", "all files created", "project is ready",
+                "task completed successfully", "all tasks completed", "work is complete",
+                "implementation complete", "setup complete", "configuration complete",
+                "files have been created", "project has been set up", "website is ready",
+                "application is ready", "all necessary files", "setup is complete"
         };
 
         // 检查停止指示词
@@ -365,14 +362,14 @@ public class NextSpeakerService {
 
         // 扩展的继续指示词
         String[] continueIndicators = {
-            "next, i", "now i", "let me", "i'll", "i will", "moving on",
-            "proceeding", "continuing", "then i", "after that", "following this",
-            "now let's", "let's now", "i need to", "i should", "i'm going to",
-            "next step", "continuing with", "moving to", "proceeding to",
-            "now creating", "now editing", "now updating", "now modifying",
-            "let me create", "let me edit", "let me update", "let me modify",
-            "i'll create", "i'll edit", "i'll update", "i'll modify",
-            "creating the", "editing the", "updating the", "modifying the"
+                "next, i", "now i", "let me", "i'll", "i will", "moving on",
+                "proceeding", "continuing", "then i", "after that", "following this",
+                "now let's", "let's now", "i need to", "i should", "i'm going to",
+                "next step", "continuing with", "moving to", "proceeding to",
+                "now creating", "now editing", "now updating", "now modifying",
+                "let me create", "let me edit", "let me update", "let me modify",
+                "i'll create", "i'll edit", "i'll update", "i'll modify",
+                "creating the", "editing the", "updating the", "modifying the"
         };
 
         // 检查继续指示词
@@ -406,25 +403,25 @@ public class NextSpeakerService {
 
         // 工具调用成功的典型模式
         String[] toolSuccessPatterns = {
-            "successfully created",
-            "successfully updated",
-            "successfully modified",
-            "successfully edited",
-            "file created",
-            "file updated",
-            "file modified",
-            "file edited",
-            "created file",
-            "updated file",
-            "modified file",
-            "edited file",
-            "✅", // 成功标记
-            "file has been created",
-            "file has been updated",
-            "file has been modified",
-            "content has been",
-            "successfully wrote",
-            "successfully saved"
+                "successfully created",
+                "successfully updated",
+                "successfully modified",
+                "successfully edited",
+                "file created",
+                "file updated",
+                "file modified",
+                "file edited",
+                "created file",
+                "updated file",
+                "modified file",
+                "edited file",
+                "✅", // 成功标记
+                "file has been created",
+                "file has been updated",
+                "file has been modified",
+                "content has been",
+                "successfully wrote",
+                "successfully saved"
         };
 
         for (String pattern : toolSuccessPatterns) {
@@ -441,16 +438,16 @@ public class NextSpeakerService {
      */
     private boolean containsFileOperationIntent(String lowerResponse) {
         String[] fileOperationIntents = {
-            "create a", "create the", "creating a", "creating the",
-            "edit a", "edit the", "editing a", "editing the",
-            "update a", "update the", "updating a", "updating the",
-            "modify a", "modify the", "modifying a", "modifying the",
-            "write a", "write the", "writing a", "writing the",
-            "generate a", "generate the", "generating a", "generating the",
-            "add to", "adding to", "append to", "appending to",
-            "need to create", "need to edit", "need to update", "need to modify",
-            "will create", "will edit", "will update", "will modify",
-            "going to create", "going to edit", "going to update", "going to modify"
+                "create a", "create the", "creating a", "creating the",
+                "edit a", "edit the", "editing a", "editing the",
+                "update a", "update the", "updating a", "updating the",
+                "modify a", "modify the", "modifying a", "modifying the",
+                "write a", "write the", "writing a", "writing the",
+                "generate a", "generate the", "generating a", "generating the",
+                "add to", "adding to", "append to", "appending to",
+                "need to create", "need to edit", "need to update", "need to modify",
+                "will create", "will edit", "will update", "will modify",
+                "going to create", "going to edit", "going to update", "going to modify"
         };
 
         for (String intent : fileOperationIntents) {
@@ -468,11 +465,12 @@ public class NextSpeakerService {
     public static class NextSpeakerResponse {
         @JsonProperty("next_speaker")
         private String nextSpeaker;
-        
+
         @JsonProperty("reasoning")
         private String reasoning;
 
-        public NextSpeakerResponse() {}
+        public NextSpeakerResponse() {
+        }
 
         public NextSpeakerResponse(String nextSpeaker, String reasoning) {
             this.nextSpeaker = nextSpeaker;

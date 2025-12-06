@@ -3,7 +3,10 @@ package com.example.demo.schema;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * JSON Schema definition class
@@ -11,25 +14,26 @@ import java.util.*;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JsonSchema {
-    
+
     private String type;
     private String description;
     private String pattern;
     private Number minimum;
     private Number maximum;
     private List<Object> enumValues;
-    
+
     @JsonProperty("properties")
     private Map<String, JsonSchema> properties;
-    
+
     @JsonProperty("required")
     private List<String> requiredFields;
-    
+
     @JsonProperty("items")
     private JsonSchema items;
 
     // Constructor
-    public JsonSchema() {}
+    public JsonSchema() {
+    }
 
     // Static factory methods
     public static JsonSchema object() {
@@ -117,30 +121,75 @@ public class JsonSchema {
     }
 
     // Getters and Setters
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public String getType() {
+        return type;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setType(String type) {
+        this.type = type;
+    }
 
-    public String getPattern() { return pattern; }
-    public void setPattern(String pattern) { this.pattern = pattern; }
+    public String getDescription() {
+        return description;
+    }
 
-    public Number getMinimum() { return minimum; }
-    public void setMinimum(Number minimum) { this.minimum = minimum; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public Number getMaximum() { return maximum; }
-    public void setMaximum(Number maximum) { this.maximum = maximum; }
+    public String getPattern() {
+        return pattern;
+    }
 
-    public List<Object> getEnumValues() { return enumValues; }
-    public void setEnumValues(List<Object> enumValues) { this.enumValues = enumValues; }
+    public void setPattern(String pattern) {
+        this.pattern = pattern;
+    }
 
-    public Map<String, JsonSchema> getProperties() { return properties; }
-    public void setProperties(Map<String, JsonSchema> properties) { this.properties = properties; }
+    public Number getMinimum() {
+        return minimum;
+    }
 
-    public List<String> getRequiredFields() { return requiredFields; }
-    public void setRequiredFields(List<String> requiredFields) { this.requiredFields = requiredFields; }
+    public void setMinimum(Number minimum) {
+        this.minimum = minimum;
+    }
 
-    public JsonSchema getItems() { return items; }
-    public void setItems(JsonSchema items) { this.items = items; }
+    public Number getMaximum() {
+        return maximum;
+    }
+
+    public void setMaximum(Number maximum) {
+        this.maximum = maximum;
+    }
+
+    public List<Object> getEnumValues() {
+        return enumValues;
+    }
+
+    public void setEnumValues(List<Object> enumValues) {
+        this.enumValues = enumValues;
+    }
+
+    public Map<String, JsonSchema> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, JsonSchema> properties) {
+        this.properties = properties;
+    }
+
+    public List<String> getRequiredFields() {
+        return requiredFields;
+    }
+
+    public void setRequiredFields(List<String> requiredFields) {
+        this.requiredFields = requiredFields;
+    }
+
+    public JsonSchema getItems() {
+        return items;
+    }
+
+    public void setItems(JsonSchema items) {
+        this.items = items;
+    }
 }

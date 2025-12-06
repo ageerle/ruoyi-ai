@@ -9,13 +9,13 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/task")
 @CrossOrigin(origins = "*")
 public class TaskStatusController {
-    
+
     private final ContinuousConversationService conversationService;
-    
+
     public TaskStatusController(ContinuousConversationService conversationService) {
         this.conversationService = conversationService;
     }
-    
+
     /**
      * 获取任务状态
      */
@@ -65,7 +65,7 @@ public class TaskStatusController {
             return dto;
         });
     }
-    
+
     // DTO类
     public static class TaskStatusDto {
         private String taskId;
@@ -77,34 +77,79 @@ public class TaskStatusController {
         private double progressPercentage;
         private long elapsedTime;
         private String errorMessage;
-        
+
         // Getters and Setters
-        public String getTaskId() { return taskId; }
-        public void setTaskId(String taskId) { this.taskId = taskId; }
-        
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-        
-        public String getCurrentAction() { return currentAction; }
-        public void setCurrentAction(String currentAction) { this.currentAction = currentAction; }
-        
-        public String getSummary() { return summary; }
-        public void setSummary(String summary) { this.summary = summary; }
-        
-        public int getCurrentTurn() { return currentTurn; }
-        public void setCurrentTurn(int currentTurn) { this.currentTurn = currentTurn; }
-        
-        public int getTotalEstimatedTurns() { return totalEstimatedTurns; }
-        public void setTotalEstimatedTurns(int totalEstimatedTurns) { this.totalEstimatedTurns = totalEstimatedTurns; }
-        
-        public double getProgressPercentage() { return progressPercentage; }
-        public void setProgressPercentage(double progressPercentage) { this.progressPercentage = progressPercentage; }
-        
-        public long getElapsedTime() { return elapsedTime; }
-        public void setElapsedTime(long elapsedTime) { this.elapsedTime = elapsedTime; }
-        
-        public String getErrorMessage() { return errorMessage; }
-        public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+        public String getTaskId() {
+            return taskId;
+        }
+
+        public void setTaskId(String taskId) {
+            this.taskId = taskId;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String getCurrentAction() {
+            return currentAction;
+        }
+
+        public void setCurrentAction(String currentAction) {
+            this.currentAction = currentAction;
+        }
+
+        public String getSummary() {
+            return summary;
+        }
+
+        public void setSummary(String summary) {
+            this.summary = summary;
+        }
+
+        public int getCurrentTurn() {
+            return currentTurn;
+        }
+
+        public void setCurrentTurn(int currentTurn) {
+            this.currentTurn = currentTurn;
+        }
+
+        public int getTotalEstimatedTurns() {
+            return totalEstimatedTurns;
+        }
+
+        public void setTotalEstimatedTurns(int totalEstimatedTurns) {
+            this.totalEstimatedTurns = totalEstimatedTurns;
+        }
+
+        public double getProgressPercentage() {
+            return progressPercentage;
+        }
+
+        public void setProgressPercentage(double progressPercentage) {
+            this.progressPercentage = progressPercentage;
+        }
+
+        public long getElapsedTime() {
+            return elapsedTime;
+        }
+
+        public void setElapsedTime(long elapsedTime) {
+            this.elapsedTime = elapsedTime;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public void setErrorMessage(String errorMessage) {
+            this.errorMessage = errorMessage;
+        }
     }
 
     // 对话结果DTO类
@@ -118,25 +163,60 @@ public class TaskStatusController {
         private long totalDurationMs;
 
         // Getters and Setters
-        public String getTaskId() { return taskId; }
-        public void setTaskId(String taskId) { this.taskId = taskId; }
+        public String getTaskId() {
+            return taskId;
+        }
 
-        public String getFullResponse() { return fullResponse; }
-        public void setFullResponse(String fullResponse) { this.fullResponse = fullResponse; }
+        public void setTaskId(String taskId) {
+            this.taskId = taskId;
+        }
 
-        public java.util.List<String> getTurnResponses() { return turnResponses; }
-        public void setTurnResponses(java.util.List<String> turnResponses) { this.turnResponses = turnResponses; }
+        public String getFullResponse() {
+            return fullResponse;
+        }
 
-        public int getTotalTurns() { return totalTurns; }
-        public void setTotalTurns(int totalTurns) { this.totalTurns = totalTurns; }
+        public void setFullResponse(String fullResponse) {
+            this.fullResponse = fullResponse;
+        }
 
-        public boolean isReachedMaxTurns() { return reachedMaxTurns; }
-        public void setReachedMaxTurns(boolean reachedMaxTurns) { this.reachedMaxTurns = reachedMaxTurns; }
+        public java.util.List<String> getTurnResponses() {
+            return turnResponses;
+        }
 
-        public String getStopReason() { return stopReason; }
-        public void setStopReason(String stopReason) { this.stopReason = stopReason; }
+        public void setTurnResponses(java.util.List<String> turnResponses) {
+            this.turnResponses = turnResponses;
+        }
 
-        public long getTotalDurationMs() { return totalDurationMs; }
-        public void setTotalDurationMs(long totalDurationMs) { this.totalDurationMs = totalDurationMs; }
+        public int getTotalTurns() {
+            return totalTurns;
+        }
+
+        public void setTotalTurns(int totalTurns) {
+            this.totalTurns = totalTurns;
+        }
+
+        public boolean isReachedMaxTurns() {
+            return reachedMaxTurns;
+        }
+
+        public void setReachedMaxTurns(boolean reachedMaxTurns) {
+            this.reachedMaxTurns = reachedMaxTurns;
+        }
+
+        public String getStopReason() {
+            return stopReason;
+        }
+
+        public void setStopReason(String stopReason) {
+            this.stopReason = stopReason;
+        }
+
+        public long getTotalDurationMs() {
+            return totalDurationMs;
+        }
+
+        public void setTotalDurationMs(long totalDurationMs) {
+            this.totalDurationMs = totalDurationMs;
+        }
     }
 }

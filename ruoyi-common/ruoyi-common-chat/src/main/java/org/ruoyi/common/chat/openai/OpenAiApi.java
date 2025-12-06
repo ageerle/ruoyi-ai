@@ -40,7 +40,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 /**
- *   open ai官方api接口
+ * open ai官方api接口
  *
  * @author https:www.unfbx.com
  * 2023-02-15
@@ -58,7 +58,7 @@ public interface OpenAiApi {
     /**
      * models 返回的数据id
      *
-     * @param id    模型主键
+     * @param id 模型主键
      * @return Single Model
      */
     @GET("v1/models/{id}")
@@ -317,7 +317,7 @@ public interface OpenAiApi {
     /**
      * 账户信息查询：里面包含总金额（美元）等信息
      *
-     * @return  账户信息
+     * @return 账户信息
      */
     @GET("v1/dashboard/billing/subscription")
     Single<Subscription> subscription();

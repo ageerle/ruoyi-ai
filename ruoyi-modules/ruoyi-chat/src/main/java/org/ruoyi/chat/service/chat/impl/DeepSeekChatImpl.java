@@ -1,10 +1,7 @@
 package org.ruoyi.chat.service.chat.impl;
 
 
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.data.message.AiMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -15,7 +12,6 @@ import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import okhttp3.Response;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.chat.support.ChatServiceHelper;
@@ -27,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,31 +31,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-
-import java.util.ArrayList;
-import java.util.List;
 /**
  * deepseek
  */
 @Service
 @Slf4j
-public class DeepSeekChatImpl  implements IChatService {
-
-    @Autowired
-    private IChatModelService chatModelService;
+public class DeepSeekChatImpl implements IChatService {
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-
     // 创建一个用于直接API调用的OkHttpClient
     private final OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .build();
+    @Autowired
+    private IChatModelService chatModelService;
 
     @Override
     public SseEmitter chat(ChatRequest chatRequest, SseEmitter emitter) {

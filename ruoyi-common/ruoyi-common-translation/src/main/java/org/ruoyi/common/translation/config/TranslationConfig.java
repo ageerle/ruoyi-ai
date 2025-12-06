@@ -43,8 +43,8 @@ public class TranslationConfig {
         TranslationHandler.TRANSLATION_MAPPER.putAll(map);
         // 设置 Bean 序列化修改器
         objectMapper.setSerializerFactory(
-            objectMapper.getSerializerFactory()
-                .withSerializerModifier(new TranslationBeanSerializerModifier()));
+                objectMapper.getSerializerFactory()
+                        .withSerializerModifier(new TranslationBeanSerializerModifier()));
     }
 
 }

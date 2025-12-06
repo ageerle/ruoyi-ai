@@ -34,7 +34,7 @@ public class LocationHandler extends AbstractHandler {
 
         //上报地理位置事件
         log.info("\n上报地理位置，纬度 : {}\n经度 : {}\n精度 : {}",
-            wxMessage.getLatitude(), wxMessage.getLongitude(), String.valueOf(wxMessage.getPrecision()));
+                wxMessage.getLatitude(), wxMessage.getLongitude(), String.valueOf(wxMessage.getPrecision()));
 
         //TODO  可以将用户地理位置信息保存到本地数据库，以便以后使用
 

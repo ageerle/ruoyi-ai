@@ -30,6 +30,7 @@ public class FineTune implements Serializable {
     private String validationFile;
     /**
      * 参考
+     *
      * @see Model
      */
     private String model;
@@ -101,7 +102,7 @@ public class FineTune implements Serializable {
     }
 
     public void setSuffix(String suffix) {
-        if(Objects.nonNull(suffix) && !"".equals(suffix) && suffix.length() > 40){
+        if (Objects.nonNull(suffix) && !"".equals(suffix) && suffix.length() > 40) {
             log.error("后缀长度不能大于40");
             throw new BaseException(CommonError.PARAM_ERROR.msg());
         }

@@ -1,19 +1,14 @@
 package org.ruoyi.aihuman.domain.bo;
 
-import org.ruoyi.aihuman.domain.AihumanConfig;
-import org.ruoyi.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
+import org.ruoyi.aihuman.domain.AihumanConfig;
+import org.ruoyi.common.core.validate.AddGroup;
+import org.ruoyi.common.core.validate.EditGroup;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.io.Serializable;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import java.io.Serializable;
-import java.io.Serializable;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
 
 /**
  * 交互数字人配置业务对象 aihuman_config
@@ -59,12 +54,12 @@ public class AihumanConfigBo implements Serializable {
     /**
      * status
      */
-    @NotNull(message = "status不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "status不能为空", groups = {AddGroup.class, EditGroup.class})
     private Integer status;
     /**
      * publish
      */
-    @NotNull(message = "publish不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotNull(message = "publish不能为空", groups = {AddGroup.class, EditGroup.class})
     private Integer publish;
 
 }

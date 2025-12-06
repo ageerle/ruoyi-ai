@@ -53,6 +53,7 @@ public class SysUserController extends BaseController {
     private final ISysDeptService deptService;
     private final ISysTenantService tenantService;
     private final ISysOssService ossService;
+
     /**
      * 获取用户列表
      */
@@ -69,8 +70,8 @@ public class SysUserController extends BaseController {
     public R<List<SysUserOptionVo>> getUserOption() {
         List<SysUserVo> sysUserVos = userService.selectUserList(new SysUserBo());
         List<SysUserOptionVo> collect = sysUserVos.stream()
-            .map(this::convertToUserOptionVo)
-            .collect(Collectors.toList());
+                .map(this::convertToUserOptionVo)
+                .collect(Collectors.toList());
         return R.ok(collect);
     }
 
@@ -176,10 +177,10 @@ public class SysUserController extends BaseController {
                 return R.fail("当前租户下用户名额不足，请联系管理员");
             }
         }
-        if(StringUtils.isEmpty(user.getPassword())){
+        if (StringUtils.isEmpty(user.getPassword())) {
             user.setPassword("123456");
         }
-        if(StringUtils.isEmpty(user.getNickName())){
+        if (StringUtils.isEmpty(user.getNickName())) {
             user.setNickName(user.getUserName());
         }
         user.setDeptId(103L);
@@ -211,7 +212,7 @@ public class SysUserController extends BaseController {
      */
     @Log(title = "修改用户名称", businessType = BusinessType.UPDATE)
     @PostMapping("/editName")
-    public R<Void> editName(@RequestBody @Validated  UserRequest userRequest) {
+    public R<Void> editName(@RequestBody @Validated UserRequest userRequest) {
         LoginUser loginUser = LoginHelper.getLoginUser();
         userService.updateUserName(loginUser.getUserId(), userRequest.getNickName());
         return R.ok("操作成功!");
@@ -327,7 +328,7 @@ public class SysUserController extends BaseController {
      * 根据部门ID统计用户数量 /system/user/list/dept/
      *
      * @param deptId 部门ID
-     */ 
+     */
     @SaCheckPermission("system:user:list:dept")
     @GetMapping("/list/dept/{deptId}")
     public R<List<SysUserVo>> countUsersByDept(@PathVariable Long deptId) {

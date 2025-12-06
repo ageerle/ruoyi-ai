@@ -6,9 +6,7 @@ import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.request.ChatRequest;
-import org.ruoyi.common.chat.utils.TikTokensUtil;
 import org.ruoyi.common.core.service.BaseContext;
-import org.ruoyi.domain.bo.ChatMessageBo;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -18,7 +16,6 @@ import java.util.function.Consumer;
 /**
  * 统一计费代理类
  * 自动处理所有ChatService的AI回复保存和计费逻辑
- *
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -33,7 +30,7 @@ public class BillingChatServiceProxy implements IChatService {
         if (!chatCostService.checkBalanceSufficient(chatRequest)) {
             String errorMsg = "余额不足，无法使用AI服务，请充值后再试";
             log.warn("余额不足阻止AI回复，用户ID: {}, 模型: {}",
-                     chatRequest.getUserId(), chatRequest.getModel());
+                    chatRequest.getUserId(), chatRequest.getModel());
             try {
                 emitter.send(errorMsg);
                 emitter.complete();
@@ -47,7 +44,7 @@ public class BillingChatServiceProxy implements IChatService {
         }
 
         log.debug("余额检查通过，开始AI回复，用户ID: {}, 模型: {}",
-                  chatRequest.getUserId(), chatRequest.getModel());
+                chatRequest.getUserId(), chatRequest.getModel());
 
         // 创建增强的SseEmitter，自动收集AI回复
         BillingSseEmitter billingEmitter = new BillingSseEmitter(emitter, chatRequest, chatCostService);
@@ -150,11 +147,11 @@ public class BillingChatServiceProxy implements IChatService {
                 chatCostService.publishBillingEvent(aiChatRequest);
 
                 log.debug("AI回复保存和计费完成，用户ID: {}, 会话ID: {}, 回复长度: {}",
-                          chatRequest.getUserId(), chatRequest.getSessionId(), aiResponse.length());
+                        chatRequest.getUserId(), chatRequest.getSessionId(), aiResponse.length());
 
             } catch (Exception e) {
                 log.error("保存AI回复和计费失败，用户ID: {}, 会话ID: {}",
-                          chatRequest.getUserId(), chatRequest.getSessionId(), e);
+                        chatRequest.getUserId(), chatRequest.getSessionId(), e);
                 // 不抛出异常，避免影响用户体验
             }
         }
@@ -212,10 +209,10 @@ public class BillingChatServiceProxy implements IChatService {
 
             String trimmed = data.trim();
             return "[DONE]".equals(trimmed)
-                || "null".equals(trimmed)
-                || trimmed.startsWith("event:")
-                || trimmed.startsWith("id:")
-                || trimmed.startsWith("retry:");
+                    || "null".equals(trimmed)
+                    || trimmed.startsWith("event:")
+                    || trimmed.startsWith("id:")
+                    || trimmed.startsWith("retry:");
         }
 
         /**
@@ -260,11 +257,11 @@ public class BillingChatServiceProxy implements IChatService {
          */
         private boolean isPureTextContent(String data) {
             return data != null
-                && !data.trim().isEmpty()
-                && !data.contains("{")
-                && !data.contains("[")
-                && !data.contains("data:")
-                && data.length() < 500; // 合理的文本长度
+                    && !data.trim().isEmpty()
+                    && !data.contains("{")
+                    && !data.contains("[")
+                    && !data.contains("data:")
+                    && data.length() < 500; // 合理的文本长度
         }
 
         /**

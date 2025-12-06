@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ToolResult {
-    
+
     private final boolean success;
     private final String llmContent;
     private final Object returnDisplay;
@@ -34,10 +34,21 @@ public class ToolResult {
     }
 
     // Getters
-    public boolean isSuccess() { return success; }
-    public String getLlmContent() { return llmContent; }
-    public Object getReturnDisplay() { return returnDisplay; }
-    public String getErrorMessage() { return errorMessage; }
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public String getLlmContent() {
+        return llmContent;
+    }
+
+    public Object getReturnDisplay() {
+        return returnDisplay;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
 
     @Override
     public String toString() {
@@ -62,8 +73,13 @@ class FileDiff {
         this.fileName = fileName;
     }
 
-    public String getFileDiff() { return fileDiff; }
-    public String getFileName() { return fileName; }
+    public String getFileDiff() {
+        return fileDiff;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
 
     @Override
     public String toString() {
@@ -89,8 +105,8 @@ class ToolConfirmationDetails {
     }
 
     public static ToolConfirmationDetails edit(String title, String fileName, String fileDiff) {
-        return new ToolConfirmationDetails("edit", title, "File edit confirmation", 
-            new FileDiff(fileDiff, fileName));
+        return new ToolConfirmationDetails("edit", title, "File edit confirmation",
+                new FileDiff(fileDiff, fileName));
     }
 
     public static ToolConfirmationDetails exec(String title, String command) {
@@ -98,8 +114,19 @@ class ToolConfirmationDetails {
     }
 
     // Getters
-    public String getType() { return type; }
-    public String getTitle() { return title; }
-    public String getDescription() { return description; }
-    public Object getDetails() { return details; }
+    public String getType() {
+        return type;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Object getDetails() {
+        return details;
+    }
 }

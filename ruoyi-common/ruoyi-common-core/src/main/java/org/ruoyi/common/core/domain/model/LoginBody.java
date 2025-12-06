@@ -21,7 +21,7 @@ public class LoginBody {
      * 用户名
      */
     @NotBlank(message = "{user.username.not.blank}")
-   // @Length(min = UserConstants.USERNAME_MIN_LENGTH, max = UserConstants.USERNAME_MAX_LENGTH, message = "{user.username.length.valid}")
+    // @Length(min = UserConstants.USERNAME_MIN_LENGTH, max = UserConstants.USERNAME_MAX_LENGTH, message = "{user.username.length.valid}")
     private String username;
 
     /**

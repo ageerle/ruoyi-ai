@@ -25,10 +25,6 @@ public class MessagePicture extends BaseMessage implements Serializable {
     private List<Content> content;
 
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
     /**
      * 构造函数
      *
@@ -56,6 +52,10 @@ public class MessagePicture extends BaseMessage implements Serializable {
         super.setFunctionCall(builder.functionCall);
         super.setToolCalls(builder.toolCalls);
         super.setToolCallId(builder.toolCallId);
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     public static final class Builder {

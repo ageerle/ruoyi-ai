@@ -24,43 +24,43 @@ public class ChatConfigBo extends BaseEntity {
     /**
      * 主键
      */
-    @NotNull(message = "主键不能为空", groups = { EditGroup.class })
+    @NotNull(message = "主键不能为空", groups = {EditGroup.class})
     private Long id;
 
     /**
      * 配置类型
      */
-    @NotBlank(message = "配置类型不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "配置类型不能为空", groups = {AddGroup.class, EditGroup.class})
     private String category;
 
     /**
      * 配置名称
      */
-    @NotBlank(message = "配置名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "配置名称不能为空", groups = {AddGroup.class, EditGroup.class})
     private String configName;
 
     /**
      * 配置值
      */
-    @NotBlank(message = "配置值不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "配置值不能为空", groups = {AddGroup.class, EditGroup.class})
     private String configValue;
 
     /**
      * 说明
      */
-    @NotBlank(message = "说明不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "说明不能为空", groups = {AddGroup.class, EditGroup.class})
     private String configDict;
 
     /**
      * 备注
      */
-    @NotBlank(message = "备注不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "备注不能为空", groups = {AddGroup.class, EditGroup.class})
     private String remark;
 
     /**
      * 更新IP
      */
-    @NotBlank(message = "更新IP不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "更新IP不能为空", groups = {AddGroup.class, EditGroup.class})
     private String updateIp;
 
 

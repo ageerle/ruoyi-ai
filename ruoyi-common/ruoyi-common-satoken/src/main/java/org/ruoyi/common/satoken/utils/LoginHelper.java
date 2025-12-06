@@ -63,8 +63,8 @@ public class LoginHelper {
             model.setDevice(deviceType.getDevice());
         }
         StpUtil.login(loginUser.getLoginId(),
-            model.setExtra(TENANT_KEY, loginUser.getTenantId())
-                .setExtra(USER_KEY, loginUser.getUserId()));
+                model.setExtra(TENANT_KEY, loginUser.getTenantId())
+                        .setExtra(USER_KEY, loginUser.getUserId()));
         StpUtil.getTokenSession().set(LOGIN_USER_KEY, loginUser);
     }
 
@@ -78,9 +78,10 @@ public class LoginHelper {
         }
         SaSession tokenSession = StpUtil.getTokenSession();
         if (tokenSession != null) {
-            loginUser =  (LoginUser) tokenSession.get(LOGIN_USER_KEY);
+            loginUser = (LoginUser) tokenSession.get(LOGIN_USER_KEY);
             SaHolder.getStorage().set(LOGIN_USER_KEY, loginUser);
-        };
+        }
+        ;
         return loginUser;
     }
 

@@ -10,7 +10,7 @@ import okhttp3.sse.EventSourceListener;
 import java.util.Objects;
 
 /**
- *   sse
+ * sse
  *
  * @author https:www.unfbx.com
  * 2023-02-28
@@ -39,7 +39,7 @@ public class ConsoleEventSourceListener extends EventSourceListener {
     @SneakyThrows
     @Override
     public void onFailure(EventSource eventSource, Throwable t, Response response) {
-        if(Objects.isNull(response)){
+        if (Objects.isNull(response)) {
             log.error("OpenAI  sse连接异常:{}", t);
             eventSource.cancel();
             return;

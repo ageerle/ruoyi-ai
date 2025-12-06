@@ -42,14 +42,14 @@ public class SysRegisterService {
 
 
         String tenantId = Constants.TENANT_ID;
-        if(StringUtils.isNotBlank(registerBody.getTenantId())){
+        if (StringUtils.isNotBlank(registerBody.getTenantId())) {
             tenantId = registerBody.getTenantId();
         }
         String username = registerBody.getUsername();
         String password = registerBody.getPassword();
 
         // 检查验证码是否正确
-        validateEmail(username,registerBody.getCode());
+        validateEmail(username, registerBody.getCode());
         SysUserBo sysUser = new SysUserBo();
         sysUser.setDomainName(registerBody.getDomainName());
         sysUser.setUserName(username);
@@ -78,12 +78,12 @@ public class SysRegisterService {
         String username = registerBody.getUsername();
         String password = registerBody.getPassword();
         SysUserVo user = userService.selectUserByUserName(username);
-        if(user == null){
-            throw new UserException(String.format("用户【%s】,未注册!",username));
+        if (user == null) {
+            throw new UserException(String.format("用户【%s】,未注册!", username));
         }
         // 检查验证码是否正确
-        validateEmail(username,registerBody.getCode());
-        userService.resetUserPwd(user.getUserId(),BCrypt.hashpw(password));
+        validateEmail(username, registerBody.getCode());
+        userService.resetUserPwd(user.getUserId(), BCrypt.hashpw(password));
     }
 
     /**
@@ -91,12 +91,12 @@ public class SysRegisterService {
      *
      * @param username 用户名
      */
-    public void validateEmail(String username,String code) {
+    public void validateEmail(String username, String code) {
         String key = GlobalConstants.CAPTCHA_CODE_KEY + username;
-         String captcha = RedisUtils.getCacheObject(key);
-        if(code.equals(captcha)){
+        String captcha = RedisUtils.getCacheObject(key);
+        if (code.equals(captcha)) {
             RedisUtils.deleteObject(captcha);
-        }else {
+        } else {
             throw new BaseException("验证码错误,请重试！");
         }
     }

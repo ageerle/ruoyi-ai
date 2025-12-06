@@ -113,6 +113,14 @@ public class SysMenu extends BaseEntity {
     private List<SysMenu> children = new ArrayList<>();
 
     /**
+     * 内链域名特殊字符替换
+     */
+    public static String innerLinkReplaceEach(String path) {
+        return StringUtils.replaceEach(path, new String[]{Constants.HTTP, Constants.HTTPS, Constants.WWW, "."},
+                new String[]{"", "", "", "/"});
+    }
+
+    /**
      * 获取路由名称
      */
     public String getRouteName() {
@@ -135,7 +143,7 @@ public class SysMenu extends BaseEntity {
         }
         // 非外链并且是一级目录（类型为目录）
         if (0L == getParentId() && UserConstants.TYPE_DIR.equals(getMenuType())
-            && UserConstants.NO_FRAME.equals(getIsFrame())) {
+                && UserConstants.NO_FRAME.equals(getIsFrame())) {
             routerPath = "/" + this.path;
         }
         // 非外链并且是一级目录（类型为菜单）
@@ -179,13 +187,5 @@ public class SysMenu extends BaseEntity {
      */
     public boolean isParentView() {
         return getParentId() != 0L && UserConstants.TYPE_DIR.equals(menuType);
-    }
-
-    /**
-     * 内链域名特殊字符替换
-     */
-    public static String innerLinkReplaceEach(String path) {
-        return StringUtils.replaceEach(path, new String[]{Constants.HTTP, Constants.HTTPS, Constants.WWW, "."},
-            new String[]{"", "", "", "/"});
     }
 }

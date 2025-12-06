@@ -16,9 +16,9 @@ public interface IGraphRAGService {
     /**
      * 将文本入库到图谱
      *
-     * @param text         文本内容
-     * @param knowledgeId  知识库ID
-     * @param metadata     元数据
+     * @param text        文本内容
+     * @param knowledgeId 知识库ID
+     * @param metadata    元数据
      * @return 抽取结果
      */
     GraphExtractionResult ingestText(String text, String knowledgeId, Map<String, Object> metadata);
@@ -26,10 +26,10 @@ public interface IGraphRAGService {
     /**
      * 将文本入库到图谱（指定模型）
      *
-     * @param text         文本内容
-     * @param knowledgeId  知识库ID
-     * @param metadata     元数据
-     * @param modelName    LLM模型名称
+     * @param text        文本内容
+     * @param knowledgeId 知识库ID
+     * @param metadata    元数据
+     * @param modelName   LLM模型名称
      * @return 抽取结果
      */
     GraphExtractionResult ingestTextWithModel(String text, String knowledgeId, Map<String, Object> metadata, String modelName);

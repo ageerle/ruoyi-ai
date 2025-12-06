@@ -37,13 +37,13 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
 
     public EditFileTool(AppProperties appProperties) {
         super(
-            "edit_file",
-            "EditFile",
-            "Edits a file by replacing specified text with new text. " +
-            "Shows a diff of the changes before applying them. " +
-            "Supports both exact string matching and line-based editing. " +
-            "Use absolute paths within the workspace directory.",
-            createSchema()
+                "edit_file",
+                "EditFile",
+                "Edits a file by replacing specified text with new text. " +
+                        "Shows a diff of the changes before applying them. " +
+                        "Supports both exact string matching and line-based editing. " +
+                        "Use absolute paths within the workspace directory.",
+                createSchema()
         );
         this.appProperties = appProperties;
         this.rootDirectory = appProperties.getWorkspace().getRootDirectory();
@@ -59,25 +59,25 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
 
     private static JsonSchema createSchema() {
         return JsonSchema.object()
-            .addProperty("file_path", JsonSchema.string(
-                "MUST be an absolute path to the file to edit. Path must be within the workspace directory (" + 
-                getWorkspaceBasePath() + "). " +
-                getPathExample("project/src/main.java") + ". " +
-                "Relative paths are NOT allowed."
-            ))
-            .addProperty("old_str", JsonSchema.string(
-                "The exact string to find and replace. Must match exactly including whitespace and newlines."
-            ))
-            .addProperty("new_str", JsonSchema.string(
-                "The new string to replace the old string with. Can be empty to delete the old string."
-            ))
-            .addProperty("start_line", JsonSchema.integer(
-                "Optional: 1-based line number where the old_str starts. Helps with disambiguation."
-            ).minimum(1))
-            .addProperty("end_line", JsonSchema.integer(
-                "Optional: 1-based line number where the old_str ends. Must be >= start_line."
-            ).minimum(1))
-            .required("file_path", "old_str", "new_str");
+                .addProperty("file_path", JsonSchema.string(
+                        "MUST be an absolute path to the file to edit. Path must be within the workspace directory (" +
+                                getWorkspaceBasePath() + "). " +
+                                getPathExample("project/src/main.java") + ". " +
+                                "Relative paths are NOT allowed."
+                ))
+                .addProperty("old_str", JsonSchema.string(
+                        "The exact string to find and replace. Must match exactly including whitespace and newlines."
+                ))
+                .addProperty("new_str", JsonSchema.string(
+                        "The new string to replace the old string with. Can be empty to delete the old string."
+                ))
+                .addProperty("start_line", JsonSchema.integer(
+                        "Optional: 1-based line number where the old_str starts. Helps with disambiguation."
+                ).minimum(1))
+                .addProperty("end_line", JsonSchema.integer(
+                        "Optional: 1-based line number where the old_str ends. Must be >= start_line."
+                ).minimum(1))
+                .required("file_path", "old_str", "new_str");
     }
 
     @Override
@@ -101,7 +101,7 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
         }
 
         Path filePath = Paths.get(params.filePath);
-        
+
         // Validate if it's an absolute path
         if (!filePath.isAbsolute()) {
             return "File path must be absolute: " + params.filePath;
@@ -126,31 +126,31 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
     public CompletableFuture<ToolConfirmationDetails> shouldConfirmExecute(EditFileParams params) {
         // Decide whether confirmation is needed based on configuration
         if (appProperties.getSecurity().getApprovalMode() == AppProperties.ApprovalMode.AUTO_EDIT ||
-            appProperties.getSecurity().getApprovalMode() == AppProperties.ApprovalMode.YOLO) {
+                appProperties.getSecurity().getApprovalMode() == AppProperties.ApprovalMode.YOLO) {
             return CompletableFuture.completedFuture(null);
         }
 
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Path filePath = Paths.get(params.filePath);
-                
+
                 if (!Files.exists(filePath)) {
                     return null; // 文件不存在，无法预览差异
                 }
-                
+
                 String currentContent = Files.readString(filePath, StandardCharsets.UTF_8);
                 String newContent = performEdit(currentContent, params);
-                
+
                 if (newContent == null) {
                     return null; // Edit failed, cannot preview differences
                 }
-                
+
                 // 生成差异显示
                 String diff = generateDiff(filePath.getFileName().toString(), currentContent, newContent);
                 String title = "Confirm Edit: " + getRelativePath(filePath);
-                
+
                 return ToolConfirmationDetails.edit(title, filePath.getFileName().toString(), diff);
-                    
+
             } catch (IOException e) {
                 logger.warn("Could not read file for edit preview: " + params.filePath, e);
                 return null;
@@ -164,9 +164,9 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
     @Tool(name = "edit_file", description = "Edits a file by replacing specified text with new text")
     public String editFile(String filePath, String oldStr, String newStr, Integer startLine, Integer endLine) {
         long callId = executionLogger.logToolStart("edit_file", "编辑文件内容",
-            String.format("文件=%s, 替换文本长度=%d->%d, 行号范围=%s-%s",
-                filePath, oldStr != null ? oldStr.length() : 0,
-                newStr != null ? newStr.length() : 0, startLine, endLine));
+                String.format("文件=%s, 替换文本长度=%d->%d, 行号范围=%s-%s",
+                        filePath, oldStr != null ? oldStr.length() : 0,
+                        newStr != null ? newStr.length() : 0, startLine, endLine));
         long startTime = System.currentTimeMillis();
 
         try {
@@ -188,7 +188,7 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
             }
 
             String editDetails = startLine != null && endLine != null ?
-                String.format("行号范围编辑: %d-%d行", startLine, endLine) : "字符串替换编辑";
+                    String.format("行号范围编辑: %d-%d行", startLine, endLine) : "字符串替换编辑";
             executionLogger.logFileOperation(callId, "编辑文件", filePath, editDetails);
 
             // Execute the tool
@@ -217,7 +217,7 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Path filePath = Paths.get(params.filePath);
-                
+
                 // Check if file exists
                 if (!Files.exists(filePath)) {
                     return ToolResult.error("File not found: " + params.filePath);
@@ -230,26 +230,26 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
 
                 // 读取原始内容
                 String originalContent = Files.readString(filePath, StandardCharsets.UTF_8);
-                
+
                 // 执行编辑
                 String newContent = performEdit(originalContent, params);
                 if (newContent == null) {
                     return ToolResult.error("Could not find the specified text to replace in file: " + params.filePath);
                 }
-                
+
                 // 创建备份
                 if (shouldCreateBackup()) {
                     createBackup(filePath, originalContent);
                 }
-                
+
                 // Write new content
                 Files.writeString(filePath, newContent, StandardCharsets.UTF_8);
-                
+
                 // Generate differences and results
                 String diff = generateDiff(filePath.getFileName().toString(), originalContent, newContent);
                 String relativePath = getRelativePath(filePath);
                 String successMessage = String.format("Successfully edited file: %s", params.filePath);
-                
+
                 return ToolResult.success(successMessage, new FileDiff(diff, filePath.getFileName().toString()));
 
             } catch (IOException e) {
@@ -276,13 +276,13 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
         if (!content.contains(params.oldStr)) {
             return null; // Cannot find string to replace
         }
-        
+
         // Only replace the first match to avoid unexpected multiple replacements
         int index = content.indexOf(params.oldStr);
         if (index == -1) {
             return null;
         }
-        
+
         return content.substring(0, index) + params.newStr + content.substring(index + params.oldStr.length());
     }
 
@@ -302,7 +302,7 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
             }
             targetContent.append(lines[i]);
         }
-        
+
         // 检查是否匹配
         if (!targetContent.toString().equals(params.oldStr)) {
             return null; // 指定行范围的内容与old_str不匹配
@@ -316,17 +316,17 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
             if (i > 0) result.append("\n");
             result.append(lines[i]);
         }
-        
+
         // 添加新内容
         if (params.startLine > 1) result.append("\n");
         result.append(params.newStr);
-        
+
         // 添加后面的行
         for (int i = params.endLine; i < lines.length; i++) {
             result.append("\n");
             result.append(lines[i]);
         }
-        
+
         return result.toString();
     }
 
@@ -334,16 +334,16 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
         try {
             List<String> oldLines = Arrays.asList(oldContent.split("\n"));
             List<String> newLines = Arrays.asList(newContent.split("\n"));
-            
+
             Patch<String> patch = DiffUtils.diff(oldLines, newLines);
             List<String> unifiedDiff = UnifiedDiffUtils.generateUnifiedDiff(
-                fileName + " (Original)",
-                fileName + " (Edited)",
-                oldLines,
-                patch,
-                3 // context lines
+                    fileName + " (Original)",
+                    fileName + " (Edited)",
+                    oldLines,
+                    patch,
+                    3 // context lines
             );
-            
+
             return String.join("\n", unifiedDiff);
         } catch (Exception e) {
             logger.warn("Could not generate diff", e);
@@ -355,7 +355,7 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String backupFileName = filePath.getFileName().toString() + ".backup." + timestamp;
         Path backupPath = filePath.getParent().resolve(backupFileName);
-        
+
         Files.writeString(backupPath, content, StandardCharsets.UTF_8);
         logger.info("Created backup: {}", backupPath);
     }
@@ -390,21 +390,22 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
     public static class EditFileParams {
         @JsonProperty("file_path")
         private String filePath;
-        
+
         @JsonProperty("old_str")
         private String oldStr;
-        
+
         @JsonProperty("new_str")
         private String newStr;
-        
+
         @JsonProperty("start_line")
         private Integer startLine;
-        
+
         @JsonProperty("end_line")
         private Integer endLine;
 
         // 构造器
-        public EditFileParams() {}
+        public EditFileParams() {
+        }
 
         public EditFileParams(String filePath, String oldStr, String newStr) {
             this.filePath = filePath;
@@ -413,28 +414,53 @@ public class EditFileTool extends BaseTool<EditFileTool.EditFileParams> {
         }
 
         // Getters and Setters
-        public String getFilePath() { return filePath; }
-        public void setFilePath(String filePath) { this.filePath = filePath; }
+        public String getFilePath() {
+            return filePath;
+        }
 
-        public String getOldStr() { return oldStr; }
-        public void setOldStr(String oldStr) { this.oldStr = oldStr; }
+        public void setFilePath(String filePath) {
+            this.filePath = filePath;
+        }
 
-        public String getNewStr() { return newStr; }
-        public void setNewStr(String newStr) { this.newStr = newStr; }
+        public String getOldStr() {
+            return oldStr;
+        }
 
-        public Integer getStartLine() { return startLine; }
-        public void setStartLine(Integer startLine) { this.startLine = startLine; }
+        public void setOldStr(String oldStr) {
+            this.oldStr = oldStr;
+        }
 
-        public Integer getEndLine() { return endLine; }
-        public void setEndLine(Integer endLine) { this.endLine = endLine; }
+        public String getNewStr() {
+            return newStr;
+        }
+
+        public void setNewStr(String newStr) {
+            this.newStr = newStr;
+        }
+
+        public Integer getStartLine() {
+            return startLine;
+        }
+
+        public void setStartLine(Integer startLine) {
+            this.startLine = startLine;
+        }
+
+        public Integer getEndLine() {
+            return endLine;
+        }
+
+        public void setEndLine(Integer endLine) {
+            this.endLine = endLine;
+        }
 
         @Override
         public String toString() {
-            return String.format("EditFileParams{path='%s', oldStrLength=%d, newStrLength=%d, lines=%s-%s}", 
-                filePath, 
-                oldStr != null ? oldStr.length() : 0,
-                newStr != null ? newStr.length() : 0,
-                startLine, endLine);
+            return String.format("EditFileParams{path='%s', oldStrLength=%d, newStrLength=%d, lines=%s-%s}",
+                    filePath,
+                    oldStr != null ? oldStr.length() : 0,
+                    newStr != null ? newStr.length() : 0,
+                    startLine, endLine);
         }
     }
 }

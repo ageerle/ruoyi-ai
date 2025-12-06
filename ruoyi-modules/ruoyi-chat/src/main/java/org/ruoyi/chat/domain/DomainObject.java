@@ -12,61 +12,59 @@ import java.util.Map;
 
 
 public class DomainObject implements Serializable {
-	@Getter
-	@Setter
-	@Schema(description = "ID")
-	protected String id;
+    @JsonIgnore
+    private final transient Object lock = new Object();
+    @Getter
+    @Setter
+    @Schema(description = "ID")
+    protected String id;
+    @Setter
+    protected Map<String, Object> properties; // 扩展属性，仅支持基本类型
 
-	@Setter
-	protected Map<String, Object> properties; // 扩展属性，仅支持基本类型
+    public void sleep() throws InterruptedException {
+        synchronized (this.lock) {
+            this.lock.wait();
+        }
+    }
 
-	@JsonIgnore
-	private final transient Object lock = new Object();
+    public void awake() {
+        synchronized (this.lock) {
+            this.lock.notifyAll();
+        }
+    }
 
-	public void sleep() throws InterruptedException {
-		synchronized (this.lock) {
-			this.lock.wait();
-		}
-	}
+    public DomainObject setProperty(String name, Object value) {
+        getProperties().put(name, value);
+        return this;
+    }
 
-	public void awake() {
-		synchronized (this.lock) {
-			this.lock.notifyAll();
-		}
-	}
+    public DomainObject removeProperty(String name) {
+        getProperties().remove(name);
+        return this;
+    }
 
-	public DomainObject setProperty(String name, Object value) {
-		getProperties().put(name, value);
-		return this;
-	}
+    public Object getProperty(String name) {
+        return getProperties().get(name);
+    }
 
-	public DomainObject removeProperty(String name) {
-		getProperties().remove(name);
-		return this;
-	}
+    @SuppressWarnings("unchecked")
+    public <T> T getPropertyGeneric(String name) {
+        return (T) getProperty(name);
+    }
 
-	public Object getProperty(String name) {
-		return getProperties().get(name);
-	}
+    public <T> T getProperty(String name, Class<T> clz) {
+        return getProperty(name, clz, null);
+    }
 
-	@SuppressWarnings("unchecked")
-	public <T> T getPropertyGeneric(String name) {
-		return (T) getProperty(name);
-	}
+    public <T> T getProperty(String name, Class<T> clz, T defaultValue) {
+        Object value = getProperty(name);
+        return value == null ? defaultValue : clz.cast(value);
+    }
 
-	public <T> T getProperty(String name, Class<T> clz) {
-		return getProperty(name, clz, null);
-	}
-
-	public <T> T getProperty(String name, Class<T> clz, T defaultValue) {
-		Object value = getProperty(name);
-		return value == null ? defaultValue : clz.cast(value);
-	}
-
-	public Map<String, Object> getProperties() {
-		if (this.properties == null) {
-			this.properties = new HashMap<>();
-		}
-		return this.properties;
-	}
+    public Map<String, Object> getProperties() {
+        if (this.properties == null) {
+            this.properties = new HashMap<>();
+        }
+        return this.properties;
+    }
 }

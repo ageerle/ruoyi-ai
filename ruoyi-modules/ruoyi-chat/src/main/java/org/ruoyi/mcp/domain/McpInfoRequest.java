@@ -11,18 +11,43 @@ public class McpInfoRequest {
     private String description;
 
     // getters and setters
-    public String getServerName() { return serverName; }
-    public void setServerName(String serverName) { this.serverName = serverName; }
+    public String getServerName() {
+        return serverName;
+    }
 
-    public String getCommand() { return command; }
-    public void setCommand(String command) { this.command = command; }
+    public void setServerName(String serverName) {
+        this.serverName = serverName;
+    }
 
-    public List<String> getArgs() { return args; }
-    public void setArgs(List<String> args) { this.args = args; }
+    public String getCommand() {
+        return command;
+    }
 
-    public Map<String, String> getEnv() { return env; }
-    public void setEnv(Map<String, String> env) { this.env = env; }
+    public void setCommand(String command) {
+        this.command = command;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public List<String> getArgs() {
+        return args;
+    }
+
+    public void setArgs(List<String> args) {
+        this.args = args;
+    }
+
+    public Map<String, String> getEnv() {
+        return env;
+    }
+
+    public void setEnv(Map<String, String> env) {
+        this.env = env;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }

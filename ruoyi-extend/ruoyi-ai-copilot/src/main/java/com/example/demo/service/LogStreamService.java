@@ -18,49 +18,49 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 public class LogStreamService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(LogStreamService.class);
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    
+
     // 活跃的SSE连接 taskId -> SseEmitter
     private final Map<String, SseEmitter> activeConnections = new ConcurrentHashMap<>();
-    
+
     // JSON序列化器
     private final ObjectMapper objectMapper = new ObjectMapper();
-    
+
     /**
      * 建立SSE连接
      */
     public SseEmitter createConnection(String taskId) {
         logger.info("🔗 建立SSE连接: taskId={}", taskId);
-        
+
         SseEmitter emitter = new SseEmitter(0L); // 无超时
-        
+
         // 设置连接事件处理
         emitter.onCompletion(() -> {
             logger.info("✅ SSE连接完成: taskId={}", taskId);
             activeConnections.remove(taskId);
         });
-        
+
         emitter.onTimeout(() -> {
             logger.warn("⏰ SSE连接超时: taskId={}", taskId);
             activeConnections.remove(taskId);
         });
-        
+
         emitter.onError((ex) -> {
             logger.error("❌ SSE连接错误: taskId={}, error={}", taskId, ex.getMessage());
             activeConnections.remove(taskId);
         });
-        
+
         // 保存连接
         activeConnections.put(taskId, emitter);
-        
+
         // 发送连接成功消息
         sendLogEvent(taskId, LogEvent.createConnectionEvent(taskId));
-        
+
         return emitter;
     }
-    
+
     /**
      * 关闭SSE连接
      */
@@ -75,7 +75,7 @@ public class LogStreamService {
             }
         }
     }
-    
+
     /**
      * 推送工具开始执行事件
      */
@@ -89,10 +89,10 @@ public class LogStreamService {
         event.setTimestamp(LocalDateTime.now().format(formatter));
         event.setIcon(getToolIcon(toolName));
         event.setStatus("RUNNING");
-        
+
         sendLogEvent(taskId, event);
     }
-    
+
     /**
      * 推送工具执行成功事件
      */
@@ -107,10 +107,10 @@ public class LogStreamService {
         event.setIcon(getToolIcon(toolName));
         event.setStatus("SUCCESS");
         event.setExecutionTime(executionTime);
-        
+
         sendLogEvent(taskId, event);
     }
-    
+
     /**
      * 推送工具执行失败事件
      */
@@ -125,10 +125,10 @@ public class LogStreamService {
         event.setIcon("❌");
         event.setStatus("ERROR");
         event.setExecutionTime(executionTime);
-        
+
         sendLogEvent(taskId, event);
     }
-    
+
     /**
      * 推送任务完成事件
      */
@@ -138,9 +138,9 @@ public class LogStreamService {
         event.setTaskId(taskId);
         event.setMessage("任务执行完成");
         event.setTimestamp(LocalDateTime.now().format(formatter));
-        
+
         sendLogEvent(taskId, event);
-        
+
         // 延迟关闭连接
         new Thread(() -> {
             try {
@@ -151,7 +151,7 @@ public class LogStreamService {
             }
         }).start();
     }
-    
+
     /**
      * 发送日志事件到前端
      */
@@ -161,11 +161,11 @@ public class LogStreamService {
             try {
                 String jsonData = objectMapper.writeValueAsString(event);
                 logger.info("📤 准备推送日志事件: taskId={}, type={}, data={}", taskId,
-                    event instanceof LogEvent ? ((LogEvent) event).getType() : "unknown", jsonData);
+                        event instanceof LogEvent ? ((LogEvent) event).getType() : "unknown", jsonData);
 
                 emitter.send(SseEmitter.event()
-                    .name("log")
-                    .data(jsonData));
+                        .name("log")
+                        .data(jsonData));
 
                 logger.info("✅ 日志事件推送成功: taskId={}", taskId);
             } catch (IOException e) {
@@ -176,23 +176,31 @@ public class LogStreamService {
             logger.warn("⚠️ 未找到SSE连接: taskId={}, 无法推送事件", taskId);
         }
     }
-    
+
     /**
      * 获取工具图标
      */
     private String getToolIcon(String toolName) {
         switch (toolName) {
-            case "readFile": return "📖";
-            case "writeFile": return "✏️";
-            case "editFile": return "📝";
-            case "listDirectory": return "📁";
-            case "analyzeProject": return "🔍";
-            case "scaffoldProject": return "🏗️";
-            case "smartEdit": return "🧠";
-            default: return "⚙️";
+            case "readFile":
+                return "📖";
+            case "writeFile":
+                return "✏️";
+            case "editFile":
+                return "📝";
+            case "listDirectory":
+                return "📁";
+            case "analyzeProject":
+                return "🔍";
+            case "scaffoldProject":
+                return "🏗️";
+            case "smartEdit":
+                return "🧠";
+            default:
+                return "⚙️";
         }
     }
-    
+
     /**
      * 获取活跃连接数
      */

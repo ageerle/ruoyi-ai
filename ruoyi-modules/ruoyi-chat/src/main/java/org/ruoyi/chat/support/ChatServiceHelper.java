@@ -1,8 +1,8 @@
 package org.ruoyi.chat.support;
 
 import org.ruoyi.chat.listener.SSEEventSourceListener;
-import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.chat.util.SSEUtil;
+import org.ruoyi.common.chat.request.ChatRequest;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**

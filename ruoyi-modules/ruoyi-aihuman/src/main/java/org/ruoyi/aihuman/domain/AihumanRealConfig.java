@@ -1,9 +1,12 @@
 package org.ruoyi.aihuman.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-import java.time.LocalDateTime;
+
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 真人交互数字人配置对象 aihuman_real_config

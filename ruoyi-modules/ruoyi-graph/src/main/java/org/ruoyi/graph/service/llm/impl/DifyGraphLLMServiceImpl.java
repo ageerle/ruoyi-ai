@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Dify 图谱LLM服务实现
  * 支持 Dify 平台的对话模型
- * 
+ * <p>
  * 注意：Dify 使用流式调用，通过 CompletableFuture 实现同步等待
  *
  * @author ruoyi
@@ -33,26 +33,26 @@ public class DifyGraphLLMServiceImpl implements IGraphLLMService {
     @Override
     public String extractGraph(String prompt, ChatModelVo chatModel) {
         log.info("Dify模型调用: model={}, apiHost={}, 提示词长度={}",
-            chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
+                chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
 
         try {
             // 创建 Dify 客户端配置
             DifyConfig config = DifyConfig.builder()
-                .baseUrl(chatModel.getApiHost())
-                .apiKey(chatModel.getApiKey())
-                .connectTimeout(5000)
-                .readTimeout(120000)  // 2分钟超时
-                .writeTimeout(30000)
-                .build();
-            
+                    .baseUrl(chatModel.getApiHost())
+                    .apiKey(chatModel.getApiKey())
+                    .connectTimeout(5000)
+                    .readTimeout(120000)  // 2分钟超时
+                    .writeTimeout(30000)
+                    .build();
+
             DifyClient chatClient = DifyClientFactory.createClient(config);
 
             // 创建聊天消息（使用流式模式）
             ChatMessage message = ChatMessage.builder()
-                .query(prompt)
-                .user("graph-system")  // 图谱系统用户
-                .responseMode(ResponseMode.STREAMING)  // 流式模式
-                .build();
+                    .query(prompt)
+                    .user("graph-system")  // 图谱系统用户
+                    .responseMode(ResponseMode.STREAMING)  // 流式模式
+                    .build();
 
             // 用于收集完整响应
             StringBuilder fullResponse = new StringBuilder();
@@ -70,8 +70,8 @@ public class DifyGraphLLMServiceImpl implements IGraphLLMService {
                 public void onMessageEnd(MessageEndEvent event) {
                     long duration = System.currentTimeMillis() - startTime;
                     String responseText = fullResponse.toString();
-                    log.info("Dify模型响应成功: 耗时={}ms, 响应长度={}, messageId={}", 
-                        duration, responseText.length(), event.getMessageId());
+                    log.info("Dify模型响应成功: 耗时={}ms, 响应长度={}, messageId={}",
+                            duration, responseText.length(), event.getMessageId());
                     responseFuture.complete(responseText);
                 }
 
@@ -79,7 +79,7 @@ public class DifyGraphLLMServiceImpl implements IGraphLLMService {
                 public void onError(ErrorEvent event) {
                     log.error("Dify模型调用错误: {}", event.getMessage());
                     responseFuture.completeExceptionally(
-                        new RuntimeException("Dify调用错误: " + event.getMessage())
+                            new RuntimeException("Dify调用错误: " + event.getMessage())
                     );
                 }
 

@@ -70,7 +70,7 @@ public class WebSocketUtils {
             broadcastMessage.setSessionKeys(unsentSessionKeys);
             RedisUtils.publish(WEB_SOCKET_TOPIC, broadcastMessage, consumer -> {
                 log.info(" WebSocket发送主题订阅消息topic:{} session keys:{} message:{}",
-                    WEB_SOCKET_TOPIC, unsentSessionKeys, webSocketMessage.getMessage());
+                        WEB_SOCKET_TOPIC, unsentSessionKeys, webSocketMessage.getMessage());
             });
         }
     }

@@ -1,9 +1,8 @@
 package org.ruoyi.common.chat.constant;
 
 /**
- *
  * @author https:www.unfbx.com
- * @since  2023-03-06
+ * @since 2023-03-06
  */
 public class OpenAIConst {
 

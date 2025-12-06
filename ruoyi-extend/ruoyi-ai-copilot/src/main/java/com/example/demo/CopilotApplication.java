@@ -1,5 +1,7 @@
 package com.example.demo;
 
+import com.example.demo.config.AppProperties;
+import com.example.demo.util.BrowserUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +12,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
-
-import com.example.demo.config.AppProperties;
-import com.example.demo.util.BrowserUtil;
 
 /**
  * 主要功能：

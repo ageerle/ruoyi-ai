@@ -9,6 +9,7 @@ public class McpServerConfig {
     private Map<String, String> env;
     private String Description;
     private String workingDirectory;
+
     // getters and setters
     public String getCommand() {
         return command;
@@ -41,6 +42,7 @@ public class McpServerConfig {
     public void setDescription(String description) {
         Description = description;
     }
+
     public String getWorkingDirectory() {
         return workingDirectory;
     }
@@ -48,6 +50,7 @@ public class McpServerConfig {
     public void setWorkingDirectory(String workingDirectory) {
         this.workingDirectory = workingDirectory;
     }
+
     @Override
     public String toString() {
         return "McpServerConfig{" +

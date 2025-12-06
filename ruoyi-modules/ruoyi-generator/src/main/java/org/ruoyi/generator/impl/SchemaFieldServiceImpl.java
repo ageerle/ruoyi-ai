@@ -10,24 +10,19 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.generator.service.SchemaFieldService;
-import org.ruoyi.generator.service.SchemaGroupService;
-import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.generator.domain.SchemaField;
 import org.ruoyi.generator.domain.bo.SchemaFieldBo;
 import org.ruoyi.generator.domain.vo.SchemaFieldVo;
 import org.ruoyi.generator.domain.vo.SchemaGroupVo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.mapper.SchemaFieldMapper;
+import org.ruoyi.generator.service.SchemaFieldService;
+import org.ruoyi.generator.service.SchemaGroupService;
+import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.helper.DataBaseHelper;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -207,7 +202,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
         Map<String, Object> result = new HashMap<>();
         result.put("schemaGroupCode", schemaGroupVo.getCode());
         result.put("tableName", schema.getTableName());
-        result.put("dictType",schema.getDictType());
+        result.put("dictType", schema.getDictType());
         result.put("tableComment", schema.getComment());
         result.put("className", toCamelCase(schema.getTableName(), true));
         result.put("tableCamelName", StrUtil.toCamelCase(schema.getTableName()));
@@ -292,7 +287,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
                 if ("1".equals(field.getIsPk())) {
                     field.setIsInsert("0");
                     field.setIsEdit("0");
-                }else {
+                } else {
                     field.setIsInsert("1");
                     field.setIsEdit("1");
                 }
@@ -376,7 +371,7 @@ public class SchemaFieldServiceImpl implements SchemaFieldService {
             return "Long";
         } else if (StrUtil.equalsAny(type, "decimal", "numeric", "float", "double")) {
             return "BigDecimal";
-        } else if (StrUtil.equalsAny(type, "date", "datetime","timestamp")) {
+        } else if (StrUtil.equalsAny(type, "date", "datetime", "timestamp")) {
             return "Date";
         } else if (StrUtil.equalsAny(type, "bit", "boolean")) {
             return "Boolean";

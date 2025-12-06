@@ -32,7 +32,6 @@ public class ChatTokenServiceImpl implements IChatTokenService {
 
     /**
      * 清空用户token
-     *
      */
     @Override
     public void resetToken(Long userId, String modelName) {
@@ -43,7 +42,6 @@ public class ChatTokenServiceImpl implements IChatTokenService {
 
     /**
      * 增加用户token
-     *
      */
     @Override
     public void editToken(ChatUsageToken chatToken) {

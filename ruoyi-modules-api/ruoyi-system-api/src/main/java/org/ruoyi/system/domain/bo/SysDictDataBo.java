@@ -25,7 +25,7 @@ public class SysDictDataBo extends BaseEntity {
     /**
      * 字典编码
      */
-    @NotNull(message = "字典编码不能为空", groups = { EditGroup.class })
+    @NotNull(message = "字典编码不能为空", groups = {EditGroup.class})
     private Long dictCode;
 
     /**
@@ -36,21 +36,21 @@ public class SysDictDataBo extends BaseEntity {
     /**
      * 字典标签
      */
-    @NotBlank(message = "字典标签不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "字典标签不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 100, message = "字典标签长度不能超过{max}个字符")
     private String dictLabel;
 
     /**
      * 字典键值
      */
-    @NotBlank(message = "字典键值不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "字典键值不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 100, message = "字典键值长度不能超过{max}个字符")
     private String dictValue;
 
     /**
      * 字典类型
      */
-    @NotBlank(message = "字典类型不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "字典类型不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 100, message = "字典类型长度不能超过{max}个字符")
     private String dictType;
 

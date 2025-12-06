@@ -51,9 +51,9 @@ public class DemoModeInterceptor implements HandlerInterceptor {
      */
     private boolean isEditOperation(String method) {
         return "POST".equalsIgnoreCase(method)
-            || "PUT".equalsIgnoreCase(method)
-            || "DELETE".equalsIgnoreCase(method)
-            || "PATCH".equalsIgnoreCase(method);
+                || "PUT".equalsIgnoreCase(method)
+                || "DELETE".equalsIgnoreCase(method)
+                || "PATCH".equalsIgnoreCase(method);
     }
 
     /**

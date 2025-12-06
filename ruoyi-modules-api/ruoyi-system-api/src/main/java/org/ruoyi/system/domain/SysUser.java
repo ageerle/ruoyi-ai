@@ -127,6 +127,14 @@ public class SysUser extends TenantEntity {
      * 用户等级
      */
     private String userGrade;
+    /**
+     * 知识库角色组类型（role/roleGroup）
+     */
+    private String kroleGroupType;
+    /**
+     * 知识库角色组id（role/roleGroup）
+     */
+    private String kroleGroupIds;
 
     public SysUser(Long userId) {
         this.userId = userId;
@@ -135,15 +143,5 @@ public class SysUser extends TenantEntity {
     public boolean isSuperAdmin() {
         return UserConstants.SUPER_ADMIN_ID.equals(this.userId);
     }
-
-    /**
-     * 知识库角色组类型（role/roleGroup）
-     */
-    private String kroleGroupType;
-
-    /**
-     * 知识库角色组id（role/roleGroup）
-     */
-    private String kroleGroupIds;
 
 }

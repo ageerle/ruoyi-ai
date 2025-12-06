@@ -14,13 +14,14 @@ import java.util.List;
 @Component
 @AllArgsConstructor
 @Slf4j
-public class TextFileLoader implements ResourceLoader{
+public class TextFileLoader implements ResourceLoader {
     private final TextSplitter textSplitter;
+
     @Override
     public String getContent(InputStream inputStream) {
         StringBuffer stringBuffer = new StringBuffer();
         try (InputStreamReader reader = new InputStreamReader(inputStream, "UTF-8");
-             BufferedReader bufferedReader = new BufferedReader(reader)){
+             BufferedReader bufferedReader = new BufferedReader(reader)) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 stringBuffer.append(line).append("\n");
@@ -30,8 +31,9 @@ public class TextFileLoader implements ResourceLoader{
         }
         return stringBuffer.toString();
     }
+
     @Override
-    public List<String> getChunkList(String content, String kid){
+    public List<String> getChunkList(String content, String kid) {
         return textSplitter.split(content, kid);
     }
 }

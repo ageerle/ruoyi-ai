@@ -42,14 +42,14 @@ public class UserActionListener implements SaTokenListener {
             LoginUser user = LoginHelper.getLoginUser();
             UserOnlineDTO dto = new UserOnlineDTO();
             dto.setIpaddr(ip);
-           // dto.setLoginLocation(AddressUtils.getRealAddressByIP(ip));
+            // dto.setLoginLocation(AddressUtils.getRealAddressByIP(ip));
             dto.setBrowser(userAgent.getBrowser().getName());
             dto.setOs(userAgent.getOs().getName());
             dto.setLoginTime(System.currentTimeMillis());
             dto.setTokenId(tokenValue);
             dto.setUserName(user.getUsername());
             dto.setDeptName(user.getDeptName());
-            if(tokenConfig.getTimeout() == -1) {
+            if (tokenConfig.getTimeout() == -1) {
                 RedisUtils.setCacheObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue, dto);
             } else {
                 RedisUtils.setCacheObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue, dto, Duration.ofSeconds(tokenConfig.getTimeout()));

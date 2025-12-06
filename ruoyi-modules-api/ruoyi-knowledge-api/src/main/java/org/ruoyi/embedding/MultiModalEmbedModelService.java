@@ -12,6 +12,7 @@ import org.ruoyi.embedding.model.MultiModalInput;
 public interface MultiModalEmbedModelService extends BaseEmbedModelService {
     /**
      * 将图像数据转换为嵌入向量
+     *
      * @param imageDataUrl 图像的地址，必须是公开可访问的URL
      * @return 包含嵌入向量的响应对象，可能包含状态信息和嵌入结果
      */
@@ -19,6 +20,7 @@ public interface MultiModalEmbedModelService extends BaseEmbedModelService {
 
     /**
      * 将视频数据转换为嵌入向量
+     *
      * @param videoDataUrl 视频的地址，必须是公开可访问的URL
      * @return 包含嵌入向量的响应对象，可能包含状态信息和嵌入结果
      */

@@ -39,6 +39,7 @@ public class SysDictTypeController extends BaseController {
     public TableDataInfo<SysDictTypeVo> all(SysDictTypeBo dictType, PageQuery pageQuery) {
         return dictTypeService.selectAll(dictType);
     }
+
     /**
      * 查询字典类型列表
      */

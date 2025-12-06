@@ -10,6 +10,8 @@ import io.reactivex.Flowable;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatService;
+import org.ruoyi.chat.support.ChatServiceHelper;
+import org.ruoyi.chat.support.RetryNotifier;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.IChatModelService;
@@ -20,8 +22,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.ruoyi.chat.support.RetryNotifier;
-import org.ruoyi.chat.support.ChatServiceHelper;
 
 /**
  * 扣子聊天管理

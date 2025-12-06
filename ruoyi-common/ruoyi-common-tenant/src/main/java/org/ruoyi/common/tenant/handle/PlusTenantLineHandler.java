@@ -47,8 +47,8 @@ public class PlusTenantLineHandler implements TenantLineHandler {
             List<String> excludes = tenantProperties.getExcludes();
             // 非业务表
             List<String> tables = ListUtil.toList(
-                "gen_table",
-                "gen_table_column"
+                    "gen_table",
+                    "gen_table_column"
             );
             tables.addAll(excludes);
             return tables.contains(tableName);

@@ -3,11 +3,11 @@ package org.ruoyi.common.chat.openai.function;
 import java.util.function.Function;
 
 /**
- *  key 的获取策略
+ * key 的获取策略
  * jdk默认实现
- * @see Function
  *
  * @author https:www.unfbx.com
+ * @see Function
  * @since 2023-04-03
  */
 @FunctionalInterface

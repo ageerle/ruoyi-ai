@@ -1,11 +1,11 @@
 package org.ruoyi.aihuman.domain.bo;
 
-import org.ruoyi.aihuman.domain.AihumanRealConfig;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.aihuman.domain.AihumanRealConfig;
 
-import java.time.LocalDateTime;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 真人交互数字人配置业务对象 aihuman_real_config
@@ -66,9 +66,9 @@ public class AihumanRealConfigBo implements Serializable {
      */
     private String runParams;
 
-     /**
-      * 运行状态
-      */
+    /**
+     * 运行状态
+     */
     private String runStatus;
 
     /**

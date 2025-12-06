@@ -27,17 +27,16 @@ import java.util.stream.Collectors;
 @Configuration
 @EnableConfigurationProperties(WxCpProperties.class)
 public class WxCpConfiguration {
+    private static Map<Integer, WxCpMessageRouter> routers = Maps.newHashMap();
+    private static Map<Integer, WxCpService> cpServices = Maps.newHashMap();
     private final LogHandler logHandler;
+    private final UnsubscribeHandler unsubscribeHandler;
     private NullHandler nullHandler;
     private LocationHandler locationHandler;
     private MenuHandler menuHandler;
     private MsgHandler msgHandler;
-    private final UnsubscribeHandler unsubscribeHandler;
     private SubscribeHandler subscribeHandler;
     private WxCpProperties properties;
-
-    private static Map<Integer, WxCpMessageRouter> routers = Maps.newHashMap();
-    private static Map<Integer, WxCpService> cpServices = Maps.newHashMap();
 
     @Autowired
     public WxCpConfiguration(LogHandler logHandler, NullHandler nullHandler, LocationHandler locationHandler,
@@ -86,40 +85,40 @@ public class WxCpConfiguration {
 
         // 自定义菜单事件
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxConsts.MenuButtonType.CLICK).handler(this.menuHandler).end();
+                .event(WxConsts.MenuButtonType.CLICK).handler(this.menuHandler).end();
 
         // 点击菜单链接事件（这里使用了一个空的处理器，可以根据自己需要进行扩展）
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxConsts.MenuButtonType.VIEW).handler(this.nullHandler).end();
+                .event(WxConsts.MenuButtonType.VIEW).handler(this.nullHandler).end();
 
         // 关注事件
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxConsts.EventType.SUBSCRIBE).handler(this.subscribeHandler)
-            .end();
+                .event(WxConsts.EventType.SUBSCRIBE).handler(this.subscribeHandler)
+                .end();
 
         // 取消关注事件
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxConsts.EventType.UNSUBSCRIBE)
-            .handler((WxCpMessageHandler) this.unsubscribeHandler).end();
+                .event(WxConsts.EventType.UNSUBSCRIBE)
+                .handler((WxCpMessageHandler) this.unsubscribeHandler).end();
 
         // 上报地理位置事件
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxConsts.EventType.LOCATION).handler(this.locationHandler)
-            .end();
+                .event(WxConsts.EventType.LOCATION).handler(this.locationHandler)
+                .end();
 
         // 接收地理位置消息
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.LOCATION)
-            .handler(this.locationHandler).end();
+                .handler(this.locationHandler).end();
 
         // 扫码事件（这里使用了一个空的处理器，可以根据自己需要进行扩展）
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxConsts.EventType.SCAN).handler((WxCpMessageHandler) this.nullHandler).end();
+                .event(WxConsts.EventType.SCAN).handler((WxCpMessageHandler) this.nullHandler).end();
 
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxCpConsts.EventType.CHANGE_CONTACT).handler(new ContactChangeHandler()).end();
+                .event(WxCpConsts.EventType.CHANGE_CONTACT).handler(new ContactChangeHandler()).end();
 
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-            .event(WxCpConsts.EventType.ENTER_AGENT).handler(new EnterAgentHandler()).end();
+                .event(WxCpConsts.EventType.ENTER_AGENT).handler(new EnterAgentHandler()).end();
 
         // 默认
         newRouter.rule().async(false).handler(this.msgHandler).end();

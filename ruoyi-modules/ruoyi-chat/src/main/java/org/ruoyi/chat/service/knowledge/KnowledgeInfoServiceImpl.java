@@ -92,23 +92,23 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     public TableDataInfo<KnowledgeInfoVo> queryPageListByRole(KnowledgeInfoBo bo, PageQuery pageQuery) {
         // 查询用户关联角色
         LoginUser loginUser = LoginHelper.getLoginUser();
-        
+
         // 构建查询条件
         LambdaQueryWrapper<KnowledgeInfo> lqw = buildQueryWrapper(bo);
-        
+
         // 管理员用户直接查询所有数据
         if (Objects.equals(loginUser.getUserId(), 1L)) {
             Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
             return TableDataInfo.build(result);
         }
-        
+
         // 检查用户是否配置了角色信息
         if (StringUtils.isNotEmpty(loginUser.getKroleGroupIds()) && StringUtils.isNotEmpty(loginUser.getKroleGroupType())) {
             // 角色/角色组id列表
             List<String> groupIdList = Arrays.stream(loginUser.getKroleGroupIds().split(","))
                     .filter(StringUtils::isNotEmpty)
                     .toList();
-            
+
             // 查询用户关联的角色
             List<KnowledgeRole> knowledgeRoles = new ArrayList<>();
             LambdaQueryWrapper<KnowledgeRole> roleLqw = Wrappers.lambdaQuery();
@@ -123,8 +123,8 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             if (!CollectionUtils.isEmpty(knowledgeRoles)) {
                 // 查询这些角色关联的知识库
                 LambdaQueryWrapper<KnowledgeRoleRelation> relationLqw = Wrappers.lambdaQuery();
-                relationLqw.in(KnowledgeRoleRelation::getKnowledgeRoleId, 
-                    knowledgeRoles.stream().map(KnowledgeRole::getId).filter(Objects::nonNull).collect(Collectors.toList()));
+                relationLqw.in(KnowledgeRoleRelation::getKnowledgeRoleId,
+                        knowledgeRoles.stream().map(KnowledgeRole::getId).filter(Objects::nonNull).collect(Collectors.toList()));
                 List<KnowledgeRoleRelation> knowledgeRoleRelations = knowledgeRoleRelationMapper.selectList(relationLqw);
 
                 // 如果角色关联了知识库
@@ -151,7 +151,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             // 用户没有配置角色信息，只显示自己的
             lqw.eq(KnowledgeInfo::getUid, loginUser.getUserId());
         }
-        
+
         Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }

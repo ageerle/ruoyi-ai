@@ -19,7 +19,7 @@ public class WeixinUserServiceImpl implements WeixinUserService {
 
     @Override
     public void checkSignature(String signature, String timestamp, String nonce) {
-        String[] arr = new String[] {token, timestamp, nonce};
+        String[] arr = new String[]{token, timestamp, nonce};
         Arrays.sort(arr);
         StringBuilder content = new StringBuilder();
         for (String str : arr) {

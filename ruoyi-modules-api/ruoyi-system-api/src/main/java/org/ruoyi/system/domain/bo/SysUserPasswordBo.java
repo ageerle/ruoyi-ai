@@ -1,4 +1,5 @@
 package org.ruoyi.system.domain.bo;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -7,7 +8,7 @@ import java.io.Serializable;
 
 
 /**
- *  用户密码修改bo
+ * 用户密码修改bo
  *
  * @author ageerle@163.com
  * date 2025/3/9

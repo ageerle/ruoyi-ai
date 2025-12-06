@@ -103,7 +103,7 @@ public class RateLimiterAspect {
             try {
                 Expression expression;
                 if (StringUtils.startsWith(key, parserContext.getExpressionPrefix())
-                    && StringUtils.endsWith(key, parserContext.getExpressionSuffix())) {
+                        && StringUtils.endsWith(key, parserContext.getExpressionSuffix())) {
                     expression = parser.parseExpression(key, parserContext);
                 } else {
                     expression = parser.parseExpression(key);

@@ -21,45 +21,45 @@ import java.io.Serializable;
 @ExcelIgnoreUnannotated
 @AutoMapper(target = McpInfo.class)
 public class McpInfoVo implements Serializable {
-        private Integer mcpId;
+    private Integer mcpId;
 
-            /**
-             * 服务器名称
-             */
-            @ExcelProperty(value = "服务器名称")
-        private String serverName;
+    /**
+     * 服务器名称
+     */
+    @ExcelProperty(value = "服务器名称")
+    private String serverName;
 
-            /**
-             * 链接方式
-             */
-            @ExcelProperty(value = "链接方式", converter = ExcelDictConvert.class)
-            @ExcelDictFormat(dictType = "mcp_transport_type")
-        private String transportType;
+    /**
+     * 链接方式
+     */
+    @ExcelProperty(value = "链接方式", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "mcp_transport_type")
+    private String transportType;
 
-            /**
-             * Command
-             */
-            @ExcelProperty(value = "Command")
-        private String command;
+    /**
+     * Command
+     */
+    @ExcelProperty(value = "Command")
+    private String command;
 
-            /**
-             * Args
-             */
-            @ExcelProperty(value = "Args")
-        private String arguments;
+    /**
+     * Args
+     */
+    @ExcelProperty(value = "Args")
+    private String arguments;
     @ExcelProperty(value = "Description")
     private String description;
-            /**
-             * Env
-             */
-            @ExcelProperty(value = "Env")
-        private String env;
+    /**
+     * Env
+     */
+    @ExcelProperty(value = "Env")
+    private String env;
 
-            /**
-             * 是否启用
-             */
-            @ExcelProperty(value = "是否启用")
-        private Boolean status;
+    /**
+     * 是否启用
+     */
+    @ExcelProperty(value = "是否启用")
+    private Boolean status;
 
 
 }

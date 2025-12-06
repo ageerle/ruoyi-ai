@@ -27,22 +27,22 @@ public class TaskController {
 
     private final MjOkHttpUtil mjOkHttpUtil;
 
-	@Operation(summary = "指定ID获取任务")
-	@GetMapping("/{id}/fetch")
+    @Operation(summary = "指定ID获取任务")
+    @GetMapping("/{id}/fetch")
     public String fetch(@Parameter(description = "任务ID") @PathVariable String id) {
         String url = "mj/task/" + id + "/fetch";
         Request request = mjOkHttpUtil.createGetRequest(url);
         return mjOkHttpUtil.executeRequest(request);
     }
 
-	@Operation(summary = "根据ID列表查询任务")
-	@PostMapping("/list-by-condition")
-	public String listByIds(@RequestBody TaskConditionDTO conditionDTO) {
+    @Operation(summary = "根据ID列表查询任务")
+    @PostMapping("/list-by-condition")
+    public String listByIds(@RequestBody TaskConditionDTO conditionDTO) {
         String url = "mj/task/list-by-condition";
         String conditionJson = JSONUtil.toJsonStr(conditionDTO);
-        Request request = mjOkHttpUtil.createPostRequest(url,conditionJson);
+        Request request = mjOkHttpUtil.createPostRequest(url, conditionJson);
         return mjOkHttpUtil.executeRequest(request);
-	}
+    }
 
     @Operation(summary = "获取任务图片的seed")
     @GetMapping("/{id}/image-seed")

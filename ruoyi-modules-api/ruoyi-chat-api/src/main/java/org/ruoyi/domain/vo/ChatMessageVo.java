@@ -96,5 +96,4 @@ public class ChatMessageVo implements Serializable {
     private Date createTime;
 
 
-
 }

@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class SubmitSimpleChangeDTO extends BaseSubmitDTO {
 
-	@Schema(description = "变化描述: ID $action$index", requiredMode = Schema.RequiredMode.REQUIRED, example = "1320098173412546 U2")
-	private String content;
+    @Schema(description = "变化描述: ID $action$index", requiredMode = Schema.RequiredMode.REQUIRED, example = "1320098173412546 U2")
+    private String content;
 
 }

@@ -9,7 +9,8 @@ import io.github.ollama4j.models.generate.OllamaStreamHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatService;
-import org.ruoyi.chat.util.SSEUtil;
+import org.ruoyi.chat.support.ChatServiceHelper;
+import org.ruoyi.chat.support.RetryNotifier;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.domain.vo.ChatModelVo;
@@ -22,8 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.ruoyi.chat.support.RetryNotifier;
-import org.ruoyi.chat.support.ChatServiceHelper;
 
 
 /**

@@ -8,7 +8,8 @@ import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.strategy.VectorStoreStrategyFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-import java.util.*;
+
+import java.util.List;
 
 /**
  * 向量库管理

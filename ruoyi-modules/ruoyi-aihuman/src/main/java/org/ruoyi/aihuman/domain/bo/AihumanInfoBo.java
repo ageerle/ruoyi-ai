@@ -1,19 +1,11 @@
 package org.ruoyi.aihuman.domain.bo;
 
-import org.ruoyi.aihuman.domain.AihumanInfo;
-import org.ruoyi.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
+import org.ruoyi.aihuman.domain.AihumanInfo;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.io.Serializable;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
-import java.io.Serializable;
-import java.io.Serializable;
-import org.ruoyi.common.core.validate.AddGroup;
-import org.ruoyi.common.core.validate.EditGroup;
 
 /**
  * 数字人信息管理业务对象 aihuman_info

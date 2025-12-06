@@ -12,12 +12,14 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+
 @Component
 @AllArgsConstructor
 @Slf4j
 public class ExcelFileLoader implements ResourceLoader {
-    private final TextSplitter textSplitter;
     private static final int DEFAULT_BUFFER_SIZE = 8192;
+    private final TextSplitter textSplitter;
+
     @Override
     public String getContent(InputStream inputStream) {
         // 使用带缓冲的输入流包装（保持原流不自动关闭）

@@ -46,13 +46,14 @@ public final class ServiceException extends RuntimeException {
         return detailMessage;
     }
 
+    public ServiceException setDetailMessage(String detailMessage) {
+        this.detailMessage = detailMessage;
+        return this;
+    }
+
     @Override
     public String getMessage() {
         return message;
-    }
-
-    public Integer getCode() {
-        return code;
     }
 
     public ServiceException setMessage(String message) {
@@ -60,8 +61,7 @@ public final class ServiceException extends RuntimeException {
         return this;
     }
 
-    public ServiceException setDetailMessage(String detailMessage) {
-        this.detailMessage = detailMessage;
-        return this;
+    public Integer getCode() {
+        return code;
     }
 }

@@ -30,8 +30,8 @@ public interface GraphInstanceMapper extends BaseMapper<GraphInstance> {
     /**
      * 更新节点和关系数量
      *
-     * @param graphUuid 图谱UUID
-     * @param nodeCount 节点数量
+     * @param graphUuid         图谱UUID
+     * @param nodeCount         节点数量
      * @param relationshipCount 关系数量
      * @return 影响行数
      */
@@ -41,7 +41,7 @@ public interface GraphInstanceMapper extends BaseMapper<GraphInstance> {
      * 更新图谱状态
      *
      * @param graphUuid 图谱UUID
-     * @param status 状态
+     * @param status    状态
      * @return 影响行数
      */
     int updateStatus(String graphUuid, Integer status);

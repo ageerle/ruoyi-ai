@@ -3,6 +3,7 @@ package org.ruoyi.aihuman.domain.vo;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.aihuman.domain.AihumanInfo;
+
 import java.io.Serializable;
 import java.util.Date;
 
@@ -16,18 +17,28 @@ import java.util.Date;
 public class AihumanInfoVo implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /** 主键ID */
+    /**
+     * 主键ID
+     */
     private Long id;
 
-    /** 交互名称 */
+    /**
+     * 交互名称
+     */
     private String name;
 
-    /** 交互内容 */
+    /**
+     * 交互内容
+     */
     private String content;
 
-    /** 创建时间 */
+    /**
+     * 创建时间
+     */
     private Date createTime;
 
-    /** 更新时间 */
+    /**
+     * 更新时间
+     */
     private Date updateTime;
 }

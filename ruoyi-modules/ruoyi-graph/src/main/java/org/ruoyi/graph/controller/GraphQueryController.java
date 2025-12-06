@@ -133,13 +133,13 @@ public class GraphQueryController extends BaseController {
 
             String modelName = request.get("modelName");
             GraphExtractionResult result;
-            
+
             if (modelName != null && !modelName.trim().isEmpty()) {
                 result = graphExtractionService.extractFromTextWithModel(text, modelName);
             } else {
                 result = graphExtractionService.extractFromText(text);
             }
-            
+
             return R.ok(result);
         } catch (Exception e) {
             return R.fail("实体抽取失败: " + e.getMessage());

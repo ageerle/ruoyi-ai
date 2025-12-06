@@ -1,4 +1,5 @@
 package org.ruoyi.aihuman.domain;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 

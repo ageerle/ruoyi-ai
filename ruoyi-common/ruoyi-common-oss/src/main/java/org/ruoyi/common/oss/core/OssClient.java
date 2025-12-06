@@ -47,7 +47,7 @@ public class OssClient {
         this.properties = ossProperties;
         try {
             AwsClientBuilder.EndpointConfiguration endpointConfig =
-                new AwsClientBuilder.EndpointConfiguration(properties.getEndpoint(), properties.getRegion());
+                    new AwsClientBuilder.EndpointConfiguration(properties.getEndpoint(), properties.getRegion());
 
             AWSCredentials credentials = new BasicAWSCredentials(properties.getAccessKey(), properties.getSecretKey());
             AWSCredentialsProvider credentialsProvider = new AWSStaticCredentialsProvider(credentials);
@@ -58,10 +58,10 @@ public class OssClient {
                 clientConfig.setProtocol(Protocol.HTTP);
             }
             AmazonS3ClientBuilder build = AmazonS3Client.builder()
-                .withEndpointConfiguration(endpointConfig)
-                .withClientConfiguration(clientConfig)
-                .withCredentials(credentialsProvider)
-                .disableChunkedEncoding();
+                    .withEndpointConfiguration(endpointConfig)
+                    .withClientConfiguration(clientConfig)
+                    .withCredentials(credentialsProvider)
+                    .disableChunkedEncoding();
             if (!StringUtils.containsAny(properties.getEndpoint(), OssConstant.CLOUD_SERVICE)) {
                 // minio 使用https限制使用域名访问 需要此配置 站点填域名
                 build.enablePathStyleAccess();
@@ -75,6 +75,36 @@ public class OssClient {
             }
             throw new OssException("配置错误! 请检查系统配置:[" + e.getMessage() + "]");
         }
+    }
+
+    private static String getPolicy(String bucketName, PolicyType policyType) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("{\n\"Statement\": [\n{\n\"Action\": [\n");
+        builder.append(switch (policyType) {
+            case WRITE -> "\"s3:GetBucketLocation\",\n\"s3:ListBucketMultipartUploads\"\n";
+            case READ_WRITE -> "\"s3:GetBucketLocation\",\n\"s3:ListBucket\",\n\"s3:ListBucketMultipartUploads\"\n";
+            default -> "\"s3:GetBucketLocation\"\n";
+        });
+        builder.append("],\n\"Effect\": \"Allow\",\n\"Principal\": \"*\",\n\"Resource\": \"arn:aws:s3:::");
+        builder.append(bucketName);
+        builder.append("\"\n},\n");
+        if (policyType == PolicyType.READ) {
+            builder.append("{\n\"Action\": [\n\"s3:ListBucket\"\n],\n\"Effect\": \"Deny\",\n\"Principal\": \"*\",\n\"Resource\": \"arn:aws:s3:::");
+            builder.append(bucketName);
+            builder.append("\"\n},\n");
+        }
+        builder.append("{\n\"Action\": ");
+        builder.append(switch (policyType) {
+            case WRITE ->
+                    "[\n\"s3:AbortMultipartUpload\",\n\"s3:DeleteObject\",\n\"s3:ListMultipartUploadParts\",\n\"s3:PutObject\"\n],\n";
+            case READ_WRITE ->
+                    "[\n\"s3:AbortMultipartUpload\",\n\"s3:DeleteObject\",\n\"s3:GetObject\",\n\"s3:ListMultipartUploadParts\",\n\"s3:PutObject\"\n],\n";
+            default -> "\"s3:GetObject\",\n";
+        });
+        builder.append("\"Effect\": \"Allow\",\n\"Principal\": \"*\",\n\"Resource\": \"arn:aws:s3:::");
+        builder.append(bucketName);
+        builder.append("/*\"\n}\n],\n\"Version\": \"2012-10-17\"\n}\n");
+        return builder.toString();
     }
 
     public void createBucket() {
@@ -178,7 +208,6 @@ public class OssClient {
         return path + suffix;
     }
 
-
     public String getConfigKey() {
         return configKey;
     }
@@ -191,9 +220,9 @@ public class OssClient {
      */
     public String getPrivateUrl(String objectKey, Integer second) {
         GeneratePresignedUrlRequest generatePresignedUrlRequest =
-            new GeneratePresignedUrlRequest(properties.getBucketName(), objectKey)
-                .withMethod(HttpMethod.GET)
-                .withExpiration(new Date(System.currentTimeMillis() + 1000L * second));
+                new GeneratePresignedUrlRequest(properties.getBucketName(), objectKey)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(new Date(System.currentTimeMillis() + 1000L * second));
         URL url = client.generatePresignedUrl(generatePresignedUrlRequest);
         return url.toString();
     }
@@ -212,34 +241,6 @@ public class OssClient {
      */
     public AccessPolicyType getAccessPolicy() {
         return AccessPolicyType.getByType(properties.getAccessPolicy());
-    }
-
-    private static String getPolicy(String bucketName, PolicyType policyType) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{\n\"Statement\": [\n{\n\"Action\": [\n");
-        builder.append(switch (policyType) {
-            case WRITE -> "\"s3:GetBucketLocation\",\n\"s3:ListBucketMultipartUploads\"\n";
-            case READ_WRITE -> "\"s3:GetBucketLocation\",\n\"s3:ListBucket\",\n\"s3:ListBucketMultipartUploads\"\n";
-            default -> "\"s3:GetBucketLocation\"\n";
-        });
-        builder.append("],\n\"Effect\": \"Allow\",\n\"Principal\": \"*\",\n\"Resource\": \"arn:aws:s3:::");
-        builder.append(bucketName);
-        builder.append("\"\n},\n");
-        if (policyType == PolicyType.READ) {
-            builder.append("{\n\"Action\": [\n\"s3:ListBucket\"\n],\n\"Effect\": \"Deny\",\n\"Principal\": \"*\",\n\"Resource\": \"arn:aws:s3:::");
-            builder.append(bucketName);
-            builder.append("\"\n},\n");
-        }
-        builder.append("{\n\"Action\": ");
-        builder.append(switch (policyType) {
-            case WRITE -> "[\n\"s3:AbortMultipartUpload\",\n\"s3:DeleteObject\",\n\"s3:ListMultipartUploadParts\",\n\"s3:PutObject\"\n],\n";
-            case READ_WRITE -> "[\n\"s3:AbortMultipartUpload\",\n\"s3:DeleteObject\",\n\"s3:GetObject\",\n\"s3:ListMultipartUploadParts\",\n\"s3:PutObject\"\n],\n";
-            default -> "\"s3:GetObject\",\n";
-        });
-        builder.append("\"Effect\": \"Allow\",\n\"Principal\": \"*\",\n\"Resource\": \"arn:aws:s3:::");
-        builder.append(bucketName);
-        builder.append("/*\"\n}\n],\n\"Version\": \"2012-10-17\"\n}\n");
-        return builder.toString();
     }
 
 }

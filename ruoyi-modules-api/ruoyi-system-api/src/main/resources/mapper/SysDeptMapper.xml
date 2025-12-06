@@ -8,21 +8,26 @@
     </resultMap>
 
     <select id="selectDeptList" resultMap="SysDeptResult">
-        select * from sys_dept ${ew.getCustomSqlSegment}
+        select *
+        from sys_dept ${ew.getCustomSqlSegment}
     </select>
 
     <select id="selectDeptById" resultMap="SysDeptResult">
-        select * from sys_dept where del_flag = '0' and dept_id = #{deptId}
+        select *
+        from sys_dept
+        where del_flag = '0'
+          and dept_id = #{deptId}
     </select>
 
     <select id="selectDeptListByRoleId" resultType="Long">
         select d.dept_id
         from sys_dept d
-            left join sys_role_dept rd on d.dept_id = rd.dept_id
+        left join sys_role_dept rd on d.dept_id = rd.dept_id
         where rd.role_id = #{roleId}
-            <if test="deptCheckStrictly">
-                and d.dept_id not in (select d.parent_id from sys_dept d inner join sys_role_dept rd on d.dept_id = rd.dept_id and rd.role_id = #{roleId})
-            </if>
+        <if test="deptCheckStrictly">
+            and d.dept_id not in (select d.parent_id from sys_dept d inner join sys_role_dept rd on d.dept_id =
+            rd.dept_id and rd.role_id = #{roleId})
+        </if>
         order by d.parent_id, d.order_num
     </select>
 

@@ -1,16 +1,12 @@
 package org.ruoyi.service.strategy;
 
-import org.ruoyi.common.core.exception.ServiceException;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
-import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.embedding.EmbeddingModelFactory;
+import org.ruoyi.service.VectorStoreService;
 
 /**
  * 向量库策略抽象基类
@@ -24,15 +20,7 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreService 
 
     protected final VectorStoreProperties vectorStoreProperties;
 
-    private final  EmbeddingModelFactory embeddingModelFactory;
-
-    /**
-     * 获取向量模型
-     */
-    @SneakyThrows
-    protected EmbeddingModel getEmbeddingModel(String modelName, Integer dimension) {
-        return embeddingModelFactory.createModel(modelName, dimension);
-    }
+    private final EmbeddingModelFactory embeddingModelFactory;
 
     /**
      * 将float数组转换为Float对象数组
@@ -43,6 +31,14 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreService 
             result[i] = primitive[i]; // 自动装箱
         }
         return result;
+    }
+
+    /**
+     * 获取向量模型
+     */
+    @SneakyThrows
+    protected EmbeddingModel getEmbeddingModel(String modelName, Integer dimension) {
+        return embeddingModelFactory.createModel(modelName, dimension);
     }
 
     /**

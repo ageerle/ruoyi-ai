@@ -20,10 +20,12 @@ import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.data.NodeIODataContent;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.DEFAULT_OUTPUT_PARAM_NAME;
 
 @Slf4j
@@ -105,7 +107,7 @@ public class WorkflowUtil {
                 .mapResult(response -> {
                     String responseTxt = response.aiMessage().text();
                     log.info("llm response:{}", responseTxt);
-                    
+
                     // 传递所有输入数据 + 添加 LLM 输出
                     wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> {
                         List<NodeIOData> outputs = new ArrayList<>(item.getInputs());
@@ -113,7 +115,7 @@ public class WorkflowUtil {
                         outputs.add(output);
                         item.setOutputs(outputs);
                     });
-                    
+
                     return Map.of("completeResult", response.aiMessage().text());
                 })
                 .startingNode(node.getUuid())

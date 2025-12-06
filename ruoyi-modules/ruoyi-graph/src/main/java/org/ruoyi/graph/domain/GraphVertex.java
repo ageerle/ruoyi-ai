@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * 图节点实体
- * 
+ *
  * @author ruoyi
  * @date 2025-09-30
  */

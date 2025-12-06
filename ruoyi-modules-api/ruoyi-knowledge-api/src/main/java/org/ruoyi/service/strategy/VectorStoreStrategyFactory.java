@@ -4,9 +4,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.config.VectorStoreProperties;
+import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.strategy.impl.MilvusVectorStoreStrategy;
 import org.ruoyi.service.strategy.impl.WeaviateVectorStoreStrategy;
-import org.ruoyi.service.VectorStoreService;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

@@ -18,7 +18,7 @@ public interface IChatTokenService {
     /**
      * 清空用户token
      */
-    void resetToken(Long userId,String modelName);
+    void resetToken(Long userId, String modelName);
 
     /**
      * 修改用户token

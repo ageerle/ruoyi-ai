@@ -7,8 +7,6 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.graph.domain.GraphInstance;
 import org.ruoyi.graph.mapper.GraphInstanceMapper;
@@ -108,28 +106,28 @@ public class GraphInstanceServiceImpl implements IGraphInstanceService {
     @Override
     public Page<GraphInstance> queryPage(Page<GraphInstance> page, String instanceName, String knowledgeId, Integer graphStatus) {
         LambdaQueryWrapper<GraphInstance> wrapper = new LambdaQueryWrapper<>();
-        
+
         // 图谱名称模糊查询
         if (StringUtils.isNotBlank(instanceName)) {
             wrapper.like(GraphInstance::getGraphName, instanceName.trim());
         }
-        
+
         // 知识库ID精确查询
         if (StringUtils.isNotBlank(knowledgeId)) {
             wrapper.eq(GraphInstance::getKnowledgeId, knowledgeId.trim());
         }
-        
+
         // 状态精确查询
         if (graphStatus != null) {
             wrapper.eq(GraphInstance::getGraphStatus, graphStatus);
         }
-        
+
         // 只查询未删除的记录
         wrapper.eq(GraphInstance::getDelFlag, "0");
-        
+
         // 按创建时间倒序
         wrapper.orderByDesc(GraphInstance::getCreateTime);
-        
+
         return graphInstanceMapper.selectPage(page, wrapper);
     }
 
@@ -166,7 +164,7 @@ public class GraphInstanceServiceImpl implements IGraphInstanceService {
             int rows = graphInstanceMapper.update(null, wrapper);
 
             log.info("更新图谱统计: graphUuid={}, nodeCount={}, relationshipCount={}, rows={}",
-                graphUuid, nodeCount, relationshipCount, rows);
+                    graphUuid, nodeCount, relationshipCount, rows);
             return rows > 0;
         } catch (Exception e) {
             log.error("更新图谱统计失败: graphUuid={}", graphUuid, e);
@@ -196,16 +194,16 @@ public class GraphInstanceServiceImpl implements IGraphInstanceService {
     public boolean deleteInstance(String graphUuid) {
         try {
             log.info("🗑️ 开始删除图谱实例及数据，graphUuid: {}", graphUuid);
-            
+
             // ⭐ 1. 先获取实例信息（获取knowledgeId）
             GraphInstance instance = getByUuid(graphUuid);
             if (instance == null) {
                 log.warn("⚠️ 图谱实例不存在: graphUuid={}", graphUuid);
                 return false;
             }
-            
+
             String knowledgeId = instance.getKnowledgeId();
-            
+
             // ⭐ 2. 删除Neo4j中的图数据（通过knowledgeId）
             if (StrUtil.isNotBlank(knowledgeId)) {
                 log.info("删除Neo4j图数据，knowledgeId: {}", knowledgeId);
@@ -218,14 +216,14 @@ public class GraphInstanceServiceImpl implements IGraphInstanceService {
             } else {
                 log.warn("⚠️ 实例没有关联知识库ID，跳过Neo4j数据删除");
             }
-            
+
             // 3. 删除MySQL中的实例记录
             LambdaQueryWrapper<GraphInstance> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(GraphInstance::getGraphUuid, graphUuid);
             int rows = graphInstanceMapper.delete(wrapper);
 
-            log.info("✅ 删除图谱实例成功: graphUuid={}, knowledgeId={}, rows={}", 
-                graphUuid, knowledgeId, rows);
+            log.info("✅ 删除图谱实例成功: graphUuid={}, knowledgeId={}, rows={}",
+                    graphUuid, knowledgeId, rows);
             return rows > 0;
         } catch (Exception e) {
             log.error("❌ 删除图谱实例失败: graphUuid={}", graphUuid, e);
@@ -244,7 +242,7 @@ public class GraphInstanceServiceImpl implements IGraphInstanceService {
             boolean instanceDeleted = deleteInstance(graphUuid);
 
             log.info("删除图谱实例及数据: graphUuid={}, graphDeleted={}, instanceDeleted={}",
-                graphUuid, graphDeleted, instanceDeleted);
+                    graphUuid, graphDeleted, instanceDeleted);
 
             return graphDeleted && instanceDeleted;
         } catch (Exception e) {
@@ -262,9 +260,9 @@ public class GraphInstanceServiceImpl implements IGraphInstanceService {
             // 更新到 MySQL（异步）
             if (stats.containsKey("nodeCount") && stats.containsKey("relationshipCount")) {
                 updateCounts(
-                    graphUuid,
-                    (Integer) stats.get("nodeCount"),
-                    (Integer) stats.get("relationshipCount")
+                        graphUuid,
+                        (Integer) stats.get("nodeCount"),
+                        (Integer) stats.get("relationshipCount")
                 );
             }
 

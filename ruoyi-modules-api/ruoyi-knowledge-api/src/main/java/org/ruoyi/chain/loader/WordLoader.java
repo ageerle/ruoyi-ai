@@ -16,6 +16,7 @@ import java.util.List;
 @Slf4j
 public class WordLoader implements ResourceLoader {
     private final TextSplitter textSplitter;
+
     @Override
     public String getContent(InputStream inputStream) {
         XWPFDocument document = null;

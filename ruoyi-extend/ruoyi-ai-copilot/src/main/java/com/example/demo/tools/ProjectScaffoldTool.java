@@ -32,11 +32,11 @@ public class ProjectScaffoldTool extends BaseTool<ProjectScaffoldTool.ScaffoldPa
 
     public ProjectScaffoldTool(AppProperties appProperties) {
         super(
-            "scaffold_project",
-            "ScaffoldProject",
-            "Create a new project with standard structure and template files. " +
-            "Supports various project types including Java, Node.js, Python, and more.",
-            createSchema()
+                "scaffold_project",
+                "ScaffoldProject",
+                "Create a new project with standard structure and template files. " +
+                        "Supports various project types including Java, Node.js, Python, and more.",
+                createSchema()
         );
         this.appProperties = appProperties;
         this.rootDirectory = appProperties.getWorkspace().getRootDirectory();
@@ -44,32 +44,32 @@ public class ProjectScaffoldTool extends BaseTool<ProjectScaffoldTool.ScaffoldPa
 
     private static JsonSchema createSchema() {
         return JsonSchema.object()
-            .addProperty("project_name", JsonSchema.string(
-                "Name of the project to create. Will be used as directory name and in templates."
-            ))
-            .addProperty("project_type", JsonSchema.string(
-                "Type of project to create. Options: " +
-                "java_maven, java_gradle, spring_boot, " +
-                "node_js, react, vue, angular, " +
-                "python, django, flask, " +
-                "html_static"
-            ))
-            .addProperty("project_path", JsonSchema.string(
-                "Optional: Custom path where to create the project. " +
-                "If not provided, will create in workspace root."
-            ))
-            .addProperty("template_variables", JsonSchema.object(
-            ))
-            .addProperty("include_git", JsonSchema.bool(
-                "Whether to initialize Git repository. Default: true"
-            ))
-            .addProperty("include_readme", JsonSchema.bool(
-                "Whether to create README.md file. Default: true"
-            ))
-            .addProperty("include_gitignore", JsonSchema.bool(
-                "Whether to create .gitignore file. Default: true"
-            ))
-            .required("project_name", "project_type");
+                .addProperty("project_name", JsonSchema.string(
+                        "Name of the project to create. Will be used as directory name and in templates."
+                ))
+                .addProperty("project_type", JsonSchema.string(
+                        "Type of project to create. Options: " +
+                                "java_maven, java_gradle, spring_boot, " +
+                                "node_js, react, vue, angular, " +
+                                "python, django, flask, " +
+                                "html_static"
+                ))
+                .addProperty("project_path", JsonSchema.string(
+                        "Optional: Custom path where to create the project. " +
+                                "If not provided, will create in workspace root."
+                ))
+                .addProperty("template_variables", JsonSchema.object(
+                ))
+                .addProperty("include_git", JsonSchema.bool(
+                        "Whether to initialize Git repository. Default: true"
+                ))
+                .addProperty("include_readme", JsonSchema.bool(
+                        "Whether to create README.md file. Default: true"
+                ))
+                .addProperty("include_gitignore", JsonSchema.bool(
+                        "Whether to create .gitignore file. Default: true"
+                ))
+                .required("project_name", "project_type");
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ProjectScaffoldTool extends BaseTool<ProjectScaffoldTool.ScaffoldPa
     /**
      * Project scaffold tool method for Spring AI integration
      */
-     @Tool(name = "scaffold_project", description = "Create a new project with standard structure and template files")
+    @Tool(name = "scaffold_project", description = "Create a new project with standard structure and template files")
     public String scaffoldProject(String projectName, String projectType, String projectPath, Boolean includeGit, Boolean includeReadme, Boolean includeGitignore) {
         try {
             ScaffoldParams params = new ScaffoldParams();
@@ -258,7 +258,7 @@ public class ProjectScaffoldTool extends BaseTool<ProjectScaffoldTool.ScaffoldPa
         // User-provided variables
         if (params.templateVariables != null) {
             params.templateVariables.forEach((key, value) ->
-                variables.put(key.toUpperCase(), String.valueOf(value)));
+                    variables.put(key.toUpperCase(), String.valueOf(value)));
         }
 
         return variables;
@@ -536,26 +536,61 @@ public class ProjectScaffoldTool extends BaseTool<ProjectScaffoldTool.ScaffoldPa
         private Boolean includeGitignore = true;
 
         // Getters and Setters
-        public String getProjectName() { return projectName; }
-        public void setProjectName(String projectName) { this.projectName = projectName; }
+        public String getProjectName() {
+            return projectName;
+        }
 
-        public String getProjectType() { return projectType; }
-        public void setProjectType(String projectType) { this.projectType = projectType; }
+        public void setProjectName(String projectName) {
+            this.projectName = projectName;
+        }
 
-        public String getProjectPath() { return projectPath; }
-        public void setProjectPath(String projectPath) { this.projectPath = projectPath; }
+        public String getProjectType() {
+            return projectType;
+        }
 
-        public Map<String, Object> getTemplateVariables() { return templateVariables; }
-        public void setTemplateVariables(Map<String, Object> templateVariables) { this.templateVariables = templateVariables; }
+        public void setProjectType(String projectType) {
+            this.projectType = projectType;
+        }
 
-        public Boolean getIncludeGit() { return includeGit; }
-        public void setIncludeGit(Boolean includeGit) { this.includeGit = includeGit; }
+        public String getProjectPath() {
+            return projectPath;
+        }
 
-        public Boolean getIncludeReadme() { return includeReadme; }
-        public void setIncludeReadme(Boolean includeReadme) { this.includeReadme = includeReadme; }
+        public void setProjectPath(String projectPath) {
+            this.projectPath = projectPath;
+        }
 
-        public Boolean getIncludeGitignore() { return includeGitignore; }
-        public void setIncludeGitignore(Boolean includeGitignore) { this.includeGitignore = includeGitignore; }
+        public Map<String, Object> getTemplateVariables() {
+            return templateVariables;
+        }
+
+        public void setTemplateVariables(Map<String, Object> templateVariables) {
+            this.templateVariables = templateVariables;
+        }
+
+        public Boolean getIncludeGit() {
+            return includeGit;
+        }
+
+        public void setIncludeGit(Boolean includeGit) {
+            this.includeGit = includeGit;
+        }
+
+        public Boolean getIncludeReadme() {
+            return includeReadme;
+        }
+
+        public void setIncludeReadme(Boolean includeReadme) {
+            this.includeReadme = includeReadme;
+        }
+
+        public Boolean getIncludeGitignore() {
+            return includeGitignore;
+        }
+
+        public void setIncludeGitignore(Boolean includeGitignore) {
+            this.includeGitignore = includeGitignore;
+        }
     }
 
     /**
@@ -572,9 +607,9 @@ public class ProjectScaffoldTool extends BaseTool<ProjectScaffoldTool.ScaffoldPa
 
         public void generateSummary(Path projectPath, ProjectType projectType) {
             this.summary = String.format("Created %s project '%s' with %d files/directories",
-                projectType.getDisplayName(),
-                projectPath.getFileName(),
-                createdItems.size());
+                    projectType.getDisplayName(),
+                    projectPath.getFileName(),
+                    createdItems.size());
 
             StringBuilder detailsBuilder = new StringBuilder();
             detailsBuilder.append("Created project structure:\n");
@@ -584,7 +619,12 @@ public class ProjectScaffoldTool extends BaseTool<ProjectScaffoldTool.ScaffoldPa
             this.details = detailsBuilder.toString();
         }
 
-        public String getSummary() { return summary; }
-        public String getDetails() { return details; }
+        public String getSummary() {
+            return summary;
+        }
+
+        public String getDetails() {
+            return details;
+        }
     }
 }

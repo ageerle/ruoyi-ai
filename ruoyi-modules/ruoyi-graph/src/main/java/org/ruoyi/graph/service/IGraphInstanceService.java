@@ -17,8 +17,8 @@ public interface IGraphInstanceService {
      * 创建图谱实例
      *
      * @param knowledgeId 知识库ID
-     * @param graphName 图谱名称
-     * @param config 配置信息
+     * @param graphName   图谱名称
+     * @param config      配置信息
      * @return 图谱实例
      */
     GraphInstance createInstance(String knowledgeId, String graphName, String config);
@@ -58,10 +58,10 @@ public interface IGraphInstanceService {
     /**
      * 条件查询图谱实例列表（分页）
      *
-     * @param page 分页对象
+     * @param page         分页对象
      * @param instanceName 图谱名称（模糊查询）
-     * @param knowledgeId 知识库ID
-     * @param graphStatus 图谱状态码
+     * @param knowledgeId  知识库ID
+     * @param graphStatus  图谱状态码
      * @return 分页结果
      */
     Page<GraphInstance> queryPage(Page<GraphInstance> page, String instanceName, String knowledgeId, Integer graphStatus);
@@ -70,7 +70,7 @@ public interface IGraphInstanceService {
      * 更新图谱状态
      *
      * @param graphUuid 图谱UUID
-     * @param status 状态
+     * @param status    状态
      * @return 是否成功
      */
     boolean updateStatus(String graphUuid, Integer status);
@@ -78,8 +78,8 @@ public interface IGraphInstanceService {
     /**
      * 更新图谱统计信息
      *
-     * @param graphUuid 图谱UUID
-     * @param nodeCount 节点数量
+     * @param graphUuid         图谱UUID
+     * @param nodeCount         节点数量
      * @param relationshipCount 关系数量
      * @return 是否成功
      */
@@ -89,7 +89,7 @@ public interface IGraphInstanceService {
      * 更新图谱配置
      *
      * @param graphUuid 图谱UUID
-     * @param config 配置信息
+     * @param config    配置信息
      * @return 是否成功
      */
     boolean updateConfig(String graphUuid, String config);

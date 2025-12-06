@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 通义千问（Qwen）图谱LLM服务实现
  * 支持阿里云通义千问系列模型
- * 
+ * <p>
  * 注意：通义千问的API与OpenAI兼容，因此可以复用 OpenAiStreamClient
  *
  * @author ruoyi
@@ -29,29 +29,29 @@ public class QwenGraphLLMServiceImpl implements IGraphLLMService {
     @Override
     public String extractGraph(String prompt, ChatModelVo chatModel) {
         log.info("Qwen模型调用: model={}, apiHost={}, 提示词长度={}",
-            chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
+                chatModel.getModelName(), chatModel.getApiHost(), prompt.length());
 
         try {
             // 通义千问API与OpenAI兼容，可以直接使用 OpenAiStreamClient
             OpenAiStreamClient client = ChatConfig.createOpenAiStreamClient(
-                chatModel.getApiHost(),
-                chatModel.getApiKey()
+                    chatModel.getApiHost(),
+                    chatModel.getApiKey()
             );
 
             // 构建消息
             List<Message> messages = Collections.singletonList(
-                Message.builder()
-                    .role(Message.Role.USER)
-                    .content(prompt)
-                    .build()
+                    Message.builder()
+                            .role(Message.Role.USER)
+                            .content(prompt)
+                            .build()
             );
 
             // 构建请求（非流式，同步调用）
             ChatCompletion completion = ChatCompletion.builder()
-                .messages(messages)
-                .model(chatModel.getModelName())
-                .stream(false)  // 同步调用
-                .build();
+                    .messages(messages)
+                    .model(chatModel.getModelName())
+                    .stream(false)  // 同步调用
+                    .build();
 
             // 同步调用 LLM
             long startTime = System.currentTimeMillis();
@@ -61,7 +61,7 @@ public class QwenGraphLLMServiceImpl implements IGraphLLMService {
             // 提取响应文本
             Object content = response.getChoices().get(0).getMessage().getContent();
             String responseText = content != null ? content.toString() : "";
-            
+
             log.info("Qwen模型响应成功: 耗时={}ms, 响应长度={}", duration, responseText.length());
 
             return responseText;

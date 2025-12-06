@@ -23,130 +23,76 @@ import java.util.concurrent.CompletableFuture;
  */
 @Component
 public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProjectParams> {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeProjectTool.class);
-    
-    @Autowired
-    private ProjectContextAnalyzer projectContextAnalyzer;
-    
     private final String rootDirectory;
     private final AppProperties appProperties;
-    
+    @Autowired
+    private ProjectContextAnalyzer projectContextAnalyzer;
+
     public AnalyzeProjectTool(AppProperties appProperties) {
         super(
-            "analyze_project",
-            "AnalyzeProject",
-            "Analyze an existing project to understand its structure, type, dependencies, and configuration. " +
-            "Provides comprehensive project information that can be used for intelligent editing and refactoring.",
-            createSchema()
+                "analyze_project",
+                "AnalyzeProject",
+                "Analyze an existing project to understand its structure, type, dependencies, and configuration. " +
+                        "Provides comprehensive project information that can be used for intelligent editing and refactoring.",
+                createSchema()
         );
         this.appProperties = appProperties;
         this.rootDirectory = appProperties.getWorkspace().getRootDirectory();
     }
-    
+
     private static JsonSchema createSchema() {
         return JsonSchema.object()
-            .addProperty("project_path", JsonSchema.string(
-                "Absolute path to the project root directory to analyze. " +
-                "Must be within the workspace directory."
-            ))
-            .addProperty("analysis_depth", JsonSchema.string(
-                "Analysis depth: 'basic', 'detailed', or 'comprehensive'. " +
-                "Default: 'detailed'. " +
-                "- basic: Project type and structure only\n" +
-                "- detailed: Includes dependencies and configuration\n" +
-                "- comprehensive: Full analysis including code statistics"
-            ))
-            .addProperty("include_code_stats", JsonSchema.bool(
-                "Whether to include detailed code statistics (lines of code, classes, methods, etc.). " +
-                "Default: true for detailed/comprehensive analysis"
-            ))
-            .addProperty("output_format", JsonSchema.string(
-                "Output format: 'summary', 'detailed', or 'json'. Default: 'detailed'"
-            ))
-            .required("project_path");
+                .addProperty("project_path", JsonSchema.string(
+                        "Absolute path to the project root directory to analyze. " +
+                                "Must be within the workspace directory."
+                ))
+                .addProperty("analysis_depth", JsonSchema.string(
+                        "Analysis depth: 'basic', 'detailed', or 'comprehensive'. " +
+                                "Default: 'detailed'. " +
+                                "- basic: Project type and structure only\n" +
+                                "- detailed: Includes dependencies and configuration\n" +
+                                "- comprehensive: Full analysis including code statistics"
+                ))
+                .addProperty("include_code_stats", JsonSchema.bool(
+                        "Whether to include detailed code statistics (lines of code, classes, methods, etc.). " +
+                                "Default: true for detailed/comprehensive analysis"
+                ))
+                .addProperty("output_format", JsonSchema.string(
+                        "Output format: 'summary', 'detailed', or 'json'. Default: 'detailed'"
+                ))
+                .required("project_path");
     }
-    
-    public enum AnalysisDepth {
-        BASIC("basic", "Basic project type and structure analysis"),
-        DETAILED("detailed", "Detailed analysis including dependencies and configuration"),
-        COMPREHENSIVE("comprehensive", "Comprehensive analysis with full code statistics");
-        
-        private final String value;
-        private final String description;
-        
-        AnalysisDepth(String value, String description) {
-            this.value = value;
-            this.description = description;
-        }
-        
-        public static AnalysisDepth fromString(String value) {
-            for (AnalysisDepth depth : values()) {
-                if (depth.value.equals(value)) {
-                    return depth;
-                }
-            }
-            return DETAILED; // default
-        }
-        
-        public String getValue() { return value; }
-        public String getDescription() { return description; }
-    }
-    
-    public enum OutputFormat {
-        SUMMARY("summary", "Brief summary of key project information"),
-        DETAILED("detailed", "Detailed human-readable analysis report"),
-        JSON("json", "Structured JSON output for programmatic use");
-        
-        private final String value;
-        private final String description;
-        
-        OutputFormat(String value, String description) {
-            this.value = value;
-            this.description = description;
-        }
-        
-        public static OutputFormat fromString(String value) {
-            for (OutputFormat format : values()) {
-                if (format.value.equals(value)) {
-                    return format;
-                }
-            }
-            return DETAILED; // default
-        }
-        
-        public String getValue() { return value; }
-        public String getDescription() { return description; }
-    }
-    
+
     @Override
     public String validateToolParams(AnalyzeProjectParams params) {
         String baseValidation = super.validateToolParams(params);
         if (baseValidation != null) {
             return baseValidation;
         }
-        
+
         if (params.projectPath == null || params.projectPath.trim().isEmpty()) {
             return "Project path cannot be empty";
         }
-        
+
         Path projectPath = Paths.get(params.projectPath);
         if (!projectPath.isAbsolute()) {
             return "Project path must be absolute: " + params.projectPath;
         }
-        
+
         if (!Files.exists(projectPath)) {
             return "Project path does not exist: " + params.projectPath;
         }
-        
+
         if (!Files.isDirectory(projectPath)) {
             return "Project path must be a directory: " + params.projectPath;
         }
-        
+
         if (!isWithinWorkspace(projectPath)) {
             return "Project path must be within the workspace directory: " + params.projectPath;
         }
-        
+
         return null;
     }
 
@@ -188,34 +134,34 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
         return CompletableFuture.supplyAsync(() -> {
             try {
                 logger.info("Starting project analysis for: {}", params.projectPath);
-                
+
                 Path projectPath = Paths.get(params.projectPath);
                 AnalysisDepth depth = AnalysisDepth.fromString(params.analysisDepth);
                 OutputFormat format = OutputFormat.fromString(params.outputFormat);
-                
+
                 // 执行项目分析
                 ProjectContext context = analyzeProject(projectPath, depth, params);
-                
+
                 // 生成输出
                 String output = generateOutput(context, format, depth);
                 String summary = generateSummary(context);
-                
+
                 logger.info("Project analysis completed for: {}", params.projectPath);
                 return ToolResult.success(summary, output);
-                
+
             } catch (Exception e) {
                 logger.error("Error during project analysis", e);
                 return ToolResult.error("Project analysis failed: " + e.getMessage());
             }
         });
     }
-    
+
     /**
      * 执行项目分析
      */
     private ProjectContext analyzeProject(Path projectPath, AnalysisDepth depth, AnalyzeProjectParams params) {
         logger.debug("Analyzing project with depth: {}", depth);
-        
+
         switch (depth) {
             case BASIC:
                 return analyzeBasic(projectPath);
@@ -227,7 +173,7 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
                 return projectContextAnalyzer.analyzeProject(projectPath);
         }
     }
-    
+
     /**
      * 基础分析
      */
@@ -238,17 +184,17 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
         context.setProjectStructure(projectContextAnalyzer.projectDiscoveryService.analyzeProjectStructure(projectPath));
         return context;
     }
-    
+
     /**
      * 详细分析
      */
     private ProjectContext analyzeDetailed(Path projectPath, AnalyzeProjectParams params) {
         ProjectContext context = analyzeBasic(projectPath);
-        
+
         // 添加依赖和配置文件分析
         context.setDependencies(projectContextAnalyzer.projectDiscoveryService.analyzeDependencies(projectPath));
         context.setConfigFiles(projectContextAnalyzer.projectDiscoveryService.findConfigurationFiles(projectPath));
-        
+
         // 如果需要代码统计
         if (params.includeCodeStats == null || params.includeCodeStats) {
             // 简化的代码统计，避免性能问题
@@ -256,10 +202,10 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
             // 这里可以添加基本的代码统计逻辑
             context.setCodeStatistics(stats);
         }
-        
+
         return context;
     }
-    
+
     /**
      * 全面分析
      */
@@ -267,7 +213,7 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
         // 使用完整的项目分析
         return projectContextAnalyzer.analyzeProject(projectPath);
     }
-    
+
     /**
      * 生成输出
      */
@@ -283,22 +229,22 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
                 return generateDetailedOutput(context, depth);
         }
     }
-    
+
     /**
      * 生成摘要输出
      */
     private String generateSummaryOutput(ProjectContext context) {
         StringBuilder output = new StringBuilder();
-        
+
         output.append("📊 PROJECT ANALYSIS SUMMARY\n");
-        output.append("=" .repeat(50)).append("\n\n");
-        
+        output.append("=".repeat(50)).append("\n\n");
+
         // 基本信息
         output.append("🏗️  Project: ").append(context.getProjectRoot().getFileName()).append("\n");
         output.append("🔧 Type: ").append(context.getProjectType().getDisplayName()).append("\n");
         output.append("💻 Language: ").append(context.getProjectType().getPrimaryLanguage()).append("\n");
         output.append("📦 Package Manager: ").append(context.getProjectType().getPackageManager()).append("\n\n");
-        
+
         // 结构信息
         if (context.getProjectStructure() != null) {
             ProjectStructure structure = context.getProjectStructure();
@@ -307,45 +253,45 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
             output.append("   - Files: ").append(structure.getTotalFiles()).append("\n");
             output.append("   - Size: ").append(formatFileSize(structure.getTotalSize())).append("\n\n");
         }
-        
+
         // 依赖信息
         if (context.getDependencies() != null && !context.getDependencies().isEmpty()) {
             output.append("📚 Dependencies: ").append(context.getDependencies().size()).append(" found\n");
             output.append("   - Key dependencies: ").append(context.getDependencySummary()).append("\n\n");
         }
-        
+
         // 配置文件
         if (context.getConfigFiles() != null && !context.getConfigFiles().isEmpty()) {
             output.append("⚙️  Configuration Files: ").append(context.getConfigFiles().size()).append(" found\n");
             context.getConfigFiles().stream()
-                .filter(ProjectContext.ConfigFile::isMainConfig)
-                .forEach(config -> output.append("   - ").append(config.getFileName()).append("\n"));
+                    .filter(ProjectContext.ConfigFile::isMainConfig)
+                    .forEach(config -> output.append("   - ").append(config.getFileName()).append("\n"));
         }
-        
+
         return output.toString();
     }
-    
+
     /**
      * 生成详细输出
      */
     private String generateDetailedOutput(ProjectContext context, AnalysisDepth depth) {
         StringBuilder output = new StringBuilder();
-        
+
         output.append("📊 COMPREHENSIVE PROJECT ANALYSIS\n");
-        output.append("=" .repeat(60)).append("\n\n");
-        
+        output.append("=".repeat(60)).append("\n\n");
+
         // 使用项目上下文的摘要生成功能
         output.append(context.generateContextSummary());
-        
+
         // 添加分析深度特定的信息
         if (depth == AnalysisDepth.COMPREHENSIVE) {
             output.append("\n=== DETAILED INSIGHTS ===\n");
             output.append(generateProjectInsights(context));
         }
-        
+
         return output.toString();
     }
-    
+
     /**
      * 生成JSON输出
      */
@@ -357,7 +303,7 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
         json.append("  \"projectName\": \"").append(context.getProjectRoot().getFileName()).append("\",\n");
         json.append("  \"projectType\": \"").append(context.getProjectType().name()).append("\",\n");
         json.append("  \"primaryLanguage\": \"").append(context.getProjectType().getPrimaryLanguage()).append("\",\n");
-        
+
         if (context.getProjectStructure() != null) {
             ProjectStructure structure = context.getProjectStructure();
             json.append("  \"structure\": {\n");
@@ -366,44 +312,44 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
             json.append("    \"totalSize\": ").append(structure.getTotalSize()).append("\n");
             json.append("  },\n");
         }
-        
+
         json.append("  \"dependencyCount\": ").append(
-            context.getDependencies() != null ? context.getDependencies().size() : 0).append(",\n");
+                context.getDependencies() != null ? context.getDependencies().size() : 0).append(",\n");
         json.append("  \"configFileCount\": ").append(
-            context.getConfigFiles() != null ? context.getConfigFiles().size() : 0).append("\n");
-        
+                context.getConfigFiles() != null ? context.getConfigFiles().size() : 0).append("\n");
+
         json.append("}");
         return json.toString();
     }
-    
+
     /**
      * 生成项目洞察
      */
     private String generateProjectInsights(ProjectContext context) {
         StringBuilder insights = new StringBuilder();
-        
+
         // 项目健康度评估
         insights.append("Project Health Assessment:\n");
-        
+
         // 检查是否有版本控制
         if (context.getMetadata().containsKey("versionControl")) {
             insights.append("✅ Version control detected: ").append(context.getMetadata().get("versionControl")).append("\n");
         } else {
             insights.append("⚠️  No version control detected\n");
         }
-        
+
         // 检查是否有CI/CD
         if (context.getMetadata().containsKey("cicd")) {
             insights.append("✅ CI/CD configured: ").append(context.getMetadata().get("cicd")).append("\n");
         } else {
             insights.append("💡 Consider setting up CI/CD\n");
         }
-        
+
         // 检查是否有容器化
         if (context.getMetadata().containsKey("containerization")) {
             insights.append("✅ Containerization: ").append(context.getMetadata().get("containerization")).append("\n");
         }
-        
+
         // 代码质量建议
         insights.append("\nRecommendations:\n");
         if (context.getProjectType().isJavaProject()) {
@@ -416,23 +362,23 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
             insights.append("- Consider using pylint or flake8 for code quality\n");
             insights.append("- Add type hints for better code documentation\n");
         }
-        
+
         return insights.toString();
     }
-    
+
     /**
      * 生成摘要
      */
     private String generateSummary(ProjectContext context) {
         return String.format("Analyzed %s project: %s (%s) with %d dependencies and %d config files",
-            context.getProjectType().getDisplayName(),
-            context.getProjectRoot().getFileName(),
-            context.getProjectType().getPrimaryLanguage(),
-            context.getDependencies() != null ? context.getDependencies().size() : 0,
-            context.getConfigFiles() != null ? context.getConfigFiles().size() : 0
+                context.getProjectType().getDisplayName(),
+                context.getProjectRoot().getFileName(),
+                context.getProjectType().getPrimaryLanguage(),
+                context.getDependencies() != null ? context.getDependencies().size() : 0,
+                context.getConfigFiles() != null ? context.getConfigFiles().size() : 0
         );
     }
-    
+
     /**
      * 格式化文件大小
      */
@@ -442,7 +388,7 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
         if (bytes < 1024 * 1024 * 1024) return String.format("%.1f MB", bytes / (1024.0 * 1024));
         return String.format("%.1f GB", bytes / (1024.0 * 1024 * 1024));
     }
-    
+
     /**
      * 检查路径是否在工作空间内
      */
@@ -456,40 +402,122 @@ public class AnalyzeProjectTool extends BaseTool<AnalyzeProjectTool.AnalyzeProje
             return false;
         }
     }
-    
+
+    public enum AnalysisDepth {
+        BASIC("basic", "Basic project type and structure analysis"),
+        DETAILED("detailed", "Detailed analysis including dependencies and configuration"),
+        COMPREHENSIVE("comprehensive", "Comprehensive analysis with full code statistics");
+
+        private final String value;
+        private final String description;
+
+        AnalysisDepth(String value, String description) {
+            this.value = value;
+            this.description = description;
+        }
+
+        public static AnalysisDepth fromString(String value) {
+            for (AnalysisDepth depth : values()) {
+                if (depth.value.equals(value)) {
+                    return depth;
+                }
+            }
+            return DETAILED; // default
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+    public enum OutputFormat {
+        SUMMARY("summary", "Brief summary of key project information"),
+        DETAILED("detailed", "Detailed human-readable analysis report"),
+        JSON("json", "Structured JSON output for programmatic use");
+
+        private final String value;
+        private final String description;
+
+        OutputFormat(String value, String description) {
+            this.value = value;
+            this.description = description;
+        }
+
+        public static OutputFormat fromString(String value) {
+            for (OutputFormat format : values()) {
+                if (format.value.equals(value)) {
+                    return format;
+                }
+            }
+            return DETAILED; // default
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
     /**
      * 分析项目参数
      */
     public static class AnalyzeProjectParams {
         @JsonProperty("project_path")
         private String projectPath;
-        
+
         @JsonProperty("analysis_depth")
         private String analysisDepth = "detailed";
-        
+
         @JsonProperty("include_code_stats")
         private Boolean includeCodeStats;
-        
+
         @JsonProperty("output_format")
         private String outputFormat = "detailed";
-        
+
         // Getters and Setters
-        public String getProjectPath() { return projectPath; }
-        public void setProjectPath(String projectPath) { this.projectPath = projectPath; }
-        
-        public String getAnalysisDepth() { return analysisDepth; }
-        public void setAnalysisDepth(String analysisDepth) { this.analysisDepth = analysisDepth; }
-        
-        public Boolean getIncludeCodeStats() { return includeCodeStats; }
-        public void setIncludeCodeStats(Boolean includeCodeStats) { this.includeCodeStats = includeCodeStats; }
-        
-        public String getOutputFormat() { return outputFormat; }
-        public void setOutputFormat(String outputFormat) { this.outputFormat = outputFormat; }
-        
+        public String getProjectPath() {
+            return projectPath;
+        }
+
+        public void setProjectPath(String projectPath) {
+            this.projectPath = projectPath;
+        }
+
+        public String getAnalysisDepth() {
+            return analysisDepth;
+        }
+
+        public void setAnalysisDepth(String analysisDepth) {
+            this.analysisDepth = analysisDepth;
+        }
+
+        public Boolean getIncludeCodeStats() {
+            return includeCodeStats;
+        }
+
+        public void setIncludeCodeStats(Boolean includeCodeStats) {
+            this.includeCodeStats = includeCodeStats;
+        }
+
+        public String getOutputFormat() {
+            return outputFormat;
+        }
+
+        public void setOutputFormat(String outputFormat) {
+            this.outputFormat = outputFormat;
+        }
+
         @Override
         public String toString() {
-            return String.format("AnalyzeProjectParams{path='%s', depth='%s', format='%s'}", 
-                projectPath, analysisDepth, outputFormat);
+            return String.format("AnalyzeProjectParams{path='%s', depth='%s', format='%s'}",
+                    projectPath, analysisDepth, outputFormat);
         }
     }
 }

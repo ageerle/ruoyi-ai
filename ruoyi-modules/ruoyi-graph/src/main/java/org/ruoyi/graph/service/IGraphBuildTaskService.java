@@ -3,7 +3,6 @@ package org.ruoyi.graph.service;
 import org.ruoyi.graph.domain.GraphBuildTask;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 图谱构建任务服务接口
@@ -16,10 +15,10 @@ public interface IGraphBuildTaskService {
     /**
      * 创建构建任务
      *
-     * @param graphUuid 图谱UUID
+     * @param graphUuid   图谱UUID
      * @param knowledgeId 知识库ID
-     * @param docId 文档ID（可选）
-     * @param taskType 任务类型
+     * @param docId       文档ID（可选）
+     * @param taskType    任务类型
      * @return 任务信息
      */
     GraphBuildTask createTask(String graphUuid, String knowledgeId, String docId, Integer taskType);
@@ -74,8 +73,8 @@ public interface IGraphBuildTaskService {
     /**
      * 更新任务进度
      *
-     * @param taskUuid 任务UUID
-     * @param progress 进度百分比
+     * @param taskUuid      任务UUID
+     * @param progress      进度百分比
      * @param processedDocs 已处理文档数
      * @return 是否成功
      */
@@ -85,7 +84,7 @@ public interface IGraphBuildTaskService {
      * 更新任务状态
      *
      * @param taskUuid 任务UUID
-     * @param status 状态
+     * @param status   状态
      * @return 是否成功
      */
     boolean updateStatus(String taskUuid, Integer status);
@@ -93,8 +92,8 @@ public interface IGraphBuildTaskService {
     /**
      * 更新提取统计信息
      *
-     * @param taskUuid 任务UUID
-     * @param extractedEntities 提取的实体数
+     * @param taskUuid           任务UUID
+     * @param extractedEntities  提取的实体数
      * @param extractedRelations 提取的关系数
      * @return 是否成功
      */
@@ -103,7 +102,7 @@ public interface IGraphBuildTaskService {
     /**
      * 标记任务为成功
      *
-     * @param taskUuid 任务UUID
+     * @param taskUuid      任务UUID
      * @param resultSummary 结果摘要
      * @return 是否成功
      */
@@ -112,7 +111,7 @@ public interface IGraphBuildTaskService {
     /**
      * 标记任务为失败
      *
-     * @param taskUuid 任务UUID
+     * @param taskUuid     任务UUID
      * @param errorMessage 错误信息
      * @return 是否成功
      */

@@ -1,6 +1,5 @@
 # 数据库开发规范
 
-
 ## 1. 建表规约
 
 ### 1.1 表命名规范
@@ -10,6 +9,7 @@
 **【强制】** 表名采用 `业务-模块-功能` 的命名方式，使用下划线分隔。
 
 **正例：**
+
 ```sql
 -- 聊天业务-配置模块-配置功能
 chat_config
@@ -31,6 +31,7 @@ knowledge_role
 ```
 
 **反例：**
+
 ```sql
 -- 不规范的命名
 chatConfig
@@ -53,21 +54,20 @@ user__info
 
 ### 2.1 必备公共字段
 
-
 **【推荐】** 表增加以下公共字段：
 
-| 字段名 | 类型 | 默认值 | 说明 | 是否必须 |
-|--------|------|--------|------|----------|
-| `id` | `bigint(20)` | AUTO_INCREMENT | 主键ID | 是 |
-| `create_time` | `datetime` | NULL | 创建时间 | 是 |
-| `update_time` | `datetime` | NULL | 更新时间 | 是 |
-| `create_by` | `bigint(20)` | NULL | 创建者ID | 是 |
-| `update_by` | `bigint(20)` | NULL | 更新者ID | 是 |
-| `create_dept` | `bigint(20)` | NULL | 创建部门ID | 是 |
-| `del_flag` | `char(1)` | '0' | 删除标志（0存在 1删除） | 推荐 |
-| `tenant_id` | `varchar(20)` | '000000' | 租户编号 | 多租户必须 |
-| `remark` | `varchar(500)` | NULL | 备注 | 是 |
-| `version` | `int(11)` | NULL | 版本号（乐观锁） | 可选 |
+| 字段名           | 类型             | 默认值            | 说明            | 是否必须  |
+|---------------|----------------|----------------|---------------|-------|
+| `id`          | `bigint(20)`   | AUTO_INCREMENT | 主键ID          | 是     |
+| `create_time` | `datetime`     | NULL           | 创建时间          | 是     |
+| `update_time` | `datetime`     | NULL           | 更新时间          | 是     |
+| `create_by`   | `bigint(20)`   | NULL           | 创建者ID         | 是     |
+| `update_by`   | `bigint(20)`   | NULL           | 更新者ID         | 是     |
+| `create_dept` | `bigint(20)`   | NULL           | 创建部门ID        | 是     |
+| `del_flag`    | `char(1)`      | '0'            | 删除标志（0存在 1删除） | 推荐    |
+| `tenant_id`   | `varchar(20)`  | '000000'       | 租户编号          | 多租户必须 |
+| `remark`      | `varchar(500)` | NULL           | 备注            | 是     |
+| `version`     | `int(11)`      | NULL           | 版本号（乐观锁）      | 可选    |
 
 ### 2.2 公共字段说明
 
@@ -105,6 +105,7 @@ script/
 **【强制】** 更新SQL文件命名格式：`YYYY-MM-DD-功能描述.sql`
 
 **正例：**
+
 ```
 2024-05-24-chat-message-billing-type.sql
 2024-07-13-chat-model-priority.sql
@@ -112,11 +113,13 @@ script/
 ```
 
 **【强制】** 每个更新SQL文件必须包含：
+
 - 文件头部注释说明变更内容
 - 变更日期和负责人
 - 具体的DDL/DML语句
 
 **正例：**
+
 ```sql
 -- 为 chat_message 表添加 billing_type 字段
 -- 变更日期: 2024-05-24
@@ -132,6 +135,7 @@ ALTER TABLE chat_message
 #### 3.3.1 首次部署
 
 **【强制】** 首次初始化项目只需要执行：
+
 ```bash
 mysql -u root -p database_name < script/sql/ruoyi-ai.sql
 ```
@@ -154,5 +158,5 @@ mysql -u root -p database_name < script/sql/update/2024-07-13-chat-model-priorit
 2. 将变更同步更新到初始化文件 `script/sql/ruoyi-ai.sql`
 
 ---
-> 
+>
 > 最后更新时间：2025-11-07

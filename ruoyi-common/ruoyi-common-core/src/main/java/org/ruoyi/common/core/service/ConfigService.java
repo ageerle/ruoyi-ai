@@ -13,8 +13,7 @@ public interface ConfigService {
      * @param configKey
      * @return
      */
-    String getConfigValue(String category,String configKey);
-
+    String getConfigValue(String category, String configKey);
 
 
 }

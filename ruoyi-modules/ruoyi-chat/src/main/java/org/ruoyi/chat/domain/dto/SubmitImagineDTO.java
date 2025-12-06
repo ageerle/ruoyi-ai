@@ -12,14 +12,14 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class SubmitImagineDTO extends BaseSubmitDTO {
 
-	@Schema(description = "提示词", requiredMode = Schema.RequiredMode.REQUIRED, example = "Cat")
-	private String prompt;
+    @Schema(description = "提示词", requiredMode = Schema.RequiredMode.REQUIRED, example = "Cat")
+    private String prompt;
 
-	@Schema(description = "垫图base64数组")
-	private List<String> base64Array;
+    @Schema(description = "垫图base64数组")
+    private List<String> base64Array;
 
-	@Schema(hidden = true)
-	@Deprecated(since = "3.0", forRemoval = true)
-	private String base64;
+    @Schema(hidden = true)
+    @Deprecated(since = "3.0", forRemoval = true)
+    private String base64;
 
 }

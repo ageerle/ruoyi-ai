@@ -24,8 +24,9 @@ import java.io.Serializable;
  *          },
  *     }
  * </pre>
+ *
  * @author https:www.unfbx.com
- * @since  2023-06-14
+ * @since 2023-06-14
  */
 @Data
 @Builder

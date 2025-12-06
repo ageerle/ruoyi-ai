@@ -13,10 +13,10 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- *  openai 返回值处理Interceptor
+ * openai 返回值处理Interceptor
  *
  * @author https:www.unfbx.com
- * @since  2023-03-23
+ * @since 2023-03-23
  */
 @Slf4j
 public class OpenAiResponseInterceptor implements Interceptor {
