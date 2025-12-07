@@ -84,7 +84,7 @@ public class ChatModel extends BaseEntity {
     /**
      * 模型供应商
      */
-    private String ProviderName;
+    private String providerName;
 
     /**
      * 备注
