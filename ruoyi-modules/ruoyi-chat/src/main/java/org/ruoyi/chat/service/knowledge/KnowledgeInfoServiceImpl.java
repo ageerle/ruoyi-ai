@@ -254,7 +254,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         check(knowledgeInfo);
         map.put("kid", knowledgeInfo.getKid());
         // 删除向量数据
-        vectorStoreService.removeById(String.valueOf(knowledgeInfo.getId()), knowledgeInfo.getVectorModelName());
+        vectorStoreService.removeById(knowledgeInfo.getKid(), knowledgeInfo.getVectorModelName());
         // 删除附件和知识片段
         fragmentMapper.deleteByMap(map);
         attachMapper.deleteByMap(map);
@@ -337,6 +337,10 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      */
     public void check(KnowledgeInfo knowledgeInfo) {
         LoginUser loginUser = LoginHelper.getLoginUser();
+        // 超级管理员可以删除所有知识库
+        if (Long.valueOf(1).equals(loginUser.getUserId())) {
+            return;
+        }
         if (!knowledgeInfo.getUid().equals(loginUser.getUserId())) {
             throw new SecurityException("权限不足");
         }
