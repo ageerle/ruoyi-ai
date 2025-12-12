@@ -1,32 +1,31 @@
 package org.ruoyi.mcp.controller;
 
-import java.util.List;
-import java.util.Map;
-
-import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import org.ruoyi.domain.McpInfo;
-import org.ruoyi.domain.bo.McpInfoBo;
-import org.ruoyi.domain.vo.McpInfoVo;
-import org.ruoyi.mcp.config.McpConfig;
-import org.ruoyi.mcp.config.McpServerConfig;
-import org.ruoyi.mcp.domain.McpInfoRequest;
-import org.ruoyi.mcp.service.McpInfoService;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
-import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
-import org.ruoyi.common.log.annotation.Log;
-import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
-
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
+import org.ruoyi.common.log.annotation.Log;
+import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.web.core.BaseController;
+import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.domain.McpInfo;
+import org.ruoyi.domain.bo.McpInfoBo;
+import org.ruoyi.domain.vo.McpInfoVo;
+import org.ruoyi.mcp.config.McpServerConfig;
+import org.ruoyi.mcp.domain.McpInfoRequest;
+import org.ruoyi.mcp.service.McpInfoService;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * MCP
@@ -42,11 +41,11 @@ public class McpInfoController extends BaseController {
 
     private final McpInfoService mcpInfoService;
 
-/**
- * 查询MCP列表
- */
-@SaCheckPermission("operator:mcpInfo:list")
-@GetMapping("/list")
+    /**
+     * 查询MCP列表
+     */
+    @SaCheckPermission("operator:mcpInfo:list")
+    @GetMapping("/list")
     public TableDataInfo<McpInfoVo> list(McpInfoBo bo, PageQuery pageQuery) {
         return mcpInfoService.queryPageList(bo, pageQuery);
     }
@@ -70,7 +69,7 @@ public class McpInfoController extends BaseController {
     @SaCheckPermission("operator:mcpInfo:query")
     @GetMapping("/{mcpId}")
     public R<McpInfoVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Integer mcpId) {
+                                @PathVariable Integer mcpId) {
         return R.ok(mcpInfoService.queryById(mcpId));
     }
 

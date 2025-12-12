@@ -39,62 +39,56 @@ public class FileType {
     public static final String YAML = "yaml";
     public static final String YML = "yml";
 
-    public static boolean isTextFile(String type){
+    public static boolean isTextFile(String type) {
         if (type.equalsIgnoreCase(TXT) || type.equalsIgnoreCase(CSV) || type.equalsIgnoreCase(PROPERTIES)
                 || type.equalsIgnoreCase(INI) || type.equalsIgnoreCase(YAML) || type.equalsIgnoreCase(YML)
-                || type.equalsIgnoreCase(LOG) || type.equalsIgnoreCase(XML)){
+                || type.equalsIgnoreCase(LOG) || type.equalsIgnoreCase(XML)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
 
-    public static boolean isCodeFile(String type){
+    public static boolean isCodeFile(String type) {
         if (type.equalsIgnoreCase(JAVA) || type.equalsIgnoreCase(HTML) || type.equalsIgnoreCase(HTM) || type.equalsIgnoreCase(JS) || type.equalsIgnoreCase(PY)
                 || type.equalsIgnoreCase(CPP) || type.equalsIgnoreCase(SQL) || type.equalsIgnoreCase(PHP) || type.equalsIgnoreCase(RUBY)
                 || type.equalsIgnoreCase(C) || type.equalsIgnoreCase(H) || type.equalsIgnoreCase(HPP) || type.equalsIgnoreCase(SWIFT)
                 || type.equalsIgnoreCase(TS) || type.equalsIgnoreCase(RUST) || type.equalsIgnoreCase(PERL) || type.equalsIgnoreCase(SHELL)
-                || type.equalsIgnoreCase(BAT) || type.equalsIgnoreCase(CMD) || type.equalsIgnoreCase(CSS)){
+                || type.equalsIgnoreCase(BAT) || type.equalsIgnoreCase(CMD) || type.equalsIgnoreCase(CSS)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
 
-    public static boolean isMdFile(String type){
-        if (type.equalsIgnoreCase(MD)){
+    public static boolean isMdFile(String type) {
+        if (type.equalsIgnoreCase(MD)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
 
-    public static boolean isWord(String type){
-        if (type.equalsIgnoreCase(DOC) || type.equalsIgnoreCase(DOCX)){
+    public static boolean isWord(String type) {
+        if (type.equalsIgnoreCase(DOC) || type.equalsIgnoreCase(DOCX)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
 
-    public static boolean isPdf(String type){
-        if (type.equalsIgnoreCase(PDF)){
+    public static boolean isPdf(String type) {
+        if (type.equalsIgnoreCase(PDF)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
 
-    public static boolean isExcel(String type){
-        if (type.equalsIgnoreCase(XLS) || type.equalsIgnoreCase(XLSX)){
+    public static boolean isExcel(String type) {
+        if (type.equalsIgnoreCase(XLS) || type.equalsIgnoreCase(XLSX)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }

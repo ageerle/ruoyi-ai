@@ -26,9 +26,9 @@ import java.util.*;
  */
 @Slf4j
 @Intercepts({@Signature(
-    type = ResultSetHandler.class,
-    method = "handleResultSets",
-    args = {Statement.class})
+        type = ResultSetHandler.class,
+        method = "handleResultSets",
+        args = {Statement.class})
 })
 @AllArgsConstructor
 public class MybatisDecryptInterceptor implements Interceptor {
@@ -61,7 +61,7 @@ public class MybatisDecryptInterceptor implements Interceptor {
             return;
         }
         if (sourceObject instanceof List<?> list) {
-            if(CollUtil.isEmpty(list)) {
+            if (CollUtil.isEmpty(list)) {
                 return;
             }
             // 判断第一个元素是否含有注解。如果没有直接返回，提高效率

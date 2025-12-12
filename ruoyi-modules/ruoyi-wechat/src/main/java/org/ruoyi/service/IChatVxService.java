@@ -11,6 +11,7 @@ public interface IChatVxService {
 
     /**
      * 企业微信应用回复
+     *
      * @param prompt 提示词
      * @return 回复内容
      */

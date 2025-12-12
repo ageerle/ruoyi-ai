@@ -28,7 +28,7 @@ public class OkHttpConfig {
 
     private void initializeOkHttpUtil(String modelName) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
-        if(chatModelVo==null){
+        if (chatModelVo == null) {
             return;
         }
         OkHttpUtil okHttpUtil = new OkHttpUtil();

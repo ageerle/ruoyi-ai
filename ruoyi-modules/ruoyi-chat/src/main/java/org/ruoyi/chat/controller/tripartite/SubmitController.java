@@ -47,20 +47,20 @@ public class SubmitController {
     public String action(@RequestBody SubmitActionDTO changeDTO) {
         ActionType actionType = ActionType.fromCustomId(getAction(changeDTO.getCustomId()));
         Optional.ofNullable(actionType).ifPresentOrElse(
-            type -> {
-                switch (type) {
-                    case UP_SAMPLE:
-                        chatCostService.taskDeduct("mj","enlarge", 0.0);
-                        break;
-                    case IN_PAINT:
-                        // 局部重绘已经扣费,不执行任何操作
-                        break;
-                    default:
-                        chatCostService.taskDeduct("mj","change", 0.0);
-                        break;
-                }
-            },
-            () -> chatCostService.taskDeduct("mj","change", 0.0)
+                type -> {
+                    switch (type) {
+                        case UP_SAMPLE:
+                            chatCostService.taskDeduct("mj", "enlarge", 0.0);
+                            break;
+                        case IN_PAINT:
+                            // 局部重绘已经扣费,不执行任何操作
+                            break;
+                        default:
+                            chatCostService.taskDeduct("mj", "change", 0.0);
+                            break;
+                    }
+                },
+                () -> chatCostService.taskDeduct("mj", "change", 0.0)
         );
 
         String jsonStr = JSONUtil.toJsonStr(changeDTO);
@@ -81,7 +81,7 @@ public class SubmitController {
     @Operation(summary = "提交图生图、混图任务")
     @PostMapping("/blend")
     public String blend(@RequestBody SubmitBlendDTO blendDTO) {
-        chatCostService.taskDeduct("mj","blend", 0.0);
+        chatCostService.taskDeduct("mj", "blend", 0.0);
         String jsonStr = JSONUtil.toJsonStr(blendDTO);
         String url = "mj/submit/blend";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -91,7 +91,7 @@ public class SubmitController {
     @Operation(summary = "提交图生文任务")
     @PostMapping("/describe")
     public String describe(@RequestBody SubmitDescribeDTO describeDTO) {
-        chatCostService.taskDeduct("mj","describe",0.0);
+        chatCostService.taskDeduct("mj", "describe", 0.0);
         String jsonStr = JSONUtil.toJsonStr(describeDTO);
         String url = "mj/submit/describe";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -101,7 +101,7 @@ public class SubmitController {
     @Operation(summary = "提交文生图任务")
     @PostMapping("/imagine")
     public String imagine(@RequestBody SubmitImagineDTO imagineDTO) {
-        chatCostService.taskDeduct("mj",imagineDTO.getPrompt(), 0.0);
+        chatCostService.taskDeduct("mj", imagineDTO.getPrompt(), 0.0);
         String jsonStr = JSONUtil.toJsonStr(imagineDTO);
         String url = "mj/submit/imagine";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -111,7 +111,7 @@ public class SubmitController {
     @Operation(summary = "提交局部重绘任务")
     @PostMapping("/modal")
     public String modal(@RequestBody SubmitModalDTO submitModalDTO) {
-        chatCostService.taskDeduct("mj","repaint ", 0.0);
+        chatCostService.taskDeduct("mj", "repaint ", 0.0);
         String jsonStr = JSONUtil.toJsonStr(submitModalDTO);
         String url = "mj/submit/modal";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);
@@ -121,7 +121,7 @@ public class SubmitController {
     @Operation(summary = "提交提示词分析任务")
     @PostMapping("/shorten")
     public String shorten(@RequestBody SubmitShortenDTO submitShortenDTO) {
-        chatCostService.taskDeduct("mj","shorten", 0.0);
+        chatCostService.taskDeduct("mj", "shorten", 0.0);
         String jsonStr = JSONUtil.toJsonStr(submitShortenDTO);
         String url = "mj/submit/shorten";
         Request request = mjOkHttpUtil.createPostRequest(url, jsonStr);

@@ -23,30 +23,30 @@ import java.util.Date;
 @AutoMapper(target = ${ClassName}.class)
 public class ${ClassName}Vo implements Serializable {
 
-#foreach ($column in $columns)
-    #if($column.isPk)
-    private $column.javaType $column.javaField;
-    #elseif($column.list)
-    /**
-     * $column.columnComment
-     */
-    #set($parentheseIndex=$column.columnComment.indexOf("（"))
-    #if($parentheseIndex != -1)
-        #set($comment=$column.columnComment.substring(0, $parentheseIndex))
-    #else
-        #set($comment=$column.columnComment)
+    #foreach ($column in $columns)
+        #if($column.isPk)
+            private $column.javaType $column.javaField;
+        #elseif($column.list)
+            /**
+             * $column.columnComment
+             */
+            #set($parentheseIndex=$column.columnComment.indexOf("（"))
+            #if($parentheseIndex != -1)
+                #set($comment=$column.columnComment.substring(0, $parentheseIndex))
+            #else
+                #set($comment=$column.columnComment)
+            #end
+            #if(${column.dictType} && ${column.dictType} != '')
+            @ExcelProperty(value = "${comment}", converter = ExcelDictConvert.class)
+            @ExcelDictFormat(dictType = "${column.dictType}")
+            #elseif($parentheseIndex != -1)
+            @ExcelProperty(value = "${comment}", converter = ExcelDictConvert.class)
+            @ExcelDictFormat(readConverterExp = "$column.readConverterExp()")
+            #else
+            @ExcelProperty(value = "${comment}")
+            #end
+        private $column.javaType $column.javaField;
+        #end
     #end
-    #if(${column.dictType} && ${column.dictType} != '')
-    @ExcelProperty(value = "${comment}", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(dictType = "${column.dictType}")
-    #elseif($parentheseIndex != -1)
-    @ExcelProperty(value = "${comment}", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "$column.readConverterExp()")
-    #else
-    @ExcelProperty(value = "${comment}")
-    #end
-    private $column.javaType $column.javaField;
-    #end
-#end
 
 }

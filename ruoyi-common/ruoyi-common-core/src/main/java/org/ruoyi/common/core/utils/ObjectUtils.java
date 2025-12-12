@@ -17,7 +17,7 @@ public class ObjectUtils extends ObjectUtil {
     /**
      * 如果对象不为空，则获取对象中的某个字段 ObjectUtils.notNullGetter(user, User::getName);
      *
-     * @param obj 对象
+     * @param obj  对象
      * @param func 获取方法
      * @return 对象字段
      */

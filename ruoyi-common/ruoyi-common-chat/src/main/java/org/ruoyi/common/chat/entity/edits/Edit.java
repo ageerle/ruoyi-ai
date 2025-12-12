@@ -7,10 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.Serializable;
 
 /**
- *  
- *
  * @author https:www.unfbx.com
- *  2023-02-15
+ * 2023-02-15
  */
 @Getter
 @Builder
@@ -35,7 +33,7 @@ public class Edit implements Serializable {
 
     /**
      * 使用什么取样温度，0到2之间。较高的值(如0.8)将使输出更加随机，而较低的值(如0.2)将使输出更加集中和确定。
-     *
+     * <p>
      * We generally recommend altering this or but not both.top_p
      */
     @Builder.Default
@@ -43,7 +41,7 @@ public class Edit implements Serializable {
 
     /**
      * 使用温度采样的替代方法称为核心采样，其中模型考虑具有top_p概率质量的令牌的结果。因此，0.1 意味着只考虑包含前 10% 概率质量的代币。
-     *
+     * <p>
      * 我们通常建议更改此设置，但不要同时更改两者。temperature
      */
     @JsonProperty("top_p")
@@ -90,6 +88,7 @@ public class Edit implements Serializable {
     public void setInstruction(String instruction) {
         this.instruction = instruction;
     }
+
     @Getter
     @AllArgsConstructor
     public enum Model {

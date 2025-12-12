@@ -1,43 +1,39 @@
 package org.ruoyi.aihuman.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.aihuman.domain.VoiceRequest;
 import org.ruoyi.aihuman.protocol.EventType;
 import org.ruoyi.aihuman.protocol.Message;
 import org.ruoyi.aihuman.protocol.MsgType;
 import org.ruoyi.aihuman.protocol.SpeechWebSocketClient;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.UUID;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 火山引擎相关接口
@@ -54,12 +50,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @RequestMapping("/aihuman/volcengine")
 public class AihumanVolcengineController {
 
-    @Autowired
-    private ResourceLoader resourceLoader;
-
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(AihumanVolcengineController.class);
-
+    @Autowired
+    private ResourceLoader resourceLoader;
 
     @PostMapping("/generate-voice-direct")
     public ResponseEntity<byte[]> generateVoiceDirect(@RequestBody VoiceRequest request) {
@@ -304,7 +298,7 @@ public class AihumanVolcengineController {
      * 调用火山引擎TTS API生成音频文件
      */
     private String callVolcengineTtsApi(String endpoint, String appId, String accessToken,
-                                       String resourceId, String voice, String text, String encoding) {
+                                        String resourceId, String voice, String text, String encoding) {
         try {
             // 确保resourceId不为空，如果为空则根据voice类型获取默认值
             if (resourceId == null || resourceId.isEmpty()) {

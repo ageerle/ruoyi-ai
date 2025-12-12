@@ -1,7 +1,6 @@
 package org.ruoyi.domain;
 
 
-import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -85,7 +84,7 @@ public class ChatModel extends BaseEntity {
     /**
      * 模型供应商
      */
-    private String ProviderName;
+    private String providerName;
 
     /**
      * 备注

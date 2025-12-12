@@ -3,7 +3,7 @@ package org.ruoyi.common.core.event;
 import org.springframework.context.ApplicationEvent;
 
 /**
- *  定义一个事件类，用于通知配置变化
+ * 定义一个事件类，用于通知配置变化
  *
  * @author ageerle@163.com
  * date 2024/5/19

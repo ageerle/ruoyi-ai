@@ -8,18 +8,19 @@ public class BaseContext {
     private static ThreadLocal<String> threadLocal = new ThreadLocal<>();
 
     /**
+     * @description: 获取值
+     * @author: yzm
+     **/
+    public static String getCurrentToken() {
+        return threadLocal.get();
+    }
+
+    /**
      * @description: 设置值
      * @author: yzm
      * @param: [token] 线程token
      **/
-    public static void setCurrentToken(String token){
+    public static void setCurrentToken(String token) {
         threadLocal.set(token);
-    }
-    /**
-     * @description: 获取值
-     * @author: yzm
-     **/
-    public static String getCurrentToken(){
-        return threadLocal.get();
     }
 }

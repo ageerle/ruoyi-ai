@@ -62,13 +62,13 @@ public class GraphConstants {
      * 默认实体抽取类型列表
      */
     public static final String[] DEFAULT_ENTITY_TYPES = {
-        ENTITY_TYPE_PERSON,
-        ENTITY_TYPE_ORGANIZATION,
-        ENTITY_TYPE_LOCATION,
-        ENTITY_TYPE_CONCEPT,
-        ENTITY_TYPE_EVENT,
-        ENTITY_TYPE_PRODUCT,
-        ENTITY_TYPE_TECHNOLOGY
+            ENTITY_TYPE_PERSON,
+            ENTITY_TYPE_ORGANIZATION,
+            ENTITY_TYPE_LOCATION,
+            ENTITY_TYPE_CONCEPT,
+            ENTITY_TYPE_EVENT,
+            ENTITY_TYPE_PRODUCT,
+            ENTITY_TYPE_TECHNOLOGY
     };
 
     /**

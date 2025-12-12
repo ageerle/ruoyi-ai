@@ -13,7 +13,6 @@ import java.io.Serial;
 import java.io.Serializable;
 
 
-
 /**
  * 聊天模型视图对象 chat_model
  *
@@ -104,7 +103,7 @@ public class ChatModelVo implements Serializable {
      * 模型供应商
      */
     @ExcelProperty(value = "模型供应商")
-    private String ProviderName;
+    private String providerName;
 
     /**
      * 备注

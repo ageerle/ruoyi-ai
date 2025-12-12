@@ -13,9 +13,9 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class SubmitBlendDTO extends BaseSubmitDTO {
 
-	@ArraySchema(arraySchema = @Schema(description = "图片base64数组", requiredMode = Schema.RequiredMode.REQUIRED), schema = @Schema(example = "data:image/png;base64,xxx1"))
-	private List<String> base64Array;
+    @ArraySchema(arraySchema = @Schema(description = "图片base64数组", requiredMode = Schema.RequiredMode.REQUIRED), schema = @Schema(example = "data:image/png;base64,xxx1"))
+    private List<String> base64Array;
 
-	@Schema(description = "比例: PORTRAIT(2:3); SQUARE(1:1); LANDSCAPE(3:2)", example = "SQUARE")
-	private BlendDimensions dimensions = BlendDimensions.SQUARE;
+    @Schema(description = "比例: PORTRAIT(2:3); SQUARE(1:1); LANDSCAPE(3:2)", example = "SQUARE")
+    private BlendDimensions dimensions = BlendDimensions.SQUARE;
 }

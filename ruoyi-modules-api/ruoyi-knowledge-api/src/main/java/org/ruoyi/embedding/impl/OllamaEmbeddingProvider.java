@@ -25,6 +25,7 @@ public class OllamaEmbeddingProvider implements BaseEmbedModelService {
     public void configure(ChatModelVo config) {
         this.chatModelVo = config;
     }
+
     @Override
     public Set<ModalityType> getSupportedModalities() {
         return Set.of(ModalityType.TEXT);

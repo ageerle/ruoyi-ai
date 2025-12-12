@@ -9,6 +9,7 @@ import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -29,14 +30,14 @@ public class SwitcherNode extends AbstractWfNode {
             SwitcherNodeConfig config = checkAndGetConfig(SwitcherNodeConfig.class);
             List<NodeIOData> inputs = state.getInputs();
 
-            log.info("条件分支节点处理中，分支数量: {}", 
+            log.info("条件分支节点处理中，分支数量: {}",
                     config.getCases() != null ? config.getCases().size() : 0);
 
             // 按顺序评估每个分支
             if (config.getCases() != null) {
                 for (int i = 0; i < config.getCases().size(); i++) {
                     SwitcherCase switcherCase = config.getCases().get(i);
-                    log.info("评估分支 {}: uuid={}, 运算符={}", 
+                    log.info("评估分支 {}: uuid={}, 运算符={}",
                             i + 1, switcherCase.getUuid(), switcherCase.getOperator());
 
                     if (evaluateCase(switcherCase, inputs)) {
@@ -45,33 +46,33 @@ public class SwitcherNode extends AbstractWfNode {
                             log.warn("分支 {} 匹配但目标节点UUID为空，跳过到下一个分支", i + 1);
                             continue;
                         }
-                        
-                        log.info("分支 {} 匹配，跳转到节点: {}", 
+
+                        log.info("分支 {} 匹配，跳转到节点: {}",
                                 i + 1, switcherCase.getTargetNodeUuid());
-                        
+
                         // 构造输出：只保留 output 和其他非 input 参数 + 添加分支匹配信息
                         List<NodeIOData> outputs = new java.util.ArrayList<>();
-                        
+
                         // 过滤输入：排除 input 参数（与 output 冗余），保留其他参数
                         inputs.stream()
-                            .filter(item -> !"input".equals(item.getName()))
-                            .forEach(outputs::add);
-                        
+                                .filter(item -> !"input".equals(item.getName()))
+                                .forEach(outputs::add);
+
                         // 如果没有 output 参数，从 input 创建 output（便于后续节点使用）
                         boolean hasOutput = outputs.stream().anyMatch(item -> "output".equals(item.getName()));
                         if (!hasOutput) {
                             inputs.stream()
-                                .filter(item -> "input".equals(item.getName()))
-                                .findFirst()
-                                .ifPresent(inputParam -> {
-                                    String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null 
-                                        ? inputParam.getContent().getTitle() : "";
-                                    NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                                    outputs.add(outputParam);
-                                    log.debug("从输入创建输出参数供下游节点使用");
-                                });
+                                    .filter(item -> "input".equals(item.getName()))
+                                    .findFirst()
+                                    .ifPresent(inputParam -> {
+                                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
+                                                ? inputParam.getContent().getTitle() : "";
+                                        NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
+                                        outputs.add(outputParam);
+                                        log.debug("从输入创建输出参数供下游节点使用");
+                                    });
                         }
-                        
+
                         outputs.add(NodeIOData.createByText("matched_case", "switcher", String.valueOf(i + 1)));
                         outputs.add(NodeIOData.createByText("case_uuid", "switcher", switcherCase.getUuid()));
                         outputs.add(NodeIOData.createByText("target_node", "switcher", switcherCase.getTargetNodeUuid()));
@@ -87,37 +88,37 @@ public class SwitcherNode extends AbstractWfNode {
 
             // 所有分支都不满足，使用默认分支
             log.info("没有分支匹配，使用默认分支: {}", config.getDefaultTargetNodeUuid());
-            
+
             if (StringUtils.isBlank(config.getDefaultTargetNodeUuid())) {
                 log.warn("默认目标节点UUID为空，工作流可能在此停止");
             }
 
-            String defaultTarget = config.getDefaultTargetNodeUuid() != null ? 
+            String defaultTarget = config.getDefaultTargetNodeUuid() != null ?
                     config.getDefaultTargetNodeUuid() : "";
-            
+
             // 构造输出：只保留 output 和其他非 input 参数 + 添加默认分支信息
             List<NodeIOData> outputs = new java.util.ArrayList<>();
-            
+
             // 过滤输入：排除 input 参数（与 output 冗余），保留其他参数
             inputs.stream()
-                .filter(item -> !"input".equals(item.getName()))
-                .forEach(outputs::add);
-            
+                    .filter(item -> !"input".equals(item.getName()))
+                    .forEach(outputs::add);
+
             // 如果没有 output 参数，从 input 创建 output（便于后续节点使用）
             boolean hasOutput = outputs.stream().anyMatch(item -> "output".equals(item.getName()));
             if (!hasOutput) {
                 inputs.stream()
-                    .filter(item -> "input".equals(item.getName()))
-                    .findFirst()
-                    .ifPresent(inputParam -> {
-                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null 
-                            ? inputParam.getContent().getTitle() : "";
-                        NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                        outputs.add(outputParam);
-                        log.debug("从输入创建输出参数供下游节点使用");
-                    });
+                        .filter(item -> "input".equals(item.getName()))
+                        .findFirst()
+                        .ifPresent(inputParam -> {
+                            String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
+                                    ? inputParam.getContent().getTitle() : "";
+                            NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
+                            outputs.add(outputParam);
+                            log.debug("从输入创建输出参数供下游节点使用");
+                        });
             }
-            
+
             outputs.add(NodeIOData.createByText("matched_case", "switcher", "default"));
             outputs.add(NodeIOData.createByText("target_node", "switcher", defaultTarget));
 
@@ -129,12 +130,12 @@ public class SwitcherNode extends AbstractWfNode {
 
         } catch (Exception e) {
             log.error("处理条件分支节点失败: {}", node.getUuid(), e);
-            
+
             List<NodeIOData> errorOutputs = List.of(
                     NodeIOData.createByText("status", "switcher", "error"),
                     NodeIOData.createByText("error", "switcher", e.getMessage())
             );
-            
+
             return NodeProcessResult.builder()
                     .content(errorOutputs)
                     .error(true)
@@ -145,8 +146,9 @@ public class SwitcherNode extends AbstractWfNode {
 
     /**
      * 评估单个分支的条件
+     *
      * @param switcherCase 分支配置
-     * @param inputs 输入数据
+     * @param inputs       输入数据
      * @return 是否满足条件
      */
     private boolean evaluateCase(SwitcherCase switcherCase, List<NodeIOData> inputs) {
@@ -158,13 +160,13 @@ public class SwitcherNode extends AbstractWfNode {
         String operator = switcherCase.getOperator();
         boolean isAnd = "and".equalsIgnoreCase(operator);
 
-        log.debug("使用 {} 逻辑评估 {} 个条件", 
+        log.debug("使用 {} 逻辑评估 {} 个条件",
                 operator, switcherCase.getConditions().size());
 
         for (SwitcherCase.Condition condition : switcherCase.getConditions()) {
             boolean conditionResult = evaluateCondition(condition, inputs);
-            log.debug("条件结果: {} (参数: {}, 运算符: {}, 值: {})", 
-                    conditionResult, condition.getNodeParamName(), 
+            log.debug("条件结果: {} (参数: {}, 运算符: {}, 值: {})",
+                    conditionResult, condition.getNodeParamName(),
                     condition.getOperator(), condition.getValue());
 
             if (isAnd && !conditionResult) {
@@ -182,29 +184,30 @@ public class SwitcherNode extends AbstractWfNode {
 
     /**
      * 评估单个条件
+     *
      * @param condition 条件配置
-     * @param inputs 输入数据
+     * @param inputs    输入数据
      * @return 是否满足条件
      */
     private boolean evaluateCondition(SwitcherCase.Condition condition, List<NodeIOData> inputs) {
         try {
-            log.info("评估条件 - 节点UUID: {}, 参数名: {}, 运算符: {}, 期望值: {}", 
-                    condition.getNodeUuid(), condition.getNodeParamName(), 
+            log.info("评估条件 - 节点UUID: {}, 参数名: {}, 运算符: {}, 期望值: {}",
+                    condition.getNodeUuid(), condition.getNodeParamName(),
                     condition.getOperator(), condition.getValue());
-            
+
             // 获取实际值
-            String actualValue = getValueFromInputs(condition.getNodeUuid(), 
+            String actualValue = getValueFromInputs(condition.getNodeUuid(),
                     condition.getNodeParamName(), inputs);
-            
+
             if (actualValue == null) {
-                log.warn("无法找到节点: {}, 参数: {} 的值 - 可用输入: {}", 
-                        condition.getNodeUuid(), condition.getNodeParamName(), 
+                log.warn("无法找到节点: {}, 参数: {} 的值 - 可用输入: {}",
+                        condition.getNodeUuid(), condition.getNodeParamName(),
                         inputs.stream().map(NodeIOData::getName).toList());
                 actualValue = "";
             }
 
             log.info("获取到的实际值: '{}' (类型: {})", actualValue, actualValue.getClass().getSimpleName());
-            
+
             String expectedValue = condition.getValue() != null ? condition.getValue() : "";
             OperatorEnum operator = OperatorEnum.getByName(condition.getOperator());
 
@@ -214,9 +217,9 @@ public class SwitcherNode extends AbstractWfNode {
             }
 
             boolean result = evaluateOperator(operator, actualValue, expectedValue);
-            log.info("条件评估结果: {} (实际值='{}', 运算符={}, 期望值='{}')", 
+            log.info("条件评估结果: {} (实际值='{}', 运算符={}, 期望值='{}')",
                     result, actualValue, operator, expectedValue);
-            
+
             return result;
 
         } catch (Exception e) {
@@ -342,7 +345,7 @@ public class SwitcherNode extends AbstractWfNode {
                     return false;
             }
         } catch (NumberFormatException e) {
-            log.warn("无法解析数字进行比较: 实际值={}, 期望值={}", 
+            log.warn("无法解析数字进行比较: 实际值={}, 期望值={}",
                     actualValue, expectedValue);
             return false;
         }

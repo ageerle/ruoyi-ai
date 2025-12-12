@@ -44,7 +44,7 @@ public class DataPermissionHelper {
     /**
      * 设置当前执行mapper权限注解
      *
-     * @param dataPermission   数据权限注解
+     * @param dataPermission 数据权限注解
      */
     public static void setPermission(DataPermission dataPermission) {
         PERMISSION_CACHE.set(dataPermission);
@@ -130,10 +130,10 @@ public class DataPermissionHelper {
         IgnoreStrategy ignoreStrategy = getIgnoreStrategy();
         if (ObjectUtil.isNotNull(ignoreStrategy)) {
             boolean noOtherIgnoreStrategy = !Boolean.TRUE.equals(ignoreStrategy.getDynamicTableName())
-                && !Boolean.TRUE.equals(ignoreStrategy.getBlockAttack())
-                && !Boolean.TRUE.equals(ignoreStrategy.getIllegalSql())
-                && !Boolean.TRUE.equals(ignoreStrategy.getTenantLine())
-                && CollectionUtil.isEmpty(ignoreStrategy.getOthers());
+                    && !Boolean.TRUE.equals(ignoreStrategy.getBlockAttack())
+                    && !Boolean.TRUE.equals(ignoreStrategy.getIllegalSql())
+                    && !Boolean.TRUE.equals(ignoreStrategy.getTenantLine())
+                    && CollectionUtil.isEmpty(ignoreStrategy.getOthers());
             Stack<Integer> reentrantStack = REENTRANT_IGNORE.get();
             boolean empty = reentrantStack.isEmpty() || reentrantStack.pop() == 1;
             if (noOtherIgnoreStrategy && empty) {

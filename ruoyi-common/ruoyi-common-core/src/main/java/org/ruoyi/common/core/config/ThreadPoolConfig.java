@@ -48,8 +48,8 @@ public class ThreadPoolConfig {
     public ScheduledExecutorService scheduledExecutorService() {
         log.info("====创建定时任务线程池====");
         return new ScheduledThreadPoolExecutor(core,
-            new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build(),
-            new ThreadPoolExecutor.CallerRunsPolicy()) {
+                new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build(),
+                new ThreadPoolExecutor.CallerRunsPolicy()) {
             @Override
             protected void afterExecute(Runnable r, Throwable t) {
                 super.afterExecute(r, t);

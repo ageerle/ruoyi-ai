@@ -11,8 +11,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 
-
-
 /**
  * 支付订单视图对象 chat_pay_order
  *

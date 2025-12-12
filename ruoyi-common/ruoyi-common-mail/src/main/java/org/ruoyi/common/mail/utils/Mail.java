@@ -37,6 +37,10 @@ public class Mail implements Builder<MimeMessage> {
      */
     private final MailAccount mailAccount;
     /**
+     * 正文、附件和图片的混合部分
+     */
+    private final Multipart multipart = new MimeMultipart();
+    /**
      * 收件人列表
      */
     private String[] tos;
@@ -65,10 +69,6 @@ public class Mail implements Builder<MimeMessage> {
      */
     private boolean isHtml;
     /**
-     * 正文、附件和图片的混合部分
-     */
-    private final Multipart multipart = new MimeMultipart();
-    /**
      * 是否使用全局会话，默认为false
      */
     private boolean useGlobalSession = false;
@@ -77,6 +77,25 @@ public class Mail implements Builder<MimeMessage> {
      * debug输出位置，可以自定义debug日志
      */
     private PrintStream debugOutput;
+
+    /**
+     * 构造，使用全局邮件帐户
+     */
+    public Mail() {
+        this(GlobalMailAccount.INSTANCE.getAccount());
+    }
+
+    /**
+     * 构造
+     *
+     * @param mailAccount 邮件帐户，如果为null使用默认配置文件的全局邮件配置
+     */
+    public Mail(MailAccount mailAccount) {
+        mailAccount = (null != mailAccount) ? mailAccount : GlobalMailAccount.INSTANCE.getAccount();
+        this.mailAccount = mailAccount.defaultIfEmpty();
+    }
+
+    // --------------------------------------------------------------- Constructor start
 
     /**
      * 创建邮件客户端
@@ -95,25 +114,6 @@ public class Mail implements Builder<MimeMessage> {
      */
     public static Mail create() {
         return new Mail();
-    }
-
-    // --------------------------------------------------------------- Constructor start
-
-    /**
-     * 构造，使用全局邮件帐户
-     */
-    public Mail() {
-        this(GlobalMailAccount.INSTANCE.getAccount());
-    }
-
-    /**
-     * 构造
-     *
-     * @param mailAccount 邮件帐户，如果为null使用默认配置文件的全局邮件配置
-     */
-    public Mail(MailAccount mailAccount) {
-        mailAccount = (null != mailAccount) ? mailAccount : GlobalMailAccount.INSTANCE.getAccount();
-        this.mailAccount = mailAccount.defaultIfEmpty();
     }
     // --------------------------------------------------------------- Constructor end
 

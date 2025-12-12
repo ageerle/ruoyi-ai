@@ -3,7 +3,7 @@ package org.ruoyi.chat.enums;
 import lombok.Getter;
 
 /**
- *  是否显示
+ * 是否显示
  *
  * @author ageerle@163.com
  * date 2025/4/10

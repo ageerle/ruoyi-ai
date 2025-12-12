@@ -1,9 +1,9 @@
 package org.ruoyi.aihuman.service;
 
-import org.ruoyi.aihuman.domain.vo.AihumanConfigVo;
 import org.ruoyi.aihuman.domain.bo.AihumanConfigBo;
-    import org.ruoyi.core.page.TableDataInfo;
-    import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.aihuman.domain.vo.AihumanConfigVo;
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,12 +19,12 @@ public interface AihumanConfigService {
     /**
      * 查询交互数字人配置
      */
-        AihumanConfigVo queryById(Integer id);
+    AihumanConfigVo queryById(Integer id);
 
-        /**
-         * 查询交互数字人配置列表
-         */
-        TableDataInfo<AihumanConfigVo> queryPageList(AihumanConfigBo bo, PageQuery pageQuery);
+    /**
+     * 查询交互数字人配置列表
+     */
+    TableDataInfo<AihumanConfigVo> queryPageList(AihumanConfigBo bo, PageQuery pageQuery);
 
     /**
      * 查询交互数字人配置列表

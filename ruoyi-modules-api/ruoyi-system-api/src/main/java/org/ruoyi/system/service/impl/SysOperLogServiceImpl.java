@@ -54,19 +54,19 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
     public TableDataInfo<SysOperLogVo> selectPageOperLogList(SysOperLogBo operLog, PageQuery pageQuery) {
         Map<String, Object> params = operLog.getParams();
         LambdaQueryWrapper<SysOperLog> lqw = new LambdaQueryWrapper<SysOperLog>()
-            .like(StringUtils.isNotBlank(operLog.getTitle()), SysOperLog::getTitle, operLog.getTitle())
-            .eq(operLog.getBusinessType() != null && operLog.getBusinessType() > 0,
-                SysOperLog::getBusinessType, operLog.getBusinessType())
-            .func(f -> {
-                if (ArrayUtil.isNotEmpty(operLog.getBusinessTypes())) {
-                    f.in(SysOperLog::getBusinessType, Arrays.asList(operLog.getBusinessTypes()));
-                }
-            })
-            .eq(operLog.getStatus() != null,
-                SysOperLog::getStatus, operLog.getStatus())
-            .like(StringUtils.isNotBlank(operLog.getOperName()), SysOperLog::getOperName, operLog.getOperName())
-            .between(params.get("beginTime") != null && params.get("endTime") != null,
-                SysOperLog::getOperTime, params.get("beginTime"), params.get("endTime"));
+                .like(StringUtils.isNotBlank(operLog.getTitle()), SysOperLog::getTitle, operLog.getTitle())
+                .eq(operLog.getBusinessType() != null && operLog.getBusinessType() > 0,
+                        SysOperLog::getBusinessType, operLog.getBusinessType())
+                .func(f -> {
+                    if (ArrayUtil.isNotEmpty(operLog.getBusinessTypes())) {
+                        f.in(SysOperLog::getBusinessType, Arrays.asList(operLog.getBusinessTypes()));
+                    }
+                })
+                .eq(operLog.getStatus() != null,
+                        SysOperLog::getStatus, operLog.getStatus())
+                .like(StringUtils.isNotBlank(operLog.getOperName()), SysOperLog::getOperName, operLog.getOperName())
+                .between(params.get("beginTime") != null && params.get("endTime") != null,
+                        SysOperLog::getOperTime, params.get("beginTime"), params.get("endTime"));
         if (StringUtils.isBlank(pageQuery.getOrderByColumn())) {
             pageQuery.setOrderByColumn("oper_id");
             pageQuery.setIsAsc("desc");
@@ -97,20 +97,20 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
     public List<SysOperLogVo> selectOperLogList(SysOperLogBo operLog) {
         Map<String, Object> params = operLog.getParams();
         return baseMapper.selectVoList(new LambdaQueryWrapper<SysOperLog>()
-            .like(StringUtils.isNotBlank(operLog.getTitle()), SysOperLog::getTitle, operLog.getTitle())
-            .eq(operLog.getBusinessType() != null && operLog.getBusinessType() > 0,
-                SysOperLog::getBusinessType, operLog.getBusinessType())
-            .func(f -> {
-                if (ArrayUtil.isNotEmpty(operLog.getBusinessTypes())) {
-                    f.in(SysOperLog::getBusinessType, Arrays.asList(operLog.getBusinessTypes()));
-                }
-            })
-            .eq(operLog.getStatus() != null && operLog.getStatus() > 0,
-                SysOperLog::getStatus, operLog.getStatus())
-            .like(StringUtils.isNotBlank(operLog.getOperName()), SysOperLog::getOperName, operLog.getOperName())
-            .between(params.get("beginTime") != null && params.get("endTime") != null,
-                SysOperLog::getOperTime, params.get("beginTime"), params.get("endTime"))
-            .orderByDesc(SysOperLog::getOperId));
+                .like(StringUtils.isNotBlank(operLog.getTitle()), SysOperLog::getTitle, operLog.getTitle())
+                .eq(operLog.getBusinessType() != null && operLog.getBusinessType() > 0,
+                        SysOperLog::getBusinessType, operLog.getBusinessType())
+                .func(f -> {
+                    if (ArrayUtil.isNotEmpty(operLog.getBusinessTypes())) {
+                        f.in(SysOperLog::getBusinessType, Arrays.asList(operLog.getBusinessTypes()));
+                    }
+                })
+                .eq(operLog.getStatus() != null && operLog.getStatus() > 0,
+                        SysOperLog::getStatus, operLog.getStatus())
+                .like(StringUtils.isNotBlank(operLog.getOperName()), SysOperLog::getOperName, operLog.getOperName())
+                .between(params.get("beginTime") != null && params.get("endTime") != null,
+                        SysOperLog::getOperTime, params.get("beginTime"), params.get("endTime"))
+                .orderByDesc(SysOperLog::getOperId));
     }
 
     /**

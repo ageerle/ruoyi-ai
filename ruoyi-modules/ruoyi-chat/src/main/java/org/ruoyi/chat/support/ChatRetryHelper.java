@@ -9,23 +9,18 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 
 /**
  * 统一的聊天重试与降级调度器。
- *
+ * <p>
  * 策略：
  * - 当前模型最多重试 3 次；仍失败则降级到同分类内、优先级小于当前的最高优先级模型。
  * - 降级模型同样最多重试 3 次；仍失败则向前端返回失败信息并停止。
- *
+ * <p>
  * 注意：实现依赖调用方在底层异步失败时执行 onFailure.run() 通知本调度器。
  */
 @Slf4j
 public class ChatRetryHelper {
-
-    public interface AttemptStarter {
-        void start(ChatModelVo model, Runnable onFailure) throws Exception;
-    }
 
     public static void executeWithRetry(
             ChatModelVo primaryModel,
@@ -109,6 +104,10 @@ public class ChatRetryHelper {
         }
 
         new Scheduler().startAttempt();
+    }
+
+    public interface AttemptStarter {
+        void start(ChatModelVo model, Runnable onFailure) throws Exception;
     }
 }
 

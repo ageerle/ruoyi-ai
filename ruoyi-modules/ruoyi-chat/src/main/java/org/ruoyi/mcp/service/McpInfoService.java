@@ -1,15 +1,15 @@
 package org.ruoyi.mcp.service;
 
-    import org.ruoyi.core.page.TableDataInfo;
-    import org.ruoyi.core.page.PageQuery;
-    import org.ruoyi.domain.McpInfo;
-    import org.ruoyi.domain.bo.McpInfoBo;
-    import org.ruoyi.domain.vo.McpInfoVo;
-    import org.ruoyi.mcp.config.McpConfig;
-    import org.ruoyi.mcp.config.McpServerConfig;
-    import org.ruoyi.mcp.domain.McpInfoRequest;
+import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.domain.McpInfo;
+import org.ruoyi.domain.bo.McpInfoBo;
+import org.ruoyi.domain.vo.McpInfoVo;
+import org.ruoyi.mcp.config.McpConfig;
+import org.ruoyi.mcp.config.McpServerConfig;
+import org.ruoyi.mcp.domain.McpInfoRequest;
 
-    import java.util.Collection;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -23,12 +23,12 @@ public interface McpInfoService {
     /**
      * 查询MCP
      */
-        McpInfoVo queryById(Integer mcpId);
+    McpInfoVo queryById(Integer mcpId);
 
-        /**
-         * 查询MCP列表
-         */
-        TableDataInfo<McpInfoVo> queryPageList(McpInfoBo bo, PageQuery pageQuery);
+    /**
+     * 查询MCP列表
+     */
+    TableDataInfo<McpInfoVo> queryPageList(McpInfoBo bo, PageQuery pageQuery);
 
     /**
      * 查询MCP列表

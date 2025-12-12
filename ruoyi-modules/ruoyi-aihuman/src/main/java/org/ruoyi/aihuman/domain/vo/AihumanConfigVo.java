@@ -1,16 +1,15 @@
 package org.ruoyi.aihuman.domain.vo;
 
-import java.time.LocalDateTime;
-import java.io.Serializable;
-import org.ruoyi.aihuman.domain.AihumanConfig;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.aihuman.domain.AihumanConfig;
 import org.ruoyi.common.excel.annotation.ExcelDictFormat;
 import org.ruoyi.common.excel.convert.ExcelDictConvert;
 
-import java.util.Date;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 
 
 /**

@@ -9,14 +9,13 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatService;
+import org.ruoyi.chat.support.ChatServiceHelper;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.domain.vo.ChatModelVo;
 import org.ruoyi.service.IChatModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.ruoyi.chat.support.ChatServiceHelper;
-
 
 
 /**
@@ -24,20 +23,17 @@ import org.ruoyi.chat.support.ChatServiceHelper;
  */
 @Service
 @Slf4j
-public class ZhipuAiChatServiceImpl  implements IChatService {
-
-    @Autowired
-    private IChatModelService chatModelService;
-
+public class ZhipuAiChatServiceImpl implements IChatService {
 
     ToolSpecification currentTime = ToolSpecification.builder()
             .name("currentTime")
             .description("currentTime")
             .build();
-
+    @Autowired
+    private IChatModelService chatModelService;
 
     @Override
-    public SseEmitter chat(ChatRequest chatRequest, SseEmitter emitter){
+    public SseEmitter chat(ChatRequest chatRequest, SseEmitter emitter) {
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         // 发送流式消息
         try {

@@ -41,7 +41,7 @@ public class GraphInstanceController extends BaseController {
      */
     private GraphInstance getInstanceByIdOrUuid(String id) {
         GraphInstance instance = null;
-        
+
         // 尝试作为数字ID查询
         try {
             Long numericId = Long.parseLong(id);
@@ -50,7 +50,7 @@ public class GraphInstanceController extends BaseController {
             // 不是数字，尝试作为UUID查询
             instance = graphInstanceService.getByUuid(id);
         }
-        
+
         return instance;
     }
 
@@ -70,11 +70,11 @@ public class GraphInstanceController extends BaseController {
 
             // 创建基础实例
             GraphInstance instance = graphInstanceService.createInstance(
-                graphInstance.getKnowledgeId(), 
-                graphInstance.getInstanceName(), 
-                graphInstance.getConfig()
+                    graphInstance.getKnowledgeId(),
+                    graphInstance.getInstanceName(),
+                    graphInstance.getConfig()
             );
-            
+
             // 设置扩展属性
             boolean needUpdate = false;
             if (graphInstance.getModelName() != null) {
@@ -93,12 +93,12 @@ public class GraphInstanceController extends BaseController {
                 instance.setRemark(graphInstance.getRemark());
                 needUpdate = true;
             }
-            
+
             // 如果有扩展属性，更新到数据库
             if (needUpdate) {
                 graphInstanceService.updateInstance(instance);
             }
-            
+
             return R.ok(instance);
         } catch (Exception e) {
             return R.fail("创建图谱实例失败: " + e.getMessage());
@@ -115,20 +115,20 @@ public class GraphInstanceController extends BaseController {
             if (graphInstance.getId() == null && (graphInstance.getGraphUuid() == null || graphInstance.getGraphUuid().trim().isEmpty())) {
                 return R.fail("图谱ID不能为空");
             }
-            
+
             // 如果有 instanceName，更新基本信息
             if (graphInstance.getInstanceName() != null) {
                 // 这里可以添加更新实例名称的逻辑
             }
-            
+
             // 更新配置
             if (graphInstance.getConfig() != null) {
                 graphInstanceService.updateConfig(graphInstance.getGraphUuid(), graphInstance.getConfig());
             }
-            
+
             // 更新模型名称、实体类型、关系类型等
             // 注意：这里需要在 Service 层实现完整的更新逻辑
-            
+
             GraphInstance instance = graphInstanceService.getByUuid(graphInstance.getGraphUuid());
             return R.ok(instance);
         } catch (Exception e) {
@@ -144,7 +144,7 @@ public class GraphInstanceController extends BaseController {
     public R<GraphInstance> getByUuid(@PathVariable String id) {
         try {
             GraphInstance instance = getInstanceByIdOrUuid(id);
-            
+
             if (instance == null) {
                 return R.fail("图谱实例不存在");
             }
@@ -168,18 +168,18 @@ public class GraphInstanceController extends BaseController {
         try {
             // 使用枚举转换前端状态字符串为数字状态码
             Integer graphStatus = GraphStatusEnum.getCodeByStatusKey(status);
-            
+
             // 创建分页对象
             Page<GraphInstance> page = new Page<>(pageNum, pageSize);
-            
+
             // 调用 Service 层分页查询
             Page<GraphInstance> result = graphInstanceService.queryPage(page, instanceName, knowledgeId, graphStatus);
-            
+
             // 构造返回结果
             Map<String, Object> data = new HashMap<>();
             data.put("rows", result.getRecords());
             data.put("total", result.getTotal());
-            
+
             return R.ok(data);
         } catch (Exception e) {
             return R.fail("获取图谱列表失败: " + e.getMessage());
@@ -262,7 +262,7 @@ public class GraphInstanceController extends BaseController {
             if (instance == null) {
                 return R.fail("图谱实例不存在");
             }
-            
+
             boolean success = graphInstanceService.deleteInstance(instance.getGraphUuid());
             return success ? R.ok() : R.fail("删除失败");
         } catch (Exception e) {
@@ -307,25 +307,25 @@ public class GraphInstanceController extends BaseController {
         try {
             // 获取图谱实例
             GraphInstance instance = getInstanceByIdOrUuid(id);
-            
+
             if (instance == null) {
                 return R.fail("图谱实例不存在");
             }
-            
+
             // 更新状态为构建中
             graphInstanceService.updateStatus(instance.getGraphUuid(), 10); // 10=构建中
-            
+
             // 创建构建任务（全量构建）
             GraphBuildTask task = buildTaskService.createTask(
-                instance.getGraphUuid(), 
-                instance.getKnowledgeId(), 
-                null,  // docId=null 表示全量构建
-                1      // taskType=1 全量构建
+                    instance.getGraphUuid(),
+                    instance.getKnowledgeId(),
+                    null,  // docId=null 表示全量构建
+                    1      // taskType=1 全量构建
             );
-            
+
             // 异步启动任务
             buildTaskService.startTask(task.getTaskUuid());
-            
+
             return R.ok(task);
         } catch (Exception e) {
             return R.fail("启动构建任务失败: " + e.getMessage());
@@ -341,25 +341,25 @@ public class GraphInstanceController extends BaseController {
         try {
             // 获取图谱实例
             GraphInstance instance = getInstanceByIdOrUuid(id);
-            
+
             if (instance == null) {
                 return R.fail("图谱实例不存在");
             }
-            
+
             // 更新状态为构建中
             graphInstanceService.updateStatus(instance.getGraphUuid(), 10); // 10=构建中
-            
+
             // 创建重建任务
             GraphBuildTask task = buildTaskService.createTask(
-                instance.getGraphUuid(), 
-                instance.getKnowledgeId(), 
-                null,  // docId=null 表示全量
-                2      // taskType=2 重建
+                    instance.getGraphUuid(),
+                    instance.getKnowledgeId(),
+                    null,  // docId=null 表示全量
+                    2      // taskType=2 重建
             );
-            
+
             // 异步启动任务
             buildTaskService.startTask(task.getTaskUuid());
-            
+
             return R.ok(task);
         } catch (Exception e) {
             return R.fail("启动重建任务失败: " + e.getMessage());
@@ -375,32 +375,32 @@ public class GraphInstanceController extends BaseController {
         try {
             // 获取图谱实例
             GraphInstance instance = getInstanceByIdOrUuid(id);
-            
+
             if (instance == null) {
                 return R.fail("图谱实例不存在");
             }
-            
+
             // 获取最新的构建任务
             GraphBuildTask latestTask = buildTaskService.getLatestTask(instance.getGraphUuid());
-            
+
             Map<String, Object> result = new HashMap<>();
             result.put("graphStatus", instance.getGraphStatus());
             result.put("nodeCount", instance.getNodeCount());
             result.put("relationshipCount", instance.getRelationshipCount());
-            
+
             if (latestTask != null) {
                 result.put("taskStatus", latestTask.getTaskStatus());
                 // ⭐ 确保 progress 不为 null，前端期望是 number 类型
                 Integer progress = latestTask.getProgress();
                 result.put("progress", progress != null ? progress : 0);
                 result.put("errorMessage", latestTask.getErrorMessage());
-                
+
                 // 转换状态字符串（兼容前端）
                 String status = "NOT_BUILT";
                 if (instance.getGraphStatus() == 10) status = "BUILDING";
                 else if (instance.getGraphStatus() == 20) status = "COMPLETED";
                 else if (instance.getGraphStatus() == 30) status = "FAILED";
-                
+
                 result.put("status", status);
             } else {
                 // ⭐ 如果没有任务，也返回默认值
@@ -409,7 +409,7 @@ public class GraphInstanceController extends BaseController {
                 result.put("errorMessage", null);
                 result.put("status", "NOT_BUILT");
             }
-            
+
             return R.ok(result);
         } catch (Exception e) {
             return R.fail("获取构建状态失败: " + e.getMessage());

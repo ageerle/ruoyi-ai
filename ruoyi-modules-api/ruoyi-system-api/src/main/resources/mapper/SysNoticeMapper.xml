@@ -5,5 +5,4 @@
 <mapper namespace="org.ruoyi.system.mapper.SysNoticeMapper">
 
 
-
 </mapper>

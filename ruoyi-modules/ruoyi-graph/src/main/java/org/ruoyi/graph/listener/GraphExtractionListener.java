@@ -43,10 +43,10 @@ public class GraphExtractionListener extends EventSourceListener {
 
             // 解析响应
             ChatCompletionResponse completionResponse = objectMapper.readValue(data, ChatCompletionResponse.class);
-            if (completionResponse != null && 
-                completionResponse.getChoices() != null && 
-                !completionResponse.getChoices().isEmpty()) {
-                
+            if (completionResponse != null &&
+                    completionResponse.getChoices() != null &&
+                    !completionResponse.getChoices().isEmpty()) {
+
                 Object content = completionResponse.getChoices().get(0).getDelta().getContent();
                 if (content != null) {
                     responseBuilder.append(content);
@@ -79,7 +79,7 @@ public class GraphExtractionListener extends EventSourceListener {
         }
         log.error("LLM调用失败: {}", errorMsg, t);
         responseFuture.completeExceptionally(
-            new RuntimeException(errorMsg, t)
+                new RuntimeException(errorMsg, t)
         );
     }
 }

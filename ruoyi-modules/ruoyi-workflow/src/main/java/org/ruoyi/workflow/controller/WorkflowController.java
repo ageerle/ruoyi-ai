@@ -120,8 +120,8 @@ public class WorkflowController {
      */
     @GetMapping("/search")
     public R<Page<WorkflowResp>> search(@RequestParam(defaultValue = "") String keyword,
-                                              @NotNull @Min(1) Integer currentPage,
-                                              @NotNull @Min(10) Integer pageSize) {
+                                        @NotNull @Min(1) Integer currentPage,
+                                        @NotNull @Min(10) Integer pageSize) {
         return R.ok(workflowService.search(keyword, currentPage, pageSize));
     }
 

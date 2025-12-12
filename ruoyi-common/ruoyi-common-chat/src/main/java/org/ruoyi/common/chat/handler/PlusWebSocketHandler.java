@@ -47,7 +47,7 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
         if (StrUtil.isNotBlank(messageContext)) {
             messages = JSONUtil.toList(messageContext, Message.class);
             // 上下文长度
-            int contextSize=10;
+            int contextSize = 10;
             if (messages.size() >= contextSize) {
                 messages = messages.subList(1, contextSize);
             }
@@ -58,13 +58,13 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
             messages.add(currentMessage);
         }
         ChatCompletion chatCompletion = ChatCompletion
-            .builder()
-            .model("gpt-4o-mini")
-            .messages(messages)
-            .temperature(0.2)
-            .stream(true)
-            .build();
-        OpenAiStreamClient openAiStreamClient=(OpenAiStreamClient) SpringUtils.context().getBean("openAiStreamClient");
+                .builder()
+                .model("gpt-4o-mini")
+                .messages(messages)
+                .temperature(0.2)
+                .stream(true)
+                .build();
+        OpenAiStreamClient openAiStreamClient = (OpenAiStreamClient) SpringUtils.context().getBean("openAiStreamClient");
         openAiStreamClient.streamChatCompletion(chatCompletion, eventSourceListener);
         LocalCache.CACHE.put(session.getId(), JSONUtil.toJsonStr(messages), LocalCache.TIMEOUT);
     }

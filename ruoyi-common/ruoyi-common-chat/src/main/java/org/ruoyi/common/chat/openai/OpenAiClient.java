@@ -56,7 +56,7 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- *   open ai 客户端
+ * open ai 客户端
  *
  * @author https:www.unfbx.com
  * @since 2023-02-11
@@ -99,15 +99,6 @@ public class OpenAiClient {
      */
     @Getter
     private OpenAiAuthInterceptor authInterceptor;
-
-    /**
-     * 构造器
-     *
-     * @return OpenAiClient.Builder
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
 
     /**
      * 构造
@@ -156,6 +147,14 @@ public class OpenAiClient {
                 .build().create(OpenAiApi.class);
     }
 
+    /**
+     * 构造器
+     *
+     * @return OpenAiClient.Builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
 
     /**
      * 创建默认OkHttpClient
@@ -681,7 +680,7 @@ public class OpenAiClient {
         RequestBody fileBody = RequestBody.create(MediaType.parse("multipart/form-data"), file);
         MultipartBody.Part multipartBody = MultipartBody.Part.createFormData("file", file.getName(), fileBody);
         //自定义参数
-        Map<String, RequestBody> requestBodyMap = new HashMap<>(5,1L);
+        Map<String, RequestBody> requestBodyMap = new HashMap<>(5, 1L);
 
         if (StrUtil.isNotBlank(translations.getModel())) {
             requestBodyMap.put(Translations.Fields.model, RequestBody.create(MediaType.parse("multipart/form-data"), translations.getModel()));
@@ -812,6 +811,7 @@ public class OpenAiClient {
         Single<Subscription> subscription = this.openAiApi.subscription();
         return subscription.blockingGet();
     }
+
     /**
      * 账户调用接口消耗金额信息查询
      * 最多查询100天
@@ -833,7 +833,6 @@ public class OpenAiClient {
         private @NotNull List<String> apiKey;
         /**
          * api请求地址，结尾处有斜杠
-         *
          */
         private String apiHost;
         /**

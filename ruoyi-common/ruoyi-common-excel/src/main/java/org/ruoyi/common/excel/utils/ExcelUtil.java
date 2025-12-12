@@ -135,12 +135,12 @@ public class ExcelUtil {
      */
     public static <T> void exportExcel(List<T> list, String sheetName, Class<T> clazz, boolean merge, OutputStream os) {
         ExcelWriterSheetBuilder builder = EasyExcel.write(os, clazz)
-            .autoCloseStream(false)
-            // 自动适配
-            .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-            // 大数值自动转换 防止失真
-            .registerConverter(new ExcelBigNumberConvert())
-            .sheet(sheetName);
+                .autoCloseStream(false)
+                // 自动适配
+                .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                // 大数值自动转换 防止失真
+                .registerConverter(new ExcelBigNumberConvert())
+                .sheet(sheetName);
         if (merge) {
             // 合并处理器
             builder.registerWriteHandler(new CellMergeStrategy(list, true));
@@ -180,11 +180,11 @@ public class ExcelUtil {
     public static void exportTemplate(List<Object> data, String templatePath, OutputStream os) {
         ClassPathResource templateResource = new ClassPathResource(templatePath);
         ExcelWriter excelWriter = EasyExcel.write(os)
-            .withTemplate(templateResource.getStream())
-            .autoCloseStream(false)
-            // 大数值自动转换 防止失真
-            .registerConverter(new ExcelBigNumberConvert())
-            .build();
+                .withTemplate(templateResource.getStream())
+                .autoCloseStream(false)
+                // 大数值自动转换 防止失真
+                .registerConverter(new ExcelBigNumberConvert())
+                .build();
         WriteSheet writeSheet = EasyExcel.writerSheet().build();
         if (CollUtil.isEmpty(data)) {
             throw new IllegalArgumentException("数据为空");
@@ -228,11 +228,11 @@ public class ExcelUtil {
     public static void exportTemplateMultiList(Map<String, Object> data, String templatePath, OutputStream os) {
         ClassPathResource templateResource = new ClassPathResource(templatePath);
         ExcelWriter excelWriter = EasyExcel.write(os)
-            .withTemplate(templateResource.getStream())
-            .autoCloseStream(false)
-            // 大数值自动转换 防止失真
-            .registerConverter(new ExcelBigNumberConvert())
-            .build();
+                .withTemplate(templateResource.getStream())
+                .autoCloseStream(false)
+                // 大数值自动转换 防止失真
+                .registerConverter(new ExcelBigNumberConvert())
+                .build();
         WriteSheet writeSheet = EasyExcel.writerSheet().build();
         if (CollUtil.isEmpty(data)) {
             throw new IllegalArgumentException("数据为空");

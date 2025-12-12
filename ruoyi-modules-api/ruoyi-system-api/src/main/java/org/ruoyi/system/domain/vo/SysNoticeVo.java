@@ -8,8 +8,6 @@ import java.io.Serial;
 import java.io.Serializable;
 
 
-
-
 /**
  * 通知公告视图对象 sys_notice
  *

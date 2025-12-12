@@ -145,7 +145,7 @@ public class PlusDataPermissionHandler {
             }
             // 包含权限标识符 这直接跳过
             if (StringUtils.isNotBlank(dataColumn.permission()) &&
-                CollUtil.contains(user.getMenuPermission(), dataColumn.permission())
+                    CollUtil.contains(user.getMenuPermission(), dataColumn.permission())
             ) {
                 ignoreMap.put(dataColumn, Boolean.TRUE);
                 continue;
@@ -187,7 +187,7 @@ public class PlusDataPermissionHandler {
                 }
                 // 忽略数据权限 防止spel表达式内有其他sql查询导致死循环调用
                 String sql = DataPermissionHelper.ignore(() ->
-                    parser.parseExpression(type.getSqlTemplate(), parserContext).getValue(context, String.class)
+                        parser.parseExpression(type.getSqlTemplate(), parserContext).getValue(context, String.class)
                 );
                 // 解析sql模板并填充
                 conditions.add(joinStr + sql);

@@ -13,7 +13,7 @@ public class PayConfig {
     /**
      * 商户ID
      */
-    private String  pid;
+    private String pid;
 
     /**
      * 接口地址
@@ -23,7 +23,7 @@ public class PayConfig {
     /**
      * 私钥
      */
-    private String key ;
+    private String key;
 
     /**
      * 服务器异步通知地址

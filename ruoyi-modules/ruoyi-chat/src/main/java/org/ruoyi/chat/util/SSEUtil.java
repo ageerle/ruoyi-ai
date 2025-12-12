@@ -16,7 +16,7 @@ public class SSEUtil {
     /**
      * 发送SSE错误事件的封装方法
      *
-     * @param sseEmitter sse事件对象
+     * @param sseEmitter   sse事件对象
      * @param errorMessage 错误信息
      */
     public static void sendErrorEvent(ResponseBodyEmitter sseEmitter, String errorMessage) {

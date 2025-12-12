@@ -11,12 +11,12 @@ public interface PayService {
     /**
      * 获取支付地址
      *
-     * @Date 2023/7/3
      * @param orderNo
      * @param name
      * @param money
      * @param clientIp
      * @return String
+     * @Date 2023/7/3
      **/
     String getPayUrl(String orderNo, String name, double money, String clientIp);
 

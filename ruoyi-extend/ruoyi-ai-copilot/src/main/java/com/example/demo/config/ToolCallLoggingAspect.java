@@ -1,7 +1,7 @@
 package com.example.demo.config;
 
-import com.example.demo.service.ToolExecutionLogger;
 import com.example.demo.service.LogStreamService;
+import com.example.demo.service.ToolExecutionLogger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,15 +20,15 @@ import java.util.regex.Pattern;
 @Aspect
 @Component
 public class ToolCallLoggingAspect {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ToolCallLoggingAspect.class);
-    
+
     @Autowired
     private ToolExecutionLogger executionLogger;
 
     @Autowired
     private LogStreamService logStreamService;
-    
+
     /**
      * 拦截使用@Tool注解的方法执行
      */
@@ -44,7 +43,7 @@ public class ToolCallLoggingAspect {
         String fileInfo = extractFileInfoFromMethodArgs(methodName, args);
 
         logger.debug("🚀 [Spring AI @Tool] 执行工具: {}.{} | 参数: {} | 文件/目录: {}",
-            className, methodName, parametersInfo, fileInfo);
+                className, methodName, parametersInfo, fileInfo);
 
         // 获取当前任务ID (从线程本地变量或其他方式)
         String taskId = getCurrentTaskId();
@@ -61,7 +60,7 @@ public class ToolCallLoggingAspect {
             long executionTime = System.currentTimeMillis() - startTime;
 
             logger.debug("✅ [Spring AI @Tool] 工具执行成功: {}.{} | 耗时: {}ms | 文件/目录: {} | 参数: {}",
-                className, methodName, executionTime, fileInfo, parametersInfo);
+                    className, methodName, executionTime, fileInfo, parametersInfo);
 
             // 推送工具执行成功事件
             if (taskId != null) {
@@ -74,7 +73,7 @@ public class ToolCallLoggingAspect {
             long executionTime = System.currentTimeMillis() - startTime;
 
             logger.error("❌ [Spring AI @Tool] 工具执行失败: {}.{} | 耗时: {}ms | 文件/目录: {} | 参数: {} | 错误: {}",
-                className, methodName, executionTime, fileInfo, parametersInfo, e.getMessage());
+                    className, methodName, executionTime, fileInfo, parametersInfo, e.getMessage());
 
             // 推送工具执行失败事件
             if (taskId != null) {
@@ -198,7 +197,7 @@ public class ToolCallLoggingAspect {
             return "解析文件路径失败";
         }
     }
-    
+
     /**
      * 从字符串中提取路径
      */
@@ -210,7 +209,7 @@ public class ToolCallLoggingAspect {
             if (jsonMatcher.find()) {
                 return jsonMatcher.group(1);
             }
-            
+
             // 键值对格式
             Pattern kvPattern = Pattern.compile(key + "=([^,\\s\\]]+)");
             Matcher kvMatcher = kvPattern.matcher(text);

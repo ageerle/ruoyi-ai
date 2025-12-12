@@ -52,5 +52,6 @@ public interface ISysOperLogService {
      * 清空操作日志
      */
     void cleanOperLog();
-  void recordOper(OperLogEvent operLogEvent);
+
+    void recordOper(OperLogEvent operLogEvent);
 }

@@ -15,7 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.service.chat.IChatCostService;
 import org.ruoyi.chat.service.chat.IChatService;
-import org.ruoyi.common.chat.entity.chat.Message;
+import org.ruoyi.chat.support.ChatServiceHelper;
+import org.ruoyi.chat.support.RetryNotifier;
 import org.ruoyi.common.chat.request.ChatRequest;
 import org.ruoyi.domain.bo.ChatSessionBo;
 import org.ruoyi.domain.vo.ChatModelVo;
@@ -25,10 +26,8 @@ import org.ruoyi.service.IChatSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.ruoyi.chat.support.ChatServiceHelper;
 
 import java.util.Objects;
-import org.ruoyi.chat.support.RetryNotifier;
 
 /**
  * dify 聊天管理

@@ -8,9 +8,9 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Schema(name = "prompt分析提交参数")
-public class SubmitShortenDTO extends BaseSubmitDTO{
+public class SubmitShortenDTO extends BaseSubmitDTO {
 
-	private String botType;
+    private String botType;
 
     private String prompt;
 

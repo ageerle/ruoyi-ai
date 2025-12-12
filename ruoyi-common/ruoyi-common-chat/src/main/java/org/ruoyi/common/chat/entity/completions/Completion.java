@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *   问题类
+ * 问题类
  *
  * @author https:www.unfbx.com
  * 2023-02-11
@@ -101,7 +101,8 @@ public class Completion implements Serializable {
 
     /**
      * 获取当前参数的tokens数
-     * @return  token数量
+     *
+     * @return token数量
      */
 //    public long tokens() {
 //        if (StrUtil.isBlank(this.prompt) || StrUtil.isBlank(this.model)) {

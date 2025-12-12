@@ -98,32 +98,32 @@
     </appender>
 
     <!-- 整合 skywalking 控制台输出 tid -->
-<!--    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">-->
-<!--        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">-->
-<!--            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">-->
-<!--                <pattern>[%tid] ${console.log.pattern}</pattern>-->
-<!--            </layout>-->
-<!--            <charset>utf-8</charset>-->
-<!--        </encoder>-->
-<!--    </appender>-->
+    <!--    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">-->
+    <!--        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">-->
+    <!--            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">-->
+    <!--                <pattern>[%tid] ${console.log.pattern}</pattern>-->
+    <!--            </layout>-->
+    <!--            <charset>utf-8</charset>-->
+    <!--        </encoder>-->
+    <!--    </appender>-->
 
     <!-- 整合 skywalking 推送采集日志 -->
-<!--    <appender name="sky_log" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">-->
-<!--        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">-->
-<!--            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">-->
-<!--                <pattern>[%tid] ${console.log.pattern}</pattern>-->
-<!--            </layout>-->
-<!--            <charset>utf-8</charset>-->
-<!--        </encoder>-->
-<!--    </appender>-->
+    <!--    <appender name="sky_log" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">-->
+    <!--        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">-->
+    <!--            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">-->
+    <!--                <pattern>[%tid] ${console.log.pattern}</pattern>-->
+    <!--            </layout>-->
+    <!--            <charset>utf-8</charset>-->
+    <!--        </encoder>-->
+    <!--    </appender>-->
 
     <!--系统操作日志-->
     <root level="info">
-        <appender-ref ref="console" />
-        <appender-ref ref="async_info" />
-        <appender-ref ref="async_error" />
-        <appender-ref ref="file_console" />
-<!--        <appender-ref ref="sky_log"/>-->
+        <appender-ref ref="console"/>
+        <appender-ref ref="async_info"/>
+        <appender-ref ref="async_error"/>
+        <appender-ref ref="file_console"/>
+        <!--        <appender-ref ref="sky_log"/>-->
     </root>
 
 </configuration>

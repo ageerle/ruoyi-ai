@@ -35,14 +35,13 @@ public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo
     private final Boolean isUpdateSupport;
 
     private final Long operUserId;
-
-    private int successNum = 0;
-    private int failureNum = 0;
     private final StringBuilder successMsg = new StringBuilder();
     private final StringBuilder failureMsg = new StringBuilder();
+    private int successNum = 0;
+    private int failureNum = 0;
 
     public SysUserImportListener(Boolean isUpdateSupport) {
-       // String initPassword = SpringUtils.getBean(ISysConfigService.class).selectConfigByKey("sys.user.initPassword");
+        // String initPassword = SpringUtils.getBean(ISysConfigService.class).selectConfigByKey("sys.user.initPassword");
         this.userService = SpringUtils.getBean(ISysUserService.class);
         this.password = BCrypt.hashpw("123456");
         this.isUpdateSupport = isUpdateSupport;
@@ -57,7 +56,7 @@ public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo
             if (ObjectUtil.isNull(sysUser)) {
                 SysUserBo user = BeanUtil.toBean(userVo, SysUserBo.class);
                 ValidatorUtils.validate(user);
-                if(StringUtils.isEmpty(user.getNickName())){
+                if (StringUtils.isEmpty(user.getNickName())) {
                     user.setNickName(user.getUserName());
                 }
                 user.setDeptId(103L);

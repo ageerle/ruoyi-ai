@@ -1,7 +1,5 @@
 package org.ruoyi.mcp.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -162,6 +160,25 @@ public class McpSSEToolInvoker {
         });
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> convertToMap(Object parameters) {
+        if (parameters instanceof Map) {
+            Map<String, Object> result = new HashMap<>();
+            Map<?, ?> paramMap = (Map<?, ?>) parameters;
+            for (Map.Entry<?, ?> entry : paramMap.entrySet()) {
+                if (entry.getKey() instanceof String) {
+                    result.put((String) entry.getKey(), entry.getValue());
+                }
+            }
+            return result;
+        }
+        return new HashMap<>();
+    }
+
+    private void registerStreamHandler(String requestId, StreamHandler streamHandler) {
+        // 实现流式处理器注册逻辑
+    }
+
     /**
      * 流式处理器
      */
@@ -183,24 +200,5 @@ public class McpSSEToolInvoker {
         public void onError(Throwable error) {
             emitter.error(error);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> convertToMap(Object parameters) {
-        if (parameters instanceof Map) {
-            Map<String, Object> result = new HashMap<>();
-            Map<?, ?> paramMap = (Map<?, ?>) parameters;
-            for (Map.Entry<?, ?> entry : paramMap.entrySet()) {
-                if (entry.getKey() instanceof String) {
-                    result.put((String) entry.getKey(), entry.getValue());
-                }
-            }
-            return result;
-        }
-        return new HashMap<>();
-    }
-
-    private void registerStreamHandler(String requestId, StreamHandler streamHandler) {
-        // 实现流式处理器注册逻辑
     }
 }

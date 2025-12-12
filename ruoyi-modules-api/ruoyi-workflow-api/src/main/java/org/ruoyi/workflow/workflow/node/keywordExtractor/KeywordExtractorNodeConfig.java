@@ -13,19 +13,19 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode
 @Data
 public class KeywordExtractorNodeConfig {
-    
+
     /**
      * 模型分类（如：llm, embedding 等）
      */
     private String category;
-    
+
     /**
      * 模型名称
      */
     @NotNull
     @JsonProperty("model_name")
     private String modelName;
-    
+
     /**
      * 提取的关键词数量
      */
@@ -33,7 +33,7 @@ public class KeywordExtractorNodeConfig {
     @Max(50)
     @JsonProperty("top_n")
     private Integer topN = 5;
-    
+
     /**
      * 提示词（可选）
      * 用于指导关键词提取的额外说明

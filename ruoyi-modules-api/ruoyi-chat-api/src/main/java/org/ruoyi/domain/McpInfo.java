@@ -5,10 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.ruoyi.annotation.DataColumn;
 import org.ruoyi.core.domain.BaseEntity;
-
-import java.util.Date;
 
 /**
  * MCP对象 mcp_info
@@ -25,7 +22,7 @@ public class McpInfo extends BaseEntity {
     /**
      * id
      */
-        @TableId(value = "mcp_id", type = IdType.AUTO)
+    @TableId(value = "mcp_id", type = IdType.AUTO)
     private Integer mcpId;
 
     /**
@@ -60,8 +57,6 @@ public class McpInfo extends BaseEntity {
      * 是否启用
      */
     private Boolean status;
-
-
 
 
 }

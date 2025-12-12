@@ -34,7 +34,7 @@ public class SunoController {
     public String generate(@RequestBody GenerateSuno generateSuno) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("suno");
         // 扣除接口费用并且保存消息记录
-        chatCostService.taskDeduct("suno","文生歌曲", NumberUtils.toDouble(okHttpConfig.getGenerate(), 0.3));
+        chatCostService.taskDeduct("suno", "文生歌曲", NumberUtils.toDouble(okHttpConfig.getGenerate(), 0.3));
         // 创建请求体（这里使用JSON作为媒体类型）
         String generateJson = JSONUtil.toJsonStr(generateSuno);
         String url = "suno/generate";
@@ -57,7 +57,7 @@ public class SunoController {
     @GetMapping("/lyrics/{taskId}")
     public String lyrics(@PathVariable String taskId) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("suno");
-        String url = "task/suno/v1/fetch/"+taskId;
+        String url = "task/suno/v1/fetch/" + taskId;
         Request request = okHttpUtil.createGetRequest(url);
         return okHttpUtil.executeRequest(request);
     }
@@ -67,7 +67,7 @@ public class SunoController {
     @GetMapping("/feed/{taskId}")
     public String feed(@PathVariable String taskId) {
         OkHttpUtil okHttpUtil = okHttpConfig.getOkHttpUtil("suno");
-        String url = "suno/feed/"+taskId;
+        String url = "suno/feed/" + taskId;
         Request request = okHttpUtil.createGetRequest(url);
         return okHttpUtil.executeRequest(request);
     }

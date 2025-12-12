@@ -14,7 +14,7 @@ import ${import};
  */
 @Data
 @TableName("${tableName}")
-public class ${ClassName} implements Serializable {
+public class ${ClassName} implements Serializable{
 
 
 #foreach ($column in $columns)

@@ -18,6 +18,7 @@ public interface KnowledgeInfoMapper extends BaseMapperPlus<KnowledgeInfo, Knowl
 
     /**
      * 根据kid查询知识库
+     *
      * @param kid 知识库id
      * @return KnowledgeInfo
      */

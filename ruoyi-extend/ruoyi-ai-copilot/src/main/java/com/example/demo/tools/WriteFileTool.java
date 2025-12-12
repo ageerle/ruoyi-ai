@@ -38,12 +38,12 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
 
     public WriteFileTool(AppProperties appProperties) {
         super(
-            "write_file",
-            "WriteFile",
-            "Writes content to a file. Creates new files or overwrites existing ones. " +
-            "Always shows a diff before writing. Automatically creates parent directories if needed. " +
-            "Use absolute paths within the workspace directory.",
-            createSchema()
+                "write_file",
+                "WriteFile",
+                "Writes content to a file. Creates new files or overwrites existing ones. " +
+                        "Always shows a diff before writing. Automatically creates parent directories if needed. " +
+                        "Use absolute paths within the workspace directory.",
+                createSchema()
         );
         this.appProperties = appProperties;
         this.rootDirectory = appProperties.getWorkspace().getRootDirectory();
@@ -59,16 +59,16 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
 
     private static JsonSchema createSchema() {
         return JsonSchema.object()
-            .addProperty("file_path", JsonSchema.string(
-                "MUST be an absolute path to the file to write to. Path must be within the workspace directory (" + 
-                getWorkspaceBasePath() + "). " +
-                getPathExample("project/src/main.java") + ". " +
-                "Relative paths are NOT allowed."
-            ))
-            .addProperty("content", JsonSchema.string(
-                "The content to write to the file. Will completely replace existing content if file exists."
-            ))
-            .required("file_path", "content");
+                .addProperty("file_path", JsonSchema.string(
+                        "MUST be an absolute path to the file to write to. Path must be within the workspace directory (" +
+                                getWorkspaceBasePath() + "). " +
+                                getPathExample("project/src/main.java") + ". " +
+                                "Relative paths are NOT allowed."
+                ))
+                .addProperty("content", JsonSchema.string(
+                        "The content to write to the file. Will completely replace existing content if file exists."
+                ))
+                .required("file_path", "content");
     }
 
     @Override
@@ -88,7 +88,7 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
         }
 
         Path filePath = Paths.get(params.filePath);
-        
+
         // 验证是否为绝对路径
         if (!filePath.isAbsolute()) {
             return "File path must be absolute: " + params.filePath;
@@ -102,15 +102,15 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
         // 验证文件扩展名
         String fileName = filePath.getFileName().toString();
         if (!isAllowedFileType(fileName)) {
-            return "File type not allowed: " + fileName + 
-                ". Allowed extensions: " + appProperties.getWorkspace().getAllowedExtensions();
+            return "File type not allowed: " + fileName +
+                    ". Allowed extensions: " + appProperties.getWorkspace().getAllowedExtensions();
         }
 
         // 验证内容大小
         byte[] contentBytes = params.content.getBytes(StandardCharsets.UTF_8);
         if (contentBytes.length > appProperties.getWorkspace().getMaxFileSize()) {
-            return "Content too large: " + contentBytes.length + " bytes. Maximum allowed: " + 
-                appProperties.getWorkspace().getMaxFileSize() + " bytes";
+            return "Content too large: " + contentBytes.length + " bytes. Maximum allowed: " +
+                    appProperties.getWorkspace().getMaxFileSize() + " bytes";
         }
 
         return null;
@@ -120,7 +120,7 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
     public CompletableFuture<ToolConfirmationDetails> shouldConfirmExecute(WriteFileParams params) {
         // 根据配置决定是否需要确认
         if (appProperties.getSecurity().getApprovalMode() == AppProperties.ApprovalMode.AUTO_EDIT ||
-            appProperties.getSecurity().getApprovalMode() == AppProperties.ApprovalMode.YOLO) {
+                appProperties.getSecurity().getApprovalMode() == AppProperties.ApprovalMode.YOLO) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -129,24 +129,24 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
                 Path filePath = Paths.get(params.filePath);
                 String currentContent = "";
                 boolean isNewFile = !Files.exists(filePath);
-                
+
                 if (!isNewFile) {
                     currentContent = Files.readString(filePath, StandardCharsets.UTF_8);
                 }
-                
+
                 // 生成差异显示
                 String diff = generateDiff(
-                    filePath.getFileName().toString(),
-                    currentContent,
-                    params.content
+                        filePath.getFileName().toString(),
+                        currentContent,
+                        params.content
                 );
-                
-                String title = isNewFile ? 
-                    "Confirm Create: " + getRelativePath(filePath) :
-                    "Confirm Write: " + getRelativePath(filePath);
-                
+
+                String title = isNewFile ?
+                        "Confirm Create: " + getRelativePath(filePath) :
+                        "Confirm Write: " + getRelativePath(filePath);
+
                 return ToolConfirmationDetails.edit(title, filePath.getFileName().toString(), diff);
-                    
+
             } catch (IOException e) {
                 logger.warn("Could not read existing file for diff: " + params.filePath, e);
                 return null; // 如果无法读取文件，直接执行
@@ -160,7 +160,7 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
     @Tool(name = "write_file", description = "Creates a new file or overwrites an existing file with the specified content")
     public String writeFile(String filePath, String content) {
         long callId = executionLogger.logToolStart("write_file", "写入文件内容",
-            String.format("文件路径=%s, 内容长度=%d字符", filePath, content != null ? content.length() : 0));
+                String.format("文件路径=%s, 内容长度=%d字符", filePath, content != null ? content.length() : 0));
         long startTime = System.currentTimeMillis();
 
         try {
@@ -179,7 +179,7 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
             }
 
             executionLogger.logFileOperation(callId, "写入文件", filePath,
-                String.format("内容长度: %d字符", content != null ? content.length() : 0));
+                    String.format("内容长度: %d字符", content != null ? content.length() : 0));
 
             // Execute the tool
             ToolResult result = execute(params).join();
@@ -209,41 +209,41 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
                 Path filePath = Paths.get(params.filePath);
                 boolean isNewFile = !Files.exists(filePath);
                 String originalContent = "";
-                
+
                 // 读取原始内容（用于备份和差异显示）
                 if (!isNewFile) {
                     originalContent = Files.readString(filePath, StandardCharsets.UTF_8);
                 }
-                
+
                 // 创建备份（如果启用）
                 if (!isNewFile && shouldCreateBackup()) {
                     createBackup(filePath, originalContent);
                 }
-                
+
                 // 确保父目录存在
                 Files.createDirectories(filePath.getParent());
-                
+
                 // 写入文件
                 Files.writeString(filePath, params.content, StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
                 // 生成结果
                 String relativePath = getRelativePath(filePath);
                 long lineCount = params.content.lines().count();
                 long byteCount = params.content.getBytes(StandardCharsets.UTF_8).length;
-                
+
                 if (isNewFile) {
-                    String successMessage = String.format("Successfully created file: %s (%d lines, %d bytes)", 
-                        params.filePath, lineCount, byteCount);
+                    String successMessage = String.format("Successfully created file: %s (%d lines, %d bytes)",
+                            params.filePath, lineCount, byteCount);
                     String displayMessage = String.format("Created %s (%d lines)", relativePath, lineCount);
                     return ToolResult.success(successMessage, displayMessage);
                 } else {
                     String diff = generateDiff(filePath.getFileName().toString(), originalContent, params.content);
-                    String successMessage = String.format("Successfully wrote to file: %s (%d lines, %d bytes)", 
-                        params.filePath, lineCount, byteCount);
+                    String successMessage = String.format("Successfully wrote to file: %s (%d lines, %d bytes)",
+                            params.filePath, lineCount, byteCount);
                     return ToolResult.success(successMessage, new FileDiff(diff, filePath.getFileName().toString()));
                 }
-                
+
             } catch (IOException e) {
                 logger.error("Error writing file: " + params.filePath, e);
                 return ToolResult.error("Error writing file: " + e.getMessage());
@@ -258,16 +258,16 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
         try {
             List<String> oldLines = Arrays.asList(oldContent.split("\n"));
             List<String> newLines = Arrays.asList(newContent.split("\n"));
-            
+
             Patch<String> patch = DiffUtils.diff(oldLines, newLines);
             List<String> unifiedDiff = UnifiedDiffUtils.generateUnifiedDiff(
-                fileName + " (Original)",
-                fileName + " (New)",
-                oldLines,
-                patch,
-                3 // context lines
+                    fileName + " (Original)",
+                    fileName + " (New)",
+                    oldLines,
+                    patch,
+                    3 // context lines
             );
-            
+
             return String.join("\n", unifiedDiff);
         } catch (Exception e) {
             logger.warn("Could not generate diff", e);
@@ -279,7 +279,7 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String backupFileName = filePath.getFileName().toString() + ".backup." + timestamp;
         Path backupPath = filePath.getParent().resolve(backupFileName);
-        
+
         Files.writeString(backupPath, content, StandardCharsets.UTF_8);
         logger.info("Created backup: {}", backupPath);
     }
@@ -303,7 +303,7 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
     private boolean isAllowedFileType(String fileName) {
         List<String> allowedExtensions = appProperties.getWorkspace().getAllowedExtensions();
         return allowedExtensions.stream()
-            .anyMatch(ext -> fileName.toLowerCase().endsWith(ext.toLowerCase()));
+                .anyMatch(ext -> fileName.toLowerCase().endsWith(ext.toLowerCase()));
     }
 
     private String getRelativePath(Path filePath) {
@@ -321,11 +321,12 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
     public static class WriteFileParams {
         @JsonProperty("file_path")
         private String filePath;
-        
+
         private String content;
 
         // 构造器
-        public WriteFileParams() {}
+        public WriteFileParams() {
+        }
 
         public WriteFileParams(String filePath, String content) {
             this.filePath = filePath;
@@ -333,16 +334,26 @@ public class WriteFileTool extends BaseTool<WriteFileTool.WriteFileParams> {
         }
 
         // Getters and Setters
-        public String getFilePath() { return filePath; }
-        public void setFilePath(String filePath) { this.filePath = filePath; }
+        public String getFilePath() {
+            return filePath;
+        }
 
-        public String getContent() { return content; }
-        public void setContent(String content) { this.content = content; }
+        public void setFilePath(String filePath) {
+            this.filePath = filePath;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public void setContent(String content) {
+            this.content = content;
+        }
 
         @Override
         public String toString() {
-            return String.format("WriteFileParams{path='%s', contentLength=%d}", 
-                filePath, content != null ? content.length() : 0);
+            return String.format("WriteFileParams{path='%s', contentLength=%d}",
+                    filePath, content != null ? content.length() : 0);
         }
     }
 }

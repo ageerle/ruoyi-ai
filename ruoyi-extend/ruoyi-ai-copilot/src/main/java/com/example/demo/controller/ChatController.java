@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -47,7 +46,6 @@ public class ChatController {
      * 发送消息给AI - 支持连续工具调用
      */
     // 在现有ChatController中修改sendMessage方法
-    
     @PostMapping("/message")
     public Mono<ChatResponseDto> sendMessage(@RequestBody ChatRequestDto request) {
         return Mono.fromCallable(() -> {
@@ -73,7 +71,7 @@ public class ChatController {
                         try {
                             logger.info("🚀 开始异步执行连续对话任务: {}", taskId);
                             continuousConversationService.executeContinuousConversation(
-                                taskId, request.getMessage(), conversationHistory
+                                    taskId, request.getMessage(), conversationHistory
                             );
                             logger.info("✅ 连续对话任务完成: {}", taskId);
                         } catch (Exception e) {
@@ -105,7 +103,7 @@ public class ChatController {
                     logger.info("📤 返回流式响应标识");
                     return responseDto;
                 }
-                
+
             } catch (Exception e) {
                 logger.error("Error processing chat message", e);
                 ChatResponseDto errorResponse = new ChatResponseDto();
@@ -115,7 +113,6 @@ public class ChatController {
             }
         });
     }
-    
 
 
     /**
@@ -132,27 +129,27 @@ public class ChatController {
 
                 // 使用Spring AI的流式API
                 Flux<String> contentStream = chatClient.prompt()
-                    .messages(conversationHistory)
-                    .stream()
-                    .content();
+                        .messages(conversationHistory)
+                        .stream()
+                        .content();
 
                 // 订阅流式内容并转发给前端
                 contentStream
-                    .doOnNext(content -> {
-                        logger.debug("📨 流式内容片段: {}", content);
-                        // 发送SSE格式的数据
-                        sink.next("data: " + content + "\n\n");
-                    })
-                    .doOnComplete(() -> {
-                        logger.info("✅ 流式对话完成");
-                        sink.next("data: [DONE]\n\n");
-                        sink.complete();
-                    })
-                    .doOnError(error -> {
-                        logger.error("❌ 流式对话错误: {}", error.getMessage());
-                        sink.error(error);
-                    })
-                    .subscribe();
+                        .doOnNext(content -> {
+                            logger.debug("📨 流式内容片段: {}", content);
+                            // 发送SSE格式的数据
+                            sink.next("data: " + content + "\n\n");
+                        })
+                        .doOnComplete(() -> {
+                            logger.info("✅ 流式对话完成");
+                            sink.next("data: [DONE]\n\n");
+                            sink.complete();
+                        })
+                        .doOnError(error -> {
+                            logger.error("❌ 流式对话错误: {}", error.getMessage());
+                            sink.error(error);
+                        })
+                        .subscribe();
 
             } catch (Exception e) {
                 logger.error("❌ 流式对话启动失败: {}", e.getMessage());
@@ -177,13 +174,13 @@ public class ChatController {
     @GetMapping("/history")
     public Mono<List<MessageDto>> getHistory() {
         List<MessageDto> history = conversationHistory.stream()
-            .map(message -> {
-                MessageDto dto = new MessageDto();
-                dto.setContent(message.getText());
-                dto.setRole(message instanceof UserMessage ? "user" : "assistant");
-                return dto;
-            })
-            .toList();
+                .map(message -> {
+                    MessageDto dto = new MessageDto();
+                    dto.setContent(message.getText());
+                    dto.setRole(message instanceof UserMessage ? "user" : "assistant");
+                    return dto;
+                })
+                .toList();
 
         return Mono.just(history);
     }
@@ -202,57 +199,97 @@ public class ChatController {
         private String stopReason;
         private long totalDurationMs;
 
-      public String getTaskId() {
-        return taskId;
-      }
+        public String getTaskId() {
+            return taskId;
+        }
 
-      public void setTaskId(String taskId) {
-        this.taskId = taskId;
-      }
+        public void setTaskId(String taskId) {
+            this.taskId = taskId;
+        }
 
-      public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
+        public String getMessage() {
+            return message;
+        }
 
-        public boolean isSuccess() { return success; }
-        public void setSuccess(boolean success) { this.success = success; }
+        public void setMessage(String message) {
+            this.message = message;
+        }
 
-      public boolean isAsyncTask() {
-        return asyncTask;
-      }
+        public boolean isSuccess() {
+            return success;
+        }
 
-      public void setAsyncTask(boolean asyncTask) {
-        this.asyncTask = asyncTask;
-      }
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
 
-      public boolean isStreamResponse() {
-        return streamResponse;
-      }
+        public boolean isAsyncTask() {
+            return asyncTask;
+        }
 
-      public void setStreamResponse(boolean streamResponse) {
-        this.streamResponse = streamResponse;
-      }
+        public void setAsyncTask(boolean asyncTask) {
+            this.asyncTask = asyncTask;
+        }
 
-      public int getTotalTurns() { return totalTurns; }
-        public void setTotalTurns(int totalTurns) { this.totalTurns = totalTurns; }
+        public boolean isStreamResponse() {
+            return streamResponse;
+        }
 
-        public boolean isReachedMaxTurns() { return reachedMaxTurns; }
-        public void setReachedMaxTurns(boolean reachedMaxTurns) { this.reachedMaxTurns = reachedMaxTurns; }
+        public void setStreamResponse(boolean streamResponse) {
+            this.streamResponse = streamResponse;
+        }
 
-        public String getStopReason() { return stopReason; }
-        public void setStopReason(String stopReason) { this.stopReason = stopReason; }
+        public int getTotalTurns() {
+            return totalTurns;
+        }
 
-        public long getTotalDurationMs() { return totalDurationMs; }
-        public void setTotalDurationMs(long totalDurationMs) { this.totalDurationMs = totalDurationMs; }
+        public void setTotalTurns(int totalTurns) {
+            this.totalTurns = totalTurns;
+        }
+
+        public boolean isReachedMaxTurns() {
+            return reachedMaxTurns;
+        }
+
+        public void setReachedMaxTurns(boolean reachedMaxTurns) {
+            this.reachedMaxTurns = reachedMaxTurns;
+        }
+
+        public String getStopReason() {
+            return stopReason;
+        }
+
+        public void setStopReason(String stopReason) {
+            this.stopReason = stopReason;
+        }
+
+        public long getTotalDurationMs() {
+            return totalDurationMs;
+        }
+
+        public void setTotalDurationMs(long totalDurationMs) {
+            this.totalDurationMs = totalDurationMs;
+        }
     }
 
     public static class MessageDto {
         private String content;
         private String role;
 
-        public String getContent() { return content; }
-        public void setContent(String content) { this.content = content; }
+        public String getContent() {
+            return content;
+        }
 
-        public String getRole() { return role; }
-        public void setRole(String role) { this.role = role; }
+        public void setContent(String content) {
+            this.content = content;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
+        }
     }
 }

@@ -56,7 +56,7 @@ public interface IKnowledgeAttachService {
     /**
      * 翻译文件
      *
-     * @param file 文件
+     * @param file           文件
      * @param targetLanguage 目标语音
      */
     String translationByFile(MultipartFile file, String targetLanguage);

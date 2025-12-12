@@ -82,7 +82,7 @@ public class ChatModelController extends BaseController {
      */
     @GetMapping("/{id}")
     public R<ChatModelVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Long id) {
+                                  @PathVariable Long id) {
         return R.ok(chatModelService.queryById(id));
     }
 

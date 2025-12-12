@@ -17,8 +17,8 @@ public class MD5Util {
     /**
      * 全局数组
      */
-    public final static String[] strDigits = { "0", "1", "2", "3", "4", "5",
-            "6", "7", "8", "9", "a", "b", "c", "d", "e", "f" };
+    public final static String[] strDigits = {"0", "1", "2", "3", "4", "5",
+            "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"};
 
     public MD5Util() {
     }
@@ -26,9 +26,9 @@ public class MD5Util {
     /**
      * 返回形式为数字跟字符串
      *
-     * @Date 2023/7/3
      * @param bByte
      * @return String
+     * @Date 2023/7/3
      **/
     public static String byteToArrayString(byte bByte) {
         int iRet = bByte;
@@ -43,9 +43,9 @@ public class MD5Util {
     /**
      * 转换字节数组为16进制字串
      *
-     * @Date 2023/7/3
      * @param bByte
      * @return String
+     * @Date 2023/7/3
      **/
     public static String byteToString(byte[] bByte) {
         StringBuffer sBuffer = new StringBuffer();
@@ -58,9 +58,9 @@ public class MD5Util {
     /**
      * 生成md5代码
      *
-     * @Date 2023/7/3
      * @param strObj
      * @return String
+     * @Date 2023/7/3
      **/
     public static String GetMD5Code(String strObj) {
         String resultString = null;

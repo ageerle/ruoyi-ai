@@ -12,7 +12,7 @@ public interface ISysPermissionService {
     /**
      * 获取角色数据权限
      *
-     * @param userId  用户id
+     * @param userId 用户id
      * @return 角色权限信息
      */
     Set<String> getRolePermission(Long userId);
@@ -20,7 +20,7 @@ public interface ISysPermissionService {
     /**
      * 获取菜单数据权限
      *
-     * @param userId  用户id
+     * @param userId 用户id
      * @return 菜单权限信息
      */
     Set<String> getMenuPermission(Long userId);

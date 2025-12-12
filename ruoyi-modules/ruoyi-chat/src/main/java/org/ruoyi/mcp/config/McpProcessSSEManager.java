@@ -1,9 +1,7 @@
 package org.ruoyi.mcp.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.info.ProcessInfo;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 
 
 @Component
@@ -94,6 +91,7 @@ public class McpProcessSSEManager {
             return false;
         }
     }
+
     private String getProcessId(Process process) {
         try {
             return String.valueOf(process.pid());
@@ -101,6 +99,7 @@ public class McpProcessSSEManager {
             return "unknown";
         }
     }
+
     private void readProcessOutput(String serverName, Process process) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()))) {
@@ -112,6 +111,7 @@ public class McpProcessSSEManager {
             System.err.println("Error reading output from " + serverName + ": " + e.getMessage());
         }
     }
+
     /**
      * 读取错误输出
      */
@@ -127,6 +127,7 @@ public class McpProcessSSEManager {
             System.err.println("Failed to read error output: " + e.getMessage());
         }
     }
+
     /**
      * 初始化 SSE 连接
      */
@@ -201,7 +202,6 @@ public class McpProcessSSEManager {
     }
 
 
-
     /**
      * 构建命令列表
      */
@@ -220,6 +220,7 @@ public class McpProcessSSEManager {
 
         return commandList;
     }
+
     /**
      * 检查是否为 Windows 系统
      */
@@ -260,6 +261,7 @@ public class McpProcessSSEManager {
         }
         return false;
     }
+
     /**
      * 检查 MCP 服务器是否运行
      */
@@ -267,6 +269,7 @@ public class McpProcessSSEManager {
         Process process = runningProcesses.get(serverName);
         return process != null && process.isAlive();
     }
+
     /**
      * 进程信息类
      */
@@ -274,11 +277,21 @@ public class McpProcessSSEManager {
         private String pid;
         private long startTime;
 
-        public String getPid() { return pid; }
-        public void setPid(String pid) { this.pid = pid; }
+        public String getPid() {
+            return pid;
+        }
 
-        public long getStartTime() { return startTime; }
-        public void setStartTime(long startTime) { this.startTime = startTime; }
+        public void setPid(String pid) {
+            this.pid = pid;
+        }
+
+        public long getStartTime() {
+            return startTime;
+        }
+
+        public void setStartTime(long startTime) {
+            this.startTime = startTime;
+        }
 
         public long getUptime() {
             return System.currentTimeMillis() - startTime;

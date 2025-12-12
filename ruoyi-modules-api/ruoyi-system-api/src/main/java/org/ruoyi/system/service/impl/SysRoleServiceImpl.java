@@ -71,13 +71,14 @@ public class SysRoleServiceImpl implements ISysRoleService {
         Map<String, Object> params = bo.getParams();
         QueryWrapper<SysRole> wrapper = Wrappers.query();
         wrapper.eq("r.del_flag", UserConstants.ROLE_NORMAL)
-            .eq(ObjectUtil.isNotNull(bo.getRoleId()), "r.role_id", bo.getRoleId())
-            .like(StringUtils.isNotBlank(bo.getRoleName()), "r.role_name", bo.getRoleName())
-            .eq(StringUtils.isNotBlank(bo.getStatus()), "r.status", bo.getStatus())
-            .like(StringUtils.isNotBlank(bo.getRoleKey()), "r.role_key", bo.getRoleKey())
-            .between(params.get("beginTime") != null && params.get("endTime") != null,
-                "r.create_time", params.get("beginTime"), params.get("endTime"))
-            .orderByAsc("r.role_sort").orderByAsc("r.create_time");;
+                .eq(ObjectUtil.isNotNull(bo.getRoleId()), "r.role_id", bo.getRoleId())
+                .like(StringUtils.isNotBlank(bo.getRoleName()), "r.role_name", bo.getRoleName())
+                .eq(StringUtils.isNotBlank(bo.getStatus()), "r.status", bo.getStatus())
+                .like(StringUtils.isNotBlank(bo.getRoleKey()), "r.role_key", bo.getRoleKey())
+                .between(params.get("beginTime") != null && params.get("endTime") != null,
+                        "r.create_time", params.get("beginTime"), params.get("endTime"))
+                .orderByAsc("r.role_sort").orderByAsc("r.create_time");
+        ;
         return wrapper;
     }
 
@@ -161,8 +162,8 @@ public class SysRoleServiceImpl implements ISysRoleService {
     @Override
     public boolean checkRoleNameUnique(SysRoleBo role) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysRole>()
-            .eq(SysRole::getRoleName, role.getRoleName())
-            .ne(ObjectUtil.isNotNull(role.getRoleId()), SysRole::getRoleId, role.getRoleId()));
+                .eq(SysRole::getRoleName, role.getRoleName())
+                .ne(ObjectUtil.isNotNull(role.getRoleId()), SysRole::getRoleId, role.getRoleId()));
         return !exist;
     }
 
@@ -175,8 +176,8 @@ public class SysRoleServiceImpl implements ISysRoleService {
     @Override
     public boolean checkRoleKeyUnique(SysRoleBo role) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysRole>()
-            .eq(SysRole::getRoleKey, role.getRoleKey())
-            .ne(ObjectUtil.isNotNull(role.getRoleId()), SysRole::getRoleId, role.getRoleId()));
+                .eq(SysRole::getRoleKey, role.getRoleKey())
+                .ne(ObjectUtil.isNotNull(role.getRoleId()), SysRole::getRoleId, role.getRoleId()));
         return !exist;
     }
 
@@ -266,9 +267,9 @@ public class SysRoleServiceImpl implements ISysRoleService {
     @Override
     public int updateRoleStatus(Long roleId, String status) {
         return baseMapper.update(null,
-            new LambdaUpdateWrapper<SysRole>()
-                .set(SysRole::getStatus, status)
-                .eq(SysRole::getRoleId, roleId));
+                new LambdaUpdateWrapper<SysRole>()
+                        .set(SysRole::getStatus, status)
+                        .eq(SysRole::getRoleId, roleId));
     }
 
     /**
@@ -381,8 +382,8 @@ public class SysRoleServiceImpl implements ISysRoleService {
     @Override
     public int deleteAuthUser(SysUserRole userRole) {
         int rows = userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-            .eq(SysUserRole::getRoleId, userRole.getRoleId())
-            .eq(SysUserRole::getUserId, userRole.getUserId()));
+                .eq(SysUserRole::getRoleId, userRole.getRoleId())
+                .eq(SysUserRole::getUserId, userRole.getUserId()));
         if (rows > 0) {
             cleanOnlineUserByRole(userRole.getRoleId());
         }
@@ -399,8 +400,8 @@ public class SysRoleServiceImpl implements ISysRoleService {
     @Override
     public int deleteAuthUsers(Long roleId, Long[] userIds) {
         int rows = userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-            .eq(SysUserRole::getRoleId, roleId)
-            .in(SysUserRole::getUserId, Arrays.asList(userIds)));
+                .eq(SysUserRole::getRoleId, roleId)
+                .in(SysUserRole::getUserId, Arrays.asList(userIds)));
         if (rows > 0) {
             cleanOnlineUserByRole(roleId);
         }

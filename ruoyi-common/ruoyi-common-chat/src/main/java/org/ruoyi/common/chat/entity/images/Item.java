@@ -7,10 +7,8 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- *  
- *
  * @author https:www.unfbx.com
- *  2023-02-15
+ * 2023-02-15
  */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -24,8 +24,8 @@ import java.util.List;
 public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
 
     @DataPermission({
-        @DataColumn(key = "deptName", value = "d.dept_id"),
-        @DataColumn(key = "userName", value = "u.user_id")
+            @DataColumn(key = "deptName", value = "d.dept_id"),
+            @DataColumn(key = "userName", value = "u.user_id")
     })
     Page<SysUserVo> selectPageUserList(@Param("page") Page<SysUser> page, @Param(Constants.WRAPPER) Wrapper<SysUser> queryWrapper);
 
@@ -36,8 +36,8 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      * @return 用户信息集合信息
      */
     @DataPermission({
-        @DataColumn(key = "deptName", value = "d.dept_id"),
-        @DataColumn(key = "userName", value = "u.user_id")
+            @DataColumn(key = "deptName", value = "d.dept_id"),
+            @DataColumn(key = "userName", value = "u.user_id")
     })
     List<SysUserVo> selectUserList(@Param(Constants.WRAPPER) Wrapper<SysUser> queryWrapper);
 
@@ -48,8 +48,8 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      * @return 用户信息集合信息
      */
     @DataPermission({
-        @DataColumn(key = "deptName", value = "d.dept_id"),
-        @DataColumn(key = "userName", value = "u.user_id")
+            @DataColumn(key = "deptName", value = "d.dept_id"),
+            @DataColumn(key = "userName", value = "u.user_id")
     })
     Page<SysUserVo> selectAllocatedList(@Param("page") Page<SysUser> page, @Param(Constants.WRAPPER) Wrapper<SysUser> queryWrapper);
 
@@ -60,8 +60,8 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      * @return 用户信息集合信息
      */
     @DataPermission({
-        @DataColumn(key = "deptName", value = "d.dept_id"),
-        @DataColumn(key = "userName", value = "u.user_id")
+            @DataColumn(key = "deptName", value = "d.dept_id"),
+            @DataColumn(key = "userName", value = "u.user_id")
     })
     Page<SysUserVo> selectUnallocatedList(@Param("page") Page<SysUser> page, @Param(Constants.WRAPPER) Wrapper<SysUser> queryWrapper);
 
@@ -161,7 +161,6 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      * 小程序 -修改用户信息
      *
      * @param user
-     *
      */
     void updateXcxUser(SysUserBo user);
 }

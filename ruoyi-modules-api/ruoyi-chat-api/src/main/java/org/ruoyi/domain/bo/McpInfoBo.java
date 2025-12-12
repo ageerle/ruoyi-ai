@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.ruoyi.domain.McpInfo;
 
-
 import java.io.Serializable;
 
 /**
@@ -19,40 +18,40 @@ import java.io.Serializable;
 @AutoMapper(target = McpInfo.class, reverseConvertGenerate = false)
 public class McpInfoBo implements Serializable {
 
-        /**
-         * id
-         */
-            @NotNull(message = "id不能为空" )
+    /**
+     * id
+     */
+    @NotNull(message = "id不能为空")
     private Integer mcpId;
 
-        /**
-         * 服务器名称
-         */
+    /**
+     * 服务器名称
+     */
     private String serverName;
 
-        /**
-         * 链接方式
-         */
+    /**
+     * 链接方式
+     */
     private String transportType;
 
-        /**
-         * Command
-         */
+    /**
+     * Command
+     */
     private String command;
 
-        /**
-         * Args
-         */
+    /**
+     * Args
+     */
     private String arguments;
     private String description;
     /**
-         * Env
-         */
+     * Env
+     */
     private String env;
 
-        /**
-         * 是否启用
-         */
+    /**
+     * 是否启用
+     */
     private Boolean status;
 
 

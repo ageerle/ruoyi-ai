@@ -5,10 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.mcp.service.McpInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import java.io.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 @Slf4j
 @Component
 public class McpProcessManager {
@@ -22,6 +27,7 @@ public class McpProcessManager {
 
     @Autowired
     private McpInfoService mcpInfoService;
+
     /**
      * 启动 MCP 服务器进程（支持环境变量）
      */
@@ -97,6 +103,7 @@ public class McpProcessManager {
         }
 
     }
+
     /**
      * 发送 MCP 消息
      */
@@ -193,6 +200,7 @@ public class McpProcessManager {
 
         return commandList;
     }
+
     /**
      * 检查是否为 Windows 系统
      */
@@ -216,6 +224,7 @@ public class McpProcessManager {
             System.err.println("Failed to read error output: " + e.getMessage());
         }
     }
+
     /**
      * 停止 MCP 服务器进程
      */
@@ -333,9 +342,20 @@ public class McpProcessManager {
         }
 
         // Getters
-        public String getName() { return name; }
-        public Process getProcess() { return process; }
-        public McpServerConfig getConfig() { return config; }
-        public LocalDateTime getStartTime() { return startTime; }
+        public String getName() {
+            return name;
+        }
+
+        public Process getProcess() {
+            return process;
+        }
+
+        public McpServerConfig getConfig() {
+            return config;
+        }
+
+        public LocalDateTime getStartTime() {
+            return startTime;
+        }
     }
 }

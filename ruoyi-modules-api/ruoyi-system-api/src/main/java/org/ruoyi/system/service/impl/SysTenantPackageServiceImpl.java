@@ -42,7 +42,7 @@ public class SysTenantPackageServiceImpl implements ISysTenantPackageService {
      * 查询租户套餐
      */
     @Override
-    public SysTenantPackageVo queryById(Long packageId){
+    public SysTenantPackageVo queryById(Long packageId) {
         return baseMapper.selectVoById(packageId);
     }
 
@@ -135,7 +135,7 @@ public class SysTenantPackageServiceImpl implements ISysTenantPackageService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             boolean exists = tenantMapper.exists(new LambdaQueryWrapper<SysTenant>().in(SysTenant::getPackageId, ids));
             if (exists) {
                 throw new ServiceException("租户套餐已被使用");

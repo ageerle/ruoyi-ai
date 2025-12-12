@@ -41,7 +41,7 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
     @Override
     public GraphExtractionResult ingestTextWithModel(String text, String knowledgeId, Map<String, Object> metadata, String modelName) {
         log.info("开始将文本入库到图谱，知识库ID: {}, 模型: {}, 文本长度: {}",
-            knowledgeId, modelName != null ? modelName : "默认", text.length());
+                knowledgeId, modelName != null ? modelName : "默认", text.length());
 
         try {
             // 1. 从文本中抽取实体和关系
@@ -59,9 +59,9 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
 
             // 2. 将抽取的实体转换为图节点
             List<GraphVertex> vertices = convertEntitiesToVertices(
-                extractionResult.getEntities(),
-                knowledgeId,
-                metadata
+                    extractionResult.getEntities(),
+                    knowledgeId,
+                    metadata
             );
 
             // 3. 批量添加节点到Neo4j，并建立实体名称→nodeId的映射
@@ -69,7 +69,7 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
             if (!vertices.isEmpty()) {
                 int addedCount = graphStoreService.addVertices(vertices);
                 log.info("成功添加 {} 个节点到图谱", addedCount);
-                
+
                 // ⭐ 建立映射：实体名称 → nodeId
                 for (GraphVertex vertex : vertices) {
                     entityNameToNodeIdMap.put(vertex.getName(), vertex.getNodeId());
@@ -79,10 +79,10 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
 
             // 4. 将抽取的关系转换为图边，使用映射填充nodeId
             List<GraphEdge> edges = convertRelationsToEdges(
-                extractionResult.getRelations(),
-                knowledgeId,
-                metadata,
-                entityNameToNodeIdMap  // ⭐ 传入映射
+                    extractionResult.getRelations(),
+                    knowledgeId,
+                    metadata,
+                    entityNameToNodeIdMap  // ⭐ 传入映射
             );
 
             // 5. 批量添加关系到Neo4j
@@ -96,11 +96,11 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
         } catch (Exception e) {
             log.error("文本入库失败", e);
             return GraphExtractionResult.builder()
-                .entities(new ArrayList<>())
-                .relations(new ArrayList<>())
-                .success(false)
-                .errorMessage(e.getMessage())
-                .build();
+                    .entities(new ArrayList<>())
+                    .relations(new ArrayList<>())
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
         }
     }
 
@@ -112,7 +112,7 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
     @Override
     public GraphExtractionResult ingestDocumentWithModel(String documentText, String knowledgeId, Map<String, Object> metadata, String modelName) {
         log.info("开始将文档入库到图谱，知识库ID: {}, 模型: {}, 文档长度: {}",
-            knowledgeId, modelName != null ? modelName : "默认", documentText.length());
+                knowledgeId, modelName != null ? modelName : "默认", documentText.length());
 
         // 如果文档较短，直接处理
         if (documentText.length() < GraphConstants.RAG_MAX_SEGMENT_SIZE_IN_TOKENS * 4) {
@@ -153,11 +153,11 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
         log.info("去重后实体数: {} -> {}", allEntities.size(), uniqueEntities.size());
 
         return GraphExtractionResult.builder()
-            .entities(uniqueEntities)
-            .relations(allRelations)
-            .tokenUsed(totalTokenUsed)
-            .success(true)
-            .build();
+                .entities(uniqueEntities)
+                .relations(allRelations)
+                .tokenUsed(totalTokenUsed)
+                .success(true)
+                .build();
     }
 
     @Override
@@ -177,7 +177,7 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
             List<GraphVertex> matchedNodes = new ArrayList<>();
             for (String keyword : keywords) {
                 List<GraphVertex> nodes = graphStoreService.searchVerticesByName(
-                    keyword, knowledgeId, Math.min(5, maxResults)
+                        keyword, knowledgeId, Math.min(5, maxResults)
                 );
                 matchedNodes.addAll(nodes);
             }
@@ -216,15 +216,15 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
 
                 // 获取邻居节点（1跳）
                 List<GraphVertex> neighbors = graphStoreService.getNeighbors(
-                    node.getNodeId(), knowledgeId, 5
+                        node.getNodeId(), knowledgeId, 5
                 );
 
                 if (!neighbors.isEmpty()) {
                     result.append("   关联实体: ");
                     List<String> neighborNames = neighbors.stream()
-                        .map(GraphVertex::getName)
-                        .limit(5)
-                        .collect(java.util.stream.Collectors.toList());
+                            .map(GraphVertex::getName)
+                            .limit(5)
+                            .collect(java.util.stream.Collectors.toList());
                     result.append(String.join(", ", neighborNames));
                     result.append("\n");
                 }
@@ -262,8 +262,8 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
 
         // 3. 过滤停用词和短词
         Set<String> stopWords = new HashSet<>(java.util.Arrays.asList(
-            "的", "了", "和", "是", "在", "我", "有", "个", "这", "那", "为",
-            "与", "或", "但", "等", "及", "而", "中", "如", "一", "二", "三"
+                "的", "了", "和", "是", "在", "我", "有", "个", "这", "那", "为",
+                "与", "或", "但", "等", "及", "而", "中", "如", "一", "二", "三"
         ));
 
         for (String word : words) {
@@ -285,9 +285,9 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
 
         // 去重并限制数量
         return keywords.stream()
-            .distinct()
-            .limit(5)
-            .collect(java.util.stream.Collectors.toList());
+                .distinct()
+                .limit(5)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
@@ -335,10 +335,10 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
 
     /**
      * 将抽取的关系转换为图边
-     * 
-     * @param relations 抽取的关系列表
-     * @param knowledgeId 知识库ID
-     * @param metadata 元数据
+     *
+     * @param relations             抽取的关系列表
+     * @param knowledgeId           知识库ID
+     * @param metadata              元数据
      * @param entityNameToNodeIdMap 实体名称到节点ID的映射
      * @return 图边列表
      */
@@ -358,8 +358,8 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
 
             // 如果找不到对应的节点ID，跳过这个关系
             if (sourceNodeId == null || targetNodeId == null) {
-                log.warn("⚠️ 跳过关系（节点未找到）: {} -> {}", 
-                    relation.getSourceEntity(), relation.getTargetEntity());
+                log.warn("⚠️ 跳过关系（节点未找到）: {} -> {}",
+                        relation.getSourceEntity(), relation.getTargetEntity());
                 skippedCount++;
                 continue;
             }
@@ -415,13 +415,13 @@ public class GraphRAGServiceImpl implements IGraphRAGService {
             }
 
             chunks.add(text.substring(start, end));
-            
+
             // ⭐ 修复死循环：确保 start 一定会增加
             // 如果已经到达文本末尾，直接退出
             if (end >= text.length()) {
                 break;
             }
-            
+
             // 计算下一个起始位置，确保至少前进1个字符
             int nextStart = end - overlap;
             if (nextStart <= start) {

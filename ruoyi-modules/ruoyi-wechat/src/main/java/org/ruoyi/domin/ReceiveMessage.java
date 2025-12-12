@@ -5,6 +5,10 @@ import lombok.Data;
 @Data
 public class ReceiveMessage {
     /**
+     * 消息ID 64位
+     */
+    String msgId;
+    /**
      * 开发者微信号
      */
     private String toUserName;
@@ -25,10 +29,6 @@ public class ReceiveMessage {
      */
     private String content;
     /**
-     * 消息ID 64位
-     */
-    String msgId;
-    /**
      * 消息的数据ID 消息来自文章才有
      */
     private String msgDataId;
@@ -47,12 +47,12 @@ public class ReceiveMessage {
 
     public String getReplyTextMsg(String msg) {
         String xml = "<xml>\n"
-            + "       <ToUserName><![CDATA[" + getFromUserName() + "]]></ToUserName>\n"
-            + "       <FromUserName><![CDATA[" + getToUserName() + "]]></FromUserName>\n"
-            + "       <CreateTime>" + System.currentTimeMillis() + "</CreateTime>\n"
-            + "       <MsgType><![CDATA[text]]></MsgType>\n"
-            + "       <Content><![CDATA[" + msg + "]]></Content>\n"
-            + "     </xml>";
+                + "       <ToUserName><![CDATA[" + getFromUserName() + "]]></ToUserName>\n"
+                + "       <FromUserName><![CDATA[" + getToUserName() + "]]></FromUserName>\n"
+                + "       <CreateTime>" + System.currentTimeMillis() + "</CreateTime>\n"
+                + "       <MsgType><![CDATA[text]]></MsgType>\n"
+                + "       <Content><![CDATA[" + msg + "]]></Content>\n"
+                + "     </xml>";
         return xml;
     }
 }

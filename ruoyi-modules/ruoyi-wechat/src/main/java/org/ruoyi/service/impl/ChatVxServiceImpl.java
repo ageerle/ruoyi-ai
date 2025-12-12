@@ -2,7 +2,6 @@ package org.ruoyi.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
 import org.ruoyi.common.chat.entity.chat.Message;
@@ -26,11 +25,11 @@ public class ChatVxServiceImpl implements IChatVxService {
         Message message = Message.builder().role(Message.Role.USER).content(prompt).build();
         messageList.add(message);
         ChatCompletion chatCompletion = ChatCompletion
-            .builder()
-            .messages(messageList)
-            .model("gpt-4o-mini")
-            .stream(false)
-            .build();
+                .builder()
+                .messages(messageList)
+                .model("gpt-4o-mini")
+                .stream(false)
+                .build();
         ChatCompletionResponse chatCompletionResponse = openAiStreamClient.chatCompletion(chatCompletion);
         return chatCompletionResponse.getChoices().get(0).getMessage().getContent().toString();
     }

@@ -1,12 +1,12 @@
 package org.ruoyi.chat.service.chat.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.config.ChatConfig;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.chat.listener.SSEEventSourceListener;
 import org.ruoyi.chat.service.chat.IChatService;
+import org.ruoyi.chat.support.ChatServiceHelper;
 import org.ruoyi.common.chat.entity.chat.ChatCompletion;
 import org.ruoyi.common.chat.entity.chat.Message;
 import org.ruoyi.common.chat.openai.OpenAiStreamClient;
@@ -17,8 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.*;
-import org.ruoyi.chat.support.ChatServiceHelper;
+import java.util.List;
 
 /**
  * 图片识别模型

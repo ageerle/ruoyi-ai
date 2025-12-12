@@ -37,8 +37,8 @@ public class EncryptorManager {
         return fieldCache.computeIfAbsent(sourceClazz, clazz -> {
             Field[] declaredFields = clazz.getDeclaredFields();
             Set<Field> fieldSet = Arrays.stream(declaredFields).filter(field ->
-                    field.isAnnotationPresent(EncryptField.class) && field.getType() == String.class)
-                .collect(Collectors.toSet());
+                            field.isAnnotationPresent(EncryptField.class) && field.getType() == String.class)
+                    .collect(Collectors.toSet());
             for (Field field : fieldSet) {
                 field.setAccessible(true);
             }

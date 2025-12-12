@@ -5,6 +5,7 @@ import lombok.Data;
 
 /**
  * 查询向量所需参数
+ *
  * @author ageer
  */
 @Data

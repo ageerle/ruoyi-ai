@@ -69,7 +69,7 @@ public class SysConfigServiceImpl implements ISysConfigService {
     @Override
     public String selectConfigByKey(String configKey) {
         SysConfig retConfig = baseMapper.selectOne(new LambdaQueryWrapper<SysConfig>()
-            .eq(SysConfig::getConfigKey, configKey));
+                .eq(SysConfig::getConfigKey, configKey));
         if (ObjectUtil.isNotNull(retConfig)) {
             return retConfig.getConfigValue();
         }
@@ -78,14 +78,15 @@ public class SysConfigServiceImpl implements ISysConfigService {
 
     /**
      * 获取注册开关
+     *
      * @param tenantId 租户id
      * @return true开启，false关闭
      */
     @Override
     public boolean selectRegisterEnabled(String tenantId) {
         SysConfig retConfig = baseMapper.selectOne(new LambdaQueryWrapper<SysConfig>()
-            .eq(SysConfig::getConfigKey, "sys.account.registerUser")
-            .eq(TenantHelper.isEnable(),SysConfig::getTenantId, tenantId));
+                .eq(SysConfig::getConfigKey, "sys.account.registerUser")
+                .eq(TenantHelper.isEnable(), SysConfig::getTenantId, tenantId));
         if (ObjectUtil.isNull(retConfig)) {
             return false;
         }
@@ -111,7 +112,7 @@ public class SysConfigServiceImpl implements ISysConfigService {
         lqw.eq(StringUtils.isNotBlank(bo.getConfigType()), SysConfig::getConfigType, bo.getConfigType());
         lqw.like(StringUtils.isNotBlank(bo.getConfigKey()), SysConfig::getConfigKey, bo.getConfigKey());
         lqw.between(params.get("beginTime") != null && params.get("endTime") != null,
-            SysConfig::getCreateTime, params.get("beginTime"), params.get("endTime"));
+                SysConfig::getCreateTime, params.get("beginTime"), params.get("endTime"));
         return lqw;
     }
 
@@ -151,7 +152,7 @@ public class SysConfigServiceImpl implements ISysConfigService {
             row = baseMapper.updateById(config);
         } else {
             row = baseMapper.update(config, new LambdaQueryWrapper<SysConfig>()
-                .eq(SysConfig::getConfigKey, config.getConfigKey()));
+                    .eq(SysConfig::getConfigKey, config.getConfigKey()));
         }
         if (row > 0) {
             return config.getConfigValue();

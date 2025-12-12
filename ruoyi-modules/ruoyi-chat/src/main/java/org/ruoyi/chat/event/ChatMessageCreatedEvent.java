@@ -24,11 +24,28 @@ public class ChatMessageCreatedEvent extends ApplicationEvent {
         this.messageId = messageId;
     }
 
-    public Long getUserId() { return userId; }
-    public Long getSessionId() { return sessionId; }
-    public String getModelName() { return modelName; }
-    public String getRole() { return role; }
-    public String getContent() { return content; }
-    public Long getMessageId() { return messageId; }
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Long getSessionId() {
+        return sessionId;
+    }
+
+    public String getModelName() {
+        return modelName;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public Long getMessageId() {
+        return messageId;
+    }
 }
 

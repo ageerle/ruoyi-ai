@@ -35,38 +35,36 @@ import java.util.regex.Pattern;
 @ConditionalOnProperty(prefix = "knowledge.graph", name = "enabled", havingValue = "true")
 public class GraphExtractionServiceImpl implements IGraphExtractionService {
 
-    private final IChatModelService chatModelService;
-    private final GraphLLMServiceFactory llmServiceFactory;
-
     /**
      * 实体匹配正则表达式
      * 格式: ("entity"<|>ENTITY_NAME<|>ENTITY_TYPE<|>ENTITY_DESCRIPTION)
      */
     private static final Pattern ENTITY_PATTERN = Pattern.compile(
-        "\\(\"entity\"" +
-        Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
-        "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
-        Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
-        "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
-        Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
-        "([^)]+)\\)"
+            "\\(\"entity\"" +
+                    Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
+                    "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
+                    Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
+                    "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
+                    Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
+                    "([^)]+)\\)"
     );
-
     /**
      * 关系匹配正则表达式
      * 格式: ("relationship"<|>SOURCE<|>TARGET<|>DESCRIPTION<|>STRENGTH)
      */
     private static final Pattern RELATION_PATTERN = Pattern.compile(
-        "\\(\"relationship\"" +
-        Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
-        "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
-        Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
-        "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
-        Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
-        "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
-        Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
-        "([^)]+)\\)"
+            "\\(\"relationship\"" +
+                    Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
+                    "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
+                    Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
+                    "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
+                    Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
+                    "([^" + Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) + "]+)" +
+                    Pattern.quote(GraphConstants.GRAPH_TUPLE_DELIMITER) +
+                    "([^)]+)\\)"
     );
+    private final IChatModelService chatModelService;
+    private final GraphLLMServiceFactory llmServiceFactory;
 
     @Override
     public GraphExtractionResult extractFromText(String text) {
@@ -90,18 +88,18 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
             result.setSuccess(true);
 
             log.info("抽取完成，实体数: {}, 关系数: {}",
-                result.getEntities().size(), result.getRelations().size());
+                    result.getEntities().size(), result.getRelations().size());
 
             return result;
 
         } catch (Exception e) {
             log.error("实体关系抽取失败", e);
             return GraphExtractionResult.builder()
-                .entities(new ArrayList<>())
-                .relations(new ArrayList<>())
-                .success(false)
-                .errorMessage(e.getMessage())
-                .build();
+                    .entities(new ArrayList<>())
+                    .relations(new ArrayList<>())
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
         }
     }
 
@@ -129,13 +127,13 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
             result.setSuccess(true);
 
             log.info("抽取完成，实体数: {}, 关系数: {}, 使用模型: {}",
-                result.getEntities().size(), result.getRelations().size(), modelName);
-            
+                    result.getEntities().size(), result.getRelations().size(), modelName);
+
             // ⭐ 调试：如果没有关系，记录原始响应（便于诊断）
             if (result.getRelations().isEmpty() && !result.getEntities().isEmpty()) {
                 log.warn("⚠️ LLM 提取到 {} 个实体，但没有提取到任何关系！", result.getEntities().size());
-                log.warn("LLM 原始响应预览（前500字符）: {}", 
-                    llmResponse.length() > 500 ? llmResponse.substring(0, 500) + "..." : llmResponse);
+                log.warn("LLM 原始响应预览（前500字符）: {}",
+                        llmResponse.length() > 500 ? llmResponse.substring(0, 500) + "..." : llmResponse);
             }
 
             return result;
@@ -143,11 +141,11 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
         } catch (Exception e) {
             log.error("实体关系抽取失败，模型: {}", modelName, e);
             return GraphExtractionResult.builder()
-                .entities(new ArrayList<>())
-                .relations(new ArrayList<>())
-                .success(false)
-                .errorMessage(e.getMessage())
-                .build();
+                    .entities(new ArrayList<>())
+                    .relations(new ArrayList<>())
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
         }
     }
 
@@ -161,11 +159,11 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
         if (StrUtil.isBlank(response)) {
             log.warn("响应为空，无法解析");
             return GraphExtractionResult.builder()
-                .entities(entities)
-                .relations(relations)
-                .success(false)
-                .errorMessage("LLM响应为空")
-                .build();
+                    .entities(entities)
+                    .relations(relations)
+                    .success(false)
+                    .errorMessage("LLM响应为空")
+                    .build();
         }
 
         try {
@@ -183,10 +181,10 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
                 }
 
                 ExtractedEntity entity = ExtractedEntity.builder()
-                    .name(name)
-                    .type(type)
-                    .description(description)
-                    .build();
+                        .name(name)
+                        .type(type)
+                        .description(description)
+                        .build();
 
                 entities.add(entity);
                 log.debug("解析到实体: name={}, type={}", name, type);
@@ -204,34 +202,34 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
                 Double confidence = calculateConfidence(strength);
 
                 ExtractedRelation relation = ExtractedRelation.builder()
-                    .sourceEntity(sourceEntity)
-                    .targetEntity(targetEntity)
-                    .description(description)
-                    .strength(strength)
-                    .confidence(confidence)
-                    .build();
+                        .sourceEntity(sourceEntity)
+                        .targetEntity(targetEntity)
+                        .description(description)
+                        .strength(strength)
+                        .confidence(confidence)
+                        .build();
 
                 relations.add(relation);
                 log.debug("解析到关系: sourceEntity={}, targetEntity={}, strength={}",
-                    sourceEntity, targetEntity, strength);
+                        sourceEntity, targetEntity, strength);
             }
 
             log.info("解析完成，实体数: {}, 关系数: {}", entities.size(), relations.size());
 
             return GraphExtractionResult.builder()
-                .entities(entities)
-                .relations(relations)
-                .success(true)
-                .build();
+                    .entities(entities)
+                    .relations(relations)
+                    .success(true)
+                    .build();
 
         } catch (Exception e) {
             log.error("解析图谱响应失败", e);
             return GraphExtractionResult.builder()
-                .entities(entities)
-                .relations(relations)
-                .success(false)
-                .errorMessage("解析失败: " + e.getMessage())
-                .build();
+                    .entities(entities)
+                    .relations(relations)
+                    .success(false)
+                    .errorMessage("解析失败: " + e.getMessage())
+                    .build();
         }
     }
 
@@ -251,12 +249,12 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
                 defaultModel = models.get(0);
             }
         }
-        
+
         if (defaultModel == null) {
             log.error("未找到可用的LLM模型");
             throw new RuntimeException("未找到可用的LLM模型，请先配置聊天模型");
         }
-        
+
         log.info("使用默认模型: {}", defaultModel.getModelName());
         return callLLMWithModel(prompt, defaultModel);
     }
@@ -270,24 +268,24 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
      */
     private String callLLMWithModel(String prompt, ChatModelVo chatModel) {
         log.info("调用LLM模型: model={}, category={}, 提示词长度={}",
-            chatModel.getModelName(), chatModel.getCategory(), prompt.length());
+                chatModel.getModelName(), chatModel.getCategory(), prompt.length());
 
         try {
             // 根据模型类别获取对应的LLM服务实现
             IGraphLLMService llmService = llmServiceFactory.getLLMService(chatModel.getCategory());
-            
+
             // 调用LLM进行图谱抽取
             String responseText = llmService.extractGraph(prompt, chatModel);
-            
+
             log.info("LLM调用成功: model={}, category={}, 响应长度={}",
-                chatModel.getModelName(), chatModel.getCategory(), responseText.length());
-            
+                    chatModel.getModelName(), chatModel.getCategory(), responseText.length());
+
             return responseText;
 
         } catch (IllegalArgumentException e) {
             // 不支持的模型类别，降级到默认实现
             log.warn("不支持的模型类别: {}, 尝试使用OpenAI兼容模式", chatModel.getCategory());
-            
+
             try {
                 IGraphLLMService openAiService = llmServiceFactory.getLLMService("openai");
                 return openAiService.extractGraph(prompt, chatModel);
@@ -295,7 +293,7 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
                 log.error("降级调用也失败: {}", fallbackEx.getMessage(), fallbackEx);
                 throw new RuntimeException("LLM调用失败: " + fallbackEx.getMessage(), fallbackEx);
             }
-            
+
         } catch (Exception e) {
             log.error("LLM调用失败: {}", e.getMessage(), e);
             throw new RuntimeException("LLM调用失败: " + e.getMessage(), e);
@@ -333,26 +331,26 @@ public class GraphExtractionServiceImpl implements IGraphExtractionService {
         if ("N/A".equalsIgnoreCase(name) || "N/A".equalsIgnoreCase(type)) {
             return true;
         }
-        
+
         // 2. 检查是否为空或纯空格
         if (StrUtil.isBlank(name) || StrUtil.isBlank(type)) {
             return true;
         }
-        
+
         // 3. 检查类型是否包含 Neo4j Label 不支持的字符
         // Neo4j Label 规则：不能包含 / : & | 等特殊字符
         if (type.matches(".*[/:&|\\\\].*")) {
             log.warn("⚠️ 实体类型包含非法字符，将被过滤: type={}", type);
             return true;
         }
-        
+
         // 4. 检查名称是否过长（Neo4j 建议 < 256）
         if (name.length() > 255 || type.length() > 64) {
-            log.warn("⚠️ 实体名称或类型过长，将被过滤: name.length={}, type.length={}", 
-                name.length(), type.length());
+            log.warn("⚠️ 实体名称或类型过长，将被过滤: name.length={}, type.length={}",
+                    name.length(), type.length());
             return true;
         }
-        
+
         return false;
     }
 

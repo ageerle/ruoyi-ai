@@ -79,7 +79,7 @@ public class SysTenantPackageController extends BaseController {
     @SaCheckPermission("system:tenantPackage:query")
     @GetMapping("/{packageId}")
     public R<SysTenantPackageVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Long packageId) {
+                                         @PathVariable Long packageId) {
         return R.ok(tenantPackageService.queryById(packageId));
     }
 

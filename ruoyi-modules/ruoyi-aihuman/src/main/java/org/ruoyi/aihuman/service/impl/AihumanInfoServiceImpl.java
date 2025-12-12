@@ -4,14 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.ruoyi.aihuman.domain.AihumanInfo;
 import org.ruoyi.aihuman.domain.vo.AihumanInfoVo;
 import org.ruoyi.aihuman.mapper.AihumanInfoMapper;
 import org.ruoyi.aihuman.service.IAihumanInfoService;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.core.page.TableDataInfo;
+import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;

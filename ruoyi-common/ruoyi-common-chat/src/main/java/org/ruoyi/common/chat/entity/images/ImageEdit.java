@@ -11,10 +11,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- *  
- *
  * @author https:www.unfbx.com
- *  2023-02-15
+ * 2023-02-15
  */
 @Getter
 @Slf4j
@@ -48,11 +46,11 @@ public class ImageEdit implements Serializable {
     private String user;
 
     public ImageEdit setN(Integer n) {
-        if(n < 1){
+        if (n < 1) {
             log.warn("n最小值1");
             n = 1;
         }
-        if(n > 10){
+        if (n > 10) {
             log.warn("n最大值10");
             n = 10;
         }
@@ -61,11 +59,11 @@ public class ImageEdit implements Serializable {
     }
 
     public ImageEdit setPrompt(String prompt) {
-        if(Objects.isNull(prompt) || "".equals(prompt)){
+        if (Objects.isNull(prompt) || "".equals(prompt)) {
             log.error("参数异常");
             throw new BaseException(CommonError.PARAM_ERROR.msg());
         }
-        if(prompt.length() > 1000){
+        if (prompt.length() > 1000) {
             log.error("长度超过1000");
             throw new BaseException(CommonError.PARAM_ERROR.msg());
         }
@@ -74,7 +72,7 @@ public class ImageEdit implements Serializable {
     }
 
     public ImageEdit setSize(SizeEnum size) {
-        if(Objects.isNull(size)){
+        if (Objects.isNull(size)) {
             size = SizeEnum.size_512;
         }
         this.size = size.getName();
@@ -82,7 +80,7 @@ public class ImageEdit implements Serializable {
     }
 
     public ImageEdit setResponseFormat(ResponseFormat responseFormat) {
-        if(Objects.isNull(responseFormat)){
+        if (Objects.isNull(responseFormat)) {
             responseFormat = ResponseFormat.URL;
         }
         this.responseFormat = responseFormat.getName();

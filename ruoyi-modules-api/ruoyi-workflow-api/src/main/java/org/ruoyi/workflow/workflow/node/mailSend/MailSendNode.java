@@ -14,6 +14,7 @@ import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -49,16 +50,16 @@ public class MailSendNode extends AbstractWfNode {
             } else {
                 // 优先使用 output，如果没有则使用 input
                 content = inputs.stream()
-                    .filter(item -> "output".equals(item.getName()))
-                    .map(NodeIOData::valueToString)
-                    .findFirst()
-                    .orElseGet(() -> inputs.stream()
-                        .filter(item -> "input".equals(item.getName()))
+                        .filter(item -> "output".equals(item.getName()))
                         .map(NodeIOData::valueToString)
                         .findFirst()
-                        .orElse(""));
+                        .orElseGet(() -> inputs.stream()
+                                .filter(item -> "input".equals(item.getName()))
+                                .map(NodeIOData::valueToString)
+                                .findFirst()
+                                .orElse(""));
             }
-            
+
             // 将换行符转换为 HTML 换行
             if (StringUtils.isNotBlank(content)) {
                 content = content.replace("\n", "<br>");
@@ -112,23 +113,23 @@ public class MailSendNode extends AbstractWfNode {
 
             // 构造输出：统一输出为 output 参数
             List<NodeIOData> outputs = new java.util.ArrayList<>();
-            
+
             // 优先使用 output，如果没有则使用 input（但重命名为 output）
             inputs.stream()
-                .filter(item -> "output".equals(item.getName()))
-                .findFirst()
-                .ifPresentOrElse(
-                    outputs::add,
-                    () -> inputs.stream()
-                        .filter(item -> "input".equals(item.getName()))
-                        .findFirst()
-                        .ifPresent(inputParam -> {
-                            String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null 
-                                ? inputParam.getContent().getTitle() : "";
-                            NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                            outputs.add(outputParam);
-                        })
-                );
+                    .filter(item -> "output".equals(item.getName()))
+                    .findFirst()
+                    .ifPresentOrElse(
+                            outputs::add,
+                            () -> inputs.stream()
+                                    .filter(item -> "input".equals(item.getName()))
+                                    .findFirst()
+                                    .ifPresent(inputParam -> {
+                                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
+                                                ? inputParam.getContent().getTitle() : "";
+                                        NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
+                                        outputs.add(outputParam);
+                                    })
+                    );
 
             return NodeProcessResult.builder().content(outputs).build();
 
@@ -136,23 +137,23 @@ public class MailSendNode extends AbstractWfNode {
             log.error("Failed to send email in node: {}", node.getId(), e);
             // 异常时也统一输出为 output 参数，添加错误信息
             List<NodeIOData> errorOutputs = new java.util.ArrayList<>();
-            
+
             state.getInputs().stream()
-                .filter(item -> "output".equals(item.getName()))
-                .findFirst()
-                .ifPresentOrElse(
-                    errorOutputs::add,
-                    () -> state.getInputs().stream()
-                        .filter(item -> "input".equals(item.getName()))
-                        .findFirst()
-                        .ifPresent(inputParam -> {
-                            String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null 
-                                ? inputParam.getContent().getTitle() : "";
-                            NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                            errorOutputs.add(outputParam);
-                        })
-                );
-            
+                    .filter(item -> "output".equals(item.getName()))
+                    .findFirst()
+                    .ifPresentOrElse(
+                            errorOutputs::add,
+                            () -> state.getInputs().stream()
+                                    .filter(item -> "input".equals(item.getName()))
+                                    .findFirst()
+                                    .ifPresent(inputParam -> {
+                                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
+                                                ? inputParam.getContent().getTitle() : "";
+                                        NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
+                                        errorOutputs.add(outputParam);
+                                    })
+                    );
+
             errorOutputs.add(NodeIOData.createByText("error", "mail", e.getMessage()));
             return NodeProcessResult.builder().content(errorOutputs).build();
         }

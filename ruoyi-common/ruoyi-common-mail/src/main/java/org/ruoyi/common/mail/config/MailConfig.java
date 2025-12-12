@@ -44,7 +44,7 @@ public class MailConfig {
         account.setConnectionTimeout(0);
     }
 
-    public String getKey(String key){
+    public String getKey(String key) {
         return configService.getConfigValue("mail", key);
     }
 }

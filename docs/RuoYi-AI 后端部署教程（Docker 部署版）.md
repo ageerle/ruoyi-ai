@@ -78,7 +78,7 @@ mkdir logs minio minio-config mysql redis weaviate
 - `Dockerfile`
 
 > 📂 这些文件在项目目录 `/script/deploy/deploy` 下。
->  上传后请检查文件路径是否与上方目录结构一致。
+> 上传后请检查文件路径是否与上方目录结构一致。
 
 ------
 
@@ -88,7 +88,7 @@ mkdir logs minio minio-config mysql redis weaviate
 2. 选择 **Maven 构建配置**，勾选 `prod` 环境，取消 `dev` 环境
 3. 点击 `package` 进行打包
 4. **注意：** 在构建前请将 `application-prod.yml` 拖入
-    `ruoyi-admin/src/main/resources` 目录中
+   `ruoyi-admin/src/main/resources` 目录中
 
 构建完成后会在：
 
@@ -103,7 +103,7 @@ ruoyi-admin/target/ruoyi-admin.jar
 ### 五、上传 Jar 包至服务器
 
 将生成的 `ruoyi-admin.jar` 上传到服务器 `/ruoyi-ai/deploy` 目录下。
- 确保与 `Dockerfile` 同目录。
+确保与 `Dockerfile` 同目录。
 
 ------
 
@@ -194,13 +194,13 @@ source /docker-entrypoint-initdb.d/ruoyi-ai.sql;
 
 ### 九、常用 Docker 命令
 
-| 功能              | 命令                              |
-| ----------------- | --------------------------------- |
-| 查看容器状态      | `docker ps -a`                    |
-| 查看日志          | `docker logs -f <容器名>`         |
-| 停止服务          | `docker compose down`             |
-| 重启服务          | `docker compose restart`          |
-| 重新构建镜像      | `docker compose build --no-cache` |
+| 功能        | 命令                                |
+|-----------|-----------------------------------|
+| 查看容器状态    | `docker ps -a`                    |
+| 查看日志      | `docker logs -f <容器名>`            |
+| 停止服务      | `docker compose down`             |
+| 重启服务      | `docker compose restart`          |
+| 重新构建镜像    | `docker compose build --no-cache` |
 | 清理无用镜像/容器 | `docker system prune -a`          |
 
 ------

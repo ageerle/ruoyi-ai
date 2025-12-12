@@ -14,7 +14,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.ruoyi.chain.split.TextSplitter;
-import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.oss.core.OssClient;
 import org.ruoyi.common.oss.entity.UploadResult;
@@ -44,11 +43,11 @@ import java.util.regex.Pattern;
 @Component
 @AllArgsConstructor
 public class PdfMinerUFileLoader implements ResourceLoader {
+    // 预编译正则表达式
+    private static final Pattern MD_IMAGE_PATTERN = Pattern.compile("!\\[(.*?)]\\((.*?)(\\s*=\\d+)?\\)");
     private final TextSplitter characterTextSplitter;
     private final PdfProperties properties;
     private final SysOssMapper sysOssMapper;
-    // 预编译正则表达式
-    private static final Pattern MD_IMAGE_PATTERN = Pattern.compile("!\\[(.*?)]\\((.*?)(\\s*=\\d+)?\\)");
     // OCR图片识别线程池
     private final ThreadPoolExecutor ocrExecutor = new ThreadPoolExecutor(
             // 核心线程数
@@ -62,6 +61,184 @@ public class PdfMinerUFileLoader implements ResourceLoader {
             // 拒绝策略
             new ThreadPoolExecutor.CallerRunsPolicy()
     );
+
+    /**
+     * 创建临时PDF文件
+     *
+     * @param is 输入流
+     * @return
+     * @throws IOException
+     */
+    private static File createTempFile(InputStream is) throws IOException {
+        File tempFile = File.createTempFile("upload_", ".pdf");
+        Files.copy(is, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        return tempFile;
+    }
+
+    /**
+     * 构建跨平台文件输出路径
+     *
+     * @return
+     * @throws IOException
+     */
+    private static Path buildOutputPath() throws IOException {
+        Path basePath = isWindows() ?
+                //  Windows C盘用户路径下 minerUOutPut，避免其他盘符权限问题
+                Paths.get(System.getProperty("user.home")).resolve("minerUOutPut") :
+                Paths.get("/var/minerUOutPut");
+
+        if (!Files.exists(basePath)) {
+            Files.createDirectories(basePath);
+        }
+        return basePath;
+    }
+
+    /**
+     * 判断当前操作系统是否为Windows
+     *
+     * @return
+     */
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    /**
+     * 执行命令
+     *
+     * @param condaEnv   conda环境路径
+     * @param inputFile  输入文件
+     * @param outputPath 输出路径
+     * @return
+     * @throws IOException
+     */
+    private static Process buildProcess(String condaEnv, File inputFile, Path outputPath) throws IOException {
+        ProcessBuilder pb = new ProcessBuilder();
+        String[] command;
+
+        if (isWindows()) {
+            command = new String[]{
+                    "cmd", "/c",
+                    "call", "conda", "activate",
+                    condaEnv.replace("\"", ""),
+                    "&&", "magic-pdf",
+                    "-p", inputFile.getAbsolutePath(),
+                    "-o", outputPath.toString()
+            };
+        } else {
+            command = new String[]{
+                    "bash", "-c",
+                    String.format("source '%s/bin/activate' && magic-pdf -p '%s' -o '%s'",
+                            condaEnv,
+                            inputFile.getAbsolutePath(),
+                            outputPath.toString())
+            };
+        }
+
+        return pb.command(command)
+                .redirectErrorStream(true)
+                .start();
+    }
+
+    /**
+     * 实时日志输出
+     *
+     * @param process 进程
+     */
+    private static void logProcessOutput(Process process) {
+        Executors.newSingleThreadExecutor().submit(() -> {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.info("[PROCESS LOG] " + line);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * 验证转换结果
+     *
+     * @param inputFile  输入文件
+     * @param outputPath 输出路径
+     * @param exitCode   退出码
+     * @return
+     */
+    private static String verifyResult(File inputFile, Path outputPath, int exitCode) {
+        String baseName = FilenameUtils.removeExtension(inputFile.getName());
+        Path expectedMd = outputPath
+                .resolve(baseName)
+                .resolve("auto")
+                .resolve(baseName + ".md");
+
+        if (exitCode == 0 && Files.exists(expectedMd)) {
+            log.info("转换成功：{}", expectedMd.toString());
+            return expectedMd.toString();
+        }
+        return String.format("转换失败（退出码%d）| 预期文件：%s", exitCode, expectedMd);
+    }
+
+    /**
+     * 多模态OCR识别图片内容
+     *
+     * @param imageUrl 图片URL
+     * @return
+     */
+    private static String imageUrlOCR(String imageUrl) {
+        OpenAiChatModel model = OpenAiChatModel.builder()
+                .apiKey("demo")
+                .modelName("gpt-4o-mini")
+                .baseUrl("http://langchain4j.dev/demo/openai/v1")
+                .build();
+
+        UserMessage userMessage = UserMessage.from(
+                TextContent.from(
+                        "请按以下逻辑处理图片：\n" +
+                                "1. 文字检测：识别图中所有可见文字（包括水印/标签），若无文字则跳至步骤3\n" +
+                                "2. 文字处理：\n" +
+                                "   a. 对识别到的文字进行❗核心信息提炼\n" +
+                                "   b. ❗禁止直接输出原文内容\n" +
+                                "   c. 描述文字位置(如'顶部居中')、字体特征(颜色/大小)\n" +
+                                "3. 视觉描述：\n" +
+                                "   a. 若无文字则用❗50字内简洁描述主体对象、场景、色彩搭配与画面氛围\n" +
+                                "   b. 若有文字则补充说明文字与画面的关系\n" +
+                                "4. 输出规则：\n" +
+                                "   - 最终输出为纯文本，格式：'[文字总结] 视觉描述 关键词：xx,xx'\n" +
+                                "   - 关键词从内容中提取3个最具代表性的名词\n" +
+                                "   - 无文字时格式：'[空] 简洁描述 关键词：xx,xx'"
+                ),
+                ImageContent.from(imageUrl)
+        );
+        ChatResponse chat = model.chat(userMessage);
+        AiMessage answer = chat.aiMessage();
+        return answer.text();
+    }
+
+    /**
+     * 清理输出目录
+     *
+     * @param outputPath 输出目录
+     */
+    private static void cleanOutputDirectory(Path outputPath) {
+        if (Files.exists(outputPath)) {
+            try {
+                Files.walk(outputPath)
+                        // 按逆序删除（子目录先删）
+                        .sorted((p1, p2) -> -p1.compareTo(p2))
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                log.warn("清理输出目录失败: {}", path, e);
+                            }
+                        });
+            } catch (IOException e) {
+                log.error("遍历输出目录失败", e);
+            }
+        }
+    }
 
     @Override
     public String getContent(InputStream inputStream) {
@@ -128,127 +305,6 @@ public class PdfMinerUFileLoader implements ResourceLoader {
     }
 
     /**
-     * 创建临时PDF文件
-     *
-     * @param is 输入流
-     * @return
-     * @throws IOException
-     */
-    private static File createTempFile(InputStream is) throws IOException {
-        File tempFile = File.createTempFile("upload_", ".pdf");
-        Files.copy(is, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        return tempFile;
-    }
-
-
-    /**
-     * 构建跨平台文件输出路径
-     *
-     * @return
-     * @throws IOException
-     */
-    private static Path buildOutputPath() throws IOException {
-        Path basePath = isWindows() ?
-                //  Windows C盘用户路径下 minerUOutPut，避免其他盘符权限问题
-                Paths.get(System.getProperty("user.home")).resolve("minerUOutPut") :
-                Paths.get("/var/minerUOutPut");
-
-        if (!Files.exists(basePath)) {
-            Files.createDirectories(basePath);
-        }
-        return basePath;
-    }
-
-    /**
-     * 判断当前操作系统是否为Windows
-     *
-     * @return
-     */
-    private static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().contains("win");
-    }
-
-    /**
-     * 执行命令
-     *
-     * @param condaEnv   conda环境路径
-     * @param inputFile  输入文件
-     * @param outputPath 输出路径
-     * @return
-     * @throws IOException
-     */
-    private static Process buildProcess(String condaEnv, File inputFile, Path outputPath) throws IOException {
-        ProcessBuilder pb = new ProcessBuilder();
-        String[] command;
-
-        if (isWindows()) {
-            command = new String[]{
-                    "cmd", "/c",
-                    "call", "conda", "activate",
-                    condaEnv.replace("\"", ""),
-                    "&&", "magic-pdf",
-                    "-p", inputFile.getAbsolutePath(),
-                    "-o", outputPath.toString()
-            };
-        } else {
-            command = new String[]{
-                    "bash", "-c",
-                    String.format("source '%s/bin/activate' && magic-pdf -p '%s' -o '%s'",
-                            condaEnv,
-                            inputFile.getAbsolutePath(),
-                            outputPath.toString())
-            };
-        }
-
-        return pb.command(command)
-                .redirectErrorStream(true)
-                .start();
-    }
-
-
-    /**
-     * 实时日志输出
-     *
-     * @param process 进程
-     */
-    private static void logProcessOutput(Process process) {
-        Executors.newSingleThreadExecutor().submit(() -> {
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    log.info("[PROCESS LOG] " + line);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    /**
-     * 验证转换结果
-     *
-     * @param inputFile  输入文件
-     * @param outputPath 输出路径
-     * @param exitCode   退出码
-     * @return
-     */
-    private static String verifyResult(File inputFile, Path outputPath, int exitCode) {
-        String baseName = FilenameUtils.removeExtension(inputFile.getName());
-        Path expectedMd = outputPath
-                .resolve(baseName)
-                .resolve("auto")
-                .resolve(baseName + ".md");
-
-        if (exitCode == 0 && Files.exists(expectedMd)) {
-            log.info("转换成功：{}", expectedMd.toString());
-            return expectedMd.toString();
-        }
-        return String.format("转换失败（退出码%d）| 预期文件：%s", exitCode, expectedMd);
-    }
-
-
-    /**
      * 正则匹配图片语法,多线程进行处理
      *
      * @param content  文本内容
@@ -299,7 +355,6 @@ public class PdfMinerUFileLoader implements ResourceLoader {
         sb.append(content.substring(previousEnd));
         return sb;
     }
-
 
     /**
      * 图片处理任务
@@ -375,43 +430,6 @@ public class PdfMinerUFileLoader implements ResourceLoader {
         }
     }
 
-
-    /**
-     * 多模态OCR识别图片内容
-     *
-     * @param imageUrl 图片URL
-     * @return
-     */
-    private static String imageUrlOCR(String imageUrl) {
-        OpenAiChatModel model = OpenAiChatModel.builder()
-                .apiKey("demo")
-                .modelName("gpt-4o-mini")
-                .baseUrl("http://langchain4j.dev/demo/openai/v1")
-                .build();
-
-        UserMessage userMessage = UserMessage.from(
-                TextContent.from(
-                        "请按以下逻辑处理图片：\n" +
-                                "1. 文字检测：识别图中所有可见文字（包括水印/标签），若无文字则跳至步骤3\n" +
-                                "2. 文字处理：\n" +
-                                "   a. 对识别到的文字进行❗核心信息提炼\n" +
-                                "   b. ❗禁止直接输出原文内容\n" +
-                                "   c. 描述文字位置(如'顶部居中')、字体特征(颜色/大小)\n" +
-                                "3. 视觉描述：\n" +
-                                "   a. 若无文字则用❗50字内简洁描述主体对象、场景、色彩搭配与画面氛围\n" +
-                                "   b. 若有文字则补充说明文字与画面的关系\n" +
-                                "4. 输出规则：\n" +
-                                "   - 最终输出为纯文本，格式：'[文字总结] 视觉描述 关键词：xx,xx'\n" +
-                                "   - 关键词从内容中提取3个最具代表性的名词\n" +
-                                "   - 无文字时格式：'[空] 简洁描述 关键词：xx,xx'"
-                ),
-                ImageContent.from(imageUrl)
-        );
-        ChatResponse chat = model.chat(userMessage);
-        AiMessage answer = chat.aiMessage();
-        return answer.text();
-    }
-
     /**
      * 静态内部类保存图片匹配信息
      */
@@ -420,30 +438,5 @@ public class PdfMinerUFileLoader implements ResourceLoader {
         String imageUrl; // 图片地址
         int start; // 匹配起始位置
         int end; // 匹配结束位置
-    }
-
-
-    /**
-     * 清理输出目录
-     *
-     * @param outputPath 输出目录
-     */
-    private static void cleanOutputDirectory(Path outputPath) {
-        if (Files.exists(outputPath)) {
-            try {
-                Files.walk(outputPath)
-                        // 按逆序删除（子目录先删）
-                        .sorted((p1, p2) -> -p1.compareTo(p2))
-                        .forEach(path -> {
-                            try {
-                                Files.delete(path);
-                            } catch (IOException e) {
-                                log.warn("清理输出目录失败: {}", path, e);
-                            }
-                        });
-            } catch (IOException e) {
-                log.error("遍历输出目录失败", e);
-            }
-        }
     }
 }

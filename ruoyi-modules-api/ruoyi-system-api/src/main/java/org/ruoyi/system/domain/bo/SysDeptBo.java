@@ -26,7 +26,7 @@ public class SysDeptBo extends BaseEntity {
     /**
      * 部门id
      */
-    @NotNull(message = "部门id不能为空", groups = { EditGroup.class })
+    @NotNull(message = "部门id不能为空", groups = {EditGroup.class})
     private Long deptId;
 
     /**
@@ -37,7 +37,7 @@ public class SysDeptBo extends BaseEntity {
     /**
      * 部门名称
      */
-    @NotBlank(message = "部门名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    @NotBlank(message = "部门名称不能为空", groups = {AddGroup.class, EditGroup.class})
     @Size(min = 0, max = 30, message = "部门名称长度不能超过{max}个字符")
     private String deptName;
 

@@ -3,7 +3,7 @@ package org.ruoyi.chain.loader;
 import java.io.InputStream;
 import java.util.List;
 
-public class FolderLoader implements ResourceLoader{
+public class FolderLoader implements ResourceLoader {
     @Override
     public String getContent(InputStream inputStream) {
         return null;

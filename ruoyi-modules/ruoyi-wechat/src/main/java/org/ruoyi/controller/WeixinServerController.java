@@ -37,7 +37,7 @@ public class WeixinServerController {
 
     @PostMapping(value = "/weixin/check")
     public String weixinMsg(@RequestBody String requestBody, @RequestParam("signature") String signature,
-        @RequestParam("timestamp") String timestamp, @RequestParam("nonce") String nonce) {
+                            @RequestParam("timestamp") String timestamp, @RequestParam("nonce") String nonce) {
 
         log.debug("requestBody:{}", requestBody);
         log.debug("signature:{}", signature);

@@ -46,8 +46,8 @@ public class UnsignedMathGenerator implements CodeGenerator {
         final int limit = getLimit();
         int a = RandomUtil.randomInt(limit);
         int b = RandomUtil.randomInt(limit);
-        String max = Integer.toString(Math.max(a,b));
-        String min = Integer.toString(Math.min(a,b));
+        String max = Integer.toString(Math.max(a, b));
+        String min = Integer.toString(Math.min(a, b));
         max = StringUtils.rightPad(max, this.numberLength, CharUtil.SPACE);
         min = StringUtils.rightPad(min, this.numberLength, CharUtil.SPACE);
 

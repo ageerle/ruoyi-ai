@@ -10,8 +10,6 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- *  
- *
  * @author https:www.unfbx.com
  * @since 2023-03-02
  */
@@ -23,10 +21,6 @@ public class Message extends BaseMessage implements Serializable {
     private Object content;
     @JsonProperty("reasoning_content")
     private String reasoningContent;
-
-    public static Builder builder() {
-        return new Builder();
-    }
 
     /**
      * 构造函数
@@ -55,6 +49,10 @@ public class Message extends BaseMessage implements Serializable {
         super.setFunctionCall(builder.functionCall);
         super.setToolCalls(builder.toolCalls);
         super.setToolCallId(builder.toolCallId);
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     public static final class Builder {

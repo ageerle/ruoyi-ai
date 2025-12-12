@@ -16,15 +16,14 @@ import java.io.IOException;
 public class BigNumberSerializer extends NumberSerializer {
 
     /**
+     * 提供实例
+     */
+    public static final BigNumberSerializer INSTANCE = new BigNumberSerializer(Number.class);
+    /**
      * 根据 JS Number.MAX_SAFE_INTEGER 与 Number.MIN_SAFE_INTEGER 得来
      */
     private static final long MAX_SAFE_INTEGER = 9007199254740991L;
     private static final long MIN_SAFE_INTEGER = -9007199254740991L;
-
-    /**
-     * 提供实例
-     */
-    public static final BigNumberSerializer INSTANCE = new BigNumberSerializer(Number.class);
 
     public BigNumberSerializer(Class<? extends Number> rawType) {
         super(rawType);

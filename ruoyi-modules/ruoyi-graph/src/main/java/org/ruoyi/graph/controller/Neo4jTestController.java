@@ -45,17 +45,17 @@ public class Neo4jTestController {
     public R<Map<String, Object>> getConfig() {
         Map<String, Object> config = new HashMap<>();
         config.put("neo4j", Map.of(
-            "uri", neo4jConfig.getUri(),
-            "username", neo4jConfig.getUsername(),
-            "database", neo4jConfig.getDatabase(),
-            "maxConnectionPoolSize", neo4jConfig.getMaxConnectionPoolSize()
+                "uri", neo4jConfig.getUri(),
+                "username", neo4jConfig.getUsername(),
+                "database", neo4jConfig.getDatabase(),
+                "maxConnectionPoolSize", neo4jConfig.getMaxConnectionPoolSize()
         ));
         config.put("graph", Map.of(
-            "enabled", graphProperties.getEnabled(),
-            "databaseType", graphProperties.getDatabaseType(),
-            "batchSize", graphProperties.getBatchSize(),
-            "extraction", graphProperties.getExtraction(),
-            "query", graphProperties.getQuery()
+                "enabled", graphProperties.getEnabled(),
+                "databaseType", graphProperties.getDatabaseType(),
+                "batchSize", graphProperties.getBatchSize(),
+                "extraction", graphProperties.getExtraction(),
+                "query", graphProperties.getQuery()
         ));
         return R.ok(config);
     }
@@ -87,8 +87,8 @@ public class Neo4jTestController {
 
     @PostMapping("/relationship")
     public R<Map<String, Object>> createTestRelationship(
-        @RequestParam String source,
-        @RequestParam String target) {
+            @RequestParam String source,
+            @RequestParam String target) {
 
         Map<String, Object> result = neo4jTestUtil.createTestRelationship(source, target);
 

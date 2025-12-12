@@ -1,6 +1,5 @@
 package org.ruoyi.chat.controller.chat;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -43,9 +42,9 @@ public class ChatSessionController extends BaseController {
      */
     @GetMapping("/list")
     public TableDataInfo<ChatSessionVo> list(ChatSessionBo bo, PageQuery pageQuery) {
-        if(!LoginHelper.isLogin()){
-           // 如果用户没有登录,返回空会话列表
-           return TableDataInfo.build();
+        if (!LoginHelper.isLogin()) {
+            // 如果用户没有登录,返回空会话列表
+            return TableDataInfo.build();
         }
         // 默认查询当前用户会话
         bo.setUserId(LoginHelper.getUserId());
@@ -69,7 +68,7 @@ public class ChatSessionController extends BaseController {
      */
     @GetMapping("/{id}")
     public R<ChatSessionVo> getInfo(@NotNull(message = "主键不能为空")
-                                     @PathVariable Long id) {
+                                    @PathVariable Long id) {
         return R.ok(chatSessionService.queryById(id));
     }
 

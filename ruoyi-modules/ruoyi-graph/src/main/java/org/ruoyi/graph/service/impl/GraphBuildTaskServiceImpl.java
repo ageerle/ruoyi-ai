@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 图谱构建任务服务实现
@@ -62,7 +61,7 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
         taskMapper.insert(task);
 
         log.info("创建图谱构建任务: taskId={}, taskUuid={}, graphUuid={}, knowledgeId={}, type={}",
-            task.getId(), task.getTaskUuid(), graphUuid, knowledgeId, task.getTaskType());
+                task.getId(), task.getTaskUuid(), graphUuid, knowledgeId, task.getTaskType());
 
         return task;
     }
@@ -73,9 +72,9 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
         // 记录线程信息
         String threadName = Thread.currentThread().getName();
         log.info("🚀 图谱构建任务启动 - taskUuid: {}, 线程: {}", taskUuid, threadName);
-        
+
         long startTime = System.currentTimeMillis();
-        
+
         try {
             // 1. 验证任务存在性
             GraphBuildTask task = getByUuid(taskUuid);
@@ -83,11 +82,11 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                 log.error("❌ 任务不存在: taskUuid={}", taskUuid);
                 return;
             }
-            
+
             // 2. 检查任务状态（防止重复执行）
             if (task.getTaskStatus() != 1) {  // 1-待处理
-                log.warn("⚠️ 任务状态不允许执行: taskUuid={}, currentStatus={}", 
-                    taskUuid, task.getTaskStatus());
+                log.warn("⚠️ 任务状态不允许执行: taskUuid={}, currentStatus={}",
+                        taskUuid, task.getTaskStatus());
                 return;
             }
 
@@ -97,35 +96,35 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                 log.error("❌ 更新任务状态失败: taskUuid={}", taskUuid);
                 return;
             }
-            
+
             log.info("✅ 任务状态已更新为运行中: taskUuid={}", taskUuid);
 
             // 4. 执行图谱构建逻辑
             try {
                 executeTaskLogic(task);
-                
+
                 long duration = (System.currentTimeMillis() - startTime) / 1000;
-                log.info("🎉 图谱构建任务完成: taskUuid={}, 耗时: {}秒, 线程: {}", 
-                    taskUuid, duration, threadName);
-                    
+                log.info("🎉 图谱构建任务完成: taskUuid={}, 耗时: {}秒, 线程: {}",
+                        taskUuid, duration, threadName);
+
             } catch (OutOfMemoryError oom) {
                 // 特殊处理OOM错误
                 log.error("💥 图谱构建任务内存溢出: taskUuid={}, 线程: {}", taskUuid, threadName, oom);
                 markFailed(taskUuid, "内存溢出，请减少批处理文档数量或增加JVM内存");
-                
+
                 // 建议垃圾回收
                 System.gc();
-                
+
             } catch (InterruptedException ie) {
                 // 特殊处理中断异常
                 Thread.currentThread().interrupt();
                 log.error("⚠️ 图谱构建任务被中断: taskUuid={}, 线程: {}", taskUuid, threadName, ie);
                 markFailed(taskUuid, "任务被中断: " + ie.getMessage());
-                
+
             } catch (Exception e) {
                 // 处理其他业务异常
                 log.error("❌ 图谱构建任务执行失败: taskUuid={}, 线程: {}", taskUuid, threadName, e);
-                
+
                 // 提取简洁的错误信息
                 String errorMsg = extractErrorMessage(e);
                 markFailed(taskUuid, errorMsg);
@@ -134,7 +133,7 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
         } catch (Exception e) {
             // 处理外层异常（如数据库访问异常）
             log.error("❌ 图谱构建任务启动失败: taskUuid={}, 线程: {}", taskUuid, threadName, e);
-            
+
             try {
                 String errorMsg = extractErrorMessage(e);
                 markFailed(taskUuid, errorMsg);
@@ -143,10 +142,10 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
             }
         }
     }
-    
+
     /**
      * 提取简洁的错误信息（用于前端显示）
-     * 
+     *
      * @param e 异常对象
      * @return 简洁的错误信息
      */
@@ -156,7 +155,7 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
         if (StrUtil.isNotBlank(message) && message.length() < 200) {
             return message;
         }
-        
+
         // 2. 检查原因链
         Throwable cause = e.getCause();
         if (cause != null && StrUtil.isNotBlank(cause.getMessage())) {
@@ -165,10 +164,10 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                 return causeMsg;
             }
         }
-        
+
         // 3. 使用异常类名
-        return e.getClass().getSimpleName() + ": " + 
-               (message != null ? message.substring(0, Math.min(150, message.length())) : "未知错误");
+        return e.getClass().getSimpleName() + ": " +
+                (message != null ? message.substring(0, Math.min(150, message.length())) : "未知错误");
     }
 
     @Override
@@ -223,8 +222,8 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
             }
 
             int rows = taskMapper.update(null, wrapper);
-            log.info("📊 更新任务进度: taskUuid={}, progress={}%, processedDocs={}, rows={}", 
-                taskUuid, progress, processedDocs, rows);
+            log.info("📊 更新任务进度: taskUuid={}, progress={}%, processedDocs={}, rows={}",
+                    taskUuid, progress, processedDocs, rows);
             return rows > 0;
         } catch (Exception e) {
             log.error("更新任务进度失败: taskUuid={}, progress={}", taskUuid, progress, e);
@@ -381,10 +380,10 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
 
             // 创建新任务
             GraphBuildTask newTask = createTask(
-                oldTask.getGraphUuid(),
-                oldTask.getKnowledgeId(),
-                oldTask.getDocId(),
-                oldTask.getTaskType()
+                    oldTask.getGraphUuid(),
+                    oldTask.getKnowledgeId(),
+                    oldTask.getDocId(),
+                    oldTask.getTaskType()
             );
 
             log.info("重试任务: oldTaskUuid={}, newTaskUuid={}", taskUuid, newTask.getTaskUuid());
@@ -419,9 +418,9 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
         // ⭐ 记录初始内存状态
         Runtime runtime = Runtime.getRuntime();
         long initialMemory = runtime.totalMemory() - runtime.freeMemory();
-        log.info("📊 初始内存使用: {} MB / {} MB", 
-            initialMemory / 1024 / 1024, 
-            runtime.maxMemory() / 1024 / 1024);
+        log.info("📊 初始内存使用: {} MB / {} MB",
+                initialMemory / 1024 / 1024,
+                runtime.maxMemory() / 1024 / 1024);
 
         try {
             // 0. 获取图谱实例配置（包括LLM模型）
@@ -433,7 +432,7 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                     log.info("使用图谱实例配置的模型: {}", modelName);
                 }
             }
-            
+
             // 1. 获取需要处理的文档列表
             List<KnowledgeAttachVo> documents;
 
@@ -491,19 +490,19 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
 
             if (documents == null || documents.isEmpty()) {
                 String errorMsg = String.format(
-                    "❌ 没有找到需要处理的文档！\n" +
-                    "  taskUuid: %s\n" +
-                    "  knowledgeId: %s\n" +
-                    "  docId: %s\n" +
-                    "  taskType: %d\n" +
-                    "  documents: %s\n" +
-                    "请检查：\n" +
-                    "  1. knowledge_attach 表中是否有 kid='%s' 的记录\n" +
-                    "  2. knowledgeId 是否正确传递\n" +
-                    "  3. KnowledgeAttachService.queryList() 是否正确执行",
-                    taskUuid, knowledgeId, docId, taskType, 
-                    documents == null ? "null" : "empty list",
-                    knowledgeId
+                        "❌ 没有找到需要处理的文档！\n" +
+                                "  taskUuid: %s\n" +
+                                "  knowledgeId: %s\n" +
+                                "  docId: %s\n" +
+                                "  taskType: %d\n" +
+                                "  documents: %s\n" +
+                                "请检查：\n" +
+                                "  1. knowledge_attach 表中是否有 kid='%s' 的记录\n" +
+                                "  2. knowledgeId 是否正确传递\n" +
+                                "  3. KnowledgeAttachService.queryList() 是否正确执行",
+                        taskUuid, knowledgeId, docId, taskType,
+                        documents == null ? "null" : "empty list",
+                        knowledgeId
                 );
                 log.warn(errorMsg);
 
@@ -532,7 +531,7 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                 log.warn("文档数量较多({}个)，建议分批处理，当前批次限制为{}个", totalDocs, maxDocsPerBatch);
                 documents = documents.subList(0, Math.min(maxDocsPerBatch, totalDocs));
                 totalDocs = documents.size();
-                
+
                 // ⭐ 重新更新 total_docs（因为被限制了）
                 LambdaUpdateWrapper<GraphBuildTask> updateWrapper2 = new LambdaUpdateWrapper<>();
                 updateWrapper2.eq(GraphBuildTask::getTaskUuid, taskUuid);
@@ -545,18 +544,18 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
             for (int i = 0; i < documents.size(); i++) {
                 KnowledgeAttachVo doc = documents.get(i);
                 long docStartTime = System.currentTimeMillis();
-                
+
                 try {
                     // ⭐ 检查内存状态
                     long usedMemory = runtime.totalMemory() - runtime.freeMemory();
                     long maxMemory = runtime.maxMemory();
                     double memoryUsage = (double) usedMemory / maxMemory * 100;
-                    
+
                     if (memoryUsage > 80) {
-                        log.warn("⚠️ 内存使用率过高: {}/{}MB ({}%), 建议垃圾回收", 
-                            usedMemory / 1024 / 1024, 
-                            maxMemory / 1024 / 1024, 
-                            String.format("%.2f", memoryUsage));
+                        log.warn("⚠️ 内存使用率过高: {}/{}MB ({}%), 建议垃圾回收",
+                                usedMemory / 1024 / 1024,
+                                maxMemory / 1024 / 1024,
+                                String.format("%.2f", memoryUsage));
                         System.gc();
                         try {
                             Thread.sleep(1000);  // 等待GC完成
@@ -565,9 +564,9 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                             log.warn("⚠️ 等待GC时被中断");
                         }
                     }
-                    
-                    log.info("📄 处理文档 [{}/{}]: docId={}, docName={}", 
-                        i + 1, totalDocs, doc.getDocId(), doc.getDocName());
+
+                    log.info("📄 处理文档 [{}/{}]: docId={}, docName={}",
+                            i + 1, totalDocs, doc.getDocId(), doc.getDocName());
 
                     // 2.1 获取文档内容
                     String content = doc.getContent();
@@ -580,8 +579,8 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
 
                     // 限制单个文档内容大小，避免内存溢出
                     if (content.length() > 50000) {
-                        log.warn("⚠️ 文档内容过大({} 字符)，截断处理: docId={}", 
-                            content.length(), doc.getDocId());
+                        log.warn("⚠️ 文档内容过大({} 字符)，截断处理: docId={}",
+                                content.length(), doc.getDocId());
                         content = content.substring(0, 50000);
                     }
 
@@ -598,11 +597,11 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                         if (content.length() > 2000) {
                             // 长文档，使用分片处理
                             result = graphRAGService.ingestDocumentWithModel(
-                                content, knowledgeId, metadata, modelName);
+                                    content, knowledgeId, metadata, modelName);
                         } else {
                             // 短文档，直接处理
                             result = graphRAGService.ingestTextWithModel(
-                                content, knowledgeId, metadata, modelName);
+                                    content, knowledgeId, metadata, modelName);
                         }
                     } catch (OutOfMemoryError oom) {
                         // OOM单独处理：强制GC后继续
@@ -620,8 +619,8 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                         failedDocs++;
                         continue;
                     } catch (Exception e) {
-                        log.error("❌ LLM调用失败，跳过文档: docId={}, error={}", 
-                            doc.getDocId(), e.getMessage());
+                        log.error("❌ LLM调用失败，跳过文档: docId={}, error={}",
+                                doc.getDocId(), e.getMessage());
                         processedDocs++;
                         failedDocs++;
                         continue;
@@ -634,14 +633,14 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                         totalEntities += entities;
                         totalRelations += relations;
                         successDocs++;
-                        
+
                         long docDuration = System.currentTimeMillis() - docStartTime;
                         log.info("✅ 文档处理成功: docId={}, 实体数={}, 关系数={}, 耗时={}ms",
-                            doc.getDocId(), entities, relations, docDuration);
+                                doc.getDocId(), entities, relations, docDuration);
                     } else {
                         failedDocs++;
                         log.warn("⚠️ 文档处理失败: docId={}, error={}",
-                            doc.getDocId(), result != null ? result.getErrorMessage() : "unknown");
+                                doc.getDocId(), result != null ? result.getErrorMessage() : "unknown");
                     }
 
                     // 2.5 更新进度
@@ -656,8 +655,8 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                     // 2.6 定期进行垃圾回收和内存检查
                     if ((i + 1) % 10 == 0) {
                         long currentMemory = runtime.totalMemory() - runtime.freeMemory();
-                        log.info("📊 已处理{}/{}个文档, 内存使用: {} MB", 
-                            i + 1, totalDocs, currentMemory / 1024 / 1024);
+                        log.info("📊 已处理{}/{}个文档, 内存使用: {} MB",
+                                i + 1, totalDocs, currentMemory / 1024 / 1024);
                         System.gc();
                         try {
                             Thread.sleep(500);  // 短暂等待GC
@@ -673,8 +672,8 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
                     log.error("⚠️ 任务被中断，停止处理文档: docId={}", doc.getDocId());
                     throw ie;
                 } catch (Exception e) {
-                    log.error("❌ 处理文档时发生异常: docId={}, error={}", 
-                        doc.getDocId(), e.getMessage(), e);
+                    log.error("❌ 处理文档时发生异常: docId={}, error={}",
+                            doc.getDocId(), e.getMessage(), e);
                     processedDocs++;
                     failedDocs++;
                     // 继续处理下一个文档（不中断整个任务）
@@ -687,7 +686,7 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
             // 3. 构建完成，生成详细摘要
             long duration = (System.currentTimeMillis() - startTime) / 1000;
             long finalMemory = runtime.totalMemory() - runtime.freeMemory();
-            
+
             Map<String, Object> summary = new HashMap<>();
             summary.put("totalDocs", totalDocs);
             summary.put("processedDocs", processedDocs);
@@ -703,7 +702,7 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
 
             // 更新统计信息到任务
             updateExtractionStats(taskUuid, totalEntities, totalRelations);
-            
+
             markSuccess(taskUuid, JSON.toJSONString(summary));
 
             log.info("🎉 图谱构建任务完成汇总:");
@@ -728,9 +727,9 @@ public class GraphBuildTaskServiceImpl implements IGraphBuildTaskService {
         } finally {
             // 清理资源，帮助GC
             System.gc();
-            log.info("📊 最终内存状态: {} MB / {} MB", 
-                (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024,
-                runtime.maxMemory() / 1024 / 1024);
+            log.info("📊 最终内存状态: {} MB / {} MB",
+                    (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024,
+                    runtime.maxMemory() / 1024 / 1024);
         }
     }
 }

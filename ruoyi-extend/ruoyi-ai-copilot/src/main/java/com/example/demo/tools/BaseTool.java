@@ -4,7 +4,6 @@ import com.example.demo.schema.JsonSchema;
 import com.example.demo.schema.SchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ToolContext;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -13,16 +12,16 @@ import java.util.concurrent.CompletableFuture;
  * All tools should inherit from this class
  */
 public abstract class BaseTool<P> {
-    
+
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-    
+
     protected final String name;
     protected final String displayName;
     protected final String description;
     protected final JsonSchema parameterSchema;
     protected final boolean isOutputMarkdown;
     protected final boolean canUpdateOutput;
-    
+
     protected SchemaValidator schemaValidator;
 
     public BaseTool(String name, String displayName, String description, JsonSchema parameterSchema) {
@@ -30,7 +29,7 @@ public abstract class BaseTool<P> {
     }
 
     public BaseTool(String name, String displayName, String description, JsonSchema parameterSchema,
-                   boolean isOutputMarkdown, boolean canUpdateOutput) {
+                    boolean isOutputMarkdown, boolean canUpdateOutput) {
         this.name = name;
         this.displayName = displayName;
         this.description = description;
@@ -57,7 +56,7 @@ public abstract class BaseTool<P> {
             logger.warn("Schema validator or parameter schema is null, skipping validation");
             return null;
         }
-        
+
         try {
             return schemaValidator.validate(parameterSchema, params);
         } catch (Exception e) {
@@ -95,12 +94,29 @@ public abstract class BaseTool<P> {
     }
 
     // Getters
-    public String getName() { return name; }
-    public String getDisplayName() { return displayName; }
-    public String getDescription() { return description; }
-    public JsonSchema getParameterSchema() { return parameterSchema; }
-    public boolean isOutputMarkdown() { return isOutputMarkdown; }
-    public boolean canUpdateOutput() { return canUpdateOutput; }
+    public String getName() {
+        return name;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public JsonSchema getParameterSchema() {
+        return parameterSchema;
+    }
+
+    public boolean isOutputMarkdown() {
+        return isOutputMarkdown;
+    }
+
+    public boolean canUpdateOutput() {
+        return canUpdateOutput;
+    }
 
     @Override
     public String toString() {

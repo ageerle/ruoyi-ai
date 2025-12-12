@@ -8,23 +8,21 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.generator.domain.SchemaGroup;
-import org.ruoyi.generator.domain.vo.SchemaGroupVo;
-import org.ruoyi.generator.event.SchemaDeletedEvent;
-import org.ruoyi.generator.service.SchemaGroupService;
-import org.ruoyi.generator.service.SchemaService;
 import org.ruoyi.generator.domain.Schema;
 import org.ruoyi.generator.domain.bo.SchemaBo;
+import org.ruoyi.generator.domain.vo.SchemaGroupVo;
 import org.ruoyi.generator.domain.vo.SchemaVo;
 import org.ruoyi.generator.event.SchemaAddedEvent;
+import org.ruoyi.generator.event.SchemaDeletedEvent;
 import org.ruoyi.generator.mapper.SchemaMapper;
+import org.ruoyi.generator.service.SchemaGroupService;
+import org.ruoyi.generator.service.SchemaService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * 数据模型Service业务层处理

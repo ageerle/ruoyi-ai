@@ -9,10 +9,10 @@ import org.ruoyi.common.chat.entity.common.Usage;
 import java.io.Serializable;
 
 /**
- *   答案类
+ * 答案类
  *
  * @author https:www.unfbx.com
- *  2023-02-11
+ * 2023-02-11
  */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

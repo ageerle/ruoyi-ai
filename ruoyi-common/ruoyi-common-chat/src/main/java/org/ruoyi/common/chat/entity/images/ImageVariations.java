@@ -12,10 +12,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- *  
- *
  * @author https:www.unfbx.com
- *  2023-02-15
+ * 2023-02-15
  */
 @Getter
 @Slf4j

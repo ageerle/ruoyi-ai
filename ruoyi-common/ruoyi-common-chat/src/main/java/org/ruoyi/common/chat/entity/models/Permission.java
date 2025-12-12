@@ -7,8 +7,6 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- *  
- *
  * @author https:www.unfbx.com
  * 2023-02-15
  */

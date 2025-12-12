@@ -66,7 +66,7 @@ public class SysNoticeServiceImpl implements ISysNoticeService {
      */
     @Override
     public SysNotice getNotice(SysNoticeBo notice) {
-        if(!StpUtil.isLogin()){
+        if (!StpUtil.isLogin()) {
             return null;
         }
 
@@ -81,7 +81,7 @@ public class SysNoticeServiceImpl implements ISysNoticeService {
         SysNoticeState sysNoticeState = states.isEmpty() ? null : states.get(0); // 取第一条记录
         if (sysNoticeState != null) {
             return baseMapper.selectById(sysNoticeState.getNoticeId());
-        }else {
+        } else {
             return null;
         }
     }
@@ -109,7 +109,7 @@ public class SysNoticeServiceImpl implements ISysNoticeService {
         // 插入公告
         int insert = baseMapper.insert(notice);
         // 公告类型（1通知 2公告）
-        if("1".equals(bo.getNoticeType())){
+        if ("1".equals(bo.getNoticeType())) {
             // 将之前通知全部设为已读
             noticeStateMapper.readAllNotice();
             // 插入通知阅读状态

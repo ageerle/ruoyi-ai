@@ -34,26 +34,26 @@ public class SecurityConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 注册路由拦截器，自定义验证规则
         registry.addInterceptor(new SaInterceptor(handler -> {
-            AllUrlHandler allUrlHandler = SpringUtils.getBean(AllUrlHandler.class);
-            // 登录验证 -- 排除多个路径
-            SaRouter
-                // 获取所有的
-                .match(allUrlHandler.getUrls())
-                // 对未排除的路径进行检查
-                .check(() -> {
-                    // 检查是否登录 是否有token
-                    StpUtil.checkLogin();
+                    AllUrlHandler allUrlHandler = SpringUtils.getBean(AllUrlHandler.class);
+                    // 登录验证 -- 排除多个路径
+                    SaRouter
+                            // 获取所有的
+                            .match(allUrlHandler.getUrls())
+                            // 对未排除的路径进行检查
+                            .check(() -> {
+                                // 检查是否登录 是否有token
+                                StpUtil.checkLogin();
 
-                    // 有效率影响 用于临时测试
-                    // if (log.isDebugEnabled()) {
-                    //     log.debug("剩余有效时间: {}", StpUtil.getTokenTimeout());
-                    //     log.debug("临时有效时间: {}", StpUtil.getTokenActivityTimeout());
-                    // }
+                                // 有效率影响 用于临时测试
+                                // if (log.isDebugEnabled()) {
+                                //     log.debug("剩余有效时间: {}", StpUtil.getTokenTimeout());
+                                //     log.debug("临时有效时间: {}", StpUtil.getTokenActivityTimeout());
+                                // }
 
-                });
-        })).addPathPatterns("/**")
-            // 排除不需要拦截的路径
-            .excludePathPatterns(securityProperties.getExcludes());
+                            });
+                })).addPathPatterns("/**")
+                // 排除不需要拦截的路径
+                .excludePathPatterns(securityProperties.getExcludes());
     }
 
 }

@@ -1,7 +1,6 @@
 package org.ruoyi.chat.listener;
 
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -13,22 +12,19 @@ import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
 import org.ruoyi.chat.service.chat.IChatCostService;
+import org.ruoyi.chat.support.RetryNotifier;
+import org.ruoyi.chat.util.SSEUtil;
 import org.ruoyi.common.chat.entity.chat.ChatCompletionResponse;
-import org.ruoyi.common.chat.entity.chat.Message;
-import org.ruoyi.common.chat.request.ChatRequest;
-import org.ruoyi.common.core.service.BaseContext;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.ruoyi.chat.util.SSEUtil;
-import org.ruoyi.chat.support.RetryNotifier;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Objects;
 
 /**
- *  OpenAIEventSourceListener
+ * OpenAIEventSourceListener
  *
  * @author https:www.unfbx.com
  * @date 2023-02-22
@@ -38,31 +34,24 @@ import java.util.Objects;
 @Component
 public class SSEEventSourceListener extends EventSourceListener {
 
+    private static final IChatCostService chatCostService = SpringUtils.getBean(IChatCostService.class);
     private SseEmitter emitter;
-
     private Long userId;
-
     private Long sessionId;
-
     private String token;
-
     private boolean retryEnabled;
+    private StringBuilder stringBuffer = new StringBuilder();
+
+    private String modelName;
 
     @Autowired(required = false)
-    public SSEEventSourceListener(SseEmitter emitter,Long userId,Long sessionId, String token, boolean retryEnabled) {
+    public SSEEventSourceListener(SseEmitter emitter, Long userId, Long sessionId, String token, boolean retryEnabled) {
         this.emitter = emitter;
         this.userId = userId;
         this.sessionId = sessionId;
         this.token = token;
         this.retryEnabled = retryEnabled;
     }
-
-
-    private StringBuilder stringBuffer = new StringBuilder();
-
-    private String modelName;
-
-    private static final IChatCostService chatCostService = SpringUtils.getBean(IChatCostService.class);
 
     /**
      * {@inheritDoc}
@@ -105,13 +94,13 @@ public class SSEEventSourceListener extends EventSourceListener {
 
             ObjectMapper mapper = new ObjectMapper();
             ChatCompletionResponse completionResponse = mapper.readValue(data, ChatCompletionResponse.class);
-            if(completionResponse == null || CollectionUtil.isEmpty(completionResponse.getChoices())){
+            if (completionResponse == null || CollectionUtil.isEmpty(completionResponse.getChoices())) {
                 return;
             }
             Object content = completionResponse.getChoices().get(0).getDelta().getContent();
 
-            if(content != null ){
-                if(StringUtils.isEmpty(modelName)){
+            if (content != null) {
+                if (StringUtils.isEmpty(modelName)) {
                     modelName = completionResponse.getModel();
                 }
                 stringBuffer.append(content);
