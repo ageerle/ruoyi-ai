@@ -7,15 +7,4 @@ spring:
         name: ruoyi-mcp-serve
         version: 1.0.0
 
-# 工具配置
-tools:
-  pexels:
-    api-key: your-pexels-api-key #key获取地址: https://www.pexels.com/zh-cn/api/key
-    api-url: https://api.pexels.com/v1/search
-  tavily:
-    api-key: your-tavily-api-key #key获取地址: https://app.tavily.com/home
-    base-url: https://api.tavily.com/search
-  file:
-    save-dir: ./tmp
-
 
