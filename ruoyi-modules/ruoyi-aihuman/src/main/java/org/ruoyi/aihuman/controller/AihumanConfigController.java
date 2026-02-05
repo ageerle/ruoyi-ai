@@ -16,9 +16,9 @@ import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

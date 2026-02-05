@@ -1,29 +1,6 @@
-# 项目相关配置
-ruoyi:
-  # 名称
-  name: "ruoyi-ai"
-  # 版本
-  version: ${revision}
-  # 版权年份
-  copyrightYear: 2025
-  # 实例演示开关
-  demoEnabled: false
-
-captcha:
-  enable: false
-  # 页面 <参数设置> 可开启关闭 验证码校验
-  # 验证码类型 math 数组计算 char 字符验证
-  type: MATH
-  # line 线段干扰 circle 圆圈干扰 shear 扭曲干扰
-  category: CIRCLE
-  # 数字验证码位数
-  numberLength: 1
-  # 字符验证码长度
-  charLength: 4
-
 # 开发环境配置
 server:
-  # 服务器的HTTP端口，默认为8080
+  # 服务器的HTTP端口，默认为6039
   port: 6039
   servlet:
     # 应用的访问路径
@@ -42,6 +19,18 @@ server:
       io: 8
       # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
       worker: 256
+
+captcha:
+  # 是否启用验证码校验
+  enable: false
+  # 验证码类型 math 数组计算 char 字符验证
+  type: MATH
+  # line 线段干扰 circle 圆圈干扰 shear 扭曲干扰
+  category: CIRCLE
+  # 数字验证码位数
+  numberLength: 1
+  # 字符验证码长度
+  charLength: 4
 
 # 日志配置
 logging:
@@ -63,7 +52,24 @@ user:
 # Spring配置
 spring:
   application:
-    name: ${ruoyi.name}
+    name: ruoyi-ai
+  # ⚠️ 禁用 Spring Boot 的 Neo4j 自动配置
+  # 默认情况下，如果类路径上存在 neo4j-java-driver，Spring Boot 会尝试自动配置
+  # 这会导致应用在启动时尝试连接到 Neo4j，即使我们没有需要它
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration
+  threads:
+    # 开启虚拟线程 仅jdk21可用
+    virtual:
+      enabled: false
+  task:
+    execution:
+      # 从 springboot 3.5 开始 spring自带线程池
+      # 不再需要 AsyncConfig与ThreadPoolConfig 可直接注入线程池使用
+      thread-name-prefix: async-
+      # 由spring自己初始化线程池
+      mode: force
   # 资源信息
   messages:
     # 国际化资源文件路径
@@ -74,10 +80,12 @@ spring:
   servlet:
     multipart:
       # 单个文件大小
-      max-file-size: 50MB
+      max-file-size: 10MB
       # 设置总上传的文件大小
-      max-request-size: 200MB
+      max-request-size: 20MB
   mvc:
+    # 设置静态资源路径 防止所有请求都去查静态资源
+    static-path-pattern: /static/**
     format:
       date-time: yyyy-MM-dd HH:mm:ss
   jackson:
@@ -96,20 +104,10 @@ spring:
 sa-token:
   # token名称 (同时也是cookie名称)
   token-name: Authorization
-  # token有效期 设为7天 (必定过期) 单位: 秒
-  timeout: 604800
-  # token临时有效期 (指定时间无操作就过期) 单位: 秒
-  activity-timeout: 604800
   # 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)
   is-concurrent: true
   # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
   is-share: false
-  # 是否尝试从header里读取token
-  is-read-header: true
-  # 是否尝试从cookie里读取token
-  is-read-cookie: false
-  # token前缀
-  token-prefix: "Bearer"
   # jwt秘钥
   jwt-secret-key: abcdefghijklmnopqrstuvwxyz
 
@@ -117,51 +115,20 @@ sa-token:
 security:
   # 排除路径
   excludes:
-    # 获取模型信息
-    - /system/model/modelList
-    # 支付回调
-    - /pay/returnUrl
-    - /pay/notifyUrl
-    # 上传文件
-    - /resource/oss/upload
-    # 重置密码
-    - /auth/reset/password
-    # 聊天接口
-    - /chat/send
-    # 文件上传
-    - /chat/upload
-    # 代码生成调用
-    - /tool/gen/getByTableName
-    - /tool/gen/batchGenCode
-    # 静态资源
     - /*.html
     - /**/*.html
     - /**/*.css
     - /**/*.js
-    # 公共路径
     - /favicon.ico
     - /error
-    # swagger 文档配置
     - /*/api-docs
     - /*/api-docs/**
-    - /v3/api-docs
-    - /v3/api-docs/**
-    - /v3/api-docs/swagger-config
-    - /swagger-ui.html
-    - /swagger-ui/**
-    - /doc.html
-    - /webjars/**
-    - /swagger-resources
-    - /swagger-resources/**
-    # actuator 监控配置
-    - /actuator
-    - /actuator/**
-    - /workflow/**
-    - /admin/workflow/**
+    - /warm-flow-ui/config
+
 # 多租户配置
 tenant:
   # 是否开启
-  enable: false
+  enable: true
   # 排除表
   excludes:
     - sys_menu
@@ -171,53 +138,27 @@ tenant:
     - sys_role_menu
     - sys_user_post
     - sys_user_role
-
-knowledge-role:
-  enable: false
+    - sys_client
+    - sys_oss_config
+    - flow_spel
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
-  # 不支持多包, 如有需要可在注解配置 或 提升扫包等级
-  # 例如 com.**.**.mapper
+  # 自定义配置 是否全局开启逻辑删除 关闭后 所有逻辑删除功能将失效
+  enableLogicDelete: true
+  # 多包名使用 例如 org.ruoyi.**.mapper,org.xxx.**.mapper
   mapperPackage: org.ruoyi.**.mapper
   # 对应的 XML 文件位置
   mapperLocations: classpath*:mapper/**/*Mapper.xml
   # 实体扫描，多个package用逗号或者分号分隔
   typeAliasesPackage: org.ruoyi.**.domain
-  # 启动时是否检查 MyBatis XML 文件的存在，默认不检查
-  checkConfigLocation: false
-  configuration:
-    # 自动驼峰命名规则（camel case）映射
-    mapUnderscoreToCamelCase: true
-    # MyBatis 自动映射策略
-    # NONE：不启用 PARTIAL：只对非嵌套 resultMap 自动映射 FULL：对所有 resultMap 自动映射
-    autoMappingBehavior: FULL
-    # MyBatis 自动映射时未知列或未知属性处理策
-    # NONE：不做处理 WARNING：打印相关警告 FAILING：抛出异常和详细信息
-    autoMappingUnknownColumnBehavior: NONE
-    # 更详细的日志输出 会有性能损耗 org.apache.ibatis.logging.stdout.StdOutImpl
-    # 关闭日志记录 (可单纯使用 p6spy 分析) org.apache.ibatis.logging.nologging.NoLoggingImpl
-    # 默认日志输出 org.apache.ibatis.logging.slf4j.Slf4jImpl
-    logImpl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
-    # 是否打印 Logo banner
-    banner: true
     dbConfig:
       # 主键类型
       # AUTO 自增 NONE 空 INPUT 用户输入 ASSIGN_ID 雪花 ASSIGN_UUID 唯一 UUID
+      # 如需改为自增 需要将数据库表全部设置为自增
       idType: ASSIGN_ID
-      # 逻辑已删除值
-      logicDeleteValue: 2
-      # 逻辑未删除值
-      logicNotDeleteValue: 0
-      # 字段验证策略之 insert,在 insert 的时候的字段验证策略
-      # IGNORED 忽略 NOT_NULL 非NULL NOT_EMPTY 非空 DEFAULT 默认 NEVER 不加入 SQL
-      insertStrategy: NOT_NULL
-      # 字段验证策略之 update,在 update 的时候的字段验证策略
-      updateStrategy: NOT_NULL
-      # 字段验证策略之 select,在 select 的时候的字段验证策略既 wrapper 根据内部 entity 生成的 where 条件
-      where-strategy: NOT_NULL
 
 # 数据加密
 mybatis-encryptor:
@@ -233,57 +174,55 @@ mybatis-encryptor:
   publicKey:
   privateKey:
 
+# api接口加密
+api-decrypt:
+  # 是否开启全局接口加密
+  enabled: false
+  # AES 加密头标识
+  headerFlag: encrypt-key
+  # 响应加密公钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
+  # 对应前端解密私钥 MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAmc3CuPiGL/LcIIm7zryCEIbl1SPzBkr75E2VMtxegyZ1lYRD+7TZGAPkvIsBcaMs6Nsy0L78n2qh+lIZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=
+  publicKey: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJnNwrj4hi/y3CCJu868ghCG5dUj8wZK++RNlTLcXoMmdZWEQ/u02RgD5LyLAXGjLOjbMtC+/J9qofpSGTKSx/MCAwEAAQ==
+  # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
+  # 对应前端加密公钥 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ==
+  privateKey: MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAqhHyZfSsYourNxaY7Nt+PrgrxkiA50efORdI5U5lsW79MmFnusUA355oaSXcLhu5xxB38SMSyP2KvuKNPuH3owIDAQABAkAfoiLyL+Z4lf4Myxk6xUDgLaWGximj20CUf+5BKKnlrK+Ed8gAkM0HqoTt2UZwA5E2MzS4EI2gjfQhz5X28uqxAiEA3wNFxfrCZlSZHb0gn2zDpWowcSxQAgiCstxGUoOqlW8CIQDDOerGKH5OmCJ4Z21v+F25WaHYPxCFMvwxpcw99EcvDQIgIdhDTIqD2jfYjPTY8Jj3EDGPbH2HHuffvflECt3Ek60CIQCFRlCkHpi7hthhYhovyloRYsM+IS9h/0BzlEAuO0ktMQIgSPT3aFAgJYwKpqRYKlLDVcflZFCKY7u3UP8iWi1Qw0Y=
+
 springdoc:
   api-docs:
     # 是否开启接口文档
     enabled: true
-  #  swagger-ui:
-  #    # 持久化认证数据
-  #    persistAuthorization: true
   info:
     # 标题
-    title: '标题：ruoyi-ai 接口文档'
+    title: '标题：ruoyi-ai管理系统_接口文档'
     # 描述
-    description: ''
+    description: '描述：用于管理集团旗下公司的人员信息,具体包括XXX,XXX模块...'
     # 版本
-    version: '版本号: ${ruoyi.version}'
+    version: '版本号: ${project.version}'
     # 作者信息
     contact:
-      name: ageerle
+      name:  ageerle
       email: ageerle@163.com
       url: https://gitee.com/ageerle/ruoyi-ai
-  components:
-    # 鉴权方式配置
-    security-schemes:
-      apiKey:
-        type: APIKEY
-        in: HEADER
-        name: ${sa-token.token-name}
   #这里定义了两个分组，可定义多个，也可以不定义
-  packages-to-scan: org.ruoyi
-
-knife4j:
-  enable: true
-  setting:
-    language: zh_cn
+  group-configs:
+    - group: 1.演示模块
+      packages-to-scan: org.ruoyi.demo
+    - group: 2.通用模块
+      packages-to-scan: org.ruoyi.web
+    - group: 3.系统模块
+      packages-to-scan: org.ruoyi.system
+    - group: 4.代码生成模块
+      packages-to-scan: org.ruoyi.generator
+    - group: 5.工作流模块
+      packages-to-scan: org.ruoyi.workflow
 
 # 防止XSS攻击
 xss:
   # 过滤开关
   enabled: true
-  # 排除链接（多个用逗号分隔）
-  excludes: /system/notice,/v3/api-docs/**,/doc.html,/swagger-ui/**,/swagger-ui.html,/swagger-resources/**,/webjars/**,/druid/**,/actuator/**,/favicon.ico
-  # 匹配链接
-  urlPatterns: /system/*,/monitor/*,/tool/*
-
-# 全局线程池相关配置
-thread-pool:
-  # 是否开启线程池
-  enabled: false
-  # 队列最大长度
-  queueCapacity: 128
-  # 线程池维护线程所允许的空闲时间
-  keepAliveSeconds: 300
+  # 排除链接
+  excludeUrls:
+    - /system/notice
 
 --- # 分布式锁 lock4j 全局配置
 lock4j:
@@ -304,42 +243,44 @@ management:
     logfile:
       external-file: ./logs/sys-console.log
   health:
-    # 禁用 Neo4j 健康检查（当知识图谱功能未启用时）
+    # ⚠️ 禁用 Neo4j 健康检查
+    # Spring Boot Actuator 会自动为 Neo4j 创建健康检查器
+    # 这会导致应用在启动时尝试连接到 Neo4j
     neo4j:
       enabled: false
 
-# websocket
-# websocket
-websocket:
+--- # 默认/推荐使用sse推送
+sse:
   enabled: true
+  path: /resource/sse
+
+--- # websocket
+websocket:
+  # 如果关闭 需要和前端开关一起关闭
+  enabled: false
   # 路径
-  path: '/resource/websocket'
+  path: /resource/websocket
   # 设置访问源地址
   allowedOrigins: '*'
 
-spring:
-  ai:
-    openai:
-      api-key: sk-xx
-      base-url: https://api.pandarobot.chat/
-    mcp:
-      client:
-        enabled: false
-        name: ruoyi-ai-mcp
-        sse:
-          connections:
-            server:
-              url: http://127.0.0.1:8081
-        stdio:
-          servers-configuration: classpath:mcp-server.json
-        request-timeout: 300s
+--- # warm-flow工作流配置
+warm-flow:
+  # 是否开启工作流，默认true
+  enabled: true
+  # 是否开启设计器ui
+  ui: true
+  # 是否显示流程图顶部文字
+  top-text-show: true
+  # 是否渲染节点悬浮提示，默认true
+  node-tooltip: true
+  # 默认Authorization，如果有多个token，用逗号分隔
+  token-name: ${sa-token.token-name},clientid
 
 # 向量库配置
 vector-store:
   # 向量存储类型 可选(weaviate/milvus)
   # 如需修改向量库类型，请修改此配置值!
   type: weaviate
-
   # Weaviate配置
   weaviate:
     protocol: http
@@ -350,15 +291,29 @@ vector-store:
     url: http://localhost:19530
     collectionname: LocalKnowledge
 
+chat:
+  memory:
+    enabled: true
+    maxMessages: 20
+    persistenceEnabled: true
 
+  #  企业微信应用
+wechat:
+  cp:
+    corpId:
+    appConfigs:
+      - agentId:
+        secret: ''
+        token:  ''
+        aesKey: ''
 --- # Neo4j 知识图谱配置
-#neo4j:
-#  uri: bolt://117.72.192.162:7687
-#  username: neo4j
-#  password: MySecurePass123!
-#  database: neo4j
-#  max-connection-pool-size: 50
-#  connection-timeout-seconds: 30
+neo4j:
+  uri: bolt://117.72.192.162:7687
+  username: neo4j
+  password: MySecurePass123!
+  database: neo4j
+  max-connection-pool-size: 50
+  connection-timeout-seconds: 30
 
 # 知识图谱配置
 knowledge:
@@ -401,4 +356,3 @@ knowledge:
       cache-enabled: true
       # 缓存过期时间（分钟）
       cache-expire-minutes: 60
-

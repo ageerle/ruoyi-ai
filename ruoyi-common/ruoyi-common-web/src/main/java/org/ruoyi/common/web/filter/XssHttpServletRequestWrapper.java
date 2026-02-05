@@ -1,6 +1,8 @@
 package org.ruoyi.common.web.filter;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HtmlUtil;
 import jakarta.servlet.ReadListener;
@@ -14,6 +16,8 @@ import org.springframework.http.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * XSS过滤处理
@@ -29,18 +33,51 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
     }
 
     @Override
+    public String getParameter(String name) {
+        String value = super.getParameter(name);
+        if (value == null) {
+            return null;
+        }
+        return HtmlUtil.cleanHtmlTag(value).trim();
+    }
+
+    @Override
+    public Map<String, String[]> getParameterMap() {
+        Map<String, String[]> valueMap = super.getParameterMap();
+        if (MapUtil.isEmpty(valueMap)) {
+            return valueMap;
+        }
+        // 避免某些容器不允许改参数的情况 copy一份重新改
+        Map<String, String[]> map = new HashMap<>(valueMap.size());
+        map.putAll(valueMap);
+        for (Map.Entry<String, String[]> entry : map.entrySet()) {
+            String[] values = entry.getValue();
+            if (values != null) {
+                int length = values.length;
+                String[] escapseValues = new String[length];
+                for (int i = 0; i < length; i++) {
+                    // 防xss攻击和过滤前后空格
+                    escapseValues[i] = HtmlUtil.cleanHtmlTag(values[i]).trim();
+                }
+                map.put(entry.getKey(), escapseValues);
+            }
+        }
+        return map;
+    }
+
+    @Override
     public String[] getParameterValues(String name) {
         String[] values = super.getParameterValues(name);
-        if (values != null) {
-            int length = values.length;
-            String[] escapseValues = new String[length];
-            for (int i = 0; i < length; i++) {
-                // 防xss攻击和过滤前后空格
-                escapseValues[i] = HtmlUtil.cleanHtmlTag(values[i]).trim();
-            }
-            return escapseValues;
+        if (ArrayUtil.isEmpty(values)) {
+            return values;
         }
-        return super.getParameterValues(name);
+        int length = values.length;
+        String[] escapseValues = new String[length];
+        for (int i = 0; i < length; i++) {
+            // 防xss攻击和过滤前后空格
+            escapseValues[i] = HtmlUtil.cleanHtmlTag(values[i]).trim();
+        }
+        return escapseValues;
     }
 
     @Override

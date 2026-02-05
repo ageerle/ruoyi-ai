@@ -35,56 +35,11 @@ async function sendMessage() {
     setButtonsEnabled(false);
 
     try {
-        const response = await fetch('/api/chat/message', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({message: message})
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // 如果是异步任务（工具调用），建立SSE连接
-            if (data.taskId && data.asyncTask) {
-                // 先显示等待状态的工具卡片
-                showWaitingToolCard();
-                logStreamManager.startLogStream(data.taskId);
-                showStatus('任务已启动，正在建立实时连接...', 'success');
-            } else if (data.streamResponse) {
-                // 流式对话响应
-                handleStreamResponse(message);
-                showStatus('开始流式对话...', 'success');
-            } else {
-                // 同步任务，直接显示结果
-                addMessage('assistant', data.message);
-
-                // 显示连续对话统计信息
-                let statusMessage = 'Message sent successfully';
-                if (data.totalTurns && data.totalTurns > 1) {
-                    statusMessage += ` (${data.totalTurns} turns`;
-                    if (data.totalDurationMs) {
-                        statusMessage += `, ${(data.totalDurationMs / 1000).toFixed(1)}s`;
-                    }
-                    statusMessage += ')';
-
-                    if (data.reachedMaxTurns) {
-                        statusMessage += ' - Reached max turns limit';
-                    }
-                    if (data.stopReason) {
-                        statusMessage += ` - ${data.stopReason}`;
-                    }
-                }
-                showStatus(statusMessage, 'success');
-            }
-        } else {
-            addMessage('assistant', data.message);
-            showStatus('Error: ' + data.message, 'error');
-        }
+        // 直接处理流式响应
+        handleStreamResponse(message);
+        showStatus('开始流式对话...', 'success');
     } catch (error) {
         console.error('Error:', error);
-        // 更安全的错误处理
         const errorMessage = error && error.message ? error.message : 'Unknown error occurred';
         addMessage('assistant', 'Sorry, there was an error processing your request: ' + errorMessage);
         showStatus('Network error: ' + errorMessage, 'error');
@@ -190,6 +145,19 @@ function showWaitingToolCard() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+// 解析SSE格式的数据 (data: content)
+function parseSseData(line) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) return null;
+
+    // SSE格式: data: content
+    if (trimmedLine.startsWith('data:')) {
+        return trimmedLine.substring(5).trim(); // 去掉 "data:" 前缀
+    }
+
+    return null;
+}
+
 // 处理流式响应
 function handleStreamResponse(userMessage) {
     console.log('🌊 开始处理流式响应，消息:', userMessage);
@@ -227,7 +195,7 @@ function handleStreamResponse(userMessage) {
     const streamIndicator = streamContainer.querySelector('.stream-indicator');
     let fullContent = '';
 
-    fetch('/api/chat/stream', {
+    fetch('/api/chat/message', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -236,50 +204,79 @@ function handleStreamResponse(userMessage) {
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
+            // 获取响应体的ReadableStream
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
+            let buffer = ''; // 用于缓存不完整的数据
 
-            function readStream() {
-                return reader.read().then(({done, value}) => {
+            // 处理流式数据
+            const processStream = () => {
+                return reader.read().then(({ done, value }) => {
                     if (done) {
                         console.log('✅ 流式响应完成');
-                        streamIndicator.style.display = 'none';
-                        streamContainer.classList.remove('streaming');
-                        showStatus('流式对话完成', 'success');
+                        // 处理剩余的缓存数据
+                        if (buffer.trim()) {
+                            const remainingLines = buffer.split('\n');
+                            for (const line of remainingLines) {
+                                const content = parseSseData(line);
+                                if (content && content !== '[DONE]') {
+                                    fullContent += content;
+                                }
+                            }
+                        }
+                        // 移除加载指示器
+                        streamIndicator.remove();
+                        // 格式化最终内容
+                        streamContent.innerHTML = formatMessage(fullContent);
                         return;
                     }
 
-                    const chunk = decoder.decode(value, {stream: true});
-                    console.log('📨 收到流式数据块:', chunk);
+                    // 解码数据块并添加到缓存
+                    buffer += decoder.decode(value, { stream: true });
+                    console.log('📨 收到数据块，缓存内容:', buffer);
 
-                    // 处理SSE格式的数据
-                    const lines = chunk.split('\n');
+                    // 按行处理数据（SSE格式为逐行）
+                    const lines = buffer.split('\n');
+
+                    // 最后一行可能不完整，保留在缓存中
+                    buffer = lines.pop() || '';
+
                     for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.substring(6);
-                            if (data === '[DONE]') {
-                                console.log('✅ 流式响应完成');
-                                streamIndicator.style.display = 'none';
-                                streamContainer.classList.remove('streaming');
-                                showStatus('流式对话完成', 'success');
-                                return;
-                            }
+                        // 解析SSE格式的数据 (data: content)
+                        const content = parseSseData(line);
 
-                            // 追加内容
-                            fullContent += data;
-                            streamContent.textContent = fullContent;
-                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        if (!content) continue;
+
+                        // 检查是否是完成标记
+                        if (content === '[DONE]') {
+                            console.log('✅ 收到完成信号');
+                            streamIndicator.remove();
+                            streamContent.innerHTML = formatMessage(fullContent);
+                            return Promise.resolve();
                         }
+
+                        // 添加内容到全局变量
+                        fullContent += content;
+
+                        // 实时更新UI（删除之前的加载指示器并显示内容）
+                        if (streamIndicator.parentNode) {
+                            streamIndicator.style.display = 'none';
+                        }
+                        streamContent.innerHTML = formatMessage(fullContent);
                     }
 
-                    return readStream();
-                });
-            }
+                    // 滚动到最新位置
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            return readStream();
+                    // 继续读取下一个数据块
+                    return processStream();
+                });
+            };
+
+            return processStream();
         })
         .catch(error => {
             console.error('❌ 流式响应错误:', error);

@@ -2,8 +2,8 @@ package org.ruoyi.aihuman.service;
 
 import org.ruoyi.aihuman.domain.bo.AihumanConfigBo;
 import org.ruoyi.aihuman.domain.vo.AihumanConfigVo;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 
 import java.util.Collection;
 import java.util.List;

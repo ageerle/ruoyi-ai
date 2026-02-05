@@ -74,6 +74,6 @@ public class WeixinApiUtil {
     }
 
     public String getKey(String key) {
-        return configService.getConfigValue("weixin", key);
+        return configService.getConfigValue("weixin");
     }
 }

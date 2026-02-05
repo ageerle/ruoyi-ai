@@ -6,7 +6,7 @@ import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import me.chanjar.weixin.cp.util.crypto.WxCpCryptUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.ruoyi.common.core.utils.JsonUtils;
+import org.ruoyi.common.json.utils.JsonUtils;
 import org.ruoyi.config.WxCpConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -63,7 +63,7 @@ public class WxPortalController {
         final WxCpService wxCpService = WxCpConfiguration.getCpService(1000002);
         WxCpXmlMessage inMessage = WxCpXmlMessage.fromEncryptedXml(requestBody, wxCpService.getWxCpConfigStorage(),
                 timestamp, nonce, signature);
-        log.debug("\n消息解密后内容为：\n{} ", JsonUtils.toJson(inMessage));
+        log.debug("\n消息解密后内容为：\n{} ", JsonUtils.toJsonString(inMessage));
         WxCpXmlOutMessage outMessage = this.route(1000002, inMessage);
         if (outMessage == null) {
             return "";

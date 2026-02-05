@@ -3,12 +3,14 @@ package org.ruoyi.system.listener;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.digest.BCrypt;
-import com.alibaba.excel.context.AnalysisContext;
-import com.alibaba.excel.event.AnalysisEventListener;
-import lombok.extern.slf4j.Slf4j;
+import cn.hutool.http.HtmlUtil;
+import cn.idev.excel.context.AnalysisContext;
+import cn.idev.excel.event.AnalysisEventListener;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.utils.SpringUtils;
-import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.core.utils.ValidatorUtils;
 import org.ruoyi.common.excel.core.ExcelListener;
 import org.ruoyi.common.excel.core.ExcelResult;
@@ -16,7 +18,9 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.domain.bo.SysUserBo;
 import org.ruoyi.system.domain.vo.SysUserImportVo;
 import org.ruoyi.system.domain.vo.SysUserVo;
+import org.ruoyi.system.service.ISysConfigService;
 import org.ruoyi.system.service.ISysUserService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -35,15 +39,16 @@ public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo
     private final Boolean isUpdateSupport;
 
     private final Long operUserId;
-    private final StringBuilder successMsg = new StringBuilder();
-    private final StringBuilder failureMsg = new StringBuilder();
+
     private int successNum = 0;
     private int failureNum = 0;
+    private final StringBuilder successMsg = new StringBuilder();
+    private final StringBuilder failureMsg = new StringBuilder();
 
     public SysUserImportListener(Boolean isUpdateSupport) {
-        // String initPassword = SpringUtils.getBean(ISysConfigService.class).selectConfigByKey("sys.user.initPassword");
+        String initPassword = SpringUtils.getBean(ISysConfigService.class).selectConfigByKey("sys.user.initPassword");
         this.userService = SpringUtils.getBean(ISysUserService.class);
-        this.password = BCrypt.hashpw("123456");
+        this.password = BCrypt.hashpw(initPassword);
         this.isUpdateSupport = isUpdateSupport;
         this.operUserId = LoginHelper.getUserId();
     }
@@ -56,10 +61,6 @@ public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo
             if (ObjectUtil.isNull(sysUser)) {
                 SysUserBo user = BeanUtil.toBean(userVo, SysUserBo.class);
                 ValidatorUtils.validate(user);
-                if (StringUtils.isEmpty(user.getNickName())) {
-                    user.setNickName(user.getUserName());
-                }
-                user.setDeptId(103L);
                 user.setPassword(password);
                 user.setCreateBy(operUserId);
                 userService.insertUser(user);
@@ -82,8 +83,12 @@ public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo
             }
         } catch (Exception e) {
             failureNum++;
-            String msg = "<br/>" + failureNum + "、账号 " + sysUser.getUserName() + " 导入失败：";
-            failureMsg.append(msg).append(e.getMessage());
+            String msg = "<br/>" + failureNum + "、账号 " + HtmlUtil.cleanHtmlTag(userVo.getUserName()) + " 导入失败：";
+            String message = e.getMessage();
+            if (e instanceof ConstraintViolationException cvException) {
+                message = StreamUtils.join(cvException.getConstraintViolations(), ConstraintViolation::getMessage, ", ");
+            }
+            failureMsg.append(msg).append(message);
             log.error(msg, e);
         }
     }

@@ -82,6 +82,17 @@ public class TenantSaTokenDao extends PlusSaTokenDao {
     }
 
     /**
+     * 获取 Object (指定反序列化类型)，如无返空
+     *
+     * @param key 键名称
+     * @return object
+     */
+    @Override
+    public <T> T getObject(String key, Class<T> classType) {
+        return super.getObject(GlobalConstants.GLOBAL_REDIS_KEY + key, classType);
+    }
+
+    /**
      * 写入Object，并设定存活时间 (单位: 秒)
      */
     @Override
@@ -136,7 +147,6 @@ public class TenantSaTokenDao extends PlusSaTokenDao {
         }
         RedisUtils.expire(GlobalConstants.GLOBAL_REDIS_KEY + key, Duration.ofSeconds(timeout));
     }
-
 
     /**
      * 搜索数据

@@ -1,6 +1,7 @@
 package org.ruoyi.common.idempotent.aspectj;
 
 import cn.dev33.satoken.SaManager;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.SecureUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.StringJoiner;
 
 /**
  * 防止重复提交(参考美团GTIS防重系统)
@@ -39,10 +41,8 @@ public class RepeatSubmitAspect {
     @Before("@annotation(repeatSubmit)")
     public void doBefore(JoinPoint point, RepeatSubmit repeatSubmit) throws Throwable {
         // 如果注解不为0 则使用注解数值
-        long interval = 0;
-        if (repeatSubmit.interval() > 0) {
-            interval = repeatSubmit.timeUnit().toMillis(repeatSubmit.interval());
-        }
+        long interval = repeatSubmit.timeUnit().toMillis(repeatSubmit.interval());
+
         if (interval < 1000) {
             throw new ServiceException("重复提交间隔时间不能小于'1'秒");
         }
@@ -58,9 +58,7 @@ public class RepeatSubmitAspect {
         submitKey = SecureUtil.md5(submitKey + ":" + nowParams);
         // 唯一标识（指定key + url + 消息头）
         String cacheRepeatKey = GlobalConstants.REPEAT_SUBMIT_KEY + url + submitKey;
-        String key = RedisUtils.getCacheObject(cacheRepeatKey);
-        if (key == null) {
-            RedisUtils.setCacheObject(cacheRepeatKey, "", Duration.ofMillis(interval));
+        if (RedisUtils.setObjectIfAbsent(cacheRepeatKey, "", Duration.ofMillis(interval))) {
             KEY_CACHE.set(cacheRepeatKey);
         } else {
             String message = repeatSubmit.message();
@@ -78,7 +76,7 @@ public class RepeatSubmitAspect {
      */
     @AfterReturning(pointcut = "@annotation(repeatSubmit)", returning = "jsonResult")
     public void doAfterReturning(JoinPoint joinPoint, RepeatSubmit repeatSubmit, Object jsonResult) {
-        if (jsonResult instanceof R r) {
+        if (jsonResult instanceof R<?> r) {
             try {
                 // 成功则不删除redis数据 保证在有效时间内无法重复提交
                 if (r.getCode() == R.SUCCESS) {
@@ -107,19 +105,16 @@ public class RepeatSubmitAspect {
      * 参数拼装
      */
     private String argsArrayToString(Object[] paramsArray) {
-        StringBuilder params = new StringBuilder();
-        if (paramsArray != null && paramsArray.length > 0) {
-            for (Object o : paramsArray) {
-                if (ObjectUtil.isNotNull(o) && !isFilterObject(o)) {
-                    try {
-                        params.append(JsonUtils.toJsonString(o)).append(" ");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+        StringJoiner params = new StringJoiner(" ");
+        if (ArrayUtil.isEmpty(paramsArray)) {
+            return params.toString();
+        }
+        for (Object o : paramsArray) {
+            if (ObjectUtil.isNotNull(o) && !isFilterObject(o)) {
+                params.add(JsonUtils.toJsonString(o));
             }
         }
-        return params.toString().trim();
+        return params.toString();
     }
 
     /**
@@ -132,7 +127,7 @@ public class RepeatSubmitAspect {
     public boolean isFilterObject(final Object o) {
         Class<?> clazz = o.getClass();
         if (clazz.isArray()) {
-            return clazz.getComponentType().isAssignableFrom(MultipartFile.class);
+            return MultipartFile.class.isAssignableFrom(clazz.getComponentType());
         } else if (Collection.class.isAssignableFrom(clazz)) {
             Collection collection = (Collection) o;
             for (Object value : collection) {
@@ -140,13 +135,12 @@ public class RepeatSubmitAspect {
             }
         } else if (Map.class.isAssignableFrom(clazz)) {
             Map map = (Map) o;
-            for (Object value : map.entrySet()) {
-                Map.Entry entry = (Map.Entry) value;
-                return entry.getValue() instanceof MultipartFile;
+            for (Object value : map.values()) {
+                return value instanceof MultipartFile;
             }
         }
         return o instanceof MultipartFile || o instanceof HttpServletRequest || o instanceof HttpServletResponse
-                || o instanceof BindingResult;
+               || o instanceof BindingResult;
     }
 
 }

@@ -3,6 +3,9 @@ package org.ruoyi.common.web.config.properties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * xss过滤 配置属性
  *
@@ -13,18 +16,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class XssProperties {
 
     /**
-     * 过滤开关
+     * Xss开关
      */
-    private String enabled;
+    private Boolean enabled;
 
     /**
-     * 排除链接（多个用逗号分隔）
+     * 排除路径
      */
-    private String excludes;
-
-    /**
-     * 匹配链接
-     */
-    private String urlPatterns;
+    private List<String> excludeUrls = new ArrayList<>();
 
 }

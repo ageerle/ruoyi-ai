@@ -1,15 +1,16 @@
 package org.ruoyi.system.controller.monitor;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.lock.annotation.Lock4j;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysOperLogBo;
 import org.ruoyi.system.domain.vo.SysOperLogVo;
 import org.ruoyi.system.service.ISysOperLogService;
@@ -53,7 +54,6 @@ public class SysOperlogController extends BaseController {
 
     /**
      * 批量删除操作日志记录
-     *
      * @param operIds 日志ids
      */
     @Log(title = "操作日志", businessType = BusinessType.DELETE)
@@ -68,6 +68,7 @@ public class SysOperlogController extends BaseController {
      */
     @Log(title = "操作日志", businessType = BusinessType.CLEAN)
     @SaCheckPermission("monitor:operlog:remove")
+    @Lock4j
     @DeleteMapping("/clean")
     public R<Void> clean() {
         operLogService.cleanOperLog();

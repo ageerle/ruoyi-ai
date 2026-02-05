@@ -7,11 +7,11 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.ContextualSerializer;
-import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.reflect.ReflectUtils;
 import org.ruoyi.common.translation.annotation.Translation;
 import org.ruoyi.common.translation.core.TranslationInterface;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Map;
@@ -39,15 +39,21 @@ public class TranslationHandler extends JsonSerializer<Object> implements Contex
         if (ObjectUtil.isNotNull(trans)) {
             // 如果映射字段不为空 则取映射字段的值
             if (StringUtils.isNotBlank(translation.mapper())) {
-                value = ReflectUtils.invokeGetter(gen.getCurrentValue(), translation.mapper());
+                value = ReflectUtils.invokeGetter(gen.currentValue(), translation.mapper());
             }
             // 如果为 null 直接写出
             if (ObjectUtil.isNull(value)) {
                 gen.writeNull();
                 return;
             }
-            Object result = trans.translation(value, translation.other());
-            gen.writeObject(result);
+            try {
+                Object result = trans.translation(value, translation.other());
+                gen.writeObject(result);
+            } catch (Exception e) {
+                log.error("翻译处理异常，type: {}, value: {}", translation.type(), value, e);
+                // 出现异常时输出原始值而不是中断序列化
+                gen.writeObject(value);
+            }
         } else {
             gen.writeObject(value);
         }

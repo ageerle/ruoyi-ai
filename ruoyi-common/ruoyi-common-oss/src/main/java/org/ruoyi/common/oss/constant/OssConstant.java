@@ -1,5 +1,7 @@
 package org.ruoyi.common.oss.constant;
 
+import org.ruoyi.common.core.constant.GlobalConstants;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -13,7 +15,7 @@ public interface OssConstant {
     /**
      * 默认配置KEY
      */
-    String DEFAULT_CONFIG_KEY = "sys_oss:default_config";
+    String DEFAULT_CONFIG_KEY = GlobalConstants.GLOBAL_REDIS_KEY + "sys_oss:default_config";
 
     /**
      * 预览列表资源开关Key
@@ -28,7 +30,7 @@ public interface OssConstant {
     /**
      * 云服务商
      */
-    String[] CLOUD_SERVICE = new String[]{"aliyun", "qcloud", "qiniu", "obs"};
+    String[] CLOUD_SERVICE = new String[] {"aliyun", "qcloud", "qiniu", "obs"};
 
     /**
      * https 状态

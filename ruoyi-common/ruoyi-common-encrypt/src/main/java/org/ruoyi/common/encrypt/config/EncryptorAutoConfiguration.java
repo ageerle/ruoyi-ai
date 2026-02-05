@@ -1,5 +1,8 @@
 package org.ruoyi.common.encrypt.config;
 
+import com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration;
+import com.baomidou.mybatisplus.autoconfigure.MybatisPlusProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.encrypt.core.EncryptorManager;
 import org.ruoyi.common.encrypt.interceptor.MybatisDecryptInterceptor;
 import org.ruoyi.common.encrypt.interceptor.MybatisEncryptInterceptor;
@@ -16,17 +19,18 @@ import org.springframework.context.annotation.Bean;
  * @author 老马
  * @version 4.6.0
  */
-@AutoConfiguration
+@AutoConfiguration(after = MybatisPlusAutoConfiguration.class)
 @EnableConfigurationProperties(EncryptorProperties.class)
 @ConditionalOnProperty(value = "mybatis-encryptor.enable", havingValue = "true")
+@Slf4j
 public class EncryptorAutoConfiguration {
 
     @Autowired
     private EncryptorProperties properties;
 
     @Bean
-    public EncryptorManager encryptorManager() {
-        return new EncryptorManager();
+    public EncryptorManager encryptorManager(MybatisPlusProperties mybatisPlusProperties) {
+        return new EncryptorManager(mybatisPlusProperties.getTypeAliasesPackage());
     }
 
     @Bean
@@ -38,4 +42,8 @@ public class EncryptorAutoConfiguration {
     public MybatisDecryptInterceptor mybatisDecryptInterceptor(EncryptorManager encryptorManager) {
         return new MybatisDecryptInterceptor(encryptorManager, properties);
     }
+
 }
+
+
+

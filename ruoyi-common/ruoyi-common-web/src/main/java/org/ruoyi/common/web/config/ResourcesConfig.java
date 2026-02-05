@@ -1,17 +1,21 @@
 package org.ruoyi.common.web.config;
 
-
-import org.ruoyi.common.web.interceptor.DemoModeInterceptor;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
+import org.ruoyi.common.core.utils.ObjectUtils;
+import org.ruoyi.common.web.handler.GlobalExceptionHandler;
 import org.ruoyi.common.web.interceptor.PlusWebInvokeTimeInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.format.FormatterRegistry;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.Date;
 
 /**
  * 通用配置
@@ -21,35 +25,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @AutoConfiguration
 public class ResourcesConfig implements WebMvcConfigurer {
 
-    @Autowired(required = false)
-    private DemoModeInterceptor demoModeInterceptor;
-
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 全局访问性能拦截
         registry.addInterceptor(new PlusWebInvokeTimeInterceptor());
+    }
 
-        // 演示模式拦截器
-        if (demoModeInterceptor != null) {
-            registry.addInterceptor(demoModeInterceptor)
-                    .addPathPatterns("/**")  // 拦截所有路径
-                    .excludePathPatterns(
-                            // 排除静态资源
-                            "/css/**",
-                            "/js/**",
-                            "/images/**",
-                            "/fonts/**",
-                            "/favicon.ico",
-                            // 排除错误页面
-                            "/error",
-                            // 排除API文档
-                            "/*/api-docs/**",
-                            "/swagger-ui/**",
-                            "/webjars/**",
-                            // 排除监控端点
-                            "/actuator/**"
-                    );
-        }
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        // 全局日期格式转换配置
+        registry.addConverter(String.class, Date.class, source -> {
+            DateTime parse = DateUtil.parse(source);
+            if (ObjectUtils.isNull(parse)) {
+                return null;
+            }
+            return parse.toJdkDate();
+        });
     }
 
     @Override
@@ -76,5 +67,13 @@ public class ResourcesConfig implements WebMvcConfigurer {
         source.registerCorsConfiguration("/**", config);
         // 返回新的CorsFilter
         return new CorsFilter(source);
+    }
+
+    /**
+     * 全局异常处理器
+     */
+    @Bean
+    public GlobalExceptionHandler globalExceptionHandler() {
+        return new GlobalExceptionHandler();
     }
 }

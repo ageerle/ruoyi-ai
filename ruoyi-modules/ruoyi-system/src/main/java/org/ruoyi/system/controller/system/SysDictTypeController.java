@@ -1,21 +1,24 @@
 package org.ruoyi.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.lock.annotation.Lock4j;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.excel.utils.ExcelUtil;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysDictTypeBo;
 import org.ruoyi.system.domain.vo.SysDictTypeVo;
 import org.ruoyi.system.service.ISysDictTypeService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -30,15 +33,6 @@ import java.util.List;
 public class SysDictTypeController extends BaseController {
 
     private final ISysDictTypeService dictTypeService;
-
-    /**
-     * 查询所有字典类型列表
-     */
-
-    @GetMapping("/all")
-    public TableDataInfo<SysDictTypeVo> all(SysDictTypeBo dictType, PageQuery pageQuery) {
-        return dictTypeService.selectAll(dictType);
-    }
 
     /**
      * 查询字典类型列表
@@ -76,6 +70,7 @@ public class SysDictTypeController extends BaseController {
      */
     @SaCheckPermission("system:dict:add")
     @Log(title = "字典类型", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysDictTypeBo dict) {
         if (!dictTypeService.checkDictTypeUnique(dict)) {
@@ -90,6 +85,7 @@ public class SysDictTypeController extends BaseController {
      */
     @SaCheckPermission("system:dict:edit")
     @Log(title = "字典类型", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysDictTypeBo dict) {
         if (!dictTypeService.checkDictTypeUnique(dict)) {
@@ -108,7 +104,7 @@ public class SysDictTypeController extends BaseController {
     @Log(title = "字典类型", businessType = BusinessType.DELETE)
     @DeleteMapping("/{dictIds}")
     public R<Void> remove(@PathVariable Long[] dictIds) {
-        dictTypeService.deleteDictTypeByIds(dictIds);
+        dictTypeService.deleteDictTypeByIds(Arrays.asList(dictIds));
         return R.ok();
     }
 
@@ -117,6 +113,7 @@ public class SysDictTypeController extends BaseController {
      */
     @SaCheckPermission("system:dict:remove")
     @Log(title = "字典类型", businessType = BusinessType.CLEAN)
+    @Lock4j
     @DeleteMapping("/refreshCache")
     public R<Void> refreshCache() {
         dictTypeService.resetDictCache();

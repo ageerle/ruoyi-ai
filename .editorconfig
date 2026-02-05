@@ -1,0 +1,32 @@
+# http://editorconfig.org
+root = true
+
+# 所有文件 ([*])：
+# 使用空格缩进，每级 4 个空格
+# UTF-8 编码
+# Unix 风格换行符 (LF)
+# 自动删除行尾空格
+# 文件末尾自动添加空行
+# JSON/YAML 文件：
+# 缩进改为 2 个空格
+# Markdown 文件：
+# 不在末尾添加空行
+# 保留行尾空格（Markdown 语法需要）
+# 作用：
+# 支持此标准的编辑器（VS Code、IDEA、Sublime 等）会自动读取并应用这些规则，确保不同开发者使用不同编辑器时，代码格式保持一致。
+
+
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+insert_final_newline = false
+trim_trailing_whitespace = false

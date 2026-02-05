@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
@@ -19,9 +19,9 @@ import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import ${packageName}.domain.vo.${ClassName}Vo;
 import ${packageName}.domain.bo.${ClassName}Bo;
-import ${packageName}.service.${ClassName}Service;
-#if($table.crud || $table.sub)
-import org.ruoyi.core.page.TableDataInfo;
+import ${packageName}.service.I${ClassName}Service;
+#if($table.crud)
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 #elseif($table.tree)
 #end
 
@@ -37,23 +37,23 @@ import org.ruoyi.core.page.TableDataInfo;
 @RequestMapping("/${moduleName}/${businessName}")
 public class ${ClassName}Controller extends BaseController {
 
-    private final ${ClassName}Service ${className}Service;
+    private final I${ClassName}Service ${className}Service;
 
-/**
- * 查询${functionName}列表
- */
-@SaCheckPermission("${permissionPrefix}:list")
-@GetMapping("/list")
-    #if($table.crud || $table.sub)
+    /**
+     * 查询${functionName}列表
+     */
+    @SaCheckPermission("${permissionPrefix}:list")
+    @GetMapping("/list")
+#if($table.crud)
     public TableDataInfo<${ClassName}Vo> list(${ClassName}Bo bo, PageQuery pageQuery) {
         return ${className}Service.queryPageList(bo, pageQuery);
     }
-    #elseif($table.tree)
-        public R<List<${ClassName}Vo>> list(${ClassName}Bo bo) {
-            List<${ClassName}Vo> list = ${className}Service.queryList(bo);
-            return R.ok(list);
-        }
-    #end
+#elseif($table.tree)
+    public R<List<${ClassName}Vo>> list(${ClassName}Bo bo) {
+        List<${ClassName}Vo> list = ${className}Service.queryList(bo);
+        return R.ok(list);
+    }
+#end
 
     /**
      * 导出${functionName}列表

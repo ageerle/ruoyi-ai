@@ -1,0 +1,152 @@
+<script setup lang="ts">
+import type { Recordable } from '@vben/types';
+
+import { nextTick } from 'vue';
+
+import { Page, useVben${PopupComponent}, type VbenFormProps } from '@vben/common-ui';
+import { getVxePopupContainer } from '@vben/utils';
+
+import { Popconfirm, Space } from 'ant-design-vue';
+
+import { useVbenVxeGrid, type VxeGridProps } from '#/adapter/vxe-table';
+import { ${businessName}List, ${businessName}Remove } from '#/api/${moduleName}/${businessName}';
+import type { ${BusinessName}Form } from '#/api/${moduleName}/${businessName}/model';
+
+import { columns, querySchema } from './data';
+import ${businessName}${PopupComponent} from './${businessName}-${popupComponent}.vue';
+
+const formOptions: VbenFormProps = {
+  commonConfig: {
+    labelWidth: 80,
+    componentProps: {
+      allowClear: true,
+    },
+  },
+  schema: querySchema(),
+  wrapperClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+};
+
+const gridOptions: VxeGridProps = {
+  // 需要使用i18n注意这里要改成getter形式 否则切换语言不会刷新
+  // columns: columns(),
+  columns,
+  height: 'auto',
+  keepSource: true,
+  pagerConfig: {
+    enabled: false,
+  },
+  proxyConfig: {
+    ajax: {
+      query: async (_, formValues = {}) => {
+        const resp = await ${businessName}List({
+          ...formValues,
+        });
+        return { rows: resp };
+      },
+      // 默认请求接口后展开全部 不需要可以删除这段
+      querySuccess: () => {
+        nextTick(() => {
+          expandAll();
+        });
+      },
+    },
+  },
+  rowConfig: {
+    keyField: '${pkColumn.javaField}',
+  },
+  /**
+   * 虚拟滚动配置（默认关闭）
+   * 数据量小时建议关闭
+   * 如果遇到样式问题（空白、错位、滚动异常等）可以关闭虚拟滚动
+   */
+  scrollY: {
+    enabled: false,
+    gt: 0,
+  },
+  treeConfig: {
+    parentField: '${treeParentCode}',
+    rowField: '${treeCode}',
+    // 自动转换为树形结构，由 vxe-table 处理，无需手动转换
+    transform: true,
+  },
+  // 表格全局唯一标识，用于保存列配置
+  id: '${moduleName}-${businessName}-index'
+};
+
+const [BasicTable, tableApi] = useVbenVxeGrid({ formOptions, gridOptions });
+const [${BusinessName}${PopupComponent}, ${popupComponent}Api] = useVben${PopupComponent}({
+  connectedComponent: ${businessName}${PopupComponent},
+});
+
+function handleAdd() {
+  ${popupComponent}Api.setData({});
+  ${popupComponent}Api.open();
+}
+
+async function handleEdit(row: Required<${BusinessName}Form>) {
+  ${popupComponent}Api.setData({ id: row.${pkColumn.javaField} });
+  ${popupComponent}Api.open();
+}
+
+async function handleDelete(row: Required<${BusinessName}Form>) {
+  await ${businessName}Remove(row.${pkColumn.javaField});
+  await tableApi.query();
+}
+
+function expandAll() {
+  tableApi.grid?.setAllTreeExpand(true);
+}
+
+function collapseAll() {
+  tableApi.grid?.setAllTreeExpand(false);
+}
+</script>
+
+<template>
+  <Page :auto-content-height="true">
+    <BasicTable table-title="${functionName}列表">
+      <template #toolbar-tools>
+        <Space>
+          <a-button @click="collapseAll">
+            {{ $t('pages.common.collapse') }}
+          </a-button>
+          <a-button @click="expandAll">
+            {{ $t('pages.common.expand') }}
+          </a-button>
+          <a-button
+            type="primary"
+            v-access:code="['${permissionPrefix}:add']"
+            @click="handleAdd"
+          >
+            {{ $t('pages.common.add') }}
+          </a-button>
+        </Space>
+      </template>
+      <template #action="{ row }">
+        <Space>
+          <ghost-button
+            v-access:code="['${permissionPrefix}:edit']"
+            @click.stop="handleEdit(row)"
+          >
+            {{ $t('pages.common.edit') }}
+          </ghost-button>
+          <Popconfirm
+            :get-popup-container="getVxePopupContainer"
+            placement="left"
+            title="确认删除？"
+            @confirm="handleDelete(row)"
+          >
+            <ghost-button
+              danger
+              v-access:code="['${permissionPrefix}:remove']"
+              @click.stop=""
+            >
+              {{ $t('pages.common.delete') }}
+            </ghost-button>
+          </Popconfirm>
+        </Space>
+      </template>
+    </BasicTable>
+    <${BusinessName}${PopupComponent} @reload="tableApi.query()" />
+  </Page>
+</template>

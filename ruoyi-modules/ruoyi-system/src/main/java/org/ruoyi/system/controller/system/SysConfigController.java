@@ -5,17 +5,19 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.excel.utils.ExcelUtil;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysConfigBo;
 import org.ruoyi.system.domain.vo.SysConfigVo;
 import org.ruoyi.system.service.ISysConfigService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -68,8 +70,8 @@ public class SysConfigController extends BaseController {
      * @param configKey 参数Key
      */
     @GetMapping(value = "/configKey/{configKey}")
-    public R<Void> getConfigKey(@PathVariable String configKey) {
-        return R.ok(configService.selectConfigByKey(configKey));
+    public R<String> getConfigKey(@PathVariable String configKey) {
+        return R.ok("操作成功", configService.selectConfigByKey(configKey));
     }
 
     /**
@@ -77,6 +79,7 @@ public class SysConfigController extends BaseController {
      */
     @SaCheckPermission("system:config:add")
     @Log(title = "参数管理", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysConfigBo config) {
         if (!configService.checkConfigKeyUnique(config)) {
@@ -91,6 +94,7 @@ public class SysConfigController extends BaseController {
      */
     @SaCheckPermission("system:config:edit")
     @Log(title = "参数管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysConfigBo config) {
         if (!configService.checkConfigKeyUnique(config)) {
@@ -105,6 +109,7 @@ public class SysConfigController extends BaseController {
      */
     @SaCheckPermission("system:config:edit")
     @Log(title = "参数管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping("/updateByKey")
     public R<Void> updateByKey(@RequestBody SysConfigBo config) {
         configService.updateConfig(config);
@@ -120,7 +125,7 @@ public class SysConfigController extends BaseController {
     @Log(title = "参数管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{configIds}")
     public R<Void> remove(@PathVariable Long[] configIds) {
-        configService.deleteConfigByIds(configIds);
+        configService.deleteConfigByIds(Arrays.asList(configIds));
         return R.ok();
     }
 

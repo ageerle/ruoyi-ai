@@ -1,0 +1,224 @@
+import type { FormSchemaGetter } from '#/adapter/form';
+import type { VxeGridProps } from '#/adapter/vxe-table';
+
+#if(${dicts} != '')
+import { getDictOptions } from '#/utils/dict';
+import { renderDict } from '#/utils/render';
+#end
+
+export const querySchema: FormSchemaGetter = () => [
+  #foreach($column in $columns)
+    #if($column.query)
+      #if($column.dictType)
+        #set($dictType=$column.dictType)
+      #else
+        #set($dictType="")
+      #end
+      #set($parentheseIndex=$column.columnComment.indexOf("（"))
+      #if($parentheseIndex != -1)
+        #set($comment=$column.columnComment.substring(0, $parentheseIndex))
+      #else
+        #set($comment=$column.columnComment)
+      #end
+      #if($column.htmlType == "input")
+        #set($component="Input")
+      #elseif($column.htmlType == "textarea")
+        #set($component="Textarea")
+      #elseif($column.htmlType == "select")
+        #set($component="Select")
+      #elseif($column.htmlType == "radio")
+        #set($component="RadioGroup")
+      #elseif($column.htmlType == "datetime" && $column.queryType != "BETWEEN")
+        #set($component="DatePicker")
+      #elseif($column.htmlType == "datetime" && $column.queryType == "BETWEEN")
+        #set($component="RangePicker")
+      #else
+        #set($component="Input")
+      #end
+  {
+    component: '${component}',
+    #if($component == "Select" || $component == "RadioGroup")
+    componentProps: {
+      #if($dictType != "")
+      // 可选从 DictEnum 中获取字典选项，便于统一维护: DictEnum.${dictType.toUpperCase()}
+      options: getDictOptions('$dictType'),
+      #end
+      #if($component == "RadioGroup")
+      buttonStyle: 'solid',
+      optionType: 'button',
+      #end
+    },
+    #elseif($component == "DatePicker" || $component == "RangePicker")
+    componentProps: {
+      showTime: true,
+      format: 'YYYY-MM-DD HH:mm:ss',
+      valueFormat: 'YYYY-MM-DD HH:mm:ss',
+    },
+    #end
+    fieldName: '${column.javaField}',
+    label: '${comment}',
+  },
+    #end
+  #end
+];
+
+/**
+ * 表格列配置
+ * 如果需要使用 i18n 国际化，请使用 getter 函数形式，否则切换语言时列配置不会刷新
+ * 使用方式: export const columns: () => VxeGridProps['columns'] = () => [...]
+ */
+export const columns: VxeGridProps['columns'] = [
+  #if($tplCategory != 'tree')
+  { type: 'checkbox', width: 60 },
+  #end
+  #foreach($column in $columns)
+    #if($column.list)
+      #if($column.dictType)
+        #set($dictType=$column.dictType)
+      #else
+        #set($dictType="")
+      #end
+      #set($parentheseIndex=$column.columnComment.indexOf("（"))
+      #if($parentheseIndex != -1)
+        #set($comment=$column.columnComment.substring(0, $parentheseIndex))
+      #else
+        #set($comment=$column.columnComment)
+      #end
+  {
+    title: '${comment}',
+    field: '${column.javaField}',
+    #if( $foreach.count == 1 && $tplCategory == 'tree')
+    treeNode: true,
+    #end
+    #if($dictType != "")
+    slots: {
+      default: ({ row }) => {
+        // 可选从 DictEnum 中获取字典选项，便于统一维护: DictEnum.${dictType.toUpperCase()}
+        return renderDict(row.${column.javaField}, '$dictType');
+      },
+    },
+    #end
+  },
+    #end
+  #end
+  {
+    field: 'action',
+    fixed: 'right',
+    slots: { default: 'action' },
+    title: '操作',
+    width: 180,
+  },
+];
+
+#if($formComponent == "useForm")
+export const ${popupComponent}Schema: FormSchemaGetter = () => [
+  #foreach($column in $columns)
+    #if($column.edit)
+      #if($column.dictType)
+        #set($dictType=$column.dictType)
+      #else
+        #set($dictType="")
+      #end
+      #set($parentheseIndex=$column.columnComment.indexOf("（"))
+      #if($parentheseIndex != -1)
+        #set($comment=$column.columnComment.substring(0, $parentheseIndex))
+      #else
+        #set($comment=$column.columnComment)
+      #end
+      #if($column.htmlType == "input")
+        #set($component="Input")
+      #elseif($column.htmlType == "textarea")
+        #set($component="Textarea")
+      #elseif($column.htmlType == "select")
+        #set($component="Select")
+      #elseif($column.htmlType == "radio")
+        #set($component="RadioGroup")
+      #elseif($column.htmlType == "checkbox")
+        #set($component="Checkbox")
+      #elseif($column.htmlType == "imageUpload")
+        #set($component="ImageUpload")
+      #elseif($column.htmlType == "fileUpload")
+        #set($component="FileUpload")
+      #elseif($column.htmlType == "editor")
+        #set($component="RichTextarea")
+      #elseif($column.htmlType == "datetime" && $column.queryType != "BETWEEN")
+        #set($component="DatePicker")
+      #elseif($column.htmlType == "datetime" && $column.queryType == "BETWEEN")
+        #set($component="RangePicker")
+      #else
+        #set($component="Input")
+      #end
+      #if($column.required && $column.pk == false)
+        #set($required='true')
+      #else
+        #set($required='false')
+      #end
+  {
+    label: '${comment}',
+    fieldName: '${column.javaField}',
+    #if("" != $treeParentCode && $column.javaField == $treeParentCode)
+    component: 'TreeSelect',
+    #else
+    component: '${component}',
+    #end
+    #if($component == "DatePicker" || $component == "RangePicker")
+    componentProps: {
+      showTime: true,
+      format: 'YYYY-MM-DD HH:mm:ss',
+      valueFormat: 'YYYY-MM-DD HH:mm:ss',
+    },
+    #elseif($component == "ImageUpload")
+    componentProps: {
+      // accept: ['jpg', 'png'], // 支持的文件类型（扩展名，不带点）或 MIME 类型（如 image/png）
+      // maxNumber: 1, // 最大上传文件数，默认为 1，为 1 时绑定为 string 类型，否则为 string[] 类型
+      // resultField: 'url', // 上传成功后返回的字段名，默认 'url'，可选: 'ossId' | 'url' | 'fileName'
+    },
+    #elseif($component == "FileUpload")
+    /**
+     * 文件上传组件配置
+     * 注意: 该组件返回数组类型，需要根据业务需求自行处理回显和提交逻辑
+     */
+    componentProps: {
+      // accept: ['xlsx', 'pdf'], // 支持的文件类型（扩展名，不带点）
+      // maxNumber: 1, // 最大上传文件数
+      // resultField: 'url', // 上传成功后返回的字段名，默认 'url'，可选: 'ossId' | 'url' | 'fileName'
+    },
+    #elseif($component == "RichTextarea")
+    componentProps: {
+      // options: {
+      //   readonly: false, // 是否只读
+      // },
+      // width: '100%', // 编辑器宽度
+      // showImageUpload: true, // 是否显示图片上传功能
+      // height: 400, // 编辑器高度，默认 400px
+    },
+    #elseif($component == "Select" || $component == "RadioGroup" || $component == "Checkbox")
+    componentProps: {
+      #if($dictType != "")
+      // 可选从 DictEnum 中获取字典选项，便于统一维护: DictEnum.${dictType.toUpperCase()}
+      options: getDictOptions('$dictType'),
+      #end
+      #if($component == "RadioGroup")
+      buttonStyle: 'solid',
+      optionType: 'button',
+      #end
+    },
+    #end
+    #if(${column.pk})
+    dependencies: {
+      show: () => false,
+      triggerFields: [''],
+    },
+    #end
+    #if($required == 'true' && $column.pk == false)
+    #if($component == "Select" || $component == "RadioGroup" || $component == "Checkbox")
+    rules: 'selectRequired',
+    #else
+    rules: 'required',
+    #end
+    #end
+  },
+    #end
+  #end
+];
+#end

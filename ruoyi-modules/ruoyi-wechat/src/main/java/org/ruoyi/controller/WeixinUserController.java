@@ -3,9 +3,9 @@ package org.ruoyi.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.common.core.domain.R;
+import org.ruoyi.common.core.domain.dto.VisitorLoginUserDto;
+import org.ruoyi.common.core.service.UserLoginService;
 import org.ruoyi.domin.WeixinQrCode;
-import org.ruoyi.service.VxLoginService;
-import org.ruoyi.system.domain.vo.LoginVo;
 import org.ruoyi.util.WeixinApiUtil;
 import org.ruoyi.util.WeixinQrCodeCacheUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ public class WeixinUserController {
     private WeixinApiUtil weixinApiUtil;
 
     @Autowired
-    private VxLoginService loginService;
+    private UserLoginService userLoginService;
 
     @GetMapping(value = "/user/qrcode")
     public R<WeixinQrCode> getQrCode() {
@@ -42,12 +42,12 @@ public class WeixinUserController {
      * 未完成，返回 check failed
      */
     @GetMapping(value = "/user/login/qrcode")
-    public R<LoginVo> userLogin(String ticket) {
+    public R<VisitorLoginUserDto> userLogin(String ticket,String clientId) {
         String openId = WeixinQrCodeCacheUtil.get(ticket);
         if (StringUtils.isNotEmpty(openId)) {
             log.info("login success,open id:{}", openId);
-            LoginVo loginVo = loginService.mpLogin(openId);
-            return R.ok(loginVo);
+            VisitorLoginUserDto loginBody = userLoginService.mpLogin(openId,clientId);
+            return R.ok(loginBody);
         }
         log.info("login error,ticket:{}", ticket);
         return R.fail("check failed");

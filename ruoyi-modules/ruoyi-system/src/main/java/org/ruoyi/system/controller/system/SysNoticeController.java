@@ -3,12 +3,14 @@ package org.ruoyi.system.controller.system;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
+import org.ruoyi.common.core.service.DictService;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.sse.utils.SseMessageUtils;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.system.domain.SysNotice;
 import org.ruoyi.system.domain.bo.SysNoticeBo;
 import org.ruoyi.system.domain.vo.SysNoticeVo;
 import org.ruoyi.system.service.ISysNoticeService;
@@ -16,7 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 公告信息操作处理
+ * 公告 信息操作处理
  *
  * @author Lion Li
  */
@@ -27,23 +29,15 @@ import org.springframework.web.bind.annotation.*;
 public class SysNoticeController extends BaseController {
 
     private final ISysNoticeService noticeService;
+    private final DictService dictService;
 
     /**
-     * 获取公告列表
+     * 获取通知公告列表
      */
+    @SaCheckPermission("system:notice:list")
     @GetMapping("/list")
     public TableDataInfo<SysNoticeVo> list(SysNoticeBo notice, PageQuery pageQuery) {
-        //公告类型（1通知 2公告）
-        notice.setNoticeType("2");
         return noticeService.selectPageNoticeList(notice, pageQuery);
-    }
-
-    /**
-     * 获取通知信息
-     */
-    @GetMapping("/getNotice")
-    public R<SysNotice> getNotice(SysNoticeBo notice) {
-        return R.ok(noticeService.getNotice(notice));
     }
 
     /**
@@ -62,9 +56,16 @@ public class SysNoticeController extends BaseController {
      */
     @SaCheckPermission("system:notice:add")
     @Log(title = "通知公告", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysNoticeBo notice) {
-        return toAjax(noticeService.insertNotice(notice));
+        int rows = noticeService.insertNotice(notice);
+        if (rows <= 0) {
+            return R.fail();
+        }
+        String type = dictService.getDictLabel("sys_notice_type", notice.getNoticeType());
+        SseMessageUtils.publishAll("[" + type + "] " + notice.getNoticeTitle());
+        return R.ok();
     }
 
     /**
@@ -72,6 +73,7 @@ public class SysNoticeController extends BaseController {
      */
     @SaCheckPermission("system:notice:edit")
     @Log(title = "通知公告", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysNoticeBo notice) {
         return toAjax(noticeService.updateNotice(notice));

@@ -3,11 +3,11 @@ spring:
     name: springAI-alibaba-copilot
   ai:
     openai:
-      base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: xx
+      base-url: https://api.ppio.com/openai
+      api-key: sk_xx
       chat:
         options:
-          model: qwen-plus
+          model: zai-org/glm-4.7-flash
 server:
   port: 8080
 
@@ -85,3 +85,7 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
   file:
     name: logs/copilot-file-ops.log
+
+
+
+

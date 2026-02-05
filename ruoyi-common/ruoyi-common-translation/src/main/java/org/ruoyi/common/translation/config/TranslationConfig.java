@@ -1,12 +1,12 @@
 package org.ruoyi.common.translation.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.translation.annotation.TranslationType;
 import org.ruoyi.common.translation.core.TranslationInterface;
 import org.ruoyi.common.translation.core.handler.TranslationBeanSerializerModifier;
 import org.ruoyi.common.translation.core.handler.TranslationHandler;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 
@@ -43,8 +43,8 @@ public class TranslationConfig {
         TranslationHandler.TRANSLATION_MAPPER.putAll(map);
         // 设置 Bean 序列化修改器
         objectMapper.setSerializerFactory(
-                objectMapper.getSerializerFactory()
-                        .withSerializerModifier(new TranslationBeanSerializerModifier()));
+            objectMapper.getSerializerFactory()
+                .withSerializerModifier(new TranslationBeanSerializerModifier()));
     }
 
 }

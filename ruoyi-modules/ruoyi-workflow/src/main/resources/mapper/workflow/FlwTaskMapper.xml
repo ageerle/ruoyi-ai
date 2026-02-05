@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.workflow.mapper.FlwTaskMapper">
+    <resultMap type="org.ruoyi.workflow.domain.vo.FlowTaskVo" id="FlowTaskResult">
+    </resultMap>
+    <resultMap type="org.ruoyi.workflow.domain.vo.FlowHisTaskVo" id="FlowHisTaskResult">
+    </resultMap>
+
+    <select id="getListRunTask" resultMap="FlowTaskResult">
+        select * from (
+            select distinct
+                t.id,
+                t.node_code,
+                t.node_name,
+                t.node_type,
+                t.definition_id,
+                t.instance_id,
+                t.create_time,
+                t.update_time,
+                t.tenant_id,
+                i.business_id,
+                i.flow_status,
+                i.create_by,
+                d.flow_name,
+                d.flow_code,
+                d.form_custom,
+                d.category,
+                COALESCE(t.form_path, d.form_path) as form_path,
+                d.version,
+                uu.processed_by,
+                uu.type,
+                biz.business_code,
+                biz.business_title
+            from flow_task t
+                    left join flow_user uu on uu.associated = t.id
+                    left join flow_definition d on t.definition_id = d.id
+                    left join flow_instance i on t.instance_id = i.id
+                    left join flow_instance_biz_ext biz on biz.instance_id = i.id
+            where t.node_type = 1
+              and t.del_flag = '0'
+              and uu.del_flag = '0'
+              and uu.type in ('1','2','3')
+         ) t
+         ${ew.getCustomSqlSegment}
+    </select>
+
+    <select id="getListFinishTask" resultMap="FlowHisTaskResult">
+        select * from (
+            select
+                a.id,
+                a.node_code,
+                a.node_name,
+                a.cooperate_type,
+                a.approver,
+                a.collaborator,
+                a.node_type,
+                a.target_node_code,
+                a.target_node_name,
+                a.definition_id,
+                a.instance_id,
+                a.flow_status flow_task_status,
+                a.message,
+                a.ext,
+                a.create_time,
+                a.update_time,
+                a.tenant_id,
+                a.form_custom,
+                a.form_path,
+                b.flow_status,
+                b.business_id,
+                b.create_by,
+                c.flow_name,
+                c.flow_code,
+                c.category,
+                c.version,
+                biz.business_code,
+                biz.business_title
+            from flow_his_task a
+                    left join flow_instance b on a.instance_id = b.id
+                    left join flow_definition c on a.definition_id = c.id
+                    left join flow_instance_biz_ext biz on biz.instance_id = b.id
+            where a.del_flag ='0'
+              and b.del_flag = '0'
+              and c.del_flag = '0'
+              and a.node_type in ('1','3','4')
+        ) t
+        ${ew.getCustomSqlSegment}
+    </select>
+
+    <select id="getTaskCopyByPage" resultMap="FlowTaskResult">
+       select * from (
+            select
+                b.id,
+                b.update_time,
+                c.business_id,
+                c.flow_status,
+                c.create_by,
+                a.processed_by,
+                a.create_time,
+                b.form_custom,
+                b.form_path,
+                b.node_name,
+                b.node_code,
+                d.flow_name,
+                d.flow_code,
+                d.category,
+                d.version,
+                biz.business_code,
+                biz.business_title
+            from flow_user a
+                left join flow_his_task b on a.associated = b.task_id
+                left join flow_instance c on b.instance_id = c.id
+                left join flow_definition d on c.definition_id=d.id
+                left join flow_instance_biz_ext biz on biz.instance_id = c.id
+            where a.type = '4'
+               and a.del_flag = '0'
+               and b.del_flag = '0'
+               and d.del_flag = '0'
+            ) t
+        ${ew.getCustomSqlSegment}
+    </select>
+</mapper>

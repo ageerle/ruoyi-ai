@@ -4,11 +4,13 @@ import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.jwt.StpLogicJwtForSimple;
 import cn.dev33.satoken.stp.StpInterface;
 import cn.dev33.satoken.stp.StpLogic;
+import org.ruoyi.common.core.factory.YmlPropertySourceFactory;
 import org.ruoyi.common.satoken.core.dao.PlusSaTokenDao;
 import org.ruoyi.common.satoken.core.service.SaPermissionImpl;
+import org.ruoyi.common.satoken.handler.SaTokenExceptionHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.context.annotation.PropertySource;
 
 /**
  * sa-token 配置
@@ -16,7 +18,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @author Lion Li
  */
 @AutoConfiguration
-public class SaTokenConfig implements WebMvcConfigurer {
+@PropertySource(value = "classpath:common-satoken.yml", factory = YmlPropertySourceFactory.class)
+public class SaTokenConfig {
 
     @Bean
     public StpLogic getStpLogicJwt() {
@@ -38,6 +41,14 @@ public class SaTokenConfig implements WebMvcConfigurer {
     @Bean
     public SaTokenDao saTokenDao() {
         return new PlusSaTokenDao();
+    }
+
+    /**
+     * 异常处理器
+     */
+    @Bean
+    public SaTokenExceptionHandler saTokenExceptionHandler() {
+        return new SaTokenExceptionHandler();
     }
 
 }

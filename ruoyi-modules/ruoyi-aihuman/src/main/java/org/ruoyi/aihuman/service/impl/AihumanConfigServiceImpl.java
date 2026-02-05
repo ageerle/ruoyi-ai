@@ -11,8 +11,8 @@ import org.ruoyi.aihuman.mapper.AihumanConfigMapper;
 import org.ruoyi.aihuman.service.AihumanConfigService;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;

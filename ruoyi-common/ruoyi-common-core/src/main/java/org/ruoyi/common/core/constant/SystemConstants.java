@@ -77,4 +77,9 @@ public interface SystemConstants {
      */
     String ROOT_DEPT_ANCESTORS = "0";
 
+    /**
+     * 默认部门 ID
+     */
+    Long DEFAULT_DEPT_ID = 100L;
+
 }

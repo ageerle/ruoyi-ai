@@ -9,8 +9,8 @@ import org.ruoyi.aihuman.domain.vo.AihumanInfoVo;
 import org.ruoyi.aihuman.mapper.AihumanInfoMapper;
 import org.ruoyi.aihuman.service.IAihumanInfoService;
 import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;

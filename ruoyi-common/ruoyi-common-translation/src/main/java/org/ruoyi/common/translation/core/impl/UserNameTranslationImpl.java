@@ -1,10 +1,10 @@
 package org.ruoyi.common.translation.core.impl;
 
-import lombok.AllArgsConstructor;
 import org.ruoyi.common.core.service.UserService;
 import org.ruoyi.common.translation.annotation.TranslationType;
 import org.ruoyi.common.translation.constant.TransConstant;
 import org.ruoyi.common.translation.core.TranslationInterface;
+import lombok.AllArgsConstructor;
 
 /**
  * 用户名翻译实现

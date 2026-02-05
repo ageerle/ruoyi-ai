@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -14,7 +14,7 @@
     </description>
 
     <properties>
-        <revision>1.0.0</revision>
+        <revision>3.0.0</revision>
     </properties>
 
     <dependencyManagement>
@@ -44,6 +44,13 @@
             <dependency>
                 <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-common-idempotent</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- 调度模块 -->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-common-job</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -110,6 +117,12 @@
                 <version>${revision}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-common-social</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!-- web服务 -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
@@ -152,29 +165,21 @@
                 <version>${revision}</version>
             </dependency>
 
-            <!-- chat模块 -->
+            <!-- WebSocket模块 -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-common-chat</artifactId>
+                <artifactId>ruoyi-common-websocket</artifactId>
                 <version>${revision}</version>
             </dependency>
 
-            <!-- 微信模块 -->
+            <!-- SSE模块 -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-common-wechat</artifactId>
+                <artifactId>ruoyi-common-sse</artifactId>
                 <version>${revision}</version>
             </dependency>
 
-
-            <!-- 支付模块 -->
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-common-pay</artifactId>
-                <version>${revision}</version>
-            </dependency>
         </dependencies>
-
     </dependencyManagement>
 
 </project>

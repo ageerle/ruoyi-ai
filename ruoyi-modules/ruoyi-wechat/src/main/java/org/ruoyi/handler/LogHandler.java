@@ -5,7 +5,7 @@ import me.chanjar.weixin.common.session.WxSessionManager;
 import me.chanjar.weixin.cp.api.WxCpService;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
-import org.ruoyi.common.core.utils.JsonUtils;
+import org.ruoyi.common.json.utils.JsonUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -19,7 +19,7 @@ public class LogHandler extends AbstractHandler {
     @Override
     public WxCpXmlOutMessage handle(WxCpXmlMessage wxMessage, Map<String, Object> context, WxCpService cpService,
                                     WxSessionManager sessionManager) {
-        log.info("\n接收到请求消息，内容：{}", JsonUtils.toJson(wxMessage));
+        log.info("\n接收到请求消息，内容：{}", JsonUtils.toJsonString(wxMessage));
         return null;
     }
 

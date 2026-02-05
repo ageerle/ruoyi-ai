@@ -32,7 +32,7 @@ public @interface EncryptField {
     String publicKey() default "";
 
     /**
-     * 公钥。RSA、SM2需要
+     * 私钥。RSA、SM2需要
      */
     String privateKey() default "";
 

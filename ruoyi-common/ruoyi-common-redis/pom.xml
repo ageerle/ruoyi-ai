@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.ruoyi</groupId>
         <artifactId>ruoyi-common</artifactId>
         <version>${revision}</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,7 +16,7 @@
     </description>
 
     <dependencies>
-        <!-- ruoyi Common Core-->
+        <!-- RuoYi Common Core-->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-core</artifactId>
@@ -33,6 +32,28 @@
             <groupId>com.baomidou</groupId>
             <artifactId>lock4j-redisson-spring-boot-starter</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
+<!--        &lt;!&ndash; redis序列化替代方案 比json快无数的跨语言二进制序列化 &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.fury</groupId>-->
+<!--            <artifactId>fury-core</artifactId>-->
+<!--            <version>0.9.0</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-api</artifactId>-->
+<!--        </dependency>-->
+
     </dependencies>
 
 </project>

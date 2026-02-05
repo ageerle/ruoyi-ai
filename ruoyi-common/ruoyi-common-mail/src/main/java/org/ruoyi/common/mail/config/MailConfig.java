@@ -1,50 +1,37 @@
 package org.ruoyi.common.mail.config;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.ruoyi.common.core.service.ConfigService;
-import org.ruoyi.common.mail.utils.MailAccount;
+import cn.hutool.extra.mail.MailAccount;
+import org.ruoyi.common.mail.config.properties.MailProperties;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 
 /**
  * JavaMail 配置
  *
  * @author Michelle.Chung
  */
-
-@RequiredArgsConstructor
-@Configuration
-@Slf4j
+@AutoConfiguration
+@EnableConfigurationProperties(MailProperties.class)
 public class MailConfig {
 
-    private final ConfigService configService;
-    private MailAccount account;
-
     @Bean
-    public MailAccount mailAccount() {
-        account = new MailAccount();
-        updateMailAccount();
+    @ConditionalOnProperty(value = "mail.enabled", havingValue = "true")
+    public MailAccount mailAccount(MailProperties mailProperties) {
+        MailAccount account = new MailAccount();
+        account.setHost(mailProperties.getHost());
+        account.setPort(mailProperties.getPort());
+        account.setAuth(mailProperties.getAuth());
+        account.setFrom(mailProperties.getFrom());
+        account.setUser(mailProperties.getUser());
+        account.setPass(mailProperties.getPass());
+        account.setSocketFactoryPort(mailProperties.getPort());
+        account.setStarttlsEnable(mailProperties.getStarttlsEnable());
+        account.setSslEnable(mailProperties.getSslEnable());
+        account.setTimeout(mailProperties.getTimeout());
+        account.setConnectionTimeout(mailProperties.getConnectionTimeout());
         return account;
     }
 
-    public void updateMailAccount() {
-        account.setHost(getKey("host"));
-        account.setPort(NumberUtils.toInt(getKey("port"), 465));
-        account.setAuth(true);
-        account.setFrom(getKey("from"));
-        account.setUser(getKey("user"));
-        account.setPass(getKey("pass"));
-        account.setSocketFactoryPort(NumberUtils.toInt(getKey("port"), 465));
-        account.setStarttlsEnable(true);
-        account.setSslEnable(true);
-        account.setTimeout(0);
-        account.setConnectionTimeout(0);
-    }
-
-    public String getKey(String key) {
-        return configService.getConfigValue("mail", key);
-    }
 }

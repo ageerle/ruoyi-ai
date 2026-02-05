@@ -13,6 +13,11 @@ public interface TransConstant {
     String USER_ID_TO_NAME = "user_id_to_name";
 
     /**
+     * 用户id转用户名称
+     */
+    String USER_ID_TO_NICKNAME = "user_id_to_nickname";
+
+    /**
      * 部门id转名称
      */
     String DEPT_ID_TO_NAME = "dept_id_to_name";

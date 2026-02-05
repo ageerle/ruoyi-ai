@@ -3,7 +3,7 @@ package org.ruoyi.aihuman.mapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.aihuman.domain.AihumanRealConfig;
 import org.ruoyi.aihuman.domain.vo.AihumanRealConfigVo;
-import org.ruoyi.core.mapper.BaseMapperPlus;
+import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 
 /**
  * 真人交互数字人配置Mapper接口

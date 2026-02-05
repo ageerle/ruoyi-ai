@@ -1,0 +1,13 @@
+# 内置配置 不允许修改 如需修改请在 nacos 上写相同配置覆盖
+# Sa-Token配置
+sa-token:
+  # 允许动态设置 token 有效期
+  dynamic-active-timeout: true
+  # 允许从 请求参数 读取 token
+  is-read-body: true
+  # 允许从 header 读取 token
+  is-read-header: true
+  # 关闭 cookie 鉴权 从根源杜绝 csrf 漏洞风险
+  is-read-cookie: false
+  # token前缀
+  token-prefix: "Bearer"

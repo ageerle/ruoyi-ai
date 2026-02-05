@@ -2,11 +2,12 @@ package org.ruoyi.common.redis.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.redisson.api.*;
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.redisson.api.*;
 
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * 分布式队列工具
@@ -15,7 +16,9 @@ import java.util.function.Consumer;
  *
  * @author Lion Li
  * @version 3.6.0 新增
+ * @deprecated redisson 新版本已经将队列功能标记删除 一些技术问题无法解决 建议搭建MQ使用
  */
+@Deprecated
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class QueueUtils {
 
@@ -132,6 +135,32 @@ public class QueueUtils {
     }
 
     /**
+     * 优先队列获取一个队列数据 没有数据返回 null(不支持延迟队列)
+     *
+     * @param queueName 队列名
+     */
+    public static <T> T getPriorityQueueObject(String queueName) {
+        RPriorityBlockingQueue<T> queue = CLIENT.getPriorityBlockingQueue(queueName);
+        return queue.poll();
+    }
+
+    /**
+     * 优先队列删除队列数据(不支持延迟队列)
+     */
+    public static <T> boolean removePriorityQueueObject(String queueName, T data) {
+        RPriorityBlockingQueue<T> queue = CLIENT.getPriorityBlockingQueue(queueName);
+        return queue.remove(data);
+    }
+
+    /**
+     * 优先队列销毁队列 所有阻塞监听 报错(不支持延迟队列)
+     */
+    public static <T> boolean destroyPriorityQueue(String queueName) {
+        RPriorityBlockingQueue<T> queue = CLIENT.getPriorityBlockingQueue(queueName);
+        return queue.delete();
+    }
+
+    /**
      * 尝试设置 有界队列 容量 用于限制数量
      *
      * @param queueName 队列名
@@ -147,12 +176,12 @@ public class QueueUtils {
      *
      * @param queueName 队列名
      * @param capacity  容量
-     * @param destroy   已存在是否销毁
+     * @param destroy   是否销毁
      */
     public static <T> boolean trySetBoundedQueueCapacity(String queueName, int capacity, boolean destroy) {
         RBoundedBlockingQueue<T> boundedBlockingQueue = CLIENT.getBoundedBlockingQueue(queueName);
-        if (boundedBlockingQueue.isExists() && destroy) {
-            destroyQueue(queueName);
+        if (destroy) {
+            boundedBlockingQueue.delete();
         }
         return boundedBlockingQueue.trySetCapacity(capacity);
     }
@@ -170,10 +199,40 @@ public class QueueUtils {
     }
 
     /**
+     * 有界队列获取一个队列数据 没有数据返回 null(不支持延迟队列)
+     *
+     * @param queueName 队列名
+     */
+    public static <T> T getBoundedQueueObject(String queueName) {
+        RBoundedBlockingQueue<T> queue = CLIENT.getBoundedBlockingQueue(queueName);
+        return queue.poll();
+    }
+
+    /**
+     * 有界队列删除队列数据(不支持延迟队列)
+     */
+    public static <T> boolean removeBoundedQueueObject(String queueName, T data) {
+        RBoundedBlockingQueue<T> queue = CLIENT.getBoundedBlockingQueue(queueName);
+        return queue.remove(data);
+    }
+
+    /**
+     * 有界队列销毁队列 所有阻塞监听 报错(不支持延迟队列)
+     */
+    public static <T> boolean destroyBoundedQueue(String queueName) {
+        RBoundedBlockingQueue<T> queue = CLIENT.getBoundedBlockingQueue(queueName);
+        return queue.delete();
+    }
+
+    /**
      * 订阅阻塞队列(可订阅所有实现类 例如: 延迟 优先 有界 等)
      */
-    public static <T> void subscribeBlockingQueue(String queueName, Consumer<T> consumer) {
+    public static <T> void subscribeBlockingQueue(String queueName, Function<T, CompletionStage<Void>> consumer, boolean isDelayed) {
         RBlockingQueue<T> queue = CLIENT.getBlockingQueue(queueName);
+        if (isDelayed) {
+            // 订阅延迟队列
+            CLIENT.getDelayedQueue(queue);
+        }
         queue.subscribeOnElements(consumer);
     }
 

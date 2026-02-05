@@ -23,7 +23,7 @@ public class CaptchaConfig {
 
     private static final int WIDTH = 160;
     private static final int HEIGHT = 60;
-    private static final Color BACKGROUND = Color.PINK;
+    private static final Color BACKGROUND = Color.LIGHT_GRAY;
     private static final Font FONT = new Font("Arial", Font.BOLD, 48);
 
     /**

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -9,58 +9,73 @@
     <version>${revision}</version>
 
     <name>ruoyi-ai</name>
-    <url>https://gitee.com/ageerle/ruoyi-ai</url>
-    <description>AI助手</description>
+    <url>>https://gitee.com/ageerle/ruoyi-ai</url>
+    <description>全栈式AI开发平台</description>
 
     <properties>
-        <revision>1.0.0</revision>
-        <spring-boot.version>3.4.4</spring-boot.version>
+        <revision>3.0.0</revision>
+        <spring-boot.version>3.5.8</spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>17</java.version>
-        <mysql.version>8.0.33</mysql.version>
         <mybatis.version>3.5.16</mybatis.version>
         <springdoc.version>2.8.13</springdoc.version>
         <therapi-javadoc.version>0.15.0</therapi-javadoc.version>
-        <poi.version>5.2.3</poi.version>
-        <easyexcel.version>3.2.1</easyexcel.version>
+        <fastexcel.version>1.3.0</fastexcel.version>
         <velocity.version>2.3</velocity.version>
-        <satoken.version>1.34.0</satoken.version>
-        <mybatis-plus.version>3.5.11</mybatis-plus.version>
+        <satoken.version>1.44.0</satoken.version>
+        <mybatis-plus.version>3.5.14</mybatis-plus.version>
         <p6spy.version>3.9.1</p6spy.version>
-        <hutool.version>5.8.35</hutool.version>
-        <okhttp.version>4.10.0</okhttp.version>
+        <hutool.version>5.8.40</hutool.version>
+        <spring-boot-admin.version>3.5.5</spring-boot-admin.version>
+        <redisson.version>3.51.0</redisson.version>
+        <lock4j.version>2.2.7</lock4j.version>
         <dynamic-ds.version>4.3.1</dynamic-ds.version>
-        <spring-boot-admin.version>3.0.3</spring-boot-admin.version>
-        <redisson.version>3.20.1</redisson.version>
-        <lock4j.version>2.2.4</lock4j.version>
-        <alibaba-ttl.version>2.14.2</alibaba-ttl.version>
-        <xxl-job.version>2.4.0</xxl-job.version>
-        <mapstruct-plus.version>1.2.1</mapstruct-plus.version>
+        <snailjob.version>1.8.0</snailjob.version>
+        <mapstruct-plus.version>1.5.0</mapstruct-plus.version>
         <mapstruct-plus.lombok.version>0.2.0</mapstruct-plus.lombok.version>
-        <lombok.version>1.18.26</lombok.version>
-        <bouncycastle.version>1.72</bouncycastle.version>
-        <!-- Apache Commons Compress 版本 -->
-        <commons-compress.version>1.26.2</commons-compress.version>
+        <lombok.version>1.18.40</lombok.version>
+        <bouncycastle.version>1.80</bouncycastle.version>
+        <justauth.version>1.16.7</justauth.version>
         <!-- 离线IP地址定位库 -->
         <ip2region.version>2.7.0</ip2region.version>
         <!-- OSS 配置 -->
-        <aws-java-sdk-s3.version>1.12.400</aws-java-sdk-s3.version>
+        <aws.sdk.version>2.28.22</aws.sdk.version>
         <!-- SMS 配置 -->
-        <aliyun.sms.version>2.0.23</aliyun.sms.version>
-        <tencent.sms.version>3.1.687</tencent.sms.version>
+        <sms4j.version>3.3.5</sms4j.version>
+        <!-- 限制框架中的fastjson版本 -->
+        <fastjson.version>1.2.83</fastjson.version>
+        <!-- 面向运行时的D-ORM依赖 -->
+        <anyline.version>8.7.2-20250603</anyline.version>
+        <!-- 工作流配置 -->
+        <warm-flow.version>1.8.2</warm-flow.version>
+        <!-- 企业微信SDK -->
+        <weixin-java-cp.version>4.4.0</weixin-java-cp.version>
+        <!-- Jackson XML -->
+        <jackson-dataformat-xml.version>2.20.1</jackson-dataformat-xml.version>
+        <!-- AI 相关依赖 -->
+        <langchain4j.version>1.11.0</langchain4j.version>
+        <langchain4j.community.version>1.11.0-beta19</langchain4j.community.version>
+        <langgraph4j.version>1.5.3</langgraph4j.version>
+        <weaviate.version>1.19.6</weaviate.version>
+        <dify.version>1.0.7</dify.version>
 
-        <!-- Neo4j 相关版本 -->
-        <neo4j-driver.version>5.26.0</neo4j-driver.version>
-        <neo4j-cypher-dsl.version>2024.1.0</neo4j-cypher-dsl.version>
-        <langchain4j-neo4j.version>1.2.0-beta8</langchain4j-neo4j.version>
+
+        <avatar-generator.version>1.1.0</avatar-generator.version>
+        <jsoup.version>1.21.2</jsoup.version>
+        <knife4j.version>4.4.0</knife4j.version>
+        <swagger-annotations.version>2.2.8</swagger-annotations.version>
+        <google-api-client.version>2.6.0</google-api-client.version>
+        <commons-collections4.version>4.5.0</commons-collections4.version>
 
         <!-- 插件版本 -->
-        <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
-        <maven-war-plugin.version>3.2.2</maven-war-plugin.version>
-        <maven-compiler-plugin.verison>3.11.0</maven-compiler-plugin.verison>
-        <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+        <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <flatten-maven-plugin.version>1.3.0</flatten-maven-plugin.version>
+        <!-- 打包默认跳过测试 -->
+        <skipTests>true</skipTests>
     </properties>
 
     <profiles>
@@ -69,7 +84,9 @@
             <properties>
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>local</profiles.active>
-                <logging.level>debug</logging.level>
+                <logging.level>info</logging.level>
+                <monitor.username>ruoyi</monitor.username>
+                <monitor.password>123456</monitor.password>
             </properties>
         </profile>
         <profile>
@@ -77,7 +94,9 @@
             <properties>
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>dev</profiles.active>
-                <logging.level>debug</logging.level>
+                <logging.level>info</logging.level>
+                <monitor.username>ruoyi</monitor.username>
+                <monitor.password>123456</monitor.password>
             </properties>
             <activation>
                 <!-- 默认环境 -->
@@ -89,6 +108,8 @@
             <properties>
                 <profiles.active>prod</profiles.active>
                 <logging.level>warn</logging.level>
+                <monitor.username>ruoyi</monitor.username>
+                <monitor.password>123456</monitor.password>
             </properties>
         </profile>
     </profiles>
@@ -96,12 +117,6 @@
     <!-- 依赖声明 -->
     <dependencyManagement>
         <dependencies>
-
-            <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
-                <version>${mysql.version}</version>
-            </dependency>
 
             <!-- SpringBoot的依赖配置-->
             <dependency>
@@ -149,25 +164,9 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi</artifactId>
-                <version>${poi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi-ooxml</artifactId>
-                <version>${poi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>easyexcel</artifactId>
-                <version>${easyexcel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.poi</groupId>
-                        <artifactId>poi-ooxml-schemas</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>cn.idev.excel</groupId>
+                <artifactId>fastexcel</artifactId>
+                <version>${fastexcel.version}</version>
             </dependency>
 
             <!-- velocity代码生成使用模板 -->
@@ -201,6 +200,12 @@
                 <version>${satoken.version}</version>
             </dependency>
 
+            <!-- dynamic-datasource 多数据源-->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
+                <version>${dynamic-ds.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.mybatis</groupId>
@@ -226,13 +231,6 @@
                 <version>${mybatis-plus.version}</version>
             </dependency>
 
-            <!-- dynamic-datasource 多数据源-->
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
-                <version>${dynamic-ds.version}</version>
-            </dependency>
-
             <!-- sql性能分析插件 -->
             <dependency>
                 <groupId>p6spy</groupId>
@@ -240,24 +238,43 @@
                 <version>${p6spy.version}</version>
             </dependency>
 
+            <!--  AWS SDK for Java 2.x  -->
             <dependency>
-                <groupId>com.amazonaws</groupId>
-                <artifactId>aws-java-sdk-s3</artifactId>
-                <version>${aws-java-sdk-s3.version}</version>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${aws.sdk.version}</version>
+            </dependency>
+            <!-- 基于 AWS CRT 的 S3 客户端的性能增强的 S3 传输管理器 -->
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3-transfer-manager</artifactId>
+                <version>${aws.sdk.version}</version>
+            </dependency>
+            <!-- 将基于 Netty 的 HTTP 客户端从类路径中移除 -->
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>netty-nio-client</artifactId>
+                <version>${aws.sdk.version}</version>
+            </dependency>
+            <!--短信sms4j-->
+            <dependency>
+                <groupId>org.dromara.sms4j</groupId>
+                <artifactId>sms4j-spring-boot-starter</artifactId>
+                <version>${sms4j.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.aliyun</groupId>
-                <artifactId>dysmsapi20170525</artifactId>
-                <version>${aliyun.sms.version}</version>
+                <groupId>de.codecentric</groupId>
+                <artifactId>spring-boot-admin-starter-server</artifactId>
+                <version>${spring-boot-admin.version}</version>
             </dependency>
-
             <dependency>
-                <groupId>com.tencentcloudapi</groupId>
-                <artifactId>tencentcloud-sdk-java-sms</artifactId>
-                <version>${tencent.sms.version}</version>
+                <groupId>de.codecentric</groupId>
+                <artifactId>spring-boot-admin-starter-client</artifactId>
+                <version>${spring-boot-admin.version}</version>
             </dependency>
 
+            <!--redisson-->
             <dependency>
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
@@ -270,10 +287,16 @@
                 <version>${lock4j.version}</version>
             </dependency>
 
+            <!-- SnailJob Client -->
             <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>transmittable-thread-local</artifactId>
-                <version>${alibaba-ttl.version}</version>
+                <groupId>com.aizuda</groupId>
+                <artifactId>snail-job-client-starter</artifactId>
+                <version>${snailjob.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aizuda</groupId>
+                <artifactId>snail-job-client-job-core</artifactId>
+                <version>${snailjob.version}</version>
             </dependency>
 
             <!-- 加密包引入 -->
@@ -283,17 +306,29 @@
                 <version>${bouncycastle.version}</version>
             </dependency>
 
-            <!-- Apache Commons Compress -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-compress</artifactId>
-                <version>${commons-compress.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>io.github.linpeilie</groupId>
                 <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
                 <version>${mapstruct-plus.version}</version>
+            </dependency>
+
+            <!-- Warm-Flow国产工作流引擎, 在线文档：http://warm-flow.cn/ -->
+            <dependency>
+                <groupId>org.dromara.warm</groupId>
+                <artifactId>warm-flow-mybatis-plus-sb3-starter</artifactId>
+                <version>${warm-flow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.dromara.warm</groupId>
+                <artifactId>warm-flow-plugin-ui-sb-web</artifactId>
+                <version>${warm-flow.version}</version>
+            </dependency>
+
+            <!-- JustAuth 的依赖配置-->
+            <dependency>
+                <groupId>me.zhyd.oauth</groupId>
+                <artifactId>JustAuth</artifactId>
+                <version>${justauth.version}</version>
             </dependency>
 
             <!-- 离线IP地址定位库 ip2region -->
@@ -304,33 +339,20 @@
             </dependency>
 
             <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-system</artifactId>
                 <version>${revision}</version>
             </dependency>
 
-
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-chat</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-knowledge-api</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-chat-api</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-system-api</artifactId>
+                <artifactId>ruoyi-job</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -342,61 +364,67 @@
 
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-graph</artifactId>
+                <artifactId>ruoyi-demo</artifactId>
                 <version>${revision}</version>
-            </dependency>
-
-            <!-- Neo4j Driver -->
-            <dependency>
-                <groupId>org.neo4j.driver</groupId>
-                <artifactId>neo4j-java-driver</artifactId>
-                <version>${neo4j-driver.version}</version>
-            </dependency>
-
-            <!-- Neo4j Cypher DSL -->
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>neo4j-cypher-dsl</artifactId>
-                <version>${neo4j-cypher-dsl.version}</version>
-            </dependency>
-
-            <!-- Langchain4j Neo4j 扩展 -->
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-community-neo4j</artifactId>
-                <version>${langchain4j-neo4j.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-aihuman</artifactId>
+                <artifactId>ruoyi-chat</artifactId>
                 <version>${revision}</version>
             </dependency>
 
-
+            <!--  工作流模块  -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-workflow</artifactId>
                 <version>${revision}</version>
             </dependency>
 
+            <!--  微信模块  -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-workflow-api</artifactId>
+                <artifactId>ruoyi-wechat</artifactId>
                 <version>${revision}</version>
+            </dependency>
+
+            <!--  数字人模块  -->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-aihuman</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!--  AI流程编排模块  -->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-aiflow</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- 企业微信SDK -->
+            <dependency>
+                <groupId>com.github.binarywang</groupId>
+                <artifactId>weixin-java-cp</artifactId>
+                <version>${weixin-java-cp.version}</version>
+            </dependency>
+
+            <!-- Jackson XML -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
+                <version>${jackson-dataformat-xml.version}</version>
             </dependency>
 
         </dependencies>
     </dependencyManagement>
 
     <modules>
-        <module>ruoyi-common</module>
-        <module>ruoyi-modules</module>
-        <module>ruoyi-modules-api</module>
         <module>ruoyi-admin</module>
+        <module>ruoyi-common</module>
         <module>ruoyi-extend</module>
+        <module>ruoyi-modules</module>
     </modules>
-
     <packaging>pom</packaging>
 
     <build>
@@ -404,7 +432,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin.verison}</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -447,6 +475,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
+                    <argLine>-Dfile.encoding=UTF-8</argLine>
                     <!-- 根据打包环境执行对应的@Tag测试方法 -->
                     <groups>${profiles.active}</groups>
                     <!-- 排除标签 -->
@@ -503,8 +532,8 @@
     <repositories>
         <repository>
             <id>public</id>
-            <name>aliyun nexus</name>
-            <url>https://maven.aliyun.com/repository/public/</url>
+            <name>huawei nexus</name>
+            <url>https://mirrors.huaweicloud.com/repository/maven/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -514,8 +543,8 @@
     <pluginRepositories>
         <pluginRepository>
             <id>public</id>
-            <name>aliyun nexus</name>
-            <url>https://maven.aliyun.com/repository/public/</url>
+            <name>huawei nexus</name>
+            <url>https://mirrors.huaweicloud.com/repository/maven/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -526,3 +555,5 @@
     </pluginRepositories>
 
 </project>
+
+

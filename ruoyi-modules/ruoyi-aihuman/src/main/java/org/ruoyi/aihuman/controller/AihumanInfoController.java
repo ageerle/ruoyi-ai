@@ -6,8 +6,8 @@ import org.ruoyi.aihuman.domain.AihumanInfo;
 import org.ruoyi.aihuman.domain.vo.AihumanInfoVo;
 import org.ruoyi.aihuman.service.IAihumanInfoService;
 import org.ruoyi.common.core.domain.R;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

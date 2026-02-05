@@ -6,11 +6,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.excel.utils.ExcelUtil;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysDictDataBo;
 import org.ruoyi.system.domain.vo.SysDictDataVo;
 import org.ruoyi.system.service.ISysDictDataService;
@@ -19,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -85,8 +87,12 @@ public class SysDictDataController extends BaseController {
      */
     @SaCheckPermission("system:dict:add")
     @Log(title = "字典数据", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysDictDataBo dict) {
+        if (!dictDataService.checkDictDataUnique(dict)) {
+            return R.fail("新增字典数据'" + dict.getDictValue() + "'失败，字典键值已存在");
+        }
         dictDataService.insertDictData(dict);
         return R.ok();
     }
@@ -96,8 +102,12 @@ public class SysDictDataController extends BaseController {
      */
     @SaCheckPermission("system:dict:edit")
     @Log(title = "字典数据", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysDictDataBo dict) {
+        if (!dictDataService.checkDictDataUnique(dict)) {
+            return R.fail("修改字典数据'" + dict.getDictValue() + "'失败，字典键值已存在");
+        }
         dictDataService.updateDictData(dict);
         return R.ok();
     }
@@ -111,7 +121,7 @@ public class SysDictDataController extends BaseController {
     @Log(title = "字典类型", businessType = BusinessType.DELETE)
     @DeleteMapping("/{dictCodes}")
     public R<Void> remove(@PathVariable Long[] dictCodes) {
-        dictDataService.deleteDictDataByIds(dictCodes);
+        dictDataService.deleteDictDataByIds(Arrays.asList(dictCodes));
         return R.ok();
     }
 }

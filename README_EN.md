@@ -8,155 +8,133 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 
-<img src="image/00.png" alt="RuoYi AI Logo" width="120" height="120">
+
+<p align="center">
+  <a href="https://trendshift.io/repositories/13209">
+    <img src="https://trendshift.io/api/badge/repositories/13209" alt="GitHub Trending">
+  </a>
+</p>
+
+<img src="docs/image/logo.png" alt="RuoYi AI Logo" width="120" height="120">
 
 ### Enterprise-Grade AI Assistant Platform
 
-*Production-ready AI platform with deep integration of FastGPT, Coze, DIFY, featuring advanced RAG technology, knowledge
-graphs, digital humans, and AI workflow orchestration*
+*An out-of-the-box intelligent AI platform that integrates mainstream AI platforms such as Coze and DIFY, providing advanced RAG technology, knowledge graphs, digital humans, and AI workflow orchestration capabilities*
 
-**[📖 中文文档](README.md)** | **[📚 Documentation](https://doc.pandarobot.chat)** | *
-*[🚀 Live Demo](https://web.pandarobot.chat)** | **[🐛 Report Bug](https://github.com/ageerle/ruoyi-ai/issues)** | *
-*[💡 Request Feature](https://github.com/ageerle/ruoyi-ai/issues)**
+**[中文](README.md)** | **[📖 Documentation](https://doc.pandarobot.chat)** |
+**[🚀 Live Demo](https://web.pandarobot.chat)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
 
 </div>
 
-## ✨ Key Features
+## ✨ Core Features
 
-### 🤖 Advanced AI Engine
+### Intelligent AI Engine
+- **Multi-Model Integration**: Supports mainstream LLM providers including OpenAI, DeepSeek, Alibaba's Tongyi Qianwen, and Zhipu AI
+- **Multi-Modal Understanding**: Intelligently processes multiple formats including text, images, and documents
+- **AI Platform Integration**: Integrates mainstream AI application platforms like **Coze**, **DIFY**, and **FastGPT**
+- **MCP Capability Integration**: Build an extensible AI toolkit ecosystem based on the Model Context Protocol
+- **AI Coding Assistant**: Built-in intelligent code analysis and project scaffolding generation capabilities
 
-- **Multi-Model Support**: OpenAI GPT-4, Azure, ChatGLM, Qwen, ZhipuAI
-- **AI Platform Integration**: Deep integration with **FastGPT**, **Coze**, **DIFY** and other leading AI platforms
-- **Spring AI MCP Integration**: Extensible tool ecosystem with Model Context Protocol
-- **Streaming Chat**: Real-time SSE/WebSocket communication
-- **AI Copilot**: Intelligent code analysis and project scaffolding
+### Local RAG Solution
+- **Private Knowledge Base**: Implements local private knowledge base based on Langchain4j framework + BGE-large-zh-v1.5 Chinese vector model
+- **Multiple Vector Databases**: Supports mainstream vector databases including Milvus, Weaviate, and Qdrant
+- **Data Security & Privacy**: Supports fully local deployment to protect enterprise data privacy
+- **Flexible Model Deployment**: Compatible with local inference frameworks like Ollama and vLLM
 
-### 🌟 AI Platform Ecosystem
+### AI Creative Tools
+- **AI Image Generation**: Integrates MidJourney and GPT-4o-image
+- **Intelligent PPT Generation**: Convert text content to beautiful presentations with one click
 
-- **FastGPT Deep Integration**: Native FastGPT API support with knowledge base retrieval, workflow orchestration and
-  context management
-- **Coze Official SDK**: Integration with ByteDance Coze platform official SDK, supporting Bot conversations and
-  streaming responses
-- **DIFY Full Compatibility**: Using DIFY Java Client for app orchestration, workflows and knowledge base management
-- **Unified Chat Interface**: Standardized chat service interface supporting seamless platform switching and load
-  balancing
-
-### 🧠 Enterprise RAG Solution
-
-- **Local Knowledge Base**: Langchain4j + BGE-large-zh-v1.5 embeddings
-- **Vector Database Support**: Milvus, Weaviate, Qdrant
-- **Privacy-First**: On-premise deployment with local LLM support
-- **Ollama & vLLM Compatible**: Flexible model deployment options
-
-### 🎨 Creative AI Tools
-
-- **AI Art Generation**: DALL·E-3, MidJourney, Stable Diffusion integration
-- **PPT Creation**: Automated slide generation from text input
-- **Multi-Modal Processing**: Text, image, and document understanding
-
-### 🧩 Knowledge Graph & Intelligent Orchestration
-
-- **Knowledge Graph Construction**: Automatically extract entities and relationships from documents and conversations to
-  build visual knowledge networks
-- **AI Workflow Orchestration**: Visual workflow designer supporting complex AI task orchestration and automated
-  execution
-- **Digital Human Interaction**: Integrated digital human avatars for more natural human-computer interaction
-- **Intelligent Reasoning Engine**: Knowledge graph-based intelligent reasoning and Q&A capabilities
+### Knowledge Graph & Intelligent Orchestration
+- **Knowledge Graph Construction**: Automatically extract entity relationships from documents and conversations, build visualized knowledge networks
+- **AI Workflow Orchestration**: Visual workflow designer supporting complex AI task orchestration and automated execution
+- **Digital Human Interaction**: Integrated digital avatars providing more natural human-machine interaction experience
 
 ## 🚀 Quick Start
 
 ### Live Demo
 
-- **User Portal**: [web.pandarobot.chat](https://web.pandarobot.chat) (demo/demo123)
-- **Admin Panel**: [admin.pandarobot.chat](https://admin.pandarobot.chat) (admin/admin123)
+- **User Experience**: [web.pandarobot.chat](https://web.pandarobot.chat) (Username: admin, Password: admin123)
+- **Admin Dashboard**: [admin.pandarobot.chat](https://admin.pandarobot.chat) (Username: admin, Password: admin123)
 
-### Source Code
+### Project Repositories
 
-| Component      | GitHub                                                | Gitee                                                | GitCode                                                |
-|----------------|-------------------------------------------------------|------------------------------------------------------|--------------------------------------------------------|
-| Backend API    | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
-| User Frontend  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
-| Admin Frontend | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
+| Module           | GitHub Repository                                      | Gitee Repository                                      | GitCode Repository                                      |
+|------------------|-------------------------------------------------------|------------------------------------------------------|--------------------------------------------------------|
+| 🔧 Backend       | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
+| 🎨 User Frontend | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
+| 🛠️ Admin Panel   | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
 
-### Collaborative Projects
-
-| Project Description |                           GitHub Repository                            |                         Gitee Repository                         |
-|:-------------------:|:----------------------------------------------------------------------:|:----------------------------------------------------------------:|
-| Simplified Frontend | [ruoyi-element-ai](https://github.com/element-plus-x/ruoyi-element-ai) | [ruoyi-element-ai](https://gitee.com/he-jiayue/ruoyi-element-ai) |
-
-## 🛠️ Tech Stack
+## 🛠️ Technical Architecture
 
 ### Core Framework
-
-- **Backend**: Spring Boot 3.4, Spring AI, Langchain4j
-- **Database**: MySQL 8.0, Redis, Vector Databases (Milvus/Weaviate/Qdrant)
-- **Frontend**: Vue 3, Vben Admin, Naive UI
-- **Authentication**: Sa-Token, JWT
+- **Backend**: Spring Boot 3.5 + Langchain4j
+- **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate/Qdrant)
+- **Frontend**: Vue 3 + Vben Admin + Element UI
+- **Security**: Sa-Token + JWT dual-layer security
 
 ### System Components
-
-- **File Processing**: PDF, Word, Excel parsing, intelligent image analysis
-- **Real-time Communication**: WebSocket real-time communication, SSE streaming
-- **System Monitoring**: Comprehensive logging, performance monitoring, health checks
+- **Document Processing**: PDF, Word, and Excel parsing with intelligent image analysis
+- **Real-Time Communication**: WebSocket real-time communication with SSE streaming responses
+- **System Monitoring**: Comprehensive logging system, performance monitoring, and service health checks
 
 ## 📚 Documentation
 
-For detailed setup, configuration, and development guides, visit our comprehensive documentation:
+Want to learn more about installation, deployment, configuration, and secondary development?
 
-**[📖 Official Documentation](https://doc.pandarobot.chat)**
+**👉 [Complete Documentation](https://doc.pandarobot.chat)**
 
 ## 🤝 Contributing
 
-We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, or improving
-documentation, your help is appreciated.
+We warmly welcome community contributions! Whether you are a seasoned developer or just getting started, you can contribute to the project 💪
 
 ### How to Contribute
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. **Fork** the project to your account
+2. **Create a branch** (`git checkout -b feature/new-feature-name`)
+3. **Commit your changes** (`git commit -m 'Add new feature'`)
+4. **Push to the branch** (`git push origin feature/new-feature-name`)
+5. **Create a Pull Request**
 
-*Please submit PRs to GitHub - they will be synchronized to other platforms automatically.*
+> 💡 **Tip**: We recommend submitting PRs to GitHub, we will automatically sync to other code hosting platforms
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-Special thanks to these amazing open source projects:
-
-- [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) - Intelligent coding
-  assistant based on spring-ai-alibaba with MCP protocol integration for project analysis and code generation
-- [Spring AI](https://spring.io/projects/spring-ai) - Spring's AI integration framework
-- [Langchain4j](https://github.com/langchain4j/langchain4j) - Java LLM framework
-- [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - Enterprise development framework
-- [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - Vue admin template
-- [chatgpt-java](https://github.com/Grt1228/chatgpt-java) - ChatGPT Java SDK
+Thanks to the following excellent open-source projects for their support:
+- [Spring AI Alibaba Copilot](https://github.com/spring-ai-alibaba/copilot) - Intelligent coding assistant based on spring-ai-alibaba
+- [Langchain4j](https://github.com/langchain4j/langchain4j) - Powerful Java LLM development framework
+- [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - Mature enterprise-level rapid development framework
+- [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - Modern Vue admin template
 
 ## 🌐 Ecosystem Partners
 
-- [PPIO Cloud](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - Cost-effective GPU
-  containers and model APIs
+- [PPIO Cloud](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - Provides cost-effective GPU computing and model API services
+- [Youyun Intelligent Computing](https://www.compshare.cn/?ytag=GPU_YY-gh_ruoyi) - Thousands of RTX40 series GPUs + mainstream models API services, second-level response, pay-per-use, free for new customers.
 
-## 💬 Community
+## Outstanding Open-Source Projects and Community Recommendations
+- [imaiwork](https://gitee.com/tsinghua-open/imaiwork) - Open-source AI phone, AI customer acquisition phone project, based on accessibility mode and RPA, more powerful than Doubao AI phone.
+
+## 💬 Community Chat
 
 <div align="center">
 
 <table>
 <tr>
 <td align="center">
-<img src="image/wx.png" alt="WeChat" width="200" height="200"><br>
-<strong>Add Author WeChat</strong><br>
-<em>Scan to join learning group</em>
+<img src="docs/image/wx.png" alt="WeChat QR Code" width="200" height="200"><br>
+<strong>Scan to Add Author's WeChat</strong><br>
+<em>Invitation to join the group</em>
 </td>
 <td align="center">
-<img src="image/qq.png" alt="QQ Group" width="200" height="200"><br>
-<strong>QQ Group</strong><br>
-<em>Technical discussion</em>
+<img src="docs/image/qq.png" alt="QQ Group QR Code" width="200" height="200"><br>
+<strong>QQ Technical Discussion Group</strong><br>
+<em>Technical discussions</em>
 </td>
+
 </tr>
 </table>
 
@@ -166,10 +144,9 @@ Special thanks to these amazing open source projects:
 
 <div align="center">
 
-**[⭐ Star this repo](https://github.com/ageerle/ruoyi-ai)** • **[🍴 Fork it](https://github.com/ageerle/ruoyi-ai/fork)
-** • **[📖 中文文档](README.md)** • **[📚 Documentation](https://doc.pandarobot.chat)**
+**[⭐ Star to Support](https://github.com/ageerle/ruoyi-ai)** • **[Fork to Contribute](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 中文](README.md)** • **[📖 Complete Documentation](https://doc.pandarobot.chat)**
 
-*Built with ❤️ by the RuoYi AI community*
+*Built with ❤️, maintained by the RuoYi AI open-source community*
 
 </div>
 
@@ -194,7 +171,3 @@ Special thanks to these amazing open source projects:
 [license-shield]: https://img.shields.io/github/license/ageerle/ruoyi-ai.svg?style=flat-square
 
 [license-url]: https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE
-
-
-
-

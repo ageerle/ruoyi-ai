@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="log.path" value="./logs/ruoyi-snailjob-server" />
+    <property name="console.log.pattern"
+              value="%cyan(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+
+
+    <!-- 控制台输出 -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${console.log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 控制台输出 -->
+    <appender name="file_console" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/console.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件名格式 -->
+            <fileNamePattern>${log.path}/console.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 日志最大 1天 -->
+            <maxHistory>1</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <!-- 过滤的级别 -->
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <appender name="file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${log.path}/info.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <MaxHistory>60</MaxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${log.path}/error.%d{yyyy-MM-dd}.log
+            </FileNamePattern>
+            <MaxHistory>60</MaxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name ="async_info" class= "ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold >100</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <appender-ref ref ="file_info"/>
+    </appender>
+
+    <appender name ="async_error" class= "ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold >100</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <appender-ref ref ="file_error"/>
+    </appender>
+
+    <!-- SnailJob appender -->
+    <appender name="snail_log_server_appender" class="com.aizuda.snailjob.server.common.appender.SnailJobServerLogbackAppender">
+    </appender>
+
+    <!-- 控制台输出日志级别 -->
+    <root level="info">
+        <appender-ref ref="console" />
+        <appender-ref ref="file_console" />
+        <appender-ref ref="async_info" />
+        <appender-ref ref="async_error" />
+        <appender-ref ref="snail_log_server_appender" />
+    </root>
+</configuration>

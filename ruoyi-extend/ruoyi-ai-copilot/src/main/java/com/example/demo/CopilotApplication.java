@@ -1,7 +1,7 @@
 package com.example.demo;
 
 import com.example.demo.config.AppProperties;
-import com.example.demo.util.BrowserUtil;
+import com.example.demo.utils.BrowserUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +9,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 
@@ -21,7 +20,6 @@ import org.springframework.core.env.Environment;
  */
 @SpringBootApplication
 @EnableConfigurationProperties(AppProperties.class)
-@EnableAspectJAutoProxy
 public class CopilotApplication {
 
     private static final Logger logger = LoggerFactory.getLogger(CopilotApplication.class);
@@ -33,7 +31,7 @@ public class CopilotApplication {
     private Environment environment;
 
     public static void main(String[] args) {
-        SpringApplication.run(CopilotApplication.class, args);
+       SpringApplication.run(CopilotApplication.class, args);
     }
 
     /**

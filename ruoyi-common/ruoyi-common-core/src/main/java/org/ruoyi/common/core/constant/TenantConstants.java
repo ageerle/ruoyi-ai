@@ -8,16 +8,6 @@ package org.ruoyi.common.core.constant;
 public interface TenantConstants {
 
     /**
-     * 租户正常状态
-     */
-    String NORMAL = "0";
-
-    /**
-     * 租户封禁状态
-     */
-    String DISABLE = "1";
-
-    /**
      * 超级管理员ID
      */
     Long SUPER_ADMIN_ID = 1L;

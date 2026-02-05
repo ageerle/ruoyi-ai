@@ -19,10 +19,12 @@ import java.util.Map;
  * @author 老马
  */
 public class EncryptUtils {
+
     /**
      * 公钥
      */
     public static final String PUBLIC_KEY = "publicKey";
+
     /**
      * 私钥
      */
@@ -51,7 +53,7 @@ public class EncryptUtils {
     /**
      * AES加密
      *
-     * @param data     待解密数据
+     * @param data     待加密数据
      * @param password 秘钥字符串
      * @return 加密后字符串, 采用Base64编码
      */
@@ -65,6 +67,25 @@ public class EncryptUtils {
             throw new IllegalArgumentException("AES秘钥长度要求为16位、24位、32位");
         }
         return SecureUtil.aes(password.getBytes(StandardCharsets.UTF_8)).encryptBase64(data, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * AES加密
+     *
+     * @param data     待加密数据
+     * @param password 秘钥字符串
+     * @return 加密后字符串, 采用Hex编码
+     */
+    public static String encryptByAesHex(String data, String password) {
+        if (StrUtil.isBlank(password)) {
+            throw new IllegalArgumentException("AES需要传入秘钥信息");
+        }
+        // aes算法的秘钥要求是16位、24位、32位
+        int[] array = {16, 24, 32};
+        if (!ArrayUtil.contains(array, password.length())) {
+            throw new IllegalArgumentException("AES秘钥长度要求为16位、24位、32位");
+        }
+        return SecureUtil.aes(password.getBytes(StandardCharsets.UTF_8)).encryptHex(data, StandardCharsets.UTF_8);
     }
 
     /**
@@ -87,7 +108,7 @@ public class EncryptUtils {
     }
 
     /**
-     * sm4加密
+     * SM4加密（Base64编码）
      *
      * @param data     待加密数据
      * @param password 秘钥字符串
@@ -106,9 +127,28 @@ public class EncryptUtils {
     }
 
     /**
+     * SM4加密（Hex编码）
+     *
+     * @param data     待加密数据
+     * @param password 秘钥字符串
+     * @return 加密后字符串, 采用Hex编码
+     */
+    public static String encryptBySm4Hex(String data, String password) {
+        if (StrUtil.isBlank(password)) {
+            throw new IllegalArgumentException("SM4需要传入秘钥信息");
+        }
+        // sm4算法的秘钥要求是16位长度
+        int sm4PasswordLength = 16;
+        if (sm4PasswordLength != password.length()) {
+            throw new IllegalArgumentException("SM4秘钥长度要求为16位");
+        }
+        return SmUtil.sm4(password.getBytes(StandardCharsets.UTF_8)).encryptHex(data, StandardCharsets.UTF_8);
+    }
+
+    /**
      * sm4解密
      *
-     * @param data     待解密数据
+     * @param data     待解密数据（可以是Base64或Hex编码）
      * @param password 秘钥字符串
      * @return 解密后字符串
      */
@@ -153,9 +193,24 @@ public class EncryptUtils {
     }
 
     /**
+     * sm2公钥加密
+     *
+     * @param data      待加密数据
+     * @param publicKey 公钥
+     * @return 加密后字符串, 采用Hex编码
+     */
+    public static String encryptBySm2Hex(String data, String publicKey) {
+        if (StrUtil.isBlank(publicKey)) {
+            throw new IllegalArgumentException("SM2需要传入公钥进行加密");
+        }
+        SM2 sm2 = SmUtil.sm2(null, publicKey);
+        return sm2.encryptHex(data, StandardCharsets.UTF_8, KeyType.PublicKey);
+    }
+
+    /**
      * sm2私钥解密
      *
-     * @param data       待加密数据
+     * @param data       待解密数据
      * @param privateKey 私钥
      * @return 解密后字符串
      */
@@ -196,9 +251,24 @@ public class EncryptUtils {
     }
 
     /**
+     * rsa公钥加密
+     *
+     * @param data      待加密数据
+     * @param publicKey 公钥
+     * @return 加密后字符串, 采用Hex编码
+     */
+    public static String encryptByRsaHex(String data, String publicKey) {
+        if (StrUtil.isBlank(publicKey)) {
+            throw new IllegalArgumentException("RSA需要传入公钥进行加密");
+        }
+        RSA rsa = SecureUtil.rsa(null, publicKey);
+        return rsa.encryptHex(data, StandardCharsets.UTF_8, KeyType.PublicKey);
+    }
+
+    /**
      * rsa私钥解密
      *
-     * @param data       待加密数据
+     * @param data       待解密数据
      * @param privateKey 私钥
      * @return 解密后字符串
      */

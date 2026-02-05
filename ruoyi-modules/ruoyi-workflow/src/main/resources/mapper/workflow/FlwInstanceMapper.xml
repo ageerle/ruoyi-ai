@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.workflow.mapper.FlwInstanceMapper">
+    <resultMap type="org.ruoyi.workflow.domain.vo.FlowInstanceVo" id="FlowInstanceResult">
+    </resultMap>
+
+    <select id="selectInstanceList" resultMap="FlowInstanceResult">
+        select fi.id,
+               fi.create_time,
+               fi.update_time,
+               fi.tenant_id,
+               fi.del_flag,
+               fi.definition_id,
+               fi.business_id,
+               fi.node_type,
+               fi.node_code,
+               fi.node_name,
+               fi.variable,
+               fi.flow_status,
+               fi.activity_status,
+               fi.create_by,
+               fi.ext,
+               fd.flow_name,
+               fd.flow_code,
+               fd.version,
+               fd.form_custom,
+               fd.form_path,
+               fd.category,
+               biz.business_code,
+               biz.business_title
+        from flow_instance fi
+                 left join flow_definition fd on fi.definition_id = fd.id
+                 left join flow_instance_biz_ext biz on biz.instance_id = fi.id
+                ${ew.getCustomSqlSegment}
+    </select>
+
+</mapper>

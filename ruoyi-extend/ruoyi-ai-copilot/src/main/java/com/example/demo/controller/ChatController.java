@@ -16,7 +16,6 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 聊天控制器
@@ -43,84 +42,11 @@ public class ChatController {
     }
 
     /**
-     * 发送消息给AI - 支持连续工具调用
+     * 流式聊天 - 直接返回流式数据
      */
-    // 在现有ChatController中修改sendMessage方法
-    @PostMapping("/message")
-    public Mono<ChatResponseDto> sendMessage(@RequestBody ChatRequestDto request) {
-        return Mono.fromCallable(() -> {
-            try {
-                logger.info("💬 ========== 新的聊天请求 ==========");
-                logger.info("📝 用户消息: {}", request.getMessage());
-                logger.info("🕐 请求时间: {}", java.time.LocalDateTime.now());
-
-                // 智能判断是否需要工具调用
-                boolean needsToolExecution = continuousConversationService.isLikelyToNeedTools(request.getMessage());
-                logger.info("🔍 工具需求分析: {}", needsToolExecution ? "可能需要工具" : "简单对话");
-
-                if (needsToolExecution) {
-                    // 需要工具调用的复杂任务 - 使用异步模式
-                    String taskId = continuousConversationService.startTask(request.getMessage());
-                    logger.info("🆔 任务ID: {}", taskId);
-
-                    // 记录任务开始
-                    executionLogger.logToolStatistics(); // 显示当前统计
-
-                    // 异步执行连续对话
-                    CompletableFuture.runAsync(() -> {
-                        try {
-                            logger.info("🚀 开始异步执行连续对话任务: {}", taskId);
-                            continuousConversationService.executeContinuousConversation(
-                                    taskId, request.getMessage(), conversationHistory
-                            );
-                            logger.info("✅ 连续对话任务完成: {}", taskId);
-                        } catch (Exception e) {
-                            logger.error("❌ 异步对话执行错误: {}", e.getMessage(), e);
-                        }
-                    });
-
-                    // 返回异步任务响应
-                    ChatResponseDto responseDto = new ChatResponseDto();
-                    responseDto.setTaskId(taskId);
-                    responseDto.setMessage("任务已启动，正在处理中...");
-                    responseDto.setSuccess(true);
-                    responseDto.setAsyncTask(true);
-
-                    logger.info("📤 返回响应: taskId={}, 异步任务已启动", taskId);
-                    return responseDto;
-                } else {
-                    // 简单对话 - 使用流式模式
-                    logger.info("🔄 执行流式对话处理");
-
-                    // 返回流式响应标识，让前端建立流式连接
-                    ChatResponseDto responseDto = new ChatResponseDto();
-                    responseDto.setMessage("开始流式对话...");
-                    responseDto.setSuccess(true);
-                    responseDto.setAsyncTask(false); // 关键：设置为false，表示不是工具任务
-                    responseDto.setStreamResponse(true); // 新增：标识为流式响应
-                    responseDto.setTotalTurns(1);
-
-                    logger.info("📤 返回流式响应标识");
-                    return responseDto;
-                }
-
-            } catch (Exception e) {
-                logger.error("Error processing chat message", e);
-                ChatResponseDto errorResponse = new ChatResponseDto();
-                errorResponse.setMessage("Error: " + e.getMessage());
-                errorResponse.setSuccess(false);
-                return errorResponse;
-            }
-        });
-    }
-
-
-    /**
-     * 流式聊天 - 真正的流式实现
-     */
-    @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(value = "/message", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> streamMessage(@RequestBody ChatRequestDto request) {
-        logger.info("🌊 开始流式对话: {}", request.getMessage());
+        logger.info("📨 开始流式聊天: {}", request.getMessage());
 
         return Flux.create(sink -> {
             try {
@@ -137,26 +63,28 @@ public class ChatController {
                 contentStream
                         .doOnNext(content -> {
                             logger.debug("📨 流式内容片段: {}", content);
-                            // 发送SSE格式的数据
-                            sink.next("data: " + content + "\n\n");
+                            // 发送内容片段（SSE格式会自动添加 "data: " 前缀）
+                            sink.next(content);
                         })
                         .doOnComplete(() -> {
-                            logger.info("✅ 流式对话完成");
-                            sink.next("data: [DONE]\n\n");
+                            logger.info("✅ 流式聊天完成");
+                            // 发送完成标记
+                            sink.next("[DONE]");
                             sink.complete();
                         })
                         .doOnError(error -> {
-                            logger.error("❌ 流式对话错误: {}", error.getMessage());
+                            logger.error("❌ 流式聊天错误: {}", error.getMessage());
                             sink.error(error);
                         })
                         .subscribe();
 
             } catch (Exception e) {
-                logger.error("❌ 流式对话启动失败: {}", e.getMessage());
+                logger.error("❌ 流式聊天启动失败: {}", e.getMessage());
                 sink.error(e);
             }
         });
     }
+
 
     /**
      * 清除对话历史
