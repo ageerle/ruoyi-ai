@@ -17,6 +17,9 @@
 
 <img src="docs/image/logo.png" alt="RuoYi AI Logo" width="120" height="120">
 
+## 功能建议&bug提交：【腾讯文档】
+https://docs.qq.com/sheet/DR3hoR3FVVkpJcnVm
+
 ### 企业级AI助手平台
 
 *开箱即用的全栈AI平台，集成Coze、DIFY等主流AI平台，提供先进的RAG技术、知识图谱、数字人和AI流程编排能力*
@@ -25,6 +28,9 @@
 **[🚀 在线体验](https://web.pandarobot.chat)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
 
 </div>
+
+
+
 
 ## ✨ 核心亮点
 
