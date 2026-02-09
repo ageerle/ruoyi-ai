@@ -98,6 +98,8 @@ public abstract class AbstractStreamingChatService implements IChatService {
             }
 
         } catch (Exception e) {
+            SseMessageUtils.sendMessage(userId, "对话出错：" + e.getMessage());
+            SseMessageUtils.completeConnection(userId, tokenValue);
             log.error("{}请求失败：{}", getProviderName(), e.getMessage(), e);
         }
         return emitter;
