@@ -225,6 +225,21 @@ public abstract class AbstractStreamingChatService implements IChatService {
             @Override
             public void onError(Throwable error) {
                 log.error("{}流式响应错误: {}", getProviderName(), error.getMessage(), error);
+                
+                // 发送错误消息到前端
+                try {
+                    String errorMessage = String.format("模型调用失败: %s", error.getMessage());
+                    SseMessageUtils.sendMessage(userId, errorMessage);
+                } catch (Exception e) {
+                    log.error("发送错误消息失败: {}", e.getMessage(), e);
+                }
+                
+                // 关闭SSE连接，避免前端一直等待
+                try {
+                    SseMessageUtils.completeConnection(userId, tokenValue);
+                } catch (Exception e) {
+                    log.error("关闭SSE连接失败: {}", e.getMessage(), e);
+                }
             }
         };
     }
