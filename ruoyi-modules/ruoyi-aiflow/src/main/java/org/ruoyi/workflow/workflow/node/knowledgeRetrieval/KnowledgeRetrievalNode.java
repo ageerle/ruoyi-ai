@@ -1,5 +1,6 @@
 package org.ruoyi.workflow.workflow.node.knowledgeRetrieval;
 
+import dev.langchain4j.data.message.SystemMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.workflow.entity.WorkflowComponent;
@@ -150,18 +151,15 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
 
             // 使用WorkflowUtil调用LLM（流式）
             WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
-            List<dev.langchain4j.data.message.UserMessage> systemMessage =
-                List.of(dev.langchain4j.data.message.UserMessage.from(prompt));
+            List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
 
             // 调用流式LLM
-            String category = StringUtils.isNotBlank(config.getCategory()) ? config.getCategory() : "llm";
             String modelName = StringUtils.isNotBlank(config.getModelName()) ? config.getModelName() : "deepseek-chat";
 
             workflowUtil.streamingInvokeLLM(
                 wfState,
                 tempState,
                 tempNode,
-                category,
                 modelName,
                 systemMessage
             );

@@ -1,17 +1,7 @@
 package org.ruoyi.service.chat.impl.memory;
 
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.dto.ChatMessageDTO;
-import org.ruoyi.domain.dto.request.ChatRequest;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 
 /**
  * 长期记忆使用示例

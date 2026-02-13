@@ -68,7 +68,7 @@ public class WorkflowEngine {
         this.workflowRuntimeNodeService = workflowRuntimeNodeService;
     }
 
-    public void run(User user, List<ObjectNode> userInputs, SseEmitter sseEmitter) {
+    public void run(User user, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue) {
         this.user = user;
         this.sseEmitter = sseEmitter;
         log.info("WorkflowEngine run,userId:{},workflowUuid:{},userInputs:{}", user.getId(), workflow.getUuid(), userInputs);
@@ -86,7 +86,7 @@ public class WorkflowEngine {
             Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
             WorkflowNode startNode = startAndEnds.getLeft();
             List<NodeIOData> wfInputs = getAndCheckUserInput(userInputs, startNode);
-            this.wfState = new WfState(user, wfInputs, runtimeUuid);
+            this.wfState = new WfState(user, wfInputs, runtimeUuid,userId, tokenValue, sseEmitter);
             workflowRuntimeService.updateInput(this.wfRuntimeResp.getId(), wfState);
 
 

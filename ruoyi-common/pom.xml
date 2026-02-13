@@ -11,6 +11,7 @@
 
     <modules>
         <module>ruoyi-common-bom</module>
+        <module>ruoyi-common-chat</module>
         <module>ruoyi-common-social</module>
         <module>ruoyi-common-core</module>
         <module>ruoyi-common-doc</module>

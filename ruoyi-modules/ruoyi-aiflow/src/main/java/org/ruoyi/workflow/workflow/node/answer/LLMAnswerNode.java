@@ -1,6 +1,6 @@
 package org.ruoyi.workflow.workflow.node.answer;
 
-import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.SystemMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.workflow.entity.WorkflowComponent;
@@ -44,9 +44,9 @@ public class LLMAnswerNode extends AbstractWfNode {
         // 调用LLM
         WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
         String modelName = nodeConfigObj.getModelName();
-        String category = nodeConfigObj.getCategory();
-        List<UserMessage> systemMessage = List.of(UserMessage.from(prompt));
-        workflowUtil.streamingInvokeLLM(wfState, state, node, category, modelName, systemMessage);
+        // 转换系统信息结构
+        List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
+        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage);
         return new NodeProcessResult();
     }
 }

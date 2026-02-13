@@ -1,15 +1,14 @@
-package org.ruoyi.domain.vo.chat;
+package org.ruoyi.common.chat.domain.vo.chat;
 
-import org.ruoyi.domain.entity.chat.ChatModel;
+
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.common.chat.domain.entity.chat.ChatModel;
 
 import java.io.Serial;
 import java.io.Serializable;
-
-
 
 /**
  * 模型管理视图对象 chat_model
@@ -110,3 +109,4 @@ public class ChatModelVo implements Serializable {
 
 
 }
+

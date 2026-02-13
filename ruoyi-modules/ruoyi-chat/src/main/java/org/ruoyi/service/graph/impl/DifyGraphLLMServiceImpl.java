@@ -10,7 +10,7 @@ import io.github.imfangs.dify.client.event.MessageEvent;
 import io.github.imfangs.dify.client.model.DifyConfig;
 import io.github.imfangs.dify.client.model.chat.ChatMessage;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.service.graph.IGraphLLMService;
 import org.springframework.stereotype.Service;
 

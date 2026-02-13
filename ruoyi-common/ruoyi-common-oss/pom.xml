@@ -61,6 +61,20 @@
             <artifactId>s3-transfer-manager</artifactId>
         </dependency>
 
+        <!-- OpenAI Java SDK -->
+        <dependency>
+            <groupId>com.openai</groupId>
+            <artifactId>openai-java</artifactId>
+            <version>4.8.0</version>
+        </dependency>
+
+        <!-- OkHttp -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
     </dependencies>
 
 </project>

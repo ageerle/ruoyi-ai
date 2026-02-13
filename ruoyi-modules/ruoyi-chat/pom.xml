@@ -16,33 +16,12 @@
 
         <dependency>
             <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-mybatis</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-excel</artifactId>
+            <artifactId>ruoyi-common-chat</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-sensitive</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-tenant</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j</artifactId>
-            <version>${langchain4j.version}</version>
         </dependency>
 
         <dependency>
@@ -139,21 +118,9 @@
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-sse</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-        </dependency>
-
-
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
         </dependency>
 
         <dependency>

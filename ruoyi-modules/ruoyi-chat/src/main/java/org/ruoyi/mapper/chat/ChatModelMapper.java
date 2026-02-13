@@ -1,7 +1,7 @@
 package org.ruoyi.mapper.chat;
 
-import org.ruoyi.domain.entity.chat.ChatModel;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.entity.chat.ChatModel;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 
 /**

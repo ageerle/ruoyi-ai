@@ -82,6 +82,20 @@ public class SysOssController extends BaseController {
     }
 
     /**
+     * 上传文件（千问百炼版）
+     *
+     * @param file 文件
+     */
+    @Log(title = "上传文件（千问百炼版）", businessType = BusinessType.INSERT)
+    @PostMapping(value = "/fileUpload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public R<SysOssUploadVo> fileUpload(@RequestPart("file") MultipartFile file) {
+        if (ObjectUtil.isNull(file)) {
+            return R.fail("上传文件不能为空");
+        }
+        return R.ok(ossService.fileUpload(file));
+    }
+
+    /**
      * 下载OSS对象
      *
      * @param ossId OSS对象ID

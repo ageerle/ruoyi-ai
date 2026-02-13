@@ -4,7 +4,7 @@ import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import dev.langchain4j.model.output.Response;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ModalityType;
 import org.ruoyi.service.embed.BaseEmbedModelService;
 import org.springframework.stereotype.Component;

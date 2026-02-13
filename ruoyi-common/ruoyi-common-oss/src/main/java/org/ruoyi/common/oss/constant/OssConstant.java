@@ -37,4 +37,16 @@ public interface OssConstant {
      */
     String IS_HTTPS = "Y";
 
+    // 文档解析前缀
+    String FILE_ID_PREFIX = "fileid://";
+
+    // 服务名称
+    String DASH_SCOPE = "Qwen";
+
+    // apiKey 配置名称
+    String CONFIG_NAME_KEY = "file.api.key";
+
+    // apiHost 配置名称
+    String CONFIG_NAME_URL = "file.api.host";
+
 }

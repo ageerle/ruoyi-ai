@@ -5,7 +5,7 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.service.graph.IGraphLLMService;
 import org.springframework.stereotype.Service;
 

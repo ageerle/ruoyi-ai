@@ -1,6 +1,6 @@
-package org.ruoyi.factory;
+package org.ruoyi.common.chat.factory;
 
-import org.ruoyi.service.chat.IChatService;
+import org.ruoyi.common.chat.Service.IChatService;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;

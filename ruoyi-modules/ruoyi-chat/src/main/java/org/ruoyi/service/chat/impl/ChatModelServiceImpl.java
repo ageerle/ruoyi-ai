@@ -1,5 +1,9 @@
 package org.ruoyi.service.chat.impl;
 
+import org.ruoyi.common.chat.Service.IChatModelService;
+import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
+import org.ruoyi.common.chat.domain.entity.chat.ChatModel;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -9,11 +13,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.service.chat.IChatModelService;
 import org.springframework.stereotype.Service;
-import org.ruoyi.domain.bo.chat.ChatModelBo;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
-import org.ruoyi.domain.entity.chat.ChatModel;
 import org.ruoyi.mapper.chat.ChatModelMapper;
 
 import java.util.List;

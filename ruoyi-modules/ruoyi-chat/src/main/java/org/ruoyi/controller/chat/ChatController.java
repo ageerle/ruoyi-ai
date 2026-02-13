@@ -4,7 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.service.chat.impl.ChatServiceFacade;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
