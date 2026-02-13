@@ -1,8 +1,10 @@
-package org.ruoyi.domain.dto.request;
+package org.ruoyi.common.chat.domain.dto.request;
 
+import dev.langchain4j.data.message.ChatMessage;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
-import org.ruoyi.domain.dto.ChatMessageDTO;
+import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
+
 import java.util.List;
 
 /**
@@ -16,7 +18,6 @@ public class ChatRequest {
 
     @NotEmpty(message = "对话消息不能为空")
     private List<ChatMessageDTO> messages;
-
     @NotEmpty(message = "传入的模型不能为空")
     private String model;
 
@@ -59,5 +60,10 @@ public class ChatRequest {
      * 会话令牌（为避免在非Web线程中获取Request，入口处注入）
      */
     private String token;
+
+    /**
+     * 原生对话对象
+     */
+    private List<ChatMessage> chatMessages;
 
 }

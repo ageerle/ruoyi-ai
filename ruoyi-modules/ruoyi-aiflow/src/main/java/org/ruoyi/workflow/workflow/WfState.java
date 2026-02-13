@@ -9,6 +9,7 @@ import org.ruoyi.workflow.entity.User;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
 
@@ -24,6 +25,9 @@ public class WfState {
     private String uuid;
     private User user;
     private String processingNodeUuid;
+    private Long userId;
+    private String tokenValue;
+    private SseEmitter sseEmitter;
 
     //Source node uuid => target node uuid list
     private Map<String, List<String>> edges = new HashMap<>();
@@ -55,10 +59,13 @@ public class WfState {
      */
     private Set<String> interruptNodes = new HashSet<>();
 
-    public WfState(User user, List<NodeIOData> input, String uuid) {
+    public WfState(User user, List<NodeIOData> input, String uuid, Long userId, String tokenValue, SseEmitter sseEmitter) {
         this.input = input;
         this.user = user;
         this.uuid = uuid;
+        this.userId = userId;
+        this.tokenValue = tokenValue;
+        this.sseEmitter = sseEmitter;
     }
 
     /**

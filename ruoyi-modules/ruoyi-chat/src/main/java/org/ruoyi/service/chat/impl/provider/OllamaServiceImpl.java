@@ -5,11 +5,11 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.dto.request.ChatRequest;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.service.chat.impl.AbstractStreamingChatService;
 import org.springframework.stereotype.Service;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 
 import java.util.List;
 

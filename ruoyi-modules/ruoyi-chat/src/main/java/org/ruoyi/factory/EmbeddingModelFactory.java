@@ -2,8 +2,8 @@ package org.ruoyi.factory;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
-import org.ruoyi.service.chat.IChatModelService;
+import org.ruoyi.common.chat.Service.IChatModelService;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.service.embed.BaseEmbedModelService;
 import org.ruoyi.service.embed.MultiModalEmbedModelService;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;

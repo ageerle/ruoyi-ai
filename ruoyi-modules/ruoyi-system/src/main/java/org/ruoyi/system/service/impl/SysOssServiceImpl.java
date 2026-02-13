@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.CacheNames;
 import org.ruoyi.common.core.domain.dto.OssDTO;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.service.OssService;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
@@ -20,6 +21,7 @@ import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.json.utils.JsonUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.oss.constant.OssConstant;
 import org.ruoyi.common.oss.core.OssClient;
 import org.ruoyi.common.oss.entity.UploadResult;
 import org.ruoyi.common.oss.enums.AccessPolicyType;
@@ -27,10 +29,14 @@ import org.ruoyi.common.oss.factory.OssFactory;
 import org.ruoyi.system.domain.SysOss;
 import org.ruoyi.system.domain.SysOssExt;
 import org.ruoyi.system.domain.bo.SysOssBo;
+import org.ruoyi.system.domain.vo.SysOssUploadVo;
 import org.ruoyi.system.domain.vo.SysOssVo;
 import org.ruoyi.system.mapper.SysOssMapper;
 import org.ruoyi.system.service.ISysOssService;
 import org.jetbrains.annotations.NotNull;
+import org.ruoyi.system.utils.QwenFileUploadUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -38,6 +44,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,6 +63,18 @@ import java.util.Map;
 public class SysOssServiceImpl implements ISysOssService, OssService {
 
     private final SysOssMapper baseMapper;
+
+    private final ConfigService configService;
+
+    // 默认密钥
+    private static String API_KEY;
+
+    // 默认api路径地址
+    private static String API_HOST;
+
+    // 上传文件服务器地址
+    @Value("${sys.upload.path}")
+    private String UPLOAD_PATH;
 
     /**
      * 查询OSS对象存储列表
@@ -221,6 +242,73 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     }
 
     /**
+     * 上传文件至千问百炼平台
+     * @param file 要上传的 MultipartFile 对象
+     * @return 上传成功后的 SysOssVo 对象，包含文件信息
+     */
+    @Override
+    public SysOssUploadVo fileUpload(MultipartFile file) {
+        String originalName = file.getOriginalFilename();
+        if (StringUtils.isEmpty(originalName)){
+            throw new ServiceException("文件名不能为空");
+        }
+        int lastDotIndex = originalName != null ? originalName.lastIndexOf(".") : -1;
+        String prefix = lastDotIndex > 0 ? originalName.substring(0, lastDotIndex) : "";
+        String suffix = lastDotIndex > 0 ? originalName.substring(lastDotIndex) : "";
+        try {
+            // 确保上传目录存在
+            Path uploadDir = Paths.get(UPLOAD_PATH);
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+            // 生成上传文件名
+            Path targetPath = uploadDir.resolve(originalName);
+            // 直接保存文件
+            File pathFile = targetPath.toFile();
+            file.transferTo(pathFile);
+            // 获取配置
+            initConfig();
+            // 使用工具类上传文件到阿里云
+            String fileId = QwenFileUploadUtils.uploadFile(pathFile, API_HOST, API_KEY);
+            if (StringUtils.isEmpty(fileId)) {
+                throw new ServiceException("文件上传失败，未获取到fileId");
+            }
+            // 拿到上传地址的路径地址
+            String filePath = targetPath.toAbsolutePath().toString();
+            // 保存文件信息到数据库
+            return buildEntity(filePath, fileId, suffix, prefix, originalName);
+        } catch (IOException e) {
+            throw new ServiceException("文件上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 保存数据到数据库中
+     * @param filePath 上传文件地址
+     * @param fileId 百炼平台返回fileID
+     * @param suffix 文件后缀
+     * @param prefix 文件前缀
+     * @param originalName 文件名称
+     * @return SysOssUploadVo 上传返回VO对象
+     */
+    @NotNull
+    private SysOssUploadVo buildEntity(String filePath, String fileId, String suffix, String prefix, String originalName) {
+        String url = OssConstant.FILE_ID_PREFIX + fileId;
+        SysOss oss = new SysOss();
+        oss.setUrl(url);
+        oss.setExt1(filePath);
+        oss.setFileSuffix(suffix);
+        oss.setFileName(prefix);
+        oss.setOriginalName(originalName);
+        oss.setService(OssConstant.DASH_SCOPE);
+        baseMapper.insert(oss);
+        SysOssUploadVo uploadVo = new SysOssUploadVo();
+        BeanUtils.copyProperties(oss, uploadVo);
+        uploadVo.setFileName(originalName);
+        return uploadVo;
+    }
+
+    /**
      * 上传文件到对象存储服务，并保存文件信息到数据库
      *
      * @param file 要上传的文件对象
@@ -285,5 +373,21 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
             oss.setUrl(storage.getPrivateUrl(oss.getFileName(), Duration.ofSeconds(120)));
         }
         return oss;
+    }
+
+    /**
+     * 初始化配置并返回API密钥和主机
+     */
+    private void initConfig() {
+        String apiKey = configService.getConfigValue(OssConstant.CONFIG_NAME_KEY);
+        if (StringUtils.isEmpty(apiKey)) {
+            throw new ServiceException("请先配置Qwen上传文件相关API_KEY");
+        }
+        API_KEY = apiKey;
+        String apiHost = configService.getConfigValue(OssConstant.CONFIG_NAME_URL);
+        if (StringUtils.isEmpty(apiHost)) {
+            throw new ServiceException("请先配置Qwen上传文件相关API_HOST");
+        }
+        API_HOST = apiHost;
     }
 }

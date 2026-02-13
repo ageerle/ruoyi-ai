@@ -2,7 +2,7 @@ package org.ruoyi.service.graph.impl;
 
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.service.graph.IGraphLLMService;
 import org.springframework.stereotype.Service;
 

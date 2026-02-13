@@ -3,8 +3,8 @@ package org.ruoyi.service.chat.impl.memory;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
 import org.ruoyi.common.core.utils.SpringUtils;
-import org.ruoyi.domain.dto.ChatMessageDTO;
 import org.ruoyi.service.chat.IChatMessageService;
 
 import java.util.ArrayList;

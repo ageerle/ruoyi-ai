@@ -1,12 +1,12 @@
-package org.ruoyi.domain.bo.chat;
+package org.ruoyi.common.chat.domain.bo.chat;
 
-import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.domain.entity.chat.ChatModel;
-import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
+import org.ruoyi.common.chat.domain.entity.chat.ChatModel;
+import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 /**
  * 模型管理业务对象 chat_model

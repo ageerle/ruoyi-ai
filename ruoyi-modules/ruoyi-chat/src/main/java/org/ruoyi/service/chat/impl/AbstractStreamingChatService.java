@@ -4,6 +4,7 @@ import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
@@ -23,20 +24,21 @@ import org.ruoyi.agent.WebSearchAgent;
 import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
 import org.ruoyi.agent.tool.QueryAllTablesTool;
 import org.ruoyi.agent.tool.QueryTableSchemaTool;
+import org.ruoyi.common.chat.Service.IChatService;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
 import org.ruoyi.domain.bo.chat.ChatMessageBo;
-import org.ruoyi.domain.dto.request.ChatRequest;
-import org.ruoyi.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.RoleType;
 import org.ruoyi.service.chat.IChatMessageService;
-import org.ruoyi.service.chat.IChatService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -76,23 +78,50 @@ public abstract class AbstractStreamingChatService implements IChatService {
      */
     @Override
     public SseEmitter chat(ChatModelVo chatModelVo, ChatRequest chatRequest, SseEmitter emitter, Long userId, String tokenValue) {
+        return executeChat(chatModelVo, chatRequest, emitter, userId, tokenValue, null);
+    }
+
+    /**
+     * 定义聊天流程骨架（包含流式回调结构）
+     */
+    @Override
+    public SseEmitter chat(ChatModelVo chatModelVo, ChatRequest chatRequest, SseEmitter emitter, Long userId, String tokenValue, StreamingChatResponseHandler handler) {
+        return executeChat(chatModelVo, chatRequest, emitter, userId, tokenValue, handler);
+    }
+
+    /**
+     * 定义聊天流程骨架
+     */
+    public SseEmitter executeChat(ChatModelVo chatModelVo, ChatRequest chatRequest, SseEmitter emitter, Long userId, String tokenValue, StreamingChatResponseHandler handler) {
         try {
-            String content = chatRequest.getMessages().get(0).getContent();
+            String content = Optional.ofNullable(chatRequest.getMessages()).filter(messages -> !messages.isEmpty())
+                // 对话逻辑：从 messages 筛选第一个元素
+                .map(messages -> messages.get(0).getContent())
+                .filter(StringUtils::isNotBlank)
+                // 工作流逻辑：从 chatMessages 筛选 UserMessage 的文本
+                .orElseGet(() -> Optional.ofNullable(chatRequest.getChatMessages()).orElse(List.of()).stream()
+                        .filter(message -> message instanceof UserMessage um)
+                        .map(message -> ((UserMessage) message).singleText())
+                        .filter(StringUtils::isNotBlank)
+                        .findFirst()
+                        .orElse(""));
+
             // 保存用户消息
             saveChatMessage(chatRequest, userId, content, RoleType.USER.getName(), chatModelVo);
-
             // 使用长期记忆增强的消息列表
             List<ChatMessage> messagesWithMemory = buildMessagesWithMemory(chatRequest);
 
-            if(chatRequest.getEnableThinking()){
-                String msg = doAgent(content,chatModelVo);
+            if (chatRequest.getEnableThinking()) {
+                String msg = doAgent(content, chatModelVo);
                 SseMessageUtils.sendMessage(userId, msg);
                 SseMessageUtils.completeConnection(userId, tokenValue);
                 // 保存助手回复消息
                 saveChatMessage(chatRequest, userId, msg, RoleType.ASSISTANT.getName(), chatModelVo);
-            }else {
+            } else {
                 // 创建包含内存管理的响应处理器
-                StreamingChatResponseHandler handler = createResponseHandler(chatRequest, userId, tokenValue, chatModelVo);
+                if (ObjectUtils.isEmpty(handler)) {
+                    handler = createResponseHandler(chatRequest, userId, tokenValue, chatModelVo);
+                }
                 // 调用具体实现的聊天方法
                 doChat(chatModelVo, chatRequest, messagesWithMemory, handler);
             }
@@ -115,8 +144,6 @@ public abstract class AbstractStreamingChatService implements IChatService {
      */
     protected List<ChatMessage> buildMessagesWithMemory(ChatRequest chatRequest) {
         List<ChatMessage> messages = new ArrayList<>();
-
-        // 加载历史消息
         if (enablePersistentMemory && chatRequest.getSessionId() != null) {
             MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
             if (memory != null) {
@@ -126,8 +153,13 @@ public abstract class AbstractStreamingChatService implements IChatService {
                     log.debug("已加载 {} 条历史消息用于会话 {}", historicalMessages.size(), chatRequest.getSessionId());
                 }
             }
+            return messages;
         }
-
+        // 工作流方式
+        List<ChatMessage> chatMessages = chatRequest.getChatMessages();
+        if (!CollectionUtils.isEmpty(chatMessages)){
+            messages.addAll(chatMessages);
+        }
         return messages;
     }
 
@@ -172,16 +204,16 @@ public abstract class AbstractStreamingChatService implements IChatService {
      *
      * @param chatModelVo 模型配置
      * @param chatRequest 聊天请求
-     * @param handler 响应处理器
+     * @param handler     响应处理器
      */
-    protected abstract void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory,StreamingChatResponseHandler handler);
+    protected abstract void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory, StreamingChatResponseHandler handler);
 
     /**
      * 创建标准的响应处理器
      *
      * @param chatRequest 聊天请求，包含sessionId等上下文信息
-     * @param userId 用户ID
-     * @param tokenValue 会话令牌
+     * @param userId      用户ID
+     * @param tokenValue  会话令牌
      * @param chatModelVo 模型配置
      * @return 标准的流式响应处理器
      */
@@ -225,7 +257,7 @@ public abstract class AbstractStreamingChatService implements IChatService {
             @Override
             public void onError(Throwable error) {
                 log.error("{}流式响应错误: {}", getProviderName(), error.getMessage(), error);
-                
+
                 // 发送错误消息到前端
                 try {
                     String errorMessage = String.format("模型调用失败: %s", error.getMessage());
@@ -233,7 +265,7 @@ public abstract class AbstractStreamingChatService implements IChatService {
                 } catch (Exception e) {
                     log.error("发送错误消息失败: {}", e.getMessage(), e);
                 }
-                
+
                 // 关闭SSE连接，避免前端一直等待
                 try {
                     SseMessageUtils.completeConnection(userId, tokenValue);
@@ -248,9 +280,9 @@ public abstract class AbstractStreamingChatService implements IChatService {
      * 保存聊天消息到数据库
      *
      * @param chatRequest 聊天请求
-     * @param userId 用户ID
-     * @param content 消息内容
-     * @param role 消息角色
+     * @param userId      用户ID
+     * @param content     消息内容
+     * @param role        消息角色
      * @param chatModelVo 模型配置
      */
     private void saveChatMessage(ChatRequest chatRequest, Long userId, String content, String role, ChatModelVo chatModelVo) {
@@ -290,7 +322,7 @@ public abstract class AbstractStreamingChatService implements IChatService {
      */
     public abstract String getProviderName();
 
-    protected String doAgent(String userMessage,ChatModelVo chatModelVo) {
+    protected String doAgent(String userMessage, ChatModelVo chatModelVo) {
         // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
         // 该服务提供两个工具: bing_search (必应搜索) 和 crawl_webpage (网页抓取)
         McpTransport transport = new StdioMcpTransport.Builder()
@@ -357,7 +389,7 @@ public abstract class AbstractStreamingChatService implements IChatService {
         SupervisorAgent supervisor = AgenticServices
             .supervisorBuilder()
             .chatModel(PLANNER_MODEL)
-            .subAgents(sqlAgent,chartGenerationAgent)
+            .subAgents(sqlAgent, chartGenerationAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .build();
 

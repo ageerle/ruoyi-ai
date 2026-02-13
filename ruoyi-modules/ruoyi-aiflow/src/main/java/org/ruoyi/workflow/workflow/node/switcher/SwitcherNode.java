@@ -1,9 +1,15 @@
 package org.ruoyi.workflow.workflow.node.switcher;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
+import org.ruoyi.workflow.service.WorkflowNodeService;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
 import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
@@ -12,6 +18,8 @@ import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 条件分支节点
@@ -23,6 +31,8 @@ public class SwitcherNode extends AbstractWfNode {
     public SwitcherNode(WorkflowComponent wfComponent, WorkflowNode nodeDef, WfState wfState, WfNodeState nodeState) {
         super(wfComponent, nodeDef, wfState, nodeState);
     }
+
+    private static final WorkflowNodeService workflowNodeService = SpringUtils.getBean(WorkflowNodeService.class);
 
     @Override
     public NodeProcessResult onProcess() {
@@ -233,7 +243,7 @@ public class SwitcherNode extends AbstractWfNode {
      */
     private String getValueFromInputs(String nodeUuid, String paramName, List<NodeIOData> inputs) {
         log.debug("从节点UUID '{}' 搜索参数 '{}'", nodeUuid, paramName);
-        
+
         String result = null;
 
         // 首先尝试从当前输入中查找
@@ -244,7 +254,7 @@ public class SwitcherNode extends AbstractWfNode {
                 result = input.valueToString();
             }
         }
-        
+
         if (result != null) {
             log.info("在当前输入中找到参数 '{}': '{}'", paramName, result);
             return result;
@@ -260,7 +270,10 @@ public class SwitcherNode extends AbstractWfNode {
                     result = output.valueToString();
                 }
             }
-            
+
+            // 根据UUID查询对应节点是否存在Param(替换成Input)
+            result = findParamValueInNode(nodeUuid, paramName, inputs, result);
+
             if (result != null) {
                 log.info("在节点 '{}' 的输出中找到参数 '{}': '{}'", nodeUuid, paramName, result);
                 return result;
@@ -280,6 +293,47 @@ public class SwitcherNode extends AbstractWfNode {
 
         log.warn("在输入或节点 '{}' 的输出中未找到参数 '{}'", nodeUuid, paramName);
         return null;
+    }
+
+    /**
+     * 根据节点UUID和参数名查找对应的输入值
+      * 意义：修复开始节点参数名错误的问题
+     *
+     * @param nodeUuid 节点的唯一标识符（UUID）
+     * @param paramName 需要查找的参数名称
+     * @param inputs 输入数据列表，用于匹配参数值
+     * @param result 默认返回结果，若未找到匹配项则返回该值
+     * @return 返回查找到的参数值，若未找到则返回默认结果
+     */
+    private String findParamValueInNode(String nodeUuid, String paramName, List<NodeIOData> inputs, String result) {
+        // 查询工作流节点信息
+        WorkflowNode workflowNode = workflowNodeService.lambdaQuery().eq(WorkflowNode::getUuid, nodeUuid).one();
+        if (ObjectUtils.isNotEmpty(workflowNode)){
+            // 获取节点的输入配置
+            String inputConfig = workflowNode.getInputConfig();
+            log.info("节点 '{}' 的输入配置: {}", nodeUuid, inputConfig);
+            if (StringUtils.isNotBlank(inputConfig)){
+                // 解析输入配置为JSON对象
+                JSONObject configJson = JSON.parseObject(inputConfig);
+                // 获取 user_inputs 数组
+                JSONArray userInputs = configJson.getJSONArray("user_inputs");
+                if (userInputs != null && !userInputs.isEmpty()) {
+                    // 在 user_inputs 中查找匹配的参数名，并获取对应值
+                    Optional<String> valueOpt = userInputs.stream()
+                        .filter(JSONObject.class::isInstance)
+                        .map(JSONObject.class::cast)
+                        .filter(obj -> paramName.equals(obj.getString("name")))
+                        .map(matchedObj -> getValueFromInputs(nodeUuid, "input", inputs))
+                        .filter(Objects::nonNull)
+                        .findFirst();
+                    // 若找到匹配值，则更新结果
+                    if (valueOpt.isPresent()) {
+                        result = valueOpt.get();
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**

@@ -3,10 +3,19 @@ package org.ruoyi.workflow.workflow;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
 import org.bsc.langgraph4j.state.AgentState;
+import org.ruoyi.common.chat.Service.IChatModelService;
+import org.ruoyi.common.chat.Service.IChatService;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.factory.ChatServiceFactory;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
@@ -15,17 +24,21 @@ import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.data.NodeIODataContent;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.DEFAULT_OUTPUT_PARAM_NAME;
 
 @Slf4j
 @Component
 public class WorkflowUtil {
+
+    @Resource
+    private ChatServiceFactory chatServiceFactory;
+
+    @Resource
+    private IChatModelService chatModelService;
 
     public static String renderTemplate(String template, List<NodeIOData> values) {
         // 🔒 关键修复：如果 template 为 null，直接返回 null 或空字符串
@@ -74,8 +87,8 @@ public class WorkflowUtil {
 
     public static String getHumanFeedbackTip(String nodeUuid, List<WorkflowNode> wfNodes) {
         WorkflowNode wfNode = wfNodes.stream()
-                .filter(item -> item.getUuid().equals(nodeUuid))
-                .findFirst().orElse(null);
+            .filter(item -> item.getUuid().equals(nodeUuid))
+            .findFirst().orElse(null);
         if (null == wfNode) {
             return "";
         }
@@ -88,73 +101,82 @@ public class WorkflowUtil {
         return String.valueOf(tip);
     }
 
-    public void streamingInvokeLLM(WfState wfState, WfNodeState state, WorkflowNode node, String category,
-                                   String modelName, List<UserMessage> systemMessage) {
-        log.info("stream invoke, category: {}, modelName: {}", category, modelName);
+    public void streamingInvokeLLM(WfState wfState, WfNodeState state, WorkflowNode node, String modelName,
+                                   List<SystemMessage> systemMessage) {
+        log.info("stream invoke, modelName: {}", modelName);
 
+        // 根据模型名称查询模型信息
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
+        if (chatModelVo == null) {
+            throw new IllegalArgumentException("模型不存在: " + modelName);
+        }
+
+        // 根据模型名称找到模型实体
+        String modelVoCategory = chatModelVo.getCategory();
         // 根据 category 获取对应的 ChatService（不使用计费代理，工作流场景单独计费）
-        //IChatService chatService = chatServiceFactory.getOriginalService(category);
+        IChatService chatService = chatServiceFactory.getOriginalService(modelVoCategory);
 
         StreamingChatGenerator<AgentState> streamingGenerator = StreamingChatGenerator.builder()
-                .mapResult(response -> {
-                    String responseTxt = response.aiMessage().text();
-                    log.info("llm response:{}", responseTxt);
+            .mapResult(response -> {
+                String responseTxt = response.aiMessage().text();
+                log.info("llm response:{}", responseTxt);
 
-                    // 传递所有输入数据 + 添加 LLM 输出
-                    wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> {
-                        List<NodeIOData> outputs = new ArrayList<>(item.getInputs());
-                        NodeIOData output = NodeIOData.createByText(DEFAULT_OUTPUT_PARAM_NAME, "", responseTxt);
-                        outputs.add(output);
-                        item.setOutputs(outputs);
-                    });
+                // 传递所有输入数据 + 添加 LLM 输出
+                wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> {
+                    List<NodeIOData> outputs = new ArrayList<>(item.getInputs());
+                    NodeIOData output = NodeIOData.createByText(DEFAULT_OUTPUT_PARAM_NAME, "", responseTxt);
+                    outputs.add(output);
+                    item.setOutputs(outputs);
+                });
 
-                    return Map.of("completeResult", response.aiMessage().text());
-                })
-                .startingNode(node.getUuid())
-                .startingState(state)
-                .build();
+                return Map.of("completeResult", response.aiMessage().text());
+            })
+            .startingNode(node.getUuid())
+            .startingState(state)
+            .build();
+
+        Long userId = wfState.getUserId();
+        String tokenValue = wfState.getTokenValue();
+        SseEmitter sseEmitter = wfState.getSseEmitter();
 
         // 构建 ruoyi-ai 的 ChatRequest
-//        List<Message> messages = new ArrayList<>();
-//
-//        addUserMessage(node, state.getInputs(), messages);
-//
-//        addSystemMessage(systemMessage, messages);
-//
-//        ChatRequest chatRequest = new ChatRequest();
-//        chatRequest.setModel(modelName);
-//        chatRequest.setMessages(messages);
+        List<ChatMessage> chatMessages = new ArrayList<>();
+        addUserMessage(node, state.getInputs(), chatMessages);
+        chatMessages.addAll(systemMessage);
+
+        // 定义模型调用对象
+        ChatRequest chatRequest = new ChatRequest();
+        // 目前工作流深度思考成员变量只能写死
+        chatRequest.setEnableThinking(false);
+        chatRequest.setModel(modelName);
+        chatRequest.setChatMessages(chatMessages);
 
         // 使用工作流专用方法
+        StreamingChatResponseHandler handler = streamingGenerator.handler();
+        chatService.chat(chatModelVo, chatRequest, sseEmitter, userId, tokenValue, handler);
         wfState.getNodeToStreamingGenerator().put(node.getUuid(), streamingGenerator);
     }
 
     /**
      * 添加用户信息
      *
-     * @param node
-     * @param messages
+     * @param node        节点
+     * @param userMessage 用户信息
      */
-    private void addUserMessage(WorkflowNode node, List<NodeIOData> userMessage, List<UserMessage> messages) {
+    private void addUserMessage(WorkflowNode node, List<NodeIOData> userMessage, List<ChatMessage> messages) {
         if (CollUtil.isEmpty(userMessage)) {
             return;
         }
-
         WfNodeInputConfig nodeInputConfig = NodeInputConfigTypeHandler.fillNodeInputConfig(node.getInputConfig());
-
         List<WfNodeParamRef> refInputs = nodeInputConfig.getRefInputs();
-
         Set<String> nameSet = CollStreamUtil.toSet(refInputs, WfNodeParamRef::getName);
-
-        userMessage.stream().filter(item -> nameSet.contains(item.getName()))
-                .map(item -> getMessage("user", item.getContent().getValue().toString())).forEach(messages::add);
-
-        if (CollUtil.isNotEmpty(messages)) {
-            return;
+        // 构建消息列表
+        List<UserMessage> messageList = buildMessageList(userMessage, nameSet);
+        // 如果没有找到匹配的消息，尝试使用input字段
+        if (CollUtil.isEmpty(messageList)) {
+            messageList = buildMessageList(userMessage, Set.of("input"));
         }
-
-        userMessage.stream().filter(item -> "input".equals(item.getName()))
-                .map(item -> getMessage("user", item.getContent().getValue().toString())).forEach(messages::add);
+        messages.addAll(messageList);
     }
 
     /**
@@ -170,19 +192,13 @@ public class WorkflowUtil {
     }
 
     /**
-     * 添加系统信息
-     *
-     * @param systemMessage
-     * @param messages
+     * 构建消息列表
      */
-    private void addSystemMessage(List<UserMessage> systemMessage, List<UserMessage> messages) {
-        log.info("addSystemMessage received: {}", systemMessage); // 🔥 加这一行
-
-        if (CollUtil.isEmpty(systemMessage)) {
-            return;
-        }
-        systemMessage.stream()
-                .map(userMsg -> getMessage("system", userMsg.singleText()))
-                .forEach(messages::add);
+    private List<UserMessage> buildMessageList(List<NodeIOData> userMessage, Set<String> nameSet) {
+        return userMessage.stream()
+            .filter(item -> item != null && item.getName() != null)
+            // 兼容默认输出参数的人机交互
+            .filter(item -> nameSet.contains(item.getName()))
+            .map(item -> getMessage("user", item.getContent().getValue().toString())).toList();
     }
 }
