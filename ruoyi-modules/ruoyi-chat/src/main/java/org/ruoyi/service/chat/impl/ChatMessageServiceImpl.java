@@ -1,5 +1,6 @@
 package org.ruoyi.service.chat.impl;
 
+import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -9,7 +10,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.domain.dto.ChatMessageDTO;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.springframework.stereotype.Service;
 import org.ruoyi.domain.bo.chat.ChatMessageBo;
@@ -146,7 +146,7 @@ public class ChatMessageServiceImpl implements IChatMessageService {
      * @return 消息DTO列表
      */
     @Override
-    public List<org.ruoyi.domain.dto.ChatMessageDTO> getMessagesBySessionId(Long sessionId) {
+    public List<ChatMessageDTO> getMessagesBySessionId(Long sessionId) {
         if (sessionId == null) {
             return new java.util.ArrayList<>();
         }

@@ -1,9 +1,12 @@
 package org.ruoyi.workflow.workflow;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.base.BaseException;
+import org.ruoyi.common.satoken.utils.LoginHelper;
+import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.workflow.entity.*;
 import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.service.*;
@@ -46,9 +49,17 @@ public class WorkflowStarter {
     @Resource
     private SSEEmitterHelper sseEmitterHelper;
 
+    @Resource
+    private SseEmitterManager sseEmitterManager;
+
 
     public SseEmitter streaming(User user, String workflowUuid, List<ObjectNode> userInputs) {
-        SseEmitter sseEmitter = new SseEmitter(SSE_TIMEOUT);
+        // 获取用户ID
+        Long userId = LoginHelper.getUserId();
+        // 获取登录Token
+        String tokenValue = StpUtil.getTokenValue();
+        // 根据用户ID和Token连接SSE对象
+        SseEmitter sseEmitter = sseEmitterManager.connect(userId, tokenValue);
         if (!sseEmitterHelper.checkOrComplete(user, sseEmitter)) {
             return sseEmitter;
         }
@@ -60,12 +71,12 @@ public class WorkflowStarter {
             sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, A_WF_DISABLED.getInfo());
             return sseEmitter;
         }
-        self.asyncRun(user, workflow, userInputs, sseEmitter);
+        self.asyncRun(user, workflow, userInputs, sseEmitter, userId, tokenValue);
         return sseEmitter;
     }
 
     @Async
-    public void asyncRun(User user, Workflow workflow, List<ObjectNode> userInputs, SseEmitter sseEmitter) {
+    public void asyncRun(User user, Workflow workflow, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue) {
         log.info("WorkflowEngine run,userId:{},workflowUuid:{},userInputs:{}", user.getId(), workflow.getUuid(), userInputs);
         List<WorkflowComponent> components = workflowComponentService.getAllEnable();
         List<WorkflowNode> nodes = workflowNodeService.lambdaQuery()
@@ -79,7 +90,7 @@ public class WorkflowStarter {
         WorkflowEngine workflowEngine = new WorkflowEngine(workflow,
                 sseEmitterHelper, components, nodes, edges,
                 workflowRuntimeService, workflowRuntimeNodeService);
-        workflowEngine.run(user, userInputs, sseEmitter);
+        workflowEngine.run(user, userInputs, sseEmitter, userId, tokenValue);
     }
 
     @Async

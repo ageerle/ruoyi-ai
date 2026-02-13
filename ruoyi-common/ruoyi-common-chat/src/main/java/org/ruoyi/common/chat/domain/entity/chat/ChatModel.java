@@ -1,10 +1,10 @@
-package org.ruoyi.domain.entity.chat;
+package org.ruoyi.common.chat.domain.entity.chat;
 
-import cn.idev.excel.annotation.ExcelProperty;
-import org.ruoyi.common.tenant.core.TenantEntity;
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.ruoyi.common.tenant.core.TenantEntity;
 
 import java.io.Serial;
 

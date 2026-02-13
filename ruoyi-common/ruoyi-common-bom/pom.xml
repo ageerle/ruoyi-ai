@@ -26,6 +26,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 对话模块 -->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-common-chat</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!-- 接口模块 -->
             <dependency>
                 <groupId>org.ruoyi</groupId>

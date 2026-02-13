@@ -1,7 +1,7 @@
 package org.ruoyi.service.graph;
 
 
-import org.ruoyi.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 
 /**
  * 图谱LLM服务接口

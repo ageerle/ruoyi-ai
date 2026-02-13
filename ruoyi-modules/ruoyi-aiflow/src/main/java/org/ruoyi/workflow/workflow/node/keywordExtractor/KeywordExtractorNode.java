@@ -1,5 +1,6 @@
 package org.ruoyi.workflow.workflow.node.keywordExtractor;
 
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -65,12 +66,9 @@ public class KeywordExtractorNode extends AbstractWfNode {
         // 调用 LLM 进行关键词提取
         WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
         String modelName = config.getModelName();
-        String category = config.getCategory();
-        List<UserMessage> systemMessage = List.of(UserMessage.from(prompt));
-
+        List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
         // 使用流式调用
-        workflowUtil.streamingInvokeLLM(wfState, state, node, category, modelName, systemMessage);
-
+        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage);
         return new NodeProcessResult();
     }
 
