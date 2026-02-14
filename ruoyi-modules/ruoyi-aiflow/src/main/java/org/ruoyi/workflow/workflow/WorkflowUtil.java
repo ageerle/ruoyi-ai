@@ -14,6 +14,7 @@ import org.bsc.langgraph4j.state.AgentState;
 import org.ruoyi.common.chat.Service.IChatModelService;
 import org.ruoyi.common.chat.Service.IChatService;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.factory.ChatServiceFactory;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
@@ -135,9 +136,11 @@ public class WorkflowUtil {
             .startingState(state)
             .build();
 
+        // 获取用户信息和Token以及SSe连接对象（对话接口需要使用）
         Long userId = wfState.getUserId();
         String tokenValue = wfState.getTokenValue();
         SseEmitter sseEmitter = wfState.getSseEmitter();
+        StreamingChatResponseHandler handler = streamingGenerator.handler();
 
         // 构建 ruoyi-ai 的 ChatRequest
         List<ChatMessage> chatMessages = new ArrayList<>();
@@ -151,9 +154,18 @@ public class WorkflowUtil {
         chatRequest.setModel(modelName);
         chatRequest.setChatMessages(chatMessages);
 
+        //构建聊天对话上下文参数
+        ChatContext chatContext = ChatContext.builder()
+            .chatModelVo(chatModelVo)
+            .chatRequest(chatRequest)
+            .emitter(sseEmitter)
+            .userId(userId)
+            .tokenValue(tokenValue)
+            .handler(handler)
+            .build();
+
         // 使用工作流专用方法
-        StreamingChatResponseHandler handler = streamingGenerator.handler();
-        chatService.chat(chatModelVo, chatRequest, sseEmitter, userId, tokenValue, handler);
+        chatService.chat(chatContext);
         wfState.getNodeToStreamingGenerator().put(node.getUuid(), streamingGenerator);
     }
 

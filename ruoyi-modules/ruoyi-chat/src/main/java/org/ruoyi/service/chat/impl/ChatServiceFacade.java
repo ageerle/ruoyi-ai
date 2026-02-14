@@ -8,6 +8,7 @@ import org.ruoyi.common.chat.Service.IChatModelService;
 import org.ruoyi.common.chat.Service.IChatService;
 import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.factory.ChatServiceFactory;
 import org.ruoyi.common.satoken.utils.LoginHelper;
@@ -71,7 +72,16 @@ public class ChatServiceFacade {
         Long userId = LoginHelper.getUserId();
         String tokenValue = StpUtil.getTokenValue();
         SseEmitter emitter = sseEmitterManager.connect(userId, tokenValue);
-        return chatService.chat(chatModelVo, chatRequest,emitter,userId, tokenValue);
+
+        // 5. 创建对话上下文对象
+        ChatContext chatContext = ChatContext.builder()
+            .chatModelVo(chatModelVo)
+            .chatRequest(chatRequest)
+            .emitter(emitter)
+            .userId(userId)
+            .tokenValue(tokenValue)
+            .build();
+        return chatService.chat(chatContext);
     }
 
     /**

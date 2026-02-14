@@ -26,6 +26,7 @@ import org.ruoyi.agent.tool.QueryAllTablesTool;
 import org.ruoyi.agent.tool.QueryTableSchemaTool;
 import org.ruoyi.common.chat.Service.IChatService;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
@@ -36,6 +37,7 @@ import org.ruoyi.enums.RoleType;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.springframework.util.CollectionUtils;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
@@ -55,6 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2025/12/13
  */
 @Slf4j
+@Validated
 public abstract class AbstractStreamingChatService implements IChatService {
 
     /**
@@ -77,22 +80,19 @@ public abstract class AbstractStreamingChatService implements IChatService {
      * 定义聊天流程骨架
      */
     @Override
-    public SseEmitter chat(ChatModelVo chatModelVo, ChatRequest chatRequest, SseEmitter emitter, Long userId, String tokenValue) {
-        return executeChat(chatModelVo, chatRequest, emitter, userId, tokenValue, null);
-    }
-
-    /**
-     * 定义聊天流程骨架（包含流式回调结构）
-     */
-    @Override
-    public SseEmitter chat(ChatModelVo chatModelVo, ChatRequest chatRequest, SseEmitter emitter, Long userId, String tokenValue, StreamingChatResponseHandler handler) {
-        return executeChat(chatModelVo, chatRequest, emitter, userId, tokenValue, handler);
-    }
-
-    /**
-     * 定义聊天流程骨架
-     */
-    public SseEmitter executeChat(ChatModelVo chatModelVo, ChatRequest chatRequest, SseEmitter emitter, Long userId, String tokenValue, StreamingChatResponseHandler handler) {
+    public SseEmitter chat(ChatContext chatContext) {
+        // 获取模型管理视图对象
+        ChatModelVo chatModelVo = chatContext.getChatModelVo();
+        // 获取对话请求对象
+        ChatRequest chatRequest = chatContext.getChatRequest();
+        // 获取SSe连接对象
+        SseEmitter emitter = chatContext.getEmitter();
+        // 获取用户ID
+        Long userId = chatContext.getUserId();
+        // 获取Token
+        String tokenValue = chatContext.getTokenValue();
+        // 获取响应处理器
+        StreamingChatResponseHandler handler = chatContext.getHandler();
         try {
             String content = Optional.ofNullable(chatRequest.getMessages()).filter(messages -> !messages.isEmpty())
                 // 对话逻辑：从 messages 筛选第一个元素
@@ -100,11 +100,11 @@ public abstract class AbstractStreamingChatService implements IChatService {
                 .filter(StringUtils::isNotBlank)
                 // 工作流逻辑：从 chatMessages 筛选 UserMessage 的文本
                 .orElseGet(() -> Optional.ofNullable(chatRequest.getChatMessages()).orElse(List.of()).stream()
-                        .filter(message -> message instanceof UserMessage um)
-                        .map(message -> ((UserMessage) message).singleText())
-                        .filter(StringUtils::isNotBlank)
-                        .findFirst()
-                        .orElse(""));
+                    .filter(message -> message instanceof UserMessage um)
+                    .map(message -> ((UserMessage) message).singleText())
+                    .filter(StringUtils::isNotBlank)
+                    .findFirst()
+                    .orElse(""));
 
             // 保存用户消息
             saveChatMessage(chatRequest, userId, content, RoleType.USER.getName(), chatModelVo);
