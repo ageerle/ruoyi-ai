@@ -1,6 +1,18 @@
 package org.ruoyi.service.chat.impl.provider;
 
-import dev.langchain4j.agent.tool.ToolSpecification;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.ruoyi.agent.EchartsAgent;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.config.McpSseConfig;
+import org.ruoyi.enums.ChatModeType;
+import org.ruoyi.service.chat.impl.AbstractStreamingChatService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
@@ -13,23 +25,11 @@ import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
+import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.service.tool.ToolProvider;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.agent.McpAgent;
-import org.ruoyi.config.McpSseConfig;
-import org.ruoyi.enums.ChatModeType;
-import org.ruoyi.service.chat.impl.AbstractStreamingChatService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
-import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * qianWenAI服务调用
@@ -41,13 +41,6 @@ import java.util.List;
 @Slf4j
 public class QianWenChatServiceImpl extends AbstractStreamingChatService {
 
-    @Autowired
-    private McpSseConfig mcpSseConfig;
-
-    /**
-     * 千问开发者默认地址
-     */
-    private static final String QWEN_API_HOST = "https://dashscope.aliyuncs.com/api/v1";
 
     // 添加文档解析的前缀字段
     private static final String UPLOAD_FILE_API_PREFIX = "fileid";
@@ -108,49 +101,45 @@ public class QianWenChatServiceImpl extends AbstractStreamingChatService {
      * @return 返回LLM信息
      */
     protected String doAgent(String userMessage,ChatModelVo chatModelVo) {
-        // 判断是否开启MCP服务
-        if (!mcpSseConfig.isEnabled()) {
-            return "";
-        }
-
-        // 步骤1：根据SSE对外暴露端点连接
-        McpTransport httpMcpTransport = new StreamableHttpMcpTransport.Builder().
-            url(mcpSseConfig.getUrl()).
-            logRequests(true).
-            build();
-
-        // 步骤2：开启客户端连接
-        McpClient mcpClient = new DefaultMcpClient.Builder()
-            .transport(httpMcpTransport)
-            .build();
-
-        // 获取所有mcp工具
-        List<ToolSpecification> toolSpecifications = mcpClient.listTools();
-        System.out.println(toolSpecifications);
-
-        // 步骤3：将mcp对象包装
-        ToolProvider toolProvider = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient))
-            .build();
-
+   
         // 步骤4：加载LLM模型对话
         QwenChatModel qwenChatModel = QwenChatModel.builder()
-            .baseUrl(QWEN_API_HOST)
             .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
             .build();
-
-        // 步骤5：将MCP对象由智能体Agent管控
-        McpAgent mcpAgent = AgenticServices.agentBuilder(McpAgent.class)
-            .chatModel(qwenChatModel)
-            .toolProvider(toolProvider)
+        McpTransport echart = new StdioMcpTransport.Builder()
+            .command(List.of("uv",
+                "--directory",
+                "/Users/zhangmingming/data/coder/LLM/MCP/cicd-pipeline-example/",
+                "run",
+                "text2sql-mcp"
+            ))
+            .logEvents(true)
             .build();
+
+        // 步骤2: 创建MCP客户端
+        McpClient echartClient = new DefaultMcpClient.Builder()
+            .transport(echart)
+            .build();
+
+        // 步骤3: 配置工具提供者
+        ToolProvider echartToolProvider = McpToolProvider.builder()
+            .mcpClients(List.of(
+                        echartClient))
+                .build();
+            
+        EchartsAgent chartGenerationAgent = AgenticServices.agentBuilder(
+                EchartsAgent.class)
+            .chatModel(qwenChatModel)
+            .toolProvider(echartToolProvider)
+            .build();
+
 
         // 步骤6：将所有MCP对象由超级智能体管控
         SupervisorAgent supervisor = AgenticServices
             .supervisorBuilder()
             .chatModel(qwenChatModel)
-            .subAgents(mcpAgent)
+            .subAgents(chartGenerationAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .build();
 
