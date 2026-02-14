@@ -124,6 +124,7 @@ security:
     - /*/api-docs
     - /*/api-docs/**
     - /warm-flow-ui/config
+    - /workflow/run
 
 # 多租户配置
 tenant:
