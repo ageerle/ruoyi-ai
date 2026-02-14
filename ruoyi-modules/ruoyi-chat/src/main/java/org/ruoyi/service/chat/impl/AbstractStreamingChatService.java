@@ -73,6 +73,9 @@ public abstract class AbstractStreamingChatService implements IChatService {
      */
     private static final Map<Object, MessageWindowChatMemory> memoryCache = new ConcurrentHashMap<>();
 
+
+
+    
     /**
      * 定义聊天流程骨架
      */
