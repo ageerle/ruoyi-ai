@@ -59,6 +59,8 @@
         <langgraph4j.version>1.5.3</langgraph4j.version>
         <weaviate.version>1.19.6</weaviate.version>
         <dify.version>1.0.7</dify.version>
+        <!-- Apache Commons Compress - 用于POI处理ZIP格式 -->
+        <commons-compress.version>1.27.1</commons-compress.version>
 
 
         <avatar-generator.version>1.1.0</avatar-generator.version>
@@ -402,6 +404,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!--  MCP模块  -->
+            <dependency>
+                <groupId>org.ruoyi</groupId>
+                <artifactId>ruoyi-mcp</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!-- 企业微信SDK -->
             <dependency>
                 <groupId>com.github.binarywang</groupId>
@@ -414,6 +423,13 @@
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-xml</artifactId>
                 <version>${jackson-dataformat-xml.version}</version>
+            </dependency>
+
+            <!-- Apache Commons Compress - 用于POI处理ZIP格式，解决导出Excel时的NoSuchMethodError -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
             </dependency>
 
         </dependencies>

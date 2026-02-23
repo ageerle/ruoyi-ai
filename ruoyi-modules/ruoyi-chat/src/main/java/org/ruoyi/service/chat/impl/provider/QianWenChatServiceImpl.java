@@ -1,6 +1,5 @@
 package org.ruoyi.service.chat.impl.provider;
 
-import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
@@ -9,20 +8,15 @@ import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.mcp.McpToolProvider;
-import dev.langchain4j.mcp.client.DefaultMcpClient;
-import dev.langchain4j.mcp.client.McpClient;
-import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.service.tool.ToolProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.agent.McpAgent;
-import org.ruoyi.config.McpSseConfig;
 import org.ruoyi.enums.ChatModeType;
+import org.ruoyi.mcp.service.core.ToolProviderFactory;
 import org.ruoyi.service.chat.impl.AbstractStreamingChatService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
@@ -40,9 +34,6 @@ import java.util.List;
 @Service
 @Slf4j
 public class QianWenChatServiceImpl extends AbstractStreamingChatService {
-
-    @Autowired
-    private McpSseConfig mcpSseConfig;
 
     /**
      * 千问开发者默认地址
@@ -103,50 +94,53 @@ public class QianWenChatServiceImpl extends AbstractStreamingChatService {
 
     /**
      * 调用MCP服务（智能体）
+     * 使用统一的ToolProviderFactory获取所有已配置的工具（BUILTIN + MCP）
+     *
      * @param userMessage 用户信息
      * @param chatModelVo 模型信息
      * @return 返回LLM信息
      */
-    protected String doAgent(String userMessage,ChatModelVo chatModelVo) {
-        // 判断是否开启MCP服务
-        if (!mcpSseConfig.isEnabled()) {
-            return "";
-        }
+    protected String doAgent(String userMessage, ChatModelVo chatModelVo) {
+        // 步骤1: 获取统一工具提供工厂
+        ToolProviderFactory toolProviderFactory = SpringUtils.getBean(ToolProviderFactory.class);
 
-        // 步骤1：根据SSE对外暴露端点连接
-        McpTransport httpMcpTransport = new StreamableHttpMcpTransport.Builder().
-            url(mcpSseConfig.getUrl()).
-            logRequests(true).
-            build();
+        // 步骤2: 获取 BUILTIN 工具对象
+        List<Object> builtinTools = toolProviderFactory.getAllBuiltinToolObjects();
 
-        // 步骤2：开启客户端连接
-        McpClient mcpClient = new DefaultMcpClient.Builder()
-            .transport(httpMcpTransport)
-            .build();
+        // 步骤3: 获取 MCP 工具提供者
+        ToolProvider mcpToolProvider = toolProviderFactory.getAllEnabledMcpToolsProvider();
 
-        // 获取所有mcp工具
-        List<ToolSpecification> toolSpecifications = mcpClient.listTools();
-        System.out.println(toolSpecifications);
+        log.info("doAgent: BUILTIN tools count = {}, MCP tools enabled = {}",
+            builtinTools.size(), mcpToolProvider != null);
 
-        // 步骤3：将mcp对象包装
-        ToolProvider toolProvider = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient))
-            .build();
-
-        // 步骤4：加载LLM模型对话
+        // 步骤4: 加载LLM模型
         QwenChatModel qwenChatModel = QwenChatModel.builder()
             .baseUrl(QWEN_API_HOST)
             .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
             .build();
 
-        // 步骤5：将MCP对象由智能体Agent管控
-        McpAgent mcpAgent = AgenticServices.agentBuilder(McpAgent.class)
-            .chatModel(qwenChatModel)
-            .toolProvider(toolProvider)
-            .build();
+        // 步骤5: 创建MCP Agent，使用所有已配置的工具
+        // 使用 .tools() 传入 BUILTIN 工具对象（Java 对象，带 @Tool 注解的方法）
+        // 使用 .toolProvider() 传入 MCP 工具提供者（MCP 协议工具）
+        var agentBuilder = AgenticServices.agentBuilder(McpAgent.class)
+            .chatModel(qwenChatModel);
 
-        // 步骤6：将所有MCP对象由超级智能体管控
+        // 添加 BUILTIN 工具（如果有）
+        if (!builtinTools.isEmpty()) {
+            agentBuilder.tools(builtinTools.toArray(new Object[0]));
+            log.debug("Added {} BUILTIN tools to agent", builtinTools.size());
+        }
+
+        // 添加 MCP 工具（如果有）
+        if (mcpToolProvider != null) {
+            agentBuilder.toolProvider(mcpToolProvider);
+            log.debug("Added MCP tool provider to agent");
+        }
+
+        McpAgent mcpAgent = agentBuilder.build();
+
+        // 步骤6: 创建超级智能体协调MCP Agent
         SupervisorAgent supervisor = AgenticServices
             .supervisorBuilder()
             .chatModel(qwenChatModel)
@@ -154,7 +148,7 @@ public class QianWenChatServiceImpl extends AbstractStreamingChatService {
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .build();
 
-        // 步骤7：调用大模型LLM
+        // 步骤7: 调用大模型LLM
         return supervisor.invoke(userMessage);
     }
 

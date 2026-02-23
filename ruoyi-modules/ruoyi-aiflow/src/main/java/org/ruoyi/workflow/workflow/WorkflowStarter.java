@@ -17,7 +17,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
-import static org.ruoyi.workflow.cosntant.AdiConstant.SSE_TIMEOUT;
 import static org.ruoyi.workflow.enums.ErrorEnum.*;
 
 @Slf4j
