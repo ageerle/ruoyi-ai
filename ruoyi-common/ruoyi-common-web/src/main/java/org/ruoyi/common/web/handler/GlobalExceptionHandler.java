@@ -121,16 +121,23 @@ public class GlobalExceptionHandler {
 
     /**
      * 拦截未知的运行时异常
+     * 注意：对于文件下载/导出等场景，IOException 可能是正常流程的一部分，
+     * 需要排除 export/download 等路径，避免干扰文件导出
      */
-    @ResponseStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(IOException.class)
-    public void handleIoException(IOException e, HttpServletRequest request) {
+    public R<Void> handleIoException(IOException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
         if (requestURI.contains("sse")) {
             // sse 经常性连接中断 例如关闭浏览器 直接屏蔽
-            return;
+            return null;
+        }
+        // 排除文件下载/导出相关的 IOException，让异常正常传播以便上层处理
+        if (requestURI.contains("/export") || requestURI.contains("/download")) {
+            // 重新抛出，让调用方处理
+            throw new RuntimeException("文件导出/下载IO异常: " + e.getMessage(), e);
         }
         log.error("请求地址'{}',连接中断", requestURI, e);
+        return R.fail(e.getMessage());
     }
 
     /**
@@ -146,6 +153,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public R<Void> handleRuntimeException(RuntimeException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
+        // 对于文件导出相关异常，不进行封装处理，让原始异常信息传播
+        Throwable cause = e.getCause();
+        if (requestURI.contains("/export") || requestURI.contains("/download")) {
+            log.error("请求地址'{}',文件导出/下载异常.", requestURI, e);
+            // 对于文件导出，直接返回异常信息，不进行额外封装
+            return R.fail(cause != null ? cause.getMessage() : e.getMessage());
+        }
         log.error("请求地址'{}',发生未知异常.", requestURI, e);
         return R.fail(e.getMessage());
     }
