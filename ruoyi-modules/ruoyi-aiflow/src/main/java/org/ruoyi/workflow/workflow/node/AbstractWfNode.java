@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.entity.WorkflowComponent;

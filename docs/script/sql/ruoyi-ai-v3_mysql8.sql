@@ -3647,3 +3647,162 @@ INSERT INTO `test_tree` VALUES (12, '000000', 10, 108, 3, '子节点88', 0, 103,
 INSERT INTO `test_tree` VALUES (13, '000000', 10, 108, 3, '子节点99', 0, 103, '2026-02-03 05:14:54', 1, NULL, NULL, 0);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+-- MCP 模块数据库表结构
+-- 版本: V3.0.0
+-- 描述: MCP 工具管理和 MCP 市场管理表
+
+-- ----------------------------
+-- MCP 工具表
+-- ----------------------------
+DROP TABLE IF EXISTS `mcp_tool_info`;
+CREATE TABLE `mcp_tool_info`
+(
+    `id`          bigint       NOT NULL AUTO_INCREMENT COMMENT '工具ID',
+    `name`        varchar(200) NOT NULL COMMENT '工具名称',
+    `description` text COMMENT '工具描述',
+    `type`        varchar(20) DEFAULT 'LOCAL' COMMENT '工具类型：LOCAL-本地, REMOTE-远程, BUILTIN-内置',
+    `status`      varchar(20) DEFAULT 'ENABLED' COMMENT '状态：ENABLED-启用, DISABLED-禁用',
+    `config_json` text COMMENT '配置信息（JSON格式）',
+    `tenant_id`   varchar(20) DEFAULT '000000' COMMENT '租户编号',
+    `create_dept` bigint      DEFAULT NULL COMMENT '创建部门',
+    `create_by`   bigint      DEFAULT NULL COMMENT '创建者',
+    `create_time` datetime    DEFAULT NULL COMMENT '创建时间',
+    `update_by`   bigint      DEFAULT NULL COMMENT '更新者',
+    `update_time` datetime    DEFAULT NULL COMMENT '更新时间',
+    `del_flag`    char(1)     DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+    PRIMARY KEY (`id`),
+    KEY           `idx_name` (`name`),
+    KEY           `idx_type` (`type`),
+    KEY           `idx_status` (`status`),
+    KEY           `idx_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MCP工具表';
+
+-- ----------------------------
+-- MCP 市场表
+-- ----------------------------
+DROP TABLE IF EXISTS `mcp_market_info`;
+CREATE TABLE `mcp_market_info`
+(
+    `id`          bigint       NOT NULL AUTO_INCREMENT COMMENT '市场ID',
+    `name`        varchar(200) NOT NULL COMMENT '市场名称',
+    `url`         varchar(500) NOT NULL COMMENT '市场URL',
+    `description` text COMMENT '市场描述',
+    `auth_config` text COMMENT '认证配置（JSON格式）',
+    `status`      varchar(20) DEFAULT 'ENABLED' COMMENT '状态：ENABLED-启用, DISABLED-禁用',
+    `tenant_id`   varchar(20) DEFAULT '000000' COMMENT '租户编号',
+    `create_dept` bigint      DEFAULT NULL COMMENT '创建部门',
+    `create_by`   bigint      DEFAULT NULL COMMENT '创建者',
+    `create_time` datetime    DEFAULT NULL COMMENT '创建时间',
+    `update_by`   bigint      DEFAULT NULL COMMENT '更新者',
+    `update_time` datetime    DEFAULT NULL COMMENT '更新时间',
+    `del_flag`    char(1)     DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+    PRIMARY KEY (`id`),
+    KEY           `idx_name` (`name`),
+    KEY           `idx_status` (`status`),
+    KEY           `idx_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MCP市场表';
+
+-- ----------------------------
+-- MCP 市场工具关联表
+-- ----------------------------
+DROP TABLE IF EXISTS `mcp_market_tool`;
+CREATE TABLE `mcp_market_tool`
+(
+    `id`               bigint       NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `market_id`        bigint       NOT NULL COMMENT '市场ID',
+    `tool_name`        varchar(200) NOT NULL COMMENT '工具名称',
+    `tool_description` text COMMENT '工具描述',
+    `tool_version`     varchar(50) COMMENT '工具版本',
+    `tool_metadata`    json COMMENT '工具元数据（JSON格式）',
+    `is_loaded`        tinyint(1) DEFAULT 0 COMMENT '是否已加载到本地',
+    `local_tool_id`    bigint COMMENT '关联的本地工具ID',
+    `create_time`      datetime DEFAULT NULL COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY                `idx_market_id` (`market_id`),
+    KEY                `idx_tool_name` (`tool_name`),
+    KEY                `idx_is_loaded` (`is_loaded`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MCP市场工具关联表';
+
+
+
+-- MCP 模块菜单权限 SQL
+-- 版本: V3.0.1
+-- 描述: MCP 工具管理和 MCP 市场管理菜单权限
+-- 菜单 ID 规划: 2000-2199
+
+-- ----------------------------
+-- MCP 主菜单
+-- ----------------------------
+INSERT INTO sys_menu
+VALUES (2000, 'MCP管理', 0, 5, 'mcp', '', '', 1, 0, 'M', '0', '0', '',
+        'mdi:robot-industrial', 103, 1, NOW(), NULL, NULL, 'MCP模块管理菜单');
+
+-- ----------------------------
+-- MCP 工具管理
+-- ----------------------------
+INSERT INTO sys_menu
+VALUES (2001, 'MCP工具管理', 2000, 1, 'tool', 'mcp/tool/index', '', 1, 0, 'C', '0',
+        '0', 'mcp:tool:list', 'material-symbols:tools-hammer-outline', 103, 1, NOW(), NULL,
+        NULL, 'MCP工具管理菜单');
+
+-- MCP 工具管理按钮权限
+INSERT INTO sys_menu
+VALUES (2002, 'MCP工具查询', 2001, 1, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:tool:query', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2003, 'MCP工具新增', 2001, 2, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:tool:add', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2004, 'MCP工具修改', 2001, 3, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:tool:edit', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2005, 'MCP工具删除', 2001, 4, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:tool:remove', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2006, 'MCP工具测试', 2001, 5, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:tool:test', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2007, 'MCP工具导出', 2001, 6, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:tool:export', '#', 103, 1, NOW(), NULL, NULL, '');
+
+-- ----------------------------
+-- MCP 市场管理
+-- ----------------------------
+INSERT INTO sys_menu
+VALUES (2010, 'MCP市场管理', 2000, 2, 'market', 'mcp/market/index', '', 1, 0, 'C', '0',
+        '0', 'mcp:market:list', 'mdi:storefront-outline', 103, 1, NOW(), NULL, NULL,
+        'MCP市场管理菜单');
+
+-- MCP 市场管理按钮权限
+INSERT INTO sys_menu
+VALUES (2011, 'MCP市场查询', 2010, 1, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:market:query', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2012, 'MCP市场新增', 2010, 2, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:market:add', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2013, 'MCP市场修改', 2010, 3, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:market:edit', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2014, 'MCP市场删除', 2010, 4, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:market:remove', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2015, 'MCP市场刷新', 2010, 5, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:market:refresh', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2016, 'MCP工具加载', 2010, 6, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:market:load', '#', 103, 1, NOW(), NULL, NULL, '');
+INSERT INTO sys_menu
+VALUES (2017, 'MCP市场导出', 2010, 7, '#', '', '', 1, 0, 'F', '0', '0',
+        'mcp:market:export', '#', 103, 1, NOW(), NULL, NULL, '');
+
+-- ----------------------------
+-- MCP 配置管理 (可选，预留扩展)
+-- ----------------------------
+-- INSERT INTO sys_menu VALUES (2020, 'MCP配置管理', 2000, 3, 'config', 'mcp/config/index', '', 1, 0, 'C', '0',
+--                              '0', 'mcp:config:list', 'ant-design:setting-outlined', 103, 1, NOW(), NULL, NULL,
+--                              'MCP配置管理菜单');
+
+
