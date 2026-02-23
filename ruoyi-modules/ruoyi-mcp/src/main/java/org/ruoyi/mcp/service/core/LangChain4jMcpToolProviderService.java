@@ -100,6 +100,7 @@ public class LangChain4jMcpToolProviderService {
     public ToolProvider getAllEnabledToolsProvider() {
         List<McpTool> enabledTools = mcpToolMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<McpTool>()
+                .ne(McpTool::getType,"BUILTIN")
                 .eq(McpTool::getStatus, McpToolStatus.ENABLED.getValue())
         );
 
@@ -144,47 +145,49 @@ public class LangChain4jMcpToolProviderService {
 
     /**
      * 获取或创建 MCP Client
-     * 包含健康检查和失败重试逻辑
      */
     private McpClient getOrCreateClient(Long toolId) {
         // 检查工具是否被禁用
         if (isToolDisabled(toolId)) {
-            log.warn("Tool {} is temporarily disabled due to previous failures", toolId);
+            log.warn("Tool {} is temporarily disabled", toolId);
             return null;
         }
 
-        // 尝试从缓存获取
+        // 返回缓存的客户端
         McpClient cachedClient = activeClients.get(toolId);
         if (cachedClient != null && isToolHealthy(toolId)) {
             return cachedClient;
         }
 
-        // 创建新的客户端
-        return activeClients.compute(toolId, (id, existingClient) -> {
-            McpTool tool = mcpToolMapper.selectById(id);
-            if (tool == null || !McpToolStatus.isEnabled(tool.getStatus())) {
-                return null;
-            }
+        // 查询工具配置
+        McpTool tool = mcpToolMapper.selectById(toolId);
+        if (tool == null || !McpToolStatus.isEnabled(tool.getStatus())) {
+            return null;
+        }
 
-            // 跳过内置工具（BUILTIN 类型）
-            if ("BUILTIN".equals(tool.getType())) {
-                log.debug("Skipping builtin tool: {}", tool.getName());
-                return null;
-            }
+        String toolType = tool.getType();
+        // 只支持 LOCAL 和 REMOTE 类型
+        if (!ToolProviderFactory.TYPE_LOCAL.equals(toolType) && !ToolProviderFactory.TYPE_REMOTE.equals(toolType)) {
+            log.warn("Unsupported tool type: {} for tool: {}", toolType, tool.getName());
+            return null;
+        }
 
-            try {
-                McpClient client = createMcpClient(tool);
-                // 标记工具为健康状态
-                markToolHealthy(id);
-                log.info("Successfully created LangChain4j MCP client for tool: {}", tool.getName());
-                return client;
-            } catch (Exception e) {
-                log.error("Failed to create MCP client for tool {}: {}", tool.getName(), e.getMessage());
-                // 记录失败并可能禁用工具
-                handleToolFailure(id);
+        // 创建并缓存新客户端
+        try {
+            McpClient client = createMcpClient(tool);
+            if (client == null) {
+                log.warn("Failed to create MCP client for tool: {}", tool.getName());
                 return null;
             }
-        });
+            activeClients.put(toolId, client);
+            markToolHealthy(toolId);
+            log.info("Created MCP client for tool: {}", tool.getName());
+            return client;
+        } catch (Exception e) {
+            log.error("Failed to create MCP client for tool {}: {}", tool.getName(), e.getMessage(), e);
+            handleToolFailure(toolId);
+            return null;
+        }
     }
 
     /**
@@ -360,11 +363,11 @@ public class LangChain4jMcpToolProviderService {
 
         JsonNode configNode = objectMapper.readTree(configJson);
 
-        if (!configNode.has("baseUrl")) {
+        if (!configNode.has("url")) {
             throw new IllegalArgumentException("baseUrl is required in config JSON for REMOTE type tool");
         }
 
-        String baseUrl = configNode.get("baseUrl").asText();
+        String baseUrl = configNode.get("url").asText();
         log.info("Creating HTTP/SSE MCP client for tool: {}, baseUrl: {}", tool.getName(), baseUrl);
 
         // 创建 HTTP/SSE 传输层

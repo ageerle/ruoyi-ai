@@ -216,6 +216,8 @@ springdoc:
       packages-to-scan: org.ruoyi.generator
     - group: 5.工作流模块
       packages-to-scan: org.ruoyi.workflow
+    - group: 6.MCP模块
+      packages-to-scan: org.ruoyi.mcp
 
 # 防止XSS攻击
 xss:
@@ -357,3 +359,14 @@ knowledge:
       cache-enabled: true
       # 缓存过期时间（分钟）
       cache-expire-minutes: 60
+
+--- # MCP 模块配置
+app:
+  mcp:
+    client:
+      # 请求超时时间（秒）
+      request-timeout: 30
+      # 连接超时时间（秒）
+      connection-timeout: 10
+      # 最大重试次数
+      max-retries: 3
