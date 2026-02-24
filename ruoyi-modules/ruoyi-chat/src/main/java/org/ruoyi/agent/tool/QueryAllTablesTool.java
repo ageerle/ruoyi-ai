@@ -1,20 +1,14 @@
 package org.ruoyi.agent.tool;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import dev.langchain4j.agent.tool.Tool;
-import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.agent.config.AgentMysqlProperties;
+import java.util.List;
+
+import org.ruoyi.agent.domain.TableStructure;
+import org.ruoyi.agent.manager.TableSchemaManager;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
+import dev.langchain4j.agent.tool.Tool;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 查询数据库所有表的 Tool
@@ -22,12 +16,11 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "agent.mysql.enabled", havingValue = "true")
 public class QueryAllTablesTool {
 
-    @Autowired(required = false)
-    private DataSource agentDataSource;
-
+  
+    @Autowired
+    private TableSchemaManager tableSchemaManager; // 注入管理器
     /**
      * 查询数据库中所有表
      * 返回数据库中存在的所有表的列表
@@ -37,44 +30,36 @@ public class QueryAllTablesTool {
     @Tool("Query all tables in the database and return table names and basic information")
     public String queryAllTables() {
         try {
-            if (agentDataSource == null) {
-                return "Error: Database datasource not configured";
-            }
-
-            try (Connection connection = agentDataSource.getConnection()) {
-                DatabaseMetaData databaseMetaData = connection.getMetaData();
-                ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"});
-
-                List<String> tableNames = new ArrayList<>();
-                List<String> tableDetails = new ArrayList<>();
-
-                while (resultSet.next()) {
-                    String tableName = resultSet.getString("TABLE_NAME");
-                    String tableComment = resultSet.getString("REMARKS");
-                    String tableType = resultSet.getString("TABLE_TYPE");
-
-                    tableNames.add(tableName);
-                    tableDetails.add(String.format("- %s (%s) - %s",
-                        tableName, tableType, tableComment != null ? tableComment : "No comment"));
+                 // 1. 从管理器获取所有允许的表结构信息（内部已包含初始化/缓存逻辑）
+                List<TableStructure> tableSchemas = tableSchemaManager.getAllowedTableSchemas();
+   
+                if (tableSchemas == null || tableSchemas.isEmpty()) {
+                    return "No tables found in database or cache is empty.";
                 }
-                resultSet.close();
-
-                if (tableNames.isEmpty()) {
-                    return "No tables found in database";
-                }
-
+   
+                // 2. 格式化结果
                 StringBuilder result = new StringBuilder();
-                result.append("Found ").append(tableNames.size()).append(" tables:\n");
-                for (String detail : tableDetails) {
-                    result.append(detail).append("\n");
+                result.append("Found ").append(tableSchemas.size()).append(" tables in cache:\n");
+   
+                for (TableStructure schema : tableSchemas) {
+                    String tableName = schema.getTableName();
+                    String tableType = schema.getTableType() != null ? schema.getTableType() : "TABLE";
+                    String tableComment = schema.getTableComment();
+   
+                    result.append(String.format("- %s (%s) - %s\n",
+                        tableName,
+                        tableType,
+                        tableComment != null ? tableComment : "No comment"));
                 }
-
-                log.info("Successfully queried {} tables", tableNames.size());
+   
+                log.info("Successfully retrieved {} tables from schema cache", tableSchemas.size());
                 return result.toString();
+   
+            } catch (Exception e) {
+                log.error("Error retrieving tables from cache", e);
+                return "Error: " + e.getMessage();
             }
-        } catch (Exception e) {
-            log.error("Error querying all tables", e);
-            return "Error: " + e.getMessage();
-        }
+      
+        
     }
 }

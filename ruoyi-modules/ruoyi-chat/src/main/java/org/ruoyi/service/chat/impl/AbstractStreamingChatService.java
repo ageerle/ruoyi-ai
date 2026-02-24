@@ -3,6 +3,7 @@ package org.ruoyi.service.chat.impl;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
+import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.mcp.McpToolProvider;
@@ -325,26 +326,26 @@ public abstract class AbstractStreamingChatService implements IChatService {
     protected String doAgent(String userMessage, ChatModelVo chatModelVo) {
         // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
         // 该服务提供两个工具: bing_search (必应搜索) 和 crawl_webpage (网页抓取)
-        McpTransport transport = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
-                "bing-cn-mcp"
-            ))
-            .logEvents(true)
-            .build();
+        // McpTransport transport = new StdioMcpTransport.Builder()
+        //     .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
+        //         "bing-cn-mcp"
+        //     ))
+        //     .logEvents(true)
+        //     .build();
 
-        // 步骤2: 创建MCP客户端
-        McpClient mcpClient = new DefaultMcpClient.Builder()
-            .transport(transport)
-            .build();
+        // // 步骤2: 创建MCP客户端
+        // McpClient mcpClient = new DefaultMcpClient.Builder()
+        //     .transport(transport)
+        //     .build();
 
-        // 步骤3: 配置工具提供者
-        ToolProvider toolProvider = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient))
-            .build();
+        // // 步骤3: 配置工具提供者
+        // ToolProvider toolProvider = McpToolProvider.builder()
+        //     .mcpClients(List.of(mcpClient))
+        //     .build();
 
 
         McpTransport transport1 = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
+            .command(List.of("npx", "-y",
                 "mcp-echarts"
             ))
             .logEvents(true)
@@ -361,40 +362,52 @@ public abstract class AbstractStreamingChatService implements IChatService {
             .build();
 
         // 步骤4: 配置OpenAI模型
-        OpenAiChatModel PLANNER_MODEL = OpenAiChatModel.builder()
-            .baseUrl(chatModelVo.getApiHost())
+        // OpenAiChatModel PLANNER_MODEL = OpenAiChatModel.builder()
+        //     .baseUrl(chatModelVo.getApiHost())
+        //     .apiKey(chatModelVo.getApiKey())
+        //     .modelName(chatModelVo.getModelName())
+        //     .build();
+
+
+        QwenChatModel qwenChatModel = QwenChatModel.builder()
+            // .baseUrl(chatModelVo.getApiHost())
             .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
-            .build();
-
+                .build();
+            
         SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
-            .chatModel(PLANNER_MODEL)
+            .chatModel(
+                        qwenChatModel)
             .tools(
-                new QueryAllTablesTool(),
-                new QueryTableSchemaTool(),
-                new ExecuteSqlQueryTool()
+                SpringUtils.getBean(QueryAllTablesTool.class),   // 必须通过 getBean 获取
+                SpringUtils.getBean(QueryTableSchemaTool.class),
+                SpringUtils.getBean(ExecuteSqlQueryTool.class)
             )
             .build();
 
-        WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
-            .chatModel(PLANNER_MODEL)
-            .toolProvider(toolProvider)
-            .build();
+        // WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
+        //     .chatModel(PLANNER_MODEL)
+        //     .toolProvider(toolProvider)
+        //     .build();
 
         ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
-            .chatModel(PLANNER_MODEL)
+            .chatModel(
+                        qwenChatModel)
             .toolProvider(toolProvider1)
             .build();
-
+        String res = sqlAgent.getData(userMessage);
+        String res1 = chartGenerationAgent.generateChart(res);
+        System.out.println(res1);
+        System.out.println(res);
         SupervisorAgent supervisor = AgenticServices
             .supervisorBuilder()
-            .chatModel(PLANNER_MODEL)
+            .chatModel(qwenChatModel)
             .subAgents(sqlAgent, chartGenerationAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .build();
 
         String invoke = supervisor.invoke(userMessage);
         System.out.println(invoke);
-        return invoke;
+        return res1;
     }
 }

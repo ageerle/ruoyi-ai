@@ -1,12 +1,5 @@
 package org.ruoyi.agent.tool;
 
-import dev.langchain4j.agent.tool.Tool;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,17 +9,26 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+
+import dev.langchain4j.agent.tool.Tool;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * 执行 SQL 查询的 Tool
  * 执行指定的 SELECT SQL 查询并返回结果
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "agent.mysql.enabled", havingValue = "true")
 public class ExecuteSqlQueryTool {
 
     @Autowired(required = false)
-    private DataSource agentDataSource;
+    private DataSource dataSource;
 
     /**
      * 执行 SELECT SQL 查询
@@ -37,6 +39,8 @@ public class ExecuteSqlQueryTool {
      */
     @Tool("Execute a SELECT SQL query and return the results. Example: SELECT * FROM sys_user")
     public String executeSql(String sql) {
+        // 2. 手动推入数据源上下文
+        DynamicDataSourceContextHolder.push("agent");
         if (sql == null || sql.trim().isEmpty()) {
             return "Error: SQL query cannot be empty";
         }
@@ -48,11 +52,11 @@ public class ExecuteSqlQueryTool {
         }
 
         try {
-            if (agentDataSource == null) {
+            if (dataSource == null) {
                 return "Error: Database datasource not configured";
             }
 
-            try (Connection connection = agentDataSource.getConnection()) {
+            try (Connection connection = dataSource.getConnection()) {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
                      ResultSet resultSet = preparedStatement.executeQuery()) {
 
@@ -82,7 +86,12 @@ public class ExecuteSqlQueryTool {
             }
         } catch (Exception e) {
             log.error("Error executing SQL: {}", sql, e);
+            // 3. 必须在 finally 中清除上下文，防止污染其他请求
+            DynamicDataSourceContextHolder.clear();
             return "Error: " + e.getMessage();
+        } finally {
+            // 3. 必须在 finally 中清除上下文，防止污染其他请求
+            DynamicDataSourceContextHolder.clear();
         }
     }
 

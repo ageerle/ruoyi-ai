@@ -1,83 +1,57 @@
 package org.ruoyi.agent.tool;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import dev.langchain4j.agent.tool.Tool;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-/**
- * 查询表建表详情的 Tool
- * 根据表名查询该表的建表 SQL 语句
- */
-@Slf4j
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+
+import dev.langchain4j.agent.tool.Tool;
+import lombok.extern.slf4j.Slf4j;
+
 @Component
-@ConditionalOnProperty(name = "agent.mysql.enabled", havingValue = "true")
+@Slf4j
 public class QueryTableSchemaTool {
 
     @Autowired(required = false)
-    private DataSource agentDataSource;
+    private DataSource dataSource;
 
-    /**
-     * 根据表名查询建表详情
-     * 返回指定表的 CREATE TABLE 语句
-     *
-     * @param tableName 表名
-     * @return 包含建表 SQL 的结果
-     */
     @Tool("Query the CREATE TABLE statement (DDL) for a specific table by table name")
     public String queryTableSchema(String tableName) {
+        // 2. 手动推入数据源上下文
+        DynamicDataSourceContextHolder.push("agent");
         if (tableName == null || tableName.trim().isEmpty()) {
             return "Error: Table name cannot be empty";
         }
 
-        // 验证表名有效性，防止 SQL 注入
-        if (!isValidIdentifier(tableName)) {
+        if (!tableName.matches("^[a-zA-Z0-9_]+$")) {
             return "Error: Invalid table name format";
         }
 
-        try {
-            if (agentDataSource == null) {
-                return "Error: Database datasource not configured";
+        String sql = "SHOW CREATE TABLE `" + tableName + "`";
+
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                return rs.getString("Create Table");
             }
-            try (Connection connection = agentDataSource.getConnection()) {
-                String sql = "SHOW CREATE TABLE " + tableName;
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
+            return "Table not found: " + tableName;
 
-                if (resultSet.next()) {
-                    String createTableSql = resultSet.getString("Create Table");
-                    resultSet.close();
-                    preparedStatement.close();
-
-                    log.info("Successfully queried schema for table: {}", tableName);
-                    return "CREATE TABLE DDL for " + tableName + ":\n\n" + createTableSql;
-                }
-
-                resultSet.close();
-                preparedStatement.close();
-                return "Error: Table not found or not accessible: " + tableName;
-            }
         } catch (Exception e) {
-            log.error("Error querying table schema for table: {}", tableName, e);
+               // 3. 必须在 finally 中清除上下文，防止污染其他请求
+            DynamicDataSourceContextHolder.clear();
+            log.error("Error querying table schema: {}", tableName, e);
             return "Error: " + e.getMessage();
+        } finally {
+            // 3. 必须在 finally 中清除上下文，防止污染其他请求
+            DynamicDataSourceContextHolder.clear();
         }
-    }
-
-    /**
-     * 验证是否为有效的 SQL 标识符
-     */
-    private boolean isValidIdentifier(String identifier) {
-        if (identifier == null || identifier.isEmpty()) {
-            return false;
-        }
-        return identifier.matches("^[a-zA-Z0-9_\\.]+$");
     }
 }

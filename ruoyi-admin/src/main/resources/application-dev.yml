@@ -58,9 +58,16 @@ spring:
           driverClassName: com.mysql.cj.jdbc.Driver
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://127.0.0.1:3306/mysql?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          url: jdbc:mysql://127.0.0.1:3306/ruoyi_ai_agent?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
           username: root
-          password: 123456
+          password: Qzhang450000
+        agent:
+          url: jdbc:mysql://127.0.0.1:3306/yunding?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          # url: jdbc:mysql://localhost:3306/agent_db
+          username: root
+          password: Qzhang450000
+          driverClassName: com.mysql.cj.jdbc.Driver
+
       hikari:
         # 最大连接池数量
         maxPoolSize: 20
@@ -77,11 +84,7 @@ spring:
         # 多久检查一次连接的活性
         keepaliveTime: 30000
 
-agent:
-  mysql:
-    url: jdbc:mysql://localhost:3306/ruoyi-ai-agent?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
-    username: root
-    password: root
+
 
 --- # 上传文件地址
 sys:
@@ -265,3 +268,4 @@ justauth:
       client-secret: 1f7d08**********5b7**********29e
       redirect-uri: ${justauth.address}/social-callback?source=gitea
 
+AGENT_ALLOWED_TABLES: "abtest_rule,abtest_project,agent_ban_log,agent_ban_logs,agent_install_sub_task,agent_install_sum_task,agent_install_task"
