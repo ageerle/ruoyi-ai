@@ -118,10 +118,10 @@ public class WorkflowUtil {
             throw new IllegalArgumentException("模型不存在: " + modelName);
         }
 
-        // 根据模型名称找到模型实体
-        String modelVoCategory = chatModelVo.getCategory();
+        // 路由服务提供商
+        String category = chatModelVo.getProviderCode();
         // 根据 category 获取对应的 ChatService（不使用计费代理，工作流场景单独计费）
-        IChatService chatService = chatServiceFactory.getOriginalService(modelVoCategory);
+        IChatService chatService = chatServiceFactory.getOriginalService(category);
 
         StreamingChatGenerator<AgentState> streamingGenerator = StreamingChatGenerator.builder()
             .mapResult(response -> {
