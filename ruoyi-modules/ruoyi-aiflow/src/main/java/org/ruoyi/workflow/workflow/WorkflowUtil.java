@@ -13,10 +13,13 @@ import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
 import org.bsc.langgraph4j.state.AgentState;
 import org.ruoyi.common.chat.Service.IChatModelService;
 import org.ruoyi.common.chat.Service.IChatService;
+import org.ruoyi.common.chat.Service.IImageGenerationService;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
+import org.ruoyi.common.chat.domain.entity.image.ImageContext;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.factory.ChatServiceFactory;
+import org.ruoyi.common.chat.factory.ImageServiceFactory;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
@@ -37,6 +40,9 @@ public class WorkflowUtil {
 
     @Resource
     private ChatServiceFactory chatServiceFactory;
+
+    @Resource
+    private ImageServiceFactory imageServiceFactory;
 
     @Resource
     private IChatModelService chatModelService;
@@ -213,4 +219,30 @@ public class WorkflowUtil {
             .filter(item -> nameSet.contains(item.getName()))
             .map(item -> getMessage("user", item.getContent().getValue().toString())).toList();
     }
+
+    /**
+     * 调用LLM 根据文字生成图片
+     */
+    public String buildTextToImage(String modelName, String prompt, String size, Integer seed){
+        log.info("Generate image invoke, modelName: {}", modelName);
+        // 根据模型名称查询模型信息
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
+        if (chatModelVo == null) {
+            throw new IllegalArgumentException("模型不存在: " + modelName);
+        }
+        // 根据模型名称找到模型实体
+        String modelVoCategory = chatModelVo.getCategory();
+        // 根据 category 获取对应的 IImageGenerationService（不使用计费代理，工作流场景单独计费）
+        IImageGenerationService imageService = imageServiceFactory.getOriginalService(modelVoCategory);
+        // 构建文生图上下文对象
+        ImageContext imageContext = ImageContext.builder()
+            .chatModelVo(chatModelVo)
+            .prompt(prompt)
+            .size(size)
+            .seed(seed)
+            .build();
+        // 调用LLM 生成图片
+        return imageService.generateImage(imageContext);
+    }
+
 }

@@ -1,4 +1,4 @@
-package org.ruoyi.workflow.workflow.node;
+package org.ruoyi.workflow.workflow.node.humanFeedBack;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -8,6 +8,7 @@ import org.ruoyi.workflow.workflow.NodeProcessResult;
 import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
+import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.*;
 
