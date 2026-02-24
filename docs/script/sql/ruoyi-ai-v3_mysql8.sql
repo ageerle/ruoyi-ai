@@ -1,3 +1,18 @@
+/*
+ Navicat MySQL Dump SQL
+
+ Source Server         : 本地
+ Source Server Type    : MySQL
+ Source Server Version : 80045 (8.0.45)
+ Source Host           : localhost:3306
+ Source Schema         : ruoyi-ai
+
+ Target Server Type    : MySQL
+ Target Server Version : 80045 (8.0.45)
+ File Encoding         : 65001
+
+ Date: 24/02/2026 22:44:53
+*/
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -1449,6 +1464,90 @@ CREATE TABLE `knowledge_info`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for mcp_market_info
+-- ----------------------------
+DROP TABLE IF EXISTS `mcp_market_info`;
+CREATE TABLE `mcp_market_info`  (
+                                    `id` bigint NOT NULL AUTO_INCREMENT COMMENT '市场ID',
+                                    `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '市场名称',
+                                    `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '市场URL',
+                                    `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '市场描述',
+                                    `auth_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '认证配置（JSON格式）',
+                                    `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ENABLED' COMMENT '状态：ENABLED-启用, DISABLED-禁用',
+                                    `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+                                    `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                                    `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+                                    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                                    `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                                    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+                                    `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+                                    PRIMARY KEY (`id`) USING BTREE,
+                                    INDEX `idx_name`(`name` ASC) USING BTREE,
+                                    INDEX `idx_status`(`status` ASC) USING BTREE,
+                                    INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of mcp_market_info
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for mcp_market_tool
+-- ----------------------------
+DROP TABLE IF EXISTS `mcp_market_tool`;
+CREATE TABLE `mcp_market_tool`  (
+                                    `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+                                    `market_id` bigint NOT NULL COMMENT '市场ID',
+                                    `tool_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '工具名称',
+                                    `tool_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '工具描述',
+                                    `tool_version` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工具版本',
+                                    `tool_metadata` json NULL COMMENT '工具元数据（JSON格式）',
+                                    `is_loaded` tinyint(1) NULL DEFAULT 0 COMMENT '是否已加载到本地',
+                                    `local_tool_id` bigint NULL DEFAULT NULL COMMENT '关联的本地工具ID',
+                                    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                                    PRIMARY KEY (`id`) USING BTREE,
+                                    INDEX `idx_market_id`(`market_id` ASC) USING BTREE,
+                                    INDEX `idx_tool_name`(`tool_name` ASC) USING BTREE,
+                                    INDEX `idx_is_loaded`(`is_loaded` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场工具关联表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of mcp_market_tool
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for mcp_tool_info
+-- ----------------------------
+DROP TABLE IF EXISTS `mcp_tool_info`;
+CREATE TABLE `mcp_tool_info`  (
+                                  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '工具ID',
+                                  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '工具名称',
+                                  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '工具描述',
+                                  `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'LOCAL' COMMENT '工具类型：LOCAL-本地, REMOTE-远程, BUILTIN-内置',
+                                  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ENABLED' COMMENT '状态：ENABLED-启用, DISABLED-禁用',
+                                  `config_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '配置信息（JSON格式）',
+                                  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+                                  `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                                  `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+                                  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                                  `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                                  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+                                  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+                                  PRIMARY KEY (`id`) USING BTREE,
+                                  INDEX `idx_name`(`name` ASC) USING BTREE,
+                                  INDEX `idx_type`(`type` ASC) USING BTREE,
+                                  INDEX `idx_status`(`status` ASC) USING BTREE,
+                                  INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP工具表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of mcp_tool_info
+-- ----------------------------
+INSERT INTO `mcp_tool_info` VALUES (1, 'edit_file', 'Edits a file by applying a diff. Use this tool when you need to make specific changes to a file. The tool will show the diff before applying changes. Use absolute paths within the workspace directory.', 'BUILTIN', 'ENABLED', NULL, '000000', -1, -1, '2026-02-24 20:19:41', -1, '2026-02-24 20:19:41', '0');
+INSERT INTO `mcp_tool_info` VALUES (2, 'list_directory', 'Lists files and directories in the specified path. Supports recursive listing and filtering. Shows file sizes, modification times, and types. Use absolute paths within the workspace directory.', 'BUILTIN', 'ENABLED', NULL, '000000', -1, -1, '2026-02-24 20:19:41', -1, '2026-02-24 20:19:41', '0');
+INSERT INTO `mcp_tool_info` VALUES (3, 'read_file', 'Reads the contents of a file. Use absolute paths within the workspace directory. Returns the complete file content as a string.', 'BUILTIN', 'ENABLED', NULL, '000000', -1, -1, '2026-02-24 20:19:41', -1, '2026-02-24 20:19:41', '0');
+
+-- ----------------------------
 -- Table structure for sj_distributed_lock
 -- ----------------------------
 DROP TABLE IF EXISTS `sj_distributed_lock`;
@@ -1460,7 +1559,7 @@ CREATE TABLE `sj_distributed_lock`  (
                                         `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                         `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
                                         PRIMARY KEY (`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '锁定表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '锁定表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_distributed_lock
@@ -1485,7 +1584,7 @@ CREATE TABLE `sj_group_config`  (
                                     `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                                     PRIMARY KEY (`id`) USING BTREE,
                                     UNIQUE INDEX `uk_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_group_config
@@ -1531,7 +1630,7 @@ CREATE TABLE `sj_job`  (
                            INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE,
                            INDEX `idx_job_status_bucket_index`(`job_status` ASC, `bucket_index` ASC) USING BTREE,
                            INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job
@@ -1553,7 +1652,7 @@ CREATE TABLE `sj_job_executor`  (
                                     PRIMARY KEY (`id`) USING BTREE,
                                     INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE,
                                     INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务执行器信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务执行器信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_executor
@@ -1579,7 +1678,7 @@ CREATE TABLE `sj_job_log_message`  (
                                        INDEX `idx_task_batch_id_task_id`(`task_batch_id` ASC, `task_id` ASC) USING BTREE,
                                        INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE,
                                        INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调度日志' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_log_message
@@ -1608,7 +1707,7 @@ CREATE TABLE `sj_job_summary`  (
                                    PRIMARY KEY (`id`) USING BTREE,
                                    UNIQUE INDEX `uk_trigger_at_system_task_type_business_id`(`trigger_at` ASC, `system_task_type` ASC, `business_id` ASC) USING BTREE,
                                    INDEX `idx_namespace_id_group_name_business_id`(`namespace_id` ASC, `group_name` ASC, `business_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_summary
@@ -1642,7 +1741,7 @@ CREATE TABLE `sj_job_task`  (
                                 INDEX `idx_task_batch_id_task_status`(`task_batch_id` ASC, `task_status` ASC) USING BTREE,
                                 INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE,
                                 INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task
@@ -1674,7 +1773,7 @@ CREATE TABLE `sj_job_task_batch`  (
                                       INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE,
                                       INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE,
                                       INDEX `idx_workflow_task_batch_id_workflow_node_id`(`workflow_task_batch_id` ASC, `workflow_node_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task_batch
@@ -1695,7 +1794,7 @@ CREATE TABLE `sj_namespace`  (
                                  PRIMARY KEY (`id`) USING BTREE,
                                  UNIQUE INDEX `uk_unique_id`(`unique_id` ASC) USING BTREE,
                                  INDEX `idx_name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '命名空间' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '命名空间' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_namespace
@@ -1724,7 +1823,7 @@ CREATE TABLE `sj_notify_config`  (
                                      `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                                      PRIMARY KEY (`id`) USING BTREE,
                                      INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_notify_config
@@ -1745,7 +1844,7 @@ CREATE TABLE `sj_notify_recipient`  (
                                         `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                                         PRIMARY KEY (`id`) USING BTREE,
                                         INDEX `idx_namespace_id`(`namespace_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '告警通知接收人' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '告警通知接收人' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_notify_recipient
@@ -1784,7 +1883,7 @@ CREATE TABLE `sj_retry`  (
                              INDEX `idx_retry_status_bucket_index`(`retry_status` ASC, `bucket_index` ASC) USING BTREE,
                              INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE,
                              INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '重试信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '重试信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_retry
@@ -1813,7 +1912,7 @@ CREATE TABLE `sj_retry_dead_letter`  (
                                          INDEX `idx_idempotent_id`(`idempotent_id` ASC) USING BTREE,
                                          INDEX `idx_biz_no`(`biz_no` ASC) USING BTREE,
                                          INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '死信队列表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '死信队列表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_retry_dead_letter
@@ -1848,7 +1947,7 @@ CREATE TABLE `sj_retry_scene_config`  (
                                           `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                                           PRIMARY KEY (`id`) USING BTREE,
                                           UNIQUE INDEX `uk_namespace_id_group_name_scene_name`(`namespace_id` ASC, `group_name` ASC, `scene_name` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '场景配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '场景配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_retry_scene_config
@@ -1873,7 +1972,7 @@ CREATE TABLE `sj_retry_summary`  (
                                      PRIMARY KEY (`id`) USING BTREE,
                                      UNIQUE INDEX `uk_scene_name_trigger_at`(`namespace_id` ASC, `group_name` ASC, `scene_name` ASC, `trigger_at` ASC) USING BTREE,
                                      INDEX `idx_trigger_at`(`trigger_at` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_retry_summary
@@ -1901,7 +2000,7 @@ CREATE TABLE `sj_retry_task`  (
                                   INDEX `task_status`(`task_status` ASC) USING BTREE,
                                   INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE,
                                   INDEX `idx_retry_id`(`retry_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '重试任务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '重试任务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_retry_task
@@ -1924,7 +2023,7 @@ CREATE TABLE `sj_retry_task_log_message`  (
                                               PRIMARY KEY (`id`) USING BTREE,
                                               INDEX `idx_namespace_id_group_name_retry_task_id`(`namespace_id` ASC, `group_name` ASC, `retry_task_id` ASC) USING BTREE,
                                               INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_retry_task_log_message
@@ -1951,7 +2050,7 @@ CREATE TABLE `sj_server_node`  (
                                    UNIQUE INDEX `uk_host_id_host_ip`(`host_id` ASC, `host_ip` ASC) USING BTREE,
                                    INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE,
                                    INDEX `idx_expire_at_node_type`(`expire_at` ASC, `node_type` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
@@ -1970,7 +2069,7 @@ CREATE TABLE `sj_system_user`  (
                                    `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                                    PRIMARY KEY (`id`) USING BTREE,
                                    UNIQUE INDEX `uk_username`(`username` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_system_user
@@ -1990,7 +2089,7 @@ CREATE TABLE `sj_system_user_permission`  (
                                               `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                                               PRIMARY KEY (`id`) USING BTREE,
                                               UNIQUE INDEX `uk_namespace_id_group_name_system_user_id`(`namespace_id` ASC, `group_name` ASC, `system_user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_system_user_permission
@@ -2025,7 +2124,7 @@ CREATE TABLE `sj_workflow`  (
                                 PRIMARY KEY (`id`) USING BTREE,
                                 INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE,
                                 INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_workflow
@@ -2056,7 +2155,7 @@ CREATE TABLE `sj_workflow_node`  (
                                      PRIMARY KEY (`id`) USING BTREE,
                                      INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE,
                                      INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_workflow_node
@@ -2085,7 +2184,7 @@ CREATE TABLE `sj_workflow_task_batch`  (
                                            INDEX `idx_job_id_task_batch_status`(`workflow_id` ASC, `task_batch_status` ASC) USING BTREE,
                                            INDEX `idx_create_dt`(`create_dt` ASC) USING BTREE,
                                            INDEX `idx_namespace_id_group_name`(`namespace_id` ASC, `group_name` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流批次' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_workflow_task_batch
@@ -2708,6 +2807,22 @@ INSERT INTO `sys_menu` VALUES (1620, '配置列表', 118, 5, '#', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (1621, '配置添加', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:add', '#', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1622, '配置编辑', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:edit', '#', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1623, '配置删除', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:remove', '#', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2000, 'MCP管理', 0, 5, 'mcp', '', '', 1, 0, 'M', '0', '0', '', 'mdi:robot-industrial', 103, 1, '2026-02-24 20:02:47', NULL, NULL, 'MCP模块管理菜单');
+INSERT INTO `sys_menu` VALUES (2001, 'MCP工具管理', 2000, 1, 'tool', 'mcp/tool/index', '', 1, 0, 'C', '0', '0', 'mcp:tool:list', 'material-symbols:tools-hammer-outline', 103, 1, '2026-02-24 20:02:47', NULL, NULL, 'MCP工具管理菜单');
+INSERT INTO `sys_menu` VALUES (2002, 'MCP工具查询', 2001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:query', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2003, 'MCP工具新增', 2001, 2, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:add', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2004, 'MCP工具修改', 2001, 3, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:edit', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2005, 'MCP工具删除', 2001, 4, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:remove', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2006, 'MCP工具测试', 2001, 5, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:test', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2007, 'MCP工具导出', 2001, 6, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:export', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2010, 'MCP市场管理', 2000, 2, 'market', 'mcp/market/index', '', 1, 0, 'C', '0', '0', 'mcp:market:list', 'mdi:storefront-outline', 103, 1, '2026-02-24 20:02:47', NULL, NULL, 'MCP市场管理菜单');
+INSERT INTO `sys_menu` VALUES (2011, 'MCP市场查询', 2010, 1, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:query', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2012, 'MCP市场新增', 2010, 2, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:add', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2013, 'MCP市场修改', 2010, 3, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:edit', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2014, 'MCP市场删除', 2010, 4, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:remove', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2015, 'MCP市场刷新', 2010, 5, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:refresh', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2016, 'MCP工具加载', 2010, 6, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:load', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2017, 'MCP市场导出', 2010, 7, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:export', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (11616, '工作流', 0, 6, 'workflow', '', '', 1, 0, 'M', '0', '0', '', 'mdi:workflow-outline', 103, 1, '2026-01-05 14:39:33', 1, '2026-01-05 14:56:07', '');
 INSERT INTO `sys_menu` VALUES (11618, '我的任务', 0, 7, 'task', '', '', 1, 0, 'M', '0', '0', '', 'carbon:task-approved', 103, 1, '2026-01-05 14:39:33', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (11619, '我的待办', 11618, 2, 'taskWaiting', 'workflow/task/taskWaiting', '', 1, 1, 'C', '0', '0', '', 'ri:todo-line', 103, 1, '2026-01-05 14:39:33', NULL, NULL, '');
@@ -3421,7 +3536,7 @@ CREATE TABLE `t_workflow_component`  (
                                          `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '000000' COMMENT '租户编号',
                                          PRIMARY KEY (`id`) USING BTREE,
                                          INDEX `idx_display_order`(`display_order` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流组件库 | Workflow Component' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 37 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流组件库 | Workflow Component' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of t_workflow_component
@@ -3429,6 +3544,9 @@ CREATE TABLE `t_workflow_component`  (
 INSERT INTO `t_workflow_component` VALUES (17, '5cd68dccbbb411f0bb7840c2ba9a7fbc', 'Start', '开始', '流程由此开始', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0, '000000');
 INSERT INTO `t_workflow_component` VALUES (18, '5cd6ac69bbb411f0bb7840c2ba9a7fbc', 'End', '结束', '流程由此结束', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0, '000000');
 INSERT INTO `t_workflow_component` VALUES (19, '5cd6c8eabbb411f0bb7840c2ba9a7fbc', 'Answer', '生成回答', '调用大语言模型回答问题', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0, '000000');
+INSERT INTO `t_workflow_component` VALUES (25, '0b4369bb60dc46d6bd84ceb4e36184dc', 'KeywordExtractor', '关键词提取', '从文本中提取关键词', 0, 1, '2025-12-26 16:30:05', '2025-12-26 16:30:05', 0, '000000');
+INSERT INTO `t_workflow_component` VALUES (26, 'bb00fc2f52c74fec82ee3f99725b56bb', 'Switcher', '条件分支', '根据条件执行不同分支', 0, 1, '2025-12-26 16:30:46', '2025-12-26 16:30:46', 0, '000000');
+INSERT INTO `t_workflow_component` VALUES (36, 'f37dbcb8f0d5464d90fbb22774490a56', 'HumanFeedback', '人类', '人机沟通', 0, 1, '2025-12-30 17:37:14', '2025-12-30 17:37:14', 0, '000000');
 
 -- ----------------------------
 -- Table structure for t_workflow_edge
@@ -3647,162 +3765,3 @@ INSERT INTO `test_tree` VALUES (12, '000000', 10, 108, 3, '子节点88', 0, 103,
 INSERT INTO `test_tree` VALUES (13, '000000', 10, 108, 3, '子节点99', 0, 103, '2026-02-03 05:14:54', 1, NULL, NULL, 0);
 
 SET FOREIGN_KEY_CHECKS = 1;
-
-
--- MCP 模块数据库表结构
--- 版本: V3.0.0
--- 描述: MCP 工具管理和 MCP 市场管理表
-
--- ----------------------------
--- MCP 工具表
--- ----------------------------
-DROP TABLE IF EXISTS `mcp_tool_info`;
-CREATE TABLE `mcp_tool_info`
-(
-    `id`          bigint       NOT NULL AUTO_INCREMENT COMMENT '工具ID',
-    `name`        varchar(200) NOT NULL COMMENT '工具名称',
-    `description` text COMMENT '工具描述',
-    `type`        varchar(20) DEFAULT 'LOCAL' COMMENT '工具类型：LOCAL-本地, REMOTE-远程, BUILTIN-内置',
-    `status`      varchar(20) DEFAULT 'ENABLED' COMMENT '状态：ENABLED-启用, DISABLED-禁用',
-    `config_json` text COMMENT '配置信息（JSON格式）',
-    `tenant_id`   varchar(20) DEFAULT '000000' COMMENT '租户编号',
-    `create_dept` bigint      DEFAULT NULL COMMENT '创建部门',
-    `create_by`   bigint      DEFAULT NULL COMMENT '创建者',
-    `create_time` datetime    DEFAULT NULL COMMENT '创建时间',
-    `update_by`   bigint      DEFAULT NULL COMMENT '更新者',
-    `update_time` datetime    DEFAULT NULL COMMENT '更新时间',
-    `del_flag`    char(1)     DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-    PRIMARY KEY (`id`),
-    KEY           `idx_name` (`name`),
-    KEY           `idx_type` (`type`),
-    KEY           `idx_status` (`status`),
-    KEY           `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MCP工具表';
-
--- ----------------------------
--- MCP 市场表
--- ----------------------------
-DROP TABLE IF EXISTS `mcp_market_info`;
-CREATE TABLE `mcp_market_info`
-(
-    `id`          bigint       NOT NULL AUTO_INCREMENT COMMENT '市场ID',
-    `name`        varchar(200) NOT NULL COMMENT '市场名称',
-    `url`         varchar(500) NOT NULL COMMENT '市场URL',
-    `description` text COMMENT '市场描述',
-    `auth_config` text COMMENT '认证配置（JSON格式）',
-    `status`      varchar(20) DEFAULT 'ENABLED' COMMENT '状态：ENABLED-启用, DISABLED-禁用',
-    `tenant_id`   varchar(20) DEFAULT '000000' COMMENT '租户编号',
-    `create_dept` bigint      DEFAULT NULL COMMENT '创建部门',
-    `create_by`   bigint      DEFAULT NULL COMMENT '创建者',
-    `create_time` datetime    DEFAULT NULL COMMENT '创建时间',
-    `update_by`   bigint      DEFAULT NULL COMMENT '更新者',
-    `update_time` datetime    DEFAULT NULL COMMENT '更新时间',
-    `del_flag`    char(1)     DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-    PRIMARY KEY (`id`),
-    KEY           `idx_name` (`name`),
-    KEY           `idx_status` (`status`),
-    KEY           `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MCP市场表';
-
--- ----------------------------
--- MCP 市场工具关联表
--- ----------------------------
-DROP TABLE IF EXISTS `mcp_market_tool`;
-CREATE TABLE `mcp_market_tool`
-(
-    `id`               bigint       NOT NULL AUTO_INCREMENT COMMENT 'ID',
-    `market_id`        bigint       NOT NULL COMMENT '市场ID',
-    `tool_name`        varchar(200) NOT NULL COMMENT '工具名称',
-    `tool_description` text COMMENT '工具描述',
-    `tool_version`     varchar(50) COMMENT '工具版本',
-    `tool_metadata`    json COMMENT '工具元数据（JSON格式）',
-    `is_loaded`        tinyint(1) DEFAULT 0 COMMENT '是否已加载到本地',
-    `local_tool_id`    bigint COMMENT '关联的本地工具ID',
-    `create_time`      datetime DEFAULT NULL COMMENT '创建时间',
-    PRIMARY KEY (`id`),
-    KEY                `idx_market_id` (`market_id`),
-    KEY                `idx_tool_name` (`tool_name`),
-    KEY                `idx_is_loaded` (`is_loaded`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MCP市场工具关联表';
-
-
-
--- MCP 模块菜单权限 SQL
--- 版本: V3.0.1
--- 描述: MCP 工具管理和 MCP 市场管理菜单权限
--- 菜单 ID 规划: 2000-2199
-
--- ----------------------------
--- MCP 主菜单
--- ----------------------------
-INSERT INTO sys_menu
-VALUES (2000, 'MCP管理', 0, 5, 'mcp', '', '', 1, 0, 'M', '0', '0', '',
-        'mdi:robot-industrial', 103, 1, NOW(), NULL, NULL, 'MCP模块管理菜单');
-
--- ----------------------------
--- MCP 工具管理
--- ----------------------------
-INSERT INTO sys_menu
-VALUES (2001, 'MCP工具管理', 2000, 1, 'tool', 'mcp/tool/index', '', 1, 0, 'C', '0',
-        '0', 'mcp:tool:list', 'material-symbols:tools-hammer-outline', 103, 1, NOW(), NULL,
-        NULL, 'MCP工具管理菜单');
-
--- MCP 工具管理按钮权限
-INSERT INTO sys_menu
-VALUES (2002, 'MCP工具查询', 2001, 1, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:tool:query', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2003, 'MCP工具新增', 2001, 2, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:tool:add', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2004, 'MCP工具修改', 2001, 3, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:tool:edit', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2005, 'MCP工具删除', 2001, 4, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:tool:remove', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2006, 'MCP工具测试', 2001, 5, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:tool:test', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2007, 'MCP工具导出', 2001, 6, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:tool:export', '#', 103, 1, NOW(), NULL, NULL, '');
-
--- ----------------------------
--- MCP 市场管理
--- ----------------------------
-INSERT INTO sys_menu
-VALUES (2010, 'MCP市场管理', 2000, 2, 'market', 'mcp/market/index', '', 1, 0, 'C', '0',
-        '0', 'mcp:market:list', 'mdi:storefront-outline', 103, 1, NOW(), NULL, NULL,
-        'MCP市场管理菜单');
-
--- MCP 市场管理按钮权限
-INSERT INTO sys_menu
-VALUES (2011, 'MCP市场查询', 2010, 1, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:market:query', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2012, 'MCP市场新增', 2010, 2, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:market:add', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2013, 'MCP市场修改', 2010, 3, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:market:edit', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2014, 'MCP市场删除', 2010, 4, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:market:remove', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2015, 'MCP市场刷新', 2010, 5, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:market:refresh', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2016, 'MCP工具加载', 2010, 6, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:market:load', '#', 103, 1, NOW(), NULL, NULL, '');
-INSERT INTO sys_menu
-VALUES (2017, 'MCP市场导出', 2010, 7, '#', '', '', 1, 0, 'F', '0', '0',
-        'mcp:market:export', '#', 103, 1, NOW(), NULL, NULL, '');
-
--- ----------------------------
--- MCP 配置管理 (可选，预留扩展)
--- ----------------------------
--- INSERT INTO sys_menu VALUES (2020, 'MCP配置管理', 2000, 3, 'config', 'mcp/config/index', '', 1, 0, 'C', '0',
---                              '0', 'mcp:config:list', 'ant-design:setting-outlined', 103, 1, NOW(), NULL, NULL,
---                              'MCP配置管理菜单');
-
-
