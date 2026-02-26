@@ -2,7 +2,7 @@ package org.ruoyi.service.knowledge.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
-import org.ruoyi.common.chat.Service.IChatModelService;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.core.domain.dto.OssDTO;
 import org.ruoyi.common.core.service.OssService;

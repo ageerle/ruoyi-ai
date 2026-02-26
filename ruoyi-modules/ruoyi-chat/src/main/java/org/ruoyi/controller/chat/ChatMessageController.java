@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import org.ruoyi.service.chat.IChatMessageService;
+import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatMessageVo;
+import org.ruoyi.common.chat.service.chatMessage.IChatMessageService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
@@ -18,8 +20,6 @@ import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
-import org.ruoyi.domain.vo.chat.ChatMessageVo;
-import org.ruoyi.domain.bo.chat.ChatMessageBo;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 
 /**

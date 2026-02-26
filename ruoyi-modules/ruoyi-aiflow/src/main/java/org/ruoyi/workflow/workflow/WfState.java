@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
 import org.bsc.langgraph4j.state.AgentState;
+import org.ruoyi.common.chat.entity.User;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeNodeDto;
-import org.ruoyi.workflow.entity.User;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
@@ -28,6 +28,7 @@ public class WfState {
     private Long userId;
     private String tokenValue;
     private SseEmitter sseEmitter;
+    private Long sessionId;
 
     //Source node uuid => target node uuid list
     private Map<String, List<String>> edges = new HashMap<>();
@@ -59,13 +60,14 @@ public class WfState {
      */
     private Set<String> interruptNodes = new HashSet<>();
 
-    public WfState(User user, List<NodeIOData> input, String uuid, Long userId, String tokenValue, SseEmitter sseEmitter) {
+    public WfState(User user, List<NodeIOData> input, String uuid, Long userId, String tokenValue, SseEmitter sseEmitter, Long sessionId) {
         this.input = input;
         this.user = user;
         this.uuid = uuid;
         this.userId = userId;
         this.tokenValue = tokenValue;
         this.sseEmitter = sseEmitter;
+        this.sessionId = sessionId;
     }
 
     /**

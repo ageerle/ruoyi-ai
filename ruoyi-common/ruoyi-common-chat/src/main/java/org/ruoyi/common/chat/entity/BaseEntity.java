@@ -1,4 +1,4 @@
-package org.ruoyi.workflow.entity;
+package org.ruoyi.common.chat.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

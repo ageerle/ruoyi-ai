@@ -2,6 +2,7 @@ package org.ruoyi.workflow.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.ruoyi.common.chat.enums.BaseEnum;
 
 @Getter
 @AllArgsConstructor

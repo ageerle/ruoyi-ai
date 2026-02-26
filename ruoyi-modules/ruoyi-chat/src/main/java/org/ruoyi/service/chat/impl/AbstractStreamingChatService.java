@@ -25,17 +25,20 @@ import org.ruoyi.agent.WebSearchAgent;
 import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
 import org.ruoyi.agent.tool.QueryAllTablesTool;
 import org.ruoyi.agent.tool.QueryTableSchemaTool;
-import org.ruoyi.common.chat.Service.IChatService;
+import org.ruoyi.common.chat.base.ThreadContext;
+import org.ruoyi.common.chat.domain.dto.request.ReSumeRunner;
+import org.ruoyi.common.chat.domain.dto.request.WorkFlowRunner;
+import org.ruoyi.common.chat.enums.RoleType;
+import org.ruoyi.common.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
-import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
+import org.ruoyi.common.chat.entity.chat.ChatContext;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.service.chatMessage.AbstractChatMessageService;
+import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
 import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
-import org.ruoyi.domain.bo.chat.ChatMessageBo;
-import org.ruoyi.enums.RoleType;
-import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
@@ -59,7 +62,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Validated
-public abstract class AbstractStreamingChatService implements IChatService {
+public abstract class AbstractStreamingChatService extends AbstractChatMessageService implements IChatService {
 
     /**
      * 默认保留的消息窗口大小（用于长期记忆）
@@ -76,6 +79,11 @@ public abstract class AbstractStreamingChatService implements IChatService {
      * Key: sessionId, Value: MessageWindowChatMemory实例
      */
     private static final Map<Object, MessageWindowChatMemory> memoryCache = new ConcurrentHashMap<>();
+
+    /**
+     * 获取工作流启用Bean对象
+     */
+    private static final IWorkFlowStarterService starterService = SpringUtils.getBean(IWorkFlowStarterService.class);
 
     /**
      * 定义聊天流程骨架
@@ -109,9 +117,28 @@ public abstract class AbstractStreamingChatService implements IChatService {
 
             // 保存用户消息
             saveChatMessage(chatRequest, userId, content, RoleType.USER.getName(), chatModelVo);
+
+            // 判断用户是否重新输入
+            boolean isResume = chatRequest.getIsResume() != null && chatRequest.getIsResume();
+            if (isResume){
+                ReSumeRunner reSumeRunner = chatRequest.getReSumeRunner();
+                if (ObjectUtils.isNotEmpty(reSumeRunner)){
+                    starterService.resumeFlow(reSumeRunner.getRuntimeUuid(), reSumeRunner.getFeedbackContent(), emitter);
+                    return emitter;
+                }
+            }
+
+            // 判断用户是否开启工作流
+            boolean enableWorkFlow = chatRequest.getEnableWorkFlow() != null && chatRequest.getEnableWorkFlow();
+            if (enableWorkFlow) {
+                WorkFlowRunner runner = chatRequest.getWorkFlowRunner();
+                if (ObjectUtils.isNotEmpty(runner)){
+                    return starterService.streaming(ThreadContext.getCurrentUser(), runner.getUuid(), runner.getInputs(), chatRequest.getSessionId());
+                }
+            }
+
             // 使用长期记忆增强的消息列表
             List<ChatMessage> messagesWithMemory = buildMessagesWithMemory(chatRequest);
-
             if (chatRequest.getEnableThinking()) {
                 String msg = doAgent(content, chatModelVo);
                 SseMessageUtils.sendMessage(userId, msg);
@@ -120,13 +147,10 @@ public abstract class AbstractStreamingChatService implements IChatService {
                 saveChatMessage(chatRequest, userId, msg, RoleType.ASSISTANT.getName(), chatModelVo);
             } else {
                 // 创建包含内存管理的响应处理器
-                if (ObjectUtils.isEmpty(handler)) {
-                    handler = createResponseHandler(chatRequest, userId, tokenValue, chatModelVo);
-                }
+                handler = ObjectUtils.isEmpty(handler) ? createResponseHandler(chatRequest, userId, tokenValue, chatModelVo) : handler;
                 // 调用具体实现的聊天方法
                 doChat(chatModelVo, chatRequest, messagesWithMemory, handler);
             }
-
         } catch (Exception e) {
             SseMessageUtils.sendMessage(userId, "对话出错：" + e.getMessage());
             SseMessageUtils.completeConnection(userId, tokenValue);
@@ -145,6 +169,12 @@ public abstract class AbstractStreamingChatService implements IChatService {
      */
     protected List<ChatMessage> buildMessagesWithMemory(ChatRequest chatRequest) {
         List<ChatMessage> messages = new ArrayList<>();
+        // 工作流对话消息
+        List<ChatMessage> chatMessages = chatRequest.getChatMessages();
+        if (!CollectionUtils.isEmpty(chatMessages)){
+            messages.addAll(chatMessages);
+        }
+        // 开启长期记忆
         if (enablePersistentMemory && chatRequest.getSessionId() != null) {
             MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
             if (memory != null) {
@@ -155,11 +185,6 @@ public abstract class AbstractStreamingChatService implements IChatService {
                 }
             }
             return messages;
-        }
-        // 工作流方式
-        List<ChatMessage> chatMessages = chatRequest.getChatMessages();
-        if (!CollectionUtils.isEmpty(chatMessages)){
-            messages.addAll(chatMessages);
         }
         return messages;
     }
@@ -275,40 +300,6 @@ public abstract class AbstractStreamingChatService implements IChatService {
                 }
             }
         };
-    }
-
-    /**
-     * 保存聊天消息到数据库
-     *
-     * @param chatRequest 聊天请求
-     * @param userId      用户ID
-     * @param content     消息内容
-     * @param role        消息角色
-     * @param chatModelVo 模型配置
-     */
-    private void saveChatMessage(ChatRequest chatRequest, Long userId, String content, String role, ChatModelVo chatModelVo) {
-        try {
-            // 验证必要的上下文信息
-            if (chatRequest == null || userId == null) {
-                log.warn("缺少必要的聊天上下文信息，无法保存消息");
-                return;
-            }
-
-            // 创建ChatMessageBo对象
-            ChatMessageBo messageBO = new ChatMessageBo();
-            messageBO.setUserId(userId);
-            messageBO.setSessionId(chatRequest.getSessionId());
-            messageBO.setContent(content);
-            messageBO.setRole(role);
-            messageBO.setModelName(chatRequest.getModel());
-            messageBO.setBillingType(chatModelVo.getModelType());
-            messageBO.setRemark(null);
-
-            IChatMessageService chatMessageService = SpringUtils.getBean(IChatMessageService.class);
-            chatMessageService.insertByBo(messageBO);
-        } catch (Exception e) {
-            log.error("保存{}聊天消息时出错: {}", getProviderName(), e.getMessage(), e);
-        }
     }
 
     /**

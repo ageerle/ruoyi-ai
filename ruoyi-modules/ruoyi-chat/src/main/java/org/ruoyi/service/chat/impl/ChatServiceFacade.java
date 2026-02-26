@@ -1,27 +1,27 @@
 package org.ruoyi.service.chat.impl;
 
-import java.util.List;
-
-import org.ruoyi.common.chat.Service.IChatModelService;
-import org.ruoyi.common.chat.Service.IChatService;
+import cn.dev33.satoken.stp.StpUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.common.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
-import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
+import org.ruoyi.common.chat.entity.chat.ChatContext;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.factory.ChatServiceFactory;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import cn.dev33.satoken.stp.StpUtil;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 
 /**
  * 聊天服务业务实现
@@ -52,7 +52,6 @@ public class ChatServiceFacade {
      * @return SseEmitter
      */
     public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
-
         // 1. 根据模型名称查询完整配置
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         if (chatModelVo == null) {

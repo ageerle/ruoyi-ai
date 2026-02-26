@@ -1,16 +1,15 @@
-package org.ruoyi.domain.vo.chat;
+package org.ruoyi.common.chat.domain.vo.chat;
 
-import org.ruoyi.domain.entity.chat.ChatMessage;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
-import org.ruoyi.common.excel.annotation.ExcelDictFormat;
-import org.ruoyi.common.excel.convert.ExcelDictConvert;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.ruoyi.common.chat.entity.chat.ChatMessage;
+import org.ruoyi.common.excel.annotation.ExcelDictFormat;
+import org.ruoyi.common.excel.convert.ExcelDictConvert;
 
 import java.io.Serial;
 import java.io.Serializable;
-
 
 
 /**

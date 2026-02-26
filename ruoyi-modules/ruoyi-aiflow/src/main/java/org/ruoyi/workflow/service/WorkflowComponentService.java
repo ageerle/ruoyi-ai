@@ -7,11 +7,11 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.chat.enums.ErrorEnum;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.dto.workflow.WfComponentReq;
 import org.ruoyi.workflow.dto.workflow.WfComponentSearchReq;
 import org.ruoyi.workflow.entity.WorkflowComponent;
-import org.ruoyi.workflow.enums.ErrorEnum;
 import org.ruoyi.workflow.mapper.WorkflowComponentMapper;
 import org.ruoyi.workflow.util.PrivilegeUtil;
 import org.ruoyi.workflow.util.UuidUtil;
@@ -26,7 +26,7 @@ import java.util.List;
 
 import static org.ruoyi.workflow.cosntant.RedisKeyConstant.WORKFLOW_COMPONENTS;
 import static org.ruoyi.workflow.cosntant.RedisKeyConstant.WORKFLOW_COMPONENT_START_KEY;
-import static org.ruoyi.workflow.enums.ErrorEnum.C_WF_COMPONENT_DELETED_FAIL_BY_USED;
+import static org.ruoyi.common.chat.enums.ErrorEnum.C_WF_COMPONENT_DELETED_FAIL_BY_USED;
 
 @Slf4j
 @Service

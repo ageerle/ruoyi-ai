@@ -62,6 +62,12 @@
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-tenant</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger-annotations.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

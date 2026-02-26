@@ -1,4 +1,4 @@
-package org.ruoyi.workflow.enums;
+package org.ruoyi.common.chat.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

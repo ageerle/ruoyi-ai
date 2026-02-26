@@ -1,4 +1,4 @@
-package org.ruoyi.enums;
+package org.ruoyi.common.chat.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,6 +18,7 @@ public enum RoleType {
     ASSISTANT("assistant"),
     FUNCTION("function"),
     TOOL("tool"),
+    WORKFLOW("workFlow")
     ;
 
     private final String name;

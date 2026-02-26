@@ -1,11 +1,11 @@
-package org.ruoyi.workflow.entity;
+package org.ruoyi.common.chat.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.ruoyi.workflow.enums.UserStatusEnum;
+import org.ruoyi.common.chat.enums.UserStatusEnum;
 
 import java.time.LocalDateTime;
 

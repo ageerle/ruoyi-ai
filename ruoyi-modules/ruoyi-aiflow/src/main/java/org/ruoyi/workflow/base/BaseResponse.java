@@ -1,7 +1,7 @@
 package org.ruoyi.workflow.base;
 
 import lombok.Data;
-import org.ruoyi.workflow.enums.ErrorEnum;
+import org.ruoyi.common.chat.enums.ErrorEnum;
 
 import java.io.Serializable;
 

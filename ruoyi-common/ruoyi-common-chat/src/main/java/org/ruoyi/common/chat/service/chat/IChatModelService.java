@@ -1,4 +1,4 @@
-package org.ruoyi.common.chat.Service;
+package org.ruoyi.common.chat.service.chat;
 
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;

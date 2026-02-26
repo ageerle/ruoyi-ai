@@ -12,12 +12,6 @@ public class LLMAnswerNodeConfig {
     @NotBlank
     private String prompt;
 
-    /**
-     * TODO
-     */
-    // @NotBlank
-    private String category;
-
     @NotNull
     @JsonProperty("model_name")
     private String modelName;

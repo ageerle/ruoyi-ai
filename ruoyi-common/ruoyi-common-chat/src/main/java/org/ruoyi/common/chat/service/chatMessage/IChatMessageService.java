@@ -1,10 +1,10 @@
-package org.ruoyi.service.chat;
+package org.ruoyi.common.chat.service.chatMessage;
 
+import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
 import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
+import org.ruoyi.common.chat.domain.vo.chat.ChatMessageVo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.domain.bo.chat.ChatMessageBo;
-import org.ruoyi.domain.vo.chat.ChatMessageVo;
 
 import java.util.Collection;
 import java.util.List;
