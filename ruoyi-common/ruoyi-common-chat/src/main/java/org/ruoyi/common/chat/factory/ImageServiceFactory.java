@@ -1,6 +1,6 @@
 package org.ruoyi.common.chat.factory;
 
-import org.ruoyi.common.chat.Service.IImageGenerationService;
+import org.ruoyi.common.chat.service.image.IImageGenerationService;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;

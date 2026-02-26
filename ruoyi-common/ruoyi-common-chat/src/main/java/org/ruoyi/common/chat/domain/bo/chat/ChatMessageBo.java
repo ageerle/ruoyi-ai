@@ -1,30 +1,30 @@
-package org.ruoyi.domain.entity.chat;
+package org.ruoyi.common.chat.domain.bo.chat;
 
-import org.ruoyi.common.tenant.core.TenantEntity;
-import com.baomidou.mybatisplus.annotation.*;
+import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.ruoyi.common.chat.entity.chat.ChatMessage;
+import org.ruoyi.common.core.validate.AddGroup;
+import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
-import java.io.Serial;
 
 /**
- * 聊天消息对象 chat_message
+ * 聊天消息业务对象 chat_message
  *
  * @author ageerle
  * @date 2025-12-14
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("chat_message")
-public class ChatMessage extends TenantEntity {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
+@AutoMapper(target = ChatMessage.class, reverseConvertGenerate = false)
+public class ChatMessageBo extends BaseEntity {
 
     /**
      * 主键
      */
-    @TableId(value = "id")
+    @NotNull(message = "主键不能为空", groups = { EditGroup.class })
     private Long id;
 
     /**
@@ -35,6 +35,7 @@ public class ChatMessage extends TenantEntity {
     /**
      * 用户id
      */
+    @NotNull(message = "用户id不能为空", groups = { AddGroup.class, EditGroup.class })
     private Long userId;
 
     /**

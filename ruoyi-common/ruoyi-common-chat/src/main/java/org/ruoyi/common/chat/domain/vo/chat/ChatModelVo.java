@@ -5,7 +5,7 @@ import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.ruoyi.common.chat.domain.entity.chat.ChatModel;
+import org.ruoyi.common.chat.entity.chat.ChatModel;
 
 import java.io.Serial;
 import java.io.Serializable;

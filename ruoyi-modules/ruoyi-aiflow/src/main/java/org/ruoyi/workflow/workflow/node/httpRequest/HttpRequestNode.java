@@ -63,6 +63,11 @@ public class HttpRequestNode extends AbstractWfNode {
             List<NodeIOData> outputs = new ArrayList<>();
             outputs.add(NodeIOData.createByText("output", "HTTP响应", response));
 
+            // 保存成功会话信息
+            String message = "HTTP响应:" + response;
+            saveSessionMessage(wfState, message);
+            // 发送驱动消息事件
+            sendSseEvent(message);
             return NodeProcessResult.builder().content(outputs).build();
 
         } catch (Exception e) {
@@ -73,6 +78,11 @@ public class HttpRequestNode extends AbstractWfNode {
             errorOutputs.add(NodeIOData.createByText("output", "错误", ""));
             errorOutputs.add(NodeIOData.createByText("error", "HTTP请求错误", e.getMessage()));
 
+            // 保存失败会话信息
+            String message = "HTTP响应失败:" + e.getMessage();
+            saveSessionMessage(wfState, message);
+            // 发送驱动消息事件
+            sendSseEvent(message);
             return NodeProcessResult.builder().content(errorOutputs).build();
         }
     }

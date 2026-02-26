@@ -1,9 +1,9 @@
 package org.ruoyi.service.image;
 
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.chat.Service.IImageGenerationService;
+import org.ruoyi.common.chat.service.image.IImageGenerationService;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-import org.ruoyi.common.chat.domain.entity.image.ImageContext;
+import org.ruoyi.common.chat.entity.image.ImageContext;
 import org.springframework.validation.annotation.Validated;
 
 @Slf4j

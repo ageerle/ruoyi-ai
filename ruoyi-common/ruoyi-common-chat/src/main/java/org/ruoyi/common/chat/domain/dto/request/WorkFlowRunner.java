@@ -1,15 +1,15 @@
-package org.ruoyi.workflow.dto.workflow;
+package org.ruoyi.common.chat.domain.dto.request;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 工作流请求体信息
+ */
 @Data
-public class WorkflowRunReq {
+public class WorkFlowRunner {
     private List<ObjectNode> inputs;
     private String uuid;
-    private Long sessionId;
-
-
 }

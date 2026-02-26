@@ -11,12 +11,14 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
 import org.bsc.langgraph4j.state.AgentState;
-import org.ruoyi.common.chat.Service.IChatModelService;
-import org.ruoyi.common.chat.Service.IChatService;
-import org.ruoyi.common.chat.Service.IImageGenerationService;
+import org.ruoyi.common.chat.enums.RoleType;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.common.chat.service.chat.IChatService;
+import org.ruoyi.common.chat.service.chatMessage.AbstractChatMessageService;
+import org.ruoyi.common.chat.service.image.IImageGenerationService;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
-import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
-import org.ruoyi.common.chat.domain.entity.image.ImageContext;
+import org.ruoyi.common.chat.entity.chat.ChatContext;
+import org.ruoyi.common.chat.entity.image.ImageContext;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.factory.ChatServiceFactory;
 import org.ruoyi.common.chat.factory.ImageServiceFactory;
@@ -28,6 +30,7 @@ import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.data.NodeIODataContent;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
@@ -35,8 +38,8 @@ import java.util.*;
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.DEFAULT_OUTPUT_PARAM_NAME;
 
 @Slf4j
-@Component
-public class WorkflowUtil {
+@Service
+public class WorkflowUtil extends AbstractChatMessageService {
 
     @Resource
     private ChatServiceFactory chatServiceFactory;
@@ -123,10 +126,37 @@ public class WorkflowUtil {
         // 根据 category 获取对应的 ChatService（不使用计费代理，工作流场景单独计费）
         IChatService chatService = chatServiceFactory.getOriginalService(category);
 
+        // 获取用户信息和Token以及SSe连接对象（对话接口需要使用）
+        Long sessionId = wfState.getSessionId();
+        Long userId = wfState.getUserId();
+        String tokenValue = wfState.getTokenValue();
+        SseEmitter sseEmitter = wfState.getSseEmitter();
+
+        // 构建 ruoyi-ai 的 ChatRequest
+        List<ChatMessage> chatMessages = new ArrayList<>();
+        addUserMessage(node, state.getInputs(), chatMessages);
+        chatMessages.addAll(systemMessage);
+
+        // 定义模型调用对象
+        ChatRequest chatRequest = new ChatRequest();
+        // 目前工作流深度思考成员变量只能写死
+        chatRequest.setSessionId(sessionId);
+        chatRequest.setEnableThinking(false);
+        chatRequest.setModel(modelName);
+        chatRequest.setChatMessages(chatMessages);
+
+        // 构建流式生成器
         StreamingChatGenerator<AgentState> streamingGenerator = StreamingChatGenerator.builder()
             .mapResult(response -> {
                 String responseTxt = response.aiMessage().text();
                 log.info("llm response:{}", responseTxt);
+
+                // 会话ID不为空时插入数据库
+                if (sessionId != null){
+                    // 保存助手回复消息
+                    saveChatMessage(chatRequest, userId, responseTxt, RoleType.ASSISTANT.getName(), chatModelVo);
+                    log.info("{}消息结束，已保存到数据库", getProviderName());
+                }
 
                 // 传递所有输入数据 + 添加 LLM 输出
                 wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> {
@@ -142,23 +172,8 @@ public class WorkflowUtil {
             .startingState(state)
             .build();
 
-        // 获取用户信息和Token以及SSe连接对象（对话接口需要使用）
-        Long userId = wfState.getUserId();
-        String tokenValue = wfState.getTokenValue();
-        SseEmitter sseEmitter = wfState.getSseEmitter();
+        // 构建流式回调响应器
         StreamingChatResponseHandler handler = streamingGenerator.handler();
-
-        // 构建 ruoyi-ai 的 ChatRequest
-        List<ChatMessage> chatMessages = new ArrayList<>();
-        addUserMessage(node, state.getInputs(), chatMessages);
-        chatMessages.addAll(systemMessage);
-
-        // 定义模型调用对象
-        ChatRequest chatRequest = new ChatRequest();
-        // 目前工作流深度思考成员变量只能写死
-        chatRequest.setEnableThinking(false);
-        chatRequest.setModel(modelName);
-        chatRequest.setChatMessages(chatMessages);
 
         //构建聊天对话上下文参数
         ChatContext chatContext = ChatContext.builder()
@@ -231,9 +246,9 @@ public class WorkflowUtil {
             throw new IllegalArgumentException("模型不存在: " + modelName);
         }
         // 根据模型名称找到模型实体
-        String modelVoCategory = chatModelVo.getCategory();
+        String category = chatModelVo.getProviderCode();
         // 根据 category 获取对应的 IImageGenerationService（不使用计费代理，工作流场景单独计费）
-        IImageGenerationService imageService = imageServiceFactory.getOriginalService(modelVoCategory);
+        IImageGenerationService imageService = imageServiceFactory.getOriginalService(category);
         // 构建文生图上下文对象
         ImageContext imageContext = ImageContext.builder()
             .chatModelVo(chatModelVo)
@@ -244,5 +259,4 @@ public class WorkflowUtil {
         // 调用LLM 生成图片
         return imageService.generateImage(imageContext);
     }
-
 }

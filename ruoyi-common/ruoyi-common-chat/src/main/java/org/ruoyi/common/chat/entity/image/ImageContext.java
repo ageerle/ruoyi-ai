@@ -1,4 +1,4 @@
-package org.ruoyi.common.chat.domain.entity.image;
+package org.ruoyi.common.chat.entity.image;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

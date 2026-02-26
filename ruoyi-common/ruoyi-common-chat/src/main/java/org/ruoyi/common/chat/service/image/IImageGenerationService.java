@@ -1,7 +1,7 @@
-package org.ruoyi.common.chat.Service;
+package org.ruoyi.common.chat.service.image;
 
 import jakarta.validation.Valid;
-import org.ruoyi.common.chat.domain.entity.image.ImageContext;
+import org.ruoyi.common.chat.entity.image.ImageContext;
 
 /**
  * 公共文生图接口

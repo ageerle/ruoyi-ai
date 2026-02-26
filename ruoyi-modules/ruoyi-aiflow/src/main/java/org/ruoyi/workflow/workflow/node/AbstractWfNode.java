@@ -6,18 +6,19 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
+import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.util.SpringUtil;
-import org.ruoyi.workflow.workflow.NodeProcessResult;
-import org.ruoyi.workflow.workflow.WfNodeInputConfig;
-import org.ruoyi.workflow.workflow.WfNodeState;
-import org.ruoyi.workflow.workflow.WfState;
+import org.ruoyi.workflow.util.WorkflowMessageUtil;
+import org.ruoyi.workflow.workflow.*;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.def.WfNodeIO;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
@@ -31,8 +32,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.*;
-import static org.ruoyi.workflow.enums.ErrorEnum.A_WF_NODE_CONFIG_ERROR;
-import static org.ruoyi.workflow.enums.ErrorEnum.A_WF_NODE_CONFIG_NOT_FOUND;
+import static org.ruoyi.common.chat.enums.ErrorEnum.A_WF_NODE_CONFIG_ERROR;
+import static org.ruoyi.common.chat.enums.ErrorEnum.A_WF_NODE_CONFIG_NOT_FOUND;
 
 /**
  * 节点实例-运行时
@@ -225,4 +226,19 @@ public abstract class AbstractWfNode {
         return nodeConfig;
     }
 
+    /**
+     * 会话消息保存方法
+     */
+    public void saveSessionMessage(WfState wfState, String message) {
+        WorkflowMessageUtil.saveWorkflowMessage(wfState, message);
+    }
+
+    /**
+     * 发送SSe消息
+     * @param message 信息
+     */
+    public void sendSseEvent(String message){
+        String nodeUuid = node.getUuid();
+        SSEEmitterHelper.parseAndSendPartialMsg(wfState.getSseEmitter(), "[NODE_CHUNK_" + nodeUuid + "]", message);
+    }
 }

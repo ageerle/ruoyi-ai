@@ -5,11 +5,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.bsc.langgraph4j.GraphStateException;
 import org.bsc.langgraph4j.StateGraph;
 import org.bsc.langgraph4j.serializer.std.ObjectStreamStateSerializer;
+import org.ruoyi.common.chat.enums.ErrorEnum;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowEdge;
 import org.ruoyi.workflow.entity.WorkflowNode;
-import org.ruoyi.workflow.enums.ErrorEnum;
 
 import java.util.*;
 import java.util.function.Function;

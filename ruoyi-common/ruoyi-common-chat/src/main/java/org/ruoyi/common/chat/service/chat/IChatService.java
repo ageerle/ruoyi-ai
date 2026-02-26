@@ -1,7 +1,7 @@
-package org.ruoyi.common.chat.Service;
+package org.ruoyi.common.chat.service.chat;
 
 import jakarta.validation.Valid;
-import org.ruoyi.common.chat.domain.entity.chat.ChatContext;
+import org.ruoyi.common.chat.entity.chat.ChatContext;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**

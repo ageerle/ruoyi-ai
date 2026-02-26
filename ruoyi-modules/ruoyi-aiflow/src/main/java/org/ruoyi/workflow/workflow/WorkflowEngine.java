@@ -3,6 +3,8 @@ package org.ruoyi.workflow.workflow;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -13,16 +15,18 @@ import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
 import org.bsc.langgraph4j.state.AgentState;
 import org.bsc.langgraph4j.state.StateSnapshot;
 import org.bsc.langgraph4j.streaming.StreamingOutput;
+import org.ruoyi.common.chat.entity.User;
+import org.ruoyi.common.chat.enums.ErrorEnum;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeNodeDto;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeResp;
 import org.ruoyi.workflow.entity.*;
-import org.ruoyi.workflow.enums.ErrorEnum;
 import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.service.WorkflowRuntimeNodeService;
 import org.ruoyi.workflow.service.WorkflowRuntimeService;
 import org.ruoyi.workflow.util.JsonUtil;
+import org.ruoyi.workflow.util.WorkflowMessageUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.def.WfNodeIO;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
@@ -34,7 +38,7 @@ import java.util.function.Function;
 
 import static org.bsc.langgraph4j.StateGraph.END;
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.*;
-import static org.ruoyi.workflow.enums.ErrorEnum.*;
+import static org.ruoyi.common.chat.enums.ErrorEnum.*;
 
 @Slf4j
 public class WorkflowEngine {
@@ -45,7 +49,9 @@ public class WorkflowEngine {
     private final SSEEmitterHelper sseEmitterHelper;
     private final WorkflowRuntimeService workflowRuntimeService;
     private final WorkflowRuntimeNodeService workflowRuntimeNodeService;
+    @Getter
     private CompiledGraph<WfNodeState> app;
+    @Setter
     private SseEmitter sseEmitter;
     private User user;
     private WfState wfState;
@@ -68,7 +74,7 @@ public class WorkflowEngine {
         this.workflowRuntimeNodeService = workflowRuntimeNodeService;
     }
 
-    public void run(User user, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue) {
+    public void run(User user, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue, Long sessionId) {
         this.user = user;
         this.sseEmitter = sseEmitter;
         log.info("WorkflowEngine run,userId:{},workflowUuid:{},userInputs:{}", user.getId(), workflow.getUuid(), userInputs);
@@ -86,7 +92,7 @@ public class WorkflowEngine {
             Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
             WorkflowNode startNode = startAndEnds.getLeft();
             List<NodeIOData> wfInputs = getAndCheckUserInput(userInputs, startNode);
-            this.wfState = new WfState(user, wfInputs, runtimeUuid,userId, tokenValue, sseEmitter);
+            this.wfState = new WfState(user, wfInputs, runtimeUuid,userId, tokenValue, sseEmitter, sessionId);
             workflowRuntimeService.updateInput(this.wfRuntimeResp.getId(), wfState);
 
 
@@ -122,6 +128,8 @@ public class WorkflowEngine {
             String intTip = WorkflowUtil.getHumanFeedbackTip(nextNode, wfNodes);
             //将等待输入信息[事件与提示词]发送到到客户端
             SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_WAIT_FEEDBACK_BY_" + nextNode + "]", intTip);
+            // 保存提示信息到Chat信息记录中（对话使用）
+            WorkflowMessageUtil.saveWorkflowMessage(wfState, intTip);
             InterruptedFlow.RUNTIME_TO_GRAPH.put(wfState.getUuid(), this);
             //更新状�?
             wfState.setProcessStatus(WORKFLOW_PROCESS_STATUS_WAITING_INPUT);
@@ -241,6 +249,7 @@ public class WorkflowEngine {
                 Map<String, String> strMap = new HashMap<>();
                 strMap.put("ck", chunk);
 //                SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", strMap.toString());
+
                 SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", chunk);
             } else {
                 AbstractWfNode abstractWfNode = wfState.getCompletedNodes().stream()
@@ -349,8 +358,4 @@ public class WorkflowEngine {
         return Pair.of(startNode, endNodes);
     }
 
-
-    public CompiledGraph<WfNodeState> getApp() {
-        return app;
-    }
 }

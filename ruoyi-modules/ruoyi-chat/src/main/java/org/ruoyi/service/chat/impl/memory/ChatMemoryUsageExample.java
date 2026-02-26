@@ -108,7 +108,7 @@ public class ChatMemoryUsageExample {
         log.info("=== 示例4：清理过期消息 ===");
         /*
         // 假设已有IChatMessageService实例
-        IChatMessageService chatMessageService = getBean(IChatMessageService.class);
+        AbstractChatMessageService chatMessageService = getBean(AbstractChatMessageService.class);
 
         // 场景：用户要求"忘记我们之前的对话"
         Long sessionId = 789L;

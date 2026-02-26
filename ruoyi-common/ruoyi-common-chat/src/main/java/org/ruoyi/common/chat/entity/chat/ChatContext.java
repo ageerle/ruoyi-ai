@@ -1,4 +1,4 @@
-package org.ruoyi.common.chat.domain.entity.chat;
+package org.ruoyi.common.chat.entity.chat;
 
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import jakarta.validation.constraints.NotNull;

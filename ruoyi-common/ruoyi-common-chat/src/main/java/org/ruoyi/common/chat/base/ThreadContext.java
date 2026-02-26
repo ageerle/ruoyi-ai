@@ -1,14 +1,14 @@
-package org.ruoyi.workflow.base;
+package org.ruoyi.common.chat.base;
 
 import cn.dev33.satoken.stp.StpUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.common.chat.entity.User;
+import org.ruoyi.common.chat.enums.UserStatusEnum;
 import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.satoken.utils.LoginHelper;
-import org.ruoyi.workflow.entity.User;
-import org.ruoyi.workflow.enums.UserStatusEnum;
 
-import static org.ruoyi.workflow.enums.ErrorEnum.A_USER_NOT_FOUND;
+import static org.ruoyi.common.chat.enums.ErrorEnum.A_USER_NOT_FOUND;
 
 /**
  * 线程上下文适配器，统一接入 Sa-Token 登录态。

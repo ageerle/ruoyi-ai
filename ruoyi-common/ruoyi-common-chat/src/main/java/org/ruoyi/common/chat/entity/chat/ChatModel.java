@@ -1,4 +1,4 @@
-package org.ruoyi.common.chat.domain.entity.chat;
+package org.ruoyi.common.chat.entity.chat;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
