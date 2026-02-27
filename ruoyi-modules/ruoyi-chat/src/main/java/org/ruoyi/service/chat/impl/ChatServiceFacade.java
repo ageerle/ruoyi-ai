@@ -15,7 +15,6 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
-;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
