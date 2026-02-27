@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONValidator;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.ruoyi.workflow.dto.node.LLmMailSendNodeConfigDto;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
@@ -13,6 +14,8 @@ import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
+import org.springframework.beans.BeanUtils;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -30,6 +33,8 @@ public class MailSendNode extends AbstractWfNode {
 
     @Override
     public NodeProcessResult onProcess() {
+        // 获取节点模板提示词信息
+        String nodeMessageTemplate = getNodeMessageTemplate(NodeMessageTemplateEnum.MAIL_SEND.getValue());
         try {
             MailSendNodeConfig config = checkAndGetConfig(MailSendNodeConfig.class);
             List<NodeIOData> inputs = state.getInputs();
@@ -37,7 +42,9 @@ public class MailSendNode extends AbstractWfNode {
             String input = getDataFromInput(inputs);
             // 判断是否为JSON格式(LLM输出转换 由LLM生成格式)
             if (StringUtils.isNotBlank(input) && isJson(input)) {
-                config = JSONObject.parseObject(input, MailSendNodeConfig.class);
+                LLmMailSendNodeConfigDto lLmMailSendNodeConfigDto = JSONObject.parseObject(input, LLmMailSendNodeConfigDto.class);
+                // 保留原本Sender和Smtp对象
+                BeanUtils.copyProperties(lLmMailSendNodeConfigDto, config);
             }
 
             // 安全获取模板（使用 defaultString 避免 null）
@@ -111,11 +118,9 @@ public class MailSendNode extends AbstractWfNode {
             mailSender.send(message);
             log.info("Email sent successfully to: {}", toMails);
 
-            // 保存成功会话信息
-            String resultMessage = "发送邮箱成功";
-            saveSessionMessage(wfState, resultMessage);
-            // 发送驱动消息事件
-            sendSseEvent(resultMessage);
+            // 保存成功会话信息且发送驱动消息事件
+            String resultMessage = nodeMessageTemplate + "发送邮箱成功";
+            notifyAndStoreMessage(wfState, resultMessage);
 
             // 构造输出：统一输出为 output 参数
             List<NodeIOData> outputs = new java.util.ArrayList<>();
@@ -144,11 +149,9 @@ public class MailSendNode extends AbstractWfNode {
             // 异常时也统一输出为 output 参数，添加错误信息
             List<NodeIOData> errorOutputs = new java.util.ArrayList<>();
 
-            // 保存失败会话信息
-            String resultMessage = "发送邮箱失败: " + e.getMessage();
-            saveSessionMessage(wfState, resultMessage);
-            // 发送驱动消息事件
-            sendSseEvent(resultMessage);
+            // 保存失败会话信息且发送驱动消息事件
+            String resultMessage = nodeMessageTemplate + "发送邮箱失败: " + e.getMessage();
+            notifyAndStoreMessage(wfState, resultMessage);
 
             state.getInputs().stream()
                 .filter(item -> "output".equals(item.getName()))

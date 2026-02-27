@@ -6,15 +6,11 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
-import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
-import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
-import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.util.SpringUtil;
 import org.ruoyi.workflow.util.WorkflowMessageUtil;
@@ -229,16 +225,16 @@ public abstract class AbstractWfNode {
     /**
      * 会话消息保存方法
      */
-    public void saveSessionMessage(WfState wfState, String message) {
-        WorkflowMessageUtil.saveWorkflowMessage(wfState, message);
+    public void notifyAndStoreMessage(WfState wfState, String message) {
+        WorkflowMessageUtil.notifyAndStoreMessage(wfState, wfState.getSseEmitter(), node, message);
     }
 
     /**
-     * 发送SSe消息
-     * @param message 信息
+     * 获取节点的响应模板
+     * @param configKey 参数Key
+     * @return 返回模板样式
      */
-    public void sendSseEvent(String message){
-        String nodeUuid = node.getUuid();
-        SSEEmitterHelper.parseAndSendPartialMsg(wfState.getSseEmitter(), "[NODE_CHUNK_" + nodeUuid + "]", message);
+    public String getNodeMessageTemplate(String configKey){
+        return WorkflowMessageUtil.getNodeMessageTemplate(configKey);
     }
 }
