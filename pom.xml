@@ -56,6 +56,7 @@
         <!-- AI 相关依赖 -->
         <langchain4j.version>1.11.0</langchain4j.version>
         <langchain4j.community.version>1.11.0-beta19</langchain4j.community.version>
+        <langchain4j.community.zhipu.ai.version>1.1.0-beta7</langchain4j.community.zhipu.ai.version>
         <langgraph4j.version>1.5.3</langgraph4j.version>
         <weaviate.version>1.19.6</weaviate.version>
         <dify.version>1.0.7</dify.version>

@@ -112,7 +112,7 @@ public class WorkflowUtil extends AbstractChatMessageService {
     }
 
     public void streamingInvokeLLM(WfState wfState, WfNodeState state, WorkflowNode node, String modelName,
-                                   List<SystemMessage> systemMessage) {
+                                   List<SystemMessage> systemMessage, String nodeMessageTemplate) {
         log.info("stream invoke, modelName: {}", modelName);
 
         // 根据模型名称查询模型信息
@@ -153,8 +153,10 @@ public class WorkflowUtil extends AbstractChatMessageService {
 
                 // 会话ID不为空时插入数据库
                 if (sessionId != null){
+                    // 获取模板消息拼接信息体
+                    String message = nodeMessageTemplate + responseTxt;
                     // 保存助手回复消息
-                    saveChatMessage(chatRequest, userId, responseTxt, RoleType.ASSISTANT.getName(), chatModelVo);
+                    saveChatMessage(chatRequest, userId, message, RoleType.ASSISTANT.getName(), chatModelVo);
                     log.info("{}消息结束，已保存到数据库", getProviderName());
                 }
 

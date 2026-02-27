@@ -15,6 +15,7 @@ import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -43,6 +44,9 @@ public class SwitcherNode extends AbstractWfNode {
             log.info("条件分支节点处理中，分支数量: {}",
                     config.getCases() != null ? config.getCases().size() : 0);
 
+            // 获取提示模板
+            String nodeMessageTemplate = getNodeMessageTemplate(NodeMessageTemplateEnum.SWITCH.getValue());
+
             // 按顺序评估每个分支
             if (config.getCases() != null) {
                 for (int i = 0; i < config.getCases().size(); i++) {
@@ -52,13 +56,17 @@ public class SwitcherNode extends AbstractWfNode {
 
                     if (evaluateCase(switcherCase, inputs)) {
                         // 检查目标节点UUID是否为空
-                        if (StringUtils.isBlank(switcherCase.getTargetNodeUuid())) {
+                        String targetNodeUuid = switcherCase.getTargetNodeUuid();
+                        if (StringUtils.isBlank(targetNodeUuid)) {
                             log.warn("分支 {} 匹配但目标节点UUID为空，跳过到下一个分支", i + 1);
                             continue;
                         }
 
+                        // 根据目标节点UUID获取对应节点名称
+                        findNodeAndNotify(targetNodeUuid, nodeMessageTemplate);
+
                         log.info("分支 {} 匹配，跳转到节点: {}",
-                                i + 1, switcherCase.getTargetNodeUuid());
+                                i + 1, targetNodeUuid);
 
                         // 构造输出：只保留 output 和其他非 input 参数 + 添加分支匹配信息
                         List<NodeIOData> outputs = new java.util.ArrayList<>();
@@ -85,12 +93,12 @@ public class SwitcherNode extends AbstractWfNode {
 
                         outputs.add(NodeIOData.createByText("matched_case", "switcher", String.valueOf(i + 1)));
                         outputs.add(NodeIOData.createByText("case_uuid", "switcher", switcherCase.getUuid()));
-                        outputs.add(NodeIOData.createByText("target_node", "switcher", switcherCase.getTargetNodeUuid()));
+                        outputs.add(NodeIOData.createByText("target_node", "switcher", targetNodeUuid));
 
                         // WorkflowEngine 会自动将 nextNodeUuid 放入 resultMap 的 "next" 键中
                         return NodeProcessResult.builder()
                                 .content(outputs)
-                                .nextNodeUuid(switcherCase.getTargetNodeUuid())
+                                .nextNodeUuid(targetNodeUuid)
                                 .build();
                     }
                 }
@@ -98,6 +106,9 @@ public class SwitcherNode extends AbstractWfNode {
 
             // 所有分支都不满足，使用默认分支
             log.info("没有分支匹配，使用默认分支: {}", config.getDefaultTargetNodeUuid());
+
+            // 根据默认目标节点UUID获取对应节点名称
+            findNodeAndNotify(config.getDefaultTargetNodeUuid(), nodeMessageTemplate);
 
             if (StringUtils.isBlank(config.getDefaultTargetNodeUuid())) {
                 log.warn("默认目标节点UUID为空，工作流可能在此停止");
@@ -151,6 +162,21 @@ public class SwitcherNode extends AbstractWfNode {
                     .error(true)
                     .message("条件分支节点错误: " + e.getMessage())
                     .build();
+        }
+    }
+
+    /**
+     * 根据节点ID查询对应节点
+     * @param targetNodeUuid 节点UUID
+     * @param nodeMessageTemplate 节点消息模板
+     */
+    private void findNodeAndNotify(String targetNodeUuid, String nodeMessageTemplate) {
+        // 根据目标节点UUID获取对应节点名称
+        WorkflowNode workflowNode = workflowNodeService.lambdaQuery().eq(WorkflowNode::getUuid, targetNodeUuid).one();
+        if (null != workflowNode){
+            // 获取节点名称
+            String message = nodeMessageTemplate + workflowNode.getTitle();
+            notifyAndStoreMessage(wfState, message);
         }
     }
 

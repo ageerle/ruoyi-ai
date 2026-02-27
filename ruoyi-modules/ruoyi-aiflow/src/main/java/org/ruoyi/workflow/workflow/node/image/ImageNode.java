@@ -11,6 +11,7 @@ import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.NODE_PROCESS_STATUS_SUCCESS;
 
@@ -51,11 +52,11 @@ public class ImageNode extends AbstractWfNode {
         Integer seed = nodeConfigObj.getSeed();
         // 调用LLM生成图片（后续可以将图片保存到OSS中）
         String imageUrl = workflowUtil.buildTextToImage(modelName, prompt, size, seed);
-        // 保存成功信息
-        String message = "图片生成地址：" + imageUrl;
-        saveSessionMessage(wfState, message);
-        // 发送驱动消息事件
-        sendSseEvent(message);
+        // 获取节点模板提示词信息
+        String nodeMessageTemplate = getNodeMessageTemplate(NodeMessageTemplateEnum.IMAGE.getValue());
+        // 保存成功信息且发送驱动消息事件
+        String message = nodeMessageTemplate + imageUrl;
+        notifyAndStoreMessage(wfState, message);
         // 创建节点参数对象
         NodeIOData nodeIOData = NodeIOData.createByText("output", "image", imageUrl);
         // 添加到输出列表以便给后续节点使用

@@ -12,6 +12,7 @@ import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -32,6 +33,8 @@ public class HttpRequestNode extends AbstractWfNode {
 
     @Override
     public NodeProcessResult onProcess() {
+        // 获取节点模板提示词信息
+        String nodeMessageTemplate = getNodeMessageTemplate(NodeMessageTemplateEnum.HTTP_REQUEST.getValue());
         try {
             HttpRequestNodeConfig config = checkAndGetConfig(HttpRequestNodeConfig.class);
             List<NodeIOData> inputs = state.getInputs();
@@ -63,11 +66,9 @@ public class HttpRequestNode extends AbstractWfNode {
             List<NodeIOData> outputs = new ArrayList<>();
             outputs.add(NodeIOData.createByText("output", "HTTP响应", response));
 
-            // 保存成功会话信息
-            String message = "HTTP响应:" + response;
-            saveSessionMessage(wfState, message);
-            // 发送驱动消息事件
-            sendSseEvent(message);
+            // 保存成功会话信息且发送驱动消息事件
+            String message = nodeMessageTemplate + response;
+            notifyAndStoreMessage(wfState, message);
             return NodeProcessResult.builder().content(outputs).build();
 
         } catch (Exception e) {
@@ -78,11 +79,9 @@ public class HttpRequestNode extends AbstractWfNode {
             errorOutputs.add(NodeIOData.createByText("output", "错误", ""));
             errorOutputs.add(NodeIOData.createByText("error", "HTTP请求错误", e.getMessage()));
 
-            // 保存失败会话信息
-            String message = "HTTP响应失败:" + e.getMessage();
-            saveSessionMessage(wfState, message);
-            // 发送驱动消息事件
-            sendSseEvent(message);
+            // 保存失败会话信息且发送驱动消息事件
+            String message = nodeMessageTemplate + e.getMessage();
+            notifyAndStoreMessage(wfState, message);
             return NodeProcessResult.builder().content(errorOutputs).build();
         }
     }

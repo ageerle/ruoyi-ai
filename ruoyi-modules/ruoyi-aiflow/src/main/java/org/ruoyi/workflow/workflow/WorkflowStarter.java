@@ -103,6 +103,8 @@ public class WorkflowStarter implements IWorkFlowStarterService {
         // 如果SSE连接对象不为空传入该对象（Chat调用工作流对话使用）
         if (null != sseEmitter){
             workflowEngine.setSseEmitter(sseEmitter);
+            // 为了让每个节点都可以发送模板消息 保持SSE对象一致（以防出现向已关闭的SSE对象发送消息）
+            workflowEngine.getWfState().setSseEmitter(sseEmitter);
         }
         workflowEngine.resume(userInput);
     }
