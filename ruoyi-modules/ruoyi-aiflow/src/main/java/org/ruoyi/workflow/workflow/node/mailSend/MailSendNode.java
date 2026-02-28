@@ -1,11 +1,11 @@
 package org.ruoyi.workflow.workflow.node.mailSend;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONValidator;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.ruoyi.workflow.dto.node.LLmMailSendNodeConfigDto;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
@@ -15,7 +15,6 @@ import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
-import org.springframework.beans.BeanUtils;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -42,9 +41,10 @@ public class MailSendNode extends AbstractWfNode {
             String input = getDataFromInput(inputs);
             // 判断是否为JSON格式(LLM输出转换 由LLM生成格式)
             if (StringUtils.isNotBlank(input) && isJson(input)) {
-                LLmMailSendNodeConfigDto lLmMailSendNodeConfigDto = JSONObject.parseObject(input, LLmMailSendNodeConfigDto.class);
-                // 保留原本Sender和Smtp对象
-                BeanUtils.copyProperties(lLmMailSendNodeConfigDto, config);
+                JSONObject inputJson = JSON.parseObject(input);
+                JSONObject configJson = (JSONObject) JSON.toJSON(config);
+                configJson.putAll(inputJson);
+                config = configJson.toJavaObject(MailSendNodeConfig.class);
             }
 
             // 安全获取模板（使用 defaultString 避免 null）

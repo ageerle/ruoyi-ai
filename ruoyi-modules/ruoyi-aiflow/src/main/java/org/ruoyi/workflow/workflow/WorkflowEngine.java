@@ -184,6 +184,8 @@ public class WorkflowEngine {
             errorMsg = "并行节点中不能包含条件分�?";
         }
         errorMsg = nodeMessageTemplate + errorMsg;
+        // 保存会话信息且发送驱动消息事件
+        WorkflowMessageUtil.saveWorkflowMessage(wfState, errorMsg);
         sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
         workflowRuntimeService.updateStatus(wfRuntimeResp.getId(), WORKFLOW_PROCESS_STATUS_FAIL, errorMsg);
     }
