@@ -52,7 +52,7 @@
 例如：
 
 - 检索结果看起来相似，但其实答非所问，先看 `No.1` 或 `No.5`
-- chunk 是对的，但结论还是错，先看 `No.2`
+- 切块是对的，但结论还是错，先看 `No.2`
 - 系统回答很自信，但没有根据，先看 `No.4`
 - 刚部署完就炸，先看 `No.14` 到 `No.16`
 
@@ -78,21 +78,21 @@
 
 ## 二、标签说明
 
-这份 16 问题清单本身已经带有 layer / tag 结构。  
+这份 16 问题清单本身已经带有层级 / 标签结构。  
 这些标签不是装饰，而是用来帮助你快速判断故障发生在哪一层。
 
-### 1. layer 标签
+### 1. 层级标签
 
-- `[IN]`：Input & Retrieval  
+- `[IN]`：输入与检索  
   输入、切块、召回、语义匹配、可见性问题
 
-- `[RE]`：Reasoning & Planning  
+- `[RE]`：推理与规划  
   理解、推理、归纳、逻辑链、抽象处理问题
 
-- `[ST]`：State & Context  
+- `[ST]`：状态与上下文  
   会话、记忆、上下文连续性、多代理状态问题
 
-- `[OP]`：Infra & Deployment  
+- `[OP]`：基础设施与部署  
   启动顺序、依赖就绪、部署锁死、预部署状态问题
 
 ### 2. `{OBS}` 标签
@@ -138,19 +138,19 @@
 
 优先看：
 
-- [No.1](#no1) `hallucination & chunk drift`
-- [No.5](#no5) `semantic ≠ embedding`
-- [No.8](#no8) `debugging is a black box`
+- [No.1](#no1) `幻觉与切块漂移`
+- [No.5](#no5) `语义 ≠ 向量嵌入`
+- [No.8](#no8) `调试是一个黑箱`
 
-### 2. chunk 本身是对的，但最终答案还是错的
+### 2. 切块本身是对的，但最终答案还是错的
 
 这类问题不是简单没检索到，而是后面那层坏了。
 
 优先看：
 
-- [No.2](#no2) `interpretation collapse`
-- [No.4](#no4) `bluffing / overconfidence`
-- [No.6](#no6) `logic collapse & recovery`
+- [No.2](#no2) `解释塌陷`
+- [No.4](#no4) `虚张声势 / 过度自信`
+- [No.6](#no6) `逻辑塌陷与恢复`
 
 ### 3. 多步任务一开始正常，后面越来越偏
 
@@ -158,9 +158,9 @@
 
 优先看：
 
-- [No.3](#no3) `long reasoning chains`
-- [No.6](#no6) `logic collapse & recovery`
-- [No.9](#no9) `entropy collapse`
+- [No.3](#no3) `长推理链`
+- [No.6](#no6) `逻辑塌陷与恢复`
+- [No.9](#no9) `熵塌陷`
 
 ### 4. 多轮对话后开始失忆，跨轮次接不上
 
@@ -168,9 +168,9 @@
 
 优先看：
 
-- [No.7](#no7) `memory breaks across sessions`
-- [No.9](#no9) `entropy collapse`
-- [No.13](#no13) `multi-agent chaos`
+- [No.7](#no7) `跨会话记忆断裂`
+- [No.9](#no9) `熵塌陷`
+- [No.13](#no13) `多代理混乱`
 
 ### 5. 遇到抽象、逻辑、规则、符号关系就崩
 
@@ -178,8 +178,8 @@
 
 优先看：
 
-- [No.11](#no11) `symbolic collapse`
-- [No.12](#no12) `philosophical recursion`
+- [No.11](#no11) `符号塌陷`
+- [No.12](#no12) `哲学递归`
 
 ### 6. 你根本不知道错在哪一层，只知道结果不对
 
@@ -188,7 +188,7 @@
 
 优先看：
 
-- [No.8](#no8) `debugging is a black box`
+- [No.8](#no8) `调试是一个黑箱`
 
 ### 7. 刚部署完最容易炸，首轮调用异常，重启后偶尔恢复
 
@@ -196,9 +196,9 @@
 
 优先看：
 
-- [No.14](#no14) `bootstrap ordering`
-- [No.15](#no15) `deployment deadlock`
-- [No.16](#no16) `pre-deploy collapse`
+- [No.14](#no14) `引导启动顺序`
+- [No.15](#no15) `部署死锁`
+- [No.16](#no16) `预部署塌陷`
 
 [返回顶部](#top) | [下一节：16 问题清单](#map16)
 
@@ -211,24 +211,24 @@
 下面这 16 项按固定顺序使用。  
 不要先重组，不要先混类，先判断最接近哪一个 **No.X**。
 
-| # | problem domain (with layer/tags) | what breaks |
+| # | 问题域（含层级/标签） | 会坏在哪里 |
 |---|---|---|
-| <a id="no1"></a> 1 | `[IN] hallucination & chunk drift {OBS}` | retrieval returns wrong/irrelevant content |
-| <a id="no2"></a> 2 | `[RE] interpretation collapse` | chunk is right, logic is wrong |
-| <a id="no3"></a> 3 | `[RE] long reasoning chains {OBS}` | drifts across multi-step tasks |
-| <a id="no4"></a> 4 | `[RE] bluffing / overconfidence` | confident but unfounded answers |
-| <a id="no5"></a> 5 | `[IN] semantic ≠ embedding {OBS}` | cosine match ≠ true meaning |
-| <a id="no6"></a> 6 | `[RE] logic collapse & recovery {OBS}` | dead-ends, needs controlled reset |
-| <a id="no7"></a> 7 | `[ST] memory breaks across sessions` | lost threads, no continuity |
-| <a id="no8"></a> 8 | `[IN] debugging is a black box {OBS}` | no visibility into failure path |
-| <a id="no9"></a> 9 | `[ST] entropy collapse` | attention melts, incoherent output |
-| <a id="no10"></a> 10 | `[RE] creative freeze` | flat, literal outputs |
-| <a id="no11"></a> 11 | `[RE] symbolic collapse` | abstract/logical prompts break |
-| <a id="no12"></a> 12 | `[RE] philosophical recursion` | self-reference loops, paradox traps |
-| <a id="no13"></a> 13 | `[ST] multi-agent chaos {OBS}` | agents overwrite or misalign logic |
-| <a id="no14"></a> 14 | `[OP] bootstrap ordering` | services fire before deps ready |
-| <a id="no15"></a> 15 | `[OP] deployment deadlock` | circular waits in infra |
-| <a id="no16"></a> 16 | `[OP] pre-deploy collapse {OBS}` | version skew / missing secret on first call |
+| <a id="no1"></a> 1 | `[IN] 幻觉与切块漂移 {OBS}` | 检索返回错误/无关内容 |
+| <a id="no2"></a> 2 | `[RE] 解释塌陷` | 切块是对的，逻辑是错的 |
+| <a id="no3"></a> 3 | `[RE] 长推理链 {OBS}` | 在多步任务中逐步漂移 |
+| <a id="no4"></a> 4 | `[RE] 虚张声势 / 过度自信` | 自信但没有根据的回答 |
+| <a id="no5"></a> 5 | `[IN] 语义 ≠ 向量嵌入 {OBS}` | 余弦匹配 ≠ 真实语义 |
+| <a id="no6"></a> 6 | `[RE] 逻辑塌陷与恢复 {OBS}` | 走入死胡同，需要受控重置 |
+| <a id="no7"></a> 7 | `[ST] 跨会话记忆断裂` | 线索丢失，没有连续性 |
+| <a id="no8"></a> 8 | `[IN] 调试是一个黑箱 {OBS}` | 看不到故障路径 |
+| <a id="no9"></a> 9 | `[ST] 熵塌陷` | 注意力熔化，输出失去连贯性 |
+| <a id="no10"></a> 10 | `[RE] 创造力冻结` | 平直、字面化输出 |
+| <a id="no11"></a> 11 | `[RE] 符号塌陷` | 抽象/逻辑性提示词失效 |
+| <a id="no12"></a> 12 | `[RE] 哲学递归` | 自我引用循环、悖论陷阱 |
+| <a id="no13"></a> 13 | `[ST] 多代理混乱 {OBS}` | 代理互相覆盖或使逻辑错位 |
+| <a id="no14"></a> 14 | `[OP] 引导启动顺序` | 依赖未就绪时服务先启动 |
+| <a id="no15"></a> 15 | `[OP] 部署死锁` | 基础设施中的循环等待 |
+| <a id="no16"></a> 16 | `[OP] 预部署塌陷 {OBS}` | 首次调用时版本错配 / 缺少密钥 |
 
 这张表是主表。  
 如果你时间很少，只做一件事也行：
@@ -258,7 +258,7 @@
 
 “我以为系统理解错了，其实它一开始就拿错了东西。”
 
-如果你命中了弱相关片段、表面相似文本、错误 chunk，后面推理再强也没用。  
+如果你命中了弱相关片段、表面相似文本、错误切块，后面推理再强也没用。  
 所以 `[IN]` 层优先看的是：
 
 1. 原始召回内容到底是什么
@@ -285,7 +285,7 @@
 
 例如：
 
-- chunk 是对的，但结论错了 → 常见是 `No.2`
+- 切块是对的，但结论错了 → 常见是 `No.2`
 - 多步任务中途开始偏 → 常见是 `No.3`
 - 回答很笃定，但完全站不住 → 常见是 `No.4`
 - 遇到抽象规则就崩 → 常见是 `No.11`
@@ -338,7 +338,7 @@
 - 多个组件互相等待，长期半可用 → `No.15`
 - 首次调用就因为版本、密钥、环境没对齐而塌陷 → `No.16`
 
-只要你看到“刚部署最容易出事”“首轮异常最严重”“重启后暂时恢复”，就要优先怀疑 `[OP]` 层，而不是先改 prompt 或参数。
+只要你看到“刚部署最容易出事”“首轮异常最严重”“重启后暂时恢复”，就要优先怀疑 `[OP]` 层，而不是先改提示词或参数。
 
 [返回顶部](#top) |
 
@@ -350,4 +350,3 @@
 ## 六、快速返回
 
 [返回顶部](#top) | [这页怎么用](#how-to-use) | [标签说明](#legend) | [常见症状入口](#symptoms) | [16 问题清单](#map16) | [按层排查](#by-layer) 
-
