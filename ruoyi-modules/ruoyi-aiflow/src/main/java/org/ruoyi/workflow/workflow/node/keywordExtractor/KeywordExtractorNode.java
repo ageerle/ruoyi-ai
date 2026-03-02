@@ -6,12 +6,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.util.SpringUtil;
+import org.ruoyi.workflow.util.WorkflowMessageUtil;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
 import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,8 +68,12 @@ public class KeywordExtractorNode extends AbstractWfNode {
         WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
         String modelName = config.getModelName();
         List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
+        // 获取节点模板提示词信息
+        String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.KEYWORD_EXTRACTOR.getValue());
+        // 发送SSE事件消息
+        WorkflowMessageUtil.sendEmitterMessage(wfState.getSseEmitter(), node, nodeMessageTemplate);
         // 使用流式调用
-        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage);
+        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage, nodeMessageTemplate);
         return new NodeProcessResult();
     }
 

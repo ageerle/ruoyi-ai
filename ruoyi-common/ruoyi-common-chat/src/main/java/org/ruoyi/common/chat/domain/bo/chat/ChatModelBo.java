@@ -4,7 +4,7 @@ import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.ruoyi.common.chat.domain.entity.chat.ChatModel;
+import org.ruoyi.common.chat.entity.chat.ChatModel;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 

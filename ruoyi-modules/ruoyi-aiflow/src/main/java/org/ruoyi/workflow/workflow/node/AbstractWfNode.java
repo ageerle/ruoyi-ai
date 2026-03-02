@@ -13,10 +13,8 @@ import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
 import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.util.SpringUtil;
-import org.ruoyi.workflow.workflow.NodeProcessResult;
-import org.ruoyi.workflow.workflow.WfNodeInputConfig;
-import org.ruoyi.workflow.workflow.WfNodeState;
-import org.ruoyi.workflow.workflow.WfState;
+import org.ruoyi.workflow.util.WorkflowMessageUtil;
+import org.ruoyi.workflow.workflow.*;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.def.WfNodeIO;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
@@ -30,8 +28,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.*;
-import static org.ruoyi.workflow.enums.ErrorEnum.A_WF_NODE_CONFIG_ERROR;
-import static org.ruoyi.workflow.enums.ErrorEnum.A_WF_NODE_CONFIG_NOT_FOUND;
+import static org.ruoyi.common.chat.enums.ErrorEnum.A_WF_NODE_CONFIG_ERROR;
+import static org.ruoyi.common.chat.enums.ErrorEnum.A_WF_NODE_CONFIG_NOT_FOUND;
 
 /**
  * 节点实例-运行时
@@ -224,4 +222,19 @@ public abstract class AbstractWfNode {
         return nodeConfig;
     }
 
+    /**
+     * 会话消息保存方法
+     */
+    public void notifyAndStoreMessage(WfState wfState, String message) {
+        WorkflowMessageUtil.notifyAndStoreMessage(wfState, wfState.getSseEmitter(), node, message);
+    }
+
+    /**
+     * 获取节点的响应模板
+     * @param configKey 参数Key
+     * @return 返回模板样式
+     */
+    public String getNodeMessageTemplate(String configKey){
+        return WorkflowMessageUtil.getNodeMessageTemplate(configKey);
+    }
 }

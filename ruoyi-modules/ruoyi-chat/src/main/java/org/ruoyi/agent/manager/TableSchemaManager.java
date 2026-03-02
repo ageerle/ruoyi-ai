@@ -1,16 +1,30 @@
 package org.ruoyi.agent.manager;
 
-import lombok.extern.slf4j.Slf4j;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
+
 import org.ruoyi.agent.domain.ColumnInfo;
 import org.ruoyi.agent.domain.TableStructure;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import javax.sql.DataSource;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 表结构管理器
@@ -24,11 +38,14 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "agent.mysql.enabled", havingValue = "true")
+@DS("agent")
 public class TableSchemaManager {
-
+ 
     @Autowired(required = false)
     private DataSource agentDataSource;
+
+    @Value("${AGENT_ALLOWED_TABLES}")
+    private String allowedTables;
 
     /**
      * 表结构缓存 (表名 -> 表结构)
@@ -55,12 +72,12 @@ public class TableSchemaManager {
             if (initialized) {
                 return;
             }
-
             try {
                 log.info("Initializing database schema cache...");
                 loadAllowedTableSchemas();
                 initialized = true;
                 log.info("Schema cache initialized with {} tables", schemaCache.size());
+              
             } catch (Exception e) {
                 log.error("Failed to initialize schema cache", e);
             }
@@ -103,6 +120,7 @@ public class TableSchemaManager {
             try (ResultSet tableRs = metaData.getTables(conn.getCatalog(), null, tableName, new String[]{"TABLE"})) {
                 if (tableRs.next()) {
                     table.setTableComment(tableRs.getString("REMARKS"));
+                    table.setTableType(tableRs.getString("TABLE_TYPE"));
                 }
             }
 
@@ -183,7 +201,6 @@ public class TableSchemaManager {
      * 获取所有允许的表名
      */
     public List<String> getAllowedTableNames() {
-        String allowedTables = System.getenv("AGENT_ALLOWED_TABLES");
         if (allowedTables == null || allowedTables.trim().isEmpty()) {
             log.warn("AGENT_ALLOWED_TABLES not configured");
             return new ArrayList<>();
@@ -224,7 +241,7 @@ public class TableSchemaManager {
      * 检查表是否在允许列表中
      */
     private boolean isTableAllowed(String tableName) {
-        String allowedTables = System.getenv("AGENT_ALLOWED_TABLES");
+        // String allowedTables = System.getenv("AGENT_ALLOWED_TABLES");
         if (allowedTables == null || allowedTables.trim().isEmpty()) {
             return false;
         }

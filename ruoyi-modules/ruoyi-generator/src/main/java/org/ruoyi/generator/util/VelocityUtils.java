@@ -12,6 +12,8 @@ import org.ruoyi.common.json.utils.JsonUtils;
 import org.ruoyi.common.mybatis.helper.DataBaseHelper;
 import org.ruoyi.generator.domain.GenTable;
 import org.ruoyi.generator.domain.GenTableColumn;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.velocity.VelocityContext;
 
 import java.util.*;

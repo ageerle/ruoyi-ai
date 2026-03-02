@@ -161,7 +161,8 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
                 tempState,
                 tempNode,
                 modelName,
-                systemMessage
+                systemMessage,
+                ""
             );
 
             // 等待LLM响应完成（最多等待30秒）

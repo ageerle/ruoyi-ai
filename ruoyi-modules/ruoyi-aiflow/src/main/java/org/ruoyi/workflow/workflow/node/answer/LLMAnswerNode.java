@@ -6,11 +6,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.util.SpringUtil;
+import org.ruoyi.workflow.util.WorkflowMessageUtil;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
 import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 
 import java.util.List;
 
@@ -46,7 +48,11 @@ public class LLMAnswerNode extends AbstractWfNode {
         String modelName = nodeConfigObj.getModelName();
         // 转换系统信息结构
         List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
-        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage);
+        // 获取节点模板提示词信息
+        String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.LLM_RESPONSE.getValue());
+        // 发送SSE驱动事件消息
+        WorkflowMessageUtil.sendEmitterMessage(wfState.getSseEmitter(), node, nodeMessageTemplate);
+        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage, nodeMessageTemplate);
         return new NodeProcessResult();
     }
 }

@@ -30,7 +30,7 @@ public class WorkflowRuntimeController {
     @Operation(summary = "接收用户输入以继续执行剩余流程")
     @PostMapping(value = "/resume/{runtimeUuid}")
     public R resume(@PathVariable String runtimeUuid, @RequestBody WorkflowResumeReq resumeReq) {
-        workflowStarter.resumeFlow(runtimeUuid, resumeReq.getFeedbackContent());
+        workflowStarter.resumeFlow(runtimeUuid, resumeReq.getFeedbackContent(), resumeReq.getSseEmitter());
         return R.ok();
     }
 

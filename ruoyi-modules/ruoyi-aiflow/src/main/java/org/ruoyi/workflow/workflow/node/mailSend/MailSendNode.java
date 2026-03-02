@@ -1,5 +1,8 @@
 package org.ruoyi.workflow.workflow.node.mailSend;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONValidator;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -11,6 +14,7 @@ import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -28,9 +32,20 @@ public class MailSendNode extends AbstractWfNode {
 
     @Override
     public NodeProcessResult onProcess() {
+        // 获取节点模板提示词信息
+        String nodeMessageTemplate = getNodeMessageTemplate(NodeMessageTemplateEnum.MAIL_SEND.getValue());
         try {
             MailSendNodeConfig config = checkAndGetConfig(MailSendNodeConfig.class);
             List<NodeIOData> inputs = state.getInputs();
+            // 获取输入信息
+            String input = getDataFromInput(inputs);
+            // 判断是否为JSON格式(LLM输出转换 由LLM生成格式)
+            if (StringUtils.isNotBlank(input) && isJson(input)) {
+                JSONObject inputJson = JSON.parseObject(input);
+                JSONObject configJson = (JSONObject) JSON.toJSON(config);
+                configJson.putAll(inputJson);
+                config = configJson.toJavaObject(MailSendNodeConfig.class);
+            }
 
             // 安全获取模板（使用 defaultString 避免 null）
             String subjectTemplate = StringUtils.defaultString(config.getSubject());
@@ -49,15 +64,7 @@ public class MailSendNode extends AbstractWfNode {
                 content = WorkflowUtil.renderTemplate(contentTemplate, inputs);
             } else {
                 // 优先使用 output，如果没有则使用 input
-                content = inputs.stream()
-                        .filter(item -> "output".equals(item.getName()))
-                        .map(NodeIOData::valueToString)
-                        .findFirst()
-                        .orElseGet(() -> inputs.stream()
-                                .filter(item -> "input".equals(item.getName()))
-                                .map(NodeIOData::valueToString)
-                                .findFirst()
-                                .orElse(""));
+                content = getDataFromInput(inputs);
             }
 
             // 将换行符转换为 HTML 换行
@@ -84,9 +91,9 @@ public class MailSendNode extends AbstractWfNode {
 
             // 设置收件人
             String[] toArray = Arrays.stream(toMails.split(","))
-                    .map(String::trim)
-                    .filter(StringUtils::isNotBlank)
-                    .toArray(String[]::new);
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .toArray(String[]::new);
             if (toArray.length == 0) {
                 throw new IllegalArgumentException("收件人邮箱列表为空");
             }
@@ -95,9 +102,9 @@ public class MailSendNode extends AbstractWfNode {
             // 设置抄送（如有）
             if (StringUtils.isNotBlank(ccMails)) {
                 String[] ccArray = Arrays.stream(ccMails.split(","))
-                        .map(String::trim)
-                        .filter(StringUtils::isNotBlank)
-                        .toArray(String[]::new);
+                    .map(String::trim)
+                    .filter(StringUtils::isNotBlank)
+                    .toArray(String[]::new);
                 if (ccArray.length > 0) {
                     helper.setCc(ccArray);
                 }
@@ -111,25 +118,29 @@ public class MailSendNode extends AbstractWfNode {
             mailSender.send(message);
             log.info("Email sent successfully to: {}", toMails);
 
+            // 保存成功会话信息且发送驱动消息事件
+            String resultMessage = nodeMessageTemplate + "发送邮箱成功";
+            notifyAndStoreMessage(wfState, resultMessage);
+
             // 构造输出：统一输出为 output 参数
             List<NodeIOData> outputs = new java.util.ArrayList<>();
 
             // 优先使用 output，如果没有则使用 input（但重命名为 output）
             inputs.stream()
-                    .filter(item -> "output".equals(item.getName()))
-                    .findFirst()
-                    .ifPresentOrElse(
-                            outputs::add,
-                            () -> inputs.stream()
-                                    .filter(item -> "input".equals(item.getName()))
-                                    .findFirst()
-                                    .ifPresent(inputParam -> {
-                                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
-                                                ? inputParam.getContent().getTitle() : "";
-                                        NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                                        outputs.add(outputParam);
-                                    })
-                    );
+                .filter(item -> "output".equals(item.getName()))
+                .findFirst()
+                .ifPresentOrElse(
+                    outputs::add,
+                    () -> inputs.stream()
+                        .filter(item -> "input".equals(item.getName()))
+                        .findFirst()
+                        .ifPresent(inputParam -> {
+                            String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
+                                ? inputParam.getContent().getTitle() : "";
+                            NodeIOData outputParam = NodeIOData.createByText("output", title, resultMessage);
+                            outputs.add(outputParam);
+                        })
+                );
 
             return NodeProcessResult.builder().content(outputs).build();
 
@@ -138,23 +149,27 @@ public class MailSendNode extends AbstractWfNode {
             // 异常时也统一输出为 output 参数，添加错误信息
             List<NodeIOData> errorOutputs = new java.util.ArrayList<>();
 
-            state.getInputs().stream()
-                    .filter(item -> "output".equals(item.getName()))
-                    .findFirst()
-                    .ifPresentOrElse(
-                            errorOutputs::add,
-                            () -> state.getInputs().stream()
-                                    .filter(item -> "input".equals(item.getName()))
-                                    .findFirst()
-                                    .ifPresent(inputParam -> {
-                                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
-                                                ? inputParam.getContent().getTitle() : "";
-                                        NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                                        errorOutputs.add(outputParam);
-                                    })
-                    );
+            // 保存失败会话信息且发送驱动消息事件
+            String resultMessage = nodeMessageTemplate + "发送邮箱失败: " + e.getMessage();
+            notifyAndStoreMessage(wfState, resultMessage);
 
-            errorOutputs.add(NodeIOData.createByText("error", "mail", e.getMessage()));
+            state.getInputs().stream()
+                .filter(item -> "output".equals(item.getName()))
+                .findFirst()
+                .ifPresentOrElse(
+                    errorOutputs::add,
+                    () -> state.getInputs().stream()
+                        .filter(item -> "input".equals(item.getName()))
+                        .findFirst()
+                        .ifPresent(inputParam -> {
+                            String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
+                                ? inputParam.getContent().getTitle() : "";
+                            NodeIOData outputParam = NodeIOData.createByText("output", title, resultMessage);
+                            errorOutputs.add(outputParam);
+                        })
+                );
+
+            errorOutputs.add(NodeIOData.createByText("error", "mail", resultMessage));
             return NodeProcessResult.builder().content(errorOutputs).build();
         }
     }
@@ -173,5 +188,41 @@ public class MailSendNode extends AbstractWfNode {
         sender.setJavaMailProperties(props);
 
         return sender;
+    }
+
+    /**
+     * 获取信息
+     * @param inputs 用户输入
+     * @return 返回输入信息
+     */
+    public String getDataFromInput(List<NodeIOData> inputs) {
+        return inputs.stream()
+            .filter(item -> "output".equals(item.getName()))
+            .map(NodeIOData::valueToString)
+            .findFirst()
+            .orElseGet(() -> inputs.stream()
+                .filter(item -> "input".equals(item.getName()))
+                .map(NodeIOData::valueToString)
+                .findFirst()
+                .orElse(""));
+    }
+
+    /**
+     * 判断字符串是否为合法的 JSON 格式
+     *
+     * @param str 待检测的字符串
+     * @return true 表示是合法 JSON (包括 JSONObject, JSONArray, 或基本类型值)
+     */
+    public static boolean isJson(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return false;
+        }
+        // 使用 try-with-resources 正确处理 JSONValidator 资源关闭
+        try (JSONValidator validator = JSONValidator.from(str.trim())) {
+            return validator.getType() == JSONValidator.Type.Object;
+        } catch (Exception e) {
+            log.warn("JSON格式校验失败: {}", e.getMessage());
+            return false;
+        }
     }
 }

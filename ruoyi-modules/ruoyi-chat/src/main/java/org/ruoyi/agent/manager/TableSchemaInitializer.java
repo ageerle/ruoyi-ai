@@ -1,11 +1,11 @@
 package org.ruoyi.agent.manager;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 架构初始化器
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "agent.mysql.enabled", havingValue = "true")
+// @ConditionalOnProperty(name = "agent.mysql.enabled", havingValue = "true")
 public class TableSchemaInitializer {
 
     @Autowired(required = false)

@@ -3,6 +3,8 @@ package org.ruoyi.workflow.workflow;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -13,20 +15,23 @@ import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
 import org.bsc.langgraph4j.state.AgentState;
 import org.bsc.langgraph4j.state.StateSnapshot;
 import org.bsc.langgraph4j.streaming.StreamingOutput;
+import org.ruoyi.common.chat.entity.User;
+import org.ruoyi.common.chat.enums.ErrorEnum;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeNodeDto;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeResp;
 import org.ruoyi.workflow.entity.*;
-import org.ruoyi.workflow.enums.ErrorEnum;
 import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.service.WorkflowRuntimeNodeService;
 import org.ruoyi.workflow.service.WorkflowRuntimeService;
 import org.ruoyi.workflow.util.JsonUtil;
+import org.ruoyi.workflow.util.WorkflowMessageUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.def.WfNodeIO;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
@@ -34,7 +39,7 @@ import java.util.function.Function;
 
 import static org.bsc.langgraph4j.StateGraph.END;
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.*;
-import static org.ruoyi.workflow.enums.ErrorEnum.*;
+import static org.ruoyi.common.chat.enums.ErrorEnum.*;
 
 @Slf4j
 public class WorkflowEngine {
@@ -45,9 +50,12 @@ public class WorkflowEngine {
     private final SSEEmitterHelper sseEmitterHelper;
     private final WorkflowRuntimeService workflowRuntimeService;
     private final WorkflowRuntimeNodeService workflowRuntimeNodeService;
+    @Getter
     private CompiledGraph<WfNodeState> app;
+    @Setter
     private SseEmitter sseEmitter;
     private User user;
+    @Getter
     private WfState wfState;
     private WfRuntimeResp wfRuntimeResp;
 
@@ -68,7 +76,7 @@ public class WorkflowEngine {
         this.workflowRuntimeNodeService = workflowRuntimeNodeService;
     }
 
-    public void run(User user, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue) {
+    public void run(User user, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue, Long sessionId) {
         this.user = user;
         this.sseEmitter = sseEmitter;
         log.info("WorkflowEngine run,userId:{},workflowUuid:{},userInputs:{}", user.getId(), workflow.getUuid(), userInputs);
@@ -86,7 +94,7 @@ public class WorkflowEngine {
             Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
             WorkflowNode startNode = startAndEnds.getLeft();
             List<NodeIOData> wfInputs = getAndCheckUserInput(userInputs, startNode);
-            this.wfState = new WfState(user, wfInputs, runtimeUuid,userId, tokenValue, sseEmitter);
+            this.wfState = new WfState(user, wfInputs, runtimeUuid,userId, tokenValue, sseEmitter, sessionId);
             workflowRuntimeService.updateInput(this.wfRuntimeResp.getId(), wfState);
 
 
@@ -119,16 +127,31 @@ public class WorkflowEngine {
         String nextNode = stateSnapshot.config().nextNode().orElse("");
         //还有下个节点，表示进入中断状态，等待用户输入后继续执�?
         if (StringUtils.isNotBlank(nextNode) && !nextNode.equalsIgnoreCase(END)) {
-            String intTip = WorkflowUtil.getHumanFeedbackTip(nextNode, wfNodes);
+            // 获取提示模板
+            String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.HUMAN_FEED_BACK.getValue());
+            // 获取人机交互提示信息
+            String intTip = nodeMessageTemplate + WorkflowUtil.getHumanFeedbackTip(nextNode, wfNodes);
             //将等待输入信息[事件与提示词]发送到到客户端
             SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_WAIT_FEEDBACK_BY_" + nextNode + "]", intTip);
+            // 保存提示信息到Chat信息记录中（对话使用）
+            WorkflowMessageUtil.saveWorkflowMessage(wfState, intTip);
             InterruptedFlow.RUNTIME_TO_GRAPH.put(wfState.getUuid(), this);
             //更新状�?
             wfState.setProcessStatus(WORKFLOW_PROCESS_STATUS_WAITING_INPUT);
             workflowRuntimeService.updateOutput(wfRuntimeResp.getId(), wfState);
         } else {
             WorkflowRuntime updatedRuntime = workflowRuntimeService.updateOutput(wfRuntimeResp.getId(), wfState);
+            // 保存成功会话信息
+            wfNodes.stream().filter(item -> stateSnapshot.node().equals(item.getUuid()))
+                .findFirst().ifPresent(wfNode -> {
+                    // 获取节点模板提示词信息
+                    String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.END.getValue());
+                    // 发送SSE消息驱动事件和保存会话
+                    WorkflowMessageUtil.notifyAndStoreMessage(wfState, sseEmitter, wfNode, nodeMessageTemplate);
+            });
+            // 发送结束消息
             sseEmitterHelper.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
+            // 发送驱动消息事件
             InterruptedFlow.RUNTIME_TO_GRAPH.remove(wfState.getUuid());
         }
     }
@@ -155,10 +178,14 @@ public class WorkflowEngine {
 
     private void errorWhenExe(Exception e) {
         log.error("error", e);
+        String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.EXCEPTION.getValue());
         String errorMsg = e.getMessage();
         if (errorMsg.contains("parallel node doesn't support conditional branch")) {
             errorMsg = "并行节点中不能包含条件分�?";
         }
+        errorMsg = nodeMessageTemplate + errorMsg;
+        // 保存会话信息且发送驱动消息事件
+        WorkflowMessageUtil.saveWorkflowMessage(wfState, errorMsg);
         sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
         workflowRuntimeService.updateStatus(wfRuntimeResp.getId(), WORKFLOW_PROCESS_STATUS_FAIL, errorMsg);
     }
@@ -241,6 +268,7 @@ public class WorkflowEngine {
                 Map<String, String> strMap = new HashMap<>();
                 strMap.put("ck", chunk);
 //                SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", strMap.toString());
+
                 SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", chunk);
             } else {
                 AbstractWfNode abstractWfNode = wfState.getCompletedNodes().stream()
@@ -349,8 +377,4 @@ public class WorkflowEngine {
         return Pair.of(startNode, endNodes);
     }
 
-
-    public CompiledGraph<WfNodeState> getApp() {
-        return app;
-    }
 }

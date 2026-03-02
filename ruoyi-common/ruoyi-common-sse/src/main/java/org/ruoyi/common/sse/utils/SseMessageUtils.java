@@ -6,6 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.sse.dto.SseMessageDto;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
 
 /**
  * SSE工具类

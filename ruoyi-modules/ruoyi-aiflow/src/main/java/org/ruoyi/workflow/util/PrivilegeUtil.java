@@ -1,9 +1,9 @@
 package org.ruoyi.workflow.util;
 
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
+import org.ruoyi.common.chat.base.ThreadContext;
+import org.ruoyi.common.chat.enums.ErrorEnum;
 import org.ruoyi.common.core.exception.base.BaseException;
-import org.ruoyi.workflow.base.ThreadContext;
-import org.ruoyi.workflow.enums.ErrorEnum;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.*;
 

@@ -22,6 +22,21 @@ public class ChatRequest {
     private String model;
 
     /**
+     * 工作流请求体
+     */
+    private WorkFlowRunner workFlowRunner;
+
+    /**
+     * 人机交互信息体
+     */
+    private ReSumeRunner reSumeRunner;
+
+    /**
+     * 是否启用工作流
+     */
+    private Boolean enableWorkFlow;
+
+    /**
      * 会话id
      */
     private Long sessionId;
@@ -40,6 +55,11 @@ public class ChatRequest {
      * 对话id(每个聊天窗口都不一样)
      */
     private Long uuid;
+
+    /**
+     * 是否为人机交互用户继续输入
+     */
+    private Boolean isResume;
 
     /**
      * 是否启用深度思考

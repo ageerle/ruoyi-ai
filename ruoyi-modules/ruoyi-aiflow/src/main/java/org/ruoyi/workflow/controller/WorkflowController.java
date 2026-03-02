@@ -5,8 +5,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import org.ruoyi.common.chat.base.ThreadContext;
 import org.ruoyi.common.core.domain.R;
-import org.ruoyi.workflow.base.ThreadContext;
 import org.ruoyi.workflow.dto.workflow.*;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.service.WorkflowComponentService;
@@ -72,7 +72,7 @@ public class WorkflowController {
     @Operation(summary = "流式响应")
     @PostMapping(value = "/run", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter sseAsk(@RequestBody WorkflowRunReq runReq) {
-        return workflowStarter.streaming(ThreadContext.getCurrentUser(), runReq.getUuid(), runReq.getInputs());
+        return workflowStarter.streaming(ThreadContext.getCurrentUser(), runReq.getUuid(), runReq.getInputs(),runReq.getSessionId());
     }
 
     @GetMapping("/mine/search")

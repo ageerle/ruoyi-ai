@@ -25,12 +25,6 @@
             <groupId>cn.idev.excel</groupId>
             <artifactId>fastexcel</artifactId>
         </dependency>
-
-        <!-- Apache Commons Compress - 用于POI处理ZIP格式，解决Excel导出时的依赖冲突 -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

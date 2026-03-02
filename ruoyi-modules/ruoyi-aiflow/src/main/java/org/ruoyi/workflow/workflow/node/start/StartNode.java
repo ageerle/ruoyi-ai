@@ -16,8 +16,8 @@ import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 import java.util.List;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.DEFAULT_OUTPUT_PARAM_NAME;
-import static org.ruoyi.workflow.enums.ErrorEnum.A_WF_NODE_CONFIG_ERROR;
-import static org.ruoyi.workflow.enums.ErrorEnum.A_WF_NODE_CONFIG_NOT_FOUND;
+import static org.ruoyi.common.chat.enums.ErrorEnum.A_WF_NODE_CONFIG_ERROR;
+import static org.ruoyi.common.chat.enums.ErrorEnum.A_WF_NODE_CONFIG_NOT_FOUND;
 
 @Slf4j
 public class StartNode extends AbstractWfNode {

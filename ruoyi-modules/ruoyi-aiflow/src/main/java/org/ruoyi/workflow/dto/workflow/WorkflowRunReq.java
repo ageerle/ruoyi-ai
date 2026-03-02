@@ -9,6 +9,7 @@ import java.util.List;
 public class WorkflowRunReq {
     private List<ObjectNode> inputs;
     private String uuid;
+    private Long sessionId;
 
 
 }

@@ -16,7 +16,8 @@ public class TableStructure {
      * 表名
      */
     private String tableName;
-
+    
+    private String tableType; // 添加此字段：BASE TABLE 或 VIEW
     /**
      * 表注释/说明
      */

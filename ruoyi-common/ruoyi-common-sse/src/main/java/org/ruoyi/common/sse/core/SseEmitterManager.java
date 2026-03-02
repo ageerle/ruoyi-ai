@@ -65,7 +65,7 @@ public class SseEmitterManager {
         emitter.onCompletion(() -> {
             SseEmitter remove = emitters.remove(token);
             if (remove != null) {
-                remove.complete();
+//                remove.complete();
             }
         });
         emitter.onTimeout(() -> {
