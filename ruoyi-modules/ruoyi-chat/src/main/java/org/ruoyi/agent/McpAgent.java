@@ -6,6 +6,7 @@ import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
 public interface McpAgent {
+
     /**
      * 系统提示词：定义智能体身份、核心职责、强制遵守的规则
      * 适配SSE流式特性，明确工具全来自远端MCP服务，仅做代理调用和结果整理
