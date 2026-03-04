@@ -1,0 +1,36 @@
+# RuoYi-AI 后端 Dockerfile
+# 基于 Maven + OpenJDK 17
+
+FROM maven:3.9-eclipse-temurin-17 AS builder
+
+# 设置工作目录
+WORKDIR /build
+
+# 复制 pom.xml 和源码
+COPY pom.xml .
+COPY ruoyi-admin ./ruoyi-admin
+COPY ruoyi-common ./ruoyi-common
+COPY ruoyi-modules ./ruoyi-modules
+COPY ruoyi-extend ./ruoyi-extend
+COPY ruoyi-modules-api ./ruoyi-modules-api
+
+# 构建项目 (使用 prod profile)
+RUN mvn clean package -Pprod -DskipTests
+
+# 最终运行镜像
+FROM eclipse-temurin:17-jre-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 从构建阶段复制 jar 包
+COPY --from=builder /build/ruoyi-admin/target/ruoyi-admin.jar ./ruoyi-admin.jar
+
+# 创建日志目录
+RUN mkdir -p /ruoyi/server/logs
+
+# 暴露端口
+EXPOSE 6039
+
+# 启动命令
+ENTRYPOINT ["java", "-jar", "ruoyi-admin.jar", "--spring.profiles.active=prod"]
