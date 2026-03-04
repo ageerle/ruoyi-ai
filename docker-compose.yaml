@@ -1,5 +1,3 @@
-version: '3.8'
-
 # RuoYi-AI 一键启动后端服务
 # 使用方式: docker-compose up -d --build
 #
@@ -23,7 +21,7 @@ services:
       MYSQL_DATABASE: ruoyi-ai
       TZ: Asia/Shanghai
     volumes:
-      - ./docs/script/sql:/docker-entrypoint-initdb.d:ro
+      - ./docs/script/sql/ruoyi-ai-v3_mysql8.sql:/docker-entrypoint-initdb.d/ruoyi-ai.sql:ro
       - ./data/mysql:/var/lib/mysql
     command:
       --default-authentication-plugin=mysql_native_password
@@ -31,11 +29,13 @@ services:
       --collation-server=utf8mb4_general_ci
       --explicit_defaults_for_timestamp=true
       --lower_case_table_names=1
+      --skip-ssl
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - ruoyi-net
 
@@ -107,7 +107,7 @@ services:
       # MySQL 配置
       SPRING_DATASOURCE_DYNAMIC_PRIMARY: master
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_DRIVERCLASSNAME: com.mysql.cj.jdbc.Driver
-      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://mysql:3306/ruoyi-ai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://mysql:3306/ruoyi-ai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: root
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: root
       # Redis 配置
@@ -117,8 +117,10 @@ services:
       # 日志配置
       LOGGING_LEVEL_ORG_RUOYI: info
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: warn
+      SYS_UPLOAD_PATH: /ruoyi/upload   # 新增：对应 sys.upload.path
     volumes:
       - ./data/logs:/ruoyi/server/logs
+      - ./data/upload:/ruoyi/upload
     depends_on:
       mysql:
         condition: service_healthy
