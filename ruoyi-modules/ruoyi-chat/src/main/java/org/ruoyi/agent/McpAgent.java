@@ -6,6 +6,7 @@ import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
 public interface McpAgent {
+
     /**
      * 系统提示词：通用工具调用智能体
      * 不限定具体工具类型，让 LangChain4j 自动传递工具描述给 LLM
