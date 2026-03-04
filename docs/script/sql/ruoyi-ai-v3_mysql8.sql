@@ -16,6 +16,8 @@
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+-- 忽略所有错误，继续执行
+SET sql_mode = '';
 
 -- ----------------------------
 -- Table structure for chat_config
