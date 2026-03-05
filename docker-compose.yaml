@@ -23,7 +23,7 @@ services:
     volumes:
       - ./docs/script/docker/mysql/init/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
       - ./docs/script/sql/ruoyi-ai-v3_mysql8.sql:/docker-entrypoint-initdb.d/ruoyi-ai-v3_mysql8.sql:ro
-      - ./data/mysql:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
     command:
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4
@@ -48,7 +48,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - ./data/redis:/data
+      - redis-data:/data
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -73,7 +73,7 @@ services:
       ENABLE_MODULES: text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai
       CLUSTER_HOSTNAME: node1
     volumes:
-      - ./data/weaviate:/var/lib/weaviate
+      - weaviate-data:/var/lib/weaviate
     networks:
       - ruoyi-net
 
@@ -89,7 +89,7 @@ services:
       MINIO_ROOT_USER: ruoyi
       MINIO_ROOT_PASSWORD: ruoyi123
     volumes:
-      - ./data/minio:/data
+      - minio-data:/data
     command: server /data --console-address ":9090"
     networks:
       - ruoyi-net
@@ -120,8 +120,8 @@ services:
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: warn
       SYS_UPLOAD_PATH: /ruoyi/upload   # 新增：对应 sys.upload.path
     volumes:
-      - ./data/logs:/ruoyi/server/logs
-      - ./data/upload:/ruoyi/upload
+      - logs-data:/ruoyi/server/logs
+      - upload-data:/ruoyi/upload
     depends_on:
       mysql:
         condition: service_healthy
@@ -133,3 +133,12 @@ services:
 networks:
   ruoyi-net:
     driver: bridge
+
+# 数据卷 支持手动指定 空为默认值
+volumes:
+  mysql-data:
+  redis-data:
+  weaviate-data:
+  minio-data:
+  logs-data:
+  upload-data:
