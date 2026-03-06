@@ -31,8 +31,8 @@
 
 ## ✨ Core Features
 
-|    Module    | Current Capabilities | Extension Direction |
-|:--------:|---|---|
+| Module | Current Capabilities | Extension Direction |
+|:---:|---|---|
 | **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu), multi-modal understanding, Coze/DIFY/FastGPT platform integration | Auto mode, fault tolerance |
 | **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate) + Knowledge Graph + Document parsing + Reranking | Audio/video parsing, knowledge source |
 | **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem | Tool plugin marketplace, toolAgent auto-loading |
