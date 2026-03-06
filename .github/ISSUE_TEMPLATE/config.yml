@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 项目文档
+    url: https://solon.noear.org/article/cases
+    about: 查看项目文档和案例展示
+  - name: 💬 技术交流
+    url: https://github.com/NAWWWI/ruoyi-ai/discussions
+    about: 参与技术讨论和经验分享
