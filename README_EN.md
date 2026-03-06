@@ -19,64 +19,57 @@
 
 ### Enterprise-Grade AI Assistant Platform
 
-*An out-of-the-box intelligent AI platform that integrates mainstream AI platforms such as Coze and DIFY, providing advanced RAG technology, knowledge graphs, digital humans, and AI workflow orchestration capabilities*
+*An out-of-the-box full-stack AI platform supporting multi-agent collaboration, Supervisor mode orchestration, and multiple decision models, with advanced RAG technology and visual workflow orchestration capabilities*
 
 **[中文](README.md)** | **[📖 Documentation](https://doc.pandarobot.chat)** |
 **[🚀 Live Demo](https://web.pandarobot.chat)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
 
 </div>
 
+
+
+
 ## ✨ Core Features
 
-### Intelligent AI Engine
-- **Multi-Model Integration**: Supports mainstream LLM providers including OpenAI, DeepSeek, Alibaba's Tongyi Qianwen, and Zhipu AI
-- **Multi-Modal Understanding**: Intelligently processes multiple formats including text, images, and documents
-- **AI Platform Integration**: Integrates mainstream AI application platforms like **Coze**, **DIFY**, and **FastGPT**
-- **MCP Capability Integration**: Build an extensible AI toolkit ecosystem based on the Model Context Protocol
-- **AI Coding Assistant**: Built-in intelligent code analysis and project scaffolding generation capabilities
-
-### Local RAG Solution
-- **Private Knowledge Base**: Implements local private knowledge base based on Langchain4j framework + BGE-large-zh-v1.5 Chinese vector model
-- **Multiple Vector Databases**: Supports mainstream vector databases including Milvus, Weaviate, and Qdrant
-- **Data Security & Privacy**: Supports fully local deployment to protect enterprise data privacy
-- **Flexible Model Deployment**: Compatible with local inference frameworks like Ollama and vLLM
-
-### AI Creative Tools
-- **AI Image Generation**: Integrates MidJourney and GPT-4o-image
-- **Intelligent PPT Generation**: Convert text content to beautiful presentations with one click
-
-### Knowledge Graph & Intelligent Orchestration
-- **Knowledge Graph Construction**: Automatically extract entity relationships from documents and conversations, build visualized knowledge networks
-- **AI Workflow Orchestration**: Visual workflow designer supporting complex AI task orchestration and automated execution
-- **Digital Human Interaction**: Integrated digital avatars providing more natural human-machine interaction experience
+|    Module    | Current Capabilities | Extension Direction |
+|:--------:|---|---|
+| **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu), multi-modal understanding, Coze/DIFY/FastGPT platform integration | Auto mode, fault tolerance |
+| **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate) + Knowledge Graph + Document parsing + Reranking | Audio/video parsing, knowledge source |
+| **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem | Tool plugin marketplace, toolAgent auto-loading |
+| **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model (with RAG) calls, email sending, manual review nodes | More node types |
+| **Multi-Agent** | Agent framework based on Langchain4j, Supervisor mode orchestration, supports multiple decision models | Configurable agents |
+| **AI Coding** | Intelligent code analysis, project scaffolding generation, Copilot assistant | Code generation optimization |
 
 ## 🚀 Quick Start
 
 ### Live Demo
 
-- **User Experience**: [web.pandarobot.chat](https://web.pandarobot.chat) (Username: admin, Password: admin123)
-- **Admin Dashboard**: [admin.pandarobot.chat](https://admin.pandarobot.chat) (Username: admin, Password: admin123)
+|   Platform   | URL | Account |
+|:------:|---|---|
+|  User Frontend   | [web.pandarobot.chat](https://web.pandarobot.chat) | admin / admin123 |
+| Admin Panel | [admin.pandarobot.chat](https://admin.pandarobot.chat) | admin / admin123 |
 
 ### Project Repositories
 
-| Module           | GitHub Repository                                      | Gitee Repository                                      | GitCode Repository                                      |
-|------------------|-------------------------------------------------------|------------------------------------------------------|--------------------------------------------------------|
-| 🔧 Backend       | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
-| 🎨 User Frontend | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
-| 🛠️ Admin Panel   | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
+| Module     | GitHub Repository                                             | Gitee Repository                                             | GitCode Repository                                             |
+|----------|-------------------------------------------------------|------------------------------------------------------|--------------------------------------------------------|
+| 🔧 Backend  | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
+| 🎨 User Frontend  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
+| 🛠️ Admin Panel | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
+
+### Partner Projects
+| Project Name           | GitHub Repository                                             | Gitee Repository
+|----------------|-------------------------------------------------------|------------------------------------------------------|
+| element-plus-x | [element-plus-x](https://github.com/element-plus-x/Element-Plus-X)       | [element-plus-x](https://gitee.com/he-jiayue/element-plus-x)       |
 
 ## 🛠️ Technical Architecture
 
 ### Core Framework
-- **Backend**: Spring Boot 3.5 + Langchain4j
-- **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate/Qdrant)
-- **Frontend**: Vue 3 + Vben Admin + Element UI
+- **Backend**: Spring Boot 4.0 + Spring AI 2.0 + Langchain4j
+- **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate)
+- **Frontend**: Vue 3 + Vben Admin + element-plus-x
 - **Security**: Sa-Token + JWT dual-layer security
 
-### System Components
-- **Document Processing**: PDF, Word, and Excel parsing with intelligent image analysis
-- **Real-Time Communication**: WebSocket real-time communication with SSE streaming responses
-- **System Monitoring**: Comprehensive logging system, performance monitoring, and service health checks
 
 ## 📚 Documentation
 

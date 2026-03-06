@@ -17,12 +17,9 @@
 
 <img src="docs/image/logo.png" alt="RuoYi AI Logo" width="120" height="120">
 
-## 功能建议&bug提交：【腾讯文档】
-https://docs.qq.com/sheet/DR3hoR3FVVkpJcnVm
-
 ### 企业级AI助手平台
 
-*开箱即用的全栈AI平台，集成Coze、DIFY等主流AI平台，提供先进的RAG技术、知识图谱、数字人和AI流程编排能力*
+*开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模型，提供先进的RAG技术和可视化流程编排能力*
 
 **[English](README_EN.md)** | **[📖 使用文档](https://doc.pandarobot.chat)** |
 **[🚀 在线体验](https://web.pandarobot.chat)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
@@ -34,34 +31,23 @@ https://docs.qq.com/sheet/DR3hoR3FVVkpJcnVm
 
 ## ✨ 核心亮点
 
-### 智能AI引擎
-- **多模型接入**：支持 OpenAI、DeepSeek、通义千问、智谱AI 等主流厂商的模型
-- **多模态理解**：支持文本、图片、文档等多种格式的智能处理
-- **AI平台集成**：集成了 **扣子(Coze)**、**DIFY**、**FastGPT** 等主流AI应用平台
-- **MCP能力集成**：基于模型上下文协议，打造可扩展的AI工具生态系统
-- **AI编程助手**：内置智能代码分析和项目脚手架生成能力
-
-### 本地化RAG方案
-- **私有知识库**：基于 Langchain4j 框架 + BGE-large-zh-v1.5 中文向量模型实现本地私有知识库
-- **多种向量库**：支持 Milvus、Weaviate、Qdrant 等主流向量数据库
-- **数据安全可控**：支持完全本地部署，保护企业数据隐私
-- **灵活模型部署**：兼容 Ollama、vLLM 等本地推理框架
-
-### AI创作工具
-- **AI 绘画创作**： 集成 MidJourney、GPT-4o-image
-- **智能PPT生成**：一键将文本内容转换为精美演示文稿
-
-### 知识图谱与智能编排
-- **知识图谱构建**：自动从文档和对话中提取实体关系，构建可视化知识网络
-- **AI 流程编排**：可视化工作流设计器，支持复杂AI任务的编排和自动化执行
-- **数字人交互**：集成数字人形象，提供更自然的人机交互体验
+|    模块    | 现有能力                                                     | 扩展方向                  |
+|:--------:|----------------------------------------------------------|-----------------------|
+| **模型管理** | 多模型接入(OpenAI/DeepSeek/通义/智谱)、多模态理解、Coze/DIFY/FastGPT平台集成 | 自动模式、容错机制             |
+| **知识库**  | 本地RAG + 向量库(Milvus/Weaviate) + 知识图谱 + 文档解析 +重排序          | 音频视频解析、知识出处           |
+| **工具管理** | Mcp协议集成、Skills能力 + 可扩展工具生态                               | 工具插件市场、toolAgent自动加载工具 |
+| **流程编排** | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型(支持rag)调用,邮件发送,人工审核等节点  | 更多节点类型                |
+| **多智能体** | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型            | 智能体可配置                |
+| **AI编程** | 智能代码分析、项目脚手架生成、Copilot助手                                 | 代码生成优化                |
 
 ## 🚀 快速体验
 
 ### 在线演示
 
-- **用户端体验**：[web.pandarobot.chat](https://web.pandarobot.chat) (账号：admin 密码：admin123)
-- **管理后台**：[admin.pandarobot.chat](https://admin.pandarobot.chat) (账号：admin 密码：admin123)
+|   平台   | 地址 | 账号 |
+|:------:|---|---|
+|  用户端   | [web.pandarobot.chat](https://web.pandarobot.chat) | admin / admin123 |
+| 管理后台 | [admin.pandarobot.chat](https://admin.pandarobot.chat) | admin / admin123 |
 
 ### 项目源码
 
@@ -71,18 +57,19 @@ https://docs.qq.com/sheet/DR3hoR3FVVkpJcnVm
 | 🎨 用户前端  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
 | 🛠️ 管理后台 | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
 
+### 合作项目
+| 项目名称           | GitHub 仓库                                             | Gitee 仓库                                             
+|----------------|-------------------------------------------------------|------------------------------------------------------|
+| element-plus-x | [element-plus-x](https://github.com/element-plus-x/Element-Plus-X)       | [element-plus-x](https://gitee.com/he-jiayue/element-plus-x)       | 
+
 ## 🛠️ 技术架构
 
 ### 核心框架
-- **后端架构**：Spring Boot 3.5 + Langchain4j
-- **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate/Qdrant）
-- **前端技术**：Vue 3 + Vben Admin + Element UI
+- **后端架构**：Spring Boot 4.0 + Spring ai 2.0 + Langchain4j
+- **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate）
+- **前端技术**：Vue 3 + Vben Admin + element-plus-x
 - **安全认证**：Sa-Token + JWT 双重保障
 
-### 系统组件
-- **文档处理**：PDF、Word、Excel 解析，图像智能分析
-- **实时通信**：WebSocket 实时通信，SSE 流式响应
-- **系统监控**：完善的日志体系、性能监控、服务健康检查
 
 ## 📚 使用文档
 
