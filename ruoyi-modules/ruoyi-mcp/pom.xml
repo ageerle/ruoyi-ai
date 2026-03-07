@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.ruoyi</groupId>
+        <artifactId>ruoyi-modules</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>ruoyi-mcp</artifactId>
+
+    <description>
+        MCP模块 - 管理MCP工具连接、市场集成和内置工具
+    </description>
+
+    <dependencies>
+        <!-- 通用模块依赖 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-excel</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
+        <!-- LangChain4j MCP - 用于 LangChain4j 集成 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-mcp</artifactId>
+            <version>${langchain4j.community.version}</version>
+        </dependency>
+
+        <!-- Jackson for JSON processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>
