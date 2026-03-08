@@ -11,13 +11,14 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.stereotype.Component;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 
 import dev.langchain4j.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 
 /**
  * 执行 SQL 查询的 Tool
@@ -25,10 +26,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-public class ExecuteSqlQueryTool {
+public class ExecuteSqlQueryTool implements BuiltinToolProvider {
 
-    @Autowired(required = false)
-    private DataSource dataSource;
+    // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
+    private DataSource getDataSource() {
+        return SpringUtils.getBean(DataSource.class);
+    }
 
     /**
      * 执行 SELECT SQL 查询
@@ -52,6 +55,7 @@ public class ExecuteSqlQueryTool {
         }
 
         try {
+            DataSource dataSource = getDataSource();
             if (dataSource == null) {
                 return "Error: Database datasource not configured";
             }
@@ -176,5 +180,20 @@ public class ExecuteSqlQueryTool {
             return str.substring(0, 17) + "...";
         }
         return str;
+    }
+
+    @Override
+    public String getToolName() {
+        return "execute_sql_query";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "执行SQL查询";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Execute a SELECT SQL query and return the results. Example: SELECT * FROM sys_user";
     }
 }

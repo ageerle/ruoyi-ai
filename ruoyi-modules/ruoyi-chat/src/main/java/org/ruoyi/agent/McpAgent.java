@@ -5,7 +5,7 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
-public interface McpAgent {
+public interface McpAgent extends Agent {
 
     /**
      * 系统提示词：通用工具调用智能体

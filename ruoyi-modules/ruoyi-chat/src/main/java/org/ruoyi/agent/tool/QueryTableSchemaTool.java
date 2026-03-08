@@ -6,20 +6,23 @@ import java.sql.ResultSet;
 
 import javax.sql.DataSource;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.stereotype.Component;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 
 import dev.langchain4j.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 
 @Component
 @Slf4j
-public class QueryTableSchemaTool {
+public class QueryTableSchemaTool implements BuiltinToolProvider {
 
-    @Autowired(required = false)
-    private DataSource dataSource;
+    // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
+    private DataSource getDataSource() {
+        return SpringUtils.getBean(DataSource.class);
+    }
 
     @Tool("Query the CREATE TABLE statement (DDL) for a specific table by table name")
     public String queryTableSchema(String tableName) {
@@ -35,7 +38,7 @@ public class QueryTableSchemaTool {
 
         String sql = "SHOW CREATE TABLE `" + tableName + "`";
 
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = getDataSource().getConnection();
                 PreparedStatement ps = connection.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
 
@@ -53,5 +56,20 @@ public class QueryTableSchemaTool {
             // 3. 必须在 finally 中清除上下文，防止污染其他请求
             DynamicDataSourceContextHolder.clear();
         }
+    }
+
+    @Override
+    public String getToolName() {
+        return "query_table_schema";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "查询表结构";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Query the CREATE TABLE statement (DDL) for a specific table by table name";
     }
 }

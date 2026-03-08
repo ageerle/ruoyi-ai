@@ -47,3 +47,4 @@ nbdist/
 !*/build/*.xml
 
 .flattened-pom.xml
+/.claude/settings.local.json

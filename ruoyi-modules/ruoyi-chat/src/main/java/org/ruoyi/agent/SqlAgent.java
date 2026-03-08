@@ -2,7 +2,6 @@ package org.ruoyi.agent;
 
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
@@ -12,7 +11,7 @@ import dev.langchain4j.service.V;
  * and returning relevant data and analysis results.
  *
  */
-public interface SqlAgent {
+public interface SqlAgent extends Agent {
 
     @SystemMessage("""
         This agent is designed for MySQL 5.7
