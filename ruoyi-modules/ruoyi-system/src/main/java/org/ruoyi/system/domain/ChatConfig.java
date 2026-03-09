@@ -1,9 +1,12 @@
-package org.ruoyi.domain.entity.chat;
+package org.ruoyi.system.domain;
 
-import org.ruoyi.common.tenant.core.TenantEntity;
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.ruoyi.common.tenant.core.TenantEntity;
 
 import java.io.Serial;
 

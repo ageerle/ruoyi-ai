@@ -90,7 +90,7 @@ spring:
 sys:
   upload:
     path: D:\\DownLoad
-    
+
 --- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
 spring.data:
   redis:

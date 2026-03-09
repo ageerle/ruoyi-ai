@@ -1,3 +1,4 @@
+
 # RuoYi AI
 
 <div align="center">
@@ -115,21 +116,7 @@ Thanks to the following excellent open-source projects for their support:
 
 <div align="center">
 
-<table>
-<tr>
-<td align="center">
-<img src="docs/image/wx.png" alt="WeChat QR Code" width="200" height="200"><br>
-<strong>Scan to Add Author's WeChat</strong><br>
-<em>Invitation to join the group</em>
-</td>
-<td align="center">
-<img src="docs/image/qq.png" alt="QQ Group QR Code" width="200" height="200"><br>
-<strong>QQ Technical Discussion Group</strong><br>
-<em>Technical discussions</em>
-</td>
-
-</tr>
-</table>
+**[📱 Join Telegram Group](https://t.me/+LqooQAc5HxRmYmE1)**
 
 </div>
 

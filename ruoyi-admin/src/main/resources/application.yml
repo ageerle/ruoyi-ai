@@ -125,7 +125,9 @@ security:
     - /*/api-docs/**
     - /warm-flow-ui/config
     - /workflow/run
-
+    - /user/qrcode
+    - /user/login/qrcode
+    - /weixin/check
 # 多租户配置
 tenant:
   # 是否开启
@@ -309,6 +311,7 @@ wechat:
         secret: ''
         token:  ''
         aesKey: ''
+
 --- # Neo4j 知识图谱配置
 neo4j:
   uri: bolt://117.72.192.162:7687

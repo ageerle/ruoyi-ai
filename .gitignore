@@ -21,9 +21,12 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
+.claude
+.github
 *.iws
 *.iml
 *.ipr
+
 
 ### JRebel ###
 rebel.xml

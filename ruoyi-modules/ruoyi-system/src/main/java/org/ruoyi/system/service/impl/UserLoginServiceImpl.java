@@ -7,8 +7,10 @@ import cn.hutool.crypto.digest.BCrypt;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.ruoyi.common.core.constant.Constants;
+import org.ruoyi.common.core.constant.SystemConstants;
 import org.ruoyi.common.core.domain.dto.VisitorLoginUserDto;
 import org.ruoyi.common.core.enums.UserType;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.UserLoginService;
 import org.ruoyi.common.core.utils.MessageUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
@@ -33,12 +35,19 @@ public class UserLoginServiceImpl implements UserLoginService {
 
 
     public VisitorLoginUserDto mpLogin(String openid, String clientId) {
+        // 校验客户端
+        SysClientVo client = clientService.queryByClientId(clientId);
+        if (ObjectUtil.isNull(client)) {
+            throw new ServiceException(MessageUtils.message("auth.grant.type.error"));
+        } else if (!SystemConstants.NORMAL.equals(client.getStatus())) {
+            throw new ServiceException(MessageUtils.message("auth.grant.type.blocked"));
+        }
         // 使用 openid 查询绑定用户 如未绑定用户 则根据业务自行处理 例如 创建默认用户
         SysUserVo user = userService.selectUserByOpenId(openid);
         VisitorLoginUserDto loginUser = new VisitorLoginUserDto();
         if (ObjectUtil.isNull(user)) {
             SysUserBo sysUser = new SysUserBo();
-            String name = "用户" + UUID.randomUUID().toString().replace("-", "");
+            String name = "用户" + UUID.randomUUID().toString().replace("-", "").substring(0, 7);
             // 设置默认用户名
             sysUser.setUserName(name);
             // 设置默认昵称
@@ -47,6 +56,8 @@ public class UserLoginServiceImpl implements UserLoginService {
             sysUser.setPassword(BCrypt.hashpw("123456"));
             // 设置微信openId
             sysUser.setOpenId(openid);
+            // 设置用户类型
+            sysUser.setUserType(UserType.SYS_USER.getUserType());
             // 设置默认余额
             sysUser.setUserBalance(NumberUtils.toDouble("1"));
             // 注册用户,设置默认租户为0
@@ -54,16 +65,15 @@ public class UserLoginServiceImpl implements UserLoginService {
             // 构建登录用户信息
             loginUser.setUserId(sysUser.getUserId());
             loginUser.setUsername(sysUser.getUserName());
-            loginUser.setUserType(UserType.APP_USER.getUserType());
+            loginUser.setUserType(UserType.SYS_USER.getUserType());
             loginUser.setOpenid(openid);
         } else {
             // 此处可根据登录用户的数据不同 自行创建 loginUser
             loginUser.setUserId(user.getUserId());
             loginUser.setUsername(user.getUserName());
-            loginUser.setUserType(user.getUserType());
+            loginUser.setUserType(UserType.SYS_USER.getUserType());
             loginUser.setOpenid(openid);
         }
-        SysClientVo client = clientService.queryByClientId(clientId);
         SaLoginParameter model = new SaLoginParameter();
         model.setDeviceType(client.getDeviceType());
         // 自定义分配 不同用户体系 不同 token 授权时间 不设置默认走全局 yml 配置

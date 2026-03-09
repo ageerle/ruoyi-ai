@@ -1,8 +1,8 @@
-package org.ruoyi.mapper.chat;
+package org.ruoyi.system.mapper;
 
-import org.ruoyi.domain.entity.chat.ChatConfig;
-import org.ruoyi.domain.vo.chat.ChatConfigVo;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
+import org.ruoyi.system.domain.ChatConfig;
+import org.ruoyi.system.domain.vo.ChatConfigVo;
 
 /**
  * 配置信息Mapper接口

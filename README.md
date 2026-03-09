@@ -137,6 +137,29 @@
 
 ---
 
+
+## 📺 视频教程
+
+<div align="center">
+
+<table>
+<tr>
+<td align="center">
+<img src="docs/image/dy.png" alt="微信二维码" width="200" height="200"><br>
+<strong>打开抖音扫一扫</strong><br>
+<em>获取免费视频教程</em>
+</td>
+<td align="center">
+<img src="docs/image/bibi.png" alt="QQ群二维码" width="200" height="200"><br>
+<strong>打开B站扫一扫</strong><br>
+<em>获取免费视频教程</em>
+</td>
+
+</tr>
+</table>
+
+</div>
+
 <div align="center">
 
 **[⭐ 点个Star支持一下](https://github.com/ageerle/ruoyi-ai)** • **[ Fork 开始贡献](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 English](README_EN.md)** • **[📖 查看完整文档](https://doc.pandarobot.chat)**
