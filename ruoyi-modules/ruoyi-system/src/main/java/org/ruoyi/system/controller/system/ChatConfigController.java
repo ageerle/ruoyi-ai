@@ -1,26 +1,27 @@
-package org.ruoyi.controller.chat;
+package org.ruoyi.system.controller.system;
 
-import java.util.List;
-
-import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.service.chat.IChatConfigService;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
-import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
-import org.ruoyi.common.log.annotation.Log;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
-import org.ruoyi.domain.vo.chat.ChatConfigVo;
-import org.ruoyi.domain.bo.chat.ChatConfigBo;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
+import org.ruoyi.common.log.annotation.Log;
+import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.web.core.BaseController;
+import org.ruoyi.system.domain.bo.ChatConfigBo;
+import org.ruoyi.system.domain.vo.ChatConfigVo;
+import org.ruoyi.system.service.IChatConfigService;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 配置信息
@@ -78,6 +79,25 @@ public class ChatConfigController extends BaseController {
     public R<Void> add(@Validated(AddGroup.class) @RequestBody ChatConfigBo bo) {
         return toAjax(chatConfigService.insertByBo(bo));
     }
+
+    /**
+     * 新增或者修改配置信息
+     */
+    @SaCheckPermission("system:config:add")
+    @Log(title = "新增或者修改配置信息", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @PostMapping("/saveOrUpdate")
+    public R<Void> saveOrUpdate(@RequestBody List<ChatConfigBo> boList) {
+        for (ChatConfigBo chatConfigBo : boList) {
+            if (chatConfigBo.getId() == null) {
+                chatConfigService.insertByBo(chatConfigBo);
+            } else {
+                chatConfigService.updateByBo(chatConfigBo);
+            }
+        }
+        return toAjax(true);
+    }
+
 
     /**
      * 修改配置信息

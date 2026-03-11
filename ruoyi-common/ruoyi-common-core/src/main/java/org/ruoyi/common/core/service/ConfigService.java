@@ -15,4 +15,13 @@ public interface ConfigService {
      */
     String getConfigValue(String configKey);
 
+    /**
+     * 根据配置类型和配置key获取值
+     *
+     * @param category 配置类型
+     * @param configKey 配置key
+     * @return 配置属性
+     */
+    String getConfigValue(String category, String configKey);
+
 }

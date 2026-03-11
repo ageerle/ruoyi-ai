@@ -1,24 +1,24 @@
-package org.ruoyi.service.chat.impl;
+package org.ruoyi.system.service.impl;
 
-import org.ruoyi.common.core.utils.MapstructUtils;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.service.chat.IChatConfigService;
+import org.ruoyi.common.core.utils.MapstructUtils;
+import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.system.domain.ChatConfig;
+import org.ruoyi.system.domain.bo.ChatConfigBo;
+import org.ruoyi.system.domain.vo.ChatConfigVo;
+import org.ruoyi.system.mapper.ChatConfigMapper;
+import org.ruoyi.system.service.IChatConfigService;
 import org.springframework.stereotype.Service;
-import org.ruoyi.domain.bo.chat.ChatConfigBo;
-import org.ruoyi.domain.vo.chat.ChatConfigVo;
-import org.ruoyi.domain.entity.chat.ChatConfig;
-import org.ruoyi.mapper.chat.ChatConfigMapper;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
 
 /**
  * 配置信息Service业务层处理

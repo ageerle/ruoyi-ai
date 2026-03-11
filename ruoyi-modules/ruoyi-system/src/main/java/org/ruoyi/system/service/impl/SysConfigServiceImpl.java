@@ -18,9 +18,11 @@ import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.redis.utils.CacheUtils;
 import org.ruoyi.common.tenant.helper.TenantHelper;
+import org.ruoyi.system.domain.ChatConfig;
 import org.ruoyi.system.domain.SysConfig;
 import org.ruoyi.system.domain.bo.SysConfigBo;
 import org.ruoyi.system.domain.vo.SysConfigVo;
+import org.ruoyi.system.mapper.ChatConfigMapper;
 import org.ruoyi.system.mapper.SysConfigMapper;
 import org.ruoyi.system.service.ISysConfigService;
 import org.springframework.cache.annotation.CachePut;
@@ -40,6 +42,9 @@ import java.util.Map;
 public class SysConfigServiceImpl implements ISysConfigService, ConfigService {
 
     private final SysConfigMapper baseMapper;
+
+
+    private final ChatConfigMapper configMapper;
 
     /**
      * 分页查询参数配置列表
@@ -210,6 +215,14 @@ public class SysConfigServiceImpl implements ISysConfigService, ConfigService {
     @Override
     public String getConfigValue(String configKey) {
         return SpringUtils.getAopProxy(this).selectConfigByKey(configKey);
+    }
+
+    @Override
+    public String getConfigValue(String category, String configKey) {
+        ChatConfig config = configMapper.selectOne(new LambdaQueryWrapper<ChatConfig>()
+            .eq(ChatConfig::getCategory, category)
+            .eq(ChatConfig::getConfigName, configKey));
+        return ObjectUtils.notNullGetter(config, ChatConfig::getConfigValue, StringUtils.EMPTY);
     }
 
 }

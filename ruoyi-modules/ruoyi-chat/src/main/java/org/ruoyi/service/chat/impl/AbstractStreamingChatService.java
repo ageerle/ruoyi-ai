@@ -1,50 +1,41 @@
 package org.ruoyi.service.chat.impl;
 
 import dev.langchain4j.agentic.AgenticServices;
-import dev.langchain4j.agentic.supervisor.SupervisorAgent;
-import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.mcp.McpToolProvider;
-import dev.langchain4j.mcp.client.DefaultMcpClient;
-import dev.langchain4j.mcp.client.McpClient;
-import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.tool.ToolProvider;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.agent.ChartGenerationAgent;
-import org.ruoyi.agent.SqlAgent;
-import org.ruoyi.agent.WebSearchAgent;
-import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
-import org.ruoyi.agent.tool.QueryAllTablesTool;
-import org.ruoyi.agent.tool.QueryTableSchemaTool;
+import org.ruoyi.agent.McpAgent;
 import org.ruoyi.common.chat.base.ThreadContext;
+import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.dto.request.ReSumeRunner;
 import org.ruoyi.common.chat.domain.dto.request.WorkFlowRunner;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.entity.chat.ChatContext;
 import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.chat.service.chat.IChatService;
-import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
-import org.ruoyi.common.chat.entity.chat.ChatContext;
-import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.service.chatMessage.AbstractChatMessageService;
 import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
 import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
+import org.ruoyi.mcp.service.core.ToolProviderFactory;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -214,17 +205,6 @@ public abstract class AbstractStreamingChatService extends AbstractChatMessageSe
     }
 
     /**
-     * 清理指定会话的内存缓存（可选）
-     * 在会话结束时调用，释放内存资源
-     *
-     * @param sessionId 会话ID
-     */
-    public static void clearChatMemory(Object sessionId) {
-        memoryCache.remove(sessionId);
-        log.debug("已清理会话 {} 的内存缓存", sessionId);
-    }
-
-    /**
      * 执行聊天（钩子方法 - 子类必须实现）
      * 注意：messages 已包含完整的历史上下文和当前消息
      *
@@ -232,7 +212,8 @@ public abstract class AbstractStreamingChatService extends AbstractChatMessageSe
      * @param chatRequest 聊天请求
      * @param handler     响应处理器
      */
-    protected abstract void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory, StreamingChatResponseHandler handler);
+    protected abstract void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest,
+                                   List<ChatMessage> messagesWithMemory, StreamingChatResponseHandler handler);
 
     /**
      * 创建标准的响应处理器
@@ -303,102 +284,79 @@ public abstract class AbstractStreamingChatService extends AbstractChatMessageSe
     }
 
     /**
-     * 构建具体厂商的 StreamingChatModel
-     * 子类必须实现此方法，返回对应厂商的模型实例
-     */
-    protected abstract StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest);
-
-
-    /**
      * 获取提供者名称（子类必须实现）
      */
     public abstract String getProviderName();
 
     protected String doAgent(String userMessage, ChatModelVo chatModelVo) {
-        // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
-        // 该服务提供两个工具: bing_search (必应搜索) 和 crawl_webpage (网页抓取)
-        // McpTransport transport = new StdioMcpTransport.Builder()
-        //     .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
-        //         "bing-cn-mcp"
-        //     ))
-        //     .logEvents(true)
-        //     .build();
-
-        // // 步骤2: 创建MCP客户端
-        // McpClient mcpClient = new DefaultMcpClient.Builder()
-        //     .transport(transport)
-        //     .build();
-
-        // // 步骤3: 配置工具提供者
-        // ToolProvider toolProvider = McpToolProvider.builder()
-        //     .mcpClients(List.of(mcpClient))
-        //     .build();
-
-
-        McpTransport transport1 = new StdioMcpTransport.Builder()
-            .command(List.of("npx", "-y",
-                "mcp-echarts"
-            ))
-            .logEvents(true)
-            .build();
-
-        // 步骤2: 创建MCP客户端
-        McpClient mcpClient1 = new DefaultMcpClient.Builder()
-            .transport(transport1)
-            .build();
-
-        // 步骤3: 配置工具提供者
-        ToolProvider toolProvider1 = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient1))
-            .build();
-
-        // 步骤4: 配置OpenAI模型
-        // OpenAiChatModel PLANNER_MODEL = OpenAiChatModel.builder()
-        //     .baseUrl(chatModelVo.getApiHost())
-        //     .apiKey(chatModelVo.getApiKey())
-        //     .modelName(chatModelVo.getModelName())
-        //     .build();
-
-
-        QwenChatModel qwenChatModel = QwenChatModel.builder()
-            // .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.getApiKey())
-            .modelName(chatModelVo.getModelName())
-                .build();
-            
-        SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
-            .chatModel(
-                        qwenChatModel)
-            .tools(
-                SpringUtils.getBean(QueryAllTablesTool.class),   // 必须通过 getBean 获取
-                SpringUtils.getBean(QueryTableSchemaTool.class),
-                SpringUtils.getBean(ExecuteSqlQueryTool.class)
-            )
-            .build();
-
-        // WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
-        //     .chatModel(PLANNER_MODEL)
-        //     .toolProvider(toolProvider)
-        //     .build();
-
-        ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
-            .chatModel(
-                        qwenChatModel)
-            .toolProvider(toolProvider1)
-            .build();
-        String res = sqlAgent.getData(userMessage);
-        String res1 = chartGenerationAgent.generateChart(res);
-        System.out.println(res1);
-        System.out.println(res);
-        SupervisorAgent supervisor = AgenticServices
-            .supervisorBuilder()
-            .chatModel(qwenChatModel)
-            .subAgents(sqlAgent, chartGenerationAgent)
-            .responseStrategy(SupervisorResponseStrategy.LAST)
-            .build();
-
-        String invoke = supervisor.invoke(userMessage);
-        System.out.println(invoke);
-        return res1;
+        log.info("执行Agent任务，消息: {}", userMessage);
+        // 加载所有可用的 Agent，让 Supervisor 根据任务类型自动选择
+        return doAgentWithAllAgents(userMessage, chatModelVo);
     }
+
+    /**
+     * 使用单一 Agent 处理所有任务
+     * 不使用 Supervisor 模式，而是使用 MCP Agent 来处理所有任务
+     *
+     * @param userMessage 用户消息
+     * @param chatModelVo 聊天模型配置
+     * @return Agent 响应结果
+     */
+    protected String doAgentWithAllAgents(String userMessage, ChatModelVo chatModelVo) {
+
+        try {
+            // 1. 加载 LLM 模型
+            QwenChatModel qwenChatModel = QwenChatModel.builder()
+                .apiKey(chatModelVo.getApiKey())
+                .modelName(chatModelVo.getModelName())
+                .build();
+
+            // 2. 获取统一工具提供工厂
+            ToolProviderFactory toolProviderFactory = SpringUtils.getBean(ToolProviderFactory.class);
+
+            // 3. 获取所有可用的工具
+
+            // 3.1 添加 BUILTIN 工具对象（包括 SQL 工具）
+            List<Object> builtinTools = toolProviderFactory.getAllBuiltinToolObjects();
+
+            List<Object> allTools = new ArrayList<>(builtinTools);
+
+            log.debug("Loaded {} builtin tools (including SQL tools)", builtinTools.size());
+
+            log.debug("Total tools: {}", allTools.size());
+
+            // 4. 获取 MCP 工具提供者
+            ToolProvider mcpToolProvider = toolProviderFactory.getAllEnabledMcpToolsProvider();
+
+            // 5. 创建 MCP Agent（包含所有工具）
+            var agentBuilder = AgenticServices.agentBuilder(McpAgent.class).chatModel(qwenChatModel);
+
+            // 添加所有工具
+            if (!allTools.isEmpty()) {
+                agentBuilder.tools(allTools.toArray(new Object[0]));
+            }
+
+            // 添加 MCP 工具
+            if (mcpToolProvider != null) {
+                agentBuilder.toolProvider(mcpToolProvider);
+            }
+
+            McpAgent mcpAgent = agentBuilder.build();
+
+            // 6. 调用大模型LLM
+            String result = mcpAgent.callMcpTool(userMessage);
+            log.info("Agent 执行完成，结果长度: {}", result.length());
+            return result;
+
+        } catch (Exception e) {
+            log.error("Agent 模式执行失败: {}", e.getMessage(), e);
+        }
+        return null;
+    }
+
+    /**
+     * 创建流式聊天模型
+     * 子类必须实现此方法，返回对应厂商的模型实例
+     */
+    protected abstract StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest);
 }

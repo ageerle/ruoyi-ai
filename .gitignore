@@ -21,9 +21,12 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
+.claude
+.github
 *.iws
 *.iml
 *.ipr
+
 
 ### JRebel ###
 rebel.xml
@@ -48,3 +51,4 @@ data/
 !*/build/*.xml
 
 .flattened-pom.xml
+/.claude/settings.local.json

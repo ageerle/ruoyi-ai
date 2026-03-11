@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @DS("agent")
 public class TableSchemaManager {
- 
+
     @Autowired(required = false)
     private DataSource agentDataSource;
 
@@ -77,7 +77,7 @@ public class TableSchemaManager {
                 loadAllowedTableSchemas();
                 initialized = true;
                 log.info("Schema cache initialized with {} tables", schemaCache.size());
-              
+
             } catch (Exception e) {
                 log.error("Failed to initialize schema cache", e);
             }
@@ -87,7 +87,7 @@ public class TableSchemaManager {
     /**
      * 加载所有允许的表的结构信息
      */
-    private void loadAllowedTableSchemas() throws SQLException {
+    private void loadAllowedTableSchemas() {
         List<String> allowedTables = getAllowedTableNames();
         for (String tableName : allowedTables) {
             try {
@@ -191,10 +191,7 @@ public class TableSchemaManager {
         }
 
         List<String> allowedTables = getAllowedTableNames();
-        return allowedTables.stream()
-                .map(schemaCache::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return allowedTables.stream().map(schemaCache::get).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     /**

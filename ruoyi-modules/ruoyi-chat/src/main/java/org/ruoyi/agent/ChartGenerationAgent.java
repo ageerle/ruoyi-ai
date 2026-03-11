@@ -6,7 +6,7 @@ import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
 
-public interface ChartGenerationAgent {
+public interface ChartGenerationAgent extends Agent {
 
     @SystemMessage("""
             You are a chart generation specialist. Your only task is to generate Apache ECharts
