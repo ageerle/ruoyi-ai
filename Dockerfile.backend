@@ -12,7 +12,7 @@ COPY ruoyi-admin ./ruoyi-admin
 COPY ruoyi-common ./ruoyi-common
 COPY ruoyi-modules ./ruoyi-modules
 COPY ruoyi-extend ./ruoyi-extend
-COPY ruoyi-modules-api ./ruoyi-modules-api
+
 
 # 构建项目 (使用 prod profile)
 RUN mvn clean package -Pprod -DskipTests
