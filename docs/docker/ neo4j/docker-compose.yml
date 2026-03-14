@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.15.0
+    container_name: ruoyi-neo4j
+    restart: unless-stopped
+    ports:
+      # HTTP端口
+      - "7474:7474"
+      # HTTPS端口
+      - "7473:7473"
+      # Bolt端口
+      - "7687:7687"
+    environment:
+      # 初始密码设置（首次启动后需要修改）
+      - NEO4J_AUTH=neo4j/your_password
+      # 接受许可协议
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      # 内存配置（根据服务器配置调整）
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2g
+      - NEO4J_dbms_memory_pagecache_size=1g
+      # 事务日志配置
+      - NEO4J_dbms_tx__log_rotation_retention__policy=3 days
+      # 允许从任何主机连接
+      - NEO4J_dbms_default__listen__address=0.0.0.0
+      # 启用APOC插件
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+      # 日志级别
+      - NEO4J_dbms_logs_debug_level=INFO
+    volumes:
+      # 数据持久化
+      - neo4j_data:/data
+      # 日志持久化
+      - neo4j_logs:/logs
+      # 导入目录
+      - neo4j_import:/var/lib/neo4j/import
+      # 插件目录
+      - neo4j_plugins:/plugins
+    networks:
+      - ruoyi-network
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  neo4j_data:
+    name: ruoyi-neo4j-data
+  neo4j_logs:
+    name: ruoyi-neo4j-logs
+  neo4j_import:
+    name: ruoyi-neo4j-import
+  neo4j_plugins:
+    name: ruoyi-neo4j-plugins
+
+networks:
+  ruoyi-network:
+    name: ruoyi-network
+    driver: bridge
+

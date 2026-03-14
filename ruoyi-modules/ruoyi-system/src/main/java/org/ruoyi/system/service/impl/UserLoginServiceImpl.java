@@ -47,7 +47,7 @@ public class UserLoginServiceImpl implements UserLoginService {
         VisitorLoginUserDto loginUser = new VisitorLoginUserDto();
         if (ObjectUtil.isNull(user)) {
             SysUserBo sysUser = new SysUserBo();
-            String name = "用户" + UUID.randomUUID().toString().replace("-", "").substring(0, 7);
+            String name = "用户" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
             // 设置默认用户名
             sysUser.setUserName(name);
             // 设置默认昵称

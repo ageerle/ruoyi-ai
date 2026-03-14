@@ -23,13 +23,13 @@ import java.util.List;
 @Slf4j
 public class ZhiPuChatServiceImpl extends AbstractStreamingChatService {
     @Override
-    protected void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory, StreamingChatResponseHandler handler) {
+    public void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory, StreamingChatResponseHandler handler) {
         StreamingChatModel streamingChatModel = buildStreamingChatModel(chatModelVo,chatRequest);
         streamingChatModel.chat(messagesWithMemory, handler);
     }
 
     @Override
-    protected StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
+    public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return ZhipuAiStreamingChatModel.builder()
             .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())

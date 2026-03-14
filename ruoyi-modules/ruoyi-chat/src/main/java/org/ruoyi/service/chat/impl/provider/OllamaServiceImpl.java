@@ -24,7 +24,7 @@ import java.util.List;
 public class OllamaServiceImpl extends AbstractStreamingChatService {
 
     @Override
-    protected StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
+    public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return OllamaStreamingChatModel.builder()
                 .baseUrl(chatModelVo.getApiHost())
                 .modelName(chatModelVo.getModelName())
@@ -33,7 +33,7 @@ public class OllamaServiceImpl extends AbstractStreamingChatService {
 
 
     @Override
-    protected void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory,StreamingChatResponseHandler handler) {
+    public void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory,StreamingChatResponseHandler handler) {
         StreamingChatModel streamingChatModel = buildStreamingChatModel(chatModelVo, chatRequest);
         streamingChatModel.chat(messagesWithMemory, handler);
     }
