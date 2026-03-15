@@ -46,29 +46,14 @@ public class ChatModelBo extends BaseEntity {
     private String modelDescribe;
 
     /**
-     * 模型价格
-     */
-    private Long modelPrice;
-
-    /**
-     * 计费类型
-     */
-    private String modelType;
-
-    /**
      * 是否显示
      */
     private String modelShow;
 
     /**
-     * 是否免费
+     * 向量维度
      */
-    private String modelFree;
-
-    /**
-     * 模型优先级(值越大优先级越高)
-     */
-    private Long priority;
+    private Integer modelDimension;
 
     /**
      * 请求地址

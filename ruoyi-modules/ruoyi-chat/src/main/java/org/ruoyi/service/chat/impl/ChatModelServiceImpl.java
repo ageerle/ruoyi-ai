@@ -92,11 +92,7 @@ public class ChatModelServiceImpl implements IChatModelService {
         lqw.like(StringUtils.isNotBlank(bo.getModelName()), ChatModel::getModelName, bo.getModelName());
         lqw.like(StringUtils.isNotBlank(bo.getProviderCode()), ChatModel::getProviderCode, bo.getProviderCode());
         lqw.eq(StringUtils.isNotBlank(bo.getModelDescribe()), ChatModel::getModelDescribe, bo.getModelDescribe());
-        lqw.eq(bo.getModelPrice() != null, ChatModel::getModelPrice, bo.getModelPrice());
-        lqw.eq(StringUtils.isNotBlank(bo.getModelType()), ChatModel::getModelType, bo.getModelType());
         lqw.eq(StringUtils.isNotBlank(bo.getModelShow()), ChatModel::getModelShow, bo.getModelShow());
-        lqw.eq(StringUtils.isNotBlank(bo.getModelFree()), ChatModel::getModelFree, bo.getModelFree());
-        lqw.eq(bo.getPriority() != null, ChatModel::getPriority, bo.getPriority());
         lqw.eq(StringUtils.isNotBlank(bo.getApiHost()), ChatModel::getApiHost, bo.getApiHost());
         lqw.eq(StringUtils.isNotBlank(bo.getApiKey()), ChatModel::getApiKey, bo.getApiKey());
         return lqw;

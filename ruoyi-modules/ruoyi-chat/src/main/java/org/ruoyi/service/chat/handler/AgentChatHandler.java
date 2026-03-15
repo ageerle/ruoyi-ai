@@ -148,7 +148,6 @@ public class AgentChatHandler implements ChatHandler {
             messageBO.setContent(content);
             messageBO.setRole(role);
             messageBO.setModelName(chatRequest.getModel());
-            messageBO.setBillingType(chatModelVo.getModelType());
             messageBO.setRemark(null);
 
             chatMessageService.insertByBo(messageBO);

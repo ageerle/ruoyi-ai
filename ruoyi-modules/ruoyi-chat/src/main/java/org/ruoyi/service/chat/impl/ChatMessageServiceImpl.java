@@ -79,10 +79,8 @@ public class ChatMessageServiceImpl implements IChatMessageService {
         lqw.eq(bo.getUserId() != null, ChatMessage::getUserId, bo.getUserId());
         lqw.eq(StringUtils.isNotBlank(bo.getContent()), ChatMessage::getContent, bo.getContent());
         lqw.eq(StringUtils.isNotBlank(bo.getRole()), ChatMessage::getRole, bo.getRole());
-        lqw.eq(bo.getDeductCost() != null, ChatMessage::getDeductCost, bo.getDeductCost());
         lqw.eq(bo.getTotalTokens() != null, ChatMessage::getTotalTokens, bo.getTotalTokens());
         lqw.like(StringUtils.isNotBlank(bo.getModelName()), ChatMessage::getModelName, bo.getModelName());
-        lqw.eq(StringUtils.isNotBlank(bo.getBillingType()), ChatMessage::getBillingType, bo.getBillingType());
         return lqw;
     }
 

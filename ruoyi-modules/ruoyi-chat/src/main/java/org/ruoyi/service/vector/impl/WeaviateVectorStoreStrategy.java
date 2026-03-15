@@ -7,6 +7,7 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.weaviate.client.WeaviateClient;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
@@ -41,8 +42,9 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     private WeaviateClient client;
 
     public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
+                                       IChatModelService chatModelService,
                                        EmbeddingModelFactory embeddingModelFactory) {
-        super(vectorStoreProperties, embeddingModelFactory);
+        super(vectorStoreProperties, embeddingModelFactory,chatModelService);
     }
 
     @Override
@@ -91,12 +93,12 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
         createSchema(storeEmbeddingBo.getKid(), storeEmbeddingBo.getEmbeddingModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(), null);
+        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName());
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
         String kid = storeEmbeddingBo.getKid();
         String docId = storeEmbeddingBo.getDocId();
-        log.info("向量存储条数记录: " + chunkList.size());
+        log.info("向量存储条数记录: {}", chunkList.size());
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < chunkList.size(); i++) {
             String text = chunkList.get(i);
@@ -123,7 +125,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
         createSchema(queryVectorBo.getKid(), queryVectorBo.getEmbeddingModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(), null);
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         float[] vector = queryEmbedding.vector();
         List<String> vectorStrings = new ArrayList<>();

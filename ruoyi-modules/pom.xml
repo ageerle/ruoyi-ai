@@ -12,11 +12,8 @@
     <modules>
         <module>ruoyi-aiflow</module>
         <module>ruoyi-chat</module>
-        <module>ruoyi-demo</module>
         <module>ruoyi-generator</module>
-        <module>ruoyi-job</module>
         <module>ruoyi-system</module>
-        <module>ruoyi-wechat</module>
         <module>ruoyi-workflow</module>
     </modules>
 

@@ -54,17 +54,6 @@ public class ChatModelVo implements Serializable {
     @ExcelProperty(value = "模型描述")
     private String modelDescribe;
 
-    /**
-     * 模型价格
-     */
-    @ExcelProperty(value = "模型价格")
-    private Long modelPrice;
-
-    /**
-     * 计费类型
-     */
-    @ExcelProperty(value = "计费类型")
-    private String modelType;
 
     /**
      * 是否显示
@@ -73,16 +62,10 @@ public class ChatModelVo implements Serializable {
     private String modelShow;
 
     /**
-     * 是否免费
+     * 向量维度
      */
-    @ExcelProperty(value = "是否免费")
-    private String modelFree;
-
-    /**
-     * 模型优先级(值越大优先级越高)
-     */
-    @ExcelProperty(value = "模型优先级(值越大优先级越高)")
-    private Long priority;
+    @ExcelProperty(value = "向量维度")
+    private Integer modelDimension;
 
     /**
      * 请求地址
@@ -101,12 +84,6 @@ public class ChatModelVo implements Serializable {
      */
     @ExcelProperty(value = "备注")
     private String remark;
-
-    /**
-     * 模型维度
-     */
-    private Integer dimension;
-
 
 }
 

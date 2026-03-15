@@ -70,21 +70,10 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-job</artifactId>
-        </dependency>
-
         <!-- 代码生成-->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-generator</artifactId>
-        </dependency>
-
-        <!--  demo模块  -->
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-demo</artifactId>
         </dependency>
 
         <dependency>
@@ -96,12 +85,6 @@
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-workflow</artifactId>
-        </dependency>
-
-        <!--  微信模块  -->
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-wechat</artifactId>
         </dependency>
 
         <!--  AI流程编排模块  -->

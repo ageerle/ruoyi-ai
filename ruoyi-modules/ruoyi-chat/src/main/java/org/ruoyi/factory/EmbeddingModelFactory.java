@@ -36,16 +36,13 @@ public class EmbeddingModelFactory {
      * 如果模型已存在于缓存中，则直接返回；否则创建新的实例
      *
      * @param embeddingModelName 嵌入模型名称
-     * @param dimension          模型维度大小
      */
-    public BaseEmbedModelService createModel(String embeddingModelName, Integer dimension) {
+    public BaseEmbedModelService createModel(String embeddingModelName) {
         return modelCache.computeIfAbsent(embeddingModelName, name -> {
             ChatModelVo modelConfig = chatModelService.selectModelByName(embeddingModelName);
+
             if (modelConfig == null) {
                 throw new IllegalArgumentException("未找到模型配置，name=" + name);
-            }
-            if (modelConfig.getDimension() != null) {
-                modelConfig.setDimension(dimension);
             }
             return createModelInstance(modelConfig.getProviderCode(), modelConfig);
         });
@@ -58,7 +55,7 @@ public class EmbeddingModelFactory {
      * @return boolean 如果模型支持多模态则返回true，否则返回false
      */
     public boolean isMultimodalModel(String embeddingModelName) {
-        return createModel(embeddingModelName, null) instanceof MultiModalEmbedModelService;
+        return createModel(embeddingModelName) instanceof MultiModalEmbedModelService;
     }
 
     /**
@@ -69,7 +66,7 @@ public class EmbeddingModelFactory {
      * @throws IllegalArgumentException 当模型不支持多模态时抛出
      */
     public MultiModalEmbedModelService createMultimodalModel(String embeddingModelName) {
-        BaseEmbedModelService model = createModel(embeddingModelName, null);
+        BaseEmbedModelService model = createModel(embeddingModelName);
         if (model instanceof MultiModalEmbedModelService) {
             return (MultiModalEmbedModelService) model;
         }
@@ -113,7 +110,6 @@ public class EmbeddingModelFactory {
             // 配置模型参数
             model.configure(config);
             log.info("成功创建嵌入模型: factory={}, modelId={}", config.getProviderCode(), config.getId());
-
             return model;
         } catch (NoSuchBeanDefinitionException e) {
             throw new IllegalArgumentException("获取不到嵌入模型: " + factory, e);
