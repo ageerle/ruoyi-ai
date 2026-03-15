@@ -14,6 +14,7 @@ public enum ChatModeType {
     ZHI_PU("zhipu", "智谱清言"),
     DEEP_SEEK("deepseek", "深度求索"),
     QIAN_WEN("qianwen", "通义千问"),
+    PPIO("ppio", "PPIO派欧云"),
     OPEN_AI("openai", "openai");
     private final String code;
     private final String description;
