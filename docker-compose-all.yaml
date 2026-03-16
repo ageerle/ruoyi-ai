@@ -133,6 +133,11 @@ services:
     restart: always
     ports:
       - "25666:5666"
+    environment:
+      # 后端 API 地址 - 运行时动态配置（无需重新构建镜像）
+      # 在完整 docker-compose 中应设置为: http://backend:6039
+      # 独立运行时可设置为实际后端地址，如: 192.168.1.100:6039
+      UPSTREAM_HOST: http://backend:6039
     # 资源限制 - 防止 CPU 和内存耗尽
     deploy:
       resources:
@@ -154,6 +159,8 @@ services:
     restart: always
     ports:
       - "25137:5137"
+    environment:
+      UPSTREAM_URL: http://backend:6039
     depends_on:
       - backend
     networks:
