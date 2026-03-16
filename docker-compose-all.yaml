@@ -1,17 +1,24 @@
-# RuoYi-AI 一键启动后端服务
-# 使用方式: docker-compose up -d --build
+# RuoYi-AI 一键启动全部服务
+# 使用方式: docker-compose up -d
 #
 # 包含服务:
-#   - MySQL 8.0 (数据库)
+#   - MySQL 8.0 (数据库，包含初始化SQL)
 #   - Redis 6.2 (缓存)
 #   - Weaviate (向量数据库)
 #   - MinIO (对象存储)
-#   - RuoYi-Backend (后端服务，源码编译)
+#   - RuoYi-Backend (后端服务)
+#   - RuoYi-Admin (管理端前端)
+#   - RuoYi-Web (用户端前端)
+#
+# 镜像仓库地址: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai
+
+version: '3.8'
 
 services:
-  # MySQL 数据库
+  # ==================== MySQL 数据库 ====================
   mysql:
-    image: mysql:8.0.33
+    # 阿里云镜像地址（包含初始化SQL）
+    image: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai/mysql:v3
     container_name: ruoyi-ai-mysql
     restart: always
     ports:
@@ -21,16 +28,7 @@ services:
       MYSQL_DATABASE: ruoyi-ai-agent
       TZ: Asia/Shanghai
     volumes:
-      - ./docs/script/docker/mysql/init/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
-      - ./docs/script/sql/ruoyi-ai-v3_mysql8.sql:/docker-entrypoint-initdb.d/ruoyi-ai-v3_mysql8.sql:ro
       - mysql-data:/var/lib/mysql
-    command:
-      --default-authentication-plugin=mysql_native_password
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_general_ci
-      --explicit_defaults_for_timestamp=true
-      --lower_case_table_names=1
-      --skip-ssl
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 15s
@@ -40,13 +38,13 @@ services:
     networks:
       - ruoyi-net
 
-  # Redis 缓存
+  # ==================== Redis 缓存 ====================
   redis:
-    image: redis:6.2
+    image: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai/redis:6.2
     container_name: ruoyi-ai-redis
     restart: always
     ports:
-      - "6379:6379"
+      - "26379:6379"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
@@ -58,9 +56,9 @@ services:
     networks:
       - ruoyi-net
 
-  # Weaviate 向量数据库
+  # ==================== Weaviate 向量数据库 ====================
   weaviate:
-    image: semitechnologies/weaviate:1.30.0
+    image: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai/weaviate:1.30.0
     container_name: ruoyi-ai-weaviate
     restart: always
     ports:
@@ -77,14 +75,14 @@ services:
     networks:
       - ruoyi-net
 
-  # MinIO 对象存储
+  # ==================== MinIO 对象存储 ====================
   minio:
-    image: minio/minio
+    image: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai/minio:latest
     container_name: ruoyi-ai-minio
     restart: always
     ports:
-      - "9000:9000"
-      - "9090:9090"
+      - "29000:9000"
+      - "29090:9090"
     environment:
       MINIO_ROOT_USER: ruoyi
       MINIO_ROOT_PASSWORD: ruoyi123
@@ -94,11 +92,9 @@ services:
     networks:
       - ruoyi-net
 
-  # RuoYi-AI 后端服务 (源码编译)
+  # ==================== RuoYi-AI 后端服务 ====================
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
+    image: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai/ruoyi-ai-backend:latest
     container_name: ruoyi-ai-backend
     restart: always
     ports:
@@ -118,7 +114,7 @@ services:
       # 日志配置
       LOGGING_LEVEL_ORG_RUOYI: info
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: warn
-      SYS_UPLOAD_PATH: /ruoyi/upload   # 新增：对应 sys.upload.path
+      SYS_UPLOAD_PATH: /ruoyi/upload
     volumes:
       - logs-data:/ruoyi/server/logs
       - upload-data:/ruoyi/upload
@@ -130,11 +126,45 @@ services:
     networks:
       - ruoyi-net
 
+  # ==================== RuoYi-AI 管理端前端 ====================
+  admin-frontend:
+    image: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai/ruoyi-ai-admin:latest
+    container_name: ruoyi-ai-admin
+    restart: always
+    ports:
+      - "25666:5666"
+    # 资源限制 - 防止 CPU 和内存耗尽
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    depends_on:
+      - backend
+    networks:
+      - ruoyi-net
+
+  # ==================== RuoYi-AI 用户端前端 ====================
+  web-frontend:
+    image: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai/ruoyi-ai-web:latest
+    container_name: ruoyi-ai-web
+    restart: always
+    ports:
+      - "25137:5137"
+    depends_on:
+      - backend
+    networks:
+      - ruoyi-net
+
+# ==================== 网络配置 ====================
 networks:
   ruoyi-net:
     driver: bridge
 
-# 数据卷 支持手动指定 空为默认值
+# ==================== 数据卷配置 ====================
 volumes:
   mysql-data:
   redis-data:
