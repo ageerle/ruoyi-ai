@@ -2,6 +2,10 @@ package org.ruoyi.service.chat.handler;
 
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
+import dev.langchain4j.community.model.zhipu.ZhipuAiChatModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.tool.ToolProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +15,9 @@ import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.entity.chat.ChatContext;
 import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.chat.service.chatMessage.IChatMessageService;
+import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
+import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.mcp.service.core.ToolProviderFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -83,10 +89,10 @@ public class AgentChatHandler implements ChatHandler {
 
         try {
             // 1. 加载 LLM 模型
-            QwenChatModel qwenChatModel = QwenChatModel.builder()
-                .apiKey(chatModelVo.getApiKey())
-                .modelName(chatModelVo.getModelName())
-                .build();
+            ChatModel chatModel = generateChatModel(chatModelVo);
+            if (chatModel == null) {
+                return "Agent 执行失败: LLM 模型创建失败";
+            }
 
             // 2. 获取内置工具
             List<Object> builtinTools = toolProviderFactory.getAllBuiltinToolObjects();
@@ -98,7 +104,7 @@ public class AgentChatHandler implements ChatHandler {
 
             // 4. 创建 MCP Agent
             var agentBuilder = AgenticServices.agentBuilder(McpAgent.class)
-                .chatModel(qwenChatModel);
+                .chatModel(chatModel);
 
             if (!allTools.isEmpty()) {
                 agentBuilder.tools(allTools.toArray(new Object[0]));
@@ -118,6 +124,52 @@ public class AgentChatHandler implements ChatHandler {
             log.error("Agent 模式执行失败: {}", e.getMessage(), e);
             return "Agent 执行失败: " + e.getMessage();
         }
+    }
+
+
+    /**
+     * 根据 providerCode 加载对应的 LLM 模型
+     * @param chatModelVo
+     * @return LLM 模型
+     */
+    private ChatModel generateChatModel(ChatModelVo chatModelVo) {
+        ChatModel targetChatModel = null;
+        String providerCode = chatModelVo.getProviderCode();
+
+        if (StringUtils.isBlank(providerCode) || ChatModeType.QIAN_WEN.getCode().equals(providerCode.toLowerCase())) {
+            // 默认使用千问服务
+            targetChatModel = QwenChatModel.builder()
+                .apiKey(chatModelVo.getApiKey())
+                .modelName(chatModelVo.getModelName())
+                .build();
+        } else if (ChatModeType.DEEP_SEEK.getCode().equals(providerCode.toLowerCase())) {
+            targetChatModel = OpenAiChatModel.builder()
+                .apiKey(chatModelVo.getApiKey())
+                .baseUrl(chatModelVo.getApiHost())
+                .modelName(chatModelVo.getModelName())
+                .build();
+        } else if (ChatModeType.OPEN_AI.getCode().equals(providerCode.toLowerCase())) {
+            targetChatModel = OpenAiChatModel.builder()
+                .apiKey(chatModelVo.getApiKey())
+                .baseUrl(chatModelVo.getApiHost())
+                .modelName(chatModelVo.getModelName())
+                .build();
+        } else if (ChatModeType.OLLAMA.getCode().equals(providerCode.toLowerCase())) {
+            targetChatModel = OllamaChatModel.builder()
+                .baseUrl(chatModelVo.getApiHost())
+                .modelName(chatModelVo.getModelName())
+                .build();
+        } else if (ChatModeType.ZHI_PU.getCode().equals(providerCode.toLowerCase())) {
+            targetChatModel = ZhipuAiChatModel.builder()
+                .apiKey(chatModelVo.getApiKey())
+                .baseUrl(chatModelVo.getApiHost())
+                .model(chatModelVo.getModelName())
+                .build();
+        } else {
+            log.error("未识别有效的模型提供商: providerCode-{}", providerCode);
+        }
+
+        return targetChatModel;
     }
 
     /**
