@@ -26,7 +26,7 @@ import java.util.List;
 public class OpenAIServiceImpl extends AbstractStreamingChatService {
 
     @Override
-    protected StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
+    public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(chatModelVo.getApiHost())
                 .apiKey(chatModelVo.getApiKey())
@@ -36,7 +36,7 @@ public class OpenAIServiceImpl extends AbstractStreamingChatService {
     }
 
     @Override
-    protected void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory, StreamingChatResponseHandler handler) {
+    public void doChat(ChatModelVo chatModelVo, ChatRequest chatRequest, List<ChatMessage> messagesWithMemory, StreamingChatResponseHandler handler) {
         StreamingChatModel streamingChatModel = buildStreamingChatModel(chatModelVo, chatRequest);
         streamingChatModel.chat(messagesWithMemory, handler);
     }

@@ -1,0 +1,28 @@
+---
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    environment:
+      - MINIO_ACCESS_KEY=ruoyi
+      - MINIO_SECRET_KEY=ruoyi123
+    volumes:
+      - minio_data:/data
+      - minio_config:/root/.minio
+    command: server /data --console-address ":9090"
+    restart: always
+    networks:
+      - minio-net
+
+networks:
+  minio-net:
+    driver: bridge
+
+volumes:
+  minio_data:
+  minio_config:

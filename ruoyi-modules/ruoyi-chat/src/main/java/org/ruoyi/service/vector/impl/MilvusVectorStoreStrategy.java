@@ -14,6 +14,8 @@ import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
@@ -31,8 +33,9 @@ import java.util.stream.IntStream;
 public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
+                                     IChatModelService chatModelService,
                                      EmbeddingModelFactory embeddingModelFactory) {
-        super(vectorStoreProperties, embeddingModelFactory);
+        super(vectorStoreProperties, embeddingModelFactory, chatModelService);
     }
 
     // 缓存不同集合与 autoFlush 配置的 Milvus 连接
@@ -42,38 +45,27 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
      * 获取 Milvus Store，支持动态维度
      */
     private EmbeddingStore<TextSegment> getMilvusStore(String collectionName, int dimension, boolean autoFlushOnInsert) {
-        String key = collectionName + "|" + dimension + "|" + autoFlushOnInsert;
-        return storeCache.computeIfAbsent(key, k ->
-                MilvusEmbeddingStore.builder()
-                        .uri(vectorStoreProperties.getMilvus().getUrl())
-                        .collectionName(collectionName)
-                        .dimension(dimension)
-                        .indexType(IndexType.IVF_FLAT)
-                        .metricType(MetricType.L2)
-                        .autoFlushOnInsert(autoFlushOnInsert)
-                        .idFieldName("id")
-                        .textFieldName("text")
-                        .metadataFieldName("metadata")
-                        .vectorFieldName("vector")
-                        .build()
-        );
+
+        return MilvusEmbeddingStore.builder()
+            .uri(vectorStoreProperties.getMilvus().getUrl())
+            .collectionName(collectionName)
+            .dimension(dimension)
+            .indexType(IndexType.IVF_FLAT)
+            .metricType(MetricType.L2)
+            .autoFlushOnInsert(autoFlushOnInsert)
+            .idFieldName("id")
+            .textFieldName("text")
+            .metadataFieldName("metadata")
+            .vectorFieldName("vector")
+            .build();
     }
 
     /**
      * 获取 embedding 模型的实际维度
      */
     private int getModelDimension(String modelName) {
-        try {
-            EmbeddingModel model = getEmbeddingModel(modelName, null);
-            // 使用一个测试文本获取向量维度
-            Embedding testEmbedding = model.embed("test").content();
-            int dimension = testEmbedding.dimension();
-            log.info("Detected embedding model dimension: {} for model: {}", dimension, modelName);
-            return dimension;
-        } catch (Exception e) {
-            log.warn("Failed to detect model dimension for: {}, using default 1024", modelName, e);
-            return 1024; // 默认使用 1024 (bge-m3 的维度)
-        }
+        ChatModelVo modelConfig = chatModelService.selectModelByName(modelName);
+        return modelConfig.getModelDimension();
     }
 
     @Override
@@ -88,7 +80,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
         int dimension = getModelDimension(storeEmbeddingBo.getEmbeddingModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(), dimension);
+        EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName());
 
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
@@ -121,7 +113,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
         int dimension = getModelDimension(queryVectorBo.getEmbeddingModelName());
-        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName(), dimension);
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
 
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + queryVectorBo.getKid();

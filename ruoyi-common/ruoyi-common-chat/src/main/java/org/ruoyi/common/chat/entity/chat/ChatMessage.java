@@ -48,10 +48,6 @@ public class ChatMessage extends TenantEntity {
      */
     private String role;
 
-    /**
-     * 扣除金额
-     */
-    private Long deductCost;
 
     /**
      * 累计 Tokens
@@ -62,11 +58,6 @@ public class ChatMessage extends TenantEntity {
      * 模型名称
      */
     private String modelName;
-
-    /**
-     * 计费类型（1-token计费，2-次数计费）
-     */
-    private String billingType;
 
     /**
      * 备注

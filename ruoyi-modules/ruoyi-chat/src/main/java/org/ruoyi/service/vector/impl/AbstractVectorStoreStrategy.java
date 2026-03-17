@@ -4,6 +4,7 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.factory.EmbeddingModelFactory;
 import org.ruoyi.service.vector.VectorStoreService;
@@ -22,6 +23,9 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreService 
 
     private final EmbeddingModelFactory embeddingModelFactory;
 
+    protected final IChatModelService chatModelService;
+
+
     /**
      * 将float数组转换为Float对象数组
      */
@@ -37,8 +41,8 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreService 
      * 获取向量模型
      */
     @SneakyThrows
-    protected EmbeddingModel getEmbeddingModel(String modelName, Integer dimension) {
-        return embeddingModelFactory.createModel(modelName, dimension);
+    protected EmbeddingModel getEmbeddingModel(String modelName) {
+        return embeddingModelFactory.createModel(modelName);
     }
 
     /**

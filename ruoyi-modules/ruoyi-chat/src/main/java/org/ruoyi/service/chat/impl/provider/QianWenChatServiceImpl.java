@@ -31,7 +31,7 @@ public class QianWenChatServiceImpl extends AbstractStreamingChatService {
     private static final String UPLOAD_FILE_API_PREFIX = "fileid";
 
     @Override
-    protected StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo,ChatRequest chatRequest) {
+    public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo,ChatRequest chatRequest) {
         return QwenStreamingChatModel.builder()
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
@@ -39,7 +39,7 @@ public class QianWenChatServiceImpl extends AbstractStreamingChatService {
     }
 
     @Override
-    protected void doChat(ChatModelVo chatModelVo,ChatRequest chatRequest,List<ChatMessage> messagesWithMemory,
+    public void doChat(ChatModelVo chatModelVo,ChatRequest chatRequest,List<ChatMessage> messagesWithMemory,
                           StreamingChatResponseHandler handler) {
         StreamingChatModel streamingChatModel = buildStreamingChatModel(chatModelVo,chatRequest);
         // 判断是否存在需要使用阿里千问的文档解析功能

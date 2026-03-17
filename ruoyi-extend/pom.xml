@@ -12,7 +12,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>ruoyi-ai-copilot</module>
         <module>ruoyi-monitor-admin</module>
         <module>ruoyi-snailjob-server</module>
     </modules>

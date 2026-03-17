@@ -80,10 +80,16 @@ public class AuthController {
         // 授权类型和客户端id
         String clientId = loginBody.getClientId();
         String grantType = loginBody.getGrantType();
+        log.info("登录请求 - clientId: {}, grantType: {}", clientId, grantType);
         SysClientVo client = clientService.queryByClientId(clientId);
+        log.info("查询客户端结果 - client: {}, grantType: {}", client, client != null ? client.getGrantType() : "null");
         // 查询不到 client 或 client 内不包含 grantType
-        if (ObjectUtil.isNull(client) || !StringUtils.contains(client.getGrantType(), grantType)) {
-            log.info("客户端id: {} 认证类型：{} 异常!.", clientId, grantType);
+        if (ObjectUtil.isNull(client)) {
+            log.info("客户端id: {} 不存在!", clientId);
+            return R.fail(MessageUtils.message("auth.grant.type.error"));
+        }
+        if (!StringUtils.contains(client.getGrantType(), grantType)) {
+            log.info("客户端id: {} 认证类型：{} 不匹配! 数据库grantType: {}", clientId, grantType, client.getGrantType());
             return R.fail(MessageUtils.message("auth.grant.type.error"));
         } else if (!SystemConstants.NORMAL.equals(client.getStatus())) {
             return R.fail(MessageUtils.message("auth.grant.type.blocked"));

@@ -38,7 +38,7 @@ public class AliBaiLianBaseEmbedProvider extends OpenAiEmbeddingProvider {
         return QwenEmbeddingModel.builder()
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
-                .dimension(1024)
+                .dimension(chatModelVo.getModelDimension())
                 .build()
                 .embedAll(textSegments);
     }

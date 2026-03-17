@@ -125,9 +125,6 @@ security:
     - /*/api-docs/**
     - /warm-flow-ui/config
     - /workflow/run
-    - /user/qrcode
-    - /user/login/qrcode
-    - /weixin/check
 # 多租户配置
 tenant:
   # 是否开启
@@ -206,6 +203,7 @@ springdoc:
       name:  ageerle
       email: ageerle@163.com
       url: https://gitee.com/ageerle/ruoyi-ai
+
   #这里定义了两个分组，可定义多个，也可以不定义
   group-configs:
     - group: 1.演示模块
@@ -247,12 +245,6 @@ management:
       show-details: ALWAYS
     logfile:
       external-file: ./logs/sys-console.log
-  health:
-    # ⚠️ 禁用 Neo4j 健康检查
-    # Spring Boot Actuator 会自动为 Neo4j 创建健康检查器
-    # 这会导致应用在启动时尝试连接到 Neo4j
-    neo4j:
-      enabled: false
 
 --- # 默认/推荐使用sse推送
 sse:
@@ -285,7 +277,7 @@ warm-flow:
 vector-store:
   # 向量存储类型 可选(weaviate/milvus)
   # 如需修改向量库类型，请修改此配置值!
-  type: weaviate
+  type: milvus
   # Weaviate配置
   weaviate:
     protocol: http
@@ -295,81 +287,3 @@ vector-store:
   milvus:
     url: http://localhost:19530
     collectionname: LocalKnowledge
-
-chat:
-  memory:
-    enabled: true
-    maxMessages: 20
-    persistenceEnabled: true
-
-  #  企业微信应用
-wechat:
-  cp:
-    corpId:
-    appConfigs:
-      - agentId:
-        secret: ''
-        token:  ''
-        aesKey: ''
-
---- # Neo4j 知识图谱配置
-neo4j:
-  uri: bolt://117.72.192.162:7687
-  username: neo4j
-  password: MySecurePass123!
-  database: neo4j
-  max-connection-pool-size: 50
-  connection-timeout-seconds: 30
-
-# 知识图谱配置
-knowledge:
-  graph:
-    # 是否启用知识图谱功能
-    enabled: false
-    # 图数据库类型: neo4j 或 apache-age
-    database-type: neo4j
-    # 是否自动创建索引
-    auto-create-index: true
-    # 批量处理大小
-    batch-size: 1000
-    # 最大重试次数
-    max-retry-count: 3
-
-    # 实体抽取配置
-    extraction:
-      # 置信度阈值（低于此值的实体将被过滤）
-      confidence-threshold: 0.7
-      # 最大实体数量（每个文档）
-      max-entities-per-doc: 100
-      # 最大关系数量（每个文档）
-      max-relations-per-doc: 200
-      # 文本分片大小（用于长文档）
-      chunk-size: 2000
-      # 分片重叠大小
-      chunk-overlap: 200
-
-    # 查询配置
-    query:
-      # 默认查询限制数量
-      default-limit: 100
-      # 最大查询限制数量
-      max-limit: 1000
-      # 路径查询最大深度
-      max-path-depth: 5
-      # 查询超时时间（秒）
-      timeout-seconds: 30
-      # 是否启用查询缓存
-      cache-enabled: true
-      # 缓存过期时间（分钟）
-      cache-expire-minutes: 60
-
---- # MCP 模块配置
-app:
-  mcp:
-    client:
-      # 请求超时时间（秒）
-      request-timeout: 30
-      # 连接超时时间（秒）
-      connection-timeout: 10
-      # 最大重试次数
-      max-retries: 3

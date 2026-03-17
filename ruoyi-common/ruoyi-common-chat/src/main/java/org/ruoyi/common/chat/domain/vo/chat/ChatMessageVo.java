@@ -57,12 +57,6 @@ public class ChatMessageVo implements Serializable {
     private String role;
 
     /**
-     * 扣除金额
-     */
-    @ExcelProperty(value = "扣除金额")
-    private Long deductCost;
-
-    /**
      * 累计 Tokens
      */
     @ExcelProperty(value = "累计 Tokens")
@@ -74,12 +68,6 @@ public class ChatMessageVo implements Serializable {
     @ExcelProperty(value = "模型名称")
     private String modelName;
 
-    /**
-     * 计费类型（1-token计费，2-次数计费）
-     */
-    @ExcelProperty(value = "计费类型", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "1=-token计费，2-次数计费")
-    private String billingType;
 
     /**
      * 备注

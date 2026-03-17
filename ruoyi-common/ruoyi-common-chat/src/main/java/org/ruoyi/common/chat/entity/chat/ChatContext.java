@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.service.chat.IChatService;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -54,4 +55,9 @@ public class ChatContext {
      * 响应处理器
      */
     private StreamingChatResponseHandler handler;
+
+    /**
+     * 聊天服务实例
+     */
+    private IChatService chatService;
 }

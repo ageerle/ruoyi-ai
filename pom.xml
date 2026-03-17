@@ -59,6 +59,8 @@
         <langgraph4j.version>1.5.3</langgraph4j.version>
         <weaviate.version>1.19.6</weaviate.version>
         <dify.version>1.0.7</dify.version>
+        <!-- gRPC 版本 - 解决 Milvus SDK 依赖冲突 -->
+        <grpc.version>1.62.2</grpc.version>
         <!-- Apache Commons Compress - 用于POI处理ZIP格式 -->
         <commons-compress.version>1.27.1</commons-compress.version>
 
@@ -125,6 +127,15 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- gRPC BOM - 解决 Milvus SDK 依赖冲突，强制统一版本 -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -354,19 +365,7 @@
 
             <dependency>
                 <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-job</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-generator</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-demo</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -383,25 +382,11 @@
                 <version>${revision}</version>
             </dependency>
 
-            <!--  微信模块  -->
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-wechat</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
             <!--  AI流程编排模块  -->
             <dependency>
                 <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-aiflow</artifactId>
                 <version>${revision}</version>
-            </dependency>
-
-            <!-- 企业微信SDK -->
-            <dependency>
-                <groupId>com.github.binarywang</groupId>
-                <artifactId>weixin-java-cp</artifactId>
-                <version>${weixin-java-cp.version}</version>
             </dependency>
 
             <!-- Jackson XML -->
