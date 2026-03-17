@@ -17,6 +17,7 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.core.utils.file.ContentTypeUtil;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.json.utils.JsonUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
@@ -218,7 +219,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         OssClient storage = OssFactory.instance();
         UploadResult uploadResult;
         try {
-            uploadResult = storage.uploadSuffix(file.getBytes(), suffix, file.getContentType());
+            uploadResult = storage.uploadSuffix(file.getBytes(), suffix, ContentTypeUtil.getContentType(suffix, file.getContentType()));
         } catch (IOException e) {
             throw new ServiceException(e.getMessage());
         }
