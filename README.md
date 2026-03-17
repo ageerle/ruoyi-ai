@@ -70,6 +70,117 @@
 - **安全认证**：Sa-Token + JWT 双重保障
 
 
+## 🐳 Docker 部署
+
+本项目提供两种 Docker 部署方式：
+
+### 方式一：一键启动所有服务（推荐）
+
+使用 `docker-compose-all.yaml` 可以一键启动所有服务（包括后端、管理端、用户端及依赖服务）：
+
+```bash
+# 克隆仓库
+git clone https://github.com/ageerle/ruoyi-ai.git
+cd ruoyi-ai
+
+# 启动所有服务（从镜像仓库拉取预构建镜像）
+docker-compose -f docker-compose-all.yaml up -d
+
+# 查看服务状态
+docker-compose -f docker-compose-all.yaml ps
+
+# 访问服务
+# 管理端: http://localhost:25666 (admin / admin123)
+# 用户端: http://localhost:25137
+# 后端API: http://localhost:26039
+```
+
+### 方式二：分步部署（源码编译）
+
+如果您需要从源码构建后端服务，请按照以下步骤操作：
+
+#### 第一步：部署后端服务
+
+```bash
+# 进入后端项目目录
+cd ruoyi-ai
+
+# 启动后端服务（源码编译构建）
+docker-compose up -d --build
+
+# 等待后端服务启动完成
+docker-compose logs -f backend
+```
+
+#### 第二步：部署管理端
+
+```bash
+# 进入管理端项目目录
+cd ruoyi-admin
+
+# 构建并启动管理端
+docker-compose up -d --build
+
+# 访问管理端
+# 地址: http://localhost:5666
+```
+
+#### 第三步：部署用户端（可选）
+
+```bash
+# 进入用户端项目目录
+cd ruoyi-web
+
+# 构建并启动用户端
+docker-compose up -d --build
+
+# 访问用户端
+# 地址: http://localhost:5137
+```
+
+### 服务端口说明
+
+| 服务 | 一键启动端口 | 分步部署端口 | 说明 |
+|------|-------------|-------------|------|
+| 管理端 | 25666 | 5666 | 管理后台访问地址 |
+| 用户端 | 25137 | 5137 | 用户前端访问地址 |
+| 后端服务 | 26039 | 6039 | 后端 API 服务 |
+| MySQL | 23306 | 23306 | 数据库服务 |
+| Redis | 26379 | 6379 | 缓存服务 |
+| Weaviate | 28080 | 28080 | 向量数据库 |
+| MinIO API | 29000 | 9000 | 对象存储 API |
+| MinIO Console | 29090 | 9090 | 对象存储控制台 |
+
+### 镜像仓库
+
+所有镜像托管在阿里云容器镜像服务：
+
+```
+crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai
+```
+
+可用镜像：
+- `mysql:v3` - MySQL 数据库（包含初始化 SQL）
+- `redis:6.2` - Redis 缓存
+- `weaviate:1.30.0` - 向量数据库
+- `minio:latest` - 对象存储
+- `ruoyi-ai-backend:latest` - 后端服务
+- `ruoyi-ai-admin:latest` - 管理端前端
+- `ruoyi-ai-web:latest` - 用户端前端
+
+### 常用命令
+
+```bash
+# 停止所有服务
+docker-compose -f docker-compose-all.yaml down
+
+# 查看服务日志
+docker-compose -f docker-compose-all.yaml logs -f [服务名]
+
+# 重启某个服务
+docker-compose -f docker-compose-all.yaml restart [服务名]
+```
+
 ## 📚 使用文档
 
 想要深入了解安装部署、功能配置和二次开发？

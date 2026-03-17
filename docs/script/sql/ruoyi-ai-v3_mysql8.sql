@@ -16,6 +16,8 @@
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+-- 忽略所有错误，继续执行
+SET sql_mode = '';
 
 -- ----------------------------
 -- Table structure for chat_message
@@ -1903,6 +1905,7 @@ CREATE TABLE `sys_client`  (
 -- ----------------------------
 INSERT INTO `sys_client` VALUES (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 1800, 604800, '0', '0', 103, 1, '2026-02-03 05:14:53', 1, '2026-02-03 05:14:53');
 INSERT INTO `sys_client` VALUES (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 1800, 604800, '0', '0', 103, 1, '2026-02-03 05:14:53', 1, '2026-02-03 05:14:53');
+INSERT INTO `sys_client` VALUES (2033738530356912129, '0d4c873ff6146ecd7f38e2e45526ab1b', 'web', 'web123', 'sms,email,password', 'pc', 1800, 604800, '0', '0', 103, 1, '2026-03-17 10:53:45', 1, '2026-03-17 10:59:16');
 
 -- ----------------------------
 -- Table structure for sys_config

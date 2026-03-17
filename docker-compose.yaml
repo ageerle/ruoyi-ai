@@ -1,0 +1,144 @@
+# RuoYi-AI 一键启动后端服务
+# 使用方式: docker-compose up -d --build
+#
+# 包含服务:
+#   - MySQL 8.0 (数据库)
+#   - Redis 6.2 (缓存)
+#   - Weaviate (向量数据库)
+#   - MinIO (对象存储)
+#   - RuoYi-Backend (后端服务，源码编译)
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0.33
+    container_name: ruoyi-ai-mysql
+    restart: always
+    ports:
+      - "23306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ruoyi-ai-agent
+      TZ: Asia/Shanghai
+    volumes:
+      - ./docs/script/docker/mysql/init/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - ./docs/script/sql/ruoyi-ai-v3_mysql8.sql:/docker-entrypoint-initdb.d/ruoyi-ai-v3_mysql8.sql:ro
+      - mysql-data:/var/lib/mysql
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+      --skip-ssl
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - ruoyi-net
+
+  # Redis 缓存
+  redis:
+    image: redis:6.2
+    container_name: ruoyi-ai-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ruoyi-net
+
+  # Weaviate 向量数据库
+  weaviate:
+    image: semitechnologies/weaviate:1.30.0
+    container_name: ruoyi-ai-weaviate
+    restart: always
+    ports:
+      - "28080:8080"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: true
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none
+      ENABLE_MODULES: text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai
+      CLUSTER_HOSTNAME: node1
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    networks:
+      - ruoyi-net
+
+  # MinIO 对象存储
+  minio:
+    image: minio/minio
+    container_name: ruoyi-ai-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    environment:
+      MINIO_ROOT_USER: ruoyi
+      MINIO_ROOT_PASSWORD: ruoyi123
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9090"
+    networks:
+      - ruoyi-net
+
+  # RuoYi-AI 后端服务 (源码编译)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: ruoyi-ai-backend
+    restart: always
+    ports:
+      - "26039:6039"
+    environment:
+      TZ: Asia/Shanghai
+      # MySQL 配置
+      SPRING_DATASOURCE_DYNAMIC_PRIMARY: master
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_DRIVERCLASSNAME: com.mysql.cj.jdbc.Driver
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://mysql:3306/ruoyi-ai-agent?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: root
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: root
+      # Redis 配置
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_DATABASE: 0
+      # 日志配置
+      LOGGING_LEVEL_ORG_RUOYI: info
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: warn
+      SYS_UPLOAD_PATH: /ruoyi/upload   # 新增：对应 sys.upload.path
+    volumes:
+      - logs-data:/ruoyi/server/logs
+      - upload-data:/ruoyi/upload
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - ruoyi-net
+
+networks:
+  ruoyi-net:
+    driver: bridge
+
+# 数据卷 支持手动指定 空为默认值
+volumes:
+  mysql-data:
+  redis-data:
+  weaviate-data:
+  minio-data:
+  logs-data:
+  upload-data:

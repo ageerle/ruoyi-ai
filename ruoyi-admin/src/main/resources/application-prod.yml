@@ -268,4 +268,4 @@ justauth:
       client-secret: 1f7d08**********5b7**********29e
       redirect-uri: ${justauth.address}/social-callback?source=gitea
 
-AGENT_ALLOWED_TABLES: ""
+AGENT_ALLOWED_TABLES: "abtest_rule,abtest_project,agent_ban_log,agent_ban_logs,agent_install_sub_task,agent_install_sum_task,agent_install_task"
