@@ -1,0 +1,21 @@
+# 基于官方MySQL 8.0镜像构建自定义镜像
+# 构建命令: docker build -t registry.cn-hangzhou.aliyuncs.com/ruoyi-ai/mysql:v3 -f Dockerfile.mysql .
+FROM mysql:8.0.33
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+
+# 复制初始化脚本和SQL文件到镜像中
+COPY docs/script/docker/mysql/init/init-db.sh /docker-entrypoint-initdb.d/init-db.sh
+COPY docs/script/sql/ruoyi-ai-v3_mysql8.sql /docker-entrypoint-initdb.d/ruoyi-ai-v3_mysql8.sql
+
+# 设置脚本可执行权限
+RUN chmod +x /docker-entrypoint-initdb.d/init-db.sh
+
+# MySQL启动参数
+CMD ["--default-authentication-plugin=mysql_native_password", \
+     "--character-set-server=utf8mb4", \
+     "--collation-server=utf8mb4_general_ci", \
+     "--explicit_defaults_for_timestamp=true", \
+     "--lower_case_table_names=1", \
+     "--skip-ssl"]
