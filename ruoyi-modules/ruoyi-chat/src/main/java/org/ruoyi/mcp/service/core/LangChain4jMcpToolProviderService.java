@@ -85,7 +85,7 @@ public class LangChain4jMcpToolProviderService {
         }
 
         if (clients.isEmpty()) {
-            return McpToolProvider.builder().build();
+            return null;
         }
 
         return McpToolProvider.builder()
