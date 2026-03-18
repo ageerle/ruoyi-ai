@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
@@ -28,6 +29,9 @@ import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 @Component
 public class ExecuteSqlQueryTool implements BuiltinToolProvider {
 
+    @Value("${AGENT_DATASOURCE}")
+    private String agentDataSource;
+
     // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
     private DataSource getDataSource() {
         return SpringUtils.getBean(DataSource.class);
@@ -43,7 +47,7 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
     @Tool("Execute a SELECT SQL query and return the results. Example: SELECT * FROM sys_user")
     public String executeSql(String sql) {
         // 2. 手动推入数据源上下文
-        DynamicDataSourceContextHolder.push("agent");
+        DynamicDataSourceContextHolder.push(agentDataSource);
         if (sql == null || sql.trim().isEmpty()) {
             return "Error: SQL query cannot be empty";
         }

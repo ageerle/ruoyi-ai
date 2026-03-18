@@ -2,14 +2,18 @@ package org.ruoyi.agent.tool;
 
 import java.util.List;
 
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import org.ruoyi.agent.domain.TableStructure;
 import org.ruoyi.agent.manager.TableSchemaManager;
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import dev.langchain4j.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
+
+import javax.sql.DataSource;
 
 /**
  * 查询数据库所有表的 Tool
@@ -18,6 +22,14 @@ import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 @Slf4j
 @Component
 public class QueryAllTablesTool implements BuiltinToolProvider {
+
+    @Value("${AGENT_DATASOURCE}")
+    private String agentDataSource;
+
+    // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
+    private DataSource getDataSource() {
+        return SpringUtils.getBean(DataSource.class);
+    }
 
     // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
     private TableSchemaManager getTableSchemaManager() {
@@ -33,6 +45,10 @@ public class QueryAllTablesTool implements BuiltinToolProvider {
     @Tool("Query all tables in the database and return table names and basic information")
     public String queryAllTables() {
         try {
+            // 手动推入数据源上下文
+            DynamicDataSourceContextHolder.push(agentDataSource);
+            log.info("切换到数据源: {} ，查询所有表", agentDataSource);
+
             // 1. 从管理器获取所有允许的表结构信息（内部已包含初始化/缓存逻辑）
             List<TableStructure> tableSchemas = getTableSchemaManager().getAllowedTableSchemas();
 
@@ -61,6 +77,9 @@ public class QueryAllTablesTool implements BuiltinToolProvider {
         } catch (Exception e) {
             log.error("Error retrieving tables from cache", e);
             return "Error: " + e.getMessage();
+        } finally {
+            // 清除上下文，防止污染其他请求
+            DynamicDataSourceContextHolder.clear();
         }
     }
 

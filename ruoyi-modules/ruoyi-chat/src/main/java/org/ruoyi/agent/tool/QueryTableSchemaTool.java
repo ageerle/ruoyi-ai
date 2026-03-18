@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import javax.sql.DataSource;
 
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
@@ -19,6 +20,9 @@ import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 @Slf4j
 public class QueryTableSchemaTool implements BuiltinToolProvider {
 
+    @Value("${AGENT_DATASOURCE}")
+    private String agentDataSource;
+
     // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
     private DataSource getDataSource() {
         return SpringUtils.getBean(DataSource.class);
@@ -27,7 +31,7 @@ public class QueryTableSchemaTool implements BuiltinToolProvider {
     @Tool("Query the CREATE TABLE statement (DDL) for a specific table by table name")
     public String queryTableSchema(String tableName) {
         // 2. 手动推入数据源上下文
-        DynamicDataSourceContextHolder.push("agent");
+        DynamicDataSourceContextHolder.push(agentDataSource);
         if (tableName == null || tableName.trim().isEmpty()) {
             return "Error: Table name cannot be empty";
         }
