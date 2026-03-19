@@ -64,7 +64,8 @@ public class WorkflowMessageUtil {
             ChatRequest chatRequest = new ChatRequest();
             chatRequest.setSessionId(sessionId);
             WorkflowUtil workflowUtil = SpringUtils.getBean(WorkflowUtil.class);
-            workflowUtil.saveChatMessage(chatRequest, userId, message, RoleType.WORKFLOW.getName(), new ChatModelVo());
+            // todo 保存消息
+            //workflowUtil.saveChatMessage(chatRequest, userId, message, RoleType.WORKFLOW.getName(), new ChatModelVo());
         }
     }
 

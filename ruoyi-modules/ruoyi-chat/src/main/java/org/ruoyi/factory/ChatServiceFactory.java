@@ -1,6 +1,7 @@
-package org.ruoyi.common.chat.factory;
+package org.ruoyi.factory;
 
 import org.ruoyi.common.chat.service.chat.IChatService;
+import org.ruoyi.service.chat.AbstractChatService;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -18,13 +19,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class ChatServiceFactory implements ApplicationContextAware {
 
-    private final Map<String, IChatService> chatServiceMap = new ConcurrentHashMap<>();
+    private final Map<String, AbstractChatService> chatServiceMap = new ConcurrentHashMap<>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         // 初始化时收集所有IChatService的实现
-        Map<String, IChatService> serviceMap = applicationContext.getBeansOfType(IChatService.class);
-        for (IChatService service : serviceMap.values()) {
+        Map<String, AbstractChatService> serviceMap = applicationContext.getBeansOfType(AbstractChatService.class);
+        for (AbstractChatService service : serviceMap.values()) {
             if (service != null ) {
                 chatServiceMap.put(service.getProviderName(), service);
             }
@@ -35,8 +36,8 @@ public class ChatServiceFactory implements ApplicationContextAware {
     /**
      * 获取原始服务（不包装代理）
      */
-    public IChatService getOriginalService(String category) {
-        IChatService service = chatServiceMap.get(category);
+    public AbstractChatService getOriginalService(String category) {
+        AbstractChatService service = chatServiceMap.get(category);
         if (service == null) {
             throw new IllegalArgumentException("不支持的模型类别: " + category);
         }

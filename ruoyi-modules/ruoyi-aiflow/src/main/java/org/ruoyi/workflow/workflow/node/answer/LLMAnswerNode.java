@@ -46,13 +46,11 @@ public class LLMAnswerNode extends AbstractWfNode {
         // 调用LLM
         WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
         String modelName = nodeConfigObj.getModelName();
-        // 转换系统信息结构
-        List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
         // 获取节点模板提示词信息
         String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.LLM_RESPONSE.getValue());
         // 发送SSE驱动事件消息
         WorkflowMessageUtil.sendEmitterMessage(wfState.getSseEmitter(), node, nodeMessageTemplate);
-        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage, nodeMessageTemplate);
+        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, prompt, nodeMessageTemplate);
         return new NodeProcessResult();
     }
 }

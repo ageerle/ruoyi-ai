@@ -21,6 +21,11 @@
 
         <dependency>
             <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-sse</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-sensitive</artifactId>
         </dependency>
 

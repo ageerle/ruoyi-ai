@@ -1,16 +1,37 @@
 package org.ruoyi.service.chat.impl;
 
-import jakarta.servlet.http.HttpServletRequest;
+import cn.dev33.satoken.stp.StpUtil;
+import dev.langchain4j.data.message.*;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
-import org.ruoyi.common.chat.entity.chat.ChatContext;
-import org.ruoyi.service.chat.handler.ChatContextBuilder;
-import org.ruoyi.service.chat.handler.ChatHandler;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.enums.RoleType;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.common.chat.service.chat.IChatService;
+import org.ruoyi.common.satoken.utils.LoginHelper;
+import org.ruoyi.common.sse.core.SseEmitterManager;
+import org.ruoyi.common.sse.utils.SseMessageUtils;
+import org.ruoyi.domain.bo.vector.QueryVectorBo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+import org.ruoyi.factory.ChatServiceFactory;
+import org.ruoyi.service.chat.AbstractChatService;
+import org.ruoyi.service.chat.IChatMessageService;
+import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
+import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 聊天服务门面层
@@ -25,27 +46,324 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ChatServiceFacade {
+public class ChatServiceFacade implements IChatService {
 
-    private final ChatContextBuilder contextBuilder;
-    private final List<ChatHandler> handlers;
+    private static final Integer DEFAULT_MAX_MESSAGES = 20;
+
+    private final IChatModelService chatModelService;
+
+    private final ChatServiceFactory chatServiceFactory;
+
+    private final IKnowledgeInfoService knowledgeInfoService;
+
+    private final VectorStoreService vectorStoreService;
+
+    private final SseEmitterManager sseEmitterManager;
+
+    private final IChatMessageService chatMessageService;
+
+    /**
+     * 内存实例缓存，避免同一会话重复创建
+     * Key: sessionId, Value: MessageWindowChatMemory实例
+     */
+    private static final Map<Object, MessageWindowChatMemory> memoryCache = new ConcurrentHashMap<>();
 
     /**
      * 统一聊天入口 - SSE流式响应
      *
      * @param chatRequest 聊天请求
-     * @param request     HTTP请求对象
      * @return SseEmitter
      */
-    public SseEmitter sseChat(ChatRequest chatRequest, HttpServletRequest request) {
-        // 1. 构建对话上下文
-        ChatContext context = contextBuilder.build(chatRequest);
+    public SseEmitter sseChat(ChatRequest chatRequest) {
 
-        // 2. 路由到对应的处理器
-        return handlers.stream()
-            .filter(handler -> handler.supports(context))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("无可用对话处理器"))
-            .handle(context);
+        // 1. 根据模型名称查询完整配置
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+        if (chatModelVo == null) {
+            throw new IllegalArgumentException("模型不存在: " + chatRequest.getModel());
+        }
+
+        // 2. 构建上下文消息列表
+        List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
+
+        // 3. 路由服务提供商
+        String providerCode = chatModelVo.getProviderCode();
+        log.info("路由到服务提供商: {}, 模型: {}", providerCode, chatRequest.getModel());
+        AbstractChatService chatService = chatServiceFactory.getOriginalService(providerCode);
+        // 4. 具体的服务实现
+        Long userId = LoginHelper.getUserId();
+        String tokenValue = StpUtil.getTokenValue();
+        SseEmitter emitter = sseEmitterManager.connect(userId, tokenValue);
+
+        StreamingChatResponseHandler handler = createResponseHandler(userId, tokenValue,chatRequest);
+
+        // 保存用户消息
+        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
+
+        // 5. 发起对话
+        StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
+        streamingChatModel.chat(contextMessages, handler);
+        return emitter;
     }
+
+    /**
+     * 支持外部 handler 的对话接口（跨模块调用）
+     * 同时发送到 SSE 和外部 handler
+     *
+     * @param chatRequest     聊天请求
+     * @param externalHandler 外部响应处理器（可为 null）
+     */
+    @Override
+    public void chat(ChatRequest chatRequest, StreamingChatResponseHandler externalHandler) {
+        // 1. 根据模型名称查询完整配置
+        ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
+        if (chatModelVo == null) {
+            throw new IllegalArgumentException("模型不存在: " + chatRequest.getModel());
+        }
+
+        // 3. 路由服务提供商
+        String providerCode = chatModelVo.getProviderCode();
+        log.info("跨模块调用 - 路由到服务提供商: {}, 模型: {}", providerCode, chatRequest.getModel());
+        AbstractChatService chatService = chatServiceFactory.getOriginalService(providerCode);
+
+        // 4. 获取用户信息
+        Long userId = LoginHelper.getUserId();
+        String tokenValue = StpUtil.getTokenValue();
+
+        // 5. 建立 SSE 连接（用于前端监听）
+        sseEmitterManager.connect(userId, tokenValue);
+
+        // 保存用户消息
+        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
+
+        // 6. 创建组合 handler：同时发送到 SSE 和外部 handler
+        StreamingChatResponseHandler combinedHandler = createCombinedHandler(userId, tokenValue, externalHandler);
+
+        // 7. 发起对话
+        StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
+        streamingChatModel.chat(chatRequest.getContent(), combinedHandler);
+    }
+
+    /**
+     * 实现接口默认方法 - 不带 handler 的调用
+     */
+    @Override
+    public SseEmitter chat(ChatRequest chatRequest) {
+        return sseChat(chatRequest);
+    }
+
+
+    /**
+     * 创建或获取聊天内存实例（缓存机制）
+     * 同一个会话ID会返回同一个内存实例，避免重复创建和消息丢失
+     *
+     * @param memoryId 内存ID（会话ID）
+     * @return MessageWindowChatMemory实例
+     */
+    private MessageWindowChatMemory createChatMemory(Object memoryId) {
+        // 先从缓存中获取
+        return memoryCache.computeIfAbsent(memoryId, key -> {
+            try {
+                PersistentChatMemoryStore store = new PersistentChatMemoryStore(chatMessageService);
+                return MessageWindowChatMemory.builder()
+                    .id(memoryId)
+                    .maxMessages(DEFAULT_MAX_MESSAGES)
+                    .chatMemoryStore(store)
+                    .build();
+            } catch (Exception e) {
+                log.warn("创建聊天内存失败: {}", e.getMessage());
+                return null;
+            }
+        });
+    }
+
+
+    /**
+     * 构建上下文消息列表
+     *
+     * @param chatRequest 聊天请求
+     * @return 上下文消息列表
+     */
+    private List<ChatMessage> buildContextMessages(ChatRequest chatRequest) {
+        List<ChatMessage> messages  = new ArrayList<>();
+        // 构建用户消息
+        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
+        messages.add(userMessage);
+
+        // 从向量库查询相关历史消息
+        if (chatRequest.getKnowledgeId() != null) {
+            // 查询知识库信息
+            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
+            if (knowledgeInfoVo == null) {
+                log.warn("知识库信息不存在，kid: {}", chatRequest.getKnowledgeId());
+                return messages;
+            }
+
+            // 查询向量模型配置信息
+            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+            if (chatModel == null) {
+                log.warn("向量模型配置不存在，模型名称: {}", knowledgeInfoVo.getEmbeddingModel());
+                return messages;
+            }
+
+            // 构建向量查询参数
+            QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
+
+            // 获取向量查询结果
+            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
+            for (String prompt : nearestList) {
+                // 知识库内容作为系统上下文添加
+                messages.add( new AiMessage(prompt));
+            }
+        }
+
+        // 从数据库查询历史对话消息
+        if (chatRequest.getSessionId() != null) {
+            MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
+            if (memory != null) {
+                List<ChatMessage> historicalMessages = memory.messages();
+                if (historicalMessages != null && !historicalMessages.isEmpty()) {
+                    messages.addAll(historicalMessages);
+                    log.debug("已加载 {} 条历史消息用于会话 {}", historicalMessages.size(), chatRequest.getSessionId());
+                }
+            }
+        }
+
+        return messages;
+    }
+
+    /**
+     * 构建向量查询参数
+     */
+    private QueryVectorBo buildQueryVectorBo(ChatRequest chatRequest, KnowledgeInfoVo knowledgeInfoVo,
+                                             ChatModelVo chatModel) {
+        QueryVectorBo queryVectorBo = new QueryVectorBo();
+        queryVectorBo.setQuery(chatRequest.getContent());
+        queryVectorBo.setKid(chatRequest.getKnowledgeId());
+        queryVectorBo.setApiKey(chatModel.getApiKey());
+        queryVectorBo.setBaseUrl(chatModel.getApiHost());
+        queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
+        queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
+        queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
+        return queryVectorBo;
+    }
+
+    /**
+     * 创建标准的响应处理器
+     *
+     * @param userId      用户ID
+     * @param tokenValue  会话令牌
+     * @return 标准的流式响应处理器
+     */
+    protected StreamingChatResponseHandler createResponseHandler(Long userId, String tokenValue,ChatRequest chatRequest) {
+        return new StreamingChatResponseHandler() {
+
+            private final StringBuilder messageBuffer = new StringBuilder();
+
+            @SneakyThrows
+            @Override
+            public void onPartialResponse(String partialResponse) {
+                // 将消息片段追加到缓冲区
+                messageBuffer.append(partialResponse);
+
+                // 实时发送内容事件到客户端
+                SseMessageUtils.sendContent(userId, partialResponse);
+                log.debug("收到消息片段: {}",  partialResponse);
+            }
+
+            @Override
+            public void onCompleteResponse(ChatResponse completeResponse) {
+                try {
+                    // 发送完成事件
+                    SseMessageUtils.sendDone(userId);
+
+                    // 消息流完成，保存消息到数据库和内存
+                    String fullMessage = messageBuffer.toString();
+
+                    if (fullMessage.isEmpty()) {
+                          log.warn("接收到空消息");
+                    } else {
+                        // 保存助手回复消息
+                        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), fullMessage, RoleType.ASSISTANT.getName(), chatRequest.getModel());
+                    }
+
+                    // 关闭SSE连接
+                    SseMessageUtils.completeConnection(userId, tokenValue);
+                     log.info("消息结束，已保存到数据库");
+                } catch (Exception e) {
+                      log.error("完成响应时出错: {}", e.getMessage(), e);
+                }
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                // 发送错误事件
+                SseMessageUtils.sendError(userId, error.getMessage());
+                log.error("流式响应错误: {}", error.getMessage());
+            }
+        };
+    }
+
+    /**
+     * 创建组合响应处理器 - 同时发送到 SSE 和外部 handler
+     *
+     * @param userId          用户ID
+     * @param tokenValue      会话令牌
+     * @param externalHandler 外部响应处理器（可为 null）
+     * @return 组合的流式响应处理器
+     */
+    protected StreamingChatResponseHandler createCombinedHandler(Long userId, String tokenValue,
+                                                                  StreamingChatResponseHandler externalHandler) {
+        return new StreamingChatResponseHandler() {
+
+            private final StringBuilder messageBuffer = new StringBuilder();
+
+            @SneakyThrows
+            @Override
+            public void onPartialResponse(String partialResponse) {
+                // 1. 追加到缓冲区
+                messageBuffer.append(partialResponse);
+
+                // 2. 发送内容事件到 SSE（前端可通过 SSE 监听）
+                SseMessageUtils.sendContent(userId, partialResponse);
+
+                // 3. 转发给外部 handler（Workflow 等模块可处理）
+                if (externalHandler != null) {
+                    externalHandler.onPartialResponse(partialResponse);
+                }
+            }
+
+            @Override
+            public void onCompleteResponse(ChatResponse completeResponse) {
+                try {
+                    // 1. 发送完成事件
+                    SseMessageUtils.sendDone(userId);
+
+                    // 2. 关闭 SSE 连接
+                    SseMessageUtils.completeConnection(userId, tokenValue);
+
+                    // 3. 转发给外部 handler
+                    if (externalHandler != null) {
+                        externalHandler.onCompleteResponse(completeResponse);
+                    }
+                } catch (Exception e) {
+                    log.error("完成响应时出错: {}", e.getMessage(), e);
+                }
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                // 发送错误事件
+                SseMessageUtils.sendError(userId, error.getMessage());
+                log.error("流式响应错误: {}", error.getMessage(), error);
+
+                // 转发给外部 handler
+                if (externalHandler != null) {
+                    externalHandler.onError(error);
+                }
+            }
+        };
+    }
+
+
 }
+

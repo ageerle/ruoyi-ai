@@ -151,7 +151,6 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
 
             // 使用WorkflowUtil调用LLM（流式）
             WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
-            List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
 
             // 调用流式LLM
             String modelName = StringUtils.isNotBlank(config.getModelName()) ? config.getModelName() : "deepseek-chat";
@@ -161,7 +160,7 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
                 tempState,
                 tempNode,
                 modelName,
-                systemMessage,
+                prompt,
                 ""
             );
 

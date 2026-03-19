@@ -2,10 +2,9 @@ package org.ruoyi.service.chat.impl.memory;
 
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
-import org.ruoyi.common.chat.service.chatMessage.IChatMessageService;
-import org.ruoyi.common.core.utils.SpringUtils;
+import org.ruoyi.service.chat.IChatMessageService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,13 +17,11 @@ import java.util.List;
  * @date 2025/01/10
  */
 @Slf4j
+@RequiredArgsConstructor
 public class PersistentChatMemoryStore implements ChatMemoryStore {
 
     private final IChatMessageService chatMessageService;
 
-    public PersistentChatMemoryStore() {
-        this.chatMessageService = SpringUtils.getBean(IChatMessageService.class);
-    }
 
     /**
      * 根据会话ID获取历史消息
@@ -38,16 +35,8 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
             }
 
             Long sessionId = Long.parseLong(memoryId.toString());
-
             // 从数据库获取该会话的所有消息
-            List<ChatMessageDTO> dtoList = chatMessageService.getMessagesBySessionId(sessionId);
-
-            if (dtoList == null || dtoList.isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            // 转换为LangChain4j格式
-            return convertToLangChainMessages(dtoList);
+            return chatMessageService.getMessagesBySessionId(sessionId);
         } catch (Exception e) {
             log.error("获取会话 {} 的消息失败: {}", memoryId, e.getMessage(), e);
             return new ArrayList<>();
@@ -89,19 +78,5 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
         }
     }
 
-    /**
-     * 将ChatMessageDTO列表转换为LangChain4j的ChatMessage列表
-     */
-    private List<ChatMessage> convertToLangChainMessages(List<ChatMessageDTO> dtoList) {
-        List<ChatMessage> messages = new ArrayList<>();
-        for (ChatMessageDTO dto : dtoList) {
-            ChatMessage message = switch (dto.getRole()) {
-                case "system" -> dev.langchain4j.data.message.SystemMessage.from(dto.getContent());
-                case "assistant" -> dev.langchain4j.data.message.AiMessage.from(dto.getContent());
-                default -> dev.langchain4j.data.message.UserMessage.from(dto.getContent());
-            };
-            messages.add(message);
-        }
-        return messages;
-    }
+
 }

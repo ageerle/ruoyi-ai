@@ -2,9 +2,11 @@ package org.ruoyi.common.sse.core;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.redis.utils.RedisUtils;
+import org.ruoyi.common.sse.dto.SseEventDto;
 import org.ruoyi.common.sse.dto.SseMessageDto;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -65,7 +67,7 @@ public class SseEmitterManager {
         emitter.onCompletion(() -> {
             SseEmitter remove = emitters.remove(token);
             if (remove != null) {
-//                remove.complete();
+               remove.complete();
             }
         });
         emitter.onTimeout(() -> {
@@ -174,9 +176,11 @@ public class SseEmitterManager {
         if (MapUtil.isNotEmpty(emitters)) {
             for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
                 try {
+                    // 格式化为标准SSE JSON格式
+                    SseEventDto eventDto = SseEventDto.content(message);
                     entry.getValue().send(SseEmitter.event()
                         .name("message")
-                        .data(message));
+                        .data(JSONUtil.toJsonStr(eventDto)));
                 } catch (Exception e) {
                     SseEmitter remove = emitters.remove(entry.getKey());
                     if (remove != null) {
@@ -188,6 +192,33 @@ public class SseEmitterManager {
             USER_TOKEN_EMITTERS.remove(userId);
         }
     }
+
+    /**
+     * 向指定的用户会话发送结构化事件
+     *
+     * @param userId    要发送消息的用户id
+     * @param eventDto  SSE事件对象
+     */
+    public void sendEvent(Long userId, SseEventDto eventDto) {
+        Map<String, SseEmitter> emitters = USER_TOKEN_EMITTERS.get(userId);
+        if (MapUtil.isNotEmpty(emitters)) {
+            for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
+                try {
+                    entry.getValue().send(SseEmitter.event()
+                        .name(eventDto.getEvent())
+                        .data(JSONUtil.toJsonStr(eventDto)));
+                } catch (Exception e) {
+                    SseEmitter remove = emitters.remove(entry.getKey());
+                    if (remove != null) {
+                        remove.complete();
+                    }
+                }
+            }
+        } else {
+            USER_TOKEN_EMITTERS.remove(userId);
+        }
+    }
+
 
     /**
      * 本机全用户会话发送消息

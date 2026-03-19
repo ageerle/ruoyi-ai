@@ -30,8 +30,8 @@ public class ChatController {
      */
     @PostMapping("/send")
     @ResponseBody
-    public SseEmitter sseChat(@RequestBody @Valid ChatRequest chatRequest, HttpServletRequest request) {
-        return chatService.sseChat(chatRequest,request);
+    public SseEmitter sseChat(@RequestBody @Valid ChatRequest chatRequest) {
+        return chatService.sseChat(chatRequest);
     }
 
 }

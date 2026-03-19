@@ -5,8 +5,6 @@ import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.common.chat.entity.chat.ChatMessage;
-import org.ruoyi.common.excel.annotation.ExcelDictFormat;
-import org.ruoyi.common.excel.convert.ExcelDictConvert;
 
 import java.io.Serial;
 import java.io.Serializable;

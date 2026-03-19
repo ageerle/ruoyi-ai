@@ -1,10 +1,10 @@
 package org.ruoyi.service.chat.impl;
 
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
 import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
-import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
 import org.ruoyi.common.chat.domain.vo.chat.ChatMessageVo;
 import org.ruoyi.common.chat.entity.chat.ChatMessage;
-import org.ruoyi.common.chat.service.chatMessage.IChatMessageService;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -14,9 +14,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.service.chat.IChatMessageService;
 import org.springframework.stereotype.Service;
 import org.ruoyi.mapper.chat.ChatMessageMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -144,24 +146,26 @@ public class ChatMessageServiceImpl implements IChatMessageService {
      * @return 消息DTO列表
      */
     @Override
-    public List<ChatMessageDTO> getMessagesBySessionId(Long sessionId) {
+    public List<dev.langchain4j.data.message.ChatMessage> getMessagesBySessionId(Long sessionId) {
         if (sessionId == null) {
             return new java.util.ArrayList<>();
         }
 
+        List<dev.langchain4j.data.message.ChatMessage> chatMessageList = new ArrayList<>();
         ChatMessageBo bo = new ChatMessageBo();
         bo.setSessionId(sessionId);
         List<ChatMessageVo> voList = queryList(bo);
 
-        return voList.stream()
-                .map(vo -> {
-                    ChatMessageDTO dto = new ChatMessageDTO();
-                    dto.setRole(vo.getRole());
-                    dto.setContent(vo.getContent());
-                    return dto;
-                })
-                .collect(java.util.stream.Collectors.toList());
+        for (ChatMessageVo chatMessageVo : voList) {
+            switch (chatMessageVo.getRole()) {
+                case "user" -> chatMessageList.add(UserMessage.from(chatMessageVo.getContent()));
+                case "assistant" -> chatMessageList.add(AiMessage.from(chatMessageVo.getContent()));
+            }
+        }
+        return chatMessageList;
     }
+
+
 
     /**
      * 根据会话ID删除所有消息
@@ -179,5 +183,36 @@ public class ChatMessageServiceImpl implements IChatMessageService {
         LambdaQueryWrapper<ChatMessage> lqw = Wrappers.lambdaQuery();
         lqw.eq(ChatMessage::getSessionId, sessionId);
         return baseMapper.delete(lqw) > 0;
+    }
+
+    /**
+     * 保存聊天消息
+     *
+     * @param userId    用户ID
+     * @param sessionId 会话ID
+     * @param content   消息内容
+     * @param role      角色类型
+     * @param modelName 模型名称
+     */
+    @Override
+    public void saveChatMessage(Long userId, Long sessionId, String content, String role, String modelName) {
+        try {
+            if (userId == null) {
+                log.warn("缺少用户ID，无法保存消息");
+                return;
+            }
+
+            ChatMessageBo messageBo = new ChatMessageBo();
+            messageBo.setUserId(userId);
+            messageBo.setSessionId(sessionId);
+            messageBo.setContent(content);
+            messageBo.setRole(role);
+            messageBo.setModelName(modelName);
+
+            insertByBo(messageBo);
+            log.debug("保存聊天消息成功，角色: {}, 会话: {}", role, sessionId);
+        } catch (Exception e) {
+            log.error("保存聊天消息时出错: {}", e.getMessage(), e);
+        }
     }
 }

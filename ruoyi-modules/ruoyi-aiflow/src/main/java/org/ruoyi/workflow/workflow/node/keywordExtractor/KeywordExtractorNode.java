@@ -67,13 +67,12 @@ public class KeywordExtractorNode extends AbstractWfNode {
         // 调用 LLM 进行关键词提取
         WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
         String modelName = config.getModelName();
-        List<SystemMessage> systemMessage = List.of(new SystemMessage(prompt));
         // 获取节点模板提示词信息
         String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.KEYWORD_EXTRACTOR.getValue());
         // 发送SSE事件消息
         WorkflowMessageUtil.sendEmitterMessage(wfState.getSseEmitter(), node, nodeMessageTemplate);
         // 使用流式调用
-        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, systemMessage, nodeMessageTemplate);
+        workflowUtil.streamingInvokeLLM(wfState, state, node, modelName, prompt, nodeMessageTemplate);
         return new NodeProcessResult();
     }
 

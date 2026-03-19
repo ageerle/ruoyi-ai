@@ -1,7 +1,7 @@
-package org.ruoyi.common.chat.service.chatMessage;
+package org.ruoyi.service.chat;
 
+import dev.langchain4j.data.message.ChatMessage;
 import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
-import org.ruoyi.common.chat.domain.dto.ChatMessageDTO;
 import org.ruoyi.common.chat.domain.vo.chat.ChatMessageVo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -74,7 +74,7 @@ public interface IChatMessageService {
      * @param sessionId 会话ID
      * @return 消息DTO列表
      */
-    List<ChatMessageDTO> getMessagesBySessionId(Long sessionId);
+    List<ChatMessage> getMessagesBySessionId(Long sessionId);
 
     /**
      * 根据会话ID删除所有消息
@@ -84,4 +84,15 @@ public interface IChatMessageService {
      * @return 是否删除成功
      */
     Boolean deleteBySessionId(Long sessionId);
+
+    /**
+     * 保存聊天消息
+     *
+     * @param userId    用户ID
+     * @param sessionId 会话ID
+     * @param content   消息内容
+     * @param role      角色类型
+     * @param modelName 模型名称
+     */
+    void saveChatMessage(Long userId, Long sessionId, String content, String role, String modelName);
 }
