@@ -19,7 +19,7 @@
 
 ### 企业级AI助手平台
 
-*开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模型，提供先进的RAG技术和可视化流程编排能力*
+*开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模式、RAG技术和流程编排能力*
 
 **[English](README_EN.md)** | **[📖 使用文档](https://doc.pandarobot.chat)** |
 **[🚀 在线体验](https://web.pandarobot.chat)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
@@ -27,17 +27,15 @@
 </div>
 
 
-
-
 ## ✨ 核心亮点
 
-|     模块     | 现有能力 | 扩展方向                   |
-|:----------:|---|------------------------|
-|  **模型管理**  | 多模型接入(OpenAI/DeepSeek/通义/智谱)、多模态理解、Coze/DIFY/FastGPT平台集成 | 自动模式、容错机制、计费管理         |
-|  **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate)  + 文档解析        | 多模态、知识出处、知识图谱、重排序    |
-|  **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             | 工具插件市场、 |
-|  **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  | 更多节点类型                 |
-|  **多智能体**  | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型          | 智能体可配置                 |
+|     模块     | 现有能力 
+|:----------:|---
+|  **模型管理**  | 多模型接入(OpenAI/DeepSeek/通义/智谱)、多模态理解、Coze/DIFY/FastGPT平台集成 
+|  **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate)  + 文档解析        
+|  **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             
+|  **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
+|  **多智能体**  | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型          
 
 ## 🚀 快速体验
 
@@ -246,30 +244,6 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 </div>
 
 ---
-
-
-## 📺 视频教程
-
-<div align="center">
-
-<table>
-<tr>
-<td align="center">
-<img src="docs/image/dy.png" alt="微信二维码" width="200" height="200"><br>
-<strong>打开抖音扫一扫</strong><br>
-<em>获取免费视频教程</em>
-</td>
-<td align="center">
-<img src="docs/image/bibi.png" alt="QQ群二维码" width="200" height="200"><br>
-<strong>打开B站扫一扫</strong><br>
-<em>获取免费视频教程</em>
-</td>
-
-</tr>
-</table>
-
-</div>
-
 <div align="center">
 
 **[⭐ 点个Star支持一下](https://github.com/ageerle/ruoyi-ai)** • **[ Fork 开始贡献](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 English](README_EN.md)** • **[📖 查看完整文档](https://doc.pandarobot.chat)**
