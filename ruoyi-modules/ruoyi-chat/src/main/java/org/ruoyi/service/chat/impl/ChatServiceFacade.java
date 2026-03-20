@@ -1,25 +1,48 @@
 package org.ruoyi.service.chat.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import dev.langchain4j.agentic.AgenticServices;
+import dev.langchain4j.agentic.supervisor.SupervisorAgent;
+import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
+import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.data.message.*;
+import dev.langchain4j.mcp.McpToolProvider;
+import dev.langchain4j.mcp.client.DefaultMcpClient;
+import dev.langchain4j.mcp.client.McpClient;
+import dev.langchain4j.mcp.client.transport.McpTransport;
+import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.service.tool.ToolProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.agent.ChartGenerationAgent;
+import org.ruoyi.agent.SqlAgent;
+import org.ruoyi.agent.WebSearchAgent;
+import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
+import org.ruoyi.agent.tool.QueryAllTablesTool;
+import org.ruoyi.agent.tool.QueryTableSchemaTool;
+import org.ruoyi.common.chat.base.ThreadContext;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.dto.request.ReSumeRunner;
+import org.ruoyi.common.chat.domain.dto.request.WorkFlowRunner;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.service.chat.IChatService;
+import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
+import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
+import org.ruoyi.mcp.service.core.ToolProviderFactory;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
@@ -62,11 +85,17 @@ public class ChatServiceFacade implements IChatService {
 
     private final IChatMessageService chatMessageService;
 
+    private final IWorkFlowStarterService workFlowStarterService;
+
+    private final ToolProviderFactory toolProviderFactory;
+
     /**
      * 内存实例缓存，避免同一会话重复创建
      * Key: sessionId, Value: MessageWindowChatMemory实例
      */
     private static final Map<Object, MessageWindowChatMemory> memoryCache = new ConcurrentHashMap<>();
+
+
 
     /**
      * 统一聊天入口 - SSE流式响应
@@ -75,6 +104,11 @@ public class ChatServiceFacade implements IChatService {
      * @return SseEmitter
      */
     public SseEmitter sseChat(ChatRequest chatRequest) {
+
+        // 4. 具体的服务实现
+        Long userId = LoginHelper.getUserId();
+        String tokenValue = StpUtil.getTokenValue();
+        SseEmitter emitter = sseEmitterManager.connect(userId, tokenValue);
 
         // 1. 根据模型名称查询完整配置
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
@@ -85,14 +119,17 @@ public class ChatServiceFacade implements IChatService {
         // 2. 构建上下文消息列表
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
 
-        // 3. 路由服务提供商
+        // 3. 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
+        SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter);
+        if (specialResult != null) {
+            return specialResult;
+        }
+
+        // 4. 路由服务提供商
         String providerCode = chatModelVo.getProviderCode();
         log.info("路由到服务提供商: {}, 模型: {}", providerCode, chatRequest.getModel());
         AbstractChatService chatService = chatServiceFactory.getOriginalService(providerCode);
-        // 4. 具体的服务实现
-        Long userId = LoginHelper.getUserId();
-        String tokenValue = StpUtil.getTokenValue();
-        SseEmitter emitter = sseEmitterManager.connect(userId, tokenValue);
+
 
         StreamingChatResponseHandler handler = createResponseHandler(userId, tokenValue,chatRequest);
 
@@ -103,6 +140,131 @@ public class ChatServiceFacade implements IChatService {
         StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
         streamingChatModel.chat(contextMessages, handler);
         return emitter;
+    }
+
+    /**
+     * 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
+     *
+     * @param chatRequest      聊天请求
+     * @param contextMessages  上下文消息列表（可能被修改）
+     * @param chatModelVo      聊天模型配置
+     * @param emitter          SSE发射器
+     * @return 如果需要提前返回则返回SseEmitter，否则返回null
+     */
+    private SseEmitter handleSpecialChatModes(ChatRequest chatRequest, List<ChatMessage> contextMessages,
+                                              ChatModelVo chatModelVo, SseEmitter emitter) {
+        // 处理工作流对话
+        if (chatRequest.getEnableWorkFlow()) {
+            log.info("处理工作流对话,会话: {}", chatRequest.getSessionId());
+
+            WorkFlowRunner runner = chatRequest.getWorkFlowRunner();
+            if (ObjectUtils.isEmpty(runner)) {
+                log.warn("工作流参数为空");
+            }
+
+            return workFlowStarterService.streaming(
+                ThreadContext.getCurrentUser(),
+                runner.getUuid(),
+                runner.getInputs(),
+                chatRequest.getSessionId()
+            );
+        }
+
+        // 处理人机交互恢复
+        if (chatRequest.getIsResume()) {
+            log.info("处理人机交互恢复");
+
+            ReSumeRunner reSumeRunner = chatRequest.getReSumeRunner();
+            if (ObjectUtils.isEmpty(reSumeRunner)) {
+                log.warn("人机交互恢复参数为空");
+                return emitter;
+            }
+
+            workFlowStarterService.resumeFlow(
+                reSumeRunner.getRuntimeUuid(),
+                reSumeRunner.getFeedbackContent(),
+                emitter
+            );
+
+            return emitter;
+        }
+
+        // 处理思考模式
+        if (chatRequest.getEnableThinking()) {
+            handleThinkingMode(chatRequest, contextMessages, chatModelVo);
+        }
+
+        return null;
+    }
+
+    /**
+     * 处理思考模式
+     *
+     * @param chatRequest      聊天请求
+     * @param contextMessages  上下文消息列表
+     * @param chatModelVo      聊天模型配置
+     */
+    private void handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages, ChatModelVo chatModelVo) {
+        // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
+        McpTransport transport = new StdioMcpTransport.Builder()
+            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "bing-cn-mcp"))
+            .logEvents(true)
+            .build();
+
+        McpClient mcpClient = new DefaultMcpClient.Builder()
+            .transport(transport)
+            .build();
+
+        ToolProvider toolProvider = McpToolProvider.builder()
+            .mcpClients(List.of(mcpClient))
+            .build();
+
+        // 配置echarts MCP
+        McpTransport transport1 = new StdioMcpTransport.Builder()
+            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "mcp-echarts"))
+            .logEvents(true)
+            .build();
+
+        McpClient mcpClient1 = new DefaultMcpClient.Builder()
+            .transport(transport1)
+            .build();
+
+        ToolProvider toolProvider1 = McpToolProvider.builder()
+            .mcpClients(List.of(mcpClient1))
+            .build();
+
+        // 配置模型
+        OpenAiChatModel plannerModel = OpenAiChatModel.builder()
+            .baseUrl(chatModelVo.getApiHost())
+            .apiKey(chatModelVo.getApiKey())
+            .modelName(chatModelVo.getModelName())
+            .build();
+
+        // 构建各Agent
+        SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
+            .chatModel(plannerModel)
+            .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
+            .build();
+
+        WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
+            .chatModel(plannerModel)
+            .toolProvider(toolProvider)
+            .build();
+
+        ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
+            .chatModel(plannerModel)
+            .toolProvider(toolProvider1)
+            .build();
+
+        // 构建监督者Agent
+        SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
+            .chatModel(plannerModel)
+            .subAgents(sqlAgent, chartGenerationAgent)
+            .responseStrategy(SupervisorResponseStrategy.LAST)
+            .build();
+
+        String invoke = supervisor.invoke(chatRequest.getContent());
+        contextMessages.add(AiMessage.from(invoke));
     }
 
     /**
