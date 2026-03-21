@@ -228,9 +228,6 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
   算力和模型 API 服务
 - [优云智算](https://www.compshare.cn/?ytag=GPU_YY-gh_ruoyi) - 万卡RTX40系GPU+海内外主流模型API服务，秒级响应，按量计费，新客免费用。
 
-## 优秀开源项目及社区推荐
-- [imaiwork](https://gitee.com/tsinghua-open/imaiwork) - AI手机开源版，AI获客手机项目，基于无障碍模式，RPA，比豆包AI手机更强大。
-
 ## 💬 社区交流
 
 <div align="center">

@@ -32,14 +32,13 @@
 
 ## ✨ Core Features
 
-| Module | Current Capabilities | Extension Direction |
-|:---:|---|---|
-| **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu), multi-modal understanding, Coze/DIFY/FastGPT platform integration | Auto mode, fault tolerance |
-| **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate) + Knowledge Graph + Document parsing + Reranking | Audio/video parsing, knowledge source |
-| **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem | Tool plugin marketplace, toolAgent auto-loading |
-| **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model (with RAG) calls, email sending, manual review nodes | More node types |
-| **Multi-Agent** | Agent framework based on Langchain4j, Supervisor mode orchestration, supports multiple decision models | Configurable agents |
-| **AI Coding** | Intelligent code analysis, project scaffolding generation, Copilot assistant | Code generation optimization |
+| Module | Current Capabilities |
+|:---:|---|
+| **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu), multi-modal understanding, Coze/DIFY/FastGPT platform integration |
+| **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate) + Document parsing |
+| **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem |
+| **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model calls, email sending, manual review nodes |
+| **Multi-Agent** | Agent framework based on Langchain4j, Supervisor mode orchestration, supports multiple decision models |
 
 ## 🚀 Quick Start
 
@@ -59,7 +58,7 @@
 | 🛠️ Admin Panel | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
 
 ### Partner Projects
-| Project Name           | GitHub Repository                                             | Gitee Repository
+| Project Name           | GitHub Repository                                             | Gitee Repository |
 |----------------|-------------------------------------------------------|------------------------------------------------------|
 | element-plus-x | [element-plus-x](https://github.com/element-plus-x/Element-Plus-X)       | [element-plus-x](https://gitee.com/he-jiayue/element-plus-x)       |
 
@@ -72,11 +71,132 @@
 - **Security**: Sa-Token + JWT dual-layer security
 
 
+- **Document Processing**: PDF, Word, Excel parsing, intelligent image analysis
+- **Real-time Communication**: WebSocket real-time communication, SSE streaming response
+- **System Monitoring**: Comprehensive logging system, performance monitoring, service health checks
+
+## 🐳 Docker Deployment
+
+This project provides two Docker deployment methods:
+
+### Method 1: One-click Start All Services (Recommended)
+
+Use `docker-compose-all.yaml` to start all services at once (including backend, admin panel, user frontend, and dependencies):
+
+```bash
+# Clone the repository
+git clone https://github.com/ageerle/ruoyi-ai.git
+cd ruoyi-ai
+
+# Start all services (pull pre-built images from registry)
+docker-compose -f docker-compose-all.yaml up -d
+
+# Check service status
+docker-compose -f docker-compose-all.yaml ps
+
+# Access services
+# Admin Panel: http://localhost:25666 (admin / admin123)
+# User Frontend: http://localhost:25137
+# Backend API: http://localhost:26039
+```
+
+### Method 2: Step-by-step Deployment (Source Build)
+
+If you need to build backend services from source, follow these steps:
+
+#### Step 1: Deploy Backend Service
+
+```bash
+# Enter backend project directory
+cd ruoyi-ai
+
+# Start backend service (build from source)
+docker-compose up -d --build
+
+# Wait for backend service to start
+docker-compose logs -f backend
+```
+
+#### Step 2: Deploy Admin Panel
+
+```bash
+# Enter admin panel project directory
+cd ruoyi-admin
+
+# Build and start admin panel
+docker-compose up -d --build
+
+# Access admin panel
+# URL: http://localhost:5666
+```
+
+#### Step 3: Deploy User Frontend (Optional)
+
+```bash
+# Enter user frontend project directory
+cd ruoyi-web
+
+# Build and start user frontend
+docker-compose up -d --build
+
+# Access user frontend
+# URL: http://localhost:5137
+```
+
+### Service Ports
+
+| Service | One-click Port | Step-by-step Port | Description |
+|------|-------------|-------------|------|
+| Admin Panel | 25666 | 5666 | Admin backend access |
+| User Frontend | 25137 | 5137 | User frontend access |
+| Backend Service | 26039 | 6039 | Backend API service |
+| MySQL | 23306 | 23306 | Database service |
+| Redis | 26379 | 6379 | Cache service |
+| Weaviate | 28080 | 28080 | Vector database |
+| MinIO API | 29000 | 9000 | Object storage API |
+| MinIO Console | 29090 | 9090 | Object storage console |
+
+### Image Registry
+
+All images are hosted on Alibaba Cloud Container Registry:
+
+```
+crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai
+```
+
+Available images:
+- `mysql:v3` - MySQL database (includes initialization SQL)
+- `redis:6.2` - Redis cache
+- `weaviate:1.30.0` - Vector database
+- `minio:latest` - Object storage
+- `ruoyi-ai-backend:latest` - Backend service
+- `ruoyi-ai-admin:latest` - Admin frontend
+- `ruoyi-ai-web:latest` - User frontend
+
+### Common Commands
+
+```bash
+# Stop all services
+docker-compose -f docker-compose-all.yaml down
+
+# View service logs
+docker-compose -f docker-compose-all.yaml logs -f [service-name]
+
+# Restart a service
+docker-compose -f docker-compose-all.yaml restart [service-name]
+```
+
 ## 📚 Documentation
 
 Want to learn more about installation, deployment, configuration, and secondary development?
 
 **👉 [Complete Documentation](https://doc.pandarobot.chat)**
+
+Experiencing issues with knowledge base or RAG responses?
+
+**👉 [RAG Troubleshooting Guide](docs/troubleshooting/rag-failures.md)**
+
+---
 
 ## 🤝 Contributing
 
@@ -109,14 +229,13 @@ Thanks to the following excellent open-source projects for their support:
 - [PPIO Cloud](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - Provides cost-effective GPU computing and model API services
 - [Youyun Intelligent Computing](https://www.compshare.cn/?ytag=GPU_YY-gh_ruoyi) - Thousands of RTX40 series GPUs + mainstream models API services, second-level response, pay-per-use, free for new customers.
 
-## Outstanding Open-Source Projects and Community Recommendations
-- [imaiwork](https://gitee.com/tsinghua-open/imaiwork) - Open-source AI phone, AI customer acquisition phone project, based on accessibility mode and RPA, more powerful than Doubao AI phone.
 
 ## 💬 Community Chat
 
 <div align="center">
 
-**[📱 Join Telegram Group](https://t.me/+LqooQAc5HxRmYmE1)**
+**[📱 Join Telegram Group](
+https://t.me/+LqooQAc5HxRmYmE1)**
 
 </div>
 
