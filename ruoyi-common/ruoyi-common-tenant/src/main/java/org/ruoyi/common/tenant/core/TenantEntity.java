@@ -1,9 +1,8 @@
 package org.ruoyi.common.tenant.core;
 
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.ruoyi.core.domain.BaseEntity;
-
 
 /**
  * 租户基类

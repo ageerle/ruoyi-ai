@@ -4,10 +4,9 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.StrUtil;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.springframework.util.AntPathMatcher;
 
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -17,10 +16,15 @@ import java.util.stream.Collectors;
  *
  * @author Lion Li
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class StringUtils extends org.apache.commons.lang3.StringUtils {
 
     public static final String SEPARATOR = ",";
+
+    public static final String SLASH = "/";
+
+    @Deprecated
+    private StringUtils() {
+    }
 
     /**
      * 获取参数不为空值
@@ -256,13 +260,13 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
         if (s != null) {
             final int len = s.length();
             if (s.length() <= size) {
-                sb.append(String.valueOf(c).repeat(size - len));
+                sb.append(Convert.toStr(c).repeat(size - len));
                 sb.append(s);
             } else {
                 return s.substring(len - size, len);
             }
         } else {
-            sb.append(String.valueOf(c).repeat(Math.max(0, size)));
+            sb.append(Convert.toStr(c).repeat(Math.max(0, size)));
         }
         return sb.toString();
     }
@@ -312,10 +316,69 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
             return new ArrayList<>(0);
         }
         return StrUtil.split(str, separator)
-                .stream()
-                .filter(Objects::nonNull)
-                .map(mapper)
-                .collect(Collectors.toList());
+            .stream()
+            .filter(Objects::nonNull)
+            .map(mapper)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 不区分大小写检查 CharSequence 是否以指定的前缀开头。
+     *
+     * @param str     要检查的 CharSequence 可能为 null
+     * @param prefixs 要查找的前缀可能为 null
+     * @return 是否包含
+     */
+    public static boolean startWithAnyIgnoreCase(CharSequence str, CharSequence... prefixs) {
+        // 判断是否是以指定字符串开头
+        for (CharSequence prefix : prefixs) {
+            if (StringUtils.startsWithIgnoreCase(str, prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 将字符串从源字符集转换为目标字符集
+     *
+     * @param input       原始字符串
+     * @param fromCharset 源字符集
+     * @param toCharset   目标字符集
+     * @return 转换后的字符串
+     */
+    public static String convert(String input, Charset fromCharset, Charset toCharset) {
+        if (isBlank(input)) {
+            return input;
+        }
+        try {
+            // 从源字符集获取字节
+            byte[] bytes = input.getBytes(fromCharset);
+            // 使用目标字符集解码
+            return new String(bytes, toCharset);
+        } catch (Exception e) {
+            return input;
+        }
+    }
+    /**
+     * 将可迭代对象中的元素使用逗号拼接成字符串
+     *
+     * @param iterable 可迭代对象，如 List、Set 等
+     * @return 拼接后的字符串
+     */
+    public static String joinComma(Iterable<?> iterable) {
+        return StringUtils.join(iterable, SEPARATOR);
+    }
+
+    /**
+     * 将数组中的元素使用逗号拼接成字符串
+     *
+     * @param array 任意类型的数组
+     * @return 拼接后的字符串
+     */
+    public static String joinComma(Object[] array) {
+        return StringUtils.join(array, SEPARATOR);
     }
 
 }

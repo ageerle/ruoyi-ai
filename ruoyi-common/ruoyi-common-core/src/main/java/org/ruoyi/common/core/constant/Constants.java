@@ -65,32 +65,17 @@ public interface Constants {
     /**
      * 验证码有效期（分钟）
      */
-    Integer CAPTCHA_EXPIRATION = 30;
+    Integer CAPTCHA_EXPIRATION = 2;
 
     /**
-     * 文多多apiToken KEY
-     */
-    String WDD_TOKEN_KEY = "sys_chat:wdd_api_token:";
-
-    /**
-     * 文多多apiToken有效期（分钟）
-     */
-    Integer WDD_TOKEN_EXPIRATION = 60 * 2;
-
-    /**
-     * 令牌
-     */
-    String TOKEN = "token";
-
-    /**
-     * 顶级部门id
+     * 顶级父级id
      */
     Long TOP_PARENT_ID = 0L;
 
     /**
-     * 默认租户ID
-     **/
-    String TENANT_ID = "00000";
+     * 加密头
+     */
+    String ENCRYPT_HEADER = "ENC_";
 
 }
 

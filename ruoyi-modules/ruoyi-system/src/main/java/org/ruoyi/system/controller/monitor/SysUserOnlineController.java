@@ -10,17 +10,20 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.dto.UserOnlineDTO;
 import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.SysUserOnline;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 在线用户监控
@@ -42,28 +45,28 @@ public class SysUserOnlineController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo<SysUserOnline> list(String ipaddr, String userName) {
         // 获取所有未过期的 token
-        List<String> keys = StpUtil.searchTokenValue("", 0, -1, false);
+        Collection<String> keys = RedisUtils.keys(CacheConstants.ONLINE_TOKEN_KEY + "*");
         List<UserOnlineDTO> userOnlineDTOList = new ArrayList<>();
         for (String key : keys) {
             String token = StringUtils.substringAfterLast(key, ":");
             // 如果已经过期则跳过
-            if (StpUtil.stpLogic.getTokenActivityTimeoutByToken(token) < -1) {
+            if (StpUtil.stpLogic.getTokenActiveTimeoutByToken(token) < -1) {
                 continue;
             }
             userOnlineDTOList.add(RedisUtils.getCacheObject(CacheConstants.ONLINE_TOKEN_KEY + token));
         }
         if (StringUtils.isNotEmpty(ipaddr) && StringUtils.isNotEmpty(userName)) {
             userOnlineDTOList = StreamUtils.filter(userOnlineDTOList, userOnline ->
-                    StringUtils.equals(ipaddr, userOnline.getIpaddr()) &&
-                            StringUtils.equals(userName, userOnline.getUserName())
+                StringUtils.equals(ipaddr, userOnline.getIpaddr()) &&
+                    StringUtils.equals(userName, userOnline.getUserName())
             );
         } else if (StringUtils.isNotEmpty(ipaddr)) {
             userOnlineDTOList = StreamUtils.filter(userOnlineDTOList, userOnline ->
-                    StringUtils.equals(ipaddr, userOnline.getIpaddr())
+                StringUtils.equals(ipaddr, userOnline.getIpaddr())
             );
         } else if (StringUtils.isNotEmpty(userName)) {
             userOnlineDTOList = StreamUtils.filter(userOnlineDTOList, userOnline ->
-                    StringUtils.equals(userName, userOnline.getUserName())
+                StringUtils.equals(userName, userOnline.getUserName())
             );
         }
         Collections.reverse(userOnlineDTOList);
@@ -79,6 +82,7 @@ public class SysUserOnlineController extends BaseController {
      */
     @SaCheckPermission("monitor:online:forceLogout")
     @Log(title = "在线用户", businessType = BusinessType.FORCE)
+    @RepeatSubmit()
     @DeleteMapping("/{tokenId}")
     public R<Void> forceLogout(@PathVariable String tokenId) {
         try {
@@ -87,4 +91,44 @@ public class SysUserOnlineController extends BaseController {
         }
         return R.ok();
     }
+
+    /**
+     * 获取当前用户登录在线设备
+     */
+    @GetMapping()
+    public TableDataInfo<SysUserOnline> getInfo() {
+        // 获取指定账号 id 的 token 集合
+        List<String> tokenIds = StpUtil.getTokenValueListByLoginId(StpUtil.getLoginIdAsString());
+        List<UserOnlineDTO> userOnlineDTOList = tokenIds.stream()
+            .filter(token -> StpUtil.stpLogic.getTokenActiveTimeoutByToken(token) >= -1)
+            .map(token -> (UserOnlineDTO) RedisUtils.getCacheObject(CacheConstants.ONLINE_TOKEN_KEY + token))
+            .collect(Collectors.toList());
+        //复制和处理 SysUserOnline 对象列表
+        Collections.reverse(userOnlineDTOList);
+        userOnlineDTOList.removeAll(Collections.singleton(null));
+        List<SysUserOnline> userOnlineList = BeanUtil.copyToList(userOnlineDTOList, SysUserOnline.class);
+        return TableDataInfo.build(userOnlineList);
+    }
+
+    /**
+     * 强退当前在线设备
+     *
+     * @param tokenId token值
+     */
+    @Log(title = "在线设备", businessType = BusinessType.FORCE)
+    @RepeatSubmit()
+    @DeleteMapping("/myself/{tokenId}")
+    public R<Void> remove(@PathVariable("tokenId") String tokenId) {
+        try {
+            // 获取指定账号 id 的 token 集合
+            List<String> keys = StpUtil.getTokenValueListByLoginId(StpUtil.getLoginIdAsString());
+            keys.stream()
+                .filter(key -> key.equals(tokenId))
+                .findFirst()
+                .ifPresent(key -> StpUtil.kickoutByTokenValue(tokenId));
+        } catch (NotLoginException ignored) {
+        }
+        return R.ok();
+    }
+
 }

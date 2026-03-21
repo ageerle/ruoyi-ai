@@ -1,17 +1,19 @@
 package org.ruoyi.system.controller.monitor;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.lock.annotation.Lock4j;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.ruoyi.common.core.constant.GlobalConstants;
+import org.ruoyi.common.core.constant.CacheConstants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.excel.utils.ExcelUtil;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.redis.utils.RedisUtils;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysLogininforBo;
 import org.ruoyi.system.domain.vo.SysLogininforVo;
 import org.ruoyi.system.service.ISysLogininforService;
@@ -55,7 +57,6 @@ public class SysLogininforController extends BaseController {
 
     /**
      * 批量删除登录日志
-     *
      * @param infoIds 日志ids
      */
     @SaCheckPermission("monitor:logininfor:remove")
@@ -70,6 +71,7 @@ public class SysLogininforController extends BaseController {
      */
     @SaCheckPermission("monitor:logininfor:remove")
     @Log(title = "登录日志", businessType = BusinessType.CLEAN)
+    @Lock4j
     @DeleteMapping("/clean")
     public R<Void> clean() {
         logininforService.cleanLogininfor();
@@ -78,9 +80,10 @@ public class SysLogininforController extends BaseController {
 
     @SaCheckPermission("monitor:logininfor:unlock")
     @Log(title = "账户解锁", businessType = BusinessType.OTHER)
+    @RepeatSubmit()
     @GetMapping("/unlock/{userName}")
     public R<Void> unlock(@PathVariable("userName") String userName) {
-        String loginName = GlobalConstants.PWD_ERR_CNT_KEY + userName;
+        String loginName = CacheConstants.PWD_ERR_CNT_KEY + userName;
         if (RedisUtils.hasKey(loginName)) {
             RedisUtils.deleteObject(loginName);
         }

@@ -38,4 +38,10 @@ public @interface RateLimiter {
      * 提示消息 支持国际化 格式为 {code}
      */
     String message() default "{rate.limiter.message}";
+
+    /**
+     * 限流策略超时时间 默认一天(策略存活时间 会清除已存在的策略数据)
+     */
+    int timeout() default 86400;
+
 }

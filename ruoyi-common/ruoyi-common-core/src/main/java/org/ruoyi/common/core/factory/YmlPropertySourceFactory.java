@@ -1,6 +1,5 @@
 package org.ruoyi.common.core.factory;
 
-
 import org.ruoyi.common.core.utils.StringUtils;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.core.env.PropertiesPropertySource;

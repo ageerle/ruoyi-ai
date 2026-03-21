@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.ruoyi</groupId>
         <artifactId>ruoyi-modules</artifactId>
         <version>${revision}</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -43,11 +42,48 @@
             <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
         <!--velocity代码生成使用模板 -->
         <dependency>
             <groupId>org.apache.velocity</groupId>
             <artifactId>velocity-engine-core</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.anyline</groupId>
+            <artifactId>anyline-environment-spring-data-jdbc</artifactId>
+            <version>${anyline.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.anyline</groupId>
+            <artifactId>anyline-data-jdbc-mysql</artifactId>
+            <version>${anyline.version}</version>
+        </dependency>
+
+        <!-- anyline支持100+种类型数据库 添加对应的jdbc依赖与anyline对应数据库依赖包即可 -->
+<!--        <dependency>-->
+<!--            <groupId>org.anyline</groupId>-->
+<!--            <artifactId>anyline-data-jdbc-oracle</artifactId>-->
+<!--            <version>${anyline.version}</version>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>org.anyline</groupId>-->
+<!--            <artifactId>anyline-data-jdbc-postgresql</artifactId>-->
+<!--            <version>${anyline.version}</version>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>org.anyline</groupId>-->
+<!--            <artifactId>anyline-data-jdbc-mssql</artifactId>-->
+<!--            <version>${anyline.version}</version>-->
+<!--        </dependency>-->
+
     </dependencies>
 
 </project>

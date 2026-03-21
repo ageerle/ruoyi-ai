@@ -1,0 +1,63 @@
+import request from '@/utils/request';
+import { AxiosPromise } from 'axios';
+import { ${BusinessName}VO, ${BusinessName}Form, ${BusinessName}Query } from '@/api/${moduleName}/${businessName}/types';
+
+/**
+ * 查询${functionName}列表
+ * @param query
+ * @returns {*}
+ */
+
+export const list${BusinessName} = (query?: ${BusinessName}Query): AxiosPromise<${BusinessName}VO[]> => {
+  return request({
+    url: '/${moduleName}/${businessName}/list',
+    method: 'get',
+    params: query
+  });
+};
+
+/**
+ * 查询${functionName}详细
+ * @param ${pkColumn.javaField}
+ */
+export const get${BusinessName} = (${pkColumn.javaField}: string | number): AxiosPromise<${BusinessName}VO> => {
+  return request({
+    url: '/${moduleName}/${businessName}/' + ${pkColumn.javaField},
+    method: 'get'
+  });
+};
+
+/**
+ * 新增${functionName}
+ * @param data
+ */
+export const add${BusinessName} = (data: ${BusinessName}Form) => {
+  return request({
+    url: '/${moduleName}/${businessName}',
+    method: 'post',
+    data: data
+  });
+};
+
+/**
+ * 修改${functionName}
+ * @param data
+ */
+export const update${BusinessName} = (data: ${BusinessName}Form) => {
+  return request({
+    url: '/${moduleName}/${businessName}',
+    method: 'put',
+    data: data
+  });
+};
+
+/**
+ * 删除${functionName}
+ * @param ${pkColumn.javaField}
+ */
+export const del${BusinessName} = (${pkColumn.javaField}: string | number | Array<string | number>) => {
+  return request({
+    url: '/${moduleName}/${businessName}/' + ${pkColumn.javaField},
+    method: 'delete'
+  });
+};

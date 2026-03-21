@@ -22,4 +22,9 @@ public interface CacheConstants {
      */
     String SYS_DICT_KEY = "sys_dict:";
 
+    /**
+     * 登录账户密码错误次数 redis key
+     */
+    String PWD_ERR_CNT_KEY = "pwd_err_cnt:";
+
 }

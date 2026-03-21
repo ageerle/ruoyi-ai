@@ -1,84 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.ruoyi</groupId>
         <artifactId>ruoyi-modules</artifactId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>jar</packaging>
     <artifactId>ruoyi-workflow</artifactId>
 
     <description>
         工作流模块
     </description>
 
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <dependencies>
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-workflow-api</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-system-api</artifactId>
+            <artifactId>ruoyi-common-sse</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
-            <version>4.4.0</version>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-mail</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>${springdoc.version}</version>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-sms</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>com.talanlabs</groupId>
-            <artifactId>avatar-generator</artifactId>
-            <version>1.1.0</version>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>com.talanlabs</groupId>
-            <artifactId>avatar-generator-cat</artifactId>
-            <version>1.1.0</version>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-excel</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.dromara.warm</groupId>
+            <artifactId>warm-flow-mybatis-plus-sb3-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.dromara.warm</groupId>
+            <artifactId>warm-flow-plugin-ui-sb-web</artifactId>
+            <version>1.8.2</version>
+        </dependency>
     </dependencies>
 
 </project>
+

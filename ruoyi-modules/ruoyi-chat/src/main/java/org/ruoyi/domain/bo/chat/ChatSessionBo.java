@@ -1,0 +1,54 @@
+package org.ruoyi.domain.bo.chat;
+
+import org.ruoyi.common.core.validate.EditGroup;
+import org.ruoyi.domain.entity.chat.ChatSession;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import jakarta.validation.constraints.*;
+
+/**
+ * 会话管理业务对象 chat_session
+ *
+ * @author ageerle
+ * @date 2025-12-30
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@AutoMapper(target = ChatSession.class, reverseConvertGenerate = false)
+public class ChatSessionBo extends BaseEntity {
+
+    /**
+     * 主键
+     */
+    @NotNull(message = "主键不能为空", groups = { EditGroup.class })
+    private Long id;
+
+    /**
+     * 用户id
+     */
+    private Long userId;
+
+    /**
+     * 会话标题
+     */
+    private String sessionTitle;
+
+    /**
+     * 会话内容
+     */
+    private String sessionContent;
+
+    /**
+     * 备注
+     */
+    private String remark;
+
+    /**
+     * 会话ID
+     */
+    private String conversationId;
+
+
+}

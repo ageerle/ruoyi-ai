@@ -1,9 +1,11 @@
 package org.ruoyi.common.encrypt.interceptor;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.executor.resultset.ResultSetHandler;
 import org.apache.ibatis.plugin.*;
 import org.ruoyi.common.core.utils.StringUtils;
@@ -26,9 +28,9 @@ import java.util.*;
  */
 @Slf4j
 @Intercepts({@Signature(
-        type = ResultSetHandler.class,
-        method = "handleResultSets",
-        args = {Statement.class})
+    type = ResultSetHandler.class,
+    method = "handleResultSets",
+    args = {Statement.class})
 })
 @AllArgsConstructor
 public class MybatisDecryptInterceptor implements Interceptor {
@@ -38,12 +40,23 @@ public class MybatisDecryptInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
+        // 开始进行参数解密
+        ResultSetHandler resultSetHandler = (ResultSetHandler) invocation.getTarget();
+        Field parameterHandlerField = resultSetHandler.getClass().getDeclaredField("parameterHandler");
+        parameterHandlerField.setAccessible(true);
+        Object target = parameterHandlerField.get(resultSetHandler);
+        if (target instanceof ParameterHandler parameterHandler) {
+            Object parameterObject = parameterHandler.getParameterObject();
+            if (ObjectUtil.isNotNull(parameterObject) && !(parameterObject instanceof String)) {
+                this.decryptHandler(parameterObject);
+            }
+        }
         // 获取执行mysql执行结果
         Object result = invocation.proceed();
         if (result == null) {
             return null;
         }
-        decryptHandler(result);
+        this.decryptHandler(result);
         return result;
     }
 
@@ -61,7 +74,7 @@ public class MybatisDecryptInterceptor implements Interceptor {
             return;
         }
         if (sourceObject instanceof List<?> list) {
-            if (CollUtil.isEmpty(list)) {
+            if(CollUtil.isEmpty(list)) {
                 return;
             }
             // 判断第一个元素是否含有注解。如果没有直接返回，提高效率
@@ -72,10 +85,14 @@ public class MybatisDecryptInterceptor implements Interceptor {
             list.forEach(this::decryptHandler);
             return;
         }
+        // 不在缓存中的类,就是没有加密注解的类(当然也有可能是typeAliasesPackage写错)
         Set<Field> fields = encryptorManager.getFieldCache(sourceObject.getClass());
+        if(ObjectUtil.isNull(fields)){
+            return;
+        }
         try {
             for (Field field : fields) {
-                field.set(sourceObject, this.decryptField(String.valueOf(field.get(sourceObject)), field));
+                field.set(sourceObject, this.decryptField(Convert.toStr(field.get(sourceObject)), field));
             }
         } catch (Exception e) {
             log.error("处理解密字段时出错", e);

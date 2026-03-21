@@ -2,10 +2,10 @@ package ${packageName}.service;
 
 import ${packageName}.domain.vo.${ClassName}Vo;
 import ${packageName}.domain.bo.${ClassName}Bo;
-    #if($table.crud || $table.sub)
-    import org.ruoyi.core.page.TableDataInfo;
-    import org.ruoyi.core.page.PageQuery;
-    #end
+#if($table.crud)
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+#end
 
 import java.util.Collection;
 import java.util.List;
@@ -16,37 +16,57 @@ import java.util.List;
  * @author ${author}
  * @date ${datetime}
  */
-public interface ${ClassName}Service {
+public interface I${ClassName}Service {
 
     /**
      * 查询${functionName}
+     *
+     * @param ${pkColumn.javaField} 主键
+     * @return ${functionName}
      */
-        ${ClassName}Vo queryById(${pkColumn.javaType} ${pkColumn.javaField});
+    ${ClassName}Vo queryById(${pkColumn.javaType} ${pkColumn.javaField});
 
-    #if($table.crud || $table.sub)
-        /**
-         * 查询${functionName}列表
-         */
-        TableDataInfo<${ClassName}Vo> queryPageList(${ClassName}Bo bo, PageQuery pageQuery);
-    #end
+#if($table.crud)
+    /**
+     * 分页查询${functionName}列表
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return ${functionName}分页列表
+     */
+    TableDataInfo<${ClassName}Vo> queryPageList(${ClassName}Bo bo, PageQuery pageQuery);
+#end
 
     /**
-     * 查询${functionName}列表
+     * 查询符合条件的${functionName}列表
+     *
+     * @param bo 查询条件
+     * @return ${functionName}列表
      */
     List<${ClassName}Vo> queryList(${ClassName}Bo bo);
 
     /**
      * 新增${functionName}
+     *
+     * @param bo ${functionName}
+     * @return 是否新增成功
      */
     Boolean insertByBo(${ClassName}Bo bo);
 
     /**
      * 修改${functionName}
+     *
+     * @param bo ${functionName}
+     * @return 是否修改成功
      */
     Boolean updateByBo(${ClassName}Bo bo);
 
     /**
      * 校验并批量删除${functionName}信息
+     *
+     * @param ids     待删除的主键集合
+     * @param isValid 是否进行有效性校验
+     * @return 是否删除成功
      */
     Boolean deleteWithValidByIds(Collection<${pkColumn.javaType}> ids, Boolean isValid);
 }

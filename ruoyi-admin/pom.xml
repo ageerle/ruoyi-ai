@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>ruoyi-ai</artifactId>
         <groupId>org.ruoyi</groupId>
         <version>${revision}</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -24,22 +23,46 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
-        <!-- Oracle -->
+<!--        &lt;!&ndash; mp支持的数据库均支持 只需要增加对应的jdbc依赖即可 &ndash;&gt;-->
+<!--        &lt;!&ndash; Oracle &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.oracle.database.jdbc</groupId>-->
+<!--            <artifactId>ojdbc8</artifactId>-->
+<!--        </dependency>-->
+<!--        &lt;!&ndash; 兼容oracle低版本 &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.oracle.database.nls</groupId>-->
+<!--            <artifactId>orai18n</artifactId>-->
+<!--        </dependency>-->
+<!--        &lt;!&ndash; PostgreSql &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.postgresql</groupId>-->
+<!--            <artifactId>postgresql</artifactId>-->
+<!--        </dependency>-->
+<!--        &lt;!&ndash; SqlServer &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.microsoft.sqlserver</groupId>-->
+<!--            <artifactId>mssql-jdbc</artifactId>-->
+<!--        </dependency>-->
+
         <dependency>
-            <groupId>com.oracle.database.jdbc</groupId>
-            <artifactId>ojdbc8</artifactId>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
-        <!-- PostgreSql -->
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-social</artifactId>
         </dependency>
 
-        <!-- SqlServer -->
         <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-ratelimiter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-mail</artifactId>
         </dependency>
 
         <dependency>
@@ -47,30 +70,52 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-chat</artifactId>
-        </dependency>
-
+        <!-- 代码生成-->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-generator</artifactId>
         </dependency>
 
-        <!-- 知识图谱模块 -->
         <dependency>
             <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-graph</artifactId>
+            <artifactId>ruoyi-chat</artifactId>
         </dependency>
+
+        <!--  工作流模块  -->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-workflow</artifactId>
         </dependency>
 
+        <!--  AI流程编排模块  -->
         <dependency>
             <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-aihuman</artifactId>
+            <artifactId>ruoyi-aiflow</artifactId>
         </dependency>
+
+
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- skywalking 整合 logback -->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.skywalking</groupId>-->
+<!--            <artifactId>apm-toolkit-logback-1.x</artifactId>-->
+<!--            <version>${与你的agent探针版本保持一致}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.skywalking</groupId>-->
+<!--            <artifactId>apm-toolkit-trace</artifactId>-->
+<!--            <version>${与你的agent探针版本保持一致}</version>-->
+<!--        </dependency>-->
 
     </dependencies>
 

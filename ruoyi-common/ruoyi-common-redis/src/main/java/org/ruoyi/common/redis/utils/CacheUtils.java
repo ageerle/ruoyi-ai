@@ -2,34 +2,20 @@ package org.ruoyi.common.redis.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.redisson.api.RMap;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-import java.util.Set;
-
 /**
- * 缓存操作工具类 {@link }
+ * 缓存操作工具类
  *
  * @author Michelle.Chung
- * @date 2022/8/13
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings(value = {"unchecked"})
 public class CacheUtils {
 
     private static final CacheManager CACHE_MANAGER = SpringUtils.getBean(CacheManager.class);
-
-    /**
-     * 获取缓存组内所有的KEY
-     *
-     * @param cacheNames 缓存组名称
-     */
-    public static Set<Object> keys(String cacheNames) {
-        RMap<Object, Object> rmap = (RMap<Object, Object>) CACHE_MANAGER.getCache(cacheNames).getNativeCache();
-        return rmap.keySet();
-    }
 
     /**
      * 获取缓存值

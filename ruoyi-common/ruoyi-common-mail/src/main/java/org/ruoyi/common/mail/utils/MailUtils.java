@@ -5,6 +5,9 @@ import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.CharUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.mail.JakartaMail;
+import cn.hutool.extra.mail.JakartaUserPassAuthenticator;
+import cn.hutool.extra.mail.MailAccount;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Session;
 import lombok.AccessLevel;
@@ -17,7 +20,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Map.Entry;
 
 /**
  * 邮件工具类
@@ -385,11 +388,11 @@ public class MailUtils {
     public static Session getSession(MailAccount mailAccount, boolean isSingleton) {
         Authenticator authenticator = null;
         if (mailAccount.isAuth()) {
-            authenticator = new UserPassAuthenticator(mailAccount.getUser(), mailAccount.getPass());
+            authenticator = new JakartaUserPassAuthenticator(mailAccount.getUser(), mailAccount.getPass());
         }
 
         return isSingleton ? Session.getDefaultInstance(mailAccount.getSmtpProps(), authenticator) //
-                : Session.getInstance(mailAccount.getSmtpProps(), authenticator);
+            : Session.getInstance(mailAccount.getSmtpProps(), authenticator);
     }
 
     // ------------------------------------------------------------------------------------------------------------------------ Private method start
@@ -412,7 +415,7 @@ public class MailUtils {
      */
     private static String send(MailAccount mailAccount, boolean useGlobalSession, Collection<String> tos, Collection<String> ccs, Collection<String> bccs, String subject, String content,
                                Map<String, InputStream> imageMap, boolean isHtml, File... files) {
-        final Mail mail = Mail.create(mailAccount).setUseGlobalSession(useGlobalSession);
+        final JakartaMail mail = JakartaMail.create(mailAccount).setUseGlobalSession(useGlobalSession);
 
         // 可选抄送人
         if (CollUtil.isNotEmpty(ccs)) {
@@ -431,7 +434,7 @@ public class MailUtils {
 
         // 图片
         if (MapUtil.isNotEmpty(imageMap)) {
-            for (Map.Entry<String, InputStream> entry : imageMap.entrySet()) {
+            for (Entry<String, InputStream> entry : imageMap.entrySet()) {
                 mail.addImage(entry.getKey(), entry.getValue());
                 // 关闭流
                 IoUtil.close(entry.getValue());
@@ -462,7 +465,5 @@ public class MailUtils {
         }
         return result;
     }
-
     // ------------------------------------------------------------------------------------------------------------------------ Private method end
-
 }

@@ -1,21 +1,21 @@
 package ${packageName}.service.impl;
 
 import org.ruoyi.common.core.utils.MapstructUtils;
-    #if($table.crud || $table.sub)
-    import org.ruoyi.core.page.TableDataInfo;
-    import org.ruoyi.core.page.PageQuery;
-    import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-    #end
+    #if($table.crud)
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+#end
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ${packageName}.domain.bo.${ClassName}Bo;
 import ${packageName}.domain.vo.${ClassName}Vo;
 import ${packageName}.domain.${ClassName};
 import ${packageName}.mapper.${ClassName}Mapper;
-import ${packageName}.service.${ClassName}Service;
-import org.ruoyi.common.core.utils.StringUtils;
+import ${packageName}.service.I${ClassName}Service;
 
 import java.util.List;
 import java.util.Map;
@@ -27,34 +27,45 @@ import java.util.Collection;
  * @author ${author}
  * @date ${datetime}
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
-public class ${ClassName}ServiceImpl implements ${ClassName}Service {
+public class ${ClassName}ServiceImpl implements I${ClassName}Service {
 
     private final ${ClassName}Mapper baseMapper;
 
     /**
      * 查询${functionName}
+     *
+     * @param ${pkColumn.javaField} 主键
+     * @return ${functionName}
      */
     @Override
-    public ${ClassName}Vo queryById(${pkColumn.javaType} ${pkColumn.javaField}) {
+    public ${ClassName}Vo queryById(${pkColumn.javaType} ${pkColumn.javaField}){
         return baseMapper.selectVoById(${pkColumn.javaField});
     }
 
-    #if($table.crud || $table.sub)
-        /**
-         * 查询${functionName}列表
-         */
-        @Override
-        public TableDataInfo<${ClassName}Vo> queryPageList(${ClassName}Bo bo, PageQuery pageQuery) {
-            LambdaQueryWrapper<${ClassName}> lqw = buildQueryWrapper(bo);
-            Page<${ClassName}Vo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-            return TableDataInfo.build(result);
-        }
-    #end
+#if($table.crud)
+    /**
+     * 分页查询${functionName}列表
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return ${functionName}分页列表
+     */
+    @Override
+    public TableDataInfo<${ClassName}Vo> queryPageList(${ClassName}Bo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<${ClassName}> lqw = buildQueryWrapper(bo);
+        Page<${ClassName}Vo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
+    }
+#end
 
     /**
-     * 查询${functionName}列表
+     * 查询符合条件的${functionName}列表
+     *
+     * @param bo 查询条件
+     * @return ${functionName}列表
      */
     @Override
     public List<${ClassName}Vo> queryList(${ClassName}Bo bo) {
@@ -63,40 +74,48 @@ public class ${ClassName}ServiceImpl implements ${ClassName}Service {
     }
 
     private LambdaQueryWrapper<${ClassName}> buildQueryWrapper(${ClassName}Bo bo) {
+        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<${ClassName}> lqw = Wrappers.lambdaQuery();
-        #foreach($column in $columns)
-            #if($column.query)
-                #set($queryType=$column.queryType)
-                #set($javaField=$column.javaField)
-                #set($javaType=$column.javaType)
-                #set($columnName=$column.columnName)
-                #set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
-                #set($mpMethod=$column.queryType.toLowerCase())
-                #if($queryType != 'BETWEEN')
-                    #if($javaType == 'String')
-                        #set($condition='StringUtils.isNotBlank(bo.get'+$AttrName+'())')
-                    #else
-                        #set($condition='bo.get'+$AttrName+'() != null')
-                    #end
-                    lqw.$mpMethod($condition, ${ClassName}::get$AttrName, bo.get$AttrName());
-                #else
-                    lqw.between(params.get("begin$AttrName") != null && params.get("end$AttrName") != null,
-                        ${ClassName}::get$AttrName , params.get("begin$AttrName"), params.get("end$AttrName"));
-                #end
-            #end
-        #end
+#foreach($column in $columns)
+#if($column.query)
+#set($queryType=$column.queryType)
+#set($javaField=$column.javaField)
+#set($javaType=$column.javaType)
+#set($columnName=$column.columnName)
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#set($mpMethod=$column.queryType.toLowerCase())
+#if($queryType != 'BETWEEN')
+#if($javaType == 'String')
+#set($condition='StringUtils.isNotBlank(bo.get'+$AttrName+'())')
+#else
+#set($condition='bo.get'+$AttrName+'() != null')
+#end
+        lqw.$mpMethod($condition, ${ClassName}::get$AttrName, bo.get$AttrName());
+#else
+        lqw.between(params.get("begin$AttrName") != null && params.get("end$AttrName") != null,
+            ${ClassName}::get$AttrName ,params.get("begin$AttrName"), params.get("end$AttrName"));
+#end
+#end
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#if($column.isPk==1)
+        lqw.orderByAsc(${ClassName}::get$AttrName);
+#end
+#end
         return lqw;
     }
 
     /**
      * 新增${functionName}
+     *
+     * @param bo ${functionName}
+     * @return 是否新增成功
      */
     @Override
     public Boolean insertByBo(${ClassName}Bo bo) {
-        ${ClassName} add = MapstructUtils.convert(bo, ${ClassName}. class);
+        ${ClassName} add = MapstructUtils.convert(bo, ${ClassName}.class);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
-        #set($pk=$pkColumn.javaField.substring(0,1).toUpperCase() + ${pkColumn.javaField.substring(1)})
+#set($pk=$pkColumn.javaField.substring(0,1).toUpperCase() + ${pkColumn.javaField.substring(1)})
         if (flag) {
             bo.set$pk(add.get$pk());
         }
@@ -105,10 +124,13 @@ public class ${ClassName}ServiceImpl implements ${ClassName}Service {
 
     /**
      * 修改${functionName}
+     *
+     * @param bo ${functionName}
+     * @return 是否修改成功
      */
     @Override
     public Boolean updateByBo(${ClassName}Bo bo) {
-        ${ClassName} update = MapstructUtils.convert(bo, ${ClassName}. class);
+        ${ClassName} update = MapstructUtils.convert(bo, ${ClassName}.class);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -116,18 +138,22 @@ public class ${ClassName}ServiceImpl implements ${ClassName}Service {
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(${ClassName} entity) {
+    private void validEntityBeforeSave(${ClassName} entity){
         //TODO 做一些数据校验,如唯一约束
     }
 
     /**
-     * 批量删除${functionName}
+     * 校验并批量删除${functionName}信息
+     *
+     * @param ids     待删除的主键集合
+     * @param isValid 是否进行有效性校验
+     * @return 是否删除成功
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<${pkColumn.javaType}> ids, Boolean isValid) {
-        if (isValid) {
+        if(isValid){
             //TODO 做一些业务上的校验,判断是否需要校验
         }
-        return baseMapper.deleteBatchIds(ids) > 0;
+        return baseMapper.deleteByIds(ids) > 0;
     }
 }

@@ -2,8 +2,9 @@ package org.ruoyi.common.redis.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.redisson.api.*;
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.redisson.api.*;
+import org.redisson.api.options.KeysScanOptions;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -36,8 +37,22 @@ public class RedisUtils {
      * @return -1 表示失败
      */
     public static long rateLimiter(String key, RateType rateType, int rate, int rateInterval) {
+        return rateLimiter(key, rateType, rate, rateInterval, 0);
+    }
+
+    /**
+     * 限流
+     *
+     * @param key          限流key
+     * @param rateType     限流类型
+     * @param rate         速率
+     * @param rateInterval 速率间隔
+     * @param timeout      超时时间
+     * @return -1 表示失败
+     */
+    public static long rateLimiter(String key, RateType rateType, int rate, int rateInterval, int timeout) {
         RRateLimiter rateLimiter = CLIENT.getRateLimiter(key);
-        rateLimiter.trySetRate(rateType, rate, rateInterval, RateIntervalUnit.SECONDS);
+        rateLimiter.trySetRate(rateType, rate, Duration.ofSeconds(rateInterval), Duration.ofSeconds(timeout));
         if (rateLimiter.tryAcquire()) {
             return rateLimiter.availablePermits();
         } else {
@@ -65,6 +80,12 @@ public class RedisUtils {
         consumer.accept(msg);
     }
 
+    /**
+     * 发布消息到指定的频道
+     *
+     * @param channelKey 通道key
+     * @param msg        发送数据
+     */
     public static <T> void publish(String channelKey, T msg) {
         RTopic topic = CLIENT.getTopic(channelKey);
         topic.publish(msg);
@@ -107,7 +128,11 @@ public class RedisUtils {
                 bucket.setAndKeepTTL(value);
             } catch (Exception e) {
                 long timeToLive = bucket.remainTimeToLive();
-                setCacheObject(key, value, Duration.ofMillis(timeToLive));
+                if (timeToLive == -1) {
+                    bucket.set(value);
+                } else {
+                    bucket.set(value, Duration.ofMillis(timeToLive));
+                }
             }
         } else {
             bucket.set(value);
@@ -122,11 +147,32 @@ public class RedisUtils {
      * @param duration 时间
      */
     public static <T> void setCacheObject(final String key, final T value, final Duration duration) {
-        RBatch batch = CLIENT.createBatch();
-        RBucketAsync<T> bucket = batch.getBucket(key);
-        bucket.setAsync(value);
-        bucket.expireAsync(duration);
-        batch.execute();
+        RBucket<T> bucket = CLIENT.getBucket(key);
+        bucket.set(value, duration);
+    }
+
+    /**
+     * 如果不存在则设置 并返回 true 如果存在则返回 false
+     *
+     * @param key   缓存的键值
+     * @param value 缓存的值
+     * @return set成功或失败
+     */
+    public static <T> boolean setObjectIfAbsent(final String key, final T value, final Duration duration) {
+        RBucket<T> bucket = CLIENT.getBucket(key);
+        return bucket.setIfAbsent(value, duration);
+    }
+
+    /**
+     * 如果存在则设置 并返回 true 如果存在则返回 false
+     *
+     * @param key   缓存的键值
+     * @param value 缓存的值
+     * @return set成功或失败
+     */
+    public static <T> boolean setObjectIfExists(final String key, final T value, final Duration duration) {
+        RBucket<T> bucket = CLIENT.getBucket(key);
+        return bucket.setIfExists(value, duration);
     }
 
     /**
@@ -231,6 +277,18 @@ public class RedisUtils {
     }
 
     /**
+     * 追加缓存List数据
+     *
+     * @param key  缓存的键值
+     * @param data 待缓存的数据
+     * @return 缓存的对象
+     */
+    public static <T> boolean addCacheList(final String key, final T data) {
+        RList<T> rList = CLIENT.getList(key);
+        return rList.add(data);
+    }
+
+    /**
      * 注册List监听器
      * <p>
      * key 监听器需开启 `notify-keyspace-events` 等 redis 相关配置
@@ -255,6 +313,19 @@ public class RedisUtils {
     }
 
     /**
+     * 获得缓存的list对象(范围)
+     *
+     * @param key  缓存的键值
+     * @param form 起始下标
+     * @param to   截止下标
+     * @return 缓存键值对应的数据
+     */
+    public static <T> List<T> getCacheListRange(final String key, int form, int to) {
+        RList<T> rList = CLIENT.getList(key);
+        return rList.range(form, to);
+    }
+
+    /**
      * 缓存Set
      *
      * @param key     缓存键值
@@ -264,6 +335,18 @@ public class RedisUtils {
     public static <T> boolean setCacheSet(final String key, final Set<T> dataSet) {
         RSet<T> rSet = CLIENT.getSet(key);
         return rSet.addAll(dataSet);
+    }
+
+    /**
+     * 追加缓存Set数据
+     *
+     * @param key  缓存的键值
+     * @param data 待缓存的数据
+     * @return 缓存的对象
+     */
+    public static <T> boolean addCacheSet(final String key, final T data) {
+        RSet<T> rSet = CLIENT.getSet(key);
+        return rSet.add(data);
     }
 
     /**
@@ -375,6 +458,21 @@ public class RedisUtils {
     }
 
     /**
+     * 删除Hash中的数据
+     *
+     * @param key   Redis键
+     * @param hKeys Hash键
+     */
+    public static <T> void delMultiCacheMapValue(final String key, final Set<String> hKeys) {
+        RBatch batch = CLIENT.createBatch();
+        RMapAsync<String, T> rMap = batch.getMap(key);
+        for (String hKey : hKeys) {
+            rMap.removeAsync(hKey);
+        }
+        batch.execute();
+    }
+
+    /**
      * 获取多个Hash中的数据
      *
      * @param key   Redis键
@@ -431,18 +529,39 @@ public class RedisUtils {
     }
 
     /**
-     * 获得缓存的基本对象列表
-     *
+     * 获得缓存的基本对象列表(全局匹配忽略租户 自行拼接租户id)
+     * <P>
+     * limit-设置扫描的限制数量(默认为0,查询全部)
+     * pattern-设置键的匹配模式(默认为null)
+     * chunkSize-设置每次扫描的块大小(默认为0,本方法设置为1000)
+     * type-设置键的类型(默认为null,查询全部类型)
+     * </P>
+     * @see KeysScanOptions
      * @param pattern 字符串前缀
      * @return 对象列表
      */
     public static Collection<String> keys(final String pattern) {
-        Stream<String> stream = CLIENT.getKeys().getKeysStreamByPattern(pattern);
-        return stream.collect(Collectors.toList());
+        return  keys(KeysScanOptions.defaults().pattern(pattern).chunkSize(1000));
     }
 
     /**
-     * 删除缓存的基本对象列表
+     * 通过扫描参数获取缓存的基本对象列表
+     * @param keysScanOptions 扫描参数
+     * <P>
+     * limit-设置扫描的限制数量(默认为0,查询全部)
+     * pattern-设置键的匹配模式(默认为null)
+     * chunkSize-设置每次扫描的块大小(默认为0)
+     * type-设置键的类型(默认为null,查询全部类型)
+     * </P>
+     * @see KeysScanOptions
+     */
+    public static Collection<String> keys(final KeysScanOptions keysScanOptions) {
+        Stream<String> keysStream = CLIENT.getKeys().getKeysStream(keysScanOptions);
+        return keysStream.collect(Collectors.toList());
+    }
+
+    /**
+     * 删除缓存的基本对象列表(全局匹配忽略租户 自行拼接租户id)
      *
      * @param pattern 字符串前缀
      */

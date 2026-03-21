@@ -1,1 +1,1 @@
-org.ruoyi.config.MybatisPlusConfig
+org.ruoyi.common.mybatis.config.MybatisPlusConfig

@@ -2,6 +2,7 @@ package org.ruoyi.common.core.domain.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.ruoyi.common.core.domain.dto.PostDTO;
 import org.ruoyi.common.core.domain.dto.RoleDTO;
 
 import java.io.Serial;
@@ -14,7 +15,6 @@ import java.util.Set;
  *
  * @author Lion Li
  */
-
 @Data
 @NoArgsConstructor
 public class LoginUser implements Serializable {
@@ -36,6 +36,11 @@ public class LoginUser implements Serializable {
      * 部门ID
      */
     private Long deptId;
+
+    /**
+     * 部门类别编码
+     */
+    private String deptCategory;
 
     /**
      * 部门名
@@ -98,14 +103,9 @@ public class LoginUser implements Serializable {
     private String username;
 
     /**
-     * 用户名
+     * 用户昵称
      */
-    private String nickName;
-
-    /**
-     * 微信头像
-     */
-    private String avatar;
+    private String nickname;
 
     /**
      * 角色对象
@@ -113,19 +113,24 @@ public class LoginUser implements Serializable {
     private List<RoleDTO> roles;
 
     /**
+     * 岗位对象
+     */
+    private List<PostDTO> posts;
+
+    /**
      * 数据权限 当前角色ID
      */
     private Long roleId;
 
     /**
-     * 关联角色类型
+     * 客户端
      */
-    private String kroleGroupType;
+    private String clientKey;
 
     /**
-     * 关联角色id
+     * 设备类型
      */
-    private String kroleGroupIds;
+    private String deviceType;
 
     /**
      * 获取登录id

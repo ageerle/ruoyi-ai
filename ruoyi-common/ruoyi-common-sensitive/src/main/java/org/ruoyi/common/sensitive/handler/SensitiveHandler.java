@@ -7,11 +7,11 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.ContextualSerializer;
-import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.sensitive.annotation.Sensitive;
 import org.ruoyi.common.sensitive.core.SensitiveService;
 import org.ruoyi.common.sensitive.core.SensitiveStrategy;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 
 import java.io.IOException;
@@ -26,12 +26,14 @@ import java.util.Objects;
 public class SensitiveHandler extends JsonSerializer<String> implements ContextualSerializer {
 
     private SensitiveStrategy strategy;
+    private String[] roleKey;
+    private String[] perms;
 
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         try {
             SensitiveService sensitiveService = SpringUtils.getBean(SensitiveService.class);
-            if (ObjectUtil.isNotNull(sensitiveService) && sensitiveService.isSensitive()) {
+            if (ObjectUtil.isNotNull(sensitiveService) && sensitiveService.isSensitive(roleKey, perms)) {
                 gen.writeString(strategy.desensitizer().apply(value));
             } else {
                 gen.writeString(value);
@@ -47,6 +49,8 @@ public class SensitiveHandler extends JsonSerializer<String> implements Contextu
         Sensitive annotation = property.getAnnotation(Sensitive.class);
         if (Objects.nonNull(annotation) && Objects.equals(String.class, property.getType().getRawClass())) {
             this.strategy = annotation.strategy();
+            this.roleKey = annotation.roleKey();
+            this.perms = annotation.perms();
             return this;
         }
         return prov.findValueSerializer(property.getType(), property);

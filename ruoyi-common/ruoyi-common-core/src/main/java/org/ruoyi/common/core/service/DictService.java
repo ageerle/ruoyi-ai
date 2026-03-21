@@ -1,5 +1,11 @@
 package org.ruoyi.common.core.service;
 
+import org.ruoyi.common.core.domain.dto.DictDataDTO;
+import org.ruoyi.common.core.domain.dto.DictTypeDTO;
+
+import java.util.List;
+import java.util.Map;
+
 /**
  * 通用 字典服务
  *
@@ -53,5 +59,29 @@ public interface DictService {
      * @return 字典值
      */
     String getDictValue(String dictType, String dictLabel, String separator);
+
+    /**
+     * 获取字典下所有的字典值与标签
+     *
+     * @param dictType 字典类型
+     * @return dictValue为key，dictLabel为值组成的Map
+     */
+    Map<String, String> getAllDictByDictType(String dictType);
+
+    /**
+     * 根据字典类型查询详细信息
+     *
+     * @param dictType 字典类型
+     * @return 字典类型详细信息
+     */
+    DictTypeDTO getDictType(String dictType);
+
+    /**
+     * 根据字典类型查询字典数据列表
+     *
+     * @param dictType 字典类型
+     * @return 字典数据列表
+     */
+    List<DictDataDTO> getDictData(String dictType);
 
 }

@@ -1,0 +1,211 @@
+{
+  "nodeList": [
+    {
+      "nodeType": "0",
+      "nodeCode": "ebebaf26-9cb6-497e-8119-4c9fed4c597c",
+      "nodeName": "开始",
+      "permissionFlag": null,
+      "nodeRatio": "0.000",
+      "anyNodeSkip": null,
+      "listenerType": null,
+      "listenerPath": null,
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[]",
+      "coordinate": "300,220|300,220",
+      "version": "1",
+      "skipList": [
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "ebebaf26-9cb6-497e-8119-4c9fed4c597c",
+          "nextNodeCode": "e1b04e96-dc81-4858-a309-2fe945d2f374",
+          "coordinate": "320,220;350,220;350,220;340,220;340,220;370,220"
+        }
+      ]
+    },
+    {
+      "nodeType": "1",
+      "nodeCode": "e1b04e96-dc81-4858-a309-2fe945d2f374",
+      "nodeName": "申请人",
+      "permissionFlag": "",
+      "nodeRatio": "0.000",
+      "anyNodeSkip": null,
+      "listenerType": "",
+      "listenerPath": "",
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[{\"code\":\"ButtonPermissionEnum\",\"value\":\"back,termination,file\"}]",
+      "coordinate": "420,220|420,220",
+      "version": "1",
+      "skipList": [
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "e1b04e96-dc81-4858-a309-2fe945d2f374",
+          "nextNodeCode": "3e743f4f-51ca-41d4-8e94-21f5dd9b59c9",
+          "coordinate": "470,220;535,220"
+        }
+      ]
+    },
+    {
+      "nodeType": "4",
+      "nodeCode": "3e743f4f-51ca-41d4-8e94-21f5dd9b59c9",
+      "permissionFlag": null,
+      "nodeRatio": "0.000",
+      "anyNodeSkip": null,
+      "listenerType": null,
+      "listenerPath": null,
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[]",
+      "coordinate": "560,220",
+      "version": "1",
+      "skipList": [
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "3e743f4f-51ca-41d4-8e94-21f5dd9b59c9",
+          "nextNodeCode": "c80f273e-1f17-4bd8-9ad1-04a4a94ea862",
+          "coordinate": "560,245;560,320;650,320"
+        },
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "3e743f4f-51ca-41d4-8e94-21f5dd9b59c9",
+          "nextNodeCode": "1e3e8d3b-18ae-4d6c-a814-ce0d724adfa4",
+          "coordinate": "560,195;560,120;650,120"
+        }
+      ]
+    },
+    {
+      "nodeType": "1",
+      "nodeCode": "c80f273e-1f17-4bd8-9ad1-04a4a94ea862",
+      "nodeName": "会签",
+      "permissionFlag": "role:1@@role:3",
+      "nodeRatio": "100.000",
+      "anyNodeSkip": null,
+      "listenerType": "",
+      "listenerPath": "",
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[{\"code\":\"ButtonPermissionEnum\",\"value\":\"back,termination,file,addSign,subSign\"}]",
+      "coordinate": "700,320|700,320",
+      "version": "1",
+      "skipList": [
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "c80f273e-1f17-4bd8-9ad1-04a4a94ea862",
+          "nextNodeCode": "1a20169e-3d82-4926-a151-e2daad28de1b",
+          "coordinate": "750,320;860,320;860,245"
+        }
+      ]
+    },
+    {
+      "nodeType": "4",
+      "nodeCode": "1a20169e-3d82-4926-a151-e2daad28de1b",
+      "permissionFlag": null,
+      "nodeRatio": "0.000",
+      "anyNodeSkip": null,
+      "listenerType": null,
+      "listenerPath": null,
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[]",
+      "coordinate": "860,220",
+      "version": "1",
+      "skipList": [
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "1a20169e-3d82-4926-a151-e2daad28de1b",
+          "nextNodeCode": "7a8f0473-e409-442e-a843-5c2b813d00e9",
+          "coordinate": "885,220;950,220"
+        }
+      ]
+    },
+    {
+      "nodeType": "1",
+      "nodeCode": "7a8f0473-e409-442e-a843-5c2b813d00e9",
+      "nodeName": "CEO",
+      "permissionFlag": "1",
+      "nodeRatio": "0.000",
+      "anyNodeSkip": null,
+      "listenerType": "",
+      "listenerPath": "",
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[{\"code\":\"ButtonPermissionEnum\",\"value\":\"back,termination,file,transfer,trust,copy\"}]",
+      "coordinate": "1000,220|1000,220",
+      "version": "1",
+      "skipList": [
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "7a8f0473-e409-442e-a843-5c2b813d00e9",
+          "nextNodeCode": "03c4d2bc-58b5-4408-a2e4-65afb046f169",
+          "coordinate": "1050,220;1120,220"
+        }
+      ]
+    },
+    {
+      "nodeType": "2",
+      "nodeCode": "03c4d2bc-58b5-4408-a2e4-65afb046f169",
+      "nodeName": "结束",
+      "permissionFlag": null,
+      "nodeRatio": "0.000",
+      "anyNodeSkip": null,
+      "listenerType": null,
+      "listenerPath": null,
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[]",
+      "coordinate": "1140,220|1140,220",
+      "version": "1",
+      "skipList": []
+    },
+    {
+      "nodeType": "1",
+      "nodeCode": "1e3e8d3b-18ae-4d6c-a814-ce0d724adfa4",
+      "nodeName": "百分之60票签",
+      "permissionFlag": "${userList}",
+      "nodeRatio": "60.000",
+      "anyNodeSkip": null,
+      "listenerType": "",
+      "listenerPath": "",
+      "formCustom": "N",
+      "formPath": null,
+      "ext": "[{\"code\":\"ButtonPermissionEnum\",\"value\":\"back,termination,file,addSign,subSign\"}]",
+      "coordinate": "700,120|700,120",
+      "version": "1",
+      "skipList": [
+        {
+          "skipType": "PASS",
+          "skipCondition": null,
+          "skipName": null,
+          "nowNodeCode": "1e3e8d3b-18ae-4d6c-a814-ce0d724adfa4",
+          "nextNodeCode": "1a20169e-3d82-4926-a151-e2daad28de1b",
+          "nextNodeType": "4",
+          "coordinate": "750,120;860,120;860,195"
+        }
+      ]
+    }
+  ],
+  "flowCode": "leave5",
+  "flowName": "请假申请-并行会签网关",
+  "modelValue": "CLASSICS",
+  "category": "103",
+  "version": "1",
+  "formCustom": "N",
+  "formPath": "/workflow/leaveEdit/index",
+  "listenerType": null,
+  "listenerPath": null
+}

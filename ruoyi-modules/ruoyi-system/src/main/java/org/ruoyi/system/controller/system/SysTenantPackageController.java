@@ -2,10 +2,6 @@ package org.ruoyi.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaCheckRole;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.TenantConstants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.validate.AddGroup;
@@ -14,12 +10,17 @@ import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysTenantPackageBo;
 import org.ruoyi.system.domain.vo.SysTenantPackageVo;
 import org.ruoyi.system.service.ISysTenantPackageService;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +35,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/system/tenant/package")
+@ConditionalOnProperty(value = "tenant.enable", havingValue = "true")
 public class SysTenantPackageController extends BaseController {
 
     private final ISysTenantPackageService tenantPackageService;
@@ -79,7 +81,7 @@ public class SysTenantPackageController extends BaseController {
     @SaCheckPermission("system:tenantPackage:query")
     @GetMapping("/{packageId}")
     public R<SysTenantPackageVo> getInfo(@NotNull(message = "主键不能为空")
-                                         @PathVariable Long packageId) {
+                                     @PathVariable Long packageId) {
         return R.ok(tenantPackageService.queryById(packageId));
     }
 
@@ -92,6 +94,9 @@ public class SysTenantPackageController extends BaseController {
     @RepeatSubmit()
     @PostMapping()
     public R<Void> add(@Validated(AddGroup.class) @RequestBody SysTenantPackageBo bo) {
+        if (!tenantPackageService.checkPackageNameUnique(bo)) {
+            return R.fail("新增套餐'" + bo.getPackageName() + "'失败，套餐名称已存在");
+        }
         return toAjax(tenantPackageService.insertByBo(bo));
     }
 
@@ -104,6 +109,9 @@ public class SysTenantPackageController extends BaseController {
     @RepeatSubmit()
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody SysTenantPackageBo bo) {
+        if (!tenantPackageService.checkPackageNameUnique(bo)) {
+            return R.fail("修改套餐'" + bo.getPackageName() + "'失败，套餐名称已存在");
+        }
         return toAjax(tenantPackageService.updateByBo(bo));
     }
 
@@ -113,6 +121,7 @@ public class SysTenantPackageController extends BaseController {
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:edit")
     @Log(title = "租户套餐", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping("/changeStatus")
     public R<Void> changeStatus(@RequestBody SysTenantPackageBo bo) {
         return toAjax(tenantPackageService.updatePackageStatus(bo));

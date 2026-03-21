@@ -1,9 +1,9 @@
 package org.ruoyi.generator.util;
 
+import org.ruoyi.common.core.constant.Constants;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.velocity.app.Velocity;
-import org.ruoyi.common.core.constant.Constants;
 
 import java.util.Properties;
 
@@ -22,8 +22,7 @@ public class VelocityInitializer {
         Properties p = new Properties();
         try {
             // 加载classpath目录下的vm文件
-            p.setProperty("resource.loader.file.class",
-                    "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
+            p.setProperty("resource.loader.file.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
             // 定义字符集
             p.setProperty(Velocity.INPUT_ENCODING, Constants.UTF8);
             // 初始化Velocity引擎，指定配置Properties

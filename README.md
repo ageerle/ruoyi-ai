@@ -15,62 +15,36 @@
   </a>
 </p>
 
-
-<img src="image/00.png" alt="RuoYi AI Logo" width="120" height="120">
+<img src="docs/image/logo.png" alt="RuoYi AI Logo" width="120" height="120">
 
 ### 企业级AI助手平台
 
-*开箱即用的智能AI平台，深度集成 FastGPT、扣子(Coze)、DIFY 等主流AI平台，提供先进的RAG技术、知识图谱、数字人和AI流程编排能力*
+*开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模式、RAG技术和流程编排能力*
 
-**[🇺🇸 English](README_EN.md)** | **[📖 使用文档](https://doc.pandarobot.chat)** | *
-*[🚀 在线体验](https://web.pandarobot.chat)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | *
-*[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
+**[English](README_EN.md)** | **[📖 使用文档](https://doc.pandarobot.chat)** |
+**[🚀 在线体验](https://web.pandarobot.chat)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
 
 </div>
 
+
 ## ✨ 核心亮点
 
-### 智能AI引擎
-
-- **多模型接入**：支持 OpenAI GPT-4、Azure、ChatGLM、通义千问、智谱AI 等主流模型
-- **AI平台集成**：深度集成 **FastGPT**、**扣子(Coze)**、**DIFY** 等主流AI应用平台
-- **Spring AI MCP 集成**：基于模型上下文协议，打造可扩展的AI工具生态系统
-- **实时流式对话**：采用 SSE/WebSocket 技术，提供丝滑的对话体验
-- **AI 编程助手**：内置智能代码分析和项目脚手架生成能力
-
-### AI平台生态集成
-
-- **FastGPT 深度集成**：原生支持 FastGPT API，包括知识库检索、工作流编排和上下文管理
-- **扣子(Coze) 官方SDK**：集成字节跳动扣子平台官方SDK，支持Bot对话和流式响应
-- **DIFY 完整兼容**：使用 DIFY Java Client，支持应用编排、工作流和知识库管理
-- **统一聊天接口**：提供统一的聊天服务接口，支持多平台无缝切换和负载均衡
-
-### 本地化RAG方案
-
-- **私有知识库**：基于 Langchain4j 框架 + BGE-large-zh-v1.5 中文向量模型
-- **多种向量库**：支持 Milvus、Weaviate、Qdrant 等主流向量数据库
-- **数据安全可控**：支持完全本地部署，保护企业数据隐私
-- **灵活模型部署**：兼容 Ollama、vLLM 等本地推理框架
-
-### AI创作工具
-
-- **AI 绘画创作**：深度集成 DALL·E-3、MidJourney、Stable Diffusion
-- **智能PPT生成**：一键将文本内容转换为精美演示文稿
-- **多模态理解**：支持文本、图片、文档等多种格式的智能处理
-
-### 知识图谱与智能编排
-
-- **知识图谱构建**：自动从文档和对话中提取实体关系，构建可视化知识网络
-- **AI 流程编排**：可视化工作流设计器，支持复杂AI任务的编排和自动化执行
-- **数字人交互**：集成数字人形象，提供更自然的人机交互体验
-- **智能推理引擎**：基于知识图谱的智能推理和问答能力
+|     模块     | 现有能力 
+|:----------:|---
+|  **模型管理**  | 多模型接入(OpenAI/DeepSeek/通义/智谱)、多模态理解、Coze/DIFY/FastGPT平台集成 
+|  **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate)  + 文档解析        
+|  **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             
+|  **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
+|  **多智能体**  | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型          
 
 ## 🚀 快速体验
 
 ### 在线演示
 
-- **用户端体验**：[web.pandarobot.chat](https://web.pandarobot.chat) (账号：admin 密码：admin123)
-- **管理后台**：[admin.pandarobot.chat](https://admin.pandarobot.chat) (账号：admin 密码：admin123)
+|   平台   | 地址 | 账号 |
+|:------:|---|---|
+|  用户端   | [web.pandarobot.chat](https://web.pandarobot.chat) | admin / admin123 |
+| 管理后台 | [admin.pandarobot.chat](https://admin.pandarobot.chat) | admin / admin123 |
 
 ### 项目源码
 
@@ -81,25 +55,133 @@
 | 🛠️ 管理后台 | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
 
 ### 合作项目
-
-| 项目介绍  |                               GitHub 仓库                                |                             Gitee 仓库                             |
-|:-----:|:----------------------------------------------------------------------:|:----------------------------------------------------------------:|
-| 前端简化版 | [ruoyi-element-ai](https://github.com/element-plus-x/ruoyi-element-ai) | [ruoyi-element-ai](https://gitee.com/he-jiayue/ruoyi-element-ai) |
+| 项目名称           | GitHub 仓库                                             | Gitee 仓库                                             
+|----------------|-------------------------------------------------------|------------------------------------------------------|
+| element-plus-x | [element-plus-x](https://github.com/element-plus-x/Element-Plus-X)       | [element-plus-x](https://gitee.com/he-jiayue/element-plus-x)       | 
 
 ## 🛠️ 技术架构
 
 ### 核心框架
-
-- **后端架构**：Spring Boot 3.4 + Spring AI + Langchain4j
-- **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate/Qdrant）
-- **前端技术**：Vue 3 + Vben Admin + Naive UI
+- **后端架构**：Spring Boot 4.0 + Spring ai 2.0 + Langchain4j
+- **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate）
+- **前端技术**：Vue 3 + Vben Admin + element-plus-x
 - **安全认证**：Sa-Token + JWT 双重保障
 
-### 系统组件
 
-- **文档处理**：PDF、Word、Excel 解析，图像智能分析  
-- **实时通信**：WebSocket 实时通信，SSE 流式响应  
-- **系统监控**：完善的日志体系、性能监控、服务健康检查  
+- **文档处理**：PDF、Word、Excel 解析，图像智能分析
+- **实时通信**：WebSocket 实时通信，SSE 流式响应
+- **系统监控**：完善的日志体系、性能监控、服务健康检查
+
+## 🐳 Docker 部署
+
+本项目提供两种 Docker 部署方式：
+
+### 方式一：一键启动所有服务（推荐）
+
+使用 `docker-compose-all.yaml` 可以一键启动所有服务（包括后端、管理端、用户端及依赖服务）：
+
+```bash
+# 克隆仓库
+git clone https://github.com/ageerle/ruoyi-ai.git
+cd ruoyi-ai
+
+# 启动所有服务（从镜像仓库拉取预构建镜像）
+docker-compose -f docker-compose-all.yaml up -d
+
+# 查看服务状态
+docker-compose -f docker-compose-all.yaml ps
+
+# 访问服务
+# 管理端: http://localhost:25666 (admin / admin123)
+# 用户端: http://localhost:25137
+# 后端API: http://localhost:26039
+```
+
+### 方式二：分步部署（源码编译）
+
+如果您需要从源码构建后端服务，请按照以下步骤操作：
+
+#### 第一步：部署后端服务
+
+```bash
+# 进入后端项目目录
+cd ruoyi-ai
+
+# 启动后端服务（源码编译构建）
+docker-compose up -d --build
+
+# 等待后端服务启动完成
+docker-compose logs -f backend
+```
+
+#### 第二步：部署管理端
+
+```bash
+# 进入管理端项目目录
+cd ruoyi-admin
+
+# 构建并启动管理端
+docker-compose up -d --build
+
+# 访问管理端
+# 地址: http://localhost:5666
+```
+
+#### 第三步：部署用户端（可选）
+
+```bash
+# 进入用户端项目目录
+cd ruoyi-web
+
+# 构建并启动用户端
+docker-compose up -d --build
+
+# 访问用户端
+# 地址: http://localhost:5137
+```
+
+### 服务端口说明
+
+| 服务 | 一键启动端口 | 分步部署端口 | 说明 |
+|------|-------------|-------------|------|
+| 管理端 | 25666 | 5666 | 管理后台访问地址 |
+| 用户端 | 25137 | 5137 | 用户前端访问地址 |
+| 后端服务 | 26039 | 6039 | 后端 API 服务 |
+| MySQL | 23306 | 23306 | 数据库服务 |
+| Redis | 26379 | 6379 | 缓存服务 |
+| Weaviate | 28080 | 28080 | 向量数据库 |
+| MinIO API | 29000 | 9000 | 对象存储 API |
+| MinIO Console | 29090 | 9090 | 对象存储控制台 |
+
+### 镜像仓库
+
+所有镜像托管在阿里云容器镜像服务：
+
+```
+crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai
+```
+
+可用镜像：
+- `mysql:v3` - MySQL 数据库（包含初始化 SQL）
+- `redis:6.2` - Redis 缓存
+- `weaviate:1.30.0` - 向量数据库
+- `minio:latest` - 对象存储
+- `ruoyi-ai-backend:latest` - 后端服务
+- `ruoyi-ai-admin:latest` - 管理端前端
+- `ruoyi-ai-web:latest` - 用户端前端
+
+### 常用命令
+
+```bash
+# 停止所有服务
+docker-compose -f docker-compose-all.yaml down
+
+# 查看服务日志
+docker-compose -f docker-compose-all.yaml logs -f [服务名]
+
+# 重启某个服务
+docker-compose -f docker-compose-all.yaml restart [服务名]
+```
 
 ## 📚 使用文档
 
@@ -134,21 +216,20 @@
 ## 🙏 特别鸣谢
 
 感谢以下优秀的开源项目为本项目提供支持：
-
-- [Spring AI Alibaba Copilot](https://github.com/springaialibaba/spring-ai-alibaba-copilot) - 基于spring-ai-alibaba
+- [Spring AI Alibaba Copilot](https://github.com/spring-ai-alibaba/copilot) - 基于spring-ai-alibaba
   的智能编码助手
-- [Spring AI](https://spring.io/projects/spring-ai) - Spring 官方 AI 集成框架
 - [Langchain4j](https://github.com/langchain4j/langchain4j) - 强大的 Java LLM 开发框架
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - 成熟的企业级快速开发框架
 - [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - 现代化的 Vue 后台管理模板
-- [chatgpt-java](https://github.com/Grt1228/chatgpt-java) - 优秀的 ChatGPT Java SDK
 
 ## 🌐 生态伙伴
 
 - [PPIO 派欧云](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - 提供高性价比的 GPU
   算力和模型 API 服务
 - [优云智算](https://www.compshare.cn/?ytag=GPU_YY-gh_ruoyi) - 万卡RTX40系GPU+海内外主流模型API服务，秒级响应，按量计费，新客免费用。
-- [胜算云](https://www.shengsuanyun.com/?from=CH_3WG71ZOS) - AI模型算力聚合超市云服务。
+
+## 优秀开源项目及社区推荐
+- [imaiwork](https://gitee.com/tsinghua-open/imaiwork) - AI手机开源版，AI获客手机项目，基于无障碍模式，RPA，比豆包AI手机更强大。
 
 ## 💬 社区交流
 
@@ -157,12 +238,12 @@
 <table>
 <tr>
 <td align="center">
-<img src="image/wx.png" alt="微信二维码" width="200" height="200"><br>
+<img src="docs/image/wx.png" alt="微信二维码" width="200" height="200"><br>
 <strong>扫码添加作者微信</strong><br>
 <em>邀请进群学习</em>
 </td>
 <td align="center">
-<img src="image/qq.png" alt="QQ群二维码" width="200" height="200"><br>
+<img src="docs/image/qq.png" alt="QQ群二维码" width="200" height="200"><br>
 <strong>QQ技术交流群</strong><br>
 <em>技术讨论</em>
 </td>
@@ -173,12 +254,9 @@
 </div>
 
 ---
-
 <div align="center">
 
-**[⭐ 点个Star支持一下](https://github.com/ageerle/ruoyi-ai)** • *
-*[🍴 Fork 开始贡献](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 English](README_EN.md)** • *
-*[📖 查看完整文档](https://doc.pandarobot.chat)**
+**[⭐ 点个Star支持一下](https://github.com/ageerle/ruoyi-ai)** • **[ Fork 开始贡献](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 English](README_EN.md)** • **[📖 查看完整文档](https://doc.pandarobot.chat)**
 
 *用 ❤️ 打造，由 RuoYi AI 开源社区维护*
 

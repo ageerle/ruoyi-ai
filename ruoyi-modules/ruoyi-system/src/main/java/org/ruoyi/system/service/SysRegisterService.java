@@ -1,11 +1,12 @@
 package org.ruoyi.system.service;
 
-import cn.dev33.satoken.secure.BCrypt;
+import cn.hutool.crypto.digest.BCrypt;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.constant.GlobalConstants;
 import org.ruoyi.common.core.domain.model.RegisterBody;
-import org.ruoyi.common.core.exception.base.BaseException;
+import org.ruoyi.common.core.enums.UserType;
 import org.ruoyi.common.core.exception.user.CaptchaException;
 import org.ruoyi.common.core.exception.user.CaptchaExpireException;
 import org.ruoyi.common.core.exception.user.UserException;
@@ -15,11 +16,11 @@ import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.log.event.LogininforEvent;
 import org.ruoyi.common.redis.utils.RedisUtils;
+import org.ruoyi.common.tenant.helper.TenantHelper;
+import org.ruoyi.common.web.config.properties.CaptchaProperties;
 import org.ruoyi.system.domain.SysUser;
-import org.ruoyi.system.domain.SysUserRole;
 import org.ruoyi.system.domain.bo.SysUserBo;
-import org.ruoyi.system.domain.vo.SysUserVo;
-import org.ruoyi.system.mapper.SysUserRoleMapper;
+import org.ruoyi.system.mapper.SysUserMapper;
 import org.springframework.stereotype.Service;
 
 /**
@@ -32,73 +33,42 @@ import org.springframework.stereotype.Service;
 public class SysRegisterService {
 
     private final ISysUserService userService;
-
-    private final SysUserRoleMapper userRoleMapper;
+    private final SysUserMapper userMapper;
+    private final CaptchaProperties captchaProperties;
 
     /**
      * 注册
      */
     public void register(RegisterBody registerBody) {
-
-
-        String tenantId = Constants.TENANT_ID;
-        if (StringUtils.isNotBlank(registerBody.getTenantId())) {
-            tenantId = registerBody.getTenantId();
-        }
+        String tenantId = registerBody.getTenantId();
         String username = registerBody.getUsername();
         String password = registerBody.getPassword();
+        // 校验用户类型是否存在
+        String userType = UserType.getUserType(registerBody.getUserType()).getUserType();
 
-        // 检查验证码是否正确
-        validateEmail(username, registerBody.getCode());
+        boolean captchaEnabled = captchaProperties.getEnable();
+        // 验证码开关
+        if (captchaEnabled) {
+            validateCaptcha(tenantId, username, registerBody.getCode(), registerBody.getUuid());
+        }
         SysUserBo sysUser = new SysUserBo();
-        sysUser.setDomainName(registerBody.getDomainName());
         sysUser.setUserName(username);
         sysUser.setNickName(username);
         sysUser.setPassword(BCrypt.hashpw(password));
-        if (!userService.checkUserNameUnique(sysUser)) {
-            throw new UserException("添加用户失败", username);
+        sysUser.setUserType(userType);
+
+        boolean exist = TenantHelper.dynamic(tenantId, () -> {
+            return userMapper.exists(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserName, sysUser.getUserName()));
+        });
+        if (exist) {
+            throw new UserException("user.register.save.error", username);
         }
-        sysUser.setUserBalance(1.0);
-        SysUser user = userService.registerUser(sysUser, tenantId);
-        if (user == null) {
-            throw new UserException("用户注册失败!");
+        boolean regFlag = userService.registerUser(sysUser, tenantId);
+        if (!regFlag) {
+            throw new UserException("user.register.error");
         }
-        // 设置默认角色
-        SysUserRole sysRole = new SysUserRole();
-        sysRole.setUserId(user.getUserId());
-        sysRole.setRoleId(1L);
-        userRoleMapper.insert(sysRole);
         recordLogininfor(tenantId, username, Constants.REGISTER, MessageUtils.message("user.register.success"));
-    }
-
-    /**
-     * 重置密码
-     */
-    public void resetPassWord(RegisterBody registerBody) {
-        String username = registerBody.getUsername();
-        String password = registerBody.getPassword();
-        SysUserVo user = userService.selectUserByUserName(username);
-        if (user == null) {
-            throw new UserException(String.format("用户【%s】,未注册!", username));
-        }
-        // 检查验证码是否正确
-        validateEmail(username, registerBody.getCode());
-        userService.resetUserPwd(user.getUserId(), BCrypt.hashpw(password));
-    }
-
-    /**
-     * 校验邮箱验证码
-     *
-     * @param username 用户名
-     */
-    public void validateEmail(String username, String code) {
-        String key = GlobalConstants.CAPTCHA_CODE_KEY + username;
-        String captcha = RedisUtils.getCacheObject(key);
-        if (code.equals(captcha)) {
-            RedisUtils.deleteObject(captcha);
-        } else {
-            throw new BaseException("验证码错误,请重试！");
-        }
     }
 
     /**
@@ -109,15 +79,15 @@ public class SysRegisterService {
      * @param uuid     唯一标识
      */
     public void validateCaptcha(String tenantId, String username, String code, String uuid) {
-        String verifyKey = GlobalConstants.CAPTCHA_CODE_KEY + StringUtils.defaultString(uuid, "");
+        String verifyKey = GlobalConstants.CAPTCHA_CODE_KEY + StringUtils.blankToDefault(uuid, "");
         String captcha = RedisUtils.getCacheObject(verifyKey);
         RedisUtils.deleteObject(verifyKey);
         if (captcha == null) {
-            recordLogininfor(tenantId, username, Constants.REGISTER, MessageUtils.message("user.jcaptcha.expire"));
+            recordLogininfor(tenantId, username, Constants.LOGIN_FAIL, MessageUtils.message("user.jcaptcha.expire"));
             throw new CaptchaExpireException();
         }
-        if (!code.equalsIgnoreCase(captcha)) {
-            recordLogininfor(tenantId, username, Constants.REGISTER, MessageUtils.message("user.jcaptcha.error"));
+        if (!StringUtils.equalsIgnoreCase(code, captcha)) {
+            recordLogininfor(tenantId, username, Constants.LOGIN_FAIL, MessageUtils.message("user.jcaptcha.error"));
             throw new CaptchaException();
         }
     }

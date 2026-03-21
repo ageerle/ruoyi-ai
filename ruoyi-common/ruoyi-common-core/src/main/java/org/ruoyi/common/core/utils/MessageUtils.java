@@ -3,6 +3,7 @@ package org.ruoyi.common.core.utils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
@@ -23,6 +24,10 @@ public class MessageUtils {
      * @return 获取国际化翻译值
      */
     public static String message(String code, Object... args) {
-        return MESSAGE_SOURCE.getMessage(code, args, LocaleContextHolder.getLocale());
+        try {
+            return MESSAGE_SOURCE.getMessage(code, args, LocaleContextHolder.getLocale());
+        } catch (NoSuchMessageException e) {
+            return code;
+        }
     }
 }

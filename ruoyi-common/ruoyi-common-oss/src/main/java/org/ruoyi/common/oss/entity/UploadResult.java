@@ -21,4 +21,10 @@ public class UploadResult {
      * 文件名
      */
     private String filename;
+
+    /**
+     * 已上传对象的实体标记（用来校验文件）
+     */
+    private String eTag;
+
 }

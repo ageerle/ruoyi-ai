@@ -1,0 +1,39 @@
+server:
+  port: 8800
+  servlet:
+    context-path: /snail-job
+
+spring:
+  application:
+    name: ruoyi-snailjob-server
+  profiles:
+    active: @profiles.active@
+  web:
+    resources:
+      static-locations: classpath:admin/
+
+mybatis-plus:
+  typeAliasesPackage: com.aizuda.snailjob.template.datasource.persistence.po
+  global-config:
+    db-config:
+      where-strategy: NOT_EMPTY
+      capital-mode: false
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+
+logging:
+  config: classpath:logback-plus.xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: ALWAYS
+    logfile:
+      external-file: ./logs/ruoyi-snailjob-server/console.log

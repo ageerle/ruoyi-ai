@@ -1,8 +1,8 @@
 package org.ruoyi.common.core.domain;
 
+import org.ruoyi.common.core.constant.HttpStatus;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.ruoyi.common.core.constant.HttpStatus;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -16,16 +16,19 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class R<T> implements Serializable {
 
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * 成功
      */
     public static final int SUCCESS = 200;
+
     /**
      * 失败
      */
     public static final int FAIL = 500;
-    @Serial
-    private static final long serialVersionUID = 1L;
+
     private int code;
 
     private String msg;
@@ -81,7 +84,7 @@ public class R<T> implements Serializable {
     /**
      * 返回警告消息
      *
-     * @param msg  返回内容
+     * @param msg 返回内容
      * @param data 数据对象
      * @return 警告消息
      */

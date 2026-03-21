@@ -1,20 +1,21 @@
 package org.ruoyi.system.controller.system;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.hutool.core.lang.tree.Tree;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.excel.utils.ExcelUtil;
+import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
 import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessType;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.web.core.BaseController;
-import org.ruoyi.core.page.PageQuery;
-import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.SysUserRole;
 import org.ruoyi.system.domain.bo.SysDeptBo;
 import org.ruoyi.system.domain.bo.SysRoleBo;
 import org.ruoyi.system.domain.bo.SysUserBo;
-import org.ruoyi.system.domain.vo.DeptTreeSelectVo;
 import org.ruoyi.system.domain.vo.SysRoleVo;
 import org.ruoyi.system.domain.vo.SysUserVo;
 import org.ruoyi.system.service.ISysDeptService;
@@ -77,8 +78,10 @@ public class SysRoleController extends BaseController {
      */
     @SaCheckPermission("system:role:add")
     @Log(title = "角色管理", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysRoleBo role) {
+        roleService.checkRoleAllowed(role);
         if (!roleService.checkRoleNameUnique(role)) {
             return R.fail("新增角色'" + role.getRoleName() + "'失败，角色名称已存在");
         } else if (!roleService.checkRoleKeyUnique(role)) {
@@ -93,9 +96,10 @@ public class SysRoleController extends BaseController {
      */
     @SaCheckPermission("system:role:edit")
     @Log(title = "角色管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysRoleBo role) {
-        roleService.checkRoleAllowed(role.getRoleId());
+        roleService.checkRoleAllowed(role);
         roleService.checkRoleDataScope(role.getRoleId());
         if (!roleService.checkRoleNameUnique(role)) {
             return R.fail("修改角色'" + role.getRoleName() + "'失败，角色名称已存在");
@@ -115,9 +119,10 @@ public class SysRoleController extends BaseController {
      */
     @SaCheckPermission("system:role:edit")
     @Log(title = "角色管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping("/dataScope")
     public R<Void> dataScope(@RequestBody SysRoleBo role) {
-        roleService.checkRoleAllowed(role.getRoleId());
+        roleService.checkRoleAllowed(role);
         roleService.checkRoleDataScope(role.getRoleId());
         return toAjax(roleService.authDataScope(role));
     }
@@ -127,9 +132,10 @@ public class SysRoleController extends BaseController {
      */
     @SaCheckPermission("system:role:edit")
     @Log(title = "角色管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping("/changeStatus")
     public R<Void> changeStatus(@RequestBody SysRoleBo role) {
-        roleService.checkRoleAllowed(role.getRoleId());
+        roleService.checkRoleAllowed(role);
         roleService.checkRoleDataScope(role.getRoleId());
         return toAjax(roleService.updateRoleStatus(role.getRoleId(), role.getStatus()));
     }
@@ -143,16 +149,18 @@ public class SysRoleController extends BaseController {
     @Log(title = "角色管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{roleIds}")
     public R<Void> remove(@PathVariable Long[] roleIds) {
-        return toAjax(roleService.deleteRoleByIds(roleIds));
+        return toAjax(roleService.deleteRoleByIds(List.of(roleIds)));
     }
 
     /**
      * 获取角色选择框列表
+     *
+     * @param roleIds 角色ID串
      */
     @SaCheckPermission("system:role:query")
     @GetMapping("/optionselect")
-    public R<List<SysRoleVo>> optionselect() {
-        return R.ok(roleService.selectRoleAll());
+    public R<List<SysRoleVo>> optionselect(@RequestParam(required = false) Long[] roleIds) {
+        return R.ok(roleService.selectRoleByIds(roleIds == null ? null : List.of(roleIds)));
     }
 
     /**
@@ -178,6 +186,7 @@ public class SysRoleController extends BaseController {
      */
     @SaCheckPermission("system:role:edit")
     @Log(title = "角色管理", businessType = BusinessType.GRANT)
+    @RepeatSubmit()
     @PutMapping("/authUser/cancel")
     public R<Void> cancelAuthUser(@RequestBody SysUserRole userRole) {
         return toAjax(roleService.deleteAuthUser(userRole));
@@ -191,6 +200,7 @@ public class SysRoleController extends BaseController {
      */
     @SaCheckPermission("system:role:edit")
     @Log(title = "角色管理", businessType = BusinessType.GRANT)
+    @RepeatSubmit()
     @PutMapping("/authUser/cancelAll")
     public R<Void> cancelAuthUserAll(Long roleId, Long[] userIds) {
         return toAjax(roleService.deleteAuthUsers(roleId, userIds));
@@ -204,6 +214,7 @@ public class SysRoleController extends BaseController {
      */
     @SaCheckPermission("system:role:edit")
     @Log(title = "角色管理", businessType = BusinessType.GRANT)
+    @RepeatSubmit()
     @PutMapping("/authUser/selectAll")
     public R<Void> selectAuthUserAll(Long roleId, Long[] userIds) {
         roleService.checkRoleDataScope(roleId);
@@ -218,9 +229,18 @@ public class SysRoleController extends BaseController {
     @SaCheckPermission("system:role:list")
     @GetMapping(value = "/deptTree/{roleId}")
     public R<DeptTreeSelectVo> roleDeptTreeselect(@PathVariable("roleId") Long roleId) {
-        DeptTreeSelectVo selectVo = new DeptTreeSelectVo();
-        selectVo.setCheckedKeys(deptService.selectDeptListByRoleId(roleId));
-        selectVo.setDepts(deptService.selectDeptTreeList(new SysDeptBo()));
+        DeptTreeSelectVo selectVo = new DeptTreeSelectVo(
+            deptService.selectDeptListByRoleId(roleId),
+            deptService.selectDeptTreeList(new SysDeptBo()));
         return R.ok(selectVo);
     }
+
+    /**
+     * 角色部门列表树信息
+     *
+     * @param checkedKeys 选中部门列表
+     * @param depts       下拉树结构列表
+     */
+    public record DeptTreeSelectVo(List<Long> checkedKeys, List<Tree<Long>> depts) {}
+
 }

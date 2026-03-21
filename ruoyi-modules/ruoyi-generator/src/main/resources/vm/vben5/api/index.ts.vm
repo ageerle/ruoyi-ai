@@ -1,0 +1,69 @@
+﻿import type { ${BusinessName}VO, ${BusinessName}Form, ${BusinessName}Query } from './model';
+
+import type { ID, IDS } from '#/api/common';
+#if($tplCategory != 'tree')
+import type { PageResult } from '#/api/common';
+#end
+
+import { commonExport } from '#/api/helper';
+import { requestClient } from '#/api/request';
+
+/**
+* 查询${functionName}列表
+* @param params
+* @returns ${functionName}列表
+*/
+export function ${businessName}List(params?: ${BusinessName}Query) {
+  #if($tplCategory != 'tree')
+  return requestClient.get<PageResult<${BusinessName}VO>>('/${moduleName}/${businessName}/list', { params });
+  #else
+  return requestClient.get<${BusinessName}VO[]>(`/${moduleName}/${businessName}/list`, { params });
+  #end
+}
+
+#if($tplCategory != 'tree')
+/**
+ * 导出${functionName}列表
+ * @param params
+ * @returns ${functionName}列表
+ */
+export function ${businessName}Export(params?: ${BusinessName}Query) {
+  return commonExport('/${moduleName}/${businessName}/export', params ?? {});
+}
+#end
+
+/**
+ * 查询${functionName}详情
+ * @param ${pkColumn.javaField} id
+ * @returns ${functionName}详情
+ */
+export function ${businessName}Info(${pkColumn.javaField}: ID) {
+  return requestClient.get<${BusinessName}VO>(`/${moduleName}/${businessName}/${${pkColumn.javaField}}`);
+}
+
+/**
+ * 新增${functionName}
+ * @param data
+ * @returns void
+ */
+export function ${businessName}Add(data: ${BusinessName}Form) {
+  return requestClient.postWithMsg<void>('/${moduleName}/${businessName}', data);
+}
+
+/**
+ * 更新${functionName}
+ * @param data
+ * @returns void
+ */
+export function ${businessName}Update(data: ${BusinessName}Form) {
+  return requestClient.putWithMsg<void>('/${moduleName}/${businessName}', data);
+}
+
+/**
+ * 删除${functionName}
+ * @param ${pkColumn.javaField} id
+ * @returns void
+ */
+export function ${businessName}Remove(${pkColumn.javaField}: ID | IDS) {
+  return requestClient.deleteWithMsg<void>(`/${moduleName}/${businessName}/${${pkColumn.javaField}}`);
+}

@@ -1,10 +1,10 @@
 package org.ruoyi.common.translation.core.impl;
 
-import lombok.AllArgsConstructor;
 import org.ruoyi.common.core.service.OssService;
 import org.ruoyi.common.translation.annotation.TranslationType;
 import org.ruoyi.common.translation.constant.TransConstant;
 import org.ruoyi.common.translation.core.TranslationInterface;
+import lombok.AllArgsConstructor;
 
 /**
  * OSS翻译实现

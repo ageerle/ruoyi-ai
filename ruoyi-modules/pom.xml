@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>ruoyi-ai</artifactId>
         <groupId>org.ruoyi</groupId>
         <version>${revision}</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <modules>
+        <module>ruoyi-aiflow</module>
+        <module>ruoyi-chat</module>
+        <module>ruoyi-generator</module>
+        <module>ruoyi-system</module>
+        <module>ruoyi-workflow</module>
+    </modules>
 
     <artifactId>ruoyi-modules</artifactId>
     <packaging>pom</packaging>
@@ -16,61 +23,5 @@
     <description>
         ruoyi-modules 业务模块
     </description>
-
-    <modules>
-        <module>ruoyi-chat</module>
-        <module>ruoyi-system</module>
-        <module>ruoyi-generator</module>
-        <module>ruoyi-wechat</module>
-        <module>ruoyi-graph</module>
-        <!-- 新添加的数字人模块-->
-        <module>ruoyi-aihuman</module>
-        <module>ruoyi-workflow</module>
-    </modules>
-
-    <properties>
-        <httpclient.version>4.5.14</httpclient.version>
-        <jackson.version>2.15.2</jackson.version>
-    </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-web</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-idempotent</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-sensitive</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.ruoyi</groupId>
-            <artifactId>ruoyi-common-tenant</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>${httpclient.version}</version>
-        </dependency>
-
-    </dependencies>
 
 </project>

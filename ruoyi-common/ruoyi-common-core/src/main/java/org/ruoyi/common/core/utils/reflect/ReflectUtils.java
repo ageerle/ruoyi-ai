@@ -1,9 +1,9 @@
 package org.ruoyi.common.core.utils.reflect;
 
 import cn.hutool.core.util.ReflectUtil;
+import org.ruoyi.common.core.utils.StringUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.ruoyi.common.core.utils.StringUtils;
 
 import java.lang.reflect.Method;
 

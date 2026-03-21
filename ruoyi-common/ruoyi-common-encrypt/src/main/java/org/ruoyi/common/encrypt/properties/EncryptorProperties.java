@@ -1,8 +1,8 @@
 package org.ruoyi.common.encrypt.properties;
 
-import lombok.Data;
 import org.ruoyi.common.encrypt.enumd.AlgorithmType;
 import org.ruoyi.common.encrypt.enumd.EncodeType;
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
