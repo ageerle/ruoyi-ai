@@ -15,7 +15,8 @@ public enum ChatModeType {
     DEEP_SEEK("deepseek", "深度求索"),
     QIAN_WEN("qianwen", "通义千问"),
     OPEN_AI("openai", "openai"),
-    PPIO("ppio", "ppio");
+    PPIO("ppio", "ppio"),
+    MINIMAX("minimax", "MiniMax");
     private final String code;
     private final String description;
 

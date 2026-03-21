@@ -34,7 +34,7 @@
 
 | Module | Current Capabilities |
 |:---:|---|
-| **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu), multi-modal understanding, Coze/DIFY/FastGPT platform integration |
+| **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu/MiniMax), multi-modal understanding, Coze/DIFY/FastGPT platform integration |
 | **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate) + Document parsing |
 | **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem |
 | **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model calls, email sending, manual review nodes |
