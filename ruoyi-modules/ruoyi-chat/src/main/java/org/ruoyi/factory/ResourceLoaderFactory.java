@@ -1,6 +1,7 @@
 package org.ruoyi.factory;
 
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.constant.FileTypeConstants;
 import org.ruoyi.service.knowledge.ResourceLoader;
 import org.ruoyi.service.knowledge.impl.loader.*;
@@ -16,6 +17,7 @@ public class ResourceLoaderFactory {
     private final ExcelTextSplitter excelTextSplitter;
 
     public ResourceLoader getLoaderByFileType(String fileType) {
+        fileType = StringUtils.removeStart(fileType, ".");
         if (FileTypeConstants.isTextFile(fileType)) {
             return new TextFileLoader(characterTextSplitter);
         } else if (FileTypeConstants.isWord(fileType)) {
