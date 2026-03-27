@@ -45,7 +45,7 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
     private static final String TEXT_SEGMENT_KEY    = "text_segment";
     private static final String METADATA_FID_KEY    = "fid";
     private static final String METADATA_KID_KEY    = "kid";
-    private static final String METADATA_DOC_ID_KEY = "docId";
+    private static final String METADATA_DOC_ID_KEY = "doc_id";
 
     public QdrantVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                      IChatModelService chatModelService,
