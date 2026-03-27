@@ -275,7 +275,7 @@ warm-flow:
 
 # 向量库配置
 vector-store:
-  # 向量存储类型 可选(weaviate/milvus)
+  # 向量存储类型 可选(weaviate/milvus/qdrant)
   # 如需修改向量库类型，请修改此配置值!
   type: milvus
   # Weaviate配置
@@ -287,3 +287,10 @@ vector-store:
   milvus:
     url: http://localhost:19530
     collectionname: LocalKnowledge
+  # Qdrant配置
+  qdrant:
+    host: localhost
+    port: 6334
+    collectionname: LocalKnowledge
+    api-key:
+    use-tls: false
