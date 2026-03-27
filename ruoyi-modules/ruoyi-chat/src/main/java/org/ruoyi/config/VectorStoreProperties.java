@@ -59,4 +59,37 @@ public class VectorStoreProperties {
          */
         private String collectionname;
     }
+
+    /**
+     * Qdrant配置
+     */
+    private Qdrant qdrant = new Qdrant();
+
+    @Data
+    public static class Qdrant {
+        /**
+         * 主机地址
+         */
+        private String host = "localhost";
+
+        /**
+         * gRPC端口
+         */
+        private int port = 6334;
+
+        /**
+         * 集合名称
+         */
+        private String collectionname = "LocalKnowledge";
+
+        /**
+         * API密钥（可选）
+         */
+        private String apiKey;
+
+        /**
+         * 是否启用TLS
+         */
+        private boolean useTls = false;
+    }
 }

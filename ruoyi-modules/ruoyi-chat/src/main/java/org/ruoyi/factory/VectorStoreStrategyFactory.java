@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.ruoyi.service.vector.impl.MilvusVectorStoreStrategy;
+import org.ruoyi.service.vector.impl.QdrantVectorStoreStrategy;
 import org.ruoyi.service.vector.impl.WeaviateVectorStoreStrategy;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,7 @@ public class VectorStoreStrategyFactory {
     private final VectorStoreProperties vectorStoreProperties;
     private final WeaviateVectorStoreStrategy weaviateStrategy;
     private final MilvusVectorStoreStrategy milvusStrategy;
+    private final QdrantVectorStoreStrategy qdrantStrategy;
 
     private Map<String, VectorStoreService> strategies;
 
@@ -35,6 +37,7 @@ public class VectorStoreStrategyFactory {
         strategies = new HashMap<>();
         strategies.put("weaviate", weaviateStrategy);
         strategies.put("milvus", milvusStrategy);
+        strategies.put("qdrant", qdrantStrategy);
         log.info("向量库策略工厂初始化完成，支持的策略: {}", strategies.keySet());
     }
 
