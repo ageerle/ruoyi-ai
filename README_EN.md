@@ -35,7 +35,7 @@
 | Module | Current Capabilities |
 |:---:|---|
 | **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu), multi-modal understanding, Coze/DIFY/FastGPT platform integration |
-| **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate) + Document parsing |
+| **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate/Qdrant) + Document parsing |
 | **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem |
 | **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model calls, email sending, manual review nodes |
 | **Multi-Agent** | Agent framework based on Langchain4j, Supervisor mode orchestration, supports multiple decision models |
@@ -66,7 +66,7 @@
 
 ### Core Framework
 - **Backend**: Spring Boot 4.0 + Spring AI 2.0 + Langchain4j
-- **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate)
+- **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate/Qdrant)
 - **Frontend**: Vue 3 + Vben Admin + element-plus-x
 - **Security**: Sa-Token + JWT dual-layer security
 
