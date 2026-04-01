@@ -122,7 +122,7 @@ public class ChatServiceFacade implements IChatService {
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
 
         // 3. 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
-        SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter);
+        SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter, userId, tokenValue);
         if (specialResult != null) {
             return specialResult;
         }
@@ -151,10 +151,13 @@ public class ChatServiceFacade implements IChatService {
      * @param contextMessages  上下文消息列表（可能被修改）
      * @param chatModelVo      聊天模型配置
      * @param emitter          SSE发射器
+     * @param userId           用户ID
+     * @param tokenValue       会话令牌
      * @return 如果需要提前返回则返回SseEmitter，否则返回null
      */
     private SseEmitter handleSpecialChatModes(ChatRequest chatRequest, List<ChatMessage> contextMessages,
-                                              ChatModelVo chatModelVo, SseEmitter emitter) {
+                                              ChatModelVo chatModelVo, SseEmitter emitter,
+                                              Long userId, String tokenValue) {
         // 处理工作流对话
         if (chatRequest.getEnableWorkFlow()) {
             log.info("处理工作流对话,会话: {}", chatRequest.getSessionId());
@@ -193,7 +196,16 @@ public class ChatServiceFacade implements IChatService {
 
         // 处理思考模式
         if (chatRequest.getEnableThinking()) {
-            handleThinkingMode(chatRequest, contextMessages, chatModelVo);
+            String thinkingResult = handleThinkingMode(chatRequest, contextMessages, chatModelVo, userId, tokenValue);
+            // 思考模式产生了有效结果，通过 SSE 发送给前端后结束
+            if (thinkingResult != null && !thinkingResult.isBlank()) {
+                SseMessageUtils.sendDone(userId);
+                SseMessageUtils.completeConnection(userId, tokenValue);
+                log.info("思考模式完成，结果已发送: {}", thinkingResult);
+                return emitter;
+            }
+            // 思考结果为空，继续走普通聊天流程
+            log.warn("思考模式未产生有效结果，继续普通聊天");
         }
 
         return null;
@@ -205,8 +217,12 @@ public class ChatServiceFacade implements IChatService {
      * @param chatRequest      聊天请求
      * @param contextMessages  上下文消息列表
      * @param chatModelVo      聊天模型配置
+     * @param userId           用户ID
+     * @param tokenValue       会话令牌
+     * @return 思考结果字符串，如果无结果则返回空字符串
      */
-    private void handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages, ChatModelVo chatModelVo) {
+    private String handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages,
+                                       ChatModelVo chatModelVo, Long userId, String tokenValue) {
         // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
         McpTransport transport = new StdioMcpTransport.Builder()
             .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "bing-cn-mcp"))
@@ -263,13 +279,38 @@ public class ChatServiceFacade implements IChatService {
         // 构建监督者Agent
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(plannerModel)
-            .subAgents(sqlAgent, chartGenerationAgent)
+            .subAgents(sqlAgent, searchAgent, chartGenerationAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .listener(new MyAgentListener())
             .build();
 
+        // 调用 supervisor
         String invoke = supervisor.invoke(chatRequest.getContent());
-        contextMessages.add(AiMessage.from(invoke));
+        log.info("【思考模式】supervisor.invoke() 返回: {}", invoke);
+
+        // 如果有有效结果，通过 SSE 发送给前端并保存到数据库
+        if (invoke != null && !invoke.isBlank()) {
+            try {
+                // 通过 SSE 实时发送思考结果
+                SseMessageUtils.sendContent(userId, invoke);
+                log.info("【思考模式】结果已发送至SSE: {}", invoke);
+
+                // 保存用户消息
+                chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(),
+                    chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
+
+                // 保存助手思考结果消息
+                chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(),
+                    invoke, RoleType.ASSISTANT.getName(), chatRequest.getModel());
+
+                // 将思考结果添加到上下文，供后续流程使用（如果需要）
+                contextMessages.add(AiMessage.from(invoke));
+            } catch (Exception e) {
+                log.error("【思考模式】发送结果或保存消息失败: {}", e.getMessage(), e);
+            }
+        }
+
+        return invoke != null ? invoke : "";
     }
 
     /**

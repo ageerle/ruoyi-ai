@@ -10,6 +10,7 @@ import dev.langchain4j.service.tool.ToolExecution;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 自定义的 AgentListener 的监听器。
@@ -25,6 +26,13 @@ import java.util.Map;
  */
 @Slf4j
 public class MyAgentListener implements dev.langchain4j.agentic.observability.AgentListener {
+
+    /** 最终捕获到的思考结果（主 Agent 完成后写入，供外部获取） */
+    private final AtomicReference<String> sharedOutputRef = new AtomicReference<>();
+
+    public String getCapturedResult() {
+        return sharedOutputRef.get();
+    }
 
     // ==================== Agent 调用生命周期 ====================
 
@@ -72,12 +80,19 @@ public class MyAgentListener implements dev.langchain4j.agentic.observability.Ag
         AgentInstance agent = agentResponse.agent();
         Map<String, Object> inputs = agentResponse.inputs();
         Object output = agentResponse.output();
+        String outputStr = output != null ? output.toString() : "";
 
         log.info("【Agent调用后】Agent名称: {}", agent.name());
         log.info("【Agent调用后】Agent ID: {}", agent.agentId());
         log.info("【Agent调用后】Agent输入参数: {}", inputs);
         log.info("【Agent调用后】Agent输出结果: {}", output);
         log.info("【Agent调用后】是否为叶子节点: {}", agent.leaf());
+
+        // 捕获主 Agent 的最终输出，供外部获取
+        if ("invoke".equals(agent.agentId()) && !outputStr.isEmpty()) {
+            sharedOutputRef.set(outputStr);
+            log.info("【Agent调用后】已捕获主Agent输出: {}", outputStr);
+        }
     }
 
     @Override
