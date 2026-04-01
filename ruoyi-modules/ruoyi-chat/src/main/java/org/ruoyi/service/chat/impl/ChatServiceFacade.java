@@ -22,6 +22,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.agent.ChartGenerationAgent;
 import org.ruoyi.agent.SqlAgent;
+import org.ruoyi.observability.MyAgentListener;
+import org.ruoyi.observability.MyMcpClientListener;
 import org.ruoyi.agent.WebSearchAgent;
 import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
 import org.ruoyi.agent.tool.QueryAllTablesTool;
@@ -213,6 +215,7 @@ public class ChatServiceFacade implements IChatService {
 
         McpClient mcpClient = new DefaultMcpClient.Builder()
             .transport(transport)
+            .listener(new MyMcpClientListener())
             .build();
 
         ToolProvider toolProvider = McpToolProvider.builder()
@@ -227,6 +230,7 @@ public class ChatServiceFacade implements IChatService {
 
         McpClient mcpClient1 = new DefaultMcpClient.Builder()
             .transport(transport1)
+            .listener(new MyMcpClientListener())
             .build();
 
         ToolProvider toolProvider1 = McpToolProvider.builder()
@@ -261,6 +265,7 @@ public class ChatServiceFacade implements IChatService {
             .chatModel(plannerModel)
             .subAgents(sqlAgent, chartGenerationAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
+            .listener(new MyAgentListener())
             .build();
 
         String invoke = supervisor.invoke(chatRequest.getContent());

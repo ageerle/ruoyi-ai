@@ -1,11 +1,14 @@
 package org.ruoyi.service.chat.impl.provider;
 
+
 import dev.langchain4j.community.model.zhipu.ZhipuAiStreamingChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ChatModeType;
+import org.ruoyi.observability.ChatModelListenerProvider;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.springframework.stereotype.Service;
 
@@ -18,13 +21,17 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ZhiPuChatServiceImpl implements AbstractChatService {
+
+    private final ChatModelListenerProvider listenerProvider;
 
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return ZhipuAiStreamingChatModel.builder()
             .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())
+            .listeners(listenerProvider.getChatModelListeners())
             .build();
     }
 

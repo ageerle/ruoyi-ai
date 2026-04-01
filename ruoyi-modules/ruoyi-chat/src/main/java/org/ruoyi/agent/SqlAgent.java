@@ -11,7 +11,7 @@ import dev.langchain4j.service.V;
  * and returning relevant data and analysis results.
  *
  */
-public interface SqlAgent extends Agent {
+public interface SqlAgent {
 
     @SystemMessage("""
         This agent is designed for MySQL 5.7

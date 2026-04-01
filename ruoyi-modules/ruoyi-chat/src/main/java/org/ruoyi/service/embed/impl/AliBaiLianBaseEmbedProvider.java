@@ -4,8 +4,12 @@ package org.ruoyi.service.embed.impl;
 import dev.langchain4j.community.model.dashscope.QwenEmbeddingModel;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.embedding.listener.EmbeddingModelListener;
 import dev.langchain4j.model.output.Response;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.observability.EmbeddingModelListenerProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.ruoyi.enums.ModalityType;
 
@@ -20,8 +24,10 @@ import java.util.Set;
 @Component("alibailian")
 public class AliBaiLianBaseEmbedProvider extends OpenAiEmbeddingProvider {
 
-
     private ChatModelVo chatModelVo;
+
+    @Autowired
+    private EmbeddingModelListenerProvider embeddingModelListenerProvider;
 
     @Override
     public void configure(ChatModelVo config) {
@@ -35,12 +41,18 @@ public class AliBaiLianBaseEmbedProvider extends OpenAiEmbeddingProvider {
 
     @Override
     public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
-        return QwenEmbeddingModel.builder()
+        List<EmbeddingModelListener> listeners = embeddingModelListenerProvider.getEmbeddingModelListeners();
+        EmbeddingModel model = QwenEmbeddingModel.builder()
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
                 .dimension(chatModelVo.getModelDimension())
-                .build()
-                .embedAll(textSegments);
+                .build();
+
+        if (!listeners.isEmpty()) {
+            model = model.addListeners(listeners);
+        }
+
+        return model.embedAll(textSegments);
     }
 
 }
