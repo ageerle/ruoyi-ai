@@ -16,7 +16,7 @@ import java.net.ServerSocket;
 public class RuoYiAIApplication {
 
     public static void main(String[] args) {
-        killPortProcess(6039);
+        // killPortProcess(6039);
         SpringApplication application = new SpringApplication(RuoYiAIApplication.class);
         application.setApplicationStartup(new BufferingApplicationStartup(2048));
         application.run(args);

@@ -76,7 +76,7 @@ public class AuthController {
     @PostMapping("/login")
     public R<LoginVo> login(@RequestBody String body) {
         LoginBody loginBody = JsonUtils.parseObject(body, LoginBody.class);
-//        ValidatorUtils.validate(loginBody);
+        ValidatorUtils.validate(loginBody);
         // 授权类型和客户端id
         String clientId = loginBody.getClientId();
         String grantType = loginBody.getGrantType();
