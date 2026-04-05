@@ -320,7 +320,6 @@ public class ChatServiceFacade implements IChatService {
 
         // 7. 发起对话
         StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
-        streamingChatModel.listeners().add(new MyChatModelListener());
         streamingChatModel.chat(chatRequest.getContent(), combinedHandler);
     }
 
