@@ -1,11 +1,13 @@
 package org.ruoyi.service.chat.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
-import dev.langchain4j.community.model.dashscope.QwenChatModel;
-import dev.langchain4j.data.message.*;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
@@ -22,8 +24,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.agent.ChartGenerationAgent;
 import org.ruoyi.agent.SqlAgent;
-import org.ruoyi.observability.MyAgentListener;
-import org.ruoyi.observability.MyMcpClientListener;
 import org.ruoyi.agent.WebSearchAgent;
 import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
 import org.ruoyi.agent.tool.QueryAllTablesTool;
@@ -45,6 +45,9 @@ import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.service.core.ToolProviderFactory;
+import org.ruoyi.observability.MyAgentListener;
+import org.ruoyi.observability.MyChatModelListener;
+import org.ruoyi.observability.MyMcpClientListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
@@ -196,16 +199,7 @@ public class ChatServiceFacade implements IChatService {
 
         // 处理思考模式
         if (chatRequest.getEnableThinking()) {
-            String thinkingResult = handleThinkingMode(chatRequest, contextMessages, chatModelVo, userId, tokenValue);
-            // 思考模式产生了有效结果，通过 SSE 发送给前端后结束
-            if (thinkingResult != null && !thinkingResult.isBlank()) {
-                SseMessageUtils.sendDone(userId);
-                SseMessageUtils.completeConnection(userId, tokenValue);
-                log.info("思考模式完成，结果已发送: {}", thinkingResult);
-                return emitter;
-            }
-            // 思考结果为空，继续走普通聊天流程
-            log.warn("思考模式未产生有效结果，继续普通聊天");
+            handleThinkingMode(chatRequest, contextMessages, chatModelVo, userId);
         }
 
         return null;
@@ -214,15 +208,13 @@ public class ChatServiceFacade implements IChatService {
     /**
      * 处理思考模式
      *
-     * @param chatRequest      聊天请求
-     * @param contextMessages  上下文消息列表
-     * @param chatModelVo      聊天模型配置
-     * @param userId           用户ID
-     * @param tokenValue       会话令牌
-     * @return 思考结果字符串，如果无结果则返回空字符串
+     * @param chatRequest     聊天请求
+     * @param contextMessages 上下文消息列表
+     * @param chatModelVo     聊天模型配置
+     * @param userId          用户ID
      */
-    private String handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages,
-                                       ChatModelVo chatModelVo, Long userId, String tokenValue) {
+    private void handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages,
+                                    ChatModelVo chatModelVo, Long userId) {
         // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
         McpTransport transport = new StdioMcpTransport.Builder()
             .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "bing-cn-mcp"))
@@ -257,60 +249,40 @@ public class ChatServiceFacade implements IChatService {
         OpenAiChatModel plannerModel = OpenAiChatModel.builder()
             .baseUrl(chatModelVo.getApiHost())
             .apiKey(chatModelVo.getApiKey())
+            .listeners(List.of(new MyChatModelListener()))
             .modelName(chatModelVo.getModelName())
             .build();
 
         // 构建各Agent
         SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
             .chatModel(plannerModel)
+            .listener(new MyAgentListener())
             .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
             .build();
 
         WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
             .chatModel(plannerModel)
+            .listener(new MyAgentListener())
             .toolProvider(toolProvider)
             .build();
 
         ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
             .chatModel(plannerModel)
+            .listener(new MyAgentListener())
             .toolProvider(toolProvider1)
             .build();
 
         // 构建监督者Agent
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(plannerModel)
+            .listener(new MyAgentListener())
             .subAgents(sqlAgent, searchAgent, chartGenerationAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
-            .listener(new MyAgentListener())
             .build();
 
         // 调用 supervisor
         String invoke = supervisor.invoke(chatRequest.getContent());
-        log.info("【思考模式】supervisor.invoke() 返回: {}", invoke);
-
-        // 如果有有效结果，通过 SSE 发送给前端并保存到数据库
-        if (invoke != null && !invoke.isBlank()) {
-            try {
-                // 通过 SSE 实时发送思考结果
-                SseMessageUtils.sendContent(userId, invoke);
-                log.info("【思考模式】结果已发送至SSE: {}", invoke);
-
-                // 保存用户消息
-                chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(),
-                    chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
-
-                // 保存助手思考结果消息
-                chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(),
-                    invoke, RoleType.ASSISTANT.getName(), chatRequest.getModel());
-
-                // 将思考结果添加到上下文，供后续流程使用（如果需要）
-                contextMessages.add(AiMessage.from(invoke));
-            } catch (Exception e) {
-                log.error("【思考模式】发送结果或保存消息失败: {}", e.getMessage(), e);
-            }
-        }
-
-        return invoke != null ? invoke : "";
+        log.info("supervisor.invoke() 返回: {}", invoke);
     }
 
     /**
@@ -348,6 +320,7 @@ public class ChatServiceFacade implements IChatService {
 
         // 7. 发起对话
         StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
+        streamingChatModel.listeners().add(new MyChatModelListener());
         streamingChatModel.chat(chatRequest.getContent(), combinedHandler);
     }
 

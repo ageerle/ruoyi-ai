@@ -2,8 +2,9 @@ package org.ruoyi.factory;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.observability.EmbeddingModelListenerProvider;
 import org.ruoyi.service.embed.BaseEmbedModelService;
 import org.ruoyi.service.embed.MultiModalEmbedModelService;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -27,6 +28,7 @@ public class EmbeddingModelFactory {
     private final ApplicationContext applicationContext;
 
     private final IChatModelService chatModelService;
+    private final EmbeddingModelListenerProvider embeddingModelListenerProvider;
 
     // 模型缓存，使用ConcurrentHashMap保证线程安全
     private final Map<String, BaseEmbedModelService> modelCache = new ConcurrentHashMap<>();
@@ -109,6 +111,8 @@ public class EmbeddingModelFactory {
             BaseEmbedModelService model = applicationContext.getBean(factory, BaseEmbedModelService.class);
             // 配置模型参数
             model.configure(config);
+            // 增加嵌入模型监听器
+            model.addListeners(embeddingModelListenerProvider.getEmbeddingModelListeners());
             log.info("成功创建嵌入模型: factory={}, modelId={}", config.getProviderCode(), config.getId());
             return model;
         } catch (NoSuchBeanDefinitionException e) {

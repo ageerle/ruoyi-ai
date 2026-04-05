@@ -8,9 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ChatModeType;
-import org.ruoyi.observability.ChatModelListenerProvider;
+import org.ruoyi.observability.MyChatModelListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 /**
@@ -24,14 +26,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ZhiPuChatServiceImpl implements AbstractChatService {
 
-    private final ChatModelListenerProvider listenerProvider;
-
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return ZhipuAiStreamingChatModel.builder()
             .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())
-            .listeners(listenerProvider.getChatModelListeners())
+            .listeners(List.of(new MyChatModelListener()))
             .build();
     }
 

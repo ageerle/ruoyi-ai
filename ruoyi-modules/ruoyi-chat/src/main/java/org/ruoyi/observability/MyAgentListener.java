@@ -46,7 +46,7 @@ public class MyAgentListener implements dev.langchain4j.agentic.observability.Ag
         log.info("【Agent调用前】Agent ID: {}", agent.agentId());
         log.info("【Agent调用前】Agent类型: {}", agent.type().getName());
         log.info("【Agent调用前】Agent描述: {}", agent.description());
-        log.info("【Agent调用前】Planner类型: {}", agent.plannerType().getName());
+        log.info("【Agent调用前】Planner类型: {}", agent.plannerType());
         log.info("【Agent调用前】输出类型: {}", agent.outputType());
         log.info("【Agent调用前】输出Key: {}", agent.outputKey());
         log.info("【Agent调用前】是否为异步: {}", agent.async());
