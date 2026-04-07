@@ -359,44 +359,16 @@ public class ChatServiceFacade implements IChatService {
 
     /**
      * 构建上下文消息列表
+
+     * 消息顺序：历史消息 → 当前用户消息（确保 AI 正确理解对话上下文）
      *
      * @param chatRequest 聊天请求
      * @return 上下文消息列表
      */
     private List<ChatMessage> buildContextMessages(ChatRequest chatRequest) {
         List<ChatMessage> messages  = new ArrayList<>();
-        // 构建用户消息
-        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
-        messages.add(userMessage);
 
-        // 从向量库查询相关历史消息
-        if (chatRequest.getKnowledgeId() != null) {
-            // 查询知识库信息
-            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
-            if (knowledgeInfoVo == null) {
-                log.warn("知识库信息不存在，kid: {}", chatRequest.getKnowledgeId());
-                return messages;
-            }
-
-            // 查询向量模型配置信息
-            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
-            if (chatModel == null) {
-                log.warn("向量模型配置不存在，模型名称: {}", knowledgeInfoVo.getEmbeddingModel());
-                return messages;
-            }
-
-            // 构建向量查询参数
-            QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
-
-            // 获取向量查询结果
-            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
-            for (String prompt : nearestList) {
-                // 知识库内容作为系统上下文添加
-                messages.add( new AiMessage(prompt));
-            }
-        }
-
-        // 从数据库查询历史对话消息
+        // 从数据库查询历史对话消息（放在前面）
         if (chatRequest.getSessionId() != null) {
             MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
             if (memory != null) {
@@ -407,6 +379,40 @@ public class ChatServiceFacade implements IChatService {
                 }
             }
         }
+
+        // 从向量库查询相关历史消息（知识库内容作为上下文）
+        if (chatRequest.getKnowledgeId() != null) {
+            // 查询知识库信息
+            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
+            if (knowledgeInfoVo == null) {
+                log.warn("知识库信息不存在，kid: {}", chatRequest.getKnowledgeId());
+                // 继续添加当前用户消息
+                messages.add(UserMessage.userMessage(chatRequest.getContent()));
+                return messages;
+            }
+
+            // 查询向量模型配置信息
+            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+            if (chatModel == null) {
+                log.warn("向量模型配置不存在，模型名称: {}", knowledgeInfoVo.getEmbeddingModel());
+                messages.add(UserMessage.userMessage(chatRequest.getContent()));
+                return messages;
+            }
+
+            // 构建向量查询参数
+            QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
+
+            // 获取向量查询结果（知识库内容作为系统上下文，放在历史消息之后）
+            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
+            for (String prompt : nearestList) {
+                // 知识库内容作为系统上下文添加
+                messages.add(new AiMessage(prompt));
+            }
+        }
+
+        // 构建当前用户消息（放在最后）
+        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
+        messages.add(userMessage);
 
         return messages;
     }
