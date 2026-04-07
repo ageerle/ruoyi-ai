@@ -2,6 +2,7 @@ package org.ruoyi.service.embed.impl;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import dev.langchain4j.model.output.Response;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
@@ -33,12 +34,13 @@ public class OpenAiEmbeddingProvider implements BaseEmbedModelService {
 
     @Override
     public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
-        return OpenAiEmbeddingModel.builder()
+        EmbeddingModel model = OpenAiEmbeddingModel.builder()
                 .baseUrl(chatModelVo.getApiHost())
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
                 .dimensions(chatModelVo.getModelDimension())
-                .build()
-                .embedAll(textSegments);
+                .build();
+
+        return model.embedAll(textSegments);
     }
 }

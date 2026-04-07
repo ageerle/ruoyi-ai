@@ -1,11 +1,13 @@
 package org.ruoyi.service.chat.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
-import dev.langchain4j.community.model.dashscope.QwenChatModel;
-import dev.langchain4j.data.message.*;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
@@ -43,6 +45,9 @@ import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.service.core.ToolProviderFactory;
+import org.ruoyi.observability.MyAgentListener;
+import org.ruoyi.observability.MyChatModelListener;
+import org.ruoyi.observability.MyMcpClientListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
@@ -120,7 +125,7 @@ public class ChatServiceFacade implements IChatService {
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
 
         // 3. 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
-        SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter);
+        SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter, userId, tokenValue);
         if (specialResult != null) {
             return specialResult;
         }
@@ -149,10 +154,13 @@ public class ChatServiceFacade implements IChatService {
      * @param contextMessages  上下文消息列表（可能被修改）
      * @param chatModelVo      聊天模型配置
      * @param emitter          SSE发射器
+     * @param userId           用户ID
+     * @param tokenValue       会话令牌
      * @return 如果需要提前返回则返回SseEmitter，否则返回null
      */
     private SseEmitter handleSpecialChatModes(ChatRequest chatRequest, List<ChatMessage> contextMessages,
-                                              ChatModelVo chatModelVo, SseEmitter emitter) {
+                                              ChatModelVo chatModelVo, SseEmitter emitter,
+                                              Long userId, String tokenValue) {
         // 处理工作流对话
         if (chatRequest.getEnableWorkFlow()) {
             log.info("处理工作流对话,会话: {}", chatRequest.getSessionId());
@@ -191,7 +199,7 @@ public class ChatServiceFacade implements IChatService {
 
         // 处理思考模式
         if (chatRequest.getEnableThinking()) {
-            handleThinkingMode(chatRequest, contextMessages, chatModelVo);
+            handleThinkingMode(chatRequest, contextMessages, chatModelVo, userId);
         }
 
         return null;
@@ -200,11 +208,13 @@ public class ChatServiceFacade implements IChatService {
     /**
      * 处理思考模式
      *
-     * @param chatRequest      聊天请求
-     * @param contextMessages  上下文消息列表
-     * @param chatModelVo      聊天模型配置
+     * @param chatRequest     聊天请求
+     * @param contextMessages 上下文消息列表
+     * @param chatModelVo     聊天模型配置
+     * @param userId          用户ID
      */
-    private void handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages, ChatModelVo chatModelVo) {
+    private void handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages,
+                                    ChatModelVo chatModelVo, Long userId) {
         // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
         McpTransport transport = new StdioMcpTransport.Builder()
             .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "bing-cn-mcp"))
@@ -213,6 +223,7 @@ public class ChatServiceFacade implements IChatService {
 
         McpClient mcpClient = new DefaultMcpClient.Builder()
             .transport(transport)
+            .listener(new MyMcpClientListener())
             .build();
 
         ToolProvider toolProvider = McpToolProvider.builder()
@@ -227,6 +238,7 @@ public class ChatServiceFacade implements IChatService {
 
         McpClient mcpClient1 = new DefaultMcpClient.Builder()
             .transport(transport1)
+            .listener(new MyMcpClientListener())
             .build();
 
         ToolProvider toolProvider1 = McpToolProvider.builder()
@@ -237,34 +249,40 @@ public class ChatServiceFacade implements IChatService {
         OpenAiChatModel plannerModel = OpenAiChatModel.builder()
             .baseUrl(chatModelVo.getApiHost())
             .apiKey(chatModelVo.getApiKey())
+            .listeners(List.of(new MyChatModelListener()))
             .modelName(chatModelVo.getModelName())
             .build();
 
         // 构建各Agent
         SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
             .chatModel(plannerModel)
+            .listener(new MyAgentListener())
             .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
             .build();
 
         WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
             .chatModel(plannerModel)
+            .listener(new MyAgentListener())
             .toolProvider(toolProvider)
             .build();
 
         ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
             .chatModel(plannerModel)
+            .listener(new MyAgentListener())
             .toolProvider(toolProvider1)
             .build();
 
         // 构建监督者Agent
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(plannerModel)
-            .subAgents(sqlAgent, chartGenerationAgent)
+            .listener(new MyAgentListener())
+            .subAgents(sqlAgent, searchAgent, chartGenerationAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .build();
 
+        // 调用 supervisor
         String invoke = supervisor.invoke(chatRequest.getContent());
-        contextMessages.add(AiMessage.from(invoke));
+        log.info("supervisor.invoke() 返回: {}", invoke);
     }
 
     /**

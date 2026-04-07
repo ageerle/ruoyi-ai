@@ -10,7 +10,7 @@ import dev.langchain4j.service.V;
  * A web search assistant that answers natural language questions by searching the internet
  * and returning relevant information from web pages.
  */
-public interface WebSearchAgent extends Agent {
+public interface WebSearchAgent {
 
     @SystemMessage("""
         You are a web search assistant. Answer questions by searching and retrieving web content.

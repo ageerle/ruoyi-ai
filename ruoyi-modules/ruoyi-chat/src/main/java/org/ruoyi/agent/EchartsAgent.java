@@ -14,7 +14,7 @@ public interface EchartsAgent {
 
     @SystemMessage("""
         You are a data visualization assistant that generates Echarts chart configurations.
-        
+
         CRITICAL OUTPUT REQUIREMENTS:
         - Return Echarts JSON wrapped in markdown code block
         - Use this exact format: ```json\n{...}\n```
@@ -81,7 +81,7 @@ public interface EchartsAgent {
         """)
     @UserMessage("""
         Generate an Echarts chart for: {{query}}
-        
+
         IMPORTANT: Return the Echarts configuration JSON wrapped in markdown code block (```json...```).
         """)
     @Agent("Data visualization assistant that returns Echarts JSON configurations for frontend rendering")
