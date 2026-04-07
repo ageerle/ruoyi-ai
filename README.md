@@ -62,7 +62,7 @@
 ## 🛠️ 技术架构
 
 ### 核心框架
-- **后端架构**：Spring Boot 4.0 + Spring ai 2.0 + Langchain4j
+- **后端架构**：Spring Boot 3.5.8 + Langchain4j
 - **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate/Qdrant）
 - **前端技术**：Vue 3 + Vben Admin + element-plus-x
 - **安全认证**：Sa-Token + JWT 双重保障
@@ -188,12 +188,6 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 想要深入了解安装部署、功能配置和二次开发？
 
 **👉 [完整使用文档](https://doc.pandarobot.chat)**
-
-遇到知识库或 RAG 回答异常问题？
-
-**👉 [RAG 回答异常排查手册](docs/troubleshooting/rag-failures.md)**
-
----
 
 ## 🤝 参与贡献
 
