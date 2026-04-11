@@ -24,6 +24,6 @@ jobs:
         distribution: 'temurin'
         cache: maven
         
-    # 3. 使用 Maven 编译打包，跳过耗时的测试过程确保打包成功即可
+    # 3. 使用专门加速的 settings 文件（跳过华为本地源劫持），大大压缩海外服务器打包时间
     - name: Build with Maven
-      run: mvn -B package --file pom.xml -DskipTests
+      run: mvn -B package --file pom.xml -s .github/actions-settings.xml -DskipTests
