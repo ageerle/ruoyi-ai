@@ -1,0 +1,29 @@
+# 本工作流将在每次往主分支推送或提交合并请求 (Pull Request) 时触发
+# 其目标是进行一次干净的基础构建打包，确保合入的代码不会导致整个项目编译失败
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. 检出仓库代码
+    - uses: actions/checkout@v4
+      
+    # 2. 设置 JDK 17 环境
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+        
+    # 3. 使用 Maven 编译打包，跳过耗时的测试过程确保打包成功即可
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml -DskipTests
