@@ -20,6 +20,7 @@ import org.ruoyi.domain.bo.knowledge.KnowledgeInfoUploadBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeAttach;
 import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
+import org.ruoyi.domain.vo.knowledge.DocFragmentCountVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeAttachVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ResourceLoaderFactory;
@@ -81,6 +82,9 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
     public TableDataInfo<KnowledgeAttachVo> queryPageList(KnowledgeAttachBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<KnowledgeAttach> lqw = buildQueryWrapper(bo);
         Page<KnowledgeAttachVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 批量填充分块数
+        List<KnowledgeAttachVo> records = result.getRecords();
+        fillFragmentCount(records);
         return TableDataInfo.build(result);
     }
 
@@ -93,7 +97,33 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
     @Override
     public List<KnowledgeAttachVo> queryList(KnowledgeAttachBo bo) {
         LambdaQueryWrapper<KnowledgeAttach> lqw = buildQueryWrapper(bo);
-        return baseMapper.selectVoList(lqw);
+        List<KnowledgeAttachVo> list = baseMapper.selectVoList(lqw);
+        fillFragmentCount(list);
+        return list;
+    }
+
+    /**
+     * 批量填充每个附件记录的分块数（fragmentCount）
+     */
+    private void fillFragmentCount(List<KnowledgeAttachVo> records) {
+        if (records == null || records.isEmpty()) return;
+        List<String> docIds = records.stream()
+            .map(KnowledgeAttachVo::getDocId)
+            .filter(docId -> docId != null && !docId.isEmpty())
+            .distinct()
+            .collect(java.util.stream.Collectors.toList());
+        if (docIds.isEmpty()) return;
+        List<DocFragmentCountVo> countList =
+            knowledgeFragmentMapper.selectFragmentCountByDocIds(docIds);
+        Map<String, Integer> countMap = new java.util.HashMap<>();
+        for (DocFragmentCountVo item : countList) {
+            if (item.getDocId() != null) {
+                countMap.put(item.getDocId(), item.getFragmentCount());
+            }
+        }
+        for (KnowledgeAttachVo vo : records) {
+            vo.setFragmentCount(countMap.getOrDefault(vo.getDocId(), 0));
+        }
     }
 
     private LambdaQueryWrapper<KnowledgeAttach> buildQueryWrapper(KnowledgeAttachBo bo) {

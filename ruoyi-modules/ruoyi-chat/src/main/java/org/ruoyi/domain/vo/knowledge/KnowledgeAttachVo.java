@@ -8,6 +8,7 @@ import org.ruoyi.domain.entity.knowledge.KnowledgeAttach;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 
 
 
@@ -67,6 +68,17 @@ public class KnowledgeAttachVo implements Serializable {
      */
     @ExcelProperty(value = "备注")
     private String remark;
+
+    /**
+     * 上传时间（来自 BaseEntity.createTime）
+     */
+    @ExcelProperty(value = "上传时间")
+    private Date createTime;
+
+    /**
+     * 分块数（统计字段，非数据库列）
+     */
+    private Integer fragmentCount;
 
 
 }

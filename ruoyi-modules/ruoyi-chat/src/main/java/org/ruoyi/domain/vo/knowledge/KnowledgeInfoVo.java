@@ -100,5 +100,10 @@ public class KnowledgeInfoVo implements Serializable {
     @ExcelProperty(value = "备注")
     private String remark;
 
+    /**
+     * 文档数（统计字段，非数据库列）
+     */
+    private Integer documentCount;
+
 
 }
