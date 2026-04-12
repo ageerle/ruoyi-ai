@@ -1,5 +1,6 @@
 package org.ruoyi.mapper.knowledge;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
@@ -15,6 +16,7 @@ import java.util.List;
  * @author ageerle
  * @date 2025-12-17
  */
+@Mapper
 public interface KnowledgeFragmentMapper extends BaseMapperPlus<KnowledgeFragment, KnowledgeFragmentVo> {
 
     /**

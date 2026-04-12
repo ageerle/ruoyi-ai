@@ -76,6 +76,12 @@ public class KnowledgeAttachVo implements Serializable {
     private Date createTime;
 
     /**
+     * 解析状态: 0待解析, 1解析中, 2已解析, 3解析失败
+     */
+    @ExcelProperty(value = "解析状态")
+    private Integer status;
+
+    /**
      * 分块数（统计字段，非数据库列）
      */
     private Integer fragmentCount;

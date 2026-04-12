@@ -72,4 +72,11 @@ public interface IKnowledgeAttachService {
      * 上传附件
      */
     void upload(KnowledgeInfoUploadBo bo);
+
+    /**
+     * 解析附件知识片段
+     *
+     * @param id 附件ID
+     */
+    void parse(Long id);
 }

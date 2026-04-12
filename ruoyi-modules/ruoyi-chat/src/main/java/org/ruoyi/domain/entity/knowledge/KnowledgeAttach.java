@@ -57,5 +57,10 @@ public class KnowledgeAttach extends BaseEntity {
      */
     private String remark;
 
+    /**
+     * 解析状态: 0待解析, 1解析中, 2已解析, 3解析失败
+     */
+    private Integer status;
+
 
 }

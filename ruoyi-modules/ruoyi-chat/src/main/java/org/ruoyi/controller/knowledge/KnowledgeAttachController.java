@@ -110,6 +110,17 @@ public class KnowledgeAttachController extends BaseController {
     @PostMapping(value = "/upload")
     public R<String> upload(KnowledgeInfoUploadBo bo){
         knowledgeAttachService.upload(bo);
-        return R.ok("上传知识库附件成功!");
+        return R.ok("上传成功!");
+    }
+
+    /**
+     * 手动解析附件内容
+     *
+     * @param id 附件ID
+     */
+    @PostMapping("/parse/{id}")
+    public R<Void> parse(@PathVariable Long id) {
+        knowledgeAttachService.parse(id);
+        return R.ok();
     }
 }
