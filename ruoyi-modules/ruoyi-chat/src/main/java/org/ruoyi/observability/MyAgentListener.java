@@ -125,21 +125,21 @@ public class MyAgentListener implements dev.langchain4j.agentic.observability.Ag
     }
 
     // ==================== 工具执行生命周期 ====================
-
-    @Override
-    public void beforeToolExecution(BeforeToolExecution beforeToolExecution) {
-        var toolRequest = beforeToolExecution.request();
-        log.info("【工具执行前】工具请求ID: {}", toolRequest.id());
-        log.info("【工具执行前】工具名称: {}", toolRequest.name());
-        log.info("【工具执行前】工具参数: {}", toolRequest.arguments());
-    }
-
-    @Override
-    public void afterToolExecution(ToolExecution toolExecution) {
-        var toolRequest = toolExecution.request();
-        log.info("【工具执行后】工具请求ID: {}", toolRequest.id());
-        log.info("【工具执行后】工具名称: {}", toolRequest.name());
-        log.info("【工具执行后】工具执行结果: {}", toolExecution.result());
-        log.info("【工具执行后】工具执行是否失败: {}", toolExecution.hasFailed());
-    }
+//
+//    @Override
+//    public void beforeToolExecution(BeforeToolExecution beforeToolExecution) {
+//        var toolRequest = beforeToolExecution.request();
+//        log.info("【工具执行前】工具请求ID: {}", toolRequest.id());
+//        log.info("【工具执行前】工具名称: {}", toolRequest.name());
+//        log.info("【工具执行前】工具参数: {}", toolRequest.arguments());
+//    }
+//
+//    @Override
+//    public void afterToolExecution(ToolExecution toolExecution) {
+//        var toolRequest = toolExecution.request();
+//        log.info("【工具执行后】工具请求ID: {}", toolRequest.id());
+//        log.info("【工具执行后】工具名称: {}", toolRequest.name());
+//        log.info("【工具执行后】工具执行结果: {}", toolExecution.result());
+//        log.info("【工具执行后】工具执行是否失败: {}", toolExecution.hasFailed());
+//    }
 }

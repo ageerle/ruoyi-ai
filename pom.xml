@@ -54,8 +54,8 @@
         <!-- Jackson XML -->
         <jackson-dataformat-xml.version>2.18.2</jackson-dataformat-xml.version>
         <!-- AI 相关依赖 -->
-        <langchain4j.version>1.11.0</langchain4j.version>
-        <langchain4j.community.version>1.11.0-beta19</langchain4j.community.version>
+        <langchain4j.version>1.13.0</langchain4j.version>
+        <langchain4j.community.version>1.13.0-beta23</langchain4j.community.version>
         <langgraph4j.version>1.5.3</langgraph4j.version>
         <weaviate.version>1.19.6</weaviate.version>
         <dify.version>1.0.7</dify.version>

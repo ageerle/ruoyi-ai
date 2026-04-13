@@ -1,5 +1,6 @@
 package org.ruoyi.common.security.config;
 
+import cn.dev33.satoken.context.SaTokenContextForThreadLocalStaff;
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.filter.SaServletFilter;
 import cn.dev33.satoken.httpauth.basic.SaHttpBasicUtil;
@@ -49,6 +50,11 @@ public class SecurityConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 注册路由拦截器，自定义验证规则
         registry.addInterceptor(new SaInterceptor(handler -> {
+                // 异步线程中 SaToken 上下文不存在，跳过检查
+                // 这避免了 SSE 流式响应完成后 emitter.complete() 触发的问题
+                if (SaTokenContextForThreadLocalStaff.getModelBoxOrNull() == null) {
+                    return;
+                }
                 AllUrlHandler allUrlHandler = SpringUtils.getBean(AllUrlHandler.class);
                 // 登录验证 -- 排除多个路径
                 SaRouter

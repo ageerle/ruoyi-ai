@@ -202,12 +202,14 @@ public class SseEmitterManager {
     public void sendEvent(Long userId, SseEventDto eventDto) {
         Map<String, SseEmitter> emitters = USER_TOKEN_EMITTERS.get(userId);
         if (MapUtil.isNotEmpty(emitters)) {
+            log.debug("【SSE发送】userId: {}, emitter数量: {}, event: {}", userId, emitters.size(), eventDto.getEvent());
             for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
                 try {
                     entry.getValue().send(SseEmitter.event()
                         .name(eventDto.getEvent())
                         .data(JSONUtil.toJsonStr(eventDto)));
                 } catch (Exception e) {
+                    log.error("【SSE发送失败】userId: {}, token: {}, error: {}", userId, entry.getKey(), e.getMessage());
                     SseEmitter remove = emitters.remove(entry.getKey());
                     if (remove != null) {
                         remove.complete();
@@ -215,6 +217,7 @@ public class SseEmitterManager {
                 }
             }
         } else {
+            log.warn("【SSE发送失败】userId: {} 没有活跃的SSE连接, 当前连接用户: {}", userId, USER_TOKEN_EMITTERS.keySet());
             USER_TOKEN_EMITTERS.remove(userId);
         }
     }

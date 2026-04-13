@@ -3,8 +3,13 @@ package org.ruoyi.common.chat.domain.dto.request;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import dev.langchain4j.data.message.ChatMessage;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
 
 
 /**
@@ -62,7 +67,6 @@ public class ChatRequest {
      */
     private String appId;
 
-
     /**
      * 对话id(每个聊天窗口都不一样)
      */
@@ -76,8 +80,28 @@ public class ChatRequest {
     private Boolean enableThinking = false;
 
     /**
-     * 是否支持联网
+     * 对话模型详情
      */
-    private Boolean enableInternet;
+    private ChatModelVo chatModelVo;
+
+    /**
+     * 对话事件
+     */
+    private SseEmitter emitter;
+
+    /**
+     * 当前登录用户id
+     */
+    private Long userId;
+
+    /**
+     * 当前登录用户TOKEN
+     */
+    private String tokenValue;
+
+    /**
+     * 完整的上下文
+     */
+    private List<ChatMessage> contextMessages;
 
 }

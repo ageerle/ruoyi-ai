@@ -1,7 +1,6 @@
 package org.ruoyi.service.chat.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
@@ -14,15 +13,19 @@ import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.tool.ToolProvider;
+import dev.langchain4j.skills.shell.ShellSkills;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.agent.ChartGenerationAgent;
+import org.ruoyi.agent.EchartsAgent;
+import org.ruoyi.agent.SkillsAgent;
 import org.ruoyi.agent.SqlAgent;
 import org.ruoyi.agent.WebSearchAgent;
 import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
@@ -38,6 +41,7 @@ import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
 import org.ruoyi.common.core.utils.ObjectUtils;
+import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
@@ -45,9 +49,7 @@ import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.service.core.ToolProviderFactory;
-import org.ruoyi.observability.MyAgentListener;
-import org.ruoyi.observability.MyChatModelListener;
-import org.ruoyi.observability.MyMcpClientListener;
+import org.ruoyi.observability.*;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
@@ -59,6 +61,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -124,10 +127,19 @@ public class ChatServiceFacade implements IChatService {
         // 2. 构建上下文消息列表
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
 
+        chatRequest.setEmitter(emitter);
+        chatRequest.setUserId(userId);
+        chatRequest.setTokenValue(tokenValue);
+        chatRequest.setChatModelVo(chatModelVo);
+        chatRequest.setContextMessages(contextMessages);
+
+        // 保存用户消息
+        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
+
         // 3. 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
-        SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter, userId, tokenValue);
-        if (specialResult != null) {
-            return specialResult;
+        SseEmitter sseEmitter = handleSpecialChatModes(chatRequest);
+        if (sseEmitter != null) {
+            return sseEmitter;
         }
 
         // 4. 路由服务提供商
@@ -135,11 +147,8 @@ public class ChatServiceFacade implements IChatService {
         log.info("路由到服务提供商: {}, 模型: {}", providerCode, chatRequest.getModel());
         AbstractChatService chatService = chatServiceFactory.getOriginalService(providerCode);
 
-
         StreamingChatResponseHandler handler = createResponseHandler(userId, tokenValue,chatRequest);
 
-        // 保存用户消息
-        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
 
         // 5. 发起对话
         StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
@@ -151,16 +160,9 @@ public class ChatServiceFacade implements IChatService {
      * 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
      *
      * @param chatRequest      聊天请求
-     * @param contextMessages  上下文消息列表（可能被修改）
-     * @param chatModelVo      聊天模型配置
-     * @param emitter          SSE发射器
-     * @param userId           用户ID
-     * @param tokenValue       会话令牌
      * @return 如果需要提前返回则返回SseEmitter，否则返回null
      */
-    private SseEmitter handleSpecialChatModes(ChatRequest chatRequest, List<ChatMessage> contextMessages,
-                                              ChatModelVo chatModelVo, SseEmitter emitter,
-                                              Long userId, String tokenValue) {
+    private SseEmitter handleSpecialChatModes(ChatRequest chatRequest) {
         // 处理工作流对话
         if (chatRequest.getEnableWorkFlow()) {
             log.info("处理工作流对话,会话: {}", chatRequest.getSessionId());
@@ -169,7 +171,6 @@ public class ChatServiceFacade implements IChatService {
             if (ObjectUtils.isEmpty(runner)) {
                 log.warn("工作流参数为空");
             }
-
             return workFlowStarterService.streaming(
                 ThreadContext.getCurrentUser(),
                 runner.getUuid(),
@@ -181,25 +182,22 @@ public class ChatServiceFacade implements IChatService {
         // 处理人机交互恢复
         if (chatRequest.getIsResume()) {
             log.info("处理人机交互恢复");
-
             ReSumeRunner reSumeRunner = chatRequest.getReSumeRunner();
             if (ObjectUtils.isEmpty(reSumeRunner)) {
                 log.warn("人机交互恢复参数为空");
-                return emitter;
             }
-
             workFlowStarterService.resumeFlow(
                 reSumeRunner.getRuntimeUuid(),
                 reSumeRunner.getFeedbackContent(),
-                emitter
+                chatRequest.getEmitter()
             );
 
-            return emitter;
-        }
+            return chatRequest.getEmitter();
 
+        }
         // 处理思考模式
         if (chatRequest.getEnableThinking()) {
-            handleThinkingMode(chatRequest, contextMessages, chatModelVo, userId);
+           return handleThinkingMode(chatRequest);
         }
 
         return null;
@@ -209,80 +207,132 @@ public class ChatServiceFacade implements IChatService {
      * 处理思考模式
      *
      * @param chatRequest     聊天请求
-     * @param contextMessages 上下文消息列表
-     * @param chatModelVo     聊天模型配置
-     * @param userId          用户ID
+
      */
-    private void handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages,
-                                    ChatModelVo chatModelVo, Long userId) {
-        // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
-        McpTransport transport = new StdioMcpTransport.Builder()
+    private SseEmitter handleThinkingMode(ChatRequest chatRequest) {
+        // 配置监督者模型
+        OpenAiChatModel plannerModel = OpenAiChatModel.builder()
+            .baseUrl(chatRequest.getChatModelVo().getApiHost())
+            .apiKey(chatRequest.getChatModelVo().getApiKey())
+            .modelName(chatRequest.getChatModelVo().getModelName())
+            .build();
+
+        // Bing 搜索 MCP 客户端
+        McpTransport bingTransport = new StdioMcpTransport.Builder()
             .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "bing-cn-mcp"))
             .logEvents(true)
             .build();
 
-        McpClient mcpClient = new DefaultMcpClient.Builder()
-            .transport(transport)
-            .listener(new MyMcpClientListener())
+        Long userId = chatRequest.getUserId();
+        McpClient bingMcpClient = new DefaultMcpClient.Builder()
+            .transport(bingTransport)
+            .listener(new MyMcpClientListener(userId))
             .build();
 
-        ToolProvider toolProvider = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient))
-            .build();
-
-        // 配置echarts MCP
-        McpTransport transport1 = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "mcp-echarts"))
+        // Playwright MCP 客户端 - 浏览器自动化工具
+        McpTransport playwrightTransport = new StdioMcpTransport.Builder()
+            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "@playwright/mcp@latest"))
             .logEvents(true)
             .build();
 
-        McpClient mcpClient1 = new DefaultMcpClient.Builder()
-            .transport(transport1)
-            .listener(new MyMcpClientListener())
+        McpClient playwrightMcpClient = new DefaultMcpClient.Builder()
+            .transport(playwrightTransport)
+            .listener(new MyMcpClientListener(userId))
             .build();
 
-        ToolProvider toolProvider1 = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient1))
+        // Filesystem MCP 客户端 - 文件管理工具
+        // 允许 AI 读取、写入、搜索文件（基于当前项目根目录）
+        String userDir = System.getProperty("user.dir");
+        McpTransport filesystemTransport = new StdioMcpTransport.Builder()
+            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
+                "@modelcontextprotocol/server-filesystem", userDir))
+            .logEvents(true)
+
             .build();
 
-        // 配置模型
-        OpenAiChatModel plannerModel = OpenAiChatModel.builder()
-            .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.getApiKey())
-            .listeners(List.of(new MyChatModelListener()))
-            .modelName(chatModelVo.getModelName())
+        McpClient filesystemMcpClient = new DefaultMcpClient.Builder()
+            .transport(filesystemTransport)
+            .listener(new MyMcpClientListener(userId))
             .build();
 
-        // 构建各Agent
+        // 合并三个 MCP 客户端的工具
+        ToolProvider toolProvider = McpToolProvider.builder()
+            // bingMcpClient,
+            .mcpClients(List.of(playwrightMcpClient, filesystemMcpClient))
+            .build();
+
+        // ========== LangChain4j Skills 基本用法 ==========
+        // 通过 SKILL.md 文件定义，LLM 按需通过 activate_skill 工具加载
+        // 加载 Skills - 使用相对路径，基于项目根目录
+        java.nio.file.Path skillsPath = java.nio.file.Path.of(userDir, "ruoyi-admin/src/main/resources/skills");
+        List<dev.langchain4j.skills.FileSystemSkill> skillsList = dev.langchain4j.skills.FileSystemSkillLoader
+            .loadSkills(skillsPath)
+            ;
+
+        ShellSkills skills = ShellSkills.from(skillsList);
+
+        // 构建子 Agent
+        WebSearchAgent searchAgent  = AgenticServices.agentBuilder(WebSearchAgent.class)
+            .chatModel(plannerModel)
+            .toolProvider(toolProvider)
+            .listener(new MyAgentListener())
+            .build();
+
+        // 构建子 Agent 2: SkillsAgent - 负责文档处理技能（docx、pdf、xlsx）
+        // 独立管理 Skills 工具
+        SkillsAgent skillsAgent = AgenticServices.agentBuilder(SkillsAgent.class)
+            .chatModel(plannerModel)
+            .systemMessage("You have access to the following skills:\n" + skills.formatAvailableSkills()
+                + "\nWhen the user's request relates to one of these skills, activate it first using the `activate_skill` tool before proceeding.")
+            .toolProvider(skills.toolProvider())
+            .build();
+
+        // 构建子 Agent 3: SqlAgent - 负责数据库查询
         SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
             .chatModel(plannerModel)
-            .listener(new MyAgentListener())
             .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
-            .build();
-
-        WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
-            .chatModel(plannerModel)
             .listener(new MyAgentListener())
-            .toolProvider(toolProvider)
             .build();
 
+        // 构建子 Agent 4: ChartGenerationAgent - 负责图表生成
         ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
             .chatModel(plannerModel)
             .listener(new MyAgentListener())
-            .toolProvider(toolProvider1)
             .build();
 
-        // 构建监督者Agent
+        // 构建子 Agent 5: EchartsAgent - 负责数据可视化（结合 SQL 查询生成 Echarts 图表）
+        EchartsAgent echartsAgent = AgenticServices.agentBuilder(EchartsAgent.class)
+            .chatModel(plannerModel)
+            .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
+            .listener(new MyAgentListener())
+            .build();
+
+        // 构建监督者 Agent - 管理多个子 Agent
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(plannerModel)
-            .listener(new MyAgentListener())
-            .subAgents(sqlAgent, searchAgent, chartGenerationAgent)
+            //.listener(new SupervisorStreamListener(null))
+            .subAgents(skillsAgent,searchAgent, sqlAgent, chartGenerationAgent, echartsAgent)
+            // 加入历史上下文 - 使用 ChatMemoryProvider 提供持久化的聊天内存
+            //.chatMemoryProvider(memoryId -> createChatMemory(chatRequest.getSessionId()))
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .build();
 
-        // 调用 supervisor
-        String invoke = supervisor.invoke(chatRequest.getContent());
-        log.info("supervisor.invoke() 返回: {}", invoke);
+        String tokenValue = chatRequest.getTokenValue();
+
+        // 异步执行 supervisor，避免阻塞 HTTP 请求线程导致 SSE 事件被缓冲
+        CompletableFuture.runAsync(() -> {
+            try {
+                String result = supervisor.invoke(chatRequest.getContent());
+                SseMessageUtils.sendContent(userId, result);
+                SseMessageUtils.sendDone(userId);
+            } catch (Exception e) {
+                log.error("Supervisor 执行失败", e);
+                SseMessageUtils.sendError(userId, e.getMessage());
+            } finally {
+                SseMessageUtils.completeConnection(userId, tokenValue);
+            }
+        });
+        return chatRequest.getEmitter();
     }
 
     /**
@@ -549,7 +599,5 @@ public class ChatServiceFacade implements IChatService {
             }
         };
     }
-
-
 }
 
