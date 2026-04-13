@@ -27,10 +27,27 @@ public class ScoringModelFactory {
         }
 
         String providerCode = rerankModelConfig.getProviderCode();
-        log.info("初始化重排模型，供应商代码: {}", providerCode);
+        log.info("初始化重排模型，供应商代码: {}, 模型名称: {}", providerCode, rerankModelConfig.getModelName());
 
-        // TODO: 在这里通过 switch 或反射具体实例化支持的各种 ScoringModel (例如 CohereScoringModel, DascScope 等)
-        // 目前返回 null 代表暂时没有加载特定的重排底座，这不会影响流程，Aggregator 会忽略它返回原样结果
+        try {
+            if ("alibailian".equalsIgnoreCase(providerCode)) {
+                return DashScopeScoringModel.builder()
+                        .apiKey(rerankModelConfig.getApiKey())
+                        .modelName(rerankModelConfig.getModelName())
+                        .build();
+            }
+
+            if ("siliconflow".equalsIgnoreCase(providerCode)) {
+                return SiliconFlowScoringModel.builder()
+                        .apiKey(rerankModelConfig.getApiKey())
+                        .modelName(rerankModelConfig.getModelName())
+                        // 如果后台配置了不同的 API Host，可以在此传递，否则使用默认值
+                        .baseUrl(rerankModelConfig.getApiHost())
+                        .build();
+            }
+        } catch (Exception e) {
+            log.error("创建重排模型失败: {}", e.getMessage(), e);
+        }
 
         return null;
     }

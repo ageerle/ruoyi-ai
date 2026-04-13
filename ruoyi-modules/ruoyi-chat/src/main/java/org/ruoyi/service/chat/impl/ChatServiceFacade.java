@@ -377,20 +377,24 @@ public class ChatServiceFacade implements IChatService {
                     CustomVectorRetriever retriever = new CustomVectorRetriever(
                             vectorStoreService, knowledgeInfoVo, chatModel);
 
-                    // 2. 获取和构建重排模型聚合器（Aggregator）
-                    // 假设已在 KnowledgeInfoVo 等加入 getRerankModelConfig/getRerankModel 等，这里演示通用逻辑
-                    // 若无重排需求，使用 DefaultContentAggregator 或无 ScoringModel 的聚合器
+                    // 2. 构建重排聚合器 (Aggregator)
                     ContentAggregator contentAggregator;
-                    // TODO: 一旦实体类实现了重排模型的支持，此处可以从数据库读出：
-                    // ChatModelVo scoringModelConfig = chatModelService.selectModelByName(knowledgeInfoVo.getRerankModel());
-                    ChatModelVo scoringModelConfig = null; // 当前暂无对应配置字段
+                    if (knowledgeInfoVo.getEnableRerank() != null && knowledgeInfoVo.getEnableRerank() == 1
+                            && knowledgeInfoVo.getRerankModel() != null) {
 
-                    ScoringModel scoringModel = scoringModelFactory.createScoringModel(scoringModelConfig);
-                    if (scoringModel != null) {
-                        contentAggregator = ReRankingContentAggregator.builder()
-                                .scoringModel(scoringModel)
-                                // .maxResults(3) 这个数字将来从配置取
-                                .build();
+                        ChatModelVo scoringModelConfig = chatModelService.selectModelByName(knowledgeInfoVo.getRerankModel());
+                        ScoringModel scoringModel = scoringModelFactory.createScoringModel(scoringModelConfig);
+
+                        if (scoringModel != null) {
+                            contentAggregator = ReRankingContentAggregator.builder()
+                                    .scoringModel(scoringModel)
+                                    // 默认重排后只留前 5 条，避免上下文过长
+                                    .maxResults(5)
+                                    .build();
+                            log.info("启用重排模型: {}", knowledgeInfoVo.getRerankModel());
+                        } else {
+                            contentAggregator = new DefaultContentAggregator();
+                        }
                     } else {
                         contentAggregator = new DefaultContentAggregator();
                     }

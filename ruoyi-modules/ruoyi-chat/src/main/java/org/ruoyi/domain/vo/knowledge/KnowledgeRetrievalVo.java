@@ -29,6 +29,16 @@ public class KnowledgeRetrievalVo implements Serializable {
     private Double score;
 
     /**
+     * 原始检索排名 (重排前)
+     */
+    private Integer originalIndex;
+
+    /**
+     * 原始检索得分 (重排前)
+     */
+    private Double rawScore;
+
+    /**
      * 来源文档名称
      */
     private String sourceName;

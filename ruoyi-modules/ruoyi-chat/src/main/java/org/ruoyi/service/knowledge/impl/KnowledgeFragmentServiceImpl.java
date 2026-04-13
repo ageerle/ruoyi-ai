@@ -1,5 +1,8 @@
 package org.ruoyi.service.knowledge.impl;
 
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.output.Response;
+import dev.langchain4j.model.scoring.ScoringModel;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -20,6 +23,7 @@ import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.service.knowledge.IKnowledgeFragmentService;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.service.knowledge.rerank.ScoringModelFactory;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -44,6 +48,7 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
     private final IKnowledgeInfoService knowledgeInfoService;
     private final IChatModelService chatModelService;
     private final VectorStoreService vectorStoreService;
+    private final ScoringModelFactory scoringModelFactory;
 
     /**
      * 查询知识片段
@@ -178,7 +183,48 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
         // 3. 执行物理检索
         List<KnowledgeRetrievalVo> allResults = vectorStoreService.search(queryVectorBo);
 
-        // 4. 根据阈值过滤 (LangChain4j 结果 score 通常 0-1)
+        // 初始化原始排名
+        for (int i = 0; i < allResults.size(); i++) {
+            allResults.get(i).setOriginalIndex(i);
+        }
+
+        // 4. 执行重排逻辑 (如果请求启用重排且配置了重排模型)
+        if (Boolean.TRUE.equals(bo.getEnableRerank()) && StringUtils.isNotBlank(bo.getRerankModel())) {
+            log.info("开始重排配置检索测试，传入模型名称: [{}]", bo.getRerankModel());
+            ChatModelVo rerankModelConfig = chatModelService.selectModelByName(bo.getRerankModel());
+            
+            if (rerankModelConfig == null) {
+                log.warn("未能找到重排模型配置: [{}]", bo.getRerankModel());
+            } else {
+                ScoringModel scoringModel = scoringModelFactory.createScoringModel(rerankModelConfig);
+                if (scoringModel != null) {
+                    log.info("执行重排精排，模型: {}, 供应商: {}", rerankModelConfig.getModelName(), rerankModelConfig.getProviderCode());
+
+                    // 将 KnowledgeRetrievalVo 转换为 TextSegment 列表进行重排
+                    List<TextSegment> segments = allResults.stream()
+                        .map(res -> TextSegment.from(res.getContent()))
+                        .collect(Collectors.toList());
+
+                    Response<List<Double>> scoresResponse = scoringModel.scoreAll(segments, bo.getQuery());
+                    List<Double> scores = scoresResponse.content();
+
+                    // 更新分数并重新排序
+                    for (int i = 0; i < allResults.size(); i++) {
+                        KnowledgeRetrievalVo resultVo = allResults.get(i);
+                        // 保存原始分数供前端展示对比
+                        resultVo.setRawScore(resultVo.getScore());
+                        if (i < scores.size()) {
+                            resultVo.setScore(scores.get(i));
+                        }
+                    }
+
+                    // 按重排后的分数从高到低排序
+                    allResults.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+                }
+            }
+        }
+
+        // 5. 根据阈值过滤
         double threshold = bo.getThreshold() != null ? bo.getThreshold() : 0.0;
         return allResults.stream()
                 .filter(res -> res.getScore() >= threshold)

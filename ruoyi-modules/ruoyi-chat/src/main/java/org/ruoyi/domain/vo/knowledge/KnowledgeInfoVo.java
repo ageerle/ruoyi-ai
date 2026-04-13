@@ -95,6 +95,19 @@ public class KnowledgeInfoVo implements Serializable {
     private String embeddingModel;
 
     /**
+     * 重排模型
+     */
+    @ExcelProperty(value = "重排模型")
+    private String rerankModel;
+
+    /**
+     * 是否启用重排（0 否 1 是）
+     */
+    @ExcelProperty(value = "是否启用重排", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(readConverterExp = "0=否,1=是")
+    private Integer enableRerank;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")

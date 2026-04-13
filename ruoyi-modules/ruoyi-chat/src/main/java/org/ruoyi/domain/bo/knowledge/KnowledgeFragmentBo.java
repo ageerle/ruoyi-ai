@@ -69,4 +69,14 @@ public class KnowledgeFragmentBo extends BaseEntity {
      */
     private Double threshold;
 
+    /**
+     * 是否启用重排
+     */
+    private Boolean enableRerank;
+
+    /**
+     * 重排模型名称
+     */
+    private String rerankModel;
+
 }
