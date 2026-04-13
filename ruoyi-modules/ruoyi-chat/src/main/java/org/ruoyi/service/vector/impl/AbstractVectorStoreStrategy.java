@@ -38,6 +38,24 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreService 
     }
 
     /**
+     * 向量 L2 归一化 (单位化)
+     */
+    protected static float[] normalize(float[] vector) {
+        if (vector == null) return null;
+        double sum = 0;
+        for (float v : vector) {
+            sum += v * v;
+        }
+        float norm = (float) Math.sqrt(sum);
+        if (norm > 1e-9) {
+            for (int i = 0; i < vector.length; i++) {
+                vector[i] /= norm;
+            }
+        }
+        return vector;
+    }
+
+    /**
      * 获取向量模型
      */
     @SneakyThrows

@@ -13,8 +13,17 @@ import org.ruoyi.domain.bo.knowledge.KnowledgeFragmentBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
 import org.ruoyi.domain.vo.knowledge.KnowledgeFragmentVo;
 import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.service.knowledge.IKnowledgeFragmentService;
+import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import java.util.List;
 import java.util.Map;
@@ -32,6 +41,9 @@ import java.util.Collection;
 public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
 
     private final KnowledgeFragmentMapper baseMapper;
+    private final IKnowledgeInfoService knowledgeInfoService;
+    private final IChatModelService chatModelService;
+    private final VectorStoreService vectorStoreService;
 
     /**
      * 查询知识片段
@@ -130,5 +142,46 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteByIds(ids) > 0;
+    }
+
+    /**
+     * 检索测试核心实现
+     */
+    @Override
+    public List<KnowledgeRetrievalVo> retrieval(KnowledgeFragmentBo bo) {
+        if (bo.getKnowledgeId() == null || StringUtils.isBlank(bo.getQuery())) {
+            return new ArrayList<>();
+        }
+
+        // 1. 获取知识库及模型配置
+        KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(bo.getKnowledgeId());
+        if (knowledgeInfoVo == null) {
+            return new ArrayList<>();
+        }
+
+        ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+        if (chatModel == null) {
+            log.warn("未找到对应的向量模型配置: {}", knowledgeInfoVo.getEmbeddingModel());
+            return new ArrayList<>();
+        }
+
+        // 2. 构造向量检索参数
+        QueryVectorBo queryVectorBo = new QueryVectorBo();
+        queryVectorBo.setQuery(bo.getQuery());
+        queryVectorBo.setKid(String.valueOf(bo.getKnowledgeId()));
+        queryVectorBo.setMaxResults(bo.getTopK() != null ? bo.getTopK() : knowledgeInfoVo.getRetrieveLimit());
+        queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
+        queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
+        queryVectorBo.setApiKey(chatModel.getApiKey());
+        queryVectorBo.setBaseUrl(chatModel.getApiHost());
+
+        // 3. 执行物理检索
+        List<KnowledgeRetrievalVo> allResults = vectorStoreService.search(queryVectorBo);
+
+        // 4. 根据阈值过滤 (LangChain4j 结果 score 通常 0-1)
+        double threshold = bo.getThreshold() != null ? bo.getThreshold() : 0.0;
+        return allResults.stream()
+                .filter(res -> res.getScore() >= threshold)
+                .collect(Collectors.toList());
     }
 }

@@ -19,7 +19,11 @@ import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.factory.EmbeddingModelFactory;
+import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
+import org.ruoyi.domain.entity.knowledge.KnowledgeAttach;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -32,10 +36,14 @@ import java.util.stream.IntStream;
 @Component
 public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
+    private final KnowledgeAttachMapper knowledgeAttachMapper;
+
     public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                      IChatModelService chatModelService,
-                                     EmbeddingModelFactory embeddingModelFactory) {
+                                     EmbeddingModelFactory embeddingModelFactory,
+                                     KnowledgeAttachMapper knowledgeAttachMapper) {
         super(vectorStoreProperties, embeddingModelFactory, chatModelService);
+        this.knowledgeAttachMapper = knowledgeAttachMapper;
     }
 
     // 缓存不同集合与 autoFlush 配置的 Milvus 连接
@@ -51,7 +59,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
             .collectionName(collectionName)
             .dimension(dimension)
             .indexType(IndexType.IVF_FLAT)
-            .metricType(MetricType.L2)
+            .metricType(MetricType.COSINE)
             .autoFlushOnInsert(autoFlushOnInsert)
             .idFieldName("id")
             .textFieldName("text")
@@ -104,7 +112,10 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
             TextSegment textSegment = TextSegment.from(text, metadata);
             Embedding embedding = embeddingModel.embed(text).content();
-            embeddingStore.add(embedding, textSegment);
+            // 单位化处理
+            float[] vector = embedding.vector();
+            normalize(vector);
+            embeddingStore.add(Embedding.from(vector), textSegment);
         });
         long endTime = System.currentTimeMillis();
         log.info("Milvus向量存储完成消耗时间：{}秒", (endTime - startTime) / 1000);
@@ -132,6 +143,55 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
             if (segment != null) {
                 resultList.add(segment.text());
             }
+        }
+        return resultList;
+    }
+
+    @Override
+    public List<KnowledgeRetrievalVo> search(QueryVectorBo queryVectorBo) {
+        int dimension = getModelDimension(queryVectorBo.getEmbeddingModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
+
+        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
+        // 查询向量单位化处理
+        float[] queryVector = queryEmbedding.vector();
+        normalize(queryVector);
+
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + queryVectorBo.getKid();
+
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, dimension, true);
+
+        EmbeddingSearchRequest request = EmbeddingSearchRequest.builder()
+                .queryEmbedding(Embedding.from(queryVector))
+                .maxResults(queryVectorBo.getMaxResults())
+                .build();
+
+        List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(request).matches();
+        List<KnowledgeRetrievalVo> resultList = new ArrayList<>();
+
+        for (EmbeddingMatch<TextSegment> match : matches) {
+            TextSegment segment = match.embedded();
+            if (segment == null) continue;
+
+            String docId = segment.metadata().getString("docId");
+            String sourceName = "未知来源";
+            if (docId != null) {
+                KnowledgeAttach attach = knowledgeAttachMapper.selectOne(new LambdaQueryWrapper<KnowledgeAttach>()
+                        .eq(KnowledgeAttach::getDocId, docId)
+                        .last("limit 1"));
+                if (attach != null) {
+                    sourceName = attach.getName();
+                }
+            }
+
+            // 提取内容、评分及来源
+            double score = match.score();
+
+            resultList.add(org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo.builder()
+                    .content(segment.text())
+                    .score(score)
+                    .sourceName(sourceName)
+                    .build());
         }
         return resultList;
     }

@@ -24,7 +24,11 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.factory.EmbeddingModelFactory;
+import org.ruoyi.domain.entity.knowledge.KnowledgeAttach;
+import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Component;
 
 import static io.qdrant.client.VectorInputFactory.vectorInput;
@@ -47,10 +51,14 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
     private static final String METADATA_KID_KEY    = "kid";
     private static final String METADATA_DOC_ID_KEY = "doc_id";
 
+    private final KnowledgeAttachMapper knowledgeAttachMapper;
+
     public QdrantVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                      IChatModelService chatModelService,
-                                     EmbeddingModelFactory embeddingModelFactory) {
+                                     EmbeddingModelFactory embeddingModelFactory,
+                                     KnowledgeAttachMapper knowledgeAttachMapper) {
         super(vectorStoreProperties, embeddingModelFactory, chatModelService);
+        this.knowledgeAttachMapper = knowledgeAttachMapper;
     }
 
     private EmbeddingStore<TextSegment> getQdrantStore(String collectionName) {
@@ -129,7 +137,10 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
             metadata.put(METADATA_DOC_ID_KEY, docId);
             TextSegment textSegment = TextSegment.from(text, metadata);
             Embedding embedding = embeddingModel.embed(text).content();
-            embeddingStore.add(embedding, textSegment);
+            // 单位化处理
+            float[] vector = embedding.vector();
+            normalize(vector);
+            embeddingStore.add(Embedding.from(vector), textSegment);
         });
 
         long endTime = System.currentTimeMillis();
@@ -140,18 +151,22 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
+        // 查询向量单位化处理
+        float[] queryVector = queryEmbedding.vector();
+        normalize(queryVector);
+
         String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + queryVectorBo.getKid();
 
-        List<Float> vector = new ArrayList<>();
-        for (float f : queryEmbedding.vector()) {
-            vector.add(f);
+        List<Float> vectorList = new ArrayList<>();
+        for (float f : queryVector) {
+            vectorList.add(f);
         }
 
         try (QdrantClient client = buildQdrantClient()) {
             QueryPoints request = QueryPoints.newBuilder()
                     .setCollectionName(collectionName)
                     .setQuery(Query.newBuilder()
-                            .setNearest(vectorInput(vector))
+                            .setNearest(vectorInput(vectorList))
                             .build())
                     .setLimit(queryVectorBo.getMaxResults())
                     .setWithPayload(enable(true))
@@ -169,6 +184,69 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
         } catch (Exception e) {
             log.error("Qdrant查询失败: {}", collectionName, e);
             throw new ServiceException("Qdrant向量查询失败");
+        }
+    }
+
+    @Override
+    public List<KnowledgeRetrievalVo> search(QueryVectorBo queryVectorBo) {
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
+        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
+        // 查询向量单位化处理
+        float[] queryVector = queryEmbedding.vector();
+        normalize(queryVector);
+
+        String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + queryVectorBo.getKid();
+
+        List<Float> vectorList = new ArrayList<>();
+        for (float f : queryVector) {
+            vectorList.add(f);
+        }
+
+        try (QdrantClient client = buildQdrantClient()) {
+            QueryPoints request = QueryPoints.newBuilder()
+                    .setCollectionName(collectionName)
+                    .setQuery(Query.newBuilder()
+                            .setNearest(vectorInput(vectorList))
+                            .build())
+                    .setLimit(queryVectorBo.getMaxResults())
+                    .setWithPayload(enable(true))
+                    .build();
+
+            List<ScoredPoint> results = client.queryAsync(request).get();
+            List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> resultList = new ArrayList<>();
+            for (ScoredPoint point : results) {
+                String content = "";
+                JsonWithInt.Value textValue = point.getPayloadMap().get(TEXT_SEGMENT_KEY);
+                if (textValue != null && textValue.hasStringValue()) {
+                    content = textValue.getStringValue();
+                }
+
+                String docId = null;
+                JsonWithInt.Value docIdValue = point.getPayloadMap().get(METADATA_DOC_ID_KEY);
+                if (docIdValue != null && docIdValue.hasStringValue()) {
+                    docId = docIdValue.getStringValue();
+                }
+
+                String sourceName = "未知来源";
+                if (docId != null) {
+                    KnowledgeAttach attach = knowledgeAttachMapper.selectOne(new LambdaQueryWrapper<KnowledgeAttach>()
+                            .eq(KnowledgeAttach::getDocId, docId)
+                            .last("limit 1"));
+                    if (attach != null) {
+                        sourceName = attach.getName();
+                    }
+                }
+
+                resultList.add(org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo.builder()
+                        .content(content)
+                        .score((double) point.getScore())
+                        .sourceName(sourceName)
+                        .build());
+            }
+            return resultList;
+        } catch (Exception e) {
+            log.error("Qdrant检索失败: {}", collectionName, e);
+            throw new ServiceException("Qdrant向量检索失败");
         }
     }
 

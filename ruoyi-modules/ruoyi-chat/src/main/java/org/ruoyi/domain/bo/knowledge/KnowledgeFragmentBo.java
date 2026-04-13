@@ -49,5 +49,24 @@ public class KnowledgeFragmentBo extends BaseEntity {
      */
     private String remark;
 
+    /**
+     * 知识库ID
+     */
+    private Long knowledgeId;
+
+    /**
+     * 检索内容
+     */
+    private String query;
+
+    /**
+     * 返回条数
+     */
+    private Integer topK;
+
+    /**
+     * 相似度阈值
+     */
+    private Double threshold;
 
 }

@@ -16,6 +16,15 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.rag.AugmentationRequest;
+import dev.langchain4j.rag.AugmentationResult;
+import dev.langchain4j.rag.DefaultRetrievalAugmentor;
+import dev.langchain4j.rag.RetrievalAugmentor;
+import dev.langchain4j.rag.content.aggregator.ContentAggregator;
+import dev.langchain4j.rag.content.aggregator.DefaultContentAggregator;
+import dev.langchain4j.rag.content.aggregator.ReRankingContentAggregator;
+import dev.langchain4j.model.scoring.ScoringModel;
+import dev.langchain4j.rag.query.Metadata;
 import dev.langchain4j.service.tool.ToolProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -46,6 +55,8 @@ import org.ruoyi.mcp.service.core.ToolProviderFactory;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
+import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
+import org.ruoyi.service.knowledge.rerank.ScoringModelFactory;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
@@ -89,6 +100,8 @@ public class ChatServiceFacade implements IChatService {
 
     private final ToolProviderFactory toolProviderFactory;
 
+    private final ScoringModelFactory scoringModelFactory;
+
     /**
      * 内存实例缓存，避免同一会话重复创建
      * Key: sessionId, Value: MessageWindowChatMemory实例
@@ -119,7 +132,9 @@ public class ChatServiceFacade implements IChatService {
         // 2. 构建上下文消息列表
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
 
-        // 3. 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
+        // 注意：buildContextMessages() 最后返回的列表中，最新的带有增强知识的 UserMessage 在最后。
+        // 对于有些模型API（非langchain4j的代理），它们可能不识别增强后的复杂文本（取决于供应商适配度）
+        // 但是通过标准流，它被解析为 String。
         SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter);
         if (specialResult != null) {
             return specialResult;
@@ -346,39 +361,63 @@ public class ChatServiceFacade implements IChatService {
      * @return 上下文消息列表
      */
     private List<ChatMessage> buildContextMessages(ChatRequest chatRequest) {
-        List<ChatMessage> messages  = new ArrayList<>();
-        // 构建用户消息
+        List<ChatMessage> messages = new ArrayList<>();
+
+        // 初始化用户消息
         UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
-        messages.add(userMessage);
 
-        // 从向量库查询相关历史消息
+        // 使用 LangChain4j 的 RetrievalAugmentor 进行检索增强
         if (chatRequest.getKnowledgeId() != null) {
-            // 查询知识库信息
             KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
-            if (knowledgeInfoVo == null) {
-                log.warn("知识库信息不存在，kid: {}", chatRequest.getKnowledgeId());
-                return messages;
-            }
+            if (knowledgeInfoVo != null) {
+                ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+                if (chatModel != null) {
 
-            // 查询向量模型配置信息
-            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
-            if (chatModel == null) {
-                log.warn("向量模型配置不存在，模型名称: {}", knowledgeInfoVo.getEmbeddingModel());
-                return messages;
-            }
+                    // 1. 构建适配器（Retriever）
+                    CustomVectorRetriever retriever = new CustomVectorRetriever(
+                            vectorStoreService, knowledgeInfoVo, chatModel);
 
-            // 构建向量查询参数
-            QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
+                    // 2. 获取和构建重排模型聚合器（Aggregator）
+                    // 假设已在 KnowledgeInfoVo 等加入 getRerankModelConfig/getRerankModel 等，这里演示通用逻辑
+                    // 若无重排需求，使用 DefaultContentAggregator 或无 ScoringModel 的聚合器
+                    ContentAggregator contentAggregator;
+                    // TODO: 一旦实体类实现了重排模型的支持，此处可以从数据库读出：
+                    // ChatModelVo scoringModelConfig = chatModelService.selectModelByName(knowledgeInfoVo.getRerankModel());
+                    ChatModelVo scoringModelConfig = null; // 当前暂无对应配置字段
 
-            // 获取向量查询结果
-            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
-            for (String prompt : nearestList) {
-                // 知识库内容作为系统上下文添加
-                messages.add( new AiMessage(prompt));
+                    ScoringModel scoringModel = scoringModelFactory.createScoringModel(scoringModelConfig);
+                    if (scoringModel != null) {
+                        contentAggregator = ReRankingContentAggregator.builder()
+                                .scoringModel(scoringModel)
+                                // .maxResults(3) 这个数字将来从配置取
+                                .build();
+                    } else {
+                        contentAggregator = new DefaultContentAggregator();
+                    }
+
+                    // 3. 构造流水线
+                    RetrievalAugmentor augmentor = DefaultRetrievalAugmentor.builder()
+                            .contentRetriever(retriever)
+                            .contentAggregator(contentAggregator)
+                            .build();
+
+                    // 4. 执行 Augmentor 增强：将检索到的知识内容编织进 UserMessage 中
+                    Metadata ragMetadata = Metadata.from(userMessage, chatRequest.getSessionId(), new ArrayList<>());
+                    AugmentationRequest augmentationRequest = new AugmentationRequest(userMessage, ragMetadata);
+
+                    AugmentationResult augmentedResult = augmentor.augment(augmentationRequest);
+
+                    ChatMessage augmentedMessage = augmentedResult.chatMessage();
+                    if (augmentedMessage instanceof UserMessage) {
+                         userMessage = (UserMessage) augmentedMessage;
+                    }
+                    log.info("RAG 增强完成: UserMessage 已重构并附加上下文背景。");
+
+                }
             }
         }
 
-        // 从数据库查询历史对话消息
+        // 从数据库查询历史对话消息（历史消息应放在当前提问前）
         if (chatRequest.getSessionId() != null) {
             MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
             if (memory != null) {
@@ -389,6 +428,9 @@ public class ChatServiceFacade implements IChatService {
                 }
             }
         }
+
+        // 注入本次用户提问（经过 RAG 增强后的 UserMessage）
+        messages.add(userMessage);
 
         return messages;
     }
