@@ -28,6 +28,8 @@ import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.List;
 import java.util.Map;
@@ -180,8 +182,47 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
         queryVectorBo.setApiKey(chatModel.getApiKey());
         queryVectorBo.setBaseUrl(chatModel.getApiHost());
 
-        // 3. 执行物理检索
-        List<KnowledgeRetrievalVo> allResults = vectorStoreService.search(queryVectorBo);
+        // 3. 执行搜索 (向量搜索 + 关键词搜索)
+        List<KnowledgeRetrievalVo> allResults;
+        
+        boolean hybridEnabled = Boolean.TRUE.equals(bo.getEnableHybrid()) || 
+                             Integer.valueOf(1).equals(knowledgeInfoVo.getEnableHybrid());
+        
+        if (hybridEnabled) {
+            log.info("执行混合检索: kid={}, query={}", bo.getKnowledgeId(), bo.getQuery());
+            try {
+                // 并行执行向量搜索
+                CompletableFuture<List<KnowledgeRetrievalVo>> vectorFuture = CompletableFuture.supplyAsync(() -> 
+                    vectorStoreService.search(queryVectorBo));
+                
+                // 执行关键词搜索 (MySQL)
+                int limit = bo.getTopK() != null ? bo.getTopK() : 50;
+                List<KnowledgeFragmentVo> keywordFragments = baseMapper.searchByKeyword(bo.getKnowledgeId(), bo.getQuery(), limit);
+                List<KnowledgeRetrievalVo> keywordResults = keywordFragments.stream().map(f -> {
+                    KnowledgeRetrievalVo vo = new KnowledgeRetrievalVo();
+                    vo.setId(f.getId().toString());
+                    vo.setContent(f.getContent());
+                    vo.setDocId(f.getDocId());
+                    vo.setIdx(f.getIdx());
+                    vo.setKnowledgeId(f.getKnowledgeId());
+                    vo.setScore(10.0); // 初始分，后续由 RRF 重新打分
+                    return vo;
+                }).collect(Collectors.toList());
+                
+                List<KnowledgeRetrievalVo> vectorResults = vectorFuture.get();
+                log.info("抽取混合结果成功: Vector命中={}条, Keyword命中={}条", vectorResults.size(), keywordResults.size());
+
+                double alpha = bo.getHybridAlpha() != null ? bo.getHybridAlpha() : 
+                              (knowledgeInfoVo.getHybridAlpha() != null ? knowledgeInfoVo.getHybridAlpha() : 0.5);
+                
+                allResults = calculateRRF(vectorResults, keywordResults, alpha);
+            } catch (Exception e) {
+                log.error("混合检索执行或合并失败，已自动降级回退到纯向量检索", e);
+                allResults = vectorStoreService.search(queryVectorBo);
+            }
+        } else {
+            allResults = vectorStoreService.search(queryVectorBo);
+        }
 
         // 初始化原始排名
         for (int i = 0; i < allResults.size(); i++) {
@@ -229,5 +270,52 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
         return allResults.stream()
                 .filter(res -> res.getScore() >= threshold)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * RRF (Reciprocal Rank Fusion) 融合算法
+     * 公式: Score = (1-alpha) * (1 / (k + rank_vector)) + alpha * (1 / (k + rank_keyword))
+     */
+    private List<KnowledgeRetrievalVo> calculateRRF(List<KnowledgeRetrievalVo> vectorList, List<KnowledgeRetrievalVo> keywordList, double alpha) {
+        Map<String, KnowledgeRetrievalVo> allMap = new HashMap<>();
+        Map<String, Double> vectorScores = new HashMap<>();
+        Map<String, Double> keywordScores = new HashMap<>();
+
+        int k = 60; // 常用 RRF 常数
+
+        for (int i = 0; i < vectorList.size(); i++) {
+            KnowledgeRetrievalVo vo = vectorList.get(i);
+            allMap.put(vo.getId(), vo);
+            vectorScores.put(vo.getId(), 1.0 / (k + i + 1));
+        }
+
+        for (int i = 0; i < keywordList.size(); i++) {
+            KnowledgeRetrievalVo vo = keywordList.get(i);
+            if (!allMap.containsKey(vo.getId())) {
+                allMap.put(vo.getId(), vo);
+            }
+            keywordScores.put(vo.getId(), 1.0 / (k + i + 1));
+        }
+
+        // 重新计算得分
+        List<KnowledgeRetrievalVo> fusedResults = new ArrayList<>();
+        for (Map.Entry<String, KnowledgeRetrievalVo> entry : allMap.entrySet()) {
+            String id = entry.getKey();
+            double vScore = vectorScores.getOrDefault(id, 0.0);
+            double kScore = keywordScores.getOrDefault(id, 0.0);
+            
+            // 混合分值
+            double finalScore = (1 - alpha) * vScore + alpha * kScore;
+            
+            // 分值归一化/缩放：将 RRF 分值放大到 0-1 范围
+            // 理论单路最大得分为 1/61 ≈ 0.016，乘以 60 使其处于相似度常用区间
+            KnowledgeRetrievalVo vo = entry.getValue();
+            vo.setScore(finalScore * 60.0); 
+            fusedResults.add(vo);
+        }
+
+        // 按融合分数从高到低排序
+        fusedResults.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+        return fusedResults;
     }
 }

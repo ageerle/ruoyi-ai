@@ -187,6 +187,7 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
                     String fid = RandomUtil.randomString(10);
                     fids.add(fid);
                     KnowledgeFragment knowledgeFragment = new KnowledgeFragment();
+                    knowledgeFragment.setKnowledgeId(knowledgeId);
                     knowledgeFragment.setDocId(docId);
                     knowledgeFragment.setIdx(i);
                     knowledgeFragment.setContent(chunkList.get(i));

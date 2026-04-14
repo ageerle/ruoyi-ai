@@ -1,7 +1,9 @@
 package org.ruoyi.domain.vo.knowledge;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -13,10 +15,32 @@ import java.io.Serializable;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class KnowledgeRetrievalVo implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 片段ID
+     */
+    private String id;
+
+    /**
+     * 文档ID
+     */
+    private String docId;
+
+    /**
+     * 知识库ID
+     */
+    private Long knowledgeId;
+
+    /**
+     * 分片索引
+     */
+    private Integer idx;
 
     /**
      * 片段内容

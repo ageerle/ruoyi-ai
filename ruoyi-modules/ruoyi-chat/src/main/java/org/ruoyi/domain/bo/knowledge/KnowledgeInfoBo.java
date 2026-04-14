@@ -92,5 +92,15 @@ public class KnowledgeInfoBo extends BaseEntity {
      */
     private String remark;
 
+    /**
+     * 是否启用混合检索（0 否 1 是）
+     */
+    private Integer enableHybrid;
+
+    /**
+     * 混合检索权重比例 (0.0-1.0)
+     */
+    private Double hybridAlpha;
+
 
 }

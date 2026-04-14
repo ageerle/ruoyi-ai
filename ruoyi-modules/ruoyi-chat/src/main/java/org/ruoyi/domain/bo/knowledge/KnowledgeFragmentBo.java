@@ -79,4 +79,14 @@ public class KnowledgeFragmentBo extends BaseEntity {
      */
     private String rerankModel;
 
+    /**
+     * 是否启用混合检索
+     */
+    private Boolean enableHybrid;
+
+    /**
+     * 混合检索权重 (0.0-1.0)
+     */
+    private Double hybridAlpha;
+
 }

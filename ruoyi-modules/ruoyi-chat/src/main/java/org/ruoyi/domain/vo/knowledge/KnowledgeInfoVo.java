@@ -114,6 +114,19 @@ public class KnowledgeInfoVo implements Serializable {
     private String remark;
 
     /**
+     * 是否启用混合检索（0 否 1 是）
+     */
+    @ExcelProperty(value = "是否启用混合检索", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(readConverterExp = "0=否,1=是")
+    private Integer enableHybrid;
+
+    /**
+     * 混合检索权重比例 (0.0-1.0)
+     */
+    @ExcelProperty(value = "混合检索权重比例")
+    private Double hybridAlpha;
+
+    /**
      * 文档数（统计字段，非数据库列）
      */
     private Integer documentCount;
