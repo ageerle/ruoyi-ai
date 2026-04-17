@@ -1,7 +1,9 @@
 package org.ruoyi.service.chat.impl.provider;
 
 
+import dev.langchain4j.community.model.zhipu.ZhipuAiChatModel;
 import dev.langchain4j.community.model.zhipu.ZhipuAiStreamingChatModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,14 @@ public class ZhiPuChatServiceImpl implements AbstractChatService {
             .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())
             .listeners(List.of(new MyChatModelListener()))
+            .build();
+    }
+
+    @Override
+    public ChatModel buildChatModel(ChatModelVo chatModelVo) {
+        return ZhipuAiChatModel.builder()
+            .apiKey(chatModelVo.getApiKey())
+            .model(chatModelVo.getModelName())
             .build();
     }
 

@@ -1,7 +1,9 @@
 package org.ruoyi.service.chat.impl.provider;
 
 
+import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,14 @@ public class QianWenChatServiceImpl implements AbstractChatService {
                 .modelName(chatModelVo.getModelName())
                 .listeners(List.of(new MyChatModelListener()))
                 .build();
+    }
+
+    @Override
+    public ChatModel buildChatModel(ChatModelVo chatModelVo) {
+        return QwenChatModel.builder()
+            .apiKey(chatModelVo.getApiKey())
+            .modelName(chatModelVo.getModelName())
+            .build();
     }
 
     @Override
