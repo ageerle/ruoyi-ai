@@ -16,7 +16,8 @@ public enum ChatModeType {
     QIAN_WEN("qianwen", "通义千问"),
     OPEN_AI("openai", "openai"),
     PPIO("ppio", "ppio"),
-    CUSTOM_API("custom_api", "自定义API");
+    CUSTOM_API("custom_api", "自定义API"),
+    MINIMAX("minimax", "MiniMax");
     private final String code;
     private final String description;
 
