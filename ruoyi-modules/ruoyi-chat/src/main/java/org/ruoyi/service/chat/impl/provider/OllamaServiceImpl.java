@@ -1,7 +1,9 @@
 package org.ruoyi.service.chat.impl.provider;
 
 
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,14 @@ public class OllamaServiceImpl implements AbstractChatService {
                 .modelName(chatModelVo.getModelName())
                 .listeners(List.of(new MyChatModelListener()))
                 .build();
+    }
+
+    @Override
+    public ChatModel buildChatModel(ChatModelVo chatModelVo) {
+        return OllamaChatModel.builder()
+            .baseUrl(chatModelVo.getApiHost())
+            .modelName(chatModelVo.getModelName())
+            .build();
     }
 
     @Override
