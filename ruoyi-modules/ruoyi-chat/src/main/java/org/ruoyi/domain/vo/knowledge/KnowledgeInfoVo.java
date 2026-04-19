@@ -95,6 +95,30 @@ public class KnowledgeInfoVo implements Serializable {
     private String embeddingModel;
 
     /**
+     * 是否启用重排序（0 否 1是）
+     */
+    @ExcelProperty(value = "是否启用重排序")
+    private Integer enableRerank;
+
+    /**
+     * 重排序模型名称
+     */
+    @ExcelProperty(value = "重排序模型")
+    private String rerankModel;
+
+    /**
+     * 重排序后返回的文档数量
+     */
+    @ExcelProperty(value = "重排序返回数量")
+    private Integer rerankTopN;
+
+    /**
+     * 重排序相关性分数阈值
+     */
+    @ExcelProperty(value = "重排序分数阈值")
+    private Double rerankScoreThreshold;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")

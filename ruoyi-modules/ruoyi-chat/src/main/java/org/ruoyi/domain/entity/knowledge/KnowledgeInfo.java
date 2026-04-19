@@ -79,6 +79,26 @@ public class KnowledgeInfo extends BaseEntity {
     private String embeddingModel;
 
     /**
+     * 是否启用重排序（0 否 1是）
+     */
+    private Integer enableRerank;
+
+    /**
+     * 重排序模型名称
+     */
+    private String rerankModel;
+
+    /**
+     * 重排序后返回的文档数量
+     */
+    private Integer rerankTopN;
+
+    /**
+     * 重排序相关性分数阈值
+     */
+    private Double rerankScoreThreshold;
+
+    /**
      * 备注
      */
     private String remark;
