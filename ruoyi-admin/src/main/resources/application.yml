@@ -265,7 +265,7 @@ demo:
   # 是否开启演示模式（开启后所有写操作将被拦截）
   enabled: false
   # 提示消息
-  message: "演示模式，不允许进行写操作"
+message: "演示模式，不允许操作"
   # 排除的路径（这些路径不受演示模式限制）
   excludes:
     - /login
@@ -276,7 +276,9 @@ demo:
     - /chat/send
     - /system/session/**
     - /system/message/**
-
+    - /system/attach/**
+    - /system/fragment/**
+    - /system/info/**
 --- # warm-flow工作流配置
 warm-flow:
   # 是否开启工作流，默认true

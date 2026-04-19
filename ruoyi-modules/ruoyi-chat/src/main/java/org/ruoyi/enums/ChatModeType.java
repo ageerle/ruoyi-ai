@@ -17,7 +17,8 @@ public enum ChatModeType {
     OPEN_AI("openai", "openai"),
     PPIO("ppio", "ppio"),
     CUSTOM_API("custom_api", "自定义API"),
-    MINIMAX("minimax", "MiniMax");
+    MINIMAX("minimax", "MiniMax"),
+    XIAOMI("xiaomi", "小米MiMo");
     private final String code;
     private final String description;
 
