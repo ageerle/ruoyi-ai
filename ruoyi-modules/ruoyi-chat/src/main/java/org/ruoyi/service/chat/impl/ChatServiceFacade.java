@@ -54,6 +54,7 @@ import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -88,6 +89,8 @@ public class ChatServiceFacade implements IChatService {
     private final IKnowledgeInfoService knowledgeInfoService;
 
     private final VectorStoreService vectorStoreService;
+
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
 
     private final SseEmitterManager sseEmitterManager;
 
@@ -452,8 +455,8 @@ public class ChatServiceFacade implements IChatService {
             // 构建向量查询参数
             QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
 
-            // 获取向量查询结果（知识库内容作为系统上下文，放在历史消息之后）
-            List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
+            // 使用知识库检索服务（支持重排序）
+            List<String> nearestList = knowledgeRetrievalService.retrieveTexts(queryVectorBo);
             for (String prompt : nearestList) {
                 // 知识库内容作为系统上下文添加
                 messages.add(new AiMessage(prompt));
@@ -480,6 +483,13 @@ public class ChatServiceFacade implements IChatService {
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
         queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
         queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
+
+        // 设置重排序参数
+        queryVectorBo.setEnableRerank(knowledgeInfoVo.getEnableRerank() != null && knowledgeInfoVo.getEnableRerank() == 1);
+        queryVectorBo.setRerankModelName(knowledgeInfoVo.getRerankModel());
+        queryVectorBo.setRerankTopN(knowledgeInfoVo.getRerankTopN());
+        queryVectorBo.setRerankScoreThreshold(knowledgeInfoVo.getRerankScoreThreshold());
+
         return queryVectorBo;
     }
 
