@@ -90,14 +90,15 @@ public class ZhiPuRerankModelService implements RerankModelService {
         // 生成智谱认证Token
         String token = generateToken(chatModelVo.getApiKey());
 
-        String url = chatModelVo.getApiHost() + "/" + chatModelVo.getModelName();
+        // 智谱重排序固定端点路径
+        String url = chatModelVo.getApiHost() + "/api/paas/v4/rerank";
         Request httpRequest = new Request.Builder()
                 .url(url)
                 .addHeader("Authorization", token)
                 .post(body)
                 .build();
 
-        try (okhttp3.Response response = okHttpClient.newCall(httpRequest).execute()) {
+        try (Response response = okHttpClient.newCall(httpRequest).execute()) {
             if (!response.isSuccessful()) {
                 String err = response.body() != null ? response.body().string() : "无错误信息";
                 throw new IllegalArgumentException("智谱API调用失败: " + response.code() + " - " + err);

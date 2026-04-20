@@ -5,17 +5,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ruoyi.domain.bo.rerank.RerankResult;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 智谱AI重排序响应DTO
+ * 阿里百炼重排序响应DTO（OpenAI兼容格式）
  *
  * @author yang
- * @date 2026-04-19
+ * @date 2026-04-20
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ZhipuRerankResponse(
-        String model,
+public record AliBaiLianRerankResponse(
+        String id,
         String object,
         List<ResultItem> results,
         UsageInfo usage
@@ -23,12 +24,26 @@ public record ZhipuRerankResponse(
     /**
      * 单个重排序结果项
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record ResultItem(
             Integer index,
             @JsonProperty("relevance_score")
             Double relevanceScore,
-            String document
-    ) {}
+            Object document
+    ) {
+        /**
+         * 获取文档文本内容
+         */
+        public String getDocumentText() {
+            if (document == null) return null;
+            if (document instanceof String) return (String) document;
+            if (document instanceof Map) {
+                Object text = ((Map<?, ?>) document).get("text");
+                return text != null ? text.toString() : null;
+            }
+            return document.toString();
+        }
+    }
 
     /**
      * Token使用信息
@@ -37,10 +52,8 @@ public record ZhipuRerankResponse(
     public record UsageInfo(
             @JsonProperty("total_tokens")
             Integer totalTokens,
-            @JsonProperty("input_tokens")
-            Integer inputTokens,
-            @JsonProperty("output_tokens")
-            Integer outputTokens
+            @JsonProperty("prompt_tokens")
+            Integer promptTokens
     ) {}
 
     /**
@@ -55,7 +68,7 @@ public record ZhipuRerankResponse(
                 .map(item -> RerankResult.RerankDocument.builder()
                         .index(item.index())
                         .relevanceScore(item.relevanceScore())
-                        .document(item.document())
+                        .document(item.getDocumentText())
                         .build())
                 .collect(Collectors.toList());
 
