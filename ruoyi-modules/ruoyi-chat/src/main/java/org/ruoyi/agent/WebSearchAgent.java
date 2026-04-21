@@ -6,33 +6,26 @@ import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
 /**
- * Web Search Agent
- * A web search assistant that answers natural language questions by searching the internet
- * and returning relevant information from web pages.
+ * 浏览器工具 Agent
+ * 能够操作浏览器相关工具：网络搜索、网页抓取、浏览器自动化等
+ *
+ * @author ageerle@163.com
+ * @date 2025/04/10
  */
-public interface WebSearchAgent extends Agent {
+public interface WebSearchAgent {
 
     @SystemMessage("""
-        You are a web search assistant. Answer questions by searching and retrieving web content.
+        你是一个系统工具助手，能够使用工具来帮助用户获取信息和操作浏览器。
 
-        Available tools:
-        1. bing_search: Search the internet with keywords
-           - query (required): search keywords
-           - count (optional): number of results, default 10, max 50
-           - offset (optional): pagination offset, default 0
-           Returns: title, link, and summary for each result
-
-        2. crawl_webpage: Extract text content from a web page
-           - url (required): web page URL
-           Returns: cleaned page title and main content
-
-        Instructions:
-        - Always cite sources in your answers
-        - Only use the two tools listed above
+        【最重要原则】
+        除非用户明确要求使用浏览器查询信息，否则不要主动调用任何搜索或浏览器工具。
+        使用指南：
+        - 搜索信息时使用 bing_search
+        - 需要详细网页内容时使用 crawl_webpage
+        - 需要交互操作（登录、点击、填写表单）时使用 Playwright 工具
+        - 在回答中注明信息来源
         """)
-    @UserMessage("""
-        Answer the following question by searching the web: {{query}}
-        """)
-    @Agent("Web search assistant using Bing search and web scraping to find and retrieve information")
+    @UserMessage("{{query}}")
+    @Agent("浏览器工具助手，支持网络搜索、网页抓取和浏览器自动化操作")
     String search(@V("query") String query);
 }

@@ -4,32 +4,28 @@ import cn.dev33.satoken.stp.StpUtil;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
-import dev.langchain4j.community.model.dashscope.QwenChatModel;
-import dev.langchain4j.data.message.*;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.rag.AugmentationRequest;
-import dev.langchain4j.rag.AugmentationResult;
-import dev.langchain4j.rag.DefaultRetrievalAugmentor;
-import dev.langchain4j.rag.RetrievalAugmentor;
-import dev.langchain4j.rag.content.aggregator.ContentAggregator;
-import dev.langchain4j.rag.content.aggregator.DefaultContentAggregator;
-import dev.langchain4j.rag.content.aggregator.ReRankingContentAggregator;
-import dev.langchain4j.model.scoring.ScoringModel;
-import dev.langchain4j.rag.query.Metadata;
 import dev.langchain4j.service.tool.ToolProvider;
+import dev.langchain4j.skills.shell.ShellSkills;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.agent.ChartGenerationAgent;
+import org.ruoyi.agent.EchartsAgent;
+import org.ruoyi.agent.SkillsAgent;
 import org.ruoyi.agent.SqlAgent;
 import org.ruoyi.agent.WebSearchAgent;
 import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
@@ -45,6 +41,7 @@ import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
 import org.ruoyi.common.core.utils.ObjectUtils;
+import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
@@ -52,12 +49,12 @@ import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.service.core.ToolProviderFactory;
+import org.ruoyi.observability.*;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
-import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
-import org.ruoyi.service.knowledge.rerank.ScoringModelFactory;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -65,6 +62,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -92,6 +90,8 @@ public class ChatServiceFacade implements IChatService {
 
     private final VectorStoreService vectorStoreService;
 
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
+
     private final SseEmitterManager sseEmitterManager;
 
     private final IChatMessageService chatMessageService;
@@ -99,8 +99,6 @@ public class ChatServiceFacade implements IChatService {
     private final IWorkFlowStarterService workFlowStarterService;
 
     private final ToolProviderFactory toolProviderFactory;
-
-    private final ScoringModelFactory scoringModelFactory;
 
     /**
      * 内存实例缓存，避免同一会话重复创建
@@ -132,12 +130,19 @@ public class ChatServiceFacade implements IChatService {
         // 2. 构建上下文消息列表
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
 
-        // 注意：buildContextMessages() 最后返回的列表中，最新的带有增强知识的 UserMessage 在最后。
-        // 对于有些模型API（非langchain4j的代理），它们可能不识别增强后的复杂文本（取决于供应商适配度）
-        // 但是通过标准流，它被解析为 String。
-        SseEmitter specialResult = handleSpecialChatModes(chatRequest, contextMessages, chatModelVo, emitter);
-        if (specialResult != null) {
-            return specialResult;
+        chatRequest.setEmitter(emitter);
+        chatRequest.setUserId(userId);
+        chatRequest.setTokenValue(tokenValue);
+        chatRequest.setChatModelVo(chatModelVo);
+        chatRequest.setContextMessages(contextMessages);
+
+        // 保存用户消息
+        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
+
+        // 3. 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
+        SseEmitter sseEmitter = handleSpecialChatModes(chatRequest);
+        if (sseEmitter != null) {
+            return sseEmitter;
         }
 
         // 4. 路由服务提供商
@@ -145,11 +150,8 @@ public class ChatServiceFacade implements IChatService {
         log.info("路由到服务提供商: {}, 模型: {}", providerCode, chatRequest.getModel());
         AbstractChatService chatService = chatServiceFactory.getOriginalService(providerCode);
 
-
         StreamingChatResponseHandler handler = createResponseHandler(userId, tokenValue,chatRequest);
 
-        // 保存用户消息
-        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
 
         // 5. 发起对话
         StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
@@ -161,13 +163,9 @@ public class ChatServiceFacade implements IChatService {
      * 处理特殊聊天模式（工作流、人机交互恢复、思考模式）
      *
      * @param chatRequest      聊天请求
-     * @param contextMessages  上下文消息列表（可能被修改）
-     * @param chatModelVo      聊天模型配置
-     * @param emitter          SSE发射器
      * @return 如果需要提前返回则返回SseEmitter，否则返回null
      */
-    private SseEmitter handleSpecialChatModes(ChatRequest chatRequest, List<ChatMessage> contextMessages,
-                                              ChatModelVo chatModelVo, SseEmitter emitter) {
+    private SseEmitter handleSpecialChatModes(ChatRequest chatRequest) {
         // 处理工作流对话
         if (chatRequest.getEnableWorkFlow()) {
             log.info("处理工作流对话,会话: {}", chatRequest.getSessionId());
@@ -176,7 +174,6 @@ public class ChatServiceFacade implements IChatService {
             if (ObjectUtils.isEmpty(runner)) {
                 log.warn("工作流参数为空");
             }
-
             return workFlowStarterService.streaming(
                 ThreadContext.getCurrentUser(),
                 runner.getUuid(),
@@ -188,25 +185,22 @@ public class ChatServiceFacade implements IChatService {
         // 处理人机交互恢复
         if (chatRequest.getIsResume()) {
             log.info("处理人机交互恢复");
-
             ReSumeRunner reSumeRunner = chatRequest.getReSumeRunner();
             if (ObjectUtils.isEmpty(reSumeRunner)) {
                 log.warn("人机交互恢复参数为空");
-                return emitter;
             }
-
             workFlowStarterService.resumeFlow(
                 reSumeRunner.getRuntimeUuid(),
                 reSumeRunner.getFeedbackContent(),
-                emitter
+                chatRequest.getEmitter()
             );
 
-            return emitter;
-        }
+            return chatRequest.getEmitter();
 
+        }
         // 处理思考模式
         if (chatRequest.getEnableThinking()) {
-            handleThinkingMode(chatRequest, contextMessages, chatModelVo);
+           return handleThinkingMode(chatRequest);
         }
 
         return null;
@@ -215,71 +209,133 @@ public class ChatServiceFacade implements IChatService {
     /**
      * 处理思考模式
      *
-     * @param chatRequest      聊天请求
-     * @param contextMessages  上下文消息列表
-     * @param chatModelVo      聊天模型配置
+     * @param chatRequest     聊天请求
+
      */
-    private void handleThinkingMode(ChatRequest chatRequest, List<ChatMessage> contextMessages, ChatModelVo chatModelVo) {
-        // 步骤1: 配置MCP传输层 - 连接到bing-cn-mcp服务器
-        McpTransport transport = new StdioMcpTransport.Builder()
+    private SseEmitter handleThinkingMode(ChatRequest chatRequest) {
+        // 配置监督者模型
+        OpenAiChatModel plannerModel = OpenAiChatModel.builder()
+            .baseUrl(chatRequest.getChatModelVo().getApiHost())
+            .apiKey(chatRequest.getChatModelVo().getApiKey())
+            .modelName(chatRequest.getChatModelVo().getModelName())
+            .build();
+
+        // Bing 搜索 MCP 客户端
+        McpTransport bingTransport = new StdioMcpTransport.Builder()
             .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "bing-cn-mcp"))
             .logEvents(true)
             .build();
 
-        McpClient mcpClient = new DefaultMcpClient.Builder()
-            .transport(transport)
+        Long userId = chatRequest.getUserId();
+        McpClient bingMcpClient = new DefaultMcpClient.Builder()
+            .transport(bingTransport)
+            .listener(new MyMcpClientListener(userId))
             .build();
 
-        ToolProvider toolProvider = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient))
-            .build();
-
-        // 配置echarts MCP
-        McpTransport transport1 = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "mcp-echarts"))
+        // Playwright MCP 客户端 - 浏览器自动化工具
+        McpTransport playwrightTransport = new StdioMcpTransport.Builder()
+            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "@playwright/mcp@latest"))
             .logEvents(true)
             .build();
 
-        McpClient mcpClient1 = new DefaultMcpClient.Builder()
-            .transport(transport1)
+        McpClient playwrightMcpClient = new DefaultMcpClient.Builder()
+            .transport(playwrightTransport)
+            .listener(new MyMcpClientListener(userId))
             .build();
 
-        ToolProvider toolProvider1 = McpToolProvider.builder()
-            .mcpClients(List.of(mcpClient1))
+        // Filesystem MCP 客户端 - 文件管理工具
+        // 允许 AI 读取、写入、搜索文件（基于当前项目根目录）
+        String userDir = System.getProperty("user.dir");
+        McpTransport filesystemTransport = new StdioMcpTransport.Builder()
+            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
+                "@modelcontextprotocol/server-filesystem", userDir))
+            .logEvents(true)
+
             .build();
 
-        // 配置模型
-        OpenAiChatModel plannerModel = OpenAiChatModel.builder()
-            .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.getApiKey())
-            .modelName(chatModelVo.getModelName())
+        McpClient filesystemMcpClient = new DefaultMcpClient.Builder()
+            .transport(filesystemTransport)
+            .listener(new MyMcpClientListener(userId))
             .build();
 
-        // 构建各Agent
+        // 合并三个 MCP 客户端的工具
+        ToolProvider toolProvider = McpToolProvider.builder()
+            // bingMcpClient,
+            .mcpClients(List.of(playwrightMcpClient, filesystemMcpClient))
+            .build();
+
+        // ========== LangChain4j Skills 基本用法 ==========
+        // 通过 SKILL.md 文件定义，LLM 按需通过 activate_skill 工具加载
+        // 加载 Skills - 使用相对路径，基于项目根目录
+        java.nio.file.Path skillsPath = java.nio.file.Path.of(userDir, "ruoyi-admin/src/main/resources/skills");
+        List<dev.langchain4j.skills.FileSystemSkill> skillsList = dev.langchain4j.skills.FileSystemSkillLoader
+            .loadSkills(skillsPath)
+            ;
+
+        ShellSkills skills = ShellSkills.from(skillsList);
+
+        // 构建子 Agent
+        WebSearchAgent searchAgent  = AgenticServices.agentBuilder(WebSearchAgent.class)
+            .chatModel(plannerModel)
+            .toolProvider(toolProvider)
+            .listener(new MyAgentListener())
+            .build();
+
+        // 构建子 Agent 2: SkillsAgent - 负责文档处理技能（docx、pdf、xlsx）
+        // 独立管理 Skills 工具
+        SkillsAgent skillsAgent = AgenticServices.agentBuilder(SkillsAgent.class)
+            .chatModel(plannerModel)
+            .systemMessage("You have access to the following skills:\n" + skills.formatAvailableSkills()
+                + "\nWhen the user's request relates to one of these skills, activate it first using the `activate_skill` tool before proceeding.")
+            .toolProvider(skills.toolProvider())
+            .build();
+
+        // 构建子 Agent 3: SqlAgent - 负责数据库查询
         SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
             .chatModel(plannerModel)
             .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
+            .listener(new MyAgentListener())
             .build();
 
-        WebSearchAgent searchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
-            .chatModel(plannerModel)
-            .toolProvider(toolProvider)
-            .build();
-
+        // 构建子 Agent 4: ChartGenerationAgent - 负责图表生成
         ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
             .chatModel(plannerModel)
-            .toolProvider(toolProvider1)
+            .listener(new MyAgentListener())
             .build();
 
-        // 构建监督者Agent
+        // 构建子 Agent 5: EchartsAgent - 负责数据可视化（结合 SQL 查询生成 Echarts 图表）
+        EchartsAgent echartsAgent = AgenticServices.agentBuilder(EchartsAgent.class)
+            .chatModel(plannerModel)
+            .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
+            .listener(new MyAgentListener())
+            .build();
+
+        // 构建监督者 Agent - 管理多个子 Agent
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(plannerModel)
-            .subAgents(sqlAgent, chartGenerationAgent)
+            //.listener(new SupervisorStreamListener(null))
+            .subAgents(skillsAgent,searchAgent, sqlAgent, chartGenerationAgent, echartsAgent)
+            // 加入历史上下文 - 使用 ChatMemoryProvider 提供持久化的聊天内存
+            //.chatMemoryProvider(memoryId -> createChatMemory(chatRequest.getSessionId()))
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .build();
 
-        String invoke = supervisor.invoke(chatRequest.getContent());
-        contextMessages.add(AiMessage.from(invoke));
+        String tokenValue = chatRequest.getTokenValue();
+
+        // 异步执行 supervisor，避免阻塞 HTTP 请求线程导致 SSE 事件被缓冲
+        CompletableFuture.runAsync(() -> {
+            try {
+                String result = supervisor.invoke(chatRequest.getContent());
+                SseMessageUtils.sendContent(userId, result);
+                SseMessageUtils.sendDone(userId);
+            } catch (Exception e) {
+                log.error("Supervisor 执行失败", e);
+                SseMessageUtils.sendError(userId, e.getMessage());
+            } finally {
+                SseMessageUtils.completeConnection(userId, tokenValue);
+            }
+        });
+        return chatRequest.getEmitter();
     }
 
     /**
@@ -356,72 +412,16 @@ public class ChatServiceFacade implements IChatService {
 
     /**
      * 构建上下文消息列表
+
+     * 消息顺序：历史消息 → 当前用户消息（确保 AI 正确理解对话上下文）
      *
      * @param chatRequest 聊天请求
      * @return 上下文消息列表
      */
     private List<ChatMessage> buildContextMessages(ChatRequest chatRequest) {
-        List<ChatMessage> messages = new ArrayList<>();
+        List<ChatMessage> messages  = new ArrayList<>();
 
-        // 初始化用户消息
-        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
-
-        // 使用 LangChain4j 的 RetrievalAugmentor 进行检索增强
-        if (chatRequest.getKnowledgeId() != null) {
-            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
-            if (knowledgeInfoVo != null) {
-                ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
-                if (chatModel != null) {
-
-                    // 1. 构建适配器（Retriever）
-                    CustomVectorRetriever retriever = new CustomVectorRetriever(
-                            vectorStoreService, knowledgeInfoVo, chatModel);
-
-                    // 2. 构建重排聚合器 (Aggregator)
-                    ContentAggregator contentAggregator;
-                    if (knowledgeInfoVo.getEnableRerank() != null && knowledgeInfoVo.getEnableRerank() == 1
-                            && knowledgeInfoVo.getRerankModel() != null) {
-
-                        ChatModelVo scoringModelConfig = chatModelService.selectModelByName(knowledgeInfoVo.getRerankModel());
-                        ScoringModel scoringModel = scoringModelFactory.createScoringModel(scoringModelConfig);
-
-                        if (scoringModel != null) {
-                            contentAggregator = ReRankingContentAggregator.builder()
-                                    .scoringModel(scoringModel)
-                                    // 默认重排后只留前 5 条，避免上下文过长
-                                    .maxResults(5)
-                                    .build();
-                            log.info("启用重排模型: {}", knowledgeInfoVo.getRerankModel());
-                        } else {
-                            contentAggregator = new DefaultContentAggregator();
-                        }
-                    } else {
-                        contentAggregator = new DefaultContentAggregator();
-                    }
-
-                    // 3. 构造流水线
-                    RetrievalAugmentor augmentor = DefaultRetrievalAugmentor.builder()
-                            .contentRetriever(retriever)
-                            .contentAggregator(contentAggregator)
-                            .build();
-
-                    // 4. 执行 Augmentor 增强：将检索到的知识内容编织进 UserMessage 中
-                    Metadata ragMetadata = Metadata.from(userMessage, chatRequest.getSessionId(), new ArrayList<>());
-                    AugmentationRequest augmentationRequest = new AugmentationRequest(userMessage, ragMetadata);
-
-                    AugmentationResult augmentedResult = augmentor.augment(augmentationRequest);
-
-                    ChatMessage augmentedMessage = augmentedResult.chatMessage();
-                    if (augmentedMessage instanceof UserMessage) {
-                         userMessage = (UserMessage) augmentedMessage;
-                    }
-                    log.info("RAG 增强完成: UserMessage 已重构并附加上下文背景。");
-
-                }
-            }
-        }
-
-        // 从数据库查询历史对话消息（历史消息应放在当前提问前）
+        // 从数据库查询历史对话消息（放在前面）
         if (chatRequest.getSessionId() != null) {
             MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
             if (memory != null) {
@@ -433,7 +433,38 @@ public class ChatServiceFacade implements IChatService {
             }
         }
 
-        // 注入本次用户提问（经过 RAG 增强后的 UserMessage）
+        // 从向量库查询相关历史消息（知识库内容作为上下文）
+        if (chatRequest.getKnowledgeId() != null) {
+            // 查询知识库信息
+            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
+            if (knowledgeInfoVo == null) {
+                log.warn("知识库信息不存在，kid: {}", chatRequest.getKnowledgeId());
+                // 继续添加当前用户消息
+                messages.add(UserMessage.userMessage(chatRequest.getContent()));
+                return messages;
+            }
+
+            // 查询向量模型配置信息
+            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+            if (chatModel == null) {
+                log.warn("向量模型配置不存在，模型名称: {}", knowledgeInfoVo.getEmbeddingModel());
+                messages.add(UserMessage.userMessage(chatRequest.getContent()));
+                return messages;
+            }
+
+            // 构建向量查询参数
+            QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
+
+            // 使用知识库检索服务（支持重排序）
+            List<String> nearestList = knowledgeRetrievalService.retrieveTexts(queryVectorBo);
+            for (String prompt : nearestList) {
+                // 知识库内容作为系统上下文添加
+                messages.add(new AiMessage(prompt));
+            }
+        }
+
+        // 构建当前用户消息（放在最后）
+        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
         messages.add(userMessage);
 
         return messages;
@@ -452,6 +483,13 @@ public class ChatServiceFacade implements IChatService {
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
         queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
         queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
+
+        // 设置重排序参数
+        queryVectorBo.setEnableRerank(knowledgeInfoVo.getEnableRerank() != null && knowledgeInfoVo.getEnableRerank() == 1);
+        queryVectorBo.setRerankModelName(knowledgeInfoVo.getRerankModel());
+        queryVectorBo.setRerankTopN(knowledgeInfoVo.getRerankTopN());
+        queryVectorBo.setRerankScoreThreshold(knowledgeInfoVo.getRerankScoreThreshold());
+
         return queryVectorBo;
     }
 
@@ -571,7 +609,5 @@ public class ChatServiceFacade implements IChatService {
             }
         };
     }
-
-
 }
 

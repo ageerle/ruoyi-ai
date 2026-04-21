@@ -51,4 +51,30 @@ public class QueryVectorBo {
      */
     private String baseUrl;
 
+
+    // ========== 重排序相关参数 ==========
+
+    /**
+     * 是否启用重排序
+     * 默认为 false
+     */
+    private Boolean enableRerank = false;
+
+    /**
+     * 重排序模型名称
+     */
+    private String rerankModelName;
+
+    /**
+     * 重排序后返回的文档数量（topN）
+     * 如果不指定，默认与 maxResults 相同
+     */
+    private Integer rerankTopN;
+
+    /**
+     * 重排序相关性分数阈值
+     * 低于此阈值的文档将被过滤
+     */
+    private Double rerankScoreThreshold;
+
 }

@@ -260,6 +260,25 @@ websocket:
   # 设置访问源地址
   allowedOrigins: '*'
 
+--- # 演示模式配置
+demo:
+  # 是否开启演示模式（开启后所有写操作将被拦截）
+  enabled: false
+  # 提示消息
+  message: "演示模式，不允许操作"
+  # 排除的路径（这些路径不受演示模式限制）
+  excludes:
+    - /login
+    - /logout
+    - /register
+    - /captcha/**
+    - /auth/**
+    - /chat/send
+    - /system/session/**
+    - /system/message/**
+    - /system/attach/**
+    - /system/fragment/**
+    - /system/info/**
 --- # warm-flow工作流配置
 warm-flow:
   # 是否开启工作流，默认true

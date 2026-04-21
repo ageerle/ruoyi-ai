@@ -9,6 +9,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.enums.ModelType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +23,8 @@ import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.excel.utils.ExcelUtil;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+
+import java.util.LinkedHashMap;
 
 /**
  * 模型管理
@@ -53,6 +56,21 @@ public class ChatModelController extends BaseController {
     public R<List<ChatModelVo>> modelList(ChatModelBo bo) {
         bo.setCategory(ModelType.CHAT.getKey());
         return R.ok(chatModelService.queryList(bo));
+    }
+
+    /**
+     * 获取模型供应商枚举
+     */
+    @GetMapping("/providerOptions")
+    public R<List<LinkedHashMap<String, String>>> providerOptions() {
+        List<LinkedHashMap<String, String>> options = new java.util.ArrayList<>();
+        for (ChatModeType type : ChatModeType.values()) {
+            LinkedHashMap<String, String> item = new LinkedHashMap<>();
+            item.put("label", type.getDescription());
+            item.put("value", type.getCode());
+            options.add(item);
+        }
+        return R.ok(options);
     }
 
     /**

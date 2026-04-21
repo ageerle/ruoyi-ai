@@ -1,4 +1,5 @@
 org.ruoyi.common.web.config.CaptchaConfig
+org.ruoyi.common.web.config.DemoAutoConfiguration
 org.ruoyi.common.web.config.FilterConfig
 org.ruoyi.common.web.config.I18nConfig
 org.ruoyi.common.web.config.ResourcesConfig

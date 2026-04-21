@@ -89,4 +89,21 @@ public class SseEventDto implements Serializable {
             .error(error)
             .build();
     }
+
+    /**
+     * 创建 MCP 工具事件
+     */
+    public static SseEventDto mcpTool(String toolName, String status, String result) {
+        return SseEventDto.builder()
+            .event("mcp_tool")
+            .content(buildMcpJson(toolName, status, result))
+            .build();
+    }
+
+    private static String buildMcpJson(String toolName, String status, String result) {
+        return String.format("{\"toolName\":\"%s\",\"status\":\"%s\",\"result\":\"%s\"}",
+            toolName != null ? toolName.replace("\"", "\\\"") : "",
+            status != null ? status : "",
+            result != null ? result.replace("\"", "\\\"").replace("\n", "\\n") : "");
+    }
 }

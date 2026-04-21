@@ -95,41 +95,34 @@ public class KnowledgeInfoVo implements Serializable {
     private String embeddingModel;
 
     /**
-     * 重排模型
+     * 是否启用重排序（0 否 1是）
      */
-    @ExcelProperty(value = "重排模型")
+    @ExcelProperty(value = "是否启用重排序")
+    private Integer enableRerank;
+
+    /**
+     * 重排序模型名称
+     */
+    @ExcelProperty(value = "重排序模型")
     private String rerankModel;
 
     /**
-     * 是否启用重排（0 否 1 是）
+     * 重排序后返回的文档数量
      */
-    @ExcelProperty(value = "是否启用重排", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "0=否,1=是")
-    private Integer enableRerank;
+    @ExcelProperty(value = "重排序返回数量")
+    private Integer rerankTopN;
+
+    /**
+     * 重排序相关性分数阈值
+     */
+    @ExcelProperty(value = "重排序分数阈值")
+    private Double rerankScoreThreshold;
 
     /**
      * 备注
      */
     @ExcelProperty(value = "备注")
     private String remark;
-
-    /**
-     * 是否启用混合检索（0 否 1 是）
-     */
-    @ExcelProperty(value = "是否启用混合检索", converter = ExcelDictConvert.class)
-    @ExcelDictFormat(readConverterExp = "0=否,1=是")
-    private Integer enableHybrid;
-
-    /**
-     * 混合检索权重比例 (0.0-1.0)
-     */
-    @ExcelProperty(value = "混合检索权重比例")
-    private Double hybridAlpha;
-
-    /**
-     * 文档数（统计字段，非数据库列）
-     */
-    private Integer documentCount;
 
 
 }

@@ -34,7 +34,7 @@
 
 | Module | Current Capabilities |
 |:---:|---|
-| **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu), multi-modal understanding, Coze/DIFY/FastGPT platform integration |
+| **Model Management** | Multi-model integration (OpenAI/DeepSeek/Tongyi/Zhipu/MiniMax), multi-modal understanding, Coze/DIFY/FastGPT platform integration |
 | **Knowledge Base** | Local RAG + Vector DB (Milvus/Weaviate/Qdrant) + Document parsing |
 | **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem |
 | **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model calls, email sending, manual review nodes |
@@ -65,7 +65,7 @@
 ## 🛠️ Technical Architecture
 
 ### Core Framework
-- **Backend**: Spring Boot 4.0 + Spring AI 2.0 + Langchain4j
+- **Backend**: Spring Boot 3.5.8 + Langchain4j
 - **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate/Qdrant)
 - **Frontend**: Vue 3 + Vben Admin + element-plus-x
 - **Security**: Sa-Token + JWT dual-layer security
@@ -191,12 +191,6 @@ docker-compose -f docker-compose-all.yaml restart [service-name]
 Want to learn more about installation, deployment, configuration, and secondary development?
 
 **👉 [Complete Documentation](https://doc.pandarobot.chat)**
-
-Experiencing issues with knowledge base or RAG responses?
-
-**👉 [RAG Troubleshooting Guide](docs/troubleshooting/rag-failures.md)**
-
----
 
 ## 🤝 Contributing
 

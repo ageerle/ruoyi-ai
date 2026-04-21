@@ -2,6 +2,7 @@ package org.ruoyi.service.embed.impl;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
 import dev.langchain4j.model.output.Response;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
@@ -34,10 +35,11 @@ public class OllamaEmbeddingProvider implements BaseEmbedModelService {
     // ollama不能设置embedding维度，使用milvus时请注意！！创建向量表时需要先设定维度大小
     @Override
     public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
-        return OllamaEmbeddingModel.builder()
+        EmbeddingModel model = OllamaEmbeddingModel.builder()
                 .baseUrl(chatModelVo.getApiHost())
                 .modelName(chatModelVo.getModelName())
-                .build()
-                .embedAll(textSegments);
+                .build();
+
+        return model.embedAll(textSegments);
     }
 }

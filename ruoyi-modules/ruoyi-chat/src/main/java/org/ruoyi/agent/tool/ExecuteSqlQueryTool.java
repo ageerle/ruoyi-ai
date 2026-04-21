@@ -43,7 +43,7 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
     @Tool("Execute a SELECT SQL query and return the results. Example: SELECT * FROM sys_user")
     public String executeSql(String sql) {
         // 2. 手动推入数据源上下文
-        DynamicDataSourceContextHolder.push("agent");
+//        DynamicDataSourceContextHolder.push("agent");
         if (sql == null || sql.trim().isEmpty()) {
             return "Error: SQL query cannot be empty";
         }

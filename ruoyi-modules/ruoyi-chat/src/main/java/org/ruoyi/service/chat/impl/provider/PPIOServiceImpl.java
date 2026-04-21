@@ -1,22 +1,28 @@
 package org.ruoyi.service.chat.impl.provider;
 
+
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ChatModeType;
+import org.ruoyi.observability.MyChatModelListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
- * OPENAI服务调用
+ * PPIO服务调用
  *
  * @author ageerle@163.com
  * @date 2025/12/13
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class PPIOServiceImpl implements AbstractChatService {
 
     @Override
@@ -25,6 +31,7 @@ public class PPIOServiceImpl implements AbstractChatService {
                 .baseUrl(chatModelVo.getApiHost())
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
+                .listeners(List.of(new MyChatModelListener()))
                 .returnThinking(chatRequest.getEnableThinking())
                 .build();
     }

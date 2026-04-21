@@ -31,8 +31,8 @@
 
 |     模块     | 现有能力 
 |:----------:|---
-|  **模型管理**  | 多模型接入(OpenAI/DeepSeek/通义/智谱)、多模态理解、Coze/DIFY/FastGPT平台集成 
-|  **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate/Qdrant)  + 文档解析        
+|  **模型管理**  | 多模型接入(OpenAI/DeepSeek/通义/智谱/MiniMax)、多模态理解、Coze/DIFY/FastGPT平台集成
+|  **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate/Qdrant)  + 文档解析
 |  **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             
 |  **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
 |  **多智能体**  | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型          
@@ -62,7 +62,7 @@
 ## 🛠️ 技术架构
 
 ### 核心框架
-- **后端架构**：Spring Boot 4.0 + Spring ai 2.0 + Langchain4j
+- **后端架构**：Spring Boot 3.5.8 + Langchain4j
 - **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate/Qdrant）
 - **前端技术**：Vue 3 + Vben Admin + element-plus-x
 - **安全认证**：Sa-Token + JWT 双重保障
@@ -188,12 +188,6 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 想要深入了解安装部署、功能配置和二次开发？
 
 **👉 [完整使用文档](https://doc.pandarobot.chat)**
-
-遇到知识库或 RAG 回答异常问题？
-
-**👉 [RAG 回答异常排查手册](docs/troubleshooting/rag-failures.md)**
-
----
 
 ## 🤝 参与贡献
 
