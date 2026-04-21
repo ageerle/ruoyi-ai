@@ -63,6 +63,11 @@ public class KnowledgeInfoBo extends BaseEntity {
     private Long retrieveLimit;
 
     /**
+     * 相似度阈值
+     */
+    private Double similarityThreshold;
+
+    /**
      * 文本块大小
      */
     private Long textBlockSize;

@@ -77,6 +77,12 @@ public class KnowledgeInfoVo implements Serializable {
     private Integer retrieveLimit;
 
     /**
+     * 相似度阈值
+     */
+    @ExcelProperty(value = "相似度阈值")
+    private Double similarityThreshold;
+
+    /**
      * 文本块大小
      */
     @ExcelProperty(value = "文本块大小")
