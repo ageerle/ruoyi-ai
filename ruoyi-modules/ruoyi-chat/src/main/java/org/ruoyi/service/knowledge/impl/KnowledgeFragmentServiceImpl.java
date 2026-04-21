@@ -1,39 +1,36 @@
 package org.ruoyi.service.knowledge.impl;
 
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.output.Response;
-import dev.langchain4j.model.scoring.ScoringModel;
-import org.ruoyi.common.core.utils.MapstructUtils;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.common.core.utils.MapstructUtils;
+import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.knowledge.KnowledgeFragmentBo;
+import org.ruoyi.domain.bo.rerank.RerankRequest;
+import org.ruoyi.domain.bo.rerank.RerankResult;
+import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
 import org.ruoyi.domain.vo.knowledge.KnowledgeFragmentVo;
-import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
-import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
-import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-import org.ruoyi.domain.bo.vector.QueryVectorBo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
+import org.ruoyi.factory.RerankModelFactory;
+import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
 import org.ruoyi.service.knowledge.IKnowledgeFragmentService;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
-import org.ruoyi.common.chat.service.chat.IChatModelService;
-import org.ruoyi.service.knowledge.rerank.ScoringModelFactory;
+import org.ruoyi.service.rerank.RerankModelService;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
+
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
 
 /**
  * 知识片段Service业务层处理
@@ -50,7 +47,7 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
     private final IKnowledgeInfoService knowledgeInfoService;
     private final IChatModelService chatModelService;
     private final VectorStoreService vectorStoreService;
-    private final ScoringModelFactory scoringModelFactory;
+    private final RerankModelFactory rerankModelFactory;
 
     /**
      * 查询知识片段
@@ -231,37 +228,38 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
 
         // 4. 执行重排逻辑 (如果请求启用重排且配置了重排模型)
         if (Boolean.TRUE.equals(bo.getEnableRerank()) && StringUtils.isNotBlank(bo.getRerankModel())) {
-            log.info("开始重排配置检索测试，传入模型名称: [{}]", bo.getRerankModel());
-            ChatModelVo rerankModelConfig = chatModelService.selectModelByName(bo.getRerankModel());
-            
-            if (rerankModelConfig == null) {
-                log.warn("未能找到重排模型配置: [{}]", bo.getRerankModel());
-            } else {
-                ScoringModel scoringModel = scoringModelFactory.createScoringModel(rerankModelConfig);
-                if (scoringModel != null) {
-                    log.info("执行重排精排，模型: {}, 供应商: {}", rerankModelConfig.getModelName(), rerankModelConfig.getProviderCode());
+            log.info("开始重排精排，模型: [{}]", bo.getRerankModel());
+            try {
+                RerankModelService rerankModel = rerankModelFactory.createModel(bo.getRerankModel());
 
-                    // 将 KnowledgeRetrievalVo 转换为 TextSegment 列表进行重排
-                    List<TextSegment> segments = allResults.stream()
-                        .map(res -> TextSegment.from(res.getContent()))
+                List<String> contents = allResults.stream()
+                        .map(KnowledgeRetrievalVo::getContent)
                         .collect(Collectors.toList());
 
-                    Response<List<Double>> scoresResponse = scoringModel.scoreAll(segments, bo.getQuery());
-                    List<Double> scores = scoresResponse.content();
+                RerankRequest rerankRequest = RerankRequest.builder()
+                        .query(bo.getQuery())
+                        .documents(contents)
+                        .topN(contents.size())
+                        .returnDocuments(false)
+                        .build();
 
-                    // 更新分数并重新排序
-                    for (int i = 0; i < allResults.size(); i++) {
-                        KnowledgeRetrievalVo resultVo = allResults.get(i);
-                        // 保存原始分数供前端展示对比
+                RerankResult rerankResult = rerankModel.rerank(rerankRequest);
+
+                // 将重排分数写回，并记录原始分数供前端对比
+                for (RerankResult.RerankDocument doc : rerankResult.getDocuments()) {
+                    if (doc.getIndex() != null && doc.getIndex() < allResults.size()) {
+                        KnowledgeRetrievalVo resultVo = allResults.get(doc.getIndex());
                         resultVo.setRawScore(resultVo.getScore());
-                        if (i < scores.size()) {
-                            resultVo.setScore(scores.get(i));
-                        }
+                        resultVo.setScore(doc.getRelevanceScore());
                     }
-
-                    // 按重排后的分数从高到低排序
-                    allResults.sort((a, b) -> b.getScore().compareTo(a.getScore()));
                 }
+
+                // 按重排后的分数从高到低排序
+                allResults.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+                log.info("重排精排完成，结果数: {}", allResults.size());
+
+            } catch (Exception e) {
+                log.error("重排精排执行失败，已跳过重排步骤: {}", e.getMessage(), e);
             }
         }
 

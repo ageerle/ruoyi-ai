@@ -99,6 +99,16 @@ public class KnowledgeInfo extends BaseEntity {
     private Double rerankScoreThreshold;
 
     /**
+     * 是否启用混合检索（0 否 1是）
+     */
+    private Integer enableHybrid;
+
+    /**
+     * 混合检索权重 (0.0-1.0)
+     */
+    private Double hybridAlpha;
+
+    /**
      * 备注
      */
     private String remark;

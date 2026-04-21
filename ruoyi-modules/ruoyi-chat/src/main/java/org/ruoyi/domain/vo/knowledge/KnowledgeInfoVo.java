@@ -119,6 +119,24 @@ public class KnowledgeInfoVo implements Serializable {
     private Double rerankScoreThreshold;
 
     /**
+     * 是否启用混合检索（0 否 1是）
+     */
+    @ExcelProperty(value = "是否启用混合检索")
+    private Integer enableHybrid;
+
+    /**
+     * 混合检索权重 (0.0-1.0)
+     */
+    @ExcelProperty(value = "混合检索权重")
+    private Double hybridAlpha;
+
+    /**
+     * 文档数量
+     */
+    @ExcelProperty(value = "文档数量")
+    private Integer documentCount;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")
