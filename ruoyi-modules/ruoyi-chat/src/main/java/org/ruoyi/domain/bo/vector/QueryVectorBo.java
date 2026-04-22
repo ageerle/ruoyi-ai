@@ -77,4 +77,22 @@ public class QueryVectorBo {
      */
     private Double rerankScoreThreshold;
 
+    // ========== 混合检索与阈值相关参数 ==========
+
+    /**
+     * 相似度阈值 (0.0-1.0)
+     * 应用于向量搜索阶段
+     */
+    private Double similarityThreshold;
+
+    /**
+     * 是否启用混合检索
+     */
+    private Boolean enableHybrid = false;
+
+    /**
+     * 混合检索权重 (0.0-1.0)
+     */
+    private Double hybridAlpha;
+
 }

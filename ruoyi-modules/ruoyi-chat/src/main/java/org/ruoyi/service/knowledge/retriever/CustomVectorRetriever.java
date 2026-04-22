@@ -9,14 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
-import org.ruoyi.service.vector.VectorStoreService;
+import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 自定义向量检索器：适配 LangChain4j ContentRetriever 接口
- * 桥接现有的 VectorStoreService 获取检索结果
+ * 自定义检索器：适配 LangChain4j ContentRetriever 接口
+ * 桥接统一的 KnowledgeRetrievalService，支持配置化的混合检索、阈值过滤等功能
  *
  * @author RobustH
  */
@@ -24,15 +25,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomVectorRetriever implements ContentRetriever {
 
-    private final VectorStoreService vectorStoreService;
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final KnowledgeInfoVo knowledgeInfoVo;
     private final ChatModelVo chatModelVo;
 
     @Override
     public List<Content> retrieve(Query query) {
-        log.info("执行自定义向量检索，关键字: {}", query.text());
+        log.info("执行自定义检索，关键字: {}", query.text());
 
-        // 构建内部查询参数
+        // 构建增强后的查询参数
         QueryVectorBo queryVectorBo = new QueryVectorBo();
         queryVectorBo.setQuery(query.text());
         queryVectorBo.setKid(String.valueOf(knowledgeInfoVo.getId()));
@@ -40,11 +41,21 @@ public class CustomVectorRetriever implements ContentRetriever {
         queryVectorBo.setBaseUrl(chatModelVo.getApiHost());
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
         queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
-        // 如果接入了重排，这里的 retrieveLimit 也就是 MaxResults 应当被放大，后续留给 Aggregator 截断
+        
+        // 应用知识库配置参数
         queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
+        queryVectorBo.setSimilarityThreshold(knowledgeInfoVo.getSimilarityThreshold());
+        queryVectorBo.setEnableHybrid(Objects.equals(knowledgeInfoVo.getEnableHybrid(), 1));
+        queryVectorBo.setHybridAlpha(knowledgeInfoVo.getHybridAlpha());
 
-        // 执行底层的多种向量库策略检索
-        List<String> nearestList = vectorStoreService.getQueryVector(queryVectorBo);
+        // 设置重排序参数 (如果 retriever 阶段也想做初步重排，可以在此设置)
+        queryVectorBo.setEnableRerank(Objects.equals(knowledgeInfoVo.getEnableRerank(), 1));
+        queryVectorBo.setRerankModelName(knowledgeInfoVo.getRerankModel());
+        queryVectorBo.setRerankTopN(knowledgeInfoVo.getRerankTopN());
+        queryVectorBo.setRerankScoreThreshold(knowledgeInfoVo.getRerankScoreThreshold());
+
+        // 通过统一服务执行检索
+        List<String> nearestList = knowledgeRetrievalService.retrieveTexts(queryVectorBo);
 
         // 将结果包装为标准的 Content 返回
         return nearestList.stream()
