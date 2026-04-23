@@ -8,6 +8,7 @@ import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.ruoyi.domain.bo.knowledge.KnowledgeFragmentBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeFragmentVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.service.knowledge.IKnowledgeFragmentService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
@@ -101,5 +102,13 @@ public class KnowledgeFragmentController extends BaseController {
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {
         return toAjax(knowledgeFragmentService.deleteWithValidByIds(List.of(ids), true));
+    }
+
+    /**
+     * 检索测试
+     */
+    @PostMapping("/retrieval")
+    public R<List<KnowledgeRetrievalVo>> retrieval(@RequestBody KnowledgeFragmentBo bo) {
+        return R.ok(knowledgeFragmentService.retrieval(bo));
     }
 }

@@ -20,6 +20,11 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.tool.ToolProvider;
 import dev.langchain4j.skills.shell.ShellSkills;
+import dev.langchain4j.rag.AugmentationRequest;
+import dev.langchain4j.rag.AugmentationResult;
+import dev.langchain4j.rag.DefaultRetrievalAugmentor;
+import dev.langchain4j.rag.RetrievalAugmentor;
+import dev.langchain4j.rag.query.Metadata;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +60,7 @@ import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
+import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -412,16 +418,49 @@ public class ChatServiceFacade implements IChatService {
 
     /**
      * 构建上下文消息列表
-
      * 消息顺序：历史消息 → 当前用户消息（确保 AI 正确理解对话上下文）
      *
      * @param chatRequest 聊天请求
      * @return 上下文消息列表
      */
     private List<ChatMessage> buildContextMessages(ChatRequest chatRequest) {
-        List<ChatMessage> messages  = new ArrayList<>();
+        List<ChatMessage> messages = new ArrayList<>();
 
-        // 从数据库查询历史对话消息（放在前面）
+        // 1. 初始化当前用户消息
+        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
+
+        // 2. 知识库检索增强 (RAG)
+        if (chatRequest.getKnowledgeId() != null) {
+            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
+            if (knowledgeInfoVo != null) {
+                ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+                if (chatModel != null) {
+                    log.info("执行高级 RAG 流程: kid={}", chatRequest.getKnowledgeId());
+
+                    // 构建自定义检索器
+                    CustomVectorRetriever retriever = new CustomVectorRetriever(
+                            knowledgeRetrievalService, knowledgeInfoVo, chatModel);
+
+                    // 构建增强流水线
+                    RetrievalAugmentor augmentor = DefaultRetrievalAugmentor.builder()
+                            .contentRetriever(retriever)
+                            .build();
+
+                    // 执行增强：编织上下文到 UserMessage
+                    Metadata metadata = Metadata.from(userMessage, chatRequest.getSessionId(), new ArrayList<>());
+                    AugmentationRequest augmentationRequest = new AugmentationRequest(userMessage, metadata);
+                    AugmentationResult result = augmentor.augment(augmentationRequest);
+
+                    ChatMessage augmented = result.chatMessage();
+                    if (augmented instanceof UserMessage) {
+                        userMessage = (UserMessage) augmented;
+                        log.debug("RAG 增强完成，UserMessage 已注入背景知识");
+                    }
+                }
+            }
+        }
+
+        // 3. 从数据库查询历史对话消息（放在前面）
         if (chatRequest.getSessionId() != null) {
             MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
             if (memory != null) {
@@ -433,38 +472,7 @@ public class ChatServiceFacade implements IChatService {
             }
         }
 
-        // 从向量库查询相关历史消息（知识库内容作为上下文）
-        if (chatRequest.getKnowledgeId() != null) {
-            // 查询知识库信息
-            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(Long.valueOf(chatRequest.getKnowledgeId()));
-            if (knowledgeInfoVo == null) {
-                log.warn("知识库信息不存在，kid: {}", chatRequest.getKnowledgeId());
-                // 继续添加当前用户消息
-                messages.add(UserMessage.userMessage(chatRequest.getContent()));
-                return messages;
-            }
-
-            // 查询向量模型配置信息
-            ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
-            if (chatModel == null) {
-                log.warn("向量模型配置不存在，模型名称: {}", knowledgeInfoVo.getEmbeddingModel());
-                messages.add(UserMessage.userMessage(chatRequest.getContent()));
-                return messages;
-            }
-
-            // 构建向量查询参数
-            QueryVectorBo queryVectorBo = buildQueryVectorBo(chatRequest, knowledgeInfoVo, chatModel);
-
-            // 使用知识库检索服务（支持重排序）
-            List<String> nearestList = knowledgeRetrievalService.retrieveTexts(queryVectorBo);
-            for (String prompt : nearestList) {
-                // 知识库内容作为系统上下文添加
-                messages.add(new AiMessage(prompt));
-            }
-        }
-
-        // 构建当前用户消息（放在最后）
-        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
+        // 4. 添加经过增强的用户消息（放在最后）
         messages.add(userMessage);
 
         return messages;

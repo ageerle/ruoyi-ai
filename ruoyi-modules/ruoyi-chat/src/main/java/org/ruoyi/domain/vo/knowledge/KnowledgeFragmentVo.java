@@ -39,7 +39,7 @@ public class KnowledgeFragmentVo implements Serializable {
      * 片段索引下标
      */
     @ExcelProperty(value = "片段索引下标")
-    private Long idx;
+    private Integer idx;
 
     /**
      * 文档内容
@@ -52,6 +52,11 @@ public class KnowledgeFragmentVo implements Serializable {
      */
     @ExcelProperty(value = "备注")
     private String remark;
+
+    /**
+     * 知识库ID
+     */
+    private Long knowledgeId;
 
 
 }

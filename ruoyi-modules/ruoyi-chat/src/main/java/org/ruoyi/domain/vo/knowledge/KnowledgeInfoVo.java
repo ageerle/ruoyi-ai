@@ -77,6 +77,12 @@ public class KnowledgeInfoVo implements Serializable {
     private Integer retrieveLimit;
 
     /**
+     * 相似度阈值
+     */
+    @ExcelProperty(value = "相似度阈值")
+    private Double similarityThreshold;
+
+    /**
      * 文本块大小
      */
     @ExcelProperty(value = "文本块大小")
@@ -117,6 +123,24 @@ public class KnowledgeInfoVo implements Serializable {
      */
     @ExcelProperty(value = "重排序分数阈值")
     private Double rerankScoreThreshold;
+
+    /**
+     * 是否启用混合检索（0 否 1是）
+     */
+    @ExcelProperty(value = "是否启用混合检索")
+    private Integer enableHybrid;
+
+    /**
+     * 混合检索权重 (0.0-1.0)
+     */
+    @ExcelProperty(value = "混合检索权重")
+    private Double hybridAlpha;
+
+    /**
+     * 文档数量
+     */
+    @ExcelProperty(value = "文档数量")
+    private Integer documentCount;
 
     /**
      * 备注

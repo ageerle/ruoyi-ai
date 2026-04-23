@@ -49,5 +49,44 @@ public class KnowledgeFragmentBo extends BaseEntity {
      */
     private String remark;
 
+    /**
+     * 知识库ID
+     */
+    private Long knowledgeId;
+
+    /**
+     * 检索内容
+     */
+    private String query;
+
+    /**
+     * 返回条数
+     */
+    private Integer topK;
+
+    /**
+     * 相似度阈值
+     */
+    private Double threshold;
+
+    /**
+     * 是否启用重排
+     */
+    private Boolean enableRerank;
+
+    /**
+     * 重排模型名称
+     */
+    private String rerankModel;
+
+    /**
+     * 是否启用混合检索
+     */
+    private Boolean enableHybrid;
+
+    /**
+     * 混合检索权重 (0.0-1.0)
+     */
+    private Double hybridAlpha;
 
 }

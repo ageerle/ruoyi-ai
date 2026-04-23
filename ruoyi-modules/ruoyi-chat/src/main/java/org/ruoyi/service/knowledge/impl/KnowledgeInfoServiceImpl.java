@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.domain.bo.knowledge.KnowledgeInfoBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeInfo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import org.ruoyi.mapper.knowledge.KnowledgeInfoMapper;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,8 @@ import java.util.Collection;
 public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
     private final KnowledgeInfoMapper baseMapper;
+
+    private final KnowledgeAttachMapper knowledgeAttachMapper;
 
     /**
      * 查询知识库
@@ -55,6 +58,8 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     public TableDataInfo<KnowledgeInfoVo> queryPageList(KnowledgeInfoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<KnowledgeInfo> lqw = buildQueryWrapper(bo);
         Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 批量填充文档数
+        fillDocumentCount(result.getRecords());
         return TableDataInfo.build(result);
     }
 
@@ -85,6 +90,17 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         lqw.eq(StringUtils.isNotBlank(bo.getVectorModel()), KnowledgeInfo::getVectorModel, bo.getVectorModel());
         lqw.eq(StringUtils.isNotBlank(bo.getEmbeddingModel()), KnowledgeInfo::getEmbeddingModel, bo.getEmbeddingModel());
         return lqw;
+    }
+
+    /**
+     * 批量填充知识库列表每一条记录的文档数（documentCount）
+     */
+    private void fillDocumentCount(List<KnowledgeInfoVo> records) {
+        if (records == null || records.isEmpty()) return;
+        for (KnowledgeInfoVo vo : records) {
+            int count = knowledgeAttachMapper.countByKnowledgeId(vo.getId());
+            vo.setDocumentCount(count);
+        }
     }
 
     /**

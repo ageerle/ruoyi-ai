@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.task.VirtualThreadTaskExecutor;
 
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.*;
 
 /**
@@ -21,6 +22,12 @@ import java.util.concurrent.*;
 @AutoConfiguration
 @EnableConfigurationProperties(ThreadPoolProperties.class)
 public class ThreadPoolConfig {
+
+    private final ThreadPoolProperties properties;
+
+    public ThreadPoolConfig(ThreadPoolProperties properties) {
+        this.properties = properties;
+    }
 
     /**
      * 核心线程数 = cpu 核心数 + 1
@@ -52,6 +59,22 @@ public class ThreadPoolConfig {
         };
         this.scheduledExecutorService = scheduledThreadPoolExecutor;
         return scheduledThreadPoolExecutor;
+    }
+
+    /**
+     * 知识库解析专用异步线程池
+     */
+    @Bean(name = "knowledgeParseExecutor")
+    public ThreadPoolTaskExecutor knowledgeParseExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(core);
+        executor.setMaxPoolSize(core * 2);
+        executor.setQueueCapacity(properties.getQueueCapacity());
+        executor.setKeepAliveSeconds(properties.getKeepAliveSeconds());
+        executor.setThreadNamePrefix("knowledge-parse-pool-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
     }
 
     /**

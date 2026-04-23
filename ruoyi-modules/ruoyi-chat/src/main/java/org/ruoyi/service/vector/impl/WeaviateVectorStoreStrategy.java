@@ -12,6 +12,7 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.factory.EmbeddingModelFactory;
 import org.springframework.stereotype.Component;
 import io.weaviate.client.Config;
@@ -24,6 +25,9 @@ import io.weaviate.client.v1.graphql.model.GraphQLResponse;
 import io.weaviate.client.v1.schema.model.Property;
 import io.weaviate.client.v1.schema.model.Schema;
 import io.weaviate.client.v1.schema.model.WeaviateClass;
+import org.ruoyi.domain.entity.knowledge.KnowledgeAttach;
+import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,11 +44,14 @@ import java.util.Map;
 public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     private WeaviateClient client;
+    private final KnowledgeAttachMapper knowledgeAttachMapper;
 
     public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                        IChatModelService chatModelService,
-                                       EmbeddingModelFactory embeddingModelFactory) {
+                                       EmbeddingModelFactory embeddingModelFactory,
+                                       KnowledgeAttachMapper knowledgeAttachMapper) {
         super(vectorStoreProperties, embeddingModelFactory,chatModelService);
+        this.knowledgeAttachMapper = knowledgeAttachMapper;
     }
 
     @Override
@@ -110,9 +117,12 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                     "kid", kid,
                     "docId", docId
             );
-            Float[] vector = toObjectArray(embedding.vector());
+            float[] vectorArray = embedding.vector();
+            normalize(vectorArray);
+            Float[] vector = toObjectArray(vectorArray);
+
             client.data().creator()
-                    .withClassName("LocalKnowledge" + kid)
+                    .withClassName(vectorStoreProperties.getWeaviate().getClassname() + kid)
                     .withProperties(properties)
                     .withVector(vector)
                     .run();
@@ -128,6 +138,9 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
         Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
         float[] vector = queryEmbedding.vector();
+        // 查询向量单位化处理
+        normalize(vector);
+
         List<String> vectorStrings = new ArrayList<>();
         for (float v : vector) {
             vectorStrings.add(String.valueOf(v));
@@ -176,6 +189,77 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             log.error("GraphQL 查询失败: {}", result.getError());
             return resultList;
         }
+    }
+
+    @Override
+    public List<KnowledgeRetrievalVo> search(QueryVectorBo queryVectorBo) {
+        createSchema(queryVectorBo.getKid(), queryVectorBo.getEmbeddingModelName());
+        EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
+        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
+        float[] vector = queryEmbedding.vector();
+        // 查询向量单位化处理
+        normalize(vector);
+        List<String> vectorStrings = new ArrayList<>();
+        for (float v : vector) {
+            vectorStrings.add(String.valueOf(v));
+        }
+        String vectorStr = String.join(",", vectorStrings);
+        String className = vectorStoreProperties.getWeaviate().getClassname();
+
+        String graphQLQuery = String.format(
+                "{\n" +
+                "  Get {\n" +
+                "    %s(nearVector: {vector: [%s]} limit: %d) {\n" +
+                "      text\n" +
+                "      docId\n" +
+                "      _additional {\n" +
+                "        distance\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}",
+                className + queryVectorBo.getKid(),
+                vectorStr,
+                queryVectorBo.getMaxResults()
+        );
+
+        Result<GraphQLResponse> result = client.graphQL().raw().withQuery(graphQLQuery).run();
+        List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> resultList = new ArrayList<>();
+
+        if (result != null && !result.hasErrors()) {
+            Object data = result.getResult().getData();
+            JSONObject entries = new JSONObject(data);
+            Map<String, cn.hutool.json.JSONArray> entriesMap = entries.get("Get", Map.class);
+            cn.hutool.json.JSONArray objects = entriesMap.get(className + queryVectorBo.getKid());
+
+            for (Object obj : objects) {
+                Map<String, Object> map = (Map<String, Object>) obj;
+                String content = (String) map.get("text");
+                String docId = (String) map.get("docId");
+
+                Map<String, Object> additional = (Map<String, Object>) map.get("_additional");
+                Double distance = Double.valueOf(String.valueOf(additional.get("distance")));
+                // 转换距离为得分 (Weaviate 0 是最相近，1 是最远；余弦距离下 1-dist 即为相似度)
+                double score = 1.0 - distance;
+
+                String sourceName = "未知来源";
+                if (docId != null) {
+                    KnowledgeAttach attach = knowledgeAttachMapper.selectOne(new LambdaQueryWrapper<KnowledgeAttach>()
+                            .eq(KnowledgeAttach::getDocId, docId)
+                            .last("limit 1"));
+                    if (attach != null) {
+                        sourceName = attach.getName();
+                    }
+                }
+
+                resultList.add(org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo.builder()
+                        .content(content)
+                        .score(score)
+                        .sourceName(sourceName)
+                        .build());
+            }
+        }
+        return resultList;
     }
 
     @Override

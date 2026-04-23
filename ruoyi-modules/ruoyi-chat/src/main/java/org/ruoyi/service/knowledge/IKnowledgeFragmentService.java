@@ -4,6 +4,7 @@ import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.domain.bo.knowledge.KnowledgeFragmentBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeFragmentVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -65,4 +66,12 @@ public interface IKnowledgeFragmentService {
      * @return 是否删除成功
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 检索测试
+     *
+     * @param bo 检索参数
+     * @return 检索结果
+     */
+    List<KnowledgeRetrievalVo> retrieval(KnowledgeFragmentBo bo);
 }

@@ -47,5 +47,10 @@ public class KnowledgeFragment extends BaseEntity {
      */
     private String remark;
 
+    /**
+     * 知识库ID
+     */
+    private Long knowledgeId;
+
 
 }

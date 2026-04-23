@@ -1,24 +1,29 @@
 package org.ruoyi.service.knowledge.impl;
 
-import org.ruoyi.common.core.utils.MapstructUtils;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.common.mybatis.core.page.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.common.core.utils.MapstructUtils;
+import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.mybatis.core.page.PageQuery;
+import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.knowledge.KnowledgeFragmentBo;
+import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
 import org.ruoyi.domain.vo.knowledge.KnowledgeFragmentVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
 import org.ruoyi.service.knowledge.IKnowledgeFragmentService;
+import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Collection;
+import java.util.*;
 
 /**
  * 知识片段Service业务层处理
@@ -32,6 +37,9 @@ import java.util.Collection;
 public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
 
     private final KnowledgeFragmentMapper baseMapper;
+    private final IKnowledgeInfoService knowledgeInfoService;
+    private final IChatModelService chatModelService;
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
 
     /**
      * 查询知识片段
@@ -71,7 +79,6 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
     }
 
     private LambdaQueryWrapper<KnowledgeFragment> buildQueryWrapper(KnowledgeFragmentBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<KnowledgeFragment> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(KnowledgeFragment::getId);
         lqw.eq(bo.getDocId() != null, KnowledgeFragment::getDocId, bo.getDocId());
@@ -130,5 +137,51 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteByIds(ids) > 0;
+    }
+
+    /**
+     * 检索测试核心实现 - 委托给统一的 KnowledgeRetrievalService
+     */
+    @Override
+    public List<KnowledgeRetrievalVo> retrieval(KnowledgeFragmentBo bo) {
+        if (bo.getKnowledgeId() == null || StringUtils.isBlank(bo.getQuery())) {
+            return new ArrayList<>();
+        }
+
+        // 1. 获取知识库及模型配置（为了获取 API Key/Host 等模型参数）
+        KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(bo.getKnowledgeId());
+        if (knowledgeInfoVo == null) {
+            return new ArrayList<>();
+        }
+
+        ChatModelVo chatModel = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+        if (chatModel == null) {
+            log.warn("未找到对应的向量模型配置: {}", knowledgeInfoVo.getEmbeddingModel());
+            return new ArrayList<>();
+        }
+
+        // 2. 构造通用的参数对象
+        QueryVectorBo queryVectorBo = new QueryVectorBo();
+        queryVectorBo.setQuery(bo.getQuery());
+        queryVectorBo.setKid(String.valueOf(bo.getKnowledgeId()));
+        queryVectorBo.setApiKey(chatModel.getApiKey());
+        queryVectorBo.setBaseUrl(chatModel.getApiHost());
+        queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
+        queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
+
+        // 使用前端传入的实时测试参数，若无则使用知识库默认参数
+        queryVectorBo.setMaxResults(bo.getTopK() != null ? bo.getTopK() : knowledgeInfoVo.getRetrieveLimit());
+        queryVectorBo.setSimilarityThreshold(bo.getThreshold() != null ? bo.getThreshold() : knowledgeInfoVo.getSimilarityThreshold());
+        
+        queryVectorBo.setEnableHybrid(bo.getEnableHybrid() != null ? bo.getEnableHybrid() : Objects.equals(knowledgeInfoVo.getEnableHybrid(), 1));
+        queryVectorBo.setHybridAlpha(bo.getHybridAlpha() != null ? bo.getHybridAlpha() : knowledgeInfoVo.getHybridAlpha());
+
+        queryVectorBo.setEnableRerank(bo.getEnableRerank() != null ? bo.getEnableRerank() : Objects.equals(knowledgeInfoVo.getEnableRerank(), 1));
+        queryVectorBo.setRerankModelName(StringUtils.isNotBlank(bo.getRerankModel()) ? bo.getRerankModel() : knowledgeInfoVo.getRerankModel());
+        queryVectorBo.setRerankTopN(bo.getTopK() != null ? bo.getTopK() : knowledgeInfoVo.getRerankTopN());
+        queryVectorBo.setRerankScoreThreshold(bo.getThreshold() != null ? bo.getThreshold() : knowledgeInfoVo.getRerankScoreThreshold());
+
+        // 3. 执行统一检索
+        return knowledgeRetrievalService.retrieve(queryVectorBo);
     }
 }

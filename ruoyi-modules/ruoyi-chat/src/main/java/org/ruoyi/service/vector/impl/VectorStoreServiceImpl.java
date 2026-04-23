@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.factory.VectorStoreStrategyFactory;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.context.annotation.Primary;
@@ -52,6 +53,13 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 queryVectorBo.getKid(), queryVectorBo.getQuery(), queryVectorBo.getMaxResults());
         VectorStoreService strategy = getCurrentStrategy();
         return strategy.getQueryVector(queryVectorBo);
+    }
+
+    @Override
+    public List<KnowledgeRetrievalVo> search(QueryVectorBo queryVectorBo) {
+        log.info("执行测试搜索: kid={}, query={}", queryVectorBo.getKid(), queryVectorBo.getQuery());
+        VectorStoreService strategy = getCurrentStrategy();
+        return strategy.search(queryVectorBo);
     }
 
     @Override
