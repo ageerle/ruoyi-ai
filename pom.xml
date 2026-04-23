@@ -58,7 +58,7 @@
         <langchain4j.community.version>1.13.0-beta23</langchain4j.community.version>
         <langgraph4j.version>1.5.3</langgraph4j.version>
         <weaviate.version>1.19.6</weaviate.version>
-        <dify.version>1.0.7</dify.version>
+        <dify.version>1.2.6</dify.version>
         <!-- gRPC 版本 - 解决 Milvus SDK 依赖冲突 -->
         <grpc.version>1.62.2</grpc.version>
         <!-- Apache Commons Compress - 用于POI处理ZIP格式 -->
