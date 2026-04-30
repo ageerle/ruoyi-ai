@@ -72,6 +72,29 @@
 - **实时通信**：WebSocket 实时通信，SSE 流式响应
 - **系统监控**：完善的日志体系、性能监控、服务健康检查
 
+## 使用web coding急速部署
+####  在线体验： https://monkeycode-ai.com/?ic=019d9e9f-edc3-7a4b-8987-11b028751a1e
+
+<table>
+<tr>
+<td align="center" style="padding: 20px;">
+<img src="docs/image/01.png" alt="web code" width="660" height="400"><br>
+</td>
+</tr>
+<tr>
+<td align="center" style="padding: 20px;">
+<img src="docs/image/02.png" alt="web code" width="660" height="400"><br>
+</td>
+</tr>
+<tr>
+<td align="center" style="padding: 20px;">
+<img src="docs/image/03.png" alt="web code" width="660" height="400"><br>
+</td>
+</tr>
+</table>
+
+#### 等待10分钟左右即可完成
+
 ## 🐳 Docker 部署
 
 本项目提供两种 Docker 部署方式：
