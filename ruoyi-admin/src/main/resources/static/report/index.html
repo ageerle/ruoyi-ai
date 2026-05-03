@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Report Agent</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#6366f1;--primary-hover:#4f46e5;--bg:#f8f9fa;--card:#fff;--border:#e2e8f0;--text:#1e293b;--text-muted:#64748b;--success:#22c55e;--warning:#f59e0b;--error:#ef4444;--shadow:0 1px 3px rgba(0,0,0,0.1);--radius:8px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.app{max-width:1200px;margin:0 auto;padding:20px}
+.header{text-align:center;margin-bottom:32px}
+.header h1{font-size:28px;background:linear-gradient(135deg,var(--primary),#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text-muted);margin-top:4px}
+.steps{display:flex;gap:8px;margin-bottom:24px;align-items:center}
+.step{flex:1;padding:12px 16px;background:var(--card);border:2px solid var(--border);border-radius:var(--radius);text-align:center;transition:all 0.3s}
+.step.active{border-color:var(--primary);background:#eef2ff}
+.step.done{border-color:var(--success);background:#f0fdf4}
+.step h3{font-size:14px;color:var(--text-muted);margin-bottom:2px}
+.step .num{font-size:24px;font-weight:700}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px}
+.card h2{font-size:18px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:var(--radius);resize:vertical;font-size:14px;line-height:1.5;font-family:inherit}
+textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,0.1)}
+.model-select{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.model-select label{font-weight:500}
+.model-select select{padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px}
+.model-select input[type=number]{width:80px}
+.btn{padding:10px 24px;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#16a34a}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn:disabled{opacity:0.6;cursor:not-allowed}
+.btn-group{display:flex;gap:8px;margin-top:16px}
+.sql-preview{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:var(--radius);font-family:monospace;white-space:pre-wrap;overflow:auto;max-height:300px;line-height:1.5}
+.sql-block{background:#1e293b;color:#e2e8f0;padding:12px 16px;border-radius:var(--radius);margin:12px 0;font-family:monospace;overflow-x:auto}
+.sql-block .label{color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.status-msg{padding:12px 16px;border-radius:var(--radius);margin:12px 0;font-size:14px;display:flex;align-items:center;gap:8px}
+.status-info{background:#e0f2fe;color:#0369a1}
+.status-success{background:#dcfce7;color:#15803d}
+.status-error{background:#fee2e2;color:#dc2626}
+.loader{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#report-container{display:none}
+#report-container iframe{width:100%;height:70vh;border:1px solid var(--border);border-radius:var(--radius)}
+.section{display:none}
+.section.active{display:block}
+.edit-bar{display:flex;gap:8px;margin-top:16px;align-items:center}
+.edit-bar input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px}
+.edit-bar input:focus{outline:none;border-color:var(--primary)}
+.fade-in{animation:fadeIn 0.3s ease-in}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>AI Report Agent</h1>
+    <p>自然语言描述需求，自动生成数据报表</p>
+  </div>
+
+  <div class="steps">
+    <div class="step active" id="step-1"><h3>Step 1</h3><div class="num" data-step="1">描述需求</div></div>
+    <div class="step" id="step-2"><h3>Step 2</h3><div class="num" data-step="2">确认SQL</div></div>
+    <div class="step" id="step-3"><h3>Step 3</h3><div class="num" data-step="3">查看报表</div></div>
+  </div>
+
+  <div class="section active fade-in" id="section-prompt">
+    <div class="card">
+      <h2>输入报表需求</h2>
+      <div class="model-select">
+        <label>模型:</label>
+        <select id="model-name" required>
+          <option value="">-- 选择模型 --</option>
+        </select>
+        <label>最大行数:</label>
+        <input type="number" id="max-rows" value="100" min="1" max="1000">
+      </div>
+      <textarea id="user-prompt" rows="4" placeholder="例如：查询最近30天注册的用户数量，按日期分组统计"></textarea>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-generate"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section fade-in" id="section-preview">
+    <div class="card">
+      <h2>SQL 预览与确认</h2>
+      <div id="preview-info"></div>
+      <div class="sql-preview" id="sql-code"></div>
+      <div class="btn-group">
+        <button class="btn btn-success" id="btn-execute" disabled></button>
+        <button class="btn btn-outline" id="btn-modify" disabled></button>
+        <button class="btn btn-outline" id="btn-cancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section fade-in" id="section-report">
+    <div id="report-container">
+      <iframe id="report-frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+    </div>
+    <div class="edit-bar">
+      <input type="text" id="edit-prompt" placeholder="输入修改要求，例如：把表格改成柱状图展示">
+      <button class="btn btn-primary" id="btn-refine"></button>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-outline" id="btn-back"></button>
+    </div>
+  </div>
+
+  <div id="status-area"></div>
+</div>
+
+<script>
+const API_BASE = '';
+let currentReport = {
+  model: '',
+  title: '',
+  summary: '',
+  sql: '',
+  html: '',
+  queryResult: ''
+};
+
+async function loadModels() {
+  try {
+    const res = await fetch(API_BASE + '/chat/model/list');
+    const data = await res.json();
+    const select = document.getElementById('model-name');
+    if (data.code === 200 && data.rows) {
+      data.rows.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.modelName || m.name;
+        opt.textContent = m.modelName || m.name;
+        select.appendChild(opt);
+      });
+    }
+  } catch (e) {
+    console.warn('无法加载模型列表，请手动填写', e);
+  }
+}
+
+function showStatus(msg, type) {
+  const area = document.getElementById('status-area');
+  area.innerHTML = '<div class="status-msg status-' + (type || 'info') + '">' + msg + '</div>';
+  setTimeout(() => area.innerHTML = '', 5000);
+}
+
+function setLoading(btn, loading) {
+  if (loading) {
+    btn.disabled = true;
+    btn._orig = btn.innerHTML;
+    btn.innerHTML = '<span class="loader"></span> 处理中...';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = btn._orig || '';
+  }
+}
+
+function setStep(s) {
+  document.querySelectorAll('.step').forEach(el => {
+    const n = parseInt(el.dataset.step || el.querySelector('.num').dataset.step);
+    el.classList.remove('active', 'done');
+    if (n === s) el.classList.add('active');
+    else if (n < s) el.classList.add('done');
+  });
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.getElementById(['section-prompt','section-preview','section-report'][s - 1]).classList.add('active');
+}
+
+// Step 1: Generate SQL
+document.getElementById('btn-generate').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-generate');
+  const model = document.getElementById('model-name').value;
+  const prompt = document.getElementById('user-prompt').value.trim();
+  const maxRows = parseInt(document.getElementById('max-rows').value) || 100;
+
+  if (!model) { showStatus('请选择或填写模型名称', 'error'); return; }
+  if (!prompt) { showStatus('请输入报表需求', 'error'); return; }
+
+  setLoading(btn, true);
+  showStatus('正在生成 SQL 预览...', 'info');
+
+  try {
+    const res = await fetch(API_BASE + '/chat/report/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, maxRows })
+    });
+    const data = await res.json();
+    if (data.code !== 200 || !data.data) throw new Error(data.msg || '生成失败');
+
+    currentReport.model = model;
+    currentReport.title = data.data.title;
+    currentReport.summary = data.data.summary;
+    currentReport.sql = data.data.sql;
+    currentReport.html = data.data.html || '';
+    currentReport.queryResult = data.data.queryResult || '';
+
+    document.getElementById('preview-info').innerHTML =
+      '<p><strong>报表标题:</strong> ' + escapeHtml(currentReport.title) + '</p>' +
+      '<p><strong>摘要:</strong> ' + escapeHtml(currentReport.summary) + '</p>';
+    document.getElementById('sql-code').textContent = currentReport.sql;
+    document.getElementById('btn-execute').disabled = false;
+    document.getElementById('btn-modify').disabled = false;
+    setStep(2);
+    showStatus('SQL 生成成功，请确认后执行', 'success');
+  } catch (e) {
+    showStatus('生成失败: ' + e.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+// Step 2: Execute
+document.getElementById('btn-execute').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-execute');
+  setLoading(btn, true);
+  showStatus('正在执行查询并生成报表...', 'info');
+
+  try {
+    const res = await fetch(API_BASE + '/chat/report/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: currentReport.model,
+        title: currentReport.title,
+        summary: currentReport.summary,
+        sql: currentReport.sql
+      })
+    });
+    const data = await res.json();
+    if (data.code !== 200 || !data.data) throw new Error(data.msg || '执行失败');
+
+    currentReport.html = data.data.html;
+    currentReport.queryResult = data.data.queryResult;
+
+    const container = document.getElementById('report-container');
+    const frame = document.getElementById('report-frame');
+    container.style.display = 'block';
+    frame.contentWindow.document.open();
+    frame.contentWindow.document.write(currentReport.html);
+    frame.contentWindow.document.close();
+
+    setStep(3);
+    showStatus('报表生成成功', 'success');
+  } catch (e) {
+    showStatus('执行失败: ' + e.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+// Step 3: Refine
+document.getElementById('btn-refine').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-refine');
+  const prompt = document.getElementById('edit-prompt').value.trim();
+  if (!prompt) { showStatus('请输入修改要求', 'error'); return; }
+
+  setLoading(btn, true);
+  showStatus('正在优化报表...', 'info');
+
+  try {
+    const res = await fetch(API_BASE + '/chat/report/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: currentReport.model,
+        prompt,
+        html: currentReport.html,
+        dataContext: currentReport.queryResult
+      })
+    });
+    const data = await res.json();
+    if (data.code !== 200 || !data.data) throw new Error(data.msg || '修改失败');
+
+    currentReport.html = data.data.html;
+    currentReport.summary = data.data.summary;
+
+    const frame = document.getElementById('report-frame');
+    frame.contentWindow.document.open();
+    frame.contentWindow.document.write(currentReport.html);
+    frame.contentWindow.document.close();
+
+    document.getElementById('edit-prompt').value = '';
+    showStatus('报表已更新', 'success');
+  } catch (e) {
+    showStatus('修改失败: ' + e.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+// Back button
+document.getElementById('btn-cancel').addEventListener('click', () => { setStep(1); showStatus('已取消', 'info'); });
+document.getElementById('btn-back').addEventListener('click', () => { setStep(2); });
+document.getElementById('btn-modify').addEventListener('click', () => { setStep(1); document.getElementById('user-prompt').value = document.getElementById('edit-prompt').value || ''; });
+
+function escapeHtml(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Init
+loadModels();
+document.getElementById('btn-generate').textContent = '生成 SQL 预览';
+document.getElementById('btn-execute').textContent = '确认执行并生成报表';
+document.getElementById('btn-cancel').textContent = '返回修改';
+document.getElementById('btn-modify').textContent = '重新编辑需求';
+document.getElementById('btn-refine').textContent = '执行修改';
+document.getElementById('btn-back').textContent = '返回查看 SQL';
+</script>
+</body>
+</html>

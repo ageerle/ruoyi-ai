@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.agent.ChartGenerationAgent;
+import org.ruoyi.agent.CodingAgent;
 import org.ruoyi.agent.EchartsAgent;
 import org.ruoyi.agent.SkillsAgent;
 import org.ruoyi.agent.SqlAgent;
@@ -54,6 +55,12 @@ import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.service.core.ToolProviderFactory;
+import org.ruoyi.mcp.tools.CreateFileTool;
+import org.ruoyi.mcp.tools.EditFileTool;
+import org.ruoyi.mcp.tools.ListDirectoryTool;
+import org.ruoyi.mcp.tools.ReadFileTool;
+import org.ruoyi.mcp.tools.RunCommandTool;
+import org.ruoyi.mcp.tools.TaskPlannerTool;
 import org.ruoyi.observability.*;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
@@ -316,11 +323,25 @@ public class ChatServiceFacade implements IChatService {
             .listener(new MyAgentListener())
             .build();
 
+        // 构建子 Agent 6: CodingAgent - 负责通用开发任务落地
+        CodingAgent codingAgent = AgenticServices.agentBuilder(CodingAgent.class)
+            .chatModel(plannerModel)
+            .tools(
+                new TaskPlannerTool(),
+                new ListDirectoryTool(),
+                new ReadFileTool(),
+                new CreateFileTool(),
+                new EditFileTool(),
+                new RunCommandTool()
+            )
+            .listener(new MyAgentListener())
+            .build();
+
         // 构建监督者 Agent - 管理多个子 Agent
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(plannerModel)
             //.listener(new SupervisorStreamListener(null))
-            .subAgents(skillsAgent,searchAgent, sqlAgent, chartGenerationAgent, echartsAgent)
+            .subAgents(skillsAgent,searchAgent, sqlAgent, chartGenerationAgent, echartsAgent, codingAgent)
             // 加入历史上下文 - 使用 ChatMemoryProvider 提供持久化的聊天内存
             //.chatMemoryProvider(memoryId -> createChatMemory(chatRequest.getSessionId()))
             .responseStrategy(SupervisorResponseStrategy.LAST)
@@ -618,4 +639,3 @@ public class ChatServiceFacade implements IChatService {
         };
     }
 }
-

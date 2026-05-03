@@ -11,7 +11,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 编辑文件工具
@@ -75,12 +78,9 @@ public class EditFileTool implements BuiltinToolProvider {
 
             // 读取原始内容
             String originalContent = Files.readString(path, StandardCharsets.UTF_8);
-            List<String> originalLines = Arrays.asList(originalContent.split("\n"));
 
             // 应用diff
             try {
-                // 这里简化处理，直接用新内容替换
-                // 在实际应用中，可能需要更复杂的diff解析
                 String newContent = applyDiff(originalContent, diff);
 
                 // 写入文件
@@ -104,14 +104,100 @@ public class EditFileTool implements BuiltinToolProvider {
     }
 
     /**
-     * 简化的diff应用逻辑
-     * 实际应用中可能需要使用更复杂的diff解析器
+     * 仅支持 unified diff（包含 @@ hunk 头）
      */
     private String applyDiff(String originalContent, String diff) {
-        // 这里简化处理，实际应用中需要解析diff格式
-        // 目前将diff作为新内容直接替换
-        // 可以考虑使用jgit等库来解析 unified diff 格式
-        return diff;
+        List<String> originalLines = new ArrayList<>(Arrays.asList(originalContent.split("\n", -1)));
+        List<String> diffLines = Arrays.asList(diff.split("\n", -1));
+
+        int i = 0;
+        while (i < diffLines.size()) {
+            String line = diffLines.get(i);
+
+            if (line.startsWith("---") || line.startsWith("+++")) {
+                i++;
+                continue;
+            }
+
+            if (!line.startsWith("@@")) {
+                i++;
+                continue;
+            }
+
+            HunkHeader header = parseHunkHeader(line);
+            int targetIndex = Math.max(0, header.oldStart - 1);
+            i++;
+
+            while (i < diffLines.size()) {
+                String hunkLine = diffLines.get(i);
+                if (hunkLine.startsWith("@@") || hunkLine.startsWith("---") || hunkLine.startsWith("+++")) {
+                    break;
+                }
+
+                if (hunkLine.startsWith("\\ No newline at end of file")) {
+                    i++;
+                    continue;
+                }
+
+                if (hunkLine.isEmpty()) {
+                    // unified diff 中空内容上下文行会表现为空字符串，视为上下文行
+                    ensureExpectedLine(originalLines, targetIndex, "");
+                    targetIndex++;
+                    i++;
+                    continue;
+                }
+
+                char op = hunkLine.charAt(0);
+                String content = hunkLine.length() > 1 ? hunkLine.substring(1) : "";
+                switch (op) {
+                    case ' ':
+                        ensureExpectedLine(originalLines, targetIndex, content);
+                        targetIndex++;
+                        break;
+                    case '-':
+                        ensureExpectedLine(originalLines, targetIndex, content);
+                        originalLines.remove(targetIndex);
+                        break;
+                    case '+':
+                        originalLines.add(targetIndex, content);
+                        targetIndex++;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unsupported diff line: " + hunkLine);
+                }
+                i++;
+            }
+        }
+
+        return String.join("\n", originalLines);
+    }
+
+    private void ensureExpectedLine(List<String> lines, int index, String expected) {
+        if (index < 0 || index >= lines.size()) {
+            throw new IllegalArgumentException("Diff out of range at line index: " + index);
+        }
+        String actual = lines.get(index);
+        if (!actual.equals(expected)) {
+            throw new IllegalArgumentException("Diff context mismatch at line " + (index + 1)
+                + ", expected: [" + expected + "], actual: [" + actual + "]");
+        }
+    }
+
+    private HunkHeader parseHunkHeader(String headerLine) {
+        Pattern p = Pattern.compile("@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@.*");
+        Matcher m = p.matcher(headerLine);
+        if (!m.matches()) {
+            throw new IllegalArgumentException("Invalid unified diff hunk header: " + headerLine);
+        }
+
+        int oldStart = Integer.parseInt(m.group(1));
+        int oldCount = m.group(2) == null ? 1 : Integer.parseInt(m.group(2));
+        int newStart = Integer.parseInt(m.group(3));
+        int newCount = m.group(4) == null ? 1 : Integer.parseInt(m.group(4));
+        return new HunkHeader(oldStart, oldCount, newStart, newCount);
+    }
+
+    private record HunkHeader(int oldStart, int oldCount, int newStart, int newCount) {
     }
 
     private boolean isWithinWorkspace(Path filePath) {
