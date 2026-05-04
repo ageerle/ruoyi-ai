@@ -17,10 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.springframework.stereotype.Service;
 import org.ruoyi.mapper.chat.ChatMessageMapper;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Collection;
 
 /**
@@ -158,12 +158,34 @@ public class ChatMessageServiceImpl implements IChatMessageService {
         ChatMessageBo bo = new ChatMessageBo();
         bo.setSessionId(sessionId);
         List<ChatMessageVo> voList = queryList(bo);
-
+        if (CollectionUtils.isEmpty(voList)) {
+            return chatMessageList;
+        }
         for (ChatMessageVo chatMessageVo : voList) {
-            switch (chatMessageVo.getRole()) {
-                case "user" -> chatMessageList.add(UserMessage.from(chatMessageVo.getContent()));
-                case "assistant" -> chatMessageList.add(AiMessage.from(chatMessageVo.getContent()));
+            //过滤掉不合法的消息记录，避免对话历史中出现异常数据导致模型调用失败
+            if (chatMessageVo == null
+                || StringUtils.isBlank(chatMessageVo.getRole())
+                || StringUtils.isBlank(chatMessageVo.getContent())) {
+                continue;
             }
+            //角色类型不区分大小写，统一转换为小写进行处理
+            String role = chatMessageVo.getRole().trim().toLowerCase(java.util.Locale.ROOT);
+            switch (role) {
+                case "user" ->
+                    chatMessageList.add(
+                        UserMessage.from(chatMessageVo.getContent().trim())
+                    );
+
+                case "assistant" ->
+                    chatMessageList.add(
+                        AiMessage.from(chatMessageVo.getContent().trim())
+                    );
+
+                default ->
+                    log.warn("Unknown chat role when loading history, sessionId={}, role={}",
+                        sessionId, role);
+            }
+
         }
         return chatMessageList;
     }
@@ -185,7 +207,11 @@ public class ChatMessageServiceImpl implements IChatMessageService {
 
         LambdaQueryWrapper<ChatMessage> lqw = Wrappers.lambdaQuery();
         lqw.eq(ChatMessage::getSessionId, sessionId);
-        return baseMapper.delete(lqw) > 0;
+
+        int rows = baseMapper.delete(lqw);
+        // rows=0 表示无匹配数据，不视为失败
+        log.debug("delete chat history finished, sessionId={}, rows={}", sessionId, rows);
+        return true;
     }
 
     /**
@@ -202,6 +228,10 @@ public class ChatMessageServiceImpl implements IChatMessageService {
         try {
             if (userId == null) {
                 log.warn("缺少用户ID，无法保存消息");
+                return;
+            }
+            if (StringUtils.isBlank(content)) {
+                log.warn("消息内容为空，跳过保存");
                 return;
             }
 
