@@ -219,6 +219,8 @@ public class ChatServiceFacade implements IChatService {
 
      */
     private SseEmitter handleThinkingMode(ChatRequest chatRequest) {
+        String npxCommand = resolveNpxCommand();
+
         // 配置监督者模型
         OpenAiChatModel plannerModel = OpenAiChatModel.builder()
             .baseUrl(chatRequest.getChatModelVo().getApiHost())
@@ -228,7 +230,7 @@ public class ChatServiceFacade implements IChatService {
 
         // Bing 搜索 MCP 客户端
         McpTransport bingTransport = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "bing-cn-mcp"))
+            .command(List.of(npxCommand, "-y", "bing-cn-mcp"))
             .logEvents(true)
             .build();
 
@@ -240,7 +242,7 @@ public class ChatServiceFacade implements IChatService {
 
         // Playwright MCP 客户端 - 浏览器自动化工具
         McpTransport playwrightTransport = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "@playwright/mcp@latest"))
+            .command(List.of(npxCommand, "-y", "@playwright/mcp@latest"))
             .logEvents(true)
             .build();
 
@@ -253,7 +255,7 @@ public class ChatServiceFacade implements IChatService {
         // 允许 AI 读取、写入、搜索文件（基于当前项目根目录）
         String userDir = System.getProperty("user.dir");
         McpTransport filesystemTransport = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
+            .command(List.of(npxCommand, "-y",
                 "@modelcontextprotocol/server-filesystem", userDir))
             .logEvents(true)
 
@@ -342,6 +344,18 @@ public class ChatServiceFacade implements IChatService {
             }
         });
         return chatRequest.getEmitter();
+    }
+
+    /**
+     * 根据运行平台选择 npx 命令，避免 Linux/macOS 环境下固定使用 npx.cmd 导致失败。
+     */
+    private String resolveNpxCommand() {
+        String customNpxCommand = System.getenv("MCP_NPX_COMMAND");
+        if (StringUtils.isNotBlank(customNpxCommand)) {
+            return customNpxCommand;
+        }
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        return osName.contains("win") ? "npx.cmd" : "npx";
     }
 
     /**
@@ -618,4 +632,3 @@ public class ChatServiceFacade implements IChatService {
         };
     }
 }
-
