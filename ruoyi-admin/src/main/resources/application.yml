@@ -313,3 +313,44 @@ vector-store:
     collectionname: LocalKnowledge
     api-key:
     use-tls: false
+
+--- # 聊天内存配置
+chat:
+  memory:
+    # 是否启用长期记忆
+    enabled: true
+
+    # ========== 内存管理策略 ==========
+    # message: 固定消息数量（使用 LangChain4j 原生 MessageWindowChatMemory，不支持 Token 管理和摘要）
+    # token: 基于 Token 数量（使用策略框架，支持摘要/截断/滑动窗口）
+    # hybrid: Token + 摘要（使用策略框架，功能最全）
+    strategy: token
+
+    # ========== 通用配置（所有策略生效）==========
+    # 预留给回复的 Token 数
+    reserved-for-reply: 2000
+    # 是否保护系统消息不被截断
+    preserve-system-messages: true
+
+    # ========== message 策略配置 ==========
+    # 仅当 strategy=message 时生效，控制保留的消息数量
+    max-messages: 20
+
+    # ========== token/hybrid 策略配置 ==========
+    # 以下配置仅当 strategy=token 或 hybrid 时生效
+    # strategy=message 时这些配置不生效：
+    # - max-tokens: 不考虑 Token 限制
+    # - summarize-token-ratio: 不触发摘要
+    # - summarize-threshold: 不触发摘要
+    # - summarizer-strategy: 不创建摘要模型
+
+    # 最大 Token 数（null 则根据模型自动获取）
+    max-tokens: null
+
+    # 摘要压缩配置
+    # 触发摘要的 Token 使用比例(0.7 = 70%)
+    summarize-token-ratio: 0.7
+    # 触发摘要的最小消息数
+    summarize-threshold: 10
+    # 摘要模型策略: current(当前模型) / smart(智能映射) / custom(自定义)
+    summarizer-strategy: current
