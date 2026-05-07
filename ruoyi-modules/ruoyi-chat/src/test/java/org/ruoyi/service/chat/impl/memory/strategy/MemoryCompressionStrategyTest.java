@@ -4,7 +4,10 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
+import org.ruoyi.service.chat.impl.memory.ChatMemoryProperties;
 import org.ruoyi.service.chat.impl.memory.TokenCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +22,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * 内存压缩策略测试类
- * 测试三种策略：滑动窗口、Token截断、摘要压缩
+ * 测试两种策略：Token截断、摘要压缩
  *
  * @author yang
  * @date 2026-05-06
@@ -28,104 +31,14 @@ import static org.mockito.Mockito.*;
 class MemoryCompressionStrategyTest {
 
     private TokenCounter tokenCounter;
-    private SlidingWindowStrategy slidingWindowStrategy;
     private TruncationStrategy truncationStrategy;
     private SummarizationStrategy summarizationStrategy;
 
     @BeforeEach
     void setUp() {
         tokenCounter = new TokenCounter();
-        slidingWindowStrategy = new SlidingWindowStrategy();
         truncationStrategy = new TruncationStrategy();
         summarizationStrategy = new SummarizationStrategy();
-    }
-
-    // ========== 滑动窗口策略测试 ==========
-
-    @Test
-    @DisplayName("滑动窗口策略 - 消息数超过窗口大小时截断")
-    void testSlidingWindow_ExceedWindowSize() {
-        // 创建测试消息：1条系统消息 + 30条普通消息
-        List<ChatMessage> messages = createTestMessages(1, 30);
-
-        // 创建上下文
-        CompressionContext context = CompressionContext.builder()
-            .messages(messages)
-            .currentTokens(tokenCounter.countMessages(messages))
-            .maxTokens(100000)  // Token充足，测试消息数量截断
-            .reservedForReply(2000)
-            .tokenCounter(tokenCounter)
-            .preserveSystemMessages(true)
-            .build();
-
-        // 验证需要压缩
-        assertTrue(slidingWindowStrategy.needsCompression(context));
-
-        // 执行压缩
-        CompressionResult result = slidingWindowStrategy.compress(context);
-
-        // 验证结果
-        assertTrue(result.isSuccess());
-        // 系统消息(1) + 最近20条普通消息 = 21条
-        assertEquals(21, result.getCompressedMessageCount());
-        // 系统消息应保留
-        assertTrue(hasSystemMessage(result.getMessages()));
-    }
-
-    @Test
-    @DisplayName("滑动窗口策略 - 消息数未超过窗口大小时不截断")
-    void testSlidingWindow_BelowWindowSize() {
-        // 创建测试消息：1条系统消息 + 5对普通消息（= 10条普通消息，总共11条，小于窗口大小20）
-        List<ChatMessage> messages = createTestMessages(1, 5);
-
-        CompressionContext context = CompressionContext.builder()
-            .messages(messages)
-            .currentTokens(tokenCounter.countMessages(messages))
-            .maxTokens(100000)  // Token充足，不超限
-            .reservedForReply(2000)
-            .tokenCounter(tokenCounter)
-            .preserveSystemMessages(true)
-            .build();
-
-        // 验证不需要压缩（消息数未超限且Token未超限）
-        assertFalse(context.isOverLimit());  // Token未超限
-        assertFalse(slidingWindowStrategy.needsCompression(context));
-
-        // 执行压缩（即使不需要，执行也应返回原消息）
-        CompressionResult result = slidingWindowStrategy.compress(context);
-
-        assertTrue(result.isSuccess());
-        assertEquals(11, result.getCompressedMessageCount());
-    }
-
-    @Test
-    @DisplayName("滑动窗口策略 - 系统消息始终保留")
-    void testSlidingWindow_PreserveSystemMessage() {
-        // 创建测试消息：3条系统消息 + 25条普通消息
-        List<ChatMessage> messages = new ArrayList<>();
-        messages.add(SystemMessage.from("系统提示1"));
-        messages.add(SystemMessage.from("系统提示2"));
-        messages.add(SystemMessage.from("系统提示3"));
-        for (int i = 0; i < 25; i++) {
-            messages.add(UserMessage.from("用户消息" + i));
-            messages.add(AiMessage.from("AI回复" + i));
-        }
-
-        CompressionContext context = CompressionContext.builder()
-            .messages(messages)
-            .currentTokens(tokenCounter.countMessages(messages))
-            .maxTokens(100000)
-            .reservedForReply(2000)
-            .tokenCounter(tokenCounter)
-            .preserveSystemMessages(true)
-            .build();
-
-        CompressionResult result = slidingWindowStrategy.compress(context);
-
-        // 验证所有系统消息保留
-        assertTrue(result.isSuccess());
-        int systemCount = countSystemMessages(result.getMessages());
-        assertEquals(3, systemCount);
     }
 
     // ========== Token截断策略测试 ==========
@@ -326,10 +239,6 @@ class MemoryCompressionStrategyTest {
             .build();
 
         // 所有策略对空消息都应正常处理
-        CompressionResult slidingResult = slidingWindowStrategy.compress(context);
-        assertTrue(slidingResult.isSuccess());
-        assertEquals(0, slidingResult.getCompressedMessageCount());
-
         CompressionResult truncResult = truncationStrategy.compress(context);
         assertTrue(truncResult.isSuccess());
         assertEquals(0, truncResult.getCompressedMessageCount());
@@ -381,18 +290,94 @@ class MemoryCompressionStrategyTest {
     }
 
     /**
-     * 统计系统消息数量
-     */
-    private int countSystemMessages(List<ChatMessage> messages) {
-        return (int) messages.stream().filter(m -> m instanceof SystemMessage).count();
-    }
-
-    /**
      * 检查是否包含摘要消息
      */
     private boolean hasSummaryMessage(List<ChatMessage> messages) {
         return messages.stream()
             .filter(m -> m instanceof SystemMessage)
             .anyMatch(m -> ((SystemMessage) m).text().contains("历史对话摘要"));
+    }
+
+    // ========== Message 策略测试 ==========
+
+    @Test
+    @DisplayName("Message策略 - 默认配置验证")
+    void testMessageStrategy_DefaultConfig() {
+        ChatMemoryProperties properties = new ChatMemoryProperties();
+
+        // 验证默认策略是 message
+        assertEquals("message", properties.getStrategy());
+        assertEquals(20, properties.getMaxMessages());
+
+        System.out.println("[Message策略] 默认配置: strategy=" + properties.getStrategy() + ", maxMessages=" + properties.getMaxMessages());
+    }
+
+    @Test
+    @DisplayName("Message策略 - 滑动窗口自动移除旧消息")
+    void testMessageStrategy_SlidingWindow() {
+        int maxMessages = 5;
+
+        // 使用 LangChain4j 原生的 MessageWindowChatMemory
+        InMemoryChatMemoryStore store = new InMemoryChatMemoryStore();
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+            .id("test-session")
+            .maxMessages(maxMessages)
+            .chatMemoryStore(store)
+            .build();
+
+        // 添加系统消息
+        memory.add(SystemMessage.from("系统提示"));
+
+        // 添加10条普通消息
+        for (int i = 0; i < 10; i++) {
+            memory.add(UserMessage.from("用户消息" + i));
+            memory.add(AiMessage.from("AI回复" + i));
+        }
+
+        // 获取消息列表
+        List<ChatMessage> messages = memory.messages();
+
+        // 验证只保留最新的 maxMessages 条消息（包括系统消息）
+        assertEquals(maxMessages, messages.size());
+
+        // 验证系统消息被保留
+        assertTrue(messages.stream().anyMatch(m -> m instanceof SystemMessage));
+
+        // 验证是最新的消息（消息8、9）
+        assertTrue(messages.stream()
+            .filter(m -> m instanceof UserMessage)
+            .anyMatch(m -> ((UserMessage) m).singleText().equals("用户消息9")));
+
+        System.out.println("[Message策略] 滑动窗口: 添加21条消息 → 保留" + messages.size() + "条消息 (maxMessages=" + maxMessages + ")");
+    }
+
+    @Test
+    @DisplayName("Message策略 - 不涉及Token管理")
+    void testMessageStrategy_NoTokenManagement() {
+        // 创建大量消息
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+            .id("test-session")
+            .maxMessages(10)
+            .chatMemoryStore(new InMemoryChatMemoryStore())
+            .build();
+
+        // 添加超长消息（模拟大量Token）
+        String longContent = "这是一条非常长的消息内容".repeat(1000);
+        for (int i = 0; i < 10; i++) {
+            memory.add(UserMessage.from(longContent));
+        }
+
+        // Message策略不考虑Token，只按消息数量截断
+        List<ChatMessage> messages = memory.messages();
+        assertEquals(10, messages.size());
+
+        // 验证所有消息都是完整的长消息
+        for (ChatMessage msg : messages) {
+            if (msg instanceof UserMessage) {
+                assertTrue(((UserMessage) msg).singleText().length() > 10000);
+            }
+        }
+
+        System.out.println("[Message策略] 不涉及Token管理: 10条超长消息完整保留，每条长度>10000字符");
     }
 }

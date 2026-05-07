@@ -113,16 +113,14 @@ public class ChatMemoryFactory {
     }
 
     /**
-     * 创建基于 Token 的内存
+     * 创建基于 Token 的内存（仅截断，不摘要）
      */
     private ChatMemory createTokenBasedMemory(Object memoryId, ChatModelVo model, ChatModel summarizer) {
         int maxTokens = resolveMaxTokens(model);
         int reservedForReply = properties.getReservedForReply();
-        double summarizeTokenRatio = properties.getSummarizeTokenRatio() != null
-                ? properties.getSummarizeTokenRatio() : 0.7;
 
-        log.info("[Token内存] 创建Token窗口内存: maxTokens={}, reservedForReply={}, 模型={}, 摘要触发比例={}",
-                maxTokens, reservedForReply, model != null ? model.getModelName() : "未知", summarizeTokenRatio);
+        log.info("[Token内存] 创建Token窗口内存: maxTokens={}, reservedForReply={}, 模型={}, 摘要=禁用",
+                maxTokens, reservedForReply, model != null ? model.getModelName() : "未知");
 
         // 判断是否使用策略框架
         boolean useStrategyFramework = properties.getUseStrategyFramework() != null
@@ -133,9 +131,9 @@ public class ChatMemoryFactory {
             .maxTokens(maxTokens)
             .tokenCounter(tokenCounter)
             .store(persistentStore)
-            .summarizeTokenRatio(summarizeTokenRatio)
-            .summarizeThreshold(properties.getSummarizeThreshold())
-            .summarizer(summarizer)
+            .summarizeTokenRatio(1.0)  // 设为 1.0，永不触发摘要
+            .summarizeThreshold(Integer.MAX_VALUE)  // 设为最大值，永不触发摘要
+            .summarizer(null)  // 不使用摘要模型
             .preserveSystemMessages(properties.getPreserveSystemMessages())
             .reservedForReply(reservedForReply)
             .strategyManager(useStrategyFramework ? strategyManager : null)

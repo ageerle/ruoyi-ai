@@ -1,8 +1,6 @@
 package org.ruoyi.service.chat.impl.memory.strategy;
 
-import dev.langchain4j.data.message.ChatMessage;
 
-import java.util.List;
 
 /**
  * 内存压缩策略接口
@@ -16,7 +14,7 @@ public interface MemoryCompressionStrategy {
     /**
      * 获取策略名称
      *
-     * @return 策略名称（如 truncation, summarization, sliding-window）
+     * @return 策略名称（如 truncation, summarization）
      */
     String getName();
 

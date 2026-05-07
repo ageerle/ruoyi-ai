@@ -329,7 +329,6 @@ public final class ModelTokenLimits {
         entry("llama3.3", 131072),
         entry("llama3.3:70b", 131072),
         // Qwen 本地
-        entry("qwen2", 32768),
         entry("qwen2.5:7b", 131072),
         entry("qwen2.5:14b", 131072),
         entry("qwen2.5:32b", 131072),
@@ -364,8 +363,6 @@ public final class ModelTokenLimits {
         entry("phi-3-medium", 128000),
         entry("phi-4", 16384),
         // 其他本地模型
-        entry("command-r", 128000),
-        entry("command-r-plus", 128000),
         entry("starcoder2", 16384),
         entry("nomic-embed-text", 8192),
 
@@ -455,9 +452,6 @@ public final class ModelTokenLimits {
         entry("llama-3.1-sonar-large", 127072),
 
         // ========== Amazon Bedrock ==========
-        entry("claude-3-sonnet", 200000),
-        entry("claude-3-haiku", 200000),
-        entry("claude-3-opus", 200000),
         entry("amazon-titan-text", 8000),
         entry("amazon-titan-text-express", 8000),
         entry("amazon-nova-pro", 300000),
@@ -509,9 +503,7 @@ public final class ModelTokenLimits {
         entry("llama3.1:405b", 131072),
         entry("qwen2.5:0.5b", 131072),
         entry("qwen2.5:1.5b", 131072),
-        entry("deepseek-v2", 128000),
         entry("deepseek-v2:16b", 128000),
-        entry("deepseek-coder-v2", 128000),
         entry("phi-3.5", 128000),
         entry("phi-3.5-mini", 128000),
         entry("llava", 4096),
@@ -519,7 +511,6 @@ public final class ModelTokenLimits {
         entry("llava:13b", 4096),
 
         // ========== Mistral AI 补充 ==========
-        entry("mistral-large", 128000),
         entry("mistral-large-2502", 128000),
         entry("codestral-mamba", 256000),
         entry("ministral-8b", 128000),
@@ -555,7 +546,6 @@ public final class ModelTokenLimits {
         entry("moonshot-v1-auto", 8192),
 
         // ========== 通义千问补充 ==========
-        entry("qwq-32b-preview", 131072),
         entry("qwq-plus-latest", 131072),
         entry("qwen2.5-omni-7b", 32768),
         entry("qwen-vl-max-longcontext", 32768),
@@ -573,16 +563,10 @@ public final class ModelTokenLimits {
         entry("glm-4v-flash", 8192),
         entry("glm-4-audio", 8192),
 
-        // ========== DeepSeek 补充 ==========
-        entry("deepseek-v3-0324", 128000),
-        entry("deepseek-r1-zero", 128000),
-
         // ========== OpenAI 补充 ==========
         entry("gpt-4.5-turbo-preview", 128000),
         entry("gpt-4.5-turbo-2025-02-27", 128000),
-        entry("o3-mini-2025-01-31", 200000),
         entry("o1-pro-2025-03-19", 200000),
-        entry("chatgpt-4o-latest", 128000),
 
         // ========== 百度文心补充 ==========
         entry("ernie-4.0-turbo-8k", 8192),

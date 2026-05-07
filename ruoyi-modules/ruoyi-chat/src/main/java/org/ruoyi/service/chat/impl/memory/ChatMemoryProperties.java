@@ -20,12 +20,15 @@ public class ChatMemoryProperties {
     private Boolean enabled = true;
 
     /**
-     * 内存管理策略（默认 token）
-     * - message: 固定消息数量
-     * - token: 基于 Token 数量
-     * - hybrid: 混合策略（Token + 摘要）
+     * 内存管理策略（默认 message）
+     * - message: 固定消息数量（使用 LangChain4j 原生 MessageWindowChatMemory）
+     *           不支持 Token 管理和摘要，适合简单场景
+     * - token: 基于 Token 数量（仅截断，不摘要）
+     *          Token 超限时直接截断旧消息，适合通用场景
+     * - hybrid: 混合策略（摘要 + 截断）
+     *          Token 达到阈值时先摘要压缩，超限时再截断，适合长对话场景
      */
-    private String strategy = "token";
+    private String strategy = "message";
 
     /**
      * 消息窗口大小 - 最多保留的消息条数（默认20）
