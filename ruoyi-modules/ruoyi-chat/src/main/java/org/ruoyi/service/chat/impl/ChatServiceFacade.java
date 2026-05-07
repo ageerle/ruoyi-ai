@@ -4,7 +4,6 @@ import cn.dev33.satoken.stp.StpUtil;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
-import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.mcp.McpToolProvider;
@@ -12,8 +11,8 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
+import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
@@ -57,6 +56,7 @@ import org.ruoyi.mcp.service.core.ToolProviderFactory;
 import org.ruoyi.observability.*;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.IChatMessageService;
+import org.ruoyi.service.chat.impl.memory.ChatMemoryFactory;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
@@ -86,8 +86,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class ChatServiceFacade implements IChatService {
 
-    private static final Integer DEFAULT_MAX_MESSAGES = 20;
-
     private final IChatModelService chatModelService;
 
     private final ChatServiceFactory chatServiceFactory;
@@ -106,11 +104,13 @@ public class ChatServiceFacade implements IChatService {
 
     private final ToolProviderFactory toolProviderFactory;
 
+    private final ChatMemoryFactory chatMemoryFactory;
+
     /**
      * 内存实例缓存，避免同一会话重复创建
-     * Key: sessionId, Value: MessageWindowChatMemory实例
+     * Key: sessionId, Value: ChatMemory实例
      */
-    private static final Map<Object, MessageWindowChatMemory> memoryCache = new ConcurrentHashMap<>();
+    private static final Map<Object, ChatMemory> memoryCache = new ConcurrentHashMap<>();
 
 
 
@@ -133,13 +133,15 @@ public class ChatServiceFacade implements IChatService {
             throw new IllegalArgumentException("模型不存在: " + chatRequest.getModel());
         }
 
+        // 先设置 chatModelVo，以便 buildContextMessages 中创建摘要模型时能获取到配置
+        chatRequest.setChatModelVo(chatModelVo);
+
         // 2. 构建上下文消息列表
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest);
 
         chatRequest.setEmitter(emitter);
         chatRequest.setUserId(userId);
         chatRequest.setTokenValue(tokenValue);
-        chatRequest.setChatModelVo(chatModelVo);
         chatRequest.setContextMessages(contextMessages);
 
         // 保存用户消息
@@ -396,18 +398,13 @@ public class ChatServiceFacade implements IChatService {
      * 同一个会话ID会返回同一个内存实例，避免重复创建和消息丢失
      *
      * @param memoryId 内存ID（会话ID）
-     * @return MessageWindowChatMemory实例
+     * @param model    模型配置
+     * @return ChatMemory实例
      */
-    private MessageWindowChatMemory createChatMemory(Object memoryId) {
-        // 先从缓存中获取
+    private ChatMemory createChatMemory(Object memoryId, ChatModelVo model) {
         return memoryCache.computeIfAbsent(memoryId, key -> {
             try {
-                PersistentChatMemoryStore store = new PersistentChatMemoryStore(chatMessageService);
-                return MessageWindowChatMemory.builder()
-                    .id(memoryId)
-                    .maxMessages(DEFAULT_MAX_MESSAGES)
-                    .chatMemoryStore(store)
-                    .build();
+                return chatMemoryFactory.create(memoryId, model);
             } catch (Exception e) {
                 log.warn("创建聊天内存失败: {}", e.getMessage());
                 return null;
@@ -462,7 +459,7 @@ public class ChatServiceFacade implements IChatService {
 
         // 3. 从数据库查询历史对话消息（放在前面）
         if (chatRequest.getSessionId() != null) {
-            MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
+            ChatMemory memory = createChatMemory(chatRequest.getSessionId(), chatRequest.getChatModelVo());
             if (memory != null) {
                 List<ChatMessage> historicalMessages = memory.messages();
                 if (historicalMessages != null && !historicalMessages.isEmpty()) {
@@ -516,12 +513,18 @@ public class ChatServiceFacade implements IChatService {
             @SneakyThrows
             @Override
             public void onPartialResponse(String partialResponse) {
+                // 过滤 null 值，避免拼接成 "nullnullnull..."
+                if (partialResponse == null) {
+                    log.debug("收到 null 消息片段，已忽略");
+                    return;
+                }
+
                 // 将消息片段追加到缓冲区
                 messageBuffer.append(partialResponse);
 
                 // 实时发送内容事件到客户端
                 SseMessageUtils.sendContent(userId, partialResponse);
-                log.debug("收到消息片段: {}",  partialResponse);
+                log.debug("收到消息片段: {}", partialResponse);
             }
 
             @Override
