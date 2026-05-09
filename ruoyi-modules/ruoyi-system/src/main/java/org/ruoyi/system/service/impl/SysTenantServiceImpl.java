@@ -25,6 +25,7 @@ import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.redis.utils.CacheUtils;
 import org.ruoyi.common.tenant.core.TenantEntity;
 import org.ruoyi.common.tenant.helper.TenantHelper;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.system.domain.*;
 import org.ruoyi.system.domain.bo.SysTenantBo;
 import org.ruoyi.system.domain.vo.SysTenantVo;
@@ -309,6 +310,10 @@ public class SysTenantServiceImpl implements ISysTenantService {
     @Override
     public void checkTenantAllowed(String tenantId) {
         if (ObjectUtil.isNotNull(tenantId) && TenantConstants.DEFAULT_TENANT_ID.equals(tenantId)) {
+            // 如果当前登录用户是超级管理员，则允许操作默认租户
+            if (LoginHelper.isSuperAdmin()) {
+                return;
+            }
             throw new ServiceException("不允许操作管理租户");
         }
     }
