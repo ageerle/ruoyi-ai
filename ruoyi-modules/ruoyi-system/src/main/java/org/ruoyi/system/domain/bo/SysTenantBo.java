@@ -10,6 +10,7 @@ import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import org.ruoyi.system.domain.SysTenant;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.util.Date;
 
 /**
@@ -99,6 +100,7 @@ public class SysTenantBo extends BaseEntity {
     /**
      * 过期时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date expireTime;
 
     /**
