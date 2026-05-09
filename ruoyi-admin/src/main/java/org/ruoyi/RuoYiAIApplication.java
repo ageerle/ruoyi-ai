@@ -7,6 +7,10 @@ import org.springframework.boot.context.metrics.buffering.BufferingApplicationSt
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+
 /**
  * 启动程序
  *
@@ -21,6 +25,21 @@ public class RuoYiAIApplication {
         application.setApplicationStartup(new BufferingApplicationStartup(2048));
         application.run(args);
         System.out.println("(♥◠‿◠)ﾉﾞ     RuoYi-AI启动成功   ლ(´ڡ`ლ)");
+    }
+
+    // 读取当前项目端口
+    @Value("${server.port:8080}")
+    private String serverPort;
+
+    // 项目启动完成后 打印端口和访问地址
+    @Bean
+    public CommandLineRunner printServerPort() {
+        return args -> {
+            System.out.println("================================================");
+            System.out.println("  项目运行端口：" + serverPort);
+            System.out.println("  本地访问地址：http://localhost:" + serverPort);
+            System.out.println("================================================");
+        };
     }
 
     /**
