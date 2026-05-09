@@ -278,7 +278,12 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
      */
     @Override
     public void checkUserAllowed(Long userId) {
+        // 检查 userId 是否不为空、检查 userId 对应的用户是否是超级管理员
         if (ObjectUtil.isNotNull(userId) && LoginHelper.isSuperAdmin(userId)) {
+            // 如果当前登录用户是超级管理员，并且操作的是自己，则允许
+            if (LoginHelper.isSuperAdmin() && LoginHelper.getUserId().equals(userId)) {
+                return;
+            }
             throw new ServiceException("不允许操作超级管理员用户");
         }
     }
