@@ -241,11 +241,11 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 ## 💎 赞助商
 感谢以下赞助商对本项目的支持：
 
-<a href="https://www.atlascloud.ai/">
+<a href="https://www.atlascloud.ai?ref=89F97E">
   <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="60" height="30">
 </a>
 
-- **[Atlas Cloud](https://www.atlascloud.ai/)** - 全模态AI推理平台，为开发者提供统一的AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问300+精选模型。
+- **[Atlas Cloud](https://www.atlascloud.ai?ref=89F97E)** - 全模态AI推理平台，为开发者提供统一的AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问300+精选模型。
 
 - **[编程计划优惠](https://www.atlascloud.ai/console/coding-plan)** -  Atlas Cloud 针对更经济型 API 推出的全新编码计划促销活动
 
