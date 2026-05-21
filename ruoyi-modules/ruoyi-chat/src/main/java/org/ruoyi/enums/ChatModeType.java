@@ -15,7 +15,7 @@ public enum ChatModeType {
     DEEP_SEEK("deepseek", "深度求索"),
     QIAN_WEN("qianwen", "通义千问"),
     OPEN_AI("openai", "openai"),
-    PPIO("ppio", "ppio"),
+    ATLAS("atlas", "Atlas Cloud"),
     CUSTOM_API("custom_api", "自定义API"),
     MINIMAX("minimax", "MiniMax"),
     XIAOMI("xiaomi", "小米MiMo");

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * PPIO服务调用
+ * Atlas Cloud服务调用
  *
  * @author ageerle@163.com
  * @date 2025/12/13
@@ -23,7 +23,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PPIOServiceImpl implements AbstractChatService {
+public class AtlaServiceImpl implements AbstractChatService {
 
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
@@ -38,7 +38,7 @@ public class PPIOServiceImpl implements AbstractChatService {
 
     @Override
     public String getProviderName() {
-        return ChatModeType.PPIO.getCode();
+        return ChatModeType.ATLAS.getCode();
     }
 
 }

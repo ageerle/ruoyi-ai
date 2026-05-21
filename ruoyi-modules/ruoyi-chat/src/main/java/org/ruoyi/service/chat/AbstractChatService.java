@@ -27,7 +27,7 @@ public interface AbstractChatService {
 
     /**
      * 创建同步聊天模型（供 Agent/SupervisorAgent 使用）
-     * 默认实现使用 OpenAI 兼容协议，适用于 OpenAI、DeepSeek、PPIO 等兼容接口的 provider。
+     * 默认实现使用 OpenAI 兼容协议，适用于 OpenAI、DeepSeek、Atlas Cloud 等兼容接口的 provider。
      * ZhiPu、QianWen、Ollama 等需覆盖此方法使用各自 SDK。
      *
      * @param chatModelVo 模型配置

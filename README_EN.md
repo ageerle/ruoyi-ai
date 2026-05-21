@@ -220,9 +220,15 @@ Thanks to the following excellent open-source projects for their support:
 
 ## 🌐 Ecosystem Partners
 
-- [PPIO Cloud](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - Provides cost-effective GPU computing and model API services
-- [Youyun Intelligent Computing](https://www.compshare.cn/?ytag=GPU_YY-gh_ruoyi) - Thousands of RTX40 series GPUs + mainstream models API services, second-level response, pay-per-use, free for new customers.
+**[Atlas Cloud](https://www.atlascloud.ai/)** - A full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities. 👉 [Coding Plan Promotion](https://www.atlascloud.ai/console/coding-plan)
 
+## 💎 Sponsors
+
+Thanks to the following sponsors for supporting this project:
+
+**[Atlas Cloud](https://www.atlascloud.ai/)** - A full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Connect once and get unified access to 300+ curated models across all modalities.
+
+> *If you would like to become a sponsor, please contact us via WeChat or Telegram.*
 
 ## 💬 Community Chat
 

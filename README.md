@@ -72,7 +72,7 @@
 - **实时通信**：WebSocket 实时通信，SSE 流式响应
 - **系统监控**：完善的日志体系、性能监控、服务健康检查
 
-## 使用web coding急速部署
+## 使用web coding部署
 ####  在线体验： https://monkeycode-ai.com/?ic=019d9e9f-edc3-7a4b-8987-11b028751a1e
 
 <table>
@@ -233,17 +233,21 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 ## 🙏 特别鸣谢
 
 感谢以下优秀的开源项目为本项目提供支持：
-- [Spring AI Alibaba Copilot](https://github.com/spring-ai-alibaba/copilot) - 基于spring-ai-alibaba
-  的智能编码助手
 - [Langchain4j](https://github.com/langchain4j/langchain4j) - 强大的 Java LLM 开发框架
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - 成熟的企业级快速开发框架
 - [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - 现代化的 Vue 后台管理模板
 
-## 🌐 生态伙伴
 
-- [PPIO 派欧云](https://ppinfra.com/user/register?invited_by=P8QTUY&utm_source=github_ruoyi-ai) - 提供高性价比的 GPU
-  算力和模型 API 服务
-- [优云智算](https://www.compshare.cn/?ytag=GPU_YY-gh_ruoyi) - 万卡RTX40系GPU+海内外主流模型API服务，秒级响应，按量计费，新客免费用。
+## 💎 赞助商
+感谢以下赞助商对本项目的支持：
+
+<a href="https://www.atlascloud.ai/">
+  <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="60" height="30">
+</a>
+
+- **[Atlas Cloud](https://www.atlascloud.ai/)** - 全模态AI推理平台，为开发者提供统一的AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问300+精选模型。
+
+- **[编程计划优惠](https://www.atlascloud.ai/console/coding-plan)** -  Atlas Cloud 针对更经济型 API 推出的全新编码计划促销活动
 
 ## 💬 社区交流
 

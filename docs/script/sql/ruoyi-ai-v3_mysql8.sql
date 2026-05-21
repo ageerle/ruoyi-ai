@@ -1,7 +1,7 @@
 /*
- Navicat MySQL Dump SQL
+ Navicat Premium Dump SQL
 
- Source Server         : 本地
+ Source Server         : localhost_3306
  Source Server Type    : MySQL
  Source Server Version : 80045 (8.0.45)
  Source Host           : localhost:3306
@@ -11,13 +11,11 @@
  Target Server Version : 80045 (8.0.45)
  File Encoding         : 65001
 
- Date: 15/03/2026 23:56:19
+ Date: 21/05/2026 11:03:49
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
--- 忽略所有错误，继续执行
-SET sql_mode = '';
 
 -- ----------------------------
 -- Table structure for chat_message
@@ -72,9 +70,9 @@ CREATE TABLE `chat_model`  (
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
-INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 'zai-org/glm-5', 'ppio', 'zai-org/glm-5', NULL, 'Y', 'https://api.ppio.com/openai', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', 'DeepSeek-V3.2 是一款在高效推理、复杂推理能力与智能体场景中表现突出的领先模型。其基于 DeepSeek Sparse Attention（DSA）稀疏注意力机制，在显著降低计算开销的同时优化长上下文性能；通过可扩展强化学习框架，整体能力达到 GPT-5 同级，高算力版本 V3.2-Speciale 更在推理表现上接近 Gemini-3.0-Pro；同时，模型依托大型智能体任务合成管线，具备更强的工具调用与多步骤决策能力，并在 2025 年 IMO 与 IOI 中取得金牌级表现。作为 MaaS 平台，我们已对 DeepSeek-V3.2 完成深度适配，通过动态调度、批处理加速、低延迟推理与企业级 SLA 保障，进一步增强其在企业生产环境中的稳定性、性价比与可控性，适用于搜索、问答、智能体、代码、数据处理等多类高价值场景。', 0);
-INSERT INTO `chat_model` VALUES (2007528268536287233, 'vector', 'baai/bge-m3', 'ppio', 'bge-m3', 1024, 'N', 'https://api.ppio.com/openai', 'sk_xx', 103, 1, '2026-01-04 03:03:32', 1, '2026-03-15 19:18:51', 'BGE-M3 是一款具备多维度能力的文本嵌入模型，可同时实现密集检索、多向量检索和稀疏检索三大核心功能。该模型设计上兼容超过100种语言，并支持从短句到长达8192词元的长文本等多种输入形式。在跨语言检索任务中，BGE-M3展现出显著优势，其性能在MIRACL、MKQA等国际基准测试中位居前列。此外，针对长文档检索场景，该模型在MLDR、NarritiveQA等数据集上的表现同样达到行业领先水平。', 0);
-INSERT INTO `chat_model` VALUES (2045735140488847361, 'chat', 'deepseek-chat', 'custom_api', 'deepseek-chat', NULL, NULL, 'https://api.deepseek.com', 'sk_xx', 103, 1, '2026-04-19 13:24:00', 1, '2026-04-19 13:24:00', 'deepseek对话模型', 0);
+INSERT INTO `chat_model` (`id`, `category`, `model_name`, `provider_code`, `model_describe`, `model_dimension`, `model_show`, `api_host`, `api_key`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `tenant_id`) VALUES (2000585866022060033, 'chat', 'zai-org/glm-5.1', 'atlas', 'zai-org/glm-5.1', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', '对话模型', 0);
+INSERT INTO `chat_model` (`id`, `category`, `model_name`, `provider_code`, `model_describe`, `model_dimension`, `model_show`, `api_host`, `api_key`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `tenant_id`) VALUES (2007528268536287233, 'vector', 'embedding-3', 'zhipu', 'embedding-3', 2048, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-01-04 03:03:32', 1, '2026-03-15 19:18:51', '向量模型', 0);
+INSERT INTO `chat_model` (`id`, `category`, `model_name`, `provider_code`, `model_describe`, `model_dimension`, `model_show`, `api_host`, `api_key`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `tenant_id`) VALUES (2045071617578237953, 'rerank', 'rerank', 'zhipu', 'rerank', NULL, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-04-17 17:27:24', 1, '2026-04-20 15:21:48', '重排序模型', 0);
 
 -- ----------------------------
 -- Table structure for chat_provider
@@ -107,12 +105,11 @@ CREATE TABLE `chat_provider`  (
 -- ----------------------------
 -- Records of chat_provider
 -- ----------------------------
-INSERT INTO `chat_provider` VALUES (1, 'OpenAI', 'openai', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/02/25/01091be272334383a1efd9bc22b73ee6.png', 'OpenAI官方API服务商', 'https://api.openai.com', '0', 1, 103, '2025-12-14 21:48:11', '1', '1', '2026-02-25 20:46:59', 'OpenAI厂商', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (11, '深度求索', 'deepseek', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/5ba8c30f153246898a4d7dc7b846de8d.png', 'DeepSeek官方API', 'https://api.deepseek.com', '0', 0, 103, '2026-04-19 12:52:34', '1', '1', '2026-04-19 13:13:25', 'DeepSeek官方API', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (12, '智谱AI', 'zhipu', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/da071783c9284fdd9ed1ce1b57b3c75c.png', '智谱AI大模型服务', 'https://open.bigmodel.cn', '0', 4, 103, '2025-12-14 21:48:11', '1', '1', '2026-04-19 13:14:00', '智谱AI厂商', NULL, '0', NULL, 0);
-INSERT INTO `chat_provider` VALUES (13, '小米MIMO', 'xiaomi', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/18dd39365ce244e3ae5e030da036760e.png', '小米官方API', 'https://api.xiaomimimo.com/anthropic/v1/messages', '0', 3, 103, '2026-04-19 12:48:24', '1', '1', '2026-04-19 13:14:22', '小米官方API', NULL, '0', NULL, 0);
+INSERT INTO `chat_provider` VALUES (13, '小米MIMO', 'xiaomi', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/18dd39365ce244e3ae5e030da036760e.png', '小米官方API', 'https://api.xiaomimimo.com/v1', '0', 3, 103, '2026-04-19 12:48:24', '1', '1', '2026-04-19 13:14:22', '小米官方API', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (14, '阿里云百炼', 'qianwen', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/02/25/de2aa7e649de44f3ba5c6380ac6acd04.png', '阿里云百炼大模型服务', 'https://dashscope.aliyuncs.com', '0', 2, 103, '2025-12-14 21:48:11', '1', '1', '2026-02-25 20:49:13', '阿里云厂商', NULL, '0', NULL, 0);
-INSERT INTO `chat_provider` VALUES (15, 'PPIO', 'ppio', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/02/25/049bb6a507174f73bba4b8d8b9e55b8a.png', 'api聚合厂商', 'https://api.ppinfra.com/openai', '0', 5, 103, '2025-12-15 23:13:42', '1', '1', '2026-02-25 20:49:01', 'api聚合厂商', NULL, '0', NULL, 0);
+INSERT INTO `chat_provider` VALUES (15, 'Atlas Cloud', 'atlas', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png', '全模态AI推理平台', 'https://api.atlascloud.ai/v1', '0', 5, 103, '2025-12-15 23:13:42', '1', '1', '2026-02-25 20:49:01', 'Atlas Cloud AI平台', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (16, 'MiniMax', 'minimax', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/fdc712e90e0e4d78b05862ad230884e5.png', 'MiniMax大模型服务，支持M2.7、M2.5等模型', 'https://api.minimax.io/v1', '0', 6, 103, '2026-04-19 12:50:12', '1', '1', '2026-04-19 13:14:59', 'MiniMax厂商', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (17, 'ollama', 'ollama', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/02/25/afecabebc8014d80b0f06b4796a74c5d.png', 'ollama大模型', 'http://127.0.0.1:11434', '0', 7, 103, '2025-12-14 21:48:11', '1', '1', '2026-02-25 20:48:48', 'ollama厂商', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (18, '自定义厂商', 'custom_api', 'https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/c1a8e122510f4e2f90deb36958af710b.png', 'OPENAI兼容格式', '自定义', '0', 8, 103, '2026-04-19 12:35:57', '1', '1', '2026-04-19 13:17:20', 'OPENAI兼容格式', NULL, '0', NULL, 0);
@@ -1091,6 +1088,7 @@ CREATE TABLE `knowledge_attach`  (
                                      `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
                                      `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
                                      `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户Id',
+                                     `status` tinyint NULL DEFAULT 0 COMMENT '解析状态: 0待解析, 1解析中, 2已解析, 3解析失败',
                                      PRIMARY KEY (`id`) USING BTREE,
                                      UNIQUE INDEX `idx_kname`(`knowledge_id` ASC, `name` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2033199209203183619 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识库附件' ROW_FORMAT = DYNAMIC;
@@ -1115,7 +1113,9 @@ CREATE TABLE `knowledge_fragment`  (
                                        `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
                                        `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
                                        `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户Id',
-                                       PRIMARY KEY (`id`) USING BTREE
+                                       `knowledge_id` bigint NULL DEFAULT NULL COMMENT '知识库ID',
+                                       PRIMARY KEY (`id`) USING BTREE,
+                                       FULLTEXT INDEX `ft_content`(`content`) WITH PARSER `ngram`
 ) ENGINE = InnoDB AUTO_INCREMENT = 2033199209131880451 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1135,6 +1135,7 @@ CREATE TABLE `knowledge_info`  (
                                    `separator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '知识分隔符',
                                    `overlap_char` int NULL DEFAULT NULL COMMENT '重叠字符数',
                                    `retrieve_limit` int NULL DEFAULT NULL COMMENT '知识库中检索的条数',
+                                   `similarity_threshold` double NULL DEFAULT 0.5 COMMENT '相似度阈值',
                                    `text_block_size` int NULL DEFAULT NULL COMMENT '文本块大小',
                                    `vector_model` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '向量库',
                                    `embedding_model` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '向量模型',
@@ -1145,6 +1146,13 @@ CREATE TABLE `knowledge_info`  (
                                    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
                                    `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
                                    `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户Id',
+                                   `enable_rerank` tinyint NULL DEFAULT 0 COMMENT '是否启用重排序（0否 1是）',
+                                   `rerank_score_threshold` double NULL DEFAULT NULL COMMENT '重排序相关性分数阈值',
+                                   `rerank_top_n` int NULL DEFAULT NULL COMMENT '重排序后返回的文档数量',
+                                   `rerank_model` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '重排序模型名称',
+                                   `enable_hybrid` tinyint(1) NULL DEFAULT 0 COMMENT '是否启用混合检索',
+                                   `hybrid_alpha` double NULL DEFAULT 0.5 COMMENT '混合检索权重比例 (0.0=纯向量, 1.0=纯关键词)',
+                                   `system_prompt` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '系统提示词',
                                    PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2033198818050781187 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识库' ROW_FORMAT = DYNAMIC;
 
@@ -1174,7 +1182,7 @@ CREATE TABLE `mcp_market_info`  (
                                     INDEX `idx_name`(`name` ASC) USING BTREE,
                                     INDEX `idx_status`(`status` ASC) USING BTREE,
                                     INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mcp_market_info
@@ -1198,7 +1206,7 @@ CREATE TABLE `mcp_market_tool`  (
                                     INDEX `idx_market_id`(`market_id` ASC) USING BTREE,
                                     INDEX `idx_tool_name`(`tool_name` ASC) USING BTREE,
                                     INDEX `idx_is_loaded`(`is_loaded` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场工具关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场工具关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mcp_market_tool
@@ -1227,7 +1235,7 @@ CREATE TABLE `mcp_tool_info`  (
                                   INDEX `idx_type`(`type` ASC) USING BTREE,
                                   INDEX `idx_status`(`status` ASC) USING BTREE,
                                   INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP工具表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP工具表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mcp_tool_info
@@ -2085,6 +2093,7 @@ INSERT INTO `sys_dict_data` VALUES (2026642525081116674, '000000', 1, '图像', 
 INSERT INTO `sys_dict_data` VALUES (2026643983713247233, '000000', 1, '次数计费', '1', 'sys_model_billing', NULL, 'green', 'N', 103, 1, '2026-02-25 21:02:34', 1, '2026-02-25 21:02:56', NULL);
 INSERT INTO `sys_dict_data` VALUES (2026644058522853378, '000000', 2, 'token计费', '2', 'sys_model_billing', NULL, 'primary', 'N', 103, 1, '2026-02-25 21:02:51', 1, '2026-02-25 21:02:51', NULL);
 INSERT INTO `sys_dict_data` VALUES (2027261114955931650, '000000', 2, '向量', 'vector', 'chat_model_category', NULL, 'default', 'N', 103, 1, '2026-02-27 13:54:49', 1, '2026-02-27 13:54:54', NULL);
+INSERT INTO `sys_dict_data` VALUES (2045070879435259905, '000000', 4, '重排序', 'rerank', 'chat_model_category', NULL, '#000000', 'N', 103, 1, '2026-04-17 17:24:28', 1, '2026-04-19 01:02:20', '重排序模型');
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -2156,243 +2165,6 @@ CREATE TABLE `sys_logininfor`  (
 -- ----------------------------
 -- Records of sys_logininfor
 -- ----------------------------
-INSERT INTO `sys_logininfor` VALUES (2018437160497668098, '000000', 'admin', 'web', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 05:31:34');
-INSERT INTO `sys_logininfor` VALUES (2018489328494317570, '000000', 'admin', 'web', 'pc', '58.56.198.114', '中国|山东省|泰安市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 08:58:52');
-INSERT INTO `sys_logininfor` VALUES (2018490223370047490, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 09:02:26');
-INSERT INTO `sys_logininfor` VALUES (2018494821124149250, '000000', 'admin', 'web', 'pc', '180.165.21.147', '中国|上海|上海市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 09:20:42');
-INSERT INTO `sys_logininfor` VALUES (2018495323429801985, '000000', 'admin', 'web', 'pc', '218.1.209.117', '中国|上海|上海市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 09:22:42');
-INSERT INTO `sys_logininfor` VALUES (2018496463106084866, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 09:27:13');
-INSERT INTO `sys_logininfor` VALUES (2018506873276338177, '000000', 'admin', 'web', 'pc', '14.155.110.230', '中国|广东省|深圳市|电信', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-03 10:08:35');
-INSERT INTO `sys_logininfor` VALUES (2018507142684872705, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-03 10:09:40');
-INSERT INTO `sys_logininfor` VALUES (2018507255759114241, '000000', 'admin', 'web', 'pc', '27.156.68.14', '中国|福建省|福州市|电信', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-03 10:10:06');
-INSERT INTO `sys_logininfor` VALUES (2018507799294775297, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 10:12:16');
-INSERT INTO `sys_logininfor` VALUES (2018507878344822786, '000000', 'admin', 'web', 'pc', '39.78.246.253', '中国|山东省|济南市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 10:12:35');
-INSERT INTO `sys_logininfor` VALUES (2018508087959359489, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 10:13:25');
-INSERT INTO `sys_logininfor` VALUES (2018513467045187586, '000000', 'admin', 'web', 'pc', '111.175.56.210', '中国|湖北省|武汉市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 10:34:47');
-INSERT INTO `sys_logininfor` VALUES (2018515864068952066, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 10:44:19');
-INSERT INTO `sys_logininfor` VALUES (2018516837059399682, '000000', 'admin', 'web', 'pc', '115.236.45.35', '中国|浙江省|杭州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 10:48:11');
-INSERT INTO `sys_logininfor` VALUES (2018517630747545602, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 10:51:20');
-INSERT INTO `sys_logininfor` VALUES (2018530038144700418, '000000', 'admin', 'web', 'pc', '116.128.248.194', '中国|湖南省|长沙市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 11:40:38');
-INSERT INTO `sys_logininfor` VALUES (2018531663223590914, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 11:47:06');
-INSERT INTO `sys_logininfor` VALUES (2018534417249734658, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 11:58:02');
-INSERT INTO `sys_logininfor` VALUES (2018537768200835074, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 12:11:21');
-INSERT INTO `sys_logininfor` VALUES (2018537900388519937, '000000', 'admin', 'web', 'pc', '183.54.238.100', '中国|广东省|广州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 12:11:53');
-INSERT INTO `sys_logininfor` VALUES (2018549455184334849, '000000', 'admin', 'web', 'pc', '13.212.58.4', '美国|康涅狄格|亚马逊', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-03 12:57:48');
-INSERT INTO `sys_logininfor` VALUES (2018554371911061506, '000000', 'admin', 'web', 'pc', '61.182.224.157', '中国|河北省|石家庄市|联通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 13:17:20');
-INSERT INTO `sys_logininfor` VALUES (2018560767549378562, '000000', 'admin', 'web', 'pc', '106.39.125.218', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 13:42:45');
-INSERT INTO `sys_logininfor` VALUES (2018567861803552769, '000000', 'admin', 'web', 'pc', '58.16.14.89', '中国|贵州省|贵阳市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 14:10:56');
-INSERT INTO `sys_logininfor` VALUES (2018568178360258561, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 14:12:12');
-INSERT INTO `sys_logininfor` VALUES (2018571219020943362, '000000', 'admin', 'web', 'pc', '116.169.71.139', '中国|辽宁省|威瑞森', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-03 14:24:17');
-INSERT INTO `sys_logininfor` VALUES (2018574610824564737, '000000', 'admin', 'web', 'pc', '113.13.108.124', '中国|广西|柳州市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 14:37:45');
-INSERT INTO `sys_logininfor` VALUES (2018574668861149186, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 14:37:59');
-INSERT INTO `sys_logininfor` VALUES (2018577941697531906, '000000', 'admin', 'web', 'pc', '36.110.12.226', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 14:50:59');
-INSERT INTO `sys_logininfor` VALUES (2018578431793565697, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-03 14:52:56');
-INSERT INTO `sys_logininfor` VALUES (2018582006717775874, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 15:07:08');
-INSERT INTO `sys_logininfor` VALUES (2018582568484605953, '000000', 'admin', 'web', 'pc', '223.104.43.1', '中国|北京|北京市|移动', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 15:09:22');
-INSERT INTO `sys_logininfor` VALUES (2018585018155274242, '000000', 'admin', 'web', 'pc', '116.169.127.68', '中国|辽宁省|威瑞森', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 15:19:06');
-INSERT INTO `sys_logininfor` VALUES (2018586528248791041, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 15:25:07');
-INSERT INTO `sys_logininfor` VALUES (2018586925091393537, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 15:26:41');
-INSERT INTO `sys_logininfor` VALUES (2018587111276548097, '000000', 'admin', 'web', 'pc', '117.159.171.116', '中国|河南省|焦作市|移动', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 15:27:26');
-INSERT INTO `sys_logininfor` VALUES (2018588210859479041, '000000', 'admin', 'web', 'pc', '61.169.93.182', '中国|上海|上海市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 15:31:48');
-INSERT INTO `sys_logininfor` VALUES (2018588453218947074, '000000', 'admin', 'web', 'pc', '61.133.210.59', '中国|宁夏|银川市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '1', 'Password input error 1 times', '2026-02-03 15:32:45');
-INSERT INTO `sys_logininfor` VALUES (2018588518431985666, '000000', 'admin', 'web', 'pc', '61.133.210.59', '中国|宁夏|银川市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 15:33:01');
-INSERT INTO `sys_logininfor` VALUES (2018588841208844289, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 15:34:18');
-INSERT INTO `sys_logininfor` VALUES (2018589986920730625, '000000', 'admin', 'web', 'pc', '115.236.69.226', '中国|浙江省|杭州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 15:38:51');
-INSERT INTO `sys_logininfor` VALUES (2018590616590618625, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 15:41:21');
-INSERT INTO `sys_logininfor` VALUES (2018593068400381953, '000000', 'admin', 'web', 'pc', '180.123.251.84', '中国|江苏省|徐州市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 15:51:06');
-INSERT INTO `sys_logininfor` VALUES (2018594019760803842, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 15:54:53');
-INSERT INTO `sys_logininfor` VALUES (2018595653618372609, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 16:01:22');
-INSERT INTO `sys_logininfor` VALUES (2018596016505360386, '000000', 'admin', 'web', 'pc', '114.242.16.161', '中国|北京|北京市|联通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 16:02:49');
-INSERT INTO `sys_logininfor` VALUES (2018596170675392513, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 16:03:25');
-INSERT INTO `sys_logininfor` VALUES (2018599719354372098, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 16:17:32');
-INSERT INTO `sys_logininfor` VALUES (2018599739910656001, '000000', 'admin', 'web', 'pc', '42.235.239.253', '中国|河南省|新乡市|联通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 16:17:36');
-INSERT INTO `sys_logininfor` VALUES (2018600606151872513, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 16:21:03');
-INSERT INTO `sys_logininfor` VALUES (2018600933580214274, '000000', 'admin', 'web', 'pc', '219.142.141.194', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 16:22:21');
-INSERT INTO `sys_logininfor` VALUES (2018602589315272705, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-03 16:28:56');
-INSERT INTO `sys_logininfor` VALUES (2018605159794479105, '000000', 'admin', 'web', 'pc', '222.168.89.242', '中国|吉林省|长春市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 16:39:09');
-INSERT INTO `sys_logininfor` VALUES (2018609628598898690, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-03 16:56:54');
-INSERT INTO `sys_logininfor` VALUES (2018609656977559553, '000000', 'admin', 'web', 'pc', '121.35.46.195', '中国|广东省|深圳市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 16:57:01');
-INSERT INTO `sys_logininfor` VALUES (2018610104228777985, '000000', 'admin', 'web', 'pc', '115.236.69.226', '中国|浙江省|杭州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 16:58:47');
-INSERT INTO `sys_logininfor` VALUES (2018610284827119618, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 16:59:31');
-INSERT INTO `sys_logininfor` VALUES (2018611513854660610, '000000', 'admin ', 'web', 'pc', '222.90.12.243', '中国|陕西省|西安市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '1', 'Password input error 1 times', '2026-02-03 17:04:24');
-INSERT INTO `sys_logininfor` VALUES (2018611519181426690, '000000', 'admin ', 'web', 'pc', '222.90.12.243', '中国|陕西省|西安市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '1', 'Password input error 2 times', '2026-02-03 17:04:25');
-INSERT INTO `sys_logininfor` VALUES (2018611644431732738, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 17:04:55');
-INSERT INTO `sys_logininfor` VALUES (2018611724014456833, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 17:05:14');
-INSERT INTO `sys_logininfor` VALUES (2018612993819021314, '000000', 'admin', 'web', 'pc', '223.160.130.33', '中国|北京|北京市|广电', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-03 17:10:16');
-INSERT INTO `sys_logininfor` VALUES (2018614987845668866, '000000', 'admin ', 'web', 'pc', '222.90.12.243', '中国|陕西省|西安市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '1', 'Password input error 1 times', '2026-02-03 17:18:12');
-INSERT INTO `sys_logininfor` VALUES (2018615005365276674, '000000', 'admin', 'web', 'pc', '222.90.12.243', '中国|陕西省|西安市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 17:18:16');
-INSERT INTO `sys_logininfor` VALUES (2018615245262688258, '000000', 'admin', 'web', 'pc', '61.184.94.104', '中国|湖北省|十堰市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 17:19:13');
-INSERT INTO `sys_logininfor` VALUES (2018615451685359617, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 17:20:02');
-INSERT INTO `sys_logininfor` VALUES (2018615588662939650, '000000', 'admin', 'web', 'pc', '183.241.255.169', '中国|北京|北京市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 17:20:35');
-INSERT INTO `sys_logininfor` VALUES (2018615733957824514, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 17:21:10');
-INSERT INTO `sys_logininfor` VALUES (2018618361873829889, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 17:31:36');
-INSERT INTO `sys_logininfor` VALUES (2018619606214774785, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 17:36:33');
-INSERT INTO `sys_logininfor` VALUES (2018621042193469441, '000000', 'admin', 'web', 'pc', '27.227.167.177', '中国|甘肃省|兰州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 17:42:15');
-INSERT INTO `sys_logininfor` VALUES (2018623610328059905, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 17:52:28');
-INSERT INTO `sys_logininfor` VALUES (2018623677315289089, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-03 17:52:44');
-INSERT INTO `sys_logininfor` VALUES (2018623870995664897, '000000', 'admin', 'web', 'pc', '59.57.134.162', '中国|福建省|厦门市|电信', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-03 17:53:30');
-INSERT INTO `sys_logininfor` VALUES (2018624044400775169, '000000', 'admin', 'web', 'pc', '39.162.49.29', '中国|河南省|郑州市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '1', 'Password input error 1 times', '2026-02-03 17:54:11');
-INSERT INTO `sys_logininfor` VALUES (2018624054987198465, '000000', 'admin', 'web', 'pc', '39.162.49.29', '中国|河南省|郑州市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '1', 'Password input error 2 times', '2026-02-03 17:54:14');
-INSERT INTO `sys_logininfor` VALUES (2018624077900681218, '000000', 'admin', 'web', 'pc', '39.162.49.29', '中国|河南省|郑州市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 17:54:19');
-INSERT INTO `sys_logininfor` VALUES (2018625637493903362, '000000', 'admin', 'web', 'pc', '114.253.10.114', '中国|北京|北京市|联通', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-03 18:00:31');
-INSERT INTO `sys_logininfor` VALUES (2018625743718846465, '000000', 'admin', 'web', 'pc', '111.198.137.189', '中国|北京|北京市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 18:00:56');
-INSERT INTO `sys_logininfor` VALUES (2018625749372768258, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-03 18:00:58');
-INSERT INTO `sys_logininfor` VALUES (2018625771480944641, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 18:01:03');
-INSERT INTO `sys_logininfor` VALUES (2018625852410040321, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '退出成功', '2026-02-03 18:01:22');
-INSERT INTO `sys_logininfor` VALUES (2018625877240320002, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-03 18:01:28');
-INSERT INTO `sys_logininfor` VALUES (2018627882260238337, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 18:09:26');
-INSERT INTO `sys_logininfor` VALUES (2018628150670528513, '000000', 'admin', 'web', 'pc', '114.253.10.114', '中国|北京|北京市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 18:10:30');
-INSERT INTO `sys_logininfor` VALUES (2018672955786137601, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 21:08:32');
-INSERT INTO `sys_logininfor` VALUES (2018689142062452738, '000000', 'admin ', 'web', 'pc', '221.205.106.23', '中国|山西省|太原市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '1', 'Password input error 1 times', '2026-02-03 22:12:52');
-INSERT INTO `sys_logininfor` VALUES (2018689178624200706, '000000', 'admin', 'web', 'pc', '221.205.106.23', '中国|山西省|太原市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 22:13:00');
-INSERT INTO `sys_logininfor` VALUES (2018689429430996993, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 22:14:00');
-INSERT INTO `sys_logininfor` VALUES (2018693323410247681, '000000', 'admin', 'web', 'pc', '140.206.143.69', '中国|上海|上海市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 22:29:28');
-INSERT INTO `sys_logininfor` VALUES (2018694798878314498, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'OSX', '0', '登录成功', '2026-02-03 22:35:20');
-INSERT INTO `sys_logininfor` VALUES (2018710386166075394, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 23:37:17');
-INSERT INTO `sys_logininfor` VALUES (2018715692476534785, '000000', 'admin', 'web', 'pc', '113.248.49.12', '中国|重庆|重庆市|电信', 'Firefox', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-03 23:58:22');
-INSERT INTO `sys_logininfor` VALUES (2018715768049504257, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Firefox', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-03 23:58:40');
-INSERT INTO `sys_logininfor` VALUES (2018745408302485505, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 01:56:26');
-INSERT INTO `sys_logininfor` VALUES (2018745476409593857, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-02-04 01:56:43');
-INSERT INTO `sys_logininfor` VALUES (2018852568944480258, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-04 09:02:16');
-INSERT INTO `sys_logininfor` VALUES (2018852760607395842, '000000', 'admin', 'web', 'pc', '39.170.0.61', '中国|浙江省|杭州市|移动', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-04 09:03:01');
-INSERT INTO `sys_logininfor` VALUES (2018855559080579073, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:14:08');
-INSERT INTO `sys_logininfor` VALUES (2018856680327090177, '000000', 'admin', 'web', 'pc', '180.201.162.34', '中国|山东省|青岛市|教育网', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 09:18:36');
-INSERT INTO `sys_logininfor` VALUES (2018856825580032001, '000000', 'admin', 'web', 'pc', '60.10.20.65', '中国|河北省|廊坊市|联通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 09:19:10');
-INSERT INTO `sys_logininfor` VALUES (2018857125414047745, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:20:22');
-INSERT INTO `sys_logininfor` VALUES (2018857183823925249, '000000', 'admin', 'web', 'pc', '114.253.10.114', '中国|北京|北京市|联通', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-04 09:20:36');
-INSERT INTO `sys_logininfor` VALUES (2018857493854294017, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-04 09:21:50');
-INSERT INTO `sys_logininfor` VALUES (2018860201030062082, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:32:35');
-INSERT INTO `sys_logininfor` VALUES (2018860399353532418, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:33:22');
-INSERT INTO `sys_logininfor` VALUES (2018860419058372609, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:33:27');
-INSERT INTO `sys_logininfor` VALUES (2018862938719391745, '000000', 'admin', 'web', 'pc', '113.65.15.168', '中国|广东省|广州市|电信', 'Firefox', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 09:43:28');
-INSERT INTO `sys_logininfor` VALUES (2018863017278705665, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Firefox', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:43:47');
-INSERT INTO `sys_logininfor` VALUES (2018863424306548737, '000000', 'admin', 'web', 'pc', '114.253.10.114', '中国|北京|北京市|联通', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-04 09:45:24');
-INSERT INTO `sys_logininfor` VALUES (2018864538947031042, '000000', 'admin', 'web', 'pc', '114.224.36.132', '中国|江苏省|无锡市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 09:49:49');
-INSERT INTO `sys_logininfor` VALUES (2018864646790975490, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:50:15');
-INSERT INTO `sys_logininfor` VALUES (2018864913326411777, '000000', 'admin', 'web', 'pc', '14.220.151.192', '中国|广东省|东莞市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 09:51:19');
-INSERT INTO `sys_logininfor` VALUES (2018865224053035009, '000000', 'admin', 'web', 'pc', '8.220.210.62', '中国|阿里巴巴', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 09:52:33');
-INSERT INTO `sys_logininfor` VALUES (2018865354428780546, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:53:04');
-INSERT INTO `sys_logininfor` VALUES (2018865432400891905, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:53:22');
-INSERT INTO `sys_logininfor` VALUES (2018865469902163970, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-02-04 09:53:31');
-INSERT INTO `sys_logininfor` VALUES (2018865485031018498, '154726', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:53:35');
-INSERT INTO `sys_logininfor` VALUES (2018865600516984833, '154726', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-02-04 09:54:03');
-INSERT INTO `sys_logininfor` VALUES (2018865826023739394, '000000', 'admin', 'web', 'pc', '113.104.237.0', '中国|广东省|深圳市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 09:54:56');
-INSERT INTO `sys_logininfor` VALUES (2018865939207032834, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 09:55:23');
-INSERT INTO `sys_logininfor` VALUES (2018868158258089986, '000000', 'admin', 'web', 'pc', '39.170.71.231', '中国|浙江省|杭州市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 10:04:12');
-INSERT INTO `sys_logininfor` VALUES (2018868610617970690, '000000', 'admin', 'web', 'pc', '219.152.39.216', '中国|重庆|重庆市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 10:06:00');
-INSERT INTO `sys_logininfor` VALUES (2018870568124813313, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 10:13:47');
-INSERT INTO `sys_logininfor` VALUES (2018882173784952834, '000000', 'admin', 'web', 'pc', '220.196.184.73', '中国|上海|上海市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '1', 'Password input error 1 times', '2026-02-04 10:59:54');
-INSERT INTO `sys_logininfor` VALUES (2018882179346599938, '000000', 'admin', 'web', 'pc', '220.196.184.73', '中国|上海|上海市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 10:59:55');
-INSERT INTO `sys_logininfor` VALUES (2018882457076633602, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 11:01:01');
-INSERT INTO `sys_logininfor` VALUES (2018882886007132162, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 11:02:44');
-INSERT INTO `sys_logininfor` VALUES (2018883626641526786, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Firefox', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 11:05:40');
-INSERT INTO `sys_logininfor` VALUES (2018885851870793730, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 11:14:31');
-INSERT INTO `sys_logininfor` VALUES (2018887170559971330, '000000', 'admin', 'web', 'pc', '114.222.24.76', '中国|江苏省|南京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 11:19:45');
-INSERT INTO `sys_logininfor` VALUES (2018887913358626817, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 11:22:42');
-INSERT INTO `sys_logininfor` VALUES (2018889490362404865, '000000', 'admin', 'web', 'pc', '124.165.224.106', '中国|山西省|吕梁市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 11:28:58');
-INSERT INTO `sys_logininfor` VALUES (2018891240427360257, '000000', 'admin', 'web', 'pc', '163.142.243.239', '中国|广东省|佛山市|联通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 11:35:56');
-INSERT INTO `sys_logininfor` VALUES (2018895246847512578, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 11:51:51');
-INSERT INTO `sys_logininfor` VALUES (2018897167293485058, '000000', 'admin', 'web', 'pc', '113.57.48.151', '中国|湖北省|武汉市|联通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 11:59:29');
-INSERT INTO `sys_logininfor` VALUES (2018898894247825410, '000000', 'admin', 'web', 'pc', '114.254.1.2', '中国|北京|北京市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 12:06:20');
-INSERT INTO `sys_logininfor` VALUES (2018899094601338882, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 12:07:08');
-INSERT INTO `sys_logininfor` VALUES (2018916480444403714, '000000', 'admin', 'web', 'pc', '219.143.206.106', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:16:13');
-INSERT INTO `sys_logininfor` VALUES (2018916794622939137, '000000', 'admin', 'web', 'pc', '116.252.72.152', '中国|广西|南宁市|电信', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-04 13:17:28');
-INSERT INTO `sys_logininfor` VALUES (2018917938204119041, '000000', 'admin', 'web', 'pc', '219.143.206.106', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:22:01');
-INSERT INTO `sys_logininfor` VALUES (2018918018160136193, '000000', 'admin', 'web', 'pc', '218.240.181.5', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:22:20');
-INSERT INTO `sys_logininfor` VALUES (2018918326378565634, '000000', 'admin', 'web', 'pc', '218.240.181.5', '中国|北京|北京市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:23:33');
-INSERT INTO `sys_logininfor` VALUES (2018920804255928322, '000000', 'admin', 'web', 'pc', '219.143.206.106', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:33:24');
-INSERT INTO `sys_logininfor` VALUES (2018921548166074369, '000000', 'admin', 'web', 'pc', '219.143.206.106', '中国|北京|北京市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:36:21');
-INSERT INTO `sys_logininfor` VALUES (2018922995012210690, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Quark', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 13:42:06');
-INSERT INTO `sys_logininfor` VALUES (2018926354117038082, '000000', 'admin', 'web', 'pc', '8.220.210.62', '中国|阿里巴巴', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:55:27');
-INSERT INTO `sys_logininfor` VALUES (2018927011129593858, '000000', 'admin', 'web', 'pc', '60.190.252.115', '中国|浙江省|杭州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 13:58:04');
-INSERT INTO `sys_logininfor` VALUES (2018927468619108353, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 13:59:53');
-INSERT INTO `sys_logininfor` VALUES (2018927515784056834, '000000', 'admin', 'web', 'pc', '14.111.243.245', '中国|重庆|重庆市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '1', 'Password input error 1 times', '2026-02-04 14:00:04');
-INSERT INTO `sys_logininfor` VALUES (2018927562521186305, '000000', 'admin', 'web', 'pc', '14.111.243.245', '中国|重庆|重庆市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 14:00:15');
-INSERT INTO `sys_logininfor` VALUES (2018929485043339265, '000000', 'admin', 'web', 'pc', '124.114.150.254', '中国|陕西省|西安市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 14:07:54');
-INSERT INTO `sys_logininfor` VALUES (2018931277877612545, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 14:15:01');
-INSERT INTO `sys_logininfor` VALUES (2018933698284621826, '000000', 'admin', 'web', 'pc', '222.35.11.50', '中国|北京|北京市|铁通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 14:24:38');
-INSERT INTO `sys_logininfor` VALUES (2018933723182010369, '000000', 'admin', 'web', 'pc', '183.162.217.80', '中国|安徽省|蚌埠市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 14:24:44');
-INSERT INTO `sys_logininfor` VALUES (2018933918011625473, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 14:25:31');
-INSERT INTO `sys_logininfor` VALUES (2018935595993272322, '000000', 'admin', 'web', 'pc', '122.225.239.202', '中国|浙江省|嘉兴市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 14:32:11');
-INSERT INTO `sys_logininfor` VALUES (2018937821423865857, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 14:41:01');
-INSERT INTO `sys_logininfor` VALUES (2018938936521527298, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 14:45:27');
-INSERT INTO `sys_logininfor` VALUES (2018946088032145409, '000000', 'admin', 'web', 'pc', '223.104.202.88', '中国|陕西省|咸阳市|移动', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 15:13:52');
-INSERT INTO `sys_logininfor` VALUES (2018946463766286337, '000000', 'admin', 'web', 'pc', '114.139.48.241', '中国|贵州省|遵义市|电信', 'Chrome', 'OSX', '0', 'Login successful', '2026-02-04 15:15:22');
-INSERT INTO `sys_logininfor` VALUES (2018948323336130562, '000000', 'admin', 'web', 'pc', '113.207.43.98', '中国|重庆|重庆市|联通', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 15:22:45');
-INSERT INTO `sys_logininfor` VALUES (2018948839856279554, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 15:24:48');
-INSERT INTO `sys_logininfor` VALUES (2018950286861799426, '000000', 'admin', 'web', 'pc', '112.224.162.237', '中国|山东省|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 15:30:33');
-INSERT INTO `sys_logininfor` VALUES (2018950904724721665, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 15:33:01');
-INSERT INTO `sys_logininfor` VALUES (2018950963323342849, '000000', 'admin', 'web', 'pc', '182.132.201.232', '中国|四川省|眉山市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 15:33:15');
-INSERT INTO `sys_logininfor` VALUES (2018950986727559170, '000000', 'admin', 'web', 'pc', '111.8.48.211', '中国|湖南省|长沙市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 15:33:20');
-INSERT INTO `sys_logininfor` VALUES (2018951848111771650, '000000', 'admin', 'web', 'pc', '219.138.228.254', '中国|湖北省|鄂州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 15:36:46');
-INSERT INTO `sys_logininfor` VALUES (2018952415047454722, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 15:39:01');
-INSERT INTO `sys_logininfor` VALUES (2018954681871634433, '000000', 'admin', 'web', 'pc', '123.235.153.115', '中国|山东省|青岛市|联通', 'MicroMessenger', 'OSX', '0', 'Login successful', '2026-02-04 15:48:01');
-INSERT INTO `sys_logininfor` VALUES (2018959635684397057, '000000', 'admin', 'web', 'pc', '58.56.198.114', '中国|山东省|泰安市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:07:42');
-INSERT INTO `sys_logininfor` VALUES (2018961274495438849, '000000', 'admin', 'web', 'pc', '120.197.21.117', '中国|广东省|广州市|移动', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:14:13');
-INSERT INTO `sys_logininfor` VALUES (2018961365956431873, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:14:35');
-INSERT INTO `sys_logininfor` VALUES (2018961449058177025, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:14:55');
-INSERT INTO `sys_logininfor` VALUES (2018961841162686465, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:16:28');
-INSERT INTO `sys_logininfor` VALUES (2018961976873586689, '000000', 'admin', 'web', 'pc', '36.112.184.220', '中国|北京|北京市|电信', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:17:00');
-INSERT INTO `sys_logininfor` VALUES (2018962175272554497, '000000', 'admin', 'web', 'pc', '39.144.212.209', '中国|移动', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:17:48');
-INSERT INTO `sys_logininfor` VALUES (2018962369447858177, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:18:34');
-INSERT INTO `sys_logininfor` VALUES (2018963149303189505, '000000', 'admin', 'web', 'pc', '112.97.202.126', '中国|广东省|东莞市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:21:40');
-INSERT INTO `sys_logininfor` VALUES (2018963440199143425, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:22:49');
-INSERT INTO `sys_logininfor` VALUES (2018966187199827970, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-02-04 16:33:44');
-INSERT INTO `sys_logininfor` VALUES (2018966195156422657, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:33:46');
-INSERT INTO `sys_logininfor` VALUES (2018967272132055041, '000000', 'admin', 'web', 'pc', '121.8.154.218', '中国|广东省|广州市|电信', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:38:03');
-INSERT INTO `sys_logininfor` VALUES (2018967970655637505, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:40:49');
-INSERT INTO `sys_logininfor` VALUES (2018968030697099265, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:41:04');
-INSERT INTO `sys_logininfor` VALUES (2018970160656945154, '000000', 'admin', 'web', 'pc', '183.209.146.73', '中国|江苏省|南京市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:49:32');
-INSERT INTO `sys_logininfor` VALUES (2018970873374052354, '000000', 'admin', 'web', 'pc', '60.1.71.196', '中国|河北省|石家庄市|联通', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:52:22');
-INSERT INTO `sys_logininfor` VALUES (2018970947504181249, '000000', 'admin', 'web', 'pc', '223.88.78.216', '中国|河南省|郑州市|移动', 'Chrome', 'Windows 10 or Windows Server 2016', '0', 'Login successful', '2026-02-04 16:52:39');
-INSERT INTO `sys_logininfor` VALUES (2018971098872418305, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 16:53:15');
-INSERT INTO `sys_logininfor` VALUES (2018978580902580226, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 17:22:59');
-INSERT INTO `sys_logininfor` VALUES (2018978998839808002, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 17:24:39');
-INSERT INTO `sys_logininfor` VALUES (2018984098123616257, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 17:44:55');
-INSERT INTO `sys_logininfor` VALUES (2018988627267293186, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 18:02:54');
-INSERT INTO `sys_logininfor` VALUES (2018990733382520834, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 18:11:17');
-INSERT INTO `sys_logininfor` VALUES (2019029939576246274, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 20:47:04');
-INSERT INTO `sys_logininfor` VALUES (2019040366678904834, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 21:28:30');
-INSERT INTO `sys_logininfor` VALUES (2019057692774109186, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 22:37:21');
-INSERT INTO `sys_logininfor` VALUES (2019057715637260289, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-04 22:37:26');
-INSERT INTO `sys_logininfor` VALUES (2019113073072279553, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'OSX', '0', '登录成功', '2026-02-05 02:17:25');
-INSERT INTO `sys_logininfor` VALUES (2019203832710565889, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-05 08:18:03');
-INSERT INTO `sys_logininfor` VALUES (2019210865128116226, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-05 08:46:00');
-INSERT INTO `sys_logininfor` VALUES (2019213517912150018, '154726', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-05 08:56:33');
-INSERT INTO `sys_logininfor` VALUES (2019217038615121921, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-05 09:10:32');
-INSERT INTO `sys_logininfor` VALUES (2019219134710157314, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Linux', '0', '登录成功', '2026-02-05 09:18:52');
-INSERT INTO `sys_logininfor` VALUES (2019222079201157121, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-05 09:30:34');
-INSERT INTO `sys_logininfor` VALUES (2019223047400198146, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'OSX', '0', '登录成功', '2026-02-05 09:34:25');
-INSERT INTO `sys_logininfor` VALUES (2019224288503140354, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-05 09:39:20');
-INSERT INTO `sys_logininfor` VALUES (2019224998575153153, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-02-05 09:42:10');
-INSERT INTO `sys_logininfor` VALUES (2019225059417726977, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-05 09:42:24');
-INSERT INTO `sys_logininfor` VALUES (2019240817392693249, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-05 10:45:01');
-INSERT INTO `sys_logininfor` VALUES (2019447979716972545, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-06 00:28:13');
-INSERT INTO `sys_logininfor` VALUES (2026536636865163265, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-25 13:56:00');
-INSERT INTO `sys_logininfor` VALUES (2026556949535502337, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-25 15:16:43');
-INSERT INTO `sys_logininfor` VALUES (2026578433112911874, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-25 16:42:05');
-INSERT INTO `sys_logininfor` VALUES (2026638437400518657, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-25 20:40:31');
-INSERT INTO `sys_logininfor` VALUES (2026647463072952321, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-25 21:16:23');
-INSERT INTO `sys_logininfor` VALUES (2026653919016968194, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-02-25 21:42:02');
-INSERT INTO `sys_logininfor` VALUES (2026654082020204546, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-25 21:42:41');
-INSERT INTO `sys_logininfor` VALUES (2026654455514587138, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-25 21:44:10');
-INSERT INTO `sys_logininfor` VALUES (2027260957187186689, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-02-27 13:54:12');
-INSERT INTO `sys_logininfor` VALUES (2030617171346399233, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-08 20:10:35');
-INSERT INTO `sys_logininfor` VALUES (2033083137191841794, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 15:29:27');
-INSERT INTO `sys_logininfor` VALUES (2033102367094214657, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 16:45:52');
-INSERT INTO `sys_logininfor` VALUES (2033116897354551298, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 17:43:36');
-INSERT INTO `sys_logininfor` VALUES (2033133175565836289, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 18:48:17');
-INSERT INTO `sys_logininfor` VALUES (2033167392953675778, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 21:04:16');
-INSERT INTO `sys_logininfor` VALUES (2033168637663719425, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 21:09:12');
-INSERT INTO `sys_logininfor` VALUES (2033170263812157441, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-03-15 21:15:40');
-INSERT INTO `sys_logininfor` VALUES (2033170654197002242, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 21:17:13');
-INSERT INTO `sys_logininfor` VALUES (2033170805703651330, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-03-15 21:17:49');
-INSERT INTO `sys_logininfor` VALUES (2033170821767835650, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 21:17:53');
-INSERT INTO `sys_logininfor` VALUES (2033170964009267201, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 21:18:27');
-INSERT INTO `sys_logininfor` VALUES (2033197762549985282, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 23:04:56');
-INSERT INTO `sys_logininfor` VALUES (2033200372921217025, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '1', '密码输入错误1次', '2026-03-15 23:15:19');
-INSERT INTO `sys_logininfor` VALUES (2033200386498179073, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 23:15:22');
-INSERT INTO `sys_logininfor` VALUES (2033210457315696642, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-03-15 23:55:23');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -3176,7 +2948,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', 'admin', 'sys_user', 'ageerle@163.com', '15888888888', '1', NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-15 23:55:23', 103, 1, '2026-02-05 09:22:12', -1, '2026-03-15 23:55:23', '管理员', NULL, 0.00);
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', 'admin', 'sys_user', 'ageerle@163.com', '15888888888', '1', NULL, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-19 23:16:57', 103, 1, '2026-02-05 09:22:12', -1, '2026-05-19 23:16:57', '管理员', NULL, 0.00);
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-02-05 09:22:12', 103, 1, '2026-02-05 09:22:12', 3, '2026-02-05 09:22:12', NULL, NULL, 0.00);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-02-05 09:22:12', 103, 1, '2026-02-05 09:22:12', 4, '2026-02-05 09:22:12', NULL, NULL, 0.00);
 
