@@ -210,7 +210,7 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 **感谢以下赞助商对本项目的支持：**
 
 > <a href="https://www.atlascloud.ai?ref=89F97E">
->   <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="156">
+>   <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="120" height="100">
 > </a>
 >
 > [访问Atlas Cloud官网](https://www.atlascloud.ai?ref=89F97E) · [编程计划优惠](https://www.atlascloud.ai/console/coding-plan) <br>
