@@ -211,7 +211,7 @@ Thanks to the following excellent open-source projects for their support:
 **Thanks to the following sponsors for supporting this project:**
 
 > <a href="https://www.atlascloud.ai?ref=89F97E">
->   <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="156">
+>   <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="120" height="100">
 > </a>
 >
 > [Visit Atlas Cloud](https://www.atlascloud.ai?ref=89F97E) · [Coding Plan Promotion](https://www.atlascloud.ai/console/coding-plan) <br>
