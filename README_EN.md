@@ -22,8 +22,8 @@
 
 *An out-of-the-box full-stack AI platform supporting multi-agent collaboration, Supervisor mode orchestration, and multiple decision models, with advanced RAG technology and visual workflow orchestration capabilities*
 
-**[中文](README.md)** | **[📖 Documentation](https://doc.pandarobot.chat)** |
-**[🚀 Live Demo](https://web.pandarobot.chat)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
+**[中文](README.md)** | **[📖 Documentation](https://doc.ruoyiai.chat/)** |
+**[🚀 Live Demo](https://web.ruoyiai.chat/)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
 
 </div>
 
@@ -39,15 +39,6 @@
 | **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem |
 | **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model calls, email sending, manual review nodes |
 | **Multi-Agent** | Agent framework based on Langchain4j, Supervisor mode orchestration, supports multiple decision models |
-
-## 🚀 Quick Start
-
-### Live Demo
-
-|   Platform   | URL | Account |
-|:------:|---|---|
-|  User Frontend   | [web.pandarobot.chat](https://web.pandarobot.chat) | admin / admin123 |
-| Admin Panel | [admin.pandarobot.chat](https://admin.pandarobot.chat) | admin / admin123 |
 
 ### Project Repositories
 
@@ -69,8 +60,6 @@
 - **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate/Qdrant)
 - **Frontend**: Vue 3 + Vben Admin + element-plus-x
 - **Security**: Sa-Token + JWT dual-layer security
-
-
 - **Document Processing**: PDF, Word, Excel parsing, intelligent image analysis
 - **Real-time Communication**: WebSocket real-time communication, SSE streaming response
 - **System Monitoring**: Comprehensive logging system, performance monitoring, service health checks
@@ -190,7 +179,7 @@ docker-compose -f docker-compose-all.yaml restart [service-name]
 
 Want to learn more about installation, deployment, configuration, and secondary development?
 
-**👉 [Complete Documentation](https://doc.pandarobot.chat)**
+**👉 [Complete Documentation](https://doc.ruoyiai.chat/)**
 
 ## 🤝 Contributing
 
@@ -213,29 +202,40 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 ## 🙏 Acknowledgments
 
 Thanks to the following excellent open-source projects for their support:
-- [Spring AI Alibaba Copilot](https://github.com/spring-ai-alibaba/copilot) - Intelligent coding assistant based on spring-ai-alibaba
 - [Langchain4j](https://github.com/langchain4j/langchain4j) - Powerful Java LLM development framework
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - Mature enterprise-level rapid development framework
 - [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - Modern Vue admin template
 
-## 🌐 Ecosystem Partners
-
-**[Atlas Cloud](https://www.atlascloud.ai/)** - A full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities. 👉 [Coding Plan Promotion](https://www.atlascloud.ai/console/coding-plan)
-
 ## 💎 Sponsors
 
-Thanks to the following sponsors for supporting this project:
+**Thanks to the following sponsors for supporting this project:**
 
-**[Atlas Cloud](https://www.atlascloud.ai/)** - A full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Connect once and get unified access to 300+ curated models across all modalities.
-
-> *If you would like to become a sponsor, please contact us via WeChat or Telegram.*
+> <a href="https://www.atlascloud.ai?ref=89F97E">
+>   <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="156">
+> </a>
+>
+> [Visit Atlas Cloud](https://www.atlascloud.ai?ref=89F97E) · [Coding Plan Promotion](https://www.atlascloud.ai/console/coding-plan) <br>
+> A full-modal AI inference platform that gives developers a unified AI API, supporting video generation, image generation, and LLMs. Connect once to access **300+ curated models**.<br>
 
 ## 💬 Community Chat
 
 <div align="center">
 
-**[📱 Join Telegram Group](
-https://t.me/+LqooQAc5HxRmYmE1)**
+<table>
+<tr>
+<td align="center">
+<img src="docs/image/wx.png" alt="WeChat QR Code" width="200" height="200"><br>
+<strong>Scan to add author on WeChat</strong><br>
+<em>Join group for learning</em>
+</td>
+<td align="center">
+<img src="docs/image/qq.png" alt="QQ Group QR Code" width="200" height="200"><br>
+<strong>QQ Tech Exchange Group</strong><br>
+<em>Technical discussion</em>
+</td>
+
+</tr>
+</table>
 
 </div>
 
@@ -243,7 +243,7 @@ https://t.me/+LqooQAc5HxRmYmE1)**
 
 <div align="center">
 
-**[⭐ Star to Support](https://github.com/ageerle/ruoyi-ai)** • **[Fork to Contribute](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 中文](README.md)** • **[📖 Complete Documentation](https://doc.pandarobot.chat)**
+**[⭐ Star to Support](https://github.com/ageerle/ruoyi-ai)** • **[Fork to Contribute](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 中文](README.md)** • **[📖 Complete Documentation](https://doc.ruoyiai.chat/)**
 
 *Built with ❤️, maintained by the RuoYi AI open-source community*
 

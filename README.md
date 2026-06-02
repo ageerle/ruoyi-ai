@@ -21,8 +21,8 @@
 
 *开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模式、RAG技术和流程编排能力*
 
-**[English](README_EN.md)** | **[📖 使用文档](https://doc.pandarobot.chat)** |
-**[🚀 在线体验](https://web.pandarobot.chat)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
+**[English](README_EN.md)** | **[📖 使用文档](https://doc.ruoyiai.chat/)** |
+**[🚀 在线体验](https://web.ruoyiai.chat/)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
 
 </div>
 
@@ -37,14 +37,6 @@
 |  **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
 |  **多智能体**  | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型          
 
-## 🚀 快速体验
-
-### 在线演示
-
-|   平台   | 地址 | 账号 |
-|:------:|---|---|
-|  用户端   | [web.pandarobot.chat](https://web.pandarobot.chat) | admin / admin123 |
-| 管理后台 | [admin.pandarobot.chat](https://admin.pandarobot.chat) | admin / admin123 |
 
 ### 项目源码
 
@@ -66,34 +58,9 @@
 - **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate/Qdrant）
 - **前端技术**：Vue 3 + Vben Admin + element-plus-x
 - **安全认证**：Sa-Token + JWT 双重保障
-
-
 - **文档处理**：PDF、Word、Excel 解析，图像智能分析
 - **实时通信**：WebSocket 实时通信，SSE 流式响应
 - **系统监控**：完善的日志体系、性能监控、服务健康检查
-
-## 使用web coding部署
-####  在线体验： https://monkeycode-ai.com/?ic=019d9e9f-edc3-7a4b-8987-11b028751a1e
-
-<table>
-<tr>
-<td align="center" style="padding: 20px;">
-<img src="docs/image/01.png" alt="web code" width="660" height="400"><br>
-</td>
-</tr>
-<tr>
-<td align="center" style="padding: 20px;">
-<img src="docs/image/02.png" alt="web code" width="660" height="400"><br>
-</td>
-</tr>
-<tr>
-<td align="center" style="padding: 20px;">
-<img src="docs/image/03.png" alt="web code" width="660" height="400"><br>
-</td>
-</tr>
-</table>
-
-#### 等待10分钟左右即可完成
 
 ## 🐳 Docker 部署
 
@@ -210,7 +177,7 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 
 想要深入了解安装部署、功能配置和二次开发？
 
-**👉 [完整使用文档](https://doc.pandarobot.chat)**
+**👉 [完整使用文档](https://doc.ruoyiai.chat/)**
 
 ## 🤝 参与贡献
 
@@ -239,15 +206,16 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 
 
 ## 💎 赞助商
-感谢以下赞助商对本项目的支持：
 
-<a href="https://www.atlascloud.ai?ref=89F97E">
-  <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="60" height="30">
-</a>
+**感谢以下赞助商对本项目的支持：**
 
-- **[Atlas Cloud](https://www.atlascloud.ai?ref=89F97E)** - 全模态AI推理平台，为开发者提供统一的AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问300+精选模型。
+> <a href="https://www.atlascloud.ai?ref=89F97E">
+>   <img src="https://ruoyiai-1254149996.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png" alt="Atlas Cloud" width="156">
+> </a>
+>
+> [访问Atlas Cloud官网](https://www.atlascloud.ai?ref=89F97E) · [编程计划优惠](https://www.atlascloud.ai/console/coding-plan) <br>
+> 全模态 AI 推理平台，为开发者提供统一的 AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问 **300+ 精选模型**。<br>
 
-- **[编程计划优惠](https://www.atlascloud.ai/console/coding-plan)** -  Atlas Cloud 针对更经济型 API 推出的全新编码计划促销活动
 
 ## 💬 社区交流
 
@@ -274,7 +242,7 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 ---
 <div align="center">
 
-**[⭐ 点个Star支持一下](https://github.com/ageerle/ruoyi-ai)** • **[ Fork 开始贡献](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 English](README_EN.md)** • **[📖 查看完整文档](https://doc.pandarobot.chat)**
+**[⭐ 点个Star支持一下](https://github.com/ageerle/ruoyi-ai)** • **[ Fork 开始贡献](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 English](README_EN.md)** • **[📖 查看完整文档](https://doc.ruoyiai.chat/)**
 
 *用 ❤️ 打造，由 RuoYi AI 开源社区维护*
 
