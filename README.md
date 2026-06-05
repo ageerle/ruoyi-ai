@@ -229,6 +229,11 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 <em>邀请进群学习</em>
 </td>
 <td align="center">
+<img src="docs/image/wx06.png" alt="微信二维码" width="200" height="200"><br>
+<strong>微信技术交流群</strong><br>
+<em>技术讨论</em>
+</td>
+<td align="center">
 <img src="docs/image/qq.png" alt="QQ群二维码" width="200" height="200"><br>
 <strong>QQ技术交流群</strong><br>
 <em>技术讨论</em>
