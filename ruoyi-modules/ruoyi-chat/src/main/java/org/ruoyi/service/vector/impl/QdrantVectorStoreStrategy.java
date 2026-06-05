@@ -116,6 +116,7 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
+		createSchema(storeEmbeddingBo.getKid(), storeEmbeddingBo.getEmbeddingModelName());
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName());
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
