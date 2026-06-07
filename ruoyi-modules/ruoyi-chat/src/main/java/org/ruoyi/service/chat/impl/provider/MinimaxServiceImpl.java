@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * MiniMax服务调用
  * <p>
- * MiniMax提供OpenAI兼容的API接口，支持MiniMax-M2.7、MiniMax-M2.5等模型。
+ * MiniMax提供OpenAI兼容的API接口，支持MiniMax-M3（默认）、MiniMax-M2.7、MiniMax-M2.7-highspeed 等模型。
  * API地址：https://api.minimax.io/v1
  *
  * @author octopus

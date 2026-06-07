@@ -27,6 +27,20 @@ class MinimaxIntegrationTest {
     }
 
     @Test
+    void buildStreamingChatModel_withRealApiKey_M3() {
+        ChatModelVo modelVo = new ChatModelVo();
+        modelVo.setApiHost("https://api.minimax.io/v1");
+        modelVo.setApiKey(apiKey);
+        modelVo.setModelName("MiniMax-M3");
+
+        ChatRequest request = new ChatRequest();
+        request.setEnableThinking(false);
+
+        StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
+        assertNotNull(model, "Should create streaming model with real API key for M3");
+    }
+
+    @Test
     void buildStreamingChatModel_withRealApiKey_M27() {
         ChatModelVo modelVo = new ChatModelVo();
         modelVo.setApiHost("https://api.minimax.io/v1");
@@ -37,34 +51,20 @@ class MinimaxIntegrationTest {
         request.setEnableThinking(false);
 
         StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model, "Should create streaming model with real API key");
+        assertNotNull(model, "Should create streaming model with M2.7");
     }
 
     @Test
-    void buildStreamingChatModel_withRealApiKey_M25() {
+    void buildStreamingChatModel_withRealApiKey_M27Highspeed() {
         ChatModelVo modelVo = new ChatModelVo();
         modelVo.setApiHost("https://api.minimax.io/v1");
         modelVo.setApiKey(apiKey);
-        modelVo.setModelName("MiniMax-M2.5");
+        modelVo.setModelName("MiniMax-M2.7-highspeed");
 
         ChatRequest request = new ChatRequest();
         request.setEnableThinking(false);
 
         StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model, "Should create streaming model with M2.5");
-    }
-
-    @Test
-    void buildStreamingChatModel_withRealApiKey_M25Highspeed() {
-        ChatModelVo modelVo = new ChatModelVo();
-        modelVo.setApiHost("https://api.minimax.io/v1");
-        modelVo.setApiKey(apiKey);
-        modelVo.setModelName("MiniMax-M2.5-highspeed");
-
-        ChatRequest request = new ChatRequest();
-        request.setEnableThinking(false);
-
-        StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model, "Should create streaming model with M2.5-highspeed");
+        assertNotNull(model, "Should create streaming model with M2.7-highspeed");
     }
 }
