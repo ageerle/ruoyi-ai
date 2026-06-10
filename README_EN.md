@@ -210,19 +210,19 @@ Thanks to the following excellent open-source projects for their support:
 
 **Thanks to the following sponsors for supporting this project:**
 
-> <a href="https://www.atlascloud.ai?ref=89F97E">
->   <img src="docs/image/sponsor/atlascloud_banner.png" alt="Atlas Cloud" width="160" height="80">
-> </a>
->
-> [Visit Atlas Cloud](https://www.atlascloud.ai?ref=89F97E) · [Coding Plan Promotion](https://www.atlascloud.ai/console/coding-plan) <br>
-> A full-modal AI inference platform that gives developers a unified AI API, supporting video generation, image generation, and LLMs. Connect once to access **300+ curated models**.<br>
+<a href="https://www.atlascloud.ai?ref=89F97E">
+  <img src="docs/image/sponsor/atlascloud_banner.png" alt="Atlas Cloud" width="160" height="80">
+</a>
 
-> <a href="https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai">
->   <img src="docs/image/sponsor/huoshan.png" alt="Volcengine CodingPlan" width="160" height="80">
-> </a>
->
-> [Volcengine CodingPlan Developer Program](https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai) <br>
-> Volcengine is ByteDance's cloud and AI service platform. Volcengine Ark provides API access to Doubao LLM, DeepSeek, and more — a one-stop AI development and inference platform for developers.<br>
+[Visit Atlas Cloud](https://www.atlascloud.ai?ref=89F97E) · [Coding Plan Promotion](https://www.atlascloud.ai/console/coding-plan)
+A full-modal AI inference platform that gives developers a unified AI API, supporting video generation, image generation, and LLMs. Connect once to access **300+ curated models**.
+
+<a href="https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai">
+  <img src="docs/image/sponsor/huoshan.png" alt="Volcengine CodingPlan" width="160" height="80">
+</a>
+
+[Volcengine CodingPlan Developer Program](https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai)
+Volcengine is ByteDance's cloud and AI service platform. Volcengine Ark provides API access to Doubao LLM, DeepSeek, and more — a one-stop AI development and inference platform for developers.
 
 ## 💬 Community Chat
 

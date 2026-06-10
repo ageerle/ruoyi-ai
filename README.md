@@ -209,19 +209,19 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
 
 **感谢以下赞助商对本项目的支持：**
 
-> <a href="https://www.atlascloud.ai?ref=89F97E">
->   <img src="docs/image/sponsor/atlascloud_banner.png" alt="Atlas Cloud" width="160" height="80">
-> </a>
->
-> [访问Atlas Cloud官网](https://www.atlascloud.ai?ref=89F97E) · [编程计划优惠](https://www.atlascloud.ai/console/coding-plan) <br>
-> 全模态 AI 推理平台，为开发者提供统一的 AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问 **300+ 精选模型**。<br>
+<a href="https://www.atlascloud.ai?ref=89F97E">
+  <img src="docs/image/sponsor/atlascloud_banner.png" alt="Atlas Cloud" width="160" height="80">
+</a>
 
-> <a href="https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai">
->   <img src="docs/image/sponsor/huoshan.png" alt="火山引擎 CodingPlan" width="160" height="80">
-> </a>
->
-> [火山引擎 CodingPlan 开发者计划](https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai) <br>
-> 火山引擎是字节跳动旗下的云与 AI 服务平台，火山方舟提供豆包大模型、DeepSeek 等多种模型的 API 接入，为开发者提供一站式 AI 开发与推理服务。<br>
+[访问Atlas Cloud官网](https://www.atlascloud.ai?ref=89F97E) · [编程计划优惠](https://www.atlascloud.ai/console/coding-plan)
+全模态 AI 推理平台，为开发者提供统一的 AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问 **300+ 精选模型**。
+
+<a href="https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai">
+  <img src="docs/image/sponsor/huoshan.png" alt="火山引擎 CodingPlan" width="160" height="80">
+</a>
+
+[火山引擎 CodingPlan 开发者计划](https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai)
+火山引擎是字节跳动旗下的云与 AI 服务平台，火山方舟提供豆包大模型、DeepSeek 等多种模型的 API 接入，为开发者提供一站式 AI 开发与推理服务。
 
 
 ## 💬 社区交流
