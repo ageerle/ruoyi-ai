@@ -32,7 +32,7 @@ class MinimaxServiceImplTest {
         ChatModelVo modelVo = new ChatModelVo();
         modelVo.setApiHost("https://api.minimax.io/v1");
         modelVo.setApiKey("test-api-key");
-        modelVo.setModelName("MiniMax-M2.7");
+        modelVo.setModelName("MiniMax-M3");
 
         ChatRequest request = new ChatRequest();
         request.setEnableThinking(false);
@@ -46,7 +46,7 @@ class MinimaxServiceImplTest {
         ChatModelVo modelVo = new ChatModelVo();
         modelVo.setApiHost("https://api.minimax.io/v1");
         modelVo.setApiKey("test-api-key");
-        modelVo.setModelName("MiniMax-M2.5");
+        modelVo.setModelName("MiniMax-M2.7");
 
         ChatRequest request = new ChatRequest();
         request.setEnableThinking(true);
@@ -60,7 +60,7 @@ class MinimaxServiceImplTest {
         ChatModelVo modelVo = new ChatModelVo();
         modelVo.setApiHost("https://api.minimax.io/v1");
         modelVo.setApiKey("test-api-key");
-        modelVo.setModelName("MiniMax-M2.5-highspeed");
+        modelVo.setModelName("MiniMax-M2.7-highspeed");
 
         ChatRequest request = new ChatRequest();
         request.setEnableThinking(false);
