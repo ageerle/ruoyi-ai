@@ -3,6 +3,8 @@ package org.ruoyi.service.chat.impl.provider;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ChatModeType;
@@ -27,29 +29,22 @@ class MinimaxServiceImplTest {
         assertEquals(ChatModeType.MINIMAX.getCode(), minimaxService.getProviderName());
     }
 
-    @Test
-    void buildStreamingChatModel_returnsNonNull() {
+    @ParameterizedTest
+    @CsvSource({
+        "https://api.minimax.io/v1, MiniMax-M3, false",
+        "https://api.minimax.io/v1, MiniMax-M2.7, true",
+        "https://api.minimaxi.com/v1, MiniMax-M3, true",
+        "https://api.minimaxi.com/v1, MiniMax-M2.7, true"
+    })
+    void buildStreamingChatModel_supportsCurrentModelsAndRegionalEndpoints(
+        String apiHost, String modelName, boolean enableThinking) {
         ChatModelVo modelVo = new ChatModelVo();
-        modelVo.setApiHost("https://api.minimax.io/v1");
+        modelVo.setApiHost(apiHost);
         modelVo.setApiKey("test-api-key");
-        modelVo.setModelName("MiniMax-M3");
+        modelVo.setModelName(modelName);
 
         ChatRequest request = new ChatRequest();
-        request.setEnableThinking(false);
-
-        StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model);
-    }
-
-    @Test
-    void buildStreamingChatModel_withThinkingEnabled() {
-        ChatModelVo modelVo = new ChatModelVo();
-        modelVo.setApiHost("https://api.minimax.io/v1");
-        modelVo.setApiKey("test-api-key");
-        modelVo.setModelName("MiniMax-M3");
-
-        ChatRequest request = new ChatRequest();
-        request.setEnableThinking(true);
+        request.setEnableThinking(enableThinking);
 
         StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
         assertNotNull(model);

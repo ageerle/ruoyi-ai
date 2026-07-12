@@ -13,10 +13,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * MiniMax服务调用
+ * MiniMax chat service.
  * <p>
- * MiniMax提供OpenAI兼容的API接口，支持MiniMax-M3等模型。
- * API地址：https://api.minimax.io/v1
+ * Uses MiniMax's OpenAI-compatible API with MiniMax-M3 and MiniMax-M2.7.
+ * Global API: https://api.minimax.io/v1
+ * China API: https://api.minimaxi.com/v1
  *
  * @author octopus
  * @date 2026/3/21

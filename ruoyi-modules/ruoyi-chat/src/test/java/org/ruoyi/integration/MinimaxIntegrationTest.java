@@ -2,8 +2,9 @@ package org.ruoyi.integration;
 
 import dev.langchain4j.model.chat.StreamingChatModel;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.service.chat.impl.provider.MinimaxServiceImpl;
@@ -26,17 +27,21 @@ class MinimaxIntegrationTest {
         apiKey = System.getenv("MINIMAX_API_KEY");
     }
 
-    @Test
-    void buildStreamingChatModel_withRealApiKey_M3() {
+    @ParameterizedTest
+    @CsvSource({
+        "MiniMax-M3, false",
+        "MiniMax-M2.7, true"
+    })
+    void buildStreamingChatModel_withCurrentModel(String modelName, boolean enableThinking) {
         ChatModelVo modelVo = new ChatModelVo();
         modelVo.setApiHost("https://api.minimax.io/v1");
         modelVo.setApiKey(apiKey);
-        modelVo.setModelName("MiniMax-M3");
+        modelVo.setModelName(modelName);
 
         ChatRequest request = new ChatRequest();
-        request.setEnableThinking(false);
+        request.setEnableThinking(enableThinking);
 
         StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model, "Should create streaming model with MiniMax-M3");
+        assertNotNull(model, "Should create streaming model with " + modelName);
     }
 }
