@@ -45,6 +45,7 @@
 | 🔧 后端服务  | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
 | 🎨 用户前端  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
 | 🛠️ 管理后台 | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
+| 🎬 短剧服务 | [ruoyi-drama](https://github.com/ageerle/ruoyi-drama) | [ruoyi-drama](https://gitee.com/ageerle/ruoyi-drama) | |
 
 ### 合作项目
 | 项目名称           | GitHub 仓库                                             | Gitee 仓库                                             
