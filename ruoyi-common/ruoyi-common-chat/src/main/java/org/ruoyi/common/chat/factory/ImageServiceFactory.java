@@ -37,6 +37,9 @@ public class ImageServiceFactory implements ApplicationContextAware {
      */
     public IImageGenerationService getOriginalService(String category) {
         IImageGenerationService service = imageSerivceMap.get(category);
+        if (service == null && "custom_api".equals(category)) {
+            service = imageSerivceMap.get("openai");
+        }
         if (service == null) {
             throw new IllegalArgumentException("不支持的模型类别: " + category);
         }

@@ -21,8 +21,18 @@ import java.util.List;
 @Data
 public class ChatRequest {
 
-    @NotEmpty(message = "传入的模型不能为空")
+    /**
+     * 模型名称。
+     * 智能体模式下可缺省：传 agentId 时后端按智能体绑定的模型解析，此字段仅作回退。
+     */
     private String model;
+
+    /**
+     * 智能体ID。传入时后端按智能体配置解析模型/工具/技能/知识库/提示词/是否深度思考。
+     */
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JSONField(serializeUsing = String.class)
+    private Long agentId;
 
     /**
      * 对话消息
@@ -34,16 +44,6 @@ public class ChatRequest {
      * 工作流请求体
      */
     private WorkFlowRunner workFlowRunner;
-
-    /**
-     * 人机交互信息体
-     */
-    private ReSumeRunner reSumeRunner;
-
-    /**
-     * 是否为人机交互用户继续输入
-     */
-    private Boolean isResume = false;
 
     /**
      * 是否启用工作流

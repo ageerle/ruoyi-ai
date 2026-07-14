@@ -18,6 +18,8 @@ public enum ChatModeType {
     ATLAS("atlas", "Atlas Cloud"),
     CUSTOM_API("custom_api", "自定义API"),
     MINIMAX("minimax", "MiniMax"),
+    DIFY("dify", "Dify"),
+    COZE("coze", "Coze"),
     XIAOMI("xiaomi", "小米MiMo");
     private final String code;
     private final String description;

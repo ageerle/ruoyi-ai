@@ -9,6 +9,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.enums.ModelType;
 import org.springframework.web.bind.annotation.*;
@@ -54,7 +55,9 @@ public class ChatModelController extends BaseController {
      */
     @GetMapping("/modelList")
     public R<List<ChatModelVo>> modelList(ChatModelBo bo) {
-        bo.setCategory(ModelType.CHAT.getKey());
+        if (StringUtils.isBlank(bo.getCategory())) {
+            bo.setCategory(ModelType.CHAT.getKey());
+        }
         return R.ok(chatModelService.queryList(bo));
     }
 

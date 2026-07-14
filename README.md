@@ -29,13 +29,13 @@
 
 ## ✨ 核心亮点
 
-|     模块     | 现有能力 
-|:----------:|---
-|  **模型管理**  | 多模型接入(OpenAI/DeepSeek/通义/智谱/MiniMax)、多模态理解、Coze/DIFY/FastGPT平台集成
-|  **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate/Qdrant)  + 文档解析
-|  **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             
-|  **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
-|  **多智能体**  | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型          
+|    模块     | 现有能力 
+|:---------:|---
+| **模型管理**  | 多模型接入(DeepSeek/智谱/MIMO/百炼/OpenAI)、多模态理解、Coze/DIFY/FastGPT/RAGFlow平台集成
+| **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate/Qdrant)  + 文档解析
+| **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             
+| **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
+| **智能体管理** | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型,可以灵活搭配工具,skills          
 
 
 ### 项目源码
