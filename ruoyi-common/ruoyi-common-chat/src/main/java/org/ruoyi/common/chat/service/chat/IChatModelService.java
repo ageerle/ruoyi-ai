@@ -73,4 +73,13 @@ public interface IChatModelService {
      * @return 是否删除成功
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
+
+    /**
+     * 按厂商批量更新密钥
+     *
+     * @param providerCode 厂商编码
+     * @param apiKey       密钥
+     * @return 是否更新成功
+     */
+    Boolean updateApiKeyByProvider(String providerCode, String apiKey);
 }

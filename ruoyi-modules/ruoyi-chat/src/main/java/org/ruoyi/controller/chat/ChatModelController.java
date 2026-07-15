@@ -8,6 +8,7 @@ import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
+import org.ruoyi.common.chat.domain.bo.chat.ModelBatchKeyBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.enums.ChatModeType;
@@ -119,6 +120,17 @@ public class ChatModelController extends BaseController {
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody ChatModelBo bo) {
         return toAjax(chatModelService.updateByBo(bo));
+    }
+
+    /**
+     * 按厂商批量更新密钥
+     */
+    @SaCheckPermission("system:model:edit")
+    @Log(title = "模型管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @PutMapping("/batchKeyByProvider")
+    public R<Void> batchKeyByProvider(@Validated @RequestBody ModelBatchKeyBo bo) {
+        return toAjax(chatModelService.updateApiKeyByProvider(bo.getProviderCode(), bo.getApiKey()));
     }
 
     /**
