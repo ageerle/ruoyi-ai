@@ -10,6 +10,7 @@ import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -148,5 +149,20 @@ public class ChatModelServiceImpl implements IChatModelService {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteByIds(ids) > 0;
+    }
+
+    /**
+     * 按厂商批量更新密钥
+     *
+     * @param providerCode 厂商编码
+     * @param apiKey       密钥
+     * @return 是否更新成功
+     */
+    @Override
+    public Boolean updateApiKeyByProvider(String providerCode, String apiKey) {
+        LambdaUpdateWrapper<ChatModel> uw = Wrappers.lambdaUpdate();
+        uw.set(ChatModel::getApiKey, apiKey)
+            .eq(ChatModel::getProviderCode, providerCode);
+        return baseMapper.update(null, uw) > 0;
     }
 }

@@ -313,3 +313,37 @@ vector-store:
     collectionname: LocalKnowledge
     api-key:
     use-tls: false
+
+# 短剧成片合成
+short-drama:
+  composition:
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    ffprobe-path: ${FFPROBE_PATH:ffprobe}
+    fps: ${SHORT_DRAMA_COMPOSITION_FPS:30}
+    audio-sample-rate: ${SHORT_DRAMA_COMPOSITION_AUDIO_SAMPLE_RATE:48000}
+    video-codec: ${SHORT_DRAMA_COMPOSITION_VIDEO_CODEC:libx264}
+    audio-codec: ${SHORT_DRAMA_COMPOSITION_AUDIO_CODEC:aac}
+    preset: ${SHORT_DRAMA_COMPOSITION_PRESET:medium}
+    crf: ${SHORT_DRAMA_COMPOSITION_CRF:20}
+    audio-bitrate: ${SHORT_DRAMA_COMPOSITION_AUDIO_BITRATE:192k}
+    max-clips: ${SHORT_DRAMA_COMPOSITION_MAX_CLIPS:100}
+    max-transition-seconds: ${SHORT_DRAMA_COMPOSITION_MAX_TRANSITION_SECONDS:2.0}
+    minimum-output-bytes: ${SHORT_DRAMA_COMPOSITION_MINIMUM_OUTPUT_BYTES:1024}
+    max-process-output-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_PROCESS_OUTPUT_BYTES:1048576}
+    max-source-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_SOURCE_BYTES:536870912}
+    max-total-source-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_TOTAL_SOURCE_BYTES:2147483648}
+    probe-timeout: ${SHORT_DRAMA_COMPOSITION_PROBE_TIMEOUT:30s}
+    process-timeout: ${SHORT_DRAMA_COMPOSITION_PROCESS_TIMEOUT:30m}
+    job-stale-after: ${SHORT_DRAMA_COMPOSITION_JOB_STALE_AFTER:45m}
+    worker-core-size: ${SHORT_DRAMA_COMPOSITION_WORKER_CORE_SIZE:1}
+    worker-max-size: ${SHORT_DRAMA_COMPOSITION_WORKER_MAX_SIZE:2}
+    worker-queue-capacity: ${SHORT_DRAMA_COMPOSITION_WORKER_QUEUE_CAPACITY:8}
+    storage-mode: ${SHORT_DRAMA_COMPOSITION_STORAGE_MODE:local}
+    local-output-directory: ${SHORT_DRAMA_COMPOSITION_LOCAL_OUTPUT_DIRECTORY:logs/short-drama-compositions}
+    download:
+      connect-timeout: ${SHORT_DRAMA_DOWNLOAD_CONNECT_TIMEOUT:30s}
+      call-timeout: ${SHORT_DRAMA_DOWNLOAD_CALL_TIMEOUT:10m}
+      max-redirects: ${SHORT_DRAMA_DOWNLOAD_MAX_REDIRECTS:5}
+      # 生产环境建议配置为视频供应商或 OSS/CDN 域名，多个值用逗号分隔。
+      allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_ALLOWED_HOSTS:}
+      fake-ip-allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_FAKE_IP_ALLOWED_HOSTS:atlas-media.oss-us-west-1.aliyuncs.com}

@@ -265,10 +265,6 @@ public class WorkflowEngine {
                 String node = streamingOutput.node();
                 String chunk = streamingOutput.chunk();
                 log.info("node:{},chunk:{}", node, chunk);
-                Map<String, String> strMap = new HashMap<>();
-                strMap.put("ck", chunk);
-//                SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", strMap.toString());
-
                 SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", chunk);
             } else {
                 AbstractWfNode abstractWfNode = wfState.getCompletedNodes().stream()

@@ -1,8 +1,11 @@
 package org.ruoyi.common.core.service;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.ruoyi.common.core.domain.dto.OssDTO;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -33,5 +36,19 @@ public interface OssService {
      */
     OssDTO uploadFile(MultipartFile file);
 
+    /**
+     * Upload a server-side file without buffering the complete payload in memory.
+     */
+    OssDTO uploadFile(File file);
+
+    /**
+     * Stream an object as an authenticated attachment response.
+     */
+    void downloadFile(Long ossId, HttpServletResponse response) throws IOException;
+
+    /**
+     * Delete one object and its sys_oss metadata.
+     */
+    Boolean deleteFile(Long ossId);
 
 }

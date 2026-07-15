@@ -13,6 +13,7 @@ import org.ruoyi.observability.MyChatModelListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 
 
@@ -33,6 +34,7 @@ public class OpenAIServiceImpl implements AbstractChatService {
                 .baseUrl(chatModelVo.getApiHost())
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
+                .timeout(Duration.ofMinutes(30))
                 .listeners(List.of(new MyChatModelListener()))
                 .returnThinking(chatRequest.getEnableThinking())
                 .build();
