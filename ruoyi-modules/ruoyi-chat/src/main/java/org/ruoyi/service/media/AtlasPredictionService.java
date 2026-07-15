@@ -36,6 +36,17 @@ public class AtlasPredictionService {
         try (Response response = okHttpClient.newCall(request).execute()) {
             ResponseBody body = response.body();
             String responseText = body == null ? "" : body.string();
+            // 404: 预测任务已过期或不存在（常见于更换 API Key 后残留的旧任务），按失败处理，
+            // 避免前端轮询反复触发异常提示。其余非 2xx 仍按异常抛出。
+            if (response.code() == 404) {
+                log.warn("Atlas Cloud 预测任务不存在或已过期: predictionId={}, category={}", predictionId, model.getCategory());
+                return MediaGenerationResponse.builder()
+                    .type(mediaType(model.getCategory()))
+                    .mimeType("image".equals(model.getCategory()) ? "image/png" : "video/mp4")
+                    .status("failed")
+                    .rawResponse(responseText)
+                    .build();
+            }
             if (!response.isSuccessful()) {
                 throw new IllegalArgumentException("Atlas Cloud生成结果查询失败: " + response.code() + " - " + responseText);
             }
