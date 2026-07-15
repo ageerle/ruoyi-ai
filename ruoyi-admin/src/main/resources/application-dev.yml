@@ -27,12 +27,12 @@ snail-job:
   enabled: false
   # 需要在 SnailJob 后台组管理创建对应名称的组,然后创建任务的时候选择对应的组,才能正确分派任务
   group: "ruoyi_group"
-  # SnailJob 接入验证令牌 详见 script/sql/ry_job.sql `sj_group_config` 表
+  # SnailJob 接入验证令牌 详见 docs/script/sql/ruoyi-ai-v3_mysql8.sql `sj_group_config` 表
   token: "SJ_cKqBTPzCsWA3VyuCfFoccmuIEGXjr5KT"
   server:
     host: 127.0.0.1
     port: 17888
-  # 命名空间UUID 详见 script/sql/ry_job.sql `sj_namespace`表`unique_id`字段
+  # 命名空间UUID 详见 docs/script/sql/ruoyi-ai-v3_mysql8.sql `sj_namespace`表`unique_id`字段
   namespace: ${spring.profiles.active}
   # 随主应用端口漂移
   port: 2${server.port}
