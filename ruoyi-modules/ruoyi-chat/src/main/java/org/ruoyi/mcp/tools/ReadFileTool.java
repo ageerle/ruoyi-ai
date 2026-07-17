@@ -86,6 +86,7 @@ public class ReadFileTool implements BuiltinToolProvider {
             // 推送读取开始事件（前端展示为正在读取）
             String relativePath = getRelativePath(path);
             if (channel != null) {
+                channel.send(CodingSseEvent.thinking("正在读取文件：" + filePath));
                 channel.send(CodingSseEvent.of("edit-start", filePath, null, null, "running"));
             }
 

@@ -7,6 +7,7 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.domain.bo.coding.CodingRequestBo;
+import org.ruoyi.enums.ModelType;
 import org.ruoyi.service.coding.CodingWorkspaceService;
 import org.ruoyi.service.coding.ICodingService;
 import org.springframework.http.MediaType;
@@ -62,8 +63,10 @@ public class CodingController {
 
     @GetMapping("/models")
     public R<List<ModelOption>> models() {
-        List<ModelOption> models = chatModelService.queryList(new ChatModelBo()).stream()
-            .filter(model -> "1".equals(model.getModelShow()))
+        // 编程对话只能用聊天模型，按 category=chat 过滤
+        ChatModelBo bo = new ChatModelBo();
+        bo.setCategory(ModelType.CHAT.getKey());
+        List<ModelOption> models = chatModelService.queryList(bo).stream()
             .map(model -> new ModelOption(model.getId(), model.getModelName(), model.getProviderCode()))
             .toList();
         return R.ok(models);

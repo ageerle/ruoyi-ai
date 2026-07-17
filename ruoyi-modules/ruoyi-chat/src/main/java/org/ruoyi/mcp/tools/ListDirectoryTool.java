@@ -90,6 +90,7 @@ public class ListDirectoryTool implements BuiltinToolProvider {
 
             // 推送列目录开始事件
             if (channel != null) {
+                channel.send(CodingSseEvent.thinking("正在扫描目录结构：" + getRelativePath(dirPath)));
                 channel.send(CodingSseEvent.of("list-progress", null, null,
                     "扫描 " + getRelativePath(dirPath), "running"));
             }

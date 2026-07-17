@@ -75,6 +75,7 @@ public class WriteFileTool implements BuiltinToolProvider {
             }
 
             if (channel != null) {
+                channel.send(CodingSseEvent.thinking("正在新建/写入文件：" + filePath));
                 channel.send(CodingSseEvent.of("add-start", filePath, null, null, "running"));
             }
 

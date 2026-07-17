@@ -87,6 +87,7 @@ public class EditFileTool implements BuiltinToolProvider {
             // 推送编辑开始事件
             String relativePath = getRelativePath(path);
             if (channel != null) {
+                channel.send(CodingSseEvent.thinking("正在编辑文件：" + filePath));
                 channel.send(CodingSseEvent.of("edit-start", filePath, null, null, "running"));
             }
 

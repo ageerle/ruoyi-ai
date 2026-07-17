@@ -77,6 +77,7 @@ public class DeleteFileTool implements BuiltinToolProvider {
             }
 
             if (channel != null) {
+                channel.send(CodingSseEvent.thinking("正在删除：" + filePath));
                 channel.send(CodingSseEvent.of("delete-start", filePath, null, null, "running"));
             }
 

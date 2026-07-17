@@ -113,6 +113,7 @@ public class ExecuteCommandTool implements BuiltinToolProvider {
         cmdList.set(0, resolvedCmd);
 
         if (channel != null) {
+            channel.send(CodingSseEvent.thinking("正在执行命令：" + command));
             channel.send(CodingSseEvent.of("cmd", null, command, null, "running"));
         }
 

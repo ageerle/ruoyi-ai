@@ -48,6 +48,8 @@
 | 🎨 User Frontend  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
 | 🛠️ Admin Panel | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
 | 🎬 Drama | [ruoyi-drama](https://github.com/ageerle/ruoyi-drama) | [ruoyi-drama](https://gitee.com/ageerle/ruoyi-drama) | |
+| 🤖 Copilot | [ruoyi-copilot](https://github.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitee.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitcode.com/ageerle/ruoyi-copilot) |
+| 📱 Mini-App | [ruoyi-uniapp](https://github.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitee.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitcode.com/ageerle/ruoyi-uniapp) |
 
 ### Partner Projects
 | Project Name           | GitHub Repository                                             | Gitee Repository |
