@@ -43,4 +43,7 @@ public class ShortDramaCharacterAppearance extends BaseEntity {
 
     /** 上一轮提示词列表（撤销用，JSON数组） */
     private String previousDescriptions;
+
+    /** 音色名（如 zh_male_taocheng_uranus_bigtts），用于该形象的对白配音 */
+    private String voice;
 }

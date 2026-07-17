@@ -24,6 +24,14 @@
             <artifactId>ruoyi-common-sse</artifactId>
         </dependency>
 
+        <!-- WebSocket 基础模块：提供 spring-websocket 依赖，用于小程序对话 WS 端点 /chat/ws。
+             注意：common-websocket 自带的 PlusWebSocketHandler/WebSocketConfig 受 websocket.enabled 控制，
+             当前 enabled=false 不激活，与本模块独立注册的 /chat/ws 互不干扰。 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-websocket</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-sensitive</artifactId>

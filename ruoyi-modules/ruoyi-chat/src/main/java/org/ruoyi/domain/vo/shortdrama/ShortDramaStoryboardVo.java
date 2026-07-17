@@ -57,6 +57,8 @@ public class ShortDramaStoryboardVo implements Serializable {
 
     private String videoStatus;
 
+    private String lastFrameUrl;
+
     private Date createTime;
 
     private Date updateTime;

@@ -2,6 +2,9 @@ package org.ruoyi.mcp.tools;
 
 import dev.langchain4j.agent.tool.Tool;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
+import org.ruoyi.service.coding.CodingEventChannel;
+import org.ruoyi.service.coding.CodingSseEvent;
+import org.ruoyi.service.coding.WorkspaceGuard;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -22,10 +25,26 @@ public class ReadFileTool implements BuiltinToolProvider {
         "Returns the complete file content as a string.";
 
     private final String rootDirectory;
+    /** 读取内容截断上限，避免大文件撑爆 LLM 上下文（32KB） */
+    private static final int MAX_BYTES = 32 * 1024;
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(getClass());
+    /** 编程能力 SSE 事件通道，可为 null（兼容 BuiltinToolRegistry 无参构造的老调用方） */
+    private final CodingEventChannel channel;
 
     public ReadFileTool() {
         this.rootDirectory = Paths.get(System.getProperty("user.dir"), "workspace").toString();
+        this.channel = null;
+    }
+
+    /**
+     * 编程能力专用构造：注入会话工作目录与事件通道。
+     *
+     * @param root    工作目录根（绝对路径）
+     * @param channel SSE 事件通道，工具执行前后推送 read 进度
+     */
+    public ReadFileTool(Path root, CodingEventChannel channel) {
+        this.rootDirectory = root.toAbsolutePath().normalize().toString();
+        this.channel = channel;
     }
 
     /**
@@ -50,7 +69,7 @@ public class ReadFileTool implements BuiltinToolProvider {
             }
 
             // 验证是否在工作目录内
-            if (!isWithinWorkspace(path)) {
+            if (!WorkspaceGuard.isWithinWorkspace(Paths.get(rootDirectory), path)) {
                 return "Error: File path must be within the workspace directory (" + rootDirectory + "): " + filePath;
             }
 
@@ -64,16 +83,31 @@ public class ReadFileTool implements BuiltinToolProvider {
                 return "Error: Path is a directory, not a file: " + filePath;
             }
 
-            // 读取文件内容
-            String content = Files.readString(path, StandardCharsets.UTF_8);
-
-            // 获取相对路径
+            // 推送读取开始事件（前端展示为正在读取）
             String relativePath = getRelativePath(path);
+            if (channel != null) {
+                channel.send(CodingSseEvent.of("edit-start", filePath, null, null, "running"));
+            }
+
+            // 读取文件内容（截断超大文件，避免撑爆上下文）
+            String content = Files.readString(path, StandardCharsets.UTF_8);
+            boolean truncated = false;
+            byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+            if (bytes.length > MAX_BYTES) {
+                content = new String(bytes, 0, MAX_BYTES, StandardCharsets.UTF_8);
+                truncated = true;
+            }
+
             long sizeBytes = content.getBytes(StandardCharsets.UTF_8).length;
             long lineCount = content.lines().count();
+            String header = String.format("File: %s (%d lines, %d bytes)%s\n\n",
+                relativePath, lineCount, sizeBytes, truncated ? " [truncated]" : "");
 
-            return String.format("File: %s (%d lines, %d bytes)\n\n%s",
-                relativePath, lineCount, sizeBytes, content);
+            if (channel != null) {
+                channel.send(CodingSseEvent.of("edit-end", filePath, null, null, "done"));
+            }
+
+            return header + content;
 
         } catch (IOException e) {
             logger.error("Error reading file: {}", filePath, e);
@@ -85,14 +119,7 @@ public class ReadFileTool implements BuiltinToolProvider {
     }
 
     private boolean isWithinWorkspace(Path filePath) {
-        try {
-            Path workspaceRoot = Paths.get(rootDirectory).toRealPath();
-            Path normalizedPath = filePath.normalize();
-            return normalizedPath.startsWith(workspaceRoot.normalize());
-        } catch (IOException e) {
-            logger.warn("Could not resolve workspace path", e);
-            return false;
-        }
+        return WorkspaceGuard.isWithinWorkspace(Paths.get(rootDirectory), filePath);
     }
 
     private String getRelativePath(Path filePath) {

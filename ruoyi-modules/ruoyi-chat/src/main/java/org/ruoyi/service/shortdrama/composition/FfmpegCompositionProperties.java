@@ -36,6 +36,17 @@ public class FfmpegCompositionProperties {
     private String storageMode = "local";
     private String localOutputDirectory = "logs/short-drama-compositions";
 
+    /** 成片是否默认加水印（前端开关未传时使用该默认值） */
+    private boolean watermarkEnabled = true;
+    /** 水印文字 */
+    private String watermarkText = "视频由ruoyi-drama生成";
+    /** 水印字体大小 */
+    private int watermarkFontSize = 28;
+    /** 水印透明度 0.0-1.0 */
+    private double watermarkAlpha = 0.6;
+    /** 水印字体文件路径（为空则用系统默认字体） */
+    private String watermarkFontFile;
+
     public BigDecimal normalizeTransitionDuration(TransitionType type, BigDecimal requested) {
         if (type == null || type == TransitionType.NONE) {
             return BigDecimal.ZERO;

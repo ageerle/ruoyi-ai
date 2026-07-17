@@ -25,4 +25,7 @@ public class MediaGenerationResponse {
     private String status;
 
     private String rawResponse;
+
+    /** 末帧图片 URL（Atlas return_last_frame=true 时返回，用于下一镜首帧承接） */
+    private String lastFrameUrl;
 }

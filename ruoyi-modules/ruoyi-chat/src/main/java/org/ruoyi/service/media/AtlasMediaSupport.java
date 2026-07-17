@@ -35,4 +35,12 @@ public final class AtlasMediaSupport {
         JsonNode value = node == null ? null : node.get(field);
         return value == null || value.isNull() ? null : value.asText();
     }
+
+    /**
+     * 截断超长文本，用于日志输出原始响应时防止刷屏。
+     */
+    public static String truncate(String text, int max) {
+        if (text == null) return null;
+        return text.length() <= max ? text : text.substring(0, max) + "...(truncated " + (text.length() - max) + " chars)";
+    }
 }

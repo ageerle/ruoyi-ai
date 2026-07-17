@@ -2,6 +2,9 @@ package org.ruoyi.mcp.tools;
 
 import dev.langchain4j.agent.tool.Tool;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
+import org.ruoyi.service.coding.CodingEventChannel;
+import org.ruoyi.service.coding.CodingSseEvent;
+import org.ruoyi.service.coding.WorkspaceGuard;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -10,8 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * 编辑文件工具
@@ -20,16 +21,26 @@ import java.util.List;
 @Component
 public class EditFileTool implements BuiltinToolProvider {
 
-    public static final String DESCRIPTION = "Edits a file by applying a diff. " +
-        "Use this tool when you need to make specific changes to a file. " +
-        "The tool will show the diff before applying changes. " +
+    public static final String DESCRIPTION = "Edits an existing file by replacing its full content. " +
+        "ALWAYS read the file first with read_file, then provide the COMPLETE new content here. " +
         "Use absolute paths within the workspace directory.";
 
     private final String rootDirectory;
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(getClass());
+    /** 编程能力 SSE 事件通道，可为 null（兼容无参构造的老调用方） */
+    private final CodingEventChannel channel;
 
     public EditFileTool() {
         this.rootDirectory = Paths.get(System.getProperty("user.dir"), "workspace").toString();
+        this.channel = null;
+    }
+
+    /**
+     * 编程能力专用构造：注入会话工作目录与事件通道。
+     */
+    public EditFileTool(Path root, CodingEventChannel channel) {
+        this.rootDirectory = root.toAbsolutePath().normalize().toString();
+        this.channel = channel;
     }
 
     /**
@@ -59,7 +70,7 @@ public class EditFileTool implements BuiltinToolProvider {
             }
 
             // 验证是否在工作目录内
-            if (!isWithinWorkspace(path)) {
+            if (!WorkspaceGuard.isWithinWorkspace(Paths.get(rootDirectory), path)) {
                 return "Error: File path must be within the workspace directory (" + rootDirectory + "): " + filePath;
             }
 
@@ -73,30 +84,31 @@ public class EditFileTool implements BuiltinToolProvider {
                 return "Error: Path is a directory, not a file: " + filePath;
             }
 
-            // 读取原始内容
-            String originalContent = Files.readString(path, StandardCharsets.UTF_8);
-            List<String> originalLines = Arrays.asList(originalContent.split("\n"));
+            // 推送编辑开始事件
+            String relativePath = getRelativePath(path);
+            if (channel != null) {
+                channel.send(CodingSseEvent.of("edit-start", filePath, null, null, "running"));
+            }
 
-            // 应用diff
+            // 应用diff（简化：整体替换为新内容）
             try {
-                // 这里简化处理，直接用新内容替换
-                // 在实际应用中，可能需要更复杂的diff解析
-                String newContent = applyDiff(originalContent, diff);
+                String newContent = applyDiff(null, diff);
 
-                // 写入文件
                 Files.writeString(path, newContent, StandardCharsets.UTF_8,
                     StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
 
-                String relativePath = getRelativePath(path);
+                if (channel != null) {
+                    channel.send(CodingSseEvent.of("edit-end", filePath, null, null, "done"));
+                }
                 return String.format("Successfully edited file: %s", relativePath);
 
             } catch (Exception e) {
+                if (channel != null) {
+                    channel.send(CodingSseEvent.of("edit-end", filePath, null, "Error: " + e.getMessage(), "done"));
+                }
                 return "Error: Failed to apply diff: " + e.getMessage();
             }
 
-        } catch (IOException e) {
-            logger.error("Error editing file: {}", filePath, e);
-            return "Error: " + e.getMessage();
         } catch (Exception e) {
             logger.error("Unexpected error editing file: {}", filePath, e);
             return "Error: Unexpected error: " + e.getMessage();
@@ -115,14 +127,7 @@ public class EditFileTool implements BuiltinToolProvider {
     }
 
     private boolean isWithinWorkspace(Path filePath) {
-        try {
-            Path workspaceRoot = Paths.get(rootDirectory).toRealPath();
-            Path normalizedPath = filePath.normalize();
-            return normalizedPath.startsWith(workspaceRoot.normalize());
-        } catch (IOException e) {
-            logger.warn("Could not resolve workspace path", e);
-            return false;
-        }
+        return WorkspaceGuard.isWithinWorkspace(Paths.get(rootDirectory), filePath);
     }
 
     private String getRelativePath(Path filePath) {

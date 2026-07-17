@@ -1,5 +1,6 @@
 package org.ruoyi.service.shortdrama.composition;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
@@ -7,7 +8,9 @@ public record CompositionSpec(
     List<CompositionSource> sources,
     TransitionType transitionType,
     double transitionDurationSeconds,
-    AspectRatio aspectRatio
+    AspectRatio aspectRatio,
+    Path narrationAudioPath,
+    boolean watermark
 ) {
 
     public CompositionSpec {

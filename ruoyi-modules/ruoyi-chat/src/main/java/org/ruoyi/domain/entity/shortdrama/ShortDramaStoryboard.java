@@ -58,4 +58,7 @@ public class ShortDramaStoryboard extends BaseEntity {
     private String videoId;
 
     private String videoStatus;
+
+    /** 上一镜末帧URL（同场景连续镜头首帧承接用） */
+    private String lastFrameUrl;
 }

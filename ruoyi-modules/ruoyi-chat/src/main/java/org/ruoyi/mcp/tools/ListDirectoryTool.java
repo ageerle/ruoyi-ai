@@ -2,6 +2,9 @@ package org.ruoyi.mcp.tools;
 
 import dev.langchain4j.agent.tool.Tool;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
+import org.ruoyi.service.coding.CodingEventChannel;
+import org.ruoyi.service.coding.CodingSseEvent;
+import org.ruoyi.service.coding.WorkspaceGuard;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -30,9 +33,20 @@ public class ListDirectoryTool implements BuiltinToolProvider {
 
     private final String rootDirectory;
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(getClass());
+    /** 编程能力 SSE 事件通道，可为 null（兼容无参构造的老调用方） */
+    private final CodingEventChannel channel;
 
     public ListDirectoryTool() {
         this.rootDirectory = Paths.get(System.getProperty("user.dir"), "workspace").toString();
+        this.channel = null;
+    }
+
+    /**
+     * 编程能力专用构造：注入会话工作目录与事件通道。
+     */
+    public ListDirectoryTool(Path root, CodingEventChannel channel) {
+        this.rootDirectory = root.toAbsolutePath().normalize().toString();
+        this.channel = channel;
     }
 
     /**
@@ -74,11 +88,23 @@ public class ListDirectoryTool implements BuiltinToolProvider {
                 return "Error: Path is not a directory: " + params.filePath;
             }
 
+            // 推送列目录开始事件
+            if (channel != null) {
+                channel.send(CodingSseEvent.of("list-progress", null, null,
+                    "扫描 " + getRelativePath(dirPath), "running"));
+            }
+
             // 列出文件和目录
             List<FileInfo> fileInfos = listFiles(dirPath, params);
 
             // 生成输出
-            return formatFileList(fileInfos, params);
+            String output = formatFileList(fileInfos, params);
+
+            if (channel != null) {
+                channel.send(CodingSseEvent.of("list-progress", null, null,
+                    "共 " + fileInfos.size() + " 项", "done"));
+            }
+            return output;
 
         } catch (IOException e) {
             logger.error("Error listing directory: {}", params.filePath, e);
@@ -233,14 +259,7 @@ public class ListDirectoryTool implements BuiltinToolProvider {
     }
 
     private boolean isWithinWorkspace(Path dirPath) {
-        try {
-            Path workspaceRoot = Paths.get(rootDirectory).toRealPath();
-            Path normalizedPath = dirPath.normalize();
-            return normalizedPath.startsWith(workspaceRoot.normalize());
-        } catch (IOException e) {
-            logger.warn("Could not resolve workspace path", e);
-            return false;
-        }
+        return WorkspaceGuard.isWithinWorkspace(Paths.get(rootDirectory), dirPath);
     }
 
     private String getRelativePath(Path dirPath) {

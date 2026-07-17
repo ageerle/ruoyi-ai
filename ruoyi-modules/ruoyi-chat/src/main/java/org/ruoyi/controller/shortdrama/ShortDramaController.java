@@ -14,6 +14,7 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaCharacterBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaCharacterAppearanceBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaComposeVideoBo;
+import org.ruoyi.domain.bo.shortdrama.ShortDramaAudioBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaLocationBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaProjectBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaScriptBo;
@@ -23,6 +24,7 @@ import org.ruoyi.domain.vo.shortdrama.ShortDramaCharacterVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaCharacterAppearanceVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaComposeVideoVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaDetailVo;
+import org.ruoyi.domain.vo.shortdrama.ShortDramaAudioVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaLocationVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaProjectVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaScriptVo;
@@ -338,6 +340,35 @@ public class ShortDramaController {
     @PostMapping("/location/{locationId}/undo-image")
     public R<ShortDramaLocationVo> undoLocationImage(@NotNull @PathVariable Long locationId) {
         return R.ok(shortDramaService.undoLocationImage(locationId, LoginHelper.getUserId()));
+    }
+
+    // ==================== 语音资产管理 ====================
+
+    @PostMapping("/audio")
+    public R<ShortDramaAudioVo> saveAudio(@Valid @RequestBody ShortDramaAudioBo bo) {
+        return R.ok(shortDramaService.saveAudio(bo, LoginHelper.getUserId()));
+    }
+
+    @PutMapping("/audio")
+    public R<ShortDramaAudioVo> updateAudio(@Valid @RequestBody ShortDramaAudioBo bo) {
+        return R.ok(shortDramaService.saveAudio(bo, LoginHelper.getUserId()));
+    }
+
+    @DeleteMapping("/audio/{audioId}")
+    public R<Void> deleteAudio(@NotNull @PathVariable Long audioId) {
+        shortDramaService.deleteAudio(audioId, LoginHelper.getUserId());
+        return R.ok();
+    }
+
+    @GetMapping("/audio/list")
+    public R<List<ShortDramaAudioVo>> listAudios(@NotNull @RequestParam Long projectId) {
+        return R.ok(shortDramaService.listAudios(projectId, LoginHelper.getUserId()));
+    }
+
+    @PostMapping("/audio/{audioId}/generate-speech")
+    public R<ShortDramaAudioVo> generateAudio(@NotNull @PathVariable Long audioId,
+                                               @NotBlank @RequestParam String model) {
+        return R.ok(shortDramaService.generateAudio(audioId, model, LoginHelper.getUserId()));
     }
 
     // ==================== 异步图片生成（轮询进度） ====================

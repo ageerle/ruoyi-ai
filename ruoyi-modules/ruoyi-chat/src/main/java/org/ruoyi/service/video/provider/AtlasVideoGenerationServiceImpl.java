@@ -59,6 +59,23 @@ public class AtlasVideoGenerationServiceImpl extends AbstractVideoGenerationServ
             payload.put("image_url", videoContext.getImageUrl());
         }
 
+        // 同步音频生成（环境音/动效）
+        if (videoContext.getGenerateAudio() != null) {
+            payload.put("generate_audio", videoContext.getGenerateAudio());
+        }
+        // 参考音频（对白口型对齐）
+        java.util.List<String> refAudios = videoContext.getReferenceAudios();
+        if (refAudios != null && !refAudios.isEmpty()) {
+            com.fasterxml.jackson.databind.node.ArrayNode arr = payload.putArray("reference_audios");
+            for (String url : refAudios) {
+                arr.add(url);
+            }
+        }
+        // 返回末帧（同场景连续镜头首帧承接用）
+        if (videoContext.getReturnLastFrame() != null) {
+            payload.put("return_last_frame", videoContext.getReturnLastFrame());
+        }
+
         Request request = new Request.Builder()
             .url(AtlasMediaSupport.endpoint(model.getApiHost(), "/model/generateVideo"))
             .addHeader("Authorization", "Bearer " + model.getApiKey())

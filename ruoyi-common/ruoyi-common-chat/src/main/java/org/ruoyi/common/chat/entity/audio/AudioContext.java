@@ -26,4 +26,19 @@ public class AudioContext {
     private Double speed;
 
     private String instructions;
+
+    /** Atlas seed-audio 参考资源：[{speaker, audioUrl, audioData, imageData}]，speaker 为音色名 */
+    private java.util.List<java.util.Map<String, String>> references;
+
+    /** Atlas seed-audio 采样率 */
+    private Integer sampleRate;
+
+    /** Atlas seed-audio 音调调整 (-12~12) */
+    private Integer pitchRate;
+
+    /** Atlas seed-audio 语速调整 (-50~100) */
+    private Integer speechRate;
+
+    /** Atlas seed-audio 响度调整 (-50~100) */
+    private Integer loudnessRate;
 }

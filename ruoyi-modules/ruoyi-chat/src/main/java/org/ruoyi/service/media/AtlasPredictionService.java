@@ -59,14 +59,54 @@ public class AtlasPredictionService {
     public MediaGenerationResponse toResponse(String raw, String type) throws IOException {
         JsonNode root = AtlasMediaSupport.OBJECT_MAPPER.readTree(raw);
         JsonNode data = root.path("data");
+        String status = AtlasMediaSupport.text(data, "status");
+        String lastFrameUrl = firstLastFrame(data);
+        if ("video".equals(type)) {
+            // 终态打完整原始响应（确认 Atlas 末帧字段名/结构），轮询中间态只打摘要，避免刷屏
+            if ("succeeded".equals(status) || "completed".equals(status) || "failed".equals(status)) {
+                log.info("Atlas 视频结果[{}]原始响应: {}", status, AtlasMediaSupport.truncate(raw, 2000));
+            }
+            log.info("Atlas 视频结果解析: status={}, lastFrameUrl={}", status, lastFrameUrl);
+        }
         return MediaGenerationResponse.builder()
             .type(type)
             .mimeType("image".equals(type) ? "image/png" : "video/mp4")
             .id(AtlasMediaSupport.text(data, "id"))
-            .status(AtlasMediaSupport.text(data, "status"))
+            .status(status)
             .url(firstOutput(data))
+            .lastFrameUrl(lastFrameUrl)
             .rawResponse(raw)
             .build();
+    }
+
+    /**
+     * 提取末帧 URL。Atlas return_last_frame=true 时会在 outputs 或顶层节点返回末帧图片，
+     * 字段名兼容 last_frame_url / end_frame_url / last_frame / last_frame_image。
+     */
+    private String firstLastFrame(JsonNode data) {
+        if (data == null || data.isMissingNode()) return null;
+        String[] keys = {"last_frame_url", "end_frame_url", "last_frame", "last_frame_image"};
+        for (String key : keys) {
+            String val = AtlasMediaSupport.text(data, key);
+            if (val != null) return val;
+        }
+        JsonNode outputs = data.path("outputs");
+        if (outputs.isObject()) {
+            for (String key : keys) {
+                String val = AtlasMediaSupport.text(outputs, key);
+                if (val != null) return val;
+            }
+        }
+        if (outputs.isArray() && !outputs.isEmpty()) {
+            JsonNode first = outputs.get(0);
+            if (first.isObject()) {
+                for (String key : keys) {
+                    String val = AtlasMediaSupport.text(first, key);
+                    if (val != null) return val;
+                }
+            }
+        }
+        return null;
     }
 
     private String firstOutput(JsonNode data) {

@@ -1,6 +1,7 @@
 package org.ruoyi.service.shortdrama;
 
 import org.ruoyi.common.chat.entity.media.MediaGenerationResponse;
+import org.ruoyi.domain.bo.shortdrama.ShortDramaAudioBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaCharacterBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaCharacterAppearanceBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaLocationBo;
@@ -8,6 +9,7 @@ import org.ruoyi.domain.bo.shortdrama.ShortDramaProjectBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaScriptBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaStoryboardBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaIdeaBo;
+import org.ruoyi.domain.vo.shortdrama.ShortDramaAudioVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaCharacterVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaCharacterAppearanceVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaDetailVo;
@@ -113,4 +115,15 @@ public interface IShortDramaService {
     ShortDramaLocationVo confirmLocationImage(Long locationId, String predictionId, String model, Long userId);
 
     Boolean deleteProject(Long projectId, Long userId);
+
+    // ==================== 语音资产 ====================
+
+    ShortDramaAudioVo saveAudio(ShortDramaAudioBo bo, Long userId);
+
+    Boolean deleteAudio(Long audioId, Long userId);
+
+    List<ShortDramaAudioVo> listAudios(Long projectId, Long userId);
+
+    /** 生成语音：TTS 合成音频，上传 OSS，回写 audioUrl/audioOssId */
+    ShortDramaAudioVo generateAudio(Long audioId, String audioModel, Long userId);
 }

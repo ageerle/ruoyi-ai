@@ -45,6 +45,7 @@ nbdist/
 *.xml.versionsBackup
 *.swp
 data/
+logs/
 
 !*/build/*.java
 !*/build/*.html

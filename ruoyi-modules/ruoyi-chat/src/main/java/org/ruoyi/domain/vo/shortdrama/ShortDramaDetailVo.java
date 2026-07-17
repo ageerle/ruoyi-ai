@@ -20,5 +20,7 @@ public class ShortDramaDetailVo implements Serializable {
 
     private List<ShortDramaLocationVo> locations;
 
+    private List<ShortDramaAudioVo> audios;
+
     private List<ShortDramaStoryboardVo> storyboards;
 }

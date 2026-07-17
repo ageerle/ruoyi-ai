@@ -32,6 +32,11 @@ public class FfmpegCommandBuilder {
             command.add("-i");
             command.add(source.path().toString());
         }
+        // 旁白音轨作为额外输入流（index = sources.size()）
+        if (spec.narrationAudioPath() != null) {
+            command.add("-i");
+            command.add(spec.narrationAudioPath().toString());
+        }
         command.add("-filter_complex_script");
         command.add(filterScript.toAbsolutePath().normalize().toString());
         command.add("-map");

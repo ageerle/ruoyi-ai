@@ -116,6 +116,7 @@ INSERT INTO `chat_model` VALUES (2060622000000000003, 'video', 'bytedance/seedan
 INSERT INTO `chat_model` VALUES (2060622000000000004, 'video', 'bytedance/seedance-2.0/reference-to-video', 'atlas', 'Seedance 2.0 多参考图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 20:24:44', 1, '2026-06-22 20:24:44', 'Atlas Cloud 视频模型 - Seedance 2.0 多参考图生视频，接收多张参考图+带@imageN标记的提示词生成视频', 0);
 INSERT INTO `chat_model` VALUES (2070700000000000002, 'chat', 'dify-chat', 'dify', 'Dify Chat App', NULL, 'Y', 'https://api.dify.ai/v1', '替换为你的DIFY_APP_API_KEY', 103, 1, '2026-07-14 11:03:44', 1, '2026-07-14 11:03:44', 'Dify 聊天应用；api_key 为 Dify App API Key，model_name 可按应用名修改', 0);
 INSERT INTO `chat_model` VALUES (2070700000000000004, 'chat', '替换为你的COZE_BOT_ID', 'coze', 'Coze Bot', NULL, 'Y', 'https://api.coze.cn', '替换为你的COZE_PAT', 103, 1, '2026-07-14 11:03:38', 1, '2026-07-14 11:03:38', 'Coze 聊天 Bot；model_name 为 Coze Bot ID，api_key 为 PAT 或 OAuth access token', 0);
+INSERT INTO `chat_model` VALUES (2070700000000000010, 'audio', 'bytedance/seed-audio-1.0', 'atlas', 'Seed Audio 1.0 语音生成（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-07-16 18:00:00', 1, '2026-07-16 18:00:00', 'Atlas Cloud 语音模型 - 支持多角色对白配音，references 指定 speaker 音色，text 中用 @audioN 引用', 0);
 
 -- ----------------------------
 -- Table structure for chat_provider
@@ -1361,6 +1362,7 @@ CREATE TABLE `short_drama_character_appearance`  (
                                                      `selected_image_index` int NULL DEFAULT 0 COMMENT '当前选中的图片索引',
                                                      `previous_image_urls` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '上一轮图片URL列表（撤销用，JSON数组）',
                                                      `previous_descriptions` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '上一轮提示词列表（撤销用，JSON数组）',
+                                                     `voice` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '音色名（如 zh_male_taocheng_uranus_bigtts），用于该形象对白配音',
                                                      PRIMARY KEY (`id`) USING BTREE,
                                                      UNIQUE INDEX `uk_character_appearance`(`character_id` ASC, `appearance_index` ASC) USING BTREE,
                                                      INDEX `idx_character_id`(`character_id` ASC) USING BTREE,
@@ -1425,6 +1427,33 @@ INSERT INTO `short_drama_location` VALUES (2077008104583090176, 2077007721974484
 INSERT INTO `short_drama_location` VALUES (2077008104604061696, 2077007721974484992, '百货大楼门口_日', '八十年代百货大楼正门，台阶宽大，门口有立柱，橱窗陈列商品，街道上有行人。', 1, '几位穿着中山装和军便装的市民站在台阶上下，有的正在看橱窗，有的在交谈。', '[\"百货大楼正门台阶最高一级中央\",\"右侧立柱旁的地面\",\"台阶下左侧报栏前\",\"对面人行道树下\"]', '[\"「百货大楼门口_日」一栋三层百货大楼，正立面贴白色瓷砖，一层为玻璃橱窗，展示布料、搪瓷盆等商品。楼顶立着「百货大楼」红色大字。门前有五级水磨石台阶，两侧有方形立柱，柱身贴着宣传画。台阶下是宽敞的马路，路边有梧桐树。光学从东南方照来，大楼正面明亮，橱窗玻璃反光。台阶上、立柱旁、报栏前、对面树荫下均有可供人物站立的空间。\",\"「百货大楼门口_日」八十年代百货商场大门，门楣上方有遮雨棚，棚下悬挂「为人民服务」标语。大门为三扇玻璃推拉门，门内可见柜台。左右两侧橱窗内陈列着自行车、缝纫机等展品。门前广场铺着六边形水泥砖，有数根电线杆。光线充足，阳光从右后方照射，左前方有阴影。大门正前方台阶、右侧电线杆附近、左侧橱窗旁均可作为人物落位点。\",\"「百货大楼门口_日」大型百货商店正门区域，建筑为现代主义风格，立面简洁。大门前有宽阔平台，平台四角有花坛，内种月季。地面为水磨石，洁净明亮。左侧有一块公告栏，贴着红色海报。远处可见公交站台，有行人等车。光线从正头顶略偏南，地面有微弱阴影。平台中央、左侧公告栏前、右侧花坛旁均有平坦地面适合站立。\"]', 'https://atlas-media.oss-us-west-1.aliyuncs.com/images/c94f6cb0c4364d5db271b9606c2bde94-101b8d0c012901fe.jpg', -1, -1, '2026-07-14 20:31:36', 1, '2026-07-14 20:38:51', 0, '[\"https://atlas-media.oss-us-west-1.aliyuncs.com/images/c94f6cb0c4364d5db271b9606c2bde94-101b8d0c012901fe.jpg\"]', '[\"宽广空间全景，[\\\"「百货大楼门口_日」一栋三层百货大楼，正立面贴白色瓷砖，一层为玻璃橱窗，展示布料、搪瓷盆等商品。楼顶立着「百货大楼」红色大字。门前有五级水磨石台阶，两侧有方形立柱，柱身贴着宣传画。台阶下是宽敞的马路，路边有梧桐树。光学从东南方照来，大楼正面明亮，橱窗玻璃反光。台阶上、立柱旁、报栏前、对面树荫下均有可供人物站立的空间。\\\",\\\"「百货大楼门口_日」八十年代百货商场大门，门楣上方有遮雨棚，棚下悬挂「为人民服务」标语。大门为三扇玻璃推拉门，门内可见柜台。左右两侧橱窗内陈列着自行车、缝纫机等展品。门前广场铺着六边形水泥砖，有数根电线杆。光线充足，阳光从右后方照射，左前方有阴影。大门正前方台阶、右侧电线杆附近、左侧橱窗旁均可作为人物落位点。\\\",\\\"「百货大楼门口_日」大型百货商店正门区域，建筑为现代主义风格，立面简洁。大门前有宽阔平台，平台四角有花坛，内种月季。地面为水磨石，洁净明亮。左侧有一块公告栏，贴着红色海报。远处可见公交站台，有行人等车。光线从正头顶略偏南，地面有微弱阴影。平台中央、左侧公告栏前、右侧花坛旁均有平坦地面适合站立。\\\"]，禁止出现任何角色，纯背景板真实电影级画面质感，真实现实场景，色彩饱满通透，画面干净精致，真实感\"]', 0, NULL, NULL);
 INSERT INTO `short_drama_location` VALUES (2077008104675364864, 2077007721974484992, '厂庆礼堂_夜', '工厂礼堂内部，舞台上有麦克风，台下长凳坐满工人，红灯笼和横幅装饰。', 1, '几十名穿着蓝色工装的工人整齐坐在长凳上，面向舞台，表情喜悦。', '[\"舞台中央麦克风架前方位置\",\"舞台左侧幕布旁\",\"观众席前排中间走道\",\"礼堂后门入口处\"]', '[\"「厂庆礼堂_夜」一座中型礼堂，空间约三百平米，两侧墙壁挂满红色锦旗和奖状。舞台为砖砌，高约一米，铺着红色地毯，中央立着麦克风，背景幕布为深红色绒布，上方悬挂「厂庆联欢晚会」横幅。观众席摆着二十排长木凳，坐满穿工装的工人。屋顶悬挂多盏白炽灯和串串红灯笼，灯光暖黄。舞台侧方、观众席中间走廊、后门口均有空地可站人。\",\"「厂庆礼堂_夜」礼堂内部呈长方形，前高后低，地板为水泥磨光。天花板有木横梁，垂吊着彩带和纸花。舞台左后侧有上台台阶，右侧放置锣鼓乐器。台下长凳密集排列，过道狭窄，工人拥挤而坐，有些站着。礼堂后墙有双开木门，紧闭。光线主要来自舞台上的聚光灯和两侧壁灯，明亮温暖。舞台中央地面、右侧锣鼓旁、后墙门边有可落位空间。\",\"「厂庆礼堂_夜」宽大的老式礼堂，墙面下半部刷绿色墙裙，上半部白墙。窗户用深色帘幕遮住。舞台台口有弧形边缘，台上有两张木椅和一张讲台。台前摆满花篮。观众席中央过道约一米宽，两侧长凳坐满人。天花板中央一盏大吊灯，四周小灯，整体照明均匀。舞台正前方、左侧幕布缺口处、礼堂后门旁均可站立。\"]', 'https://atlas-media.oss-us-west-1.aliyuncs.com/images/a9295d479fef45f198bffd3ef850eacd-588538d1e9d8e094.jpg', -1, -1, '2026-07-14 20:31:36', 1, '2026-07-14 20:38:51', 0, '[\"https://atlas-media.oss-us-west-1.aliyuncs.com/images/a9295d479fef45f198bffd3ef850eacd-588538d1e9d8e094.jpg\"]', '[\"宽广空间全景，[\\\"「厂庆礼堂_夜」一座中型礼堂，空间约三百平米，两侧墙壁挂满红色锦旗和奖状。舞台为砖砌，高约一米，铺着红色地毯，中央立着麦克风，背景幕布为深红色绒布，上方悬挂「厂庆联欢晚会」横幅。观众席摆着二十排长木凳，坐满穿工装的工人。屋顶悬挂多盏白炽灯和串串红灯笼，灯光暖黄。舞台侧方、观众席中间走廊、后门口均有空地可站人。\\\",\\\"「厂庆礼堂_夜」礼堂内部呈长方形，前高后低，地板为水泥磨光。天花板有木横梁，垂吊着彩带和纸花。舞台左后侧有上台台阶，右侧放置锣鼓乐器。台下长凳密集排列，过道狭窄，工人拥挤而坐，有些站着。礼堂后墙有双开木门，紧闭。光线主要来自舞台上的聚光灯和两侧壁灯，明亮温暖。舞台中央地面、右侧锣鼓旁、后墙门边有可落位空间。\\\",\\\"「厂庆礼堂_夜」宽大的老式礼堂，墙面下半部刷绿色墙裙，上半部白墙。窗户用深色帘幕遮住。舞台台口有弧形边缘，台上有两张木椅和一张讲台。台前摆满花篮。观众席中央过道约一米宽，两侧长凳坐满人。天花板中央一盏大吊灯，四周小灯，整体照明均匀。舞台正前方、左侧幕布缺口处、礼堂后门旁均可站立。\\\"]，禁止出现任何角色，纯背景板真实电影级画面质感，真实现实场景，色彩饱满通透，画面干净精致，真实感\"]', 0, NULL, NULL);
 INSERT INTO `short_drama_location` VALUES (2077008104721502208, 2077007721974484992, '工厂大门_晨', '清晨工厂大门，新挂牌「华夏信息服务中心」，自行车棚，远处烟囱冒烟。', 1, '几名穿着蓝色工装的工人推着自行车或步行进入厂门，路边有早点摊的模糊身影。', '[\"厂门口新挂牌下方正中间\",\"右侧自行车棚外侧\",\"左侧传达室门口台阶\",\"马路对面老槐树旁\"]', '[\"「工厂大门_晨」工厂大门为铁制对开栅栏门，门柱为红砖砌成，左侧门柱上挂着崭新白底黑字牌子「华夏信息服务中心」。进门可见一条水泥路通向厂区。右侧有一排自行车棚，棚内停着几十辆自行车。远处工厂烟囱缓缓冒白烟，背景是朦胧的晨曦天空。阳光从东方斜照，拉长门柱影子。大门正下方、自行车棚外面、左侧传达室门口、马路对面树荫下均有平坦地面。\",\"「工厂大门_晨」晨曦中的老工厂入口，灰砖围墙高约三米，大门敞开。左侧传达室为平房，窗户透出灯光。门右侧墙上贴着红色通知。路面是水泥铺设，有些许落叶。厂内远处可见车间屋顶和冒烟烟囱。天空泛鱼肚白，东边有朝霞。光线从右前方射来，门牌上的字清晰反光。大门中央、传达室左侧空地、路边电线杆旁都可以站人。\",\"「工厂大门_晨」工厂正门区域，宽阔的厂前空地上矗立着新立的招牌。大门两侧各有一棵法国梧桐，枝叶繁茂。地面为柏油路，路中央画有白色虚线。厂门内侧两边是花坛，种着冬青。远处厂房轮廓在晨雾中若隐若现，烟囱吐烟。光线柔和，晨光从建筑物缝隙中洒落。招牌下方、左侧花坛旁、右侧梧桐树下均是可站立的空旷位置。\"]', 'https://atlas-media.oss-us-west-1.aliyuncs.com/images/50f5cc1fb8e74dac95d589c23dc2daf7-7fb4da35d3075e95.jpg', -1, -1, '2026-07-14 20:31:36', 1, '2026-07-14 20:38:51', 0, '[\"https://atlas-media.oss-us-west-1.aliyuncs.com/images/50f5cc1fb8e74dac95d589c23dc2daf7-7fb4da35d3075e95.jpg\"]', '[\"宽广空间全景，[\\\"「工厂大门_晨」工厂大门为铁制对开栅栏门，门柱为红砖砌成，左侧门柱上挂着崭新白底黑字牌子「华夏信息服务中心」。进门可见一条水泥路通向厂区。右侧有一排自行车棚，棚内停着几十辆自行车。远处工厂烟囱缓缓冒白烟，背景是朦胧的晨曦天空。阳光从东方斜照，拉长门柱影子。大门正下方、自行车棚外面、左侧传达室门口、马路对面树荫下均有平坦地面。\\\",\\\"「工厂大门_晨」晨曦中的老工厂入口，灰砖围墙高约三米，大门敞开。左侧传达室为平房，窗户透出灯光。门右侧墙上贴着红色通知。路面是水泥铺设，有些许落叶。厂内远处可见车间屋顶和冒烟烟囱。天空泛鱼肚白，东边有朝霞。光线从右前方射来，门牌上的字清晰反光。大门中央、传达室左侧空地、路边电线杆旁都可以站人。\\\",\\\"「工厂大门_晨」工厂正门区域，宽阔的厂前空地上矗立着新立的招牌。大门两侧各有一棵法国梧桐，枝叶繁茂。地面为柏油路，路中央画有白色虚线。厂门内侧两边是花坛，种着冬青。远处厂房轮廓在晨雾中若隐若现，烟囱吐烟。光线柔和，晨光从建筑物缝隙中洒落。招牌下方、左侧花坛旁、右侧梧桐树下均是可站立的空旷位置。\\\"]，禁止出现任何角色，纯背景板真实电影级画面质感，真实现实场景，色彩饱满通透，画面干净精致，真实感\"]', 0, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for short_drama_audio
+-- ----------------------------
+DROP TABLE IF EXISTS `short_drama_audio`;
+CREATE TABLE `short_drama_audio`  (
+                                       `id` bigint NOT NULL COMMENT '主键',
+                                       `project_id` bigint NOT NULL COMMENT '项目ID',
+                                       `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '语音资产名称',
+                                       `audio_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'narration' COMMENT '语音类型：narration(旁白)/dialogue(对白)',
+                                       `text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '语音文案（生成语音用的文本）',
+                                       `voice` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '音色（如 alloy/onyx）',
+                                       `audio_oss_id` bigint NULL DEFAULT NULL COMMENT '音频文件OSS ID',
+                                       `audio_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '音频文件URL',
+                                       `linked_storyboard_id` bigint NULL DEFAULT NULL COMMENT '对白关联的分镜ID（NULL=全局旁白）',
+                                       `duration_seconds` int NULL DEFAULT NULL COMMENT '音频时长（秒）',
+                                       `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                                       `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+                                       `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                       `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                                       `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                       `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户Id',
+                                       PRIMARY KEY (`id`) USING BTREE,
+                                       INDEX `idx_project_id`(`project_id` ASC) USING BTREE,
+                                       INDEX `idx_linked_storyboard_id`(`linked_storyboard_id` ASC) USING BTREE,
+                                       INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '短剧语音资产表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for short_drama_project
@@ -1517,6 +1546,7 @@ CREATE TABLE `short_drama_storyboard`  (
                                            `video_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '视频地址',
                                            `video_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '视频生成任务ID',
                                            `video_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'pending' COMMENT '视频状态：pending/generating/done/failed',
+                                           `last_frame_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '上一镜末帧URL（同场景连续镜头首帧承接用）',
                                            `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
                                            `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
                                            `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

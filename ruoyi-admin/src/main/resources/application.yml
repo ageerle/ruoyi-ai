@@ -20,6 +20,10 @@ server:
       # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
       worker: 256
 
+--- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
+chat:
+  default-model: deepseek-v4-flash
+
 captcha:
   # 是否启用验证码校验
   enable: false
@@ -125,6 +129,7 @@ security:
     - /*/api-docs/**
     - /warm-flow-ui/config
     - /workflow/run
+    - /coding/**
 # 多租户配置
 tenant:
   # 是否开启
@@ -335,6 +340,7 @@ short-drama:
     probe-timeout: ${SHORT_DRAMA_COMPOSITION_PROBE_TIMEOUT:30s}
     process-timeout: ${SHORT_DRAMA_COMPOSITION_PROCESS_TIMEOUT:30m}
     job-stale-after: ${SHORT_DRAMA_COMPOSITION_JOB_STALE_AFTER:45m}
+    watermark-font-file: ${SHORT_DRAMA_COMPOSITION_WATERMARK_FONT_FILE:}
     worker-core-size: ${SHORT_DRAMA_COMPOSITION_WORKER_CORE_SIZE:1}
     worker-max-size: ${SHORT_DRAMA_COMPOSITION_WORKER_MAX_SIZE:2}
     worker-queue-capacity: ${SHORT_DRAMA_COMPOSITION_WORKER_QUEUE_CAPACITY:8}

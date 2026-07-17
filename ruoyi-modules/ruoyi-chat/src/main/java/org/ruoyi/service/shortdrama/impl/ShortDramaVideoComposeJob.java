@@ -4,6 +4,7 @@ import org.ruoyi.service.shortdrama.composition.AspectRatio;
 import org.ruoyi.service.shortdrama.composition.TransitionType;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,7 +15,10 @@ record ShortDramaVideoComposeJob(
     TransitionType transitionType,
     BigDecimal transitionDurationSeconds,
     AspectRatio aspectRatio,
-    List<Long> storyboardIds
+    List<Long> storyboardIds,
+    Long narrationAudioId,
+    Path narrationAudioPath,
+    boolean watermark
 ) {
 
     ShortDramaVideoComposeJob {

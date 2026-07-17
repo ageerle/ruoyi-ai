@@ -37,6 +37,8 @@ public class ShortDramaCharacterAppearanceVo implements Serializable {
 
     private String previousDescriptions;
 
+    private String voice;
+
     private Date createTime;
 
     private Date updateTime;

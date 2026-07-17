@@ -10,8 +10,10 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.OssService;
 import org.ruoyi.common.core.utils.file.FileUtils;
 import org.ruoyi.common.tenant.helper.TenantHelper;
+import org.ruoyi.domain.entity.shortdrama.ShortDramaAudio;
 import org.ruoyi.domain.entity.shortdrama.ShortDramaProject;
 import org.ruoyi.domain.entity.shortdrama.ShortDramaStoryboard;
+import org.ruoyi.mapper.shortdrama.ShortDramaAudioMapper;
 import org.ruoyi.mapper.shortdrama.ShortDramaProjectMapper;
 import org.ruoyi.mapper.shortdrama.ShortDramaStoryboardMapper;
 import org.ruoyi.service.shortdrama.composition.CompositionArtifact;
@@ -41,6 +43,7 @@ public class ShortDramaVideoComposeWorker {
 
     private final ShortDramaProjectMapper projectMapper;
     private final ShortDramaStoryboardMapper storyboardMapper;
+    private final ShortDramaAudioMapper audioMapper;
     private final FfmpegVideoComposer videoComposer;
     private final FfmpegCompositionProperties compositionProperties;
     private final SafeVideoSourceDownloader sourceDownloader;
@@ -65,11 +68,16 @@ public class ShortDramaVideoComposeWorker {
                 return;
             }
 
+            // 旁白语音资产下载到工作目录（ossId → 本地文件）
+            Path narrationAudioPath = downloadNarration(job, workDirectory);
+
             CompositionArtifact artifact = videoComposer.compose(new CompositionSpec(
                 sources,
                 job.transitionType(),
                 job.transitionDurationSeconds().doubleValue(),
-                job.aspectRatio()
+                job.aspectRatio(),
+                narrationAudioPath,
+                job.watermark()
             ), workDirectory);
             if (!updateProgress(job, 85)) {
                 return;
@@ -196,6 +204,24 @@ public class ShortDramaVideoComposeWorker {
         return projectMapper.update(null, activeJobUpdate(job)
             .set(ShortDramaProject::getComposeProgress, Math.max(0, Math.min(99, progress)))
             .set(ShortDramaProject::getUpdateTime, new Date())) > 0;
+    }
+
+    /**
+     * 将旁白语音资产下载为本地文件。语音资产未指定或不存在时返回 null（不混入旁白）。
+     */
+    private Path downloadNarration(ShortDramaVideoComposeJob job, Path workDirectory) throws IOException {
+        if (job.narrationAudioId() == null) {
+            return null;
+        }
+        ShortDramaAudio audio = audioMapper.selectById(job.narrationAudioId());
+        if (audio == null || StrUtil.isBlank(audio.getAudioUrl())) {
+            log.warn("旁白语音资产不存在或无音频URL, audioId={}", job.narrationAudioId());
+            return null;
+        }
+        Path target = workDirectory.resolve("narration.mp3");
+        long maxSourceBytes = compositionProperties.getMaxSourceBytes();
+        sourceDownloader.download(audio.getAudioUrl(), target, maxSourceBytes, maxSourceBytes);
+        return target;
     }
 
     private boolean isActive(ShortDramaVideoComposeJob job) {

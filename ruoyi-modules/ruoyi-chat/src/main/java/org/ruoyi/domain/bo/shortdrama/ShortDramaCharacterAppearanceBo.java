@@ -32,4 +32,6 @@ public class ShortDramaCharacterAppearanceBo extends BaseEntity {
     private String previousImageUrls;
 
     private String previousDescriptions;
+
+    private String voice;
 }

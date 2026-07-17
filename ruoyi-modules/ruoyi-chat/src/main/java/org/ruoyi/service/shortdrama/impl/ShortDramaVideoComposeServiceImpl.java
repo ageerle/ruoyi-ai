@@ -92,7 +92,10 @@ public class ShortDramaVideoComposeServiceImpl implements IShortDramaVideoCompos
             transitionType,
             transitionDuration,
             aspectRatio,
-            bo.getStoryboardIds()
+            bo.getStoryboardIds(),
+            bo.getNarrationAudioId(),
+            null,
+            resolveWatermark(bo.getWatermark())
         );
         try {
             composeWorker.composeAsync(job);
@@ -216,6 +219,11 @@ public class ShortDramaVideoComposeServiceImpl implements IShortDramaVideoCompos
         } catch (IllegalArgumentException ex) {
             throw new ServiceException("转场时长无效: " + ex.getMessage());
         }
+    }
+
+    /** 前端 watermark 为空时回退到配置默认值（默认开启 ruoyi-ai） */
+    private boolean resolveWatermark(Boolean requested) {
+        return requested == null ? compositionProperties.isWatermarkEnabled() : requested;
     }
 
     private Date staleBefore(Date now) {
