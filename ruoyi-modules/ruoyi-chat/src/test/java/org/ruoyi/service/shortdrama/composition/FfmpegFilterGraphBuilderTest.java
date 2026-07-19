@@ -183,6 +183,6 @@ class FfmpegFilterGraphBuilderTest {
         List<CompositionSource> sources = java.util.stream.IntStream.range(0, sourceCount)
             .mapToObj(index -> new CompositionSource(Path.of("clip-" + index + ".mp4"), null))
             .toList();
-        return new CompositionSpec(sources, transition, duration, ratio);
+        return new CompositionSpec(sources, transition, duration, ratio, null, false);
     }
 }

@@ -15,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 public class NodeProcessResult {
 
+    @Builder.Default
     private List<NodeIOData> content = new ArrayList<>();
 
     /**
@@ -25,6 +26,7 @@ public class NodeProcessResult {
     /**
      * 是否发生错误
      */
+    @Builder.Default
     private boolean error = false;
 
     /**

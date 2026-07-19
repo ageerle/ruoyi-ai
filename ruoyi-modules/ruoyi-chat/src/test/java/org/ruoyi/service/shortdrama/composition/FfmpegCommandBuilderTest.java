@@ -26,7 +26,9 @@ class FfmpegCommandBuilderTest {
             List.of(source),
             TransitionType.NONE,
             0,
-            AspectRatio.PORTRAIT
+            AspectRatio.PORTRAIT,
+            null,
+            false
         );
         FfmpegFilterGraph graph = new FfmpegFilterGraph(
             "[0:v]null[v0]",

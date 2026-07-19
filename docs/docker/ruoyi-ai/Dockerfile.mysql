@@ -7,7 +7,7 @@ ENV TZ=Asia/Shanghai
 
 # 复制初始化脚本和SQL文件到镜像中
 COPY docs/script/docker/mysql/init/init-db.sh /docker-entrypoint-initdb.d/init-db.sh
-COPY docs/script/sql/ruoyi-ai-v3_mysql8.sql /docker-entrypoint-initdb.d/ruoyi-ai-v3_mysql8.sql
+COPY docs/script/sql/ruoyi-ai.sql /docker-entrypoint-initdb.d/ruoyi-ai.sql
 
 # 设置脚本可执行权限
 RUN chmod +x /docker-entrypoint-initdb.d/init-db.sh
