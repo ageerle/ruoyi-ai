@@ -504,19 +504,7 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <!-- 关闭过滤 -->
                 <filtering>false</filtering>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <!-- 引入所有 匹配文件进行过滤 -->
-                <includes>
-                    <include>application*</include>
-                    <include>bootstrap*</include>
-                    <include>banner*</include>
-                </includes>
-                <!-- 启用过滤 即该资源中的变量将会被过滤器中的值替换 -->
-                <filtering>true</filtering>
             </resource>
         </resources>
     </build>
