@@ -72,6 +72,21 @@
             <groupId>com.talanlabs</groupId>
             <artifactId>avatar-generator-cat</artifactId>
             <version>${avatar-generator.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.javassist</groupId>
+                    <artifactId>javassist</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- avatar-generator-cat pulls an obsolete Javassist POM that Maven 3.9
+             warns about. Reflections 0.9.10 is compatible with the maintained
+             drop-in replacement. -->
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>${javassist.version}</version>
         </dependency>
 
 

@@ -39,7 +39,7 @@ captcha:
 # 日志配置
 logging:
   level:
-    org.ruoyi: @logging.level@
+    org.ruoyi: ${LOGGING_LEVEL_ORG_RUOYI:info}
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
@@ -79,7 +79,7 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: @profiles.active@
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   # 文件上传
   servlet:
     multipart:
