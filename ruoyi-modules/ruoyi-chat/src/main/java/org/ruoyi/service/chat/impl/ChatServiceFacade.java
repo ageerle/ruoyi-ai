@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.agent.ChartGenerationAgent;
+import org.ruoyi.agent.ChitChatAgent;
 import org.ruoyi.agent.EchartsAgent;
 import org.ruoyi.agent.SkillsAgent;
 import org.ruoyi.agent.SqlAgent;
@@ -267,11 +268,18 @@ public class ChatServiceFacade implements IChatService {
             .listener(new MyAgentListener())
             .build();
 
+        // 构建子 Agent 6: ChitChatAgent - 简单闲聊兜底,避免无子 Agent 可用时 supervisor 空转
+        ChitChatAgent chitChatAgent = AgenticServices.agentBuilder(ChitChatAgent.class)
+            .chatModel(plannerModel)
+            .build();
+
         // 构建监督者 Agent - 管理多个子 Agent
         var supervisorBuilder = AgenticServices.supervisorBuilder()
             .chatModel(plannerModel)
-            .subAgents(skillsAgent, searchAgent, sqlAgent, chartGenerationAgent, echartsAgent)
-            .responseStrategy(SupervisorResponseStrategy.LAST);
+            .subAgents(skillsAgent, searchAgent, sqlAgent, chartGenerationAgent, echartsAgent, chitChatAgent)
+            .supervisorContext("仅当请求是问候或简单闲聊、不需要任何数据、搜索、技能或图表时,才使用 chitChatAgent;"
+                + "其余情况必须使用对应的专业 Agent")
+            .responseStrategy(SupervisorResponseStrategy.SUMMARY);
         SupervisorAgent supervisor = supervisorBuilder.build();
 
         // 知识库增强：智能体绑定了知识库时，对 supervisor 输入做一次 RAG 增强
