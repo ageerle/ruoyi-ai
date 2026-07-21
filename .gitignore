@@ -53,3 +53,4 @@ logs/
 
 .flattened-pom.xml
 /.claude/settings.local.json
+/docs/docker/milvus/volumes/
