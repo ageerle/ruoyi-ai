@@ -129,20 +129,26 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
         log.info("Qdrant向量存储条数记录: {}", chunkList.size());
         long startTime = System.currentTimeMillis();
 
-        IntStream.range(0, chunkList.size()).forEach(i -> {
+        List<TextSegment> segments = new ArrayList<>(chunkList.size());
+        for (int i = 0; i < chunkList.size(); i++) {
             String text = chunkList.get(i);
             String fid = fidList.get(i);
             Metadata metadata = new Metadata();
             metadata.put(METADATA_FID_KEY, fid);
             metadata.put(METADATA_KID_KEY, kid);
             metadata.put(METADATA_DOC_ID_KEY, docId);
-            TextSegment textSegment = TextSegment.from(text, metadata);
-            Embedding embedding = embeddingModel.embed(text).content();
+            segments.add(TextSegment.from(text, metadata));
+        }
+        List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
+        if (embeddings.size() != segments.size()) {
+            throw new ServiceException("Embedding 返回数量与分片数量不一致");
+        }
+        for (Embedding embedding : embeddings) {
             // 单位化处理
             float[] vector = embedding.vector();
             normalize(vector);
-            embeddingStore.add(Embedding.from(vector), textSegment);
-        });
+        }
+        embeddingStore.addAll(embeddings, segments);
 
         long endTime = System.currentTimeMillis();
         log.info("Qdrant向量存储完成消耗时间：{}秒", (endTime - startTime) / 1000);
@@ -228,6 +234,12 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
                     docId = docIdValue.getStringValue();
                 }
 
+                String fid = null;
+                JsonWithInt.Value fidValue = point.getPayloadMap().get(METADATA_FID_KEY);
+                if (fidValue != null && fidValue.hasStringValue()) {
+                    fid = fidValue.getStringValue();
+                }
+
                 String sourceName = "未知来源";
                 if (docId != null) {
                     KnowledgeAttach attach = knowledgeAttachMapper.selectOne(new LambdaQueryWrapper<KnowledgeAttach>()
@@ -239,6 +251,8 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 }
 
                 resultList.add(org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo.builder()
+                        .id(fid)
+                        .docId(docId)
                         .content(content)
                         .score((double) point.getScore())
                         .sourceName(sourceName)

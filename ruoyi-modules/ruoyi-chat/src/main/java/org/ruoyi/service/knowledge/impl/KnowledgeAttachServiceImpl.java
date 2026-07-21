@@ -2,6 +2,7 @@ package org.ruoyi.service.knowledge.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -11,6 +12,7 @@ import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.enums.KnowledgeAttachStatus;
 import org.ruoyi.common.core.domain.dto.OssDTO;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.OssService;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
@@ -32,6 +34,7 @@ import org.ruoyi.service.knowledge.IKnowledgeAttachService;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.knowledge.ResourceLoader;
 import org.ruoyi.service.vector.VectorStoreService;
+import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,6 +63,7 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
     private final ResourceLoaderFactory resourceLoaderFactory;
     private final VectorStoreService vectorStoreService;
     private final OssService ossService;
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
 
     @Override
     public KnowledgeAttachVo queryById(Long id) {
@@ -126,18 +130,44 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
+        // 删除附件前，同步清理其片段记录与向量库中的向量
+        List<KnowledgeAttach> attaches = baseMapper.selectByIds(ids);
+        for (KnowledgeAttach attach : attaches) {
+            String docId = attach.getDocId();
+            String kid = String.valueOf(attach.getKnowledgeId());
+            vectorStoreService.removeByDocId(docId, kid);
+            knowledgeFragmentMapper.delete(
+                Wrappers.<KnowledgeFragment>lambdaQuery().eq(KnowledgeFragment::getDocId, docId));
+            if (attach.getOssId() != null) {
+                ossService.deleteFile(attach.getOssId());
+            }
+            knowledgeRetrievalService.invalidateKnowledge(kid);
+        }
         return baseMapper.deleteByIds(ids) > 0;
     }
 
     @Override
     public void upload(KnowledgeInfoUploadBo bo) {
         MultipartFile file = bo.getFile();
+        final String fileHash;
+        try (InputStream input = file.getInputStream()) {
+            fileHash = DigestUtil.sha256Hex(input);
+        } catch (Exception e) {
+            throw new ServiceException("计算文件摘要失败", e);
+        }
+        boolean duplicate = baseMapper.exists(Wrappers.<KnowledgeAttach>lambdaQuery()
+            .eq(KnowledgeAttach::getKnowledgeId, bo.getKnowledgeId())
+            .eq(KnowledgeAttach::getFileHash, fileHash));
+        if (duplicate) {
+            throw new ServiceException("该文件已上传，请勿重复提交");
+        }
         OssDTO ossDTO = ossService.uploadFile(file);
 
         KnowledgeAttach knowledgeAttach = new KnowledgeAttach();
         knowledgeAttach.setKnowledgeId(bo.getKnowledgeId());
         knowledgeAttach.setOssId(ossDTO.getOssId());
         knowledgeAttach.setDocId(RandomUtil.randomString(10));
+        knowledgeAttach.setFileHash(fileHash);
         knowledgeAttach.setName(ossDTO.getOriginalName());
         knowledgeAttach.setType(ossDTO.getFileSuffix());
         knowledgeAttach.setStatus(KnowledgeAttachStatus.WAITING.getCode()); // 待解析
@@ -166,6 +196,8 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
             Long knowledgeId = attach.getKnowledgeId();
             String docId = attach.getDocId();
+            List<KnowledgeFragment> oldFragments = knowledgeFragmentMapper.selectList(
+                    Wrappers.<KnowledgeFragment>lambdaQuery().eq(KnowledgeFragment::getDocId, docId));
 
             // 获取文件信息并下载
             List<OssDTO> ossDTOs = ossService.selectByIds(String.valueOf(attach.getOssId()));
@@ -180,25 +212,25 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             }
             List<String> chunkList = resourceLoader.getChunkList(content, String.valueOf(knowledgeId));
 
-            List<String> fids = new ArrayList<>();
-            List<KnowledgeFragment> knowledgeFragmentList = new ArrayList<>();
-            if (CollUtil.isNotEmpty(chunkList)) {
-                for (int i = 0; i < chunkList.size(); i++) {
-                    String fid = RandomUtil.randomString(10);
-                    fids.add(fid);
-                    KnowledgeFragment knowledgeFragment = new KnowledgeFragment();
-                    knowledgeFragment.setKnowledgeId(knowledgeId);
-                    knowledgeFragment.setDocId(docId);
-                    knowledgeFragment.setIdx(i);
-                    knowledgeFragment.setContent(chunkList.get(i));
-                    knowledgeFragment.setCreateTime(new Date());
-                    knowledgeFragmentList.add(knowledgeFragment);
-                }
-                knowledgeFragmentMapper.delete(Wrappers.<KnowledgeFragment>lambdaQuery().eq(KnowledgeFragment::getDocId, docId));
-                knowledgeFragmentMapper.insertBatch(knowledgeFragmentList);
-                log.info("文档切片并入库完成，共计 {} 个片段。id: {}", chunkList.size(), id);
+            if (CollUtil.isEmpty(chunkList)) {
+                throw new RuntimeException("文档分片结果为空，请检查文档内容或分片器是否支持该文件类型");
             }
 
+            // 重新解析前先清理旧的向量数据，避免向量重复累积
+            List<String> fids = new ArrayList<>();
+            List<KnowledgeFragment> knowledgeFragmentList = new ArrayList<>();
+            for (int i = 0; i < chunkList.size(); i++) {
+                String fid = RandomUtil.randomString(10);
+                fids.add(fid);
+                KnowledgeFragment knowledgeFragment = new KnowledgeFragment();
+                knowledgeFragment.setKnowledgeId(knowledgeId);
+                knowledgeFragment.setDocId(docId);
+                knowledgeFragment.setFid(fid);
+                knowledgeFragment.setIdx(i);
+                knowledgeFragment.setContent(chunkList.get(i));
+                knowledgeFragment.setCreateTime(new Date());
+                knowledgeFragmentList.add(knowledgeFragment);
+            }
             KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(knowledgeId);
             ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
 
@@ -211,7 +243,27 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
             storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
             storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
-            vectorStoreService.storeEmbeddings(storeEmbeddingBo);
+            try {
+                vectorStoreService.storeEmbeddings(storeEmbeddingBo);
+                for (KnowledgeFragment old : oldFragments) {
+                    if (StringUtils.isNotBlank(old.getFid())) {
+                        vectorStoreService.removeByFid(old.getFid(), String.valueOf(knowledgeId));
+                    }
+                }
+            } catch (Exception vectorError) {
+                for (String newFid : fids) {
+                    try {
+                        vectorStoreService.removeByFid(newFid, String.valueOf(knowledgeId));
+                    } catch (Exception cleanupError) {
+                        log.error("补偿删除新向量失败, kid={}, fid={}", knowledgeId, newFid, cleanupError);
+                    }
+                }
+                throw vectorError;
+            }
+
+            knowledgeFragmentMapper.delete(Wrappers.<KnowledgeFragment>lambdaQuery().eq(KnowledgeFragment::getDocId, docId));
+            knowledgeFragmentMapper.insertBatch(knowledgeFragmentList);
+            knowledgeRetrievalService.invalidateKnowledge(String.valueOf(knowledgeId));
 
             attach.setStatus(KnowledgeAttachStatus.COMPLETED.getCode()); // 已完成
             baseMapper.updateById(attach);

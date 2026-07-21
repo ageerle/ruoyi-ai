@@ -16,6 +16,9 @@ import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import org.ruoyi.mapper.knowledge.KnowledgeInfoMapper;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
+import org.ruoyi.common.core.service.OssService;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +38,12 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     private final KnowledgeInfoMapper baseMapper;
 
     private final KnowledgeAttachMapper knowledgeAttachMapper;
+
+    private final org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper knowledgeFragmentMapper;
+
+    private final org.ruoyi.service.vector.VectorStoreService vectorStoreService;
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
+    private final OssService ossService;
 
     /**
      * 查询知识库
@@ -97,10 +106,14 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      */
     private void fillDocumentCount(List<KnowledgeInfoVo> records) {
         if (records == null || records.isEmpty()) return;
-        for (KnowledgeInfoVo vo : records) {
-            int count = knowledgeAttachMapper.countByKnowledgeId(vo.getId());
-            vo.setDocumentCount(count);
+        List<Long> ids = records.stream().map(KnowledgeInfoVo::getId).toList();
+        Map<Long, Integer> counts = new java.util.HashMap<>();
+        for (Map<String, Object> row : knowledgeAttachMapper.countByKnowledgeIds(ids)) {
+            Number kid = (Number) (row.get("knowledgeId") != null ? row.get("knowledgeId") : row.get("knowledgeid"));
+            Number count = (Number) (row.get("documentCount") != null ? row.get("documentCount") : row.get("documentcount"));
+            if (kid != null && count != null) counts.put(kid.longValue(), count.intValue());
         }
+        records.forEach(vo -> vo.setDocumentCount(counts.getOrDefault(vo.getId(), 0)));
     }
 
     /**
@@ -130,7 +143,9 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     public Boolean updateByBo(KnowledgeInfoBo bo) {
         KnowledgeInfo update = MapstructUtils.convert(bo, KnowledgeInfo.class);
         validEntityBeforeSave(update);
-        return baseMapper.updateById(update) > 0;
+        boolean updated = baseMapper.updateById(update) > 0;
+        if (updated) knowledgeRetrievalService.invalidateKnowledge(String.valueOf(bo.getId()));
+        return updated;
     }
 
     /**
@@ -148,9 +163,32 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      * @return 是否删除成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if(isValid){
             //TODO 做一些业务上的校验,判断是否需要校验
+        }
+        for (Long kid : ids) {
+            KnowledgeInfo info = baseMapper.selectById(kid);
+            // 1. 删除向量库中该知识库的所有向量（按文档逐个清理，三种向量库行为一致）
+            List<org.ruoyi.domain.entity.knowledge.KnowledgeAttach> attaches = knowledgeAttachMapper.selectList(
+                Wrappers.lambdaQuery(org.ruoyi.domain.entity.knowledge.KnowledgeAttach.class)
+                    .eq(org.ruoyi.domain.entity.knowledge.KnowledgeAttach::getKnowledgeId, kid));
+            vectorStoreService.removeById(String.valueOf(kid), info == null ? null : info.getVectorModel());
+            List<Long> ossIds = attaches.stream()
+                    .map(org.ruoyi.domain.entity.knowledge.KnowledgeAttach::getOssId)
+                    .filter(java.util.Objects::nonNull).toList();
+            if (!ossIds.isEmpty()) {
+                for (Long ossId : ossIds) {
+                    ossService.deleteFile(ossId);
+                }
+            }
+            // 2. 删除该知识库下的附件与片段记录
+            knowledgeAttachMapper.delete(Wrappers.lambdaQuery(org.ruoyi.domain.entity.knowledge.KnowledgeAttach.class)
+                .eq(org.ruoyi.domain.entity.knowledge.KnowledgeAttach::getKnowledgeId, kid));
+            knowledgeFragmentMapper.delete(Wrappers.lambdaQuery(org.ruoyi.domain.entity.knowledge.KnowledgeFragment.class)
+                .eq(org.ruoyi.domain.entity.knowledge.KnowledgeFragment::getKnowledgeId, kid));
+            knowledgeRetrievalService.invalidateKnowledge(String.valueOf(kid));
         }
         return baseMapper.deleteByIds(ids) > 0;
     }

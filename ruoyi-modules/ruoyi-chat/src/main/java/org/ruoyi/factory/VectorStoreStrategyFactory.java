@@ -10,6 +10,7 @@ import org.ruoyi.service.vector.impl.MilvusVectorStoreStrategy;
 import org.ruoyi.service.vector.impl.QdrantVectorStoreStrategy;
 import org.ruoyi.service.vector.impl.WeaviateVectorStoreStrategy;
 import org.springframework.stereotype.Component;
+import org.ruoyi.common.core.exception.ServiceException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,14 +46,20 @@ public class VectorStoreStrategyFactory {
      * 获取当前配置的向量库策略
      */
     public VectorStoreService getStrategy() {
-        String vectorStoreType = vectorStoreProperties.getType();
+        return getStrategy(null);
+    }
+
+    public VectorStoreService getStrategy(String requestedType) {
+        String vectorStoreType = requestedType;
+        if (vectorStoreType == null || vectorStoreType.trim().isEmpty()) {
+            vectorStoreType = vectorStoreProperties.getType();
+        }
         if (vectorStoreType == null || vectorStoreType.trim().isEmpty()) {
             vectorStoreType = "weaviate"; // 默认使用weaviate
         }
         VectorStoreService strategy = strategies.get(vectorStoreType.toLowerCase());
         if (strategy == null) {
-            log.warn("未找到向量库策略: {}, 使用默认策略: weaviate", vectorStoreType);
-            strategy = strategies.get("weaviate");
+            throw new ServiceException("不支持的向量库类型: " + vectorStoreType);
         }
         log.debug("使用向量库策略: {}", vectorStoreType);
         return strategy;

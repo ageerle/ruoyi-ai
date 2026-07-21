@@ -106,7 +106,10 @@ public class KnowledgeAttachController extends BaseController {
 
     /**
      * 上传知识库附件
+     * 注意：multipart 上传不能加 @RepeatSubmit（其参数序列化不支持 MultipartFile）
      */
+    @SaCheckPermission("system:attach:add")
+    @Log(title = "知识库附件", businessType = BusinessType.INSERT)
     @PostMapping(value = "/upload")
     public R<String> upload(KnowledgeInfoUploadBo bo){
         knowledgeAttachService.upload(bo);
@@ -118,7 +121,10 @@ public class KnowledgeAttachController extends BaseController {
      *
      * @param id 附件ID
      */
+    @SaCheckPermission("system:attach:edit")
+    @Log(title = "知识库附件", businessType = BusinessType.UPDATE)
     @PostMapping("/parse/{id}")
+    @RepeatSubmit()
     public R<Void> parse(@PathVariable Long id) {
         knowledgeAttachService.parse(id);
         return R.ok();

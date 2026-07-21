@@ -34,7 +34,7 @@ public interface KnowledgeFragmentMapper extends BaseMapperPlus<KnowledgeFragmen
             "</script>")
     List<DocFragmentCountVo> selectFragmentCountByDocIds(@Param("docIds") List<String> docIds);
     @Select("<script>" +
-            "SELECT id, doc_id AS docId, content, idx, knowledge_id AS knowledgeId " +
+            "SELECT id, fid, doc_id AS docId, content, idx, knowledge_id AS knowledgeId " +
             "FROM knowledge_fragment " +
             "WHERE knowledge_id = #{knowledgeId} " +
             "AND MATCH (content) AGAINST (#{query} IN NATURAL LANGUAGE MODE) " +
