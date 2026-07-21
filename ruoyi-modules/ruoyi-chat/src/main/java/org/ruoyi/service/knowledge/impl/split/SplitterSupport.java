@@ -1,71 +1,67 @@
 package org.ruoyi.service.knowledge.impl.split;
 
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 
-/**
- * 分片工具：提供各 Splitter 共用的滑动窗口切分与片段合并能力
- */
+/** Shared, deterministic split pipeline used by every supported document format. */
 public final class SplitterSupport {
+    private SplitterSupport() {}
 
-    private SplitterSupport() {
+    public static List<String> split(String content, DocumentSplitConfig config,
+                                     Function<String, List<String>> naturalSections) {
+        if (content == null || content.isBlank()) return List.of();
+        String normalized = content.replace("\r\n", "\n").replace('\r', '\n');
+        List<String> primary = literalSections(normalized, config.separator());
+        List<String> result = new ArrayList<>();
+        for (String part : primary) {
+            List<String> sections = naturalSections.apply(part);
+            String joined = sections.stream().filter(s -> s != null && !s.isBlank())
+                .map(String::strip).reduce((a, b) -> a + "\n\n" + b).orElse("");
+            result.addAll(slidingWindow(joined, config.blockSize(), config.overlap()));
+        }
+        return result;
     }
 
-    /**
-     * 滑动窗口切分：每块约 blockSize 字符，相邻块保留 overlap 字符重叠
-     */
+    static List<String> literalSections(String content, String separator) {
+        if (separator == null || separator.isEmpty() || !content.contains(separator)) return List.of(content);
+        List<String> parts = new ArrayList<>();
+        for (String part : content.split(Pattern.quote(separator), -1)) {
+            if (!part.isBlank()) parts.add(part);
+        }
+        return parts;
+    }
+
+    /** blockSize is a strict maximum; overlap is the repeated suffix/prefix length. */
     public static List<String> slidingWindow(String content, int blockSize, int overlap) {
-        List<String> chunkList = new ArrayList<>();
-        int len = content.length();
-        int right = 0;
-        int i = 0;
-        while (len > right) {
-            int begin = i * blockSize - overlap;
-            if (begin < 0) {
-                begin = 0;
-            }
-            int end = blockSize * (i + 1) + overlap;
-            if (end > len) {
-                end = len;
-            }
-            String chunk = content.substring(begin, end).trim();
-            if (!chunk.isEmpty()) {
-                chunkList.add(chunk);
-            }
-            i++;
-            right = right + blockSize;
+        if (content == null || content.isBlank()) return List.of();
+        String value = content.strip();
+        List<String> chunks = new ArrayList<>();
+        int step = blockSize - overlap;
+        for (int start = 0; start < value.length(); start += step) {
+            int end = Math.min(value.length(), start + blockSize);
+            String chunk = value.substring(start, end).strip();
+            if (!chunk.isEmpty()) chunks.add(chunk);
+            if (end == value.length()) break;
         }
-        return chunkList;
+        return chunks;
     }
 
-    /**
-     * 将小段按顺序合并到不超过 blockSize，超过 blockSize 的单段再用滑动窗口切分
-     */
+    /** Compatibility helper retained for callers/tests; now enforces strict maximum size. */
     public static List<String> mergeAndSplit(String[] sections, int blockSize, int overlap) {
-        List<String> chunkList = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-        for (String section : sections) {
-            if (section == null || section.isBlank()) {
-                continue;
-            }
-            if (section.length() > blockSize) {
-                // 超长段先冲刷当前缓冲，再单独窗口切分
-                if (current.length() > 0) {
-                    chunkList.add(current.toString().trim());
-                    current.setLength(0);
-                }
-                chunkList.addAll(slidingWindow(section, blockSize, overlap));
-            } else if (current.length() + section.length() > blockSize) {
-                chunkList.add(current.toString().trim());
-                current.setLength(0);
-                current.append(section);
-            } else {
-                current.append(section);
-            }
-        }
-        if (current.length() > 0) {
-            chunkList.add(current.toString().trim());
-        }
-        return chunkList;
+        return split(String.join("\n\n", sections),
+            new DocumentSplitConfig(null, blockSize, overlap, ""),
+            text -> List.of(text));
+    }
+
+    static List<String> paragraphs(String content) {
+        return List.of(content.split("\\n\\s*\\n+"));
+    }
+
+    static List<String> lines(String content) {
+        return List.of(content.split("\\n+"));
     }
 }

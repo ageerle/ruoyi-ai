@@ -9,6 +9,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.ruoyi.domain.bo.knowledge.KnowledgeAttachBo;
 import org.ruoyi.domain.bo.knowledge.KnowledgeInfoUploadBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeAttachVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeReparseVo;
 import org.ruoyi.service.knowledge.IKnowledgeAttachService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
@@ -128,5 +129,13 @@ public class KnowledgeAttachController extends BaseController {
     public R<Void> parse(@PathVariable Long id) {
         knowledgeAttachService.parse(id);
         return R.ok();
+    }
+
+    @SaCheckPermission("system:attach:edit")
+    @Log(title = "知识库附件批量重新解析", businessType = BusinessType.UPDATE)
+    @PostMapping("/reparse/knowledge/{knowledgeId}")
+    @RepeatSubmit()
+    public R<KnowledgeReparseVo> reparseKnowledge(@PathVariable Long knowledgeId) {
+        return R.ok(knowledgeAttachService.reparseKnowledge(knowledgeId));
     }
 }

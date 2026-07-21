@@ -18,6 +18,7 @@ import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.common.core.service.OssService;
 
 import java.util.List;
@@ -152,6 +153,11 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      * 保存前的数据校验
      */
     private void validEntityBeforeSave(KnowledgeInfo entity){
+        int blockSize = entity.getTextBlockSize() == null
+            ? DocumentSplitConfig.DEFAULT_BLOCK_SIZE : entity.getTextBlockSize().intValue();
+        int overlap = entity.getOverlapChar() == null
+            ? DocumentSplitConfig.DEFAULT_OVERLAP : entity.getOverlapChar().intValue();
+        new DocumentSplitConfig(entity.getSeparator(), blockSize, overlap, "");
         //TODO 做一些数据校验,如唯一约束
     }
 

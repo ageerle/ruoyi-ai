@@ -1,47 +1,56 @@
 package org.ruoyi.service.knowledge.impl.split;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.utils.StringUtils;
-import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
-import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.knowledge.TextSplitter;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Markdown 分片器：优先按标题（# ~ ######）切分，保持章节语义完整；
- * 小节合并到不超过块大小，超大章节再按滑动窗口切分
- */
 @Component
-@AllArgsConstructor
-@Slf4j
 public class MarkdownTextSplitter implements TextSplitter {
-
-    private final IKnowledgeInfoService knowledgeInfoService;
-
     @Override
-    public List<String> split(String content, String kid) {
-        int textBlockSize = 1000;
-        int overlapChar = 50;
-        if (StringUtils.isNotBlank(kid)) {
-            try {
-                KnowledgeInfoVo info = knowledgeInfoService.queryById(Long.parseLong(kid));
-                if (info != null) {
-                    if (info.getTextBlockSize() != null && info.getTextBlockSize() > 0) {
-                        textBlockSize = info.getTextBlockSize().intValue();
-                    }
-                    if (info.getOverlapChar() != null && info.getOverlapChar() > 0) {
-                        overlapChar = info.getOverlapChar().intValue();
-                    }
+    public List<String> split(String content, DocumentSplitConfig config) {
+        return SplitterSupport.split(content, config, this::sections);
+    }
+
+    /** Split headings without treating heading-looking lines inside fenced code as headings. */
+    private List<String> sections(String markdown) {
+        String[] lines = markdown.split("\\n", -1);
+        List<String> sections = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean fenced = false;
+        String fenceMarker = null;
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            String trimmed = line.stripLeading();
+            if (trimmed.startsWith("```") || trimmed.startsWith("~~~")) {
+                String marker = trimmed.substring(0, 3);
+                if (!fenced) {
+                    fenced = true;
+                    fenceMarker = marker;
+                } else if (marker.equals(fenceMarker)) {
+                    fenced = false;
+                    fenceMarker = null;
                 }
-            } catch (Exception e) {
-                log.warn("查询知识库配置失败，使用默认配置, kid={}", kid, e);
+            }
+            boolean atx = !fenced && line.matches("^#{1,6}(\\s+.*)?$");
+            boolean setextTitle = !fenced && i + 1 < lines.length
+                && lines[i + 1].matches("^\\s*(=+|-+)\\s*$") && !line.isBlank();
+            if ((atx || setextTitle) && current.length() > 0) flush(sections, current);
+            current.append(line);
+            if (i < lines.length - 1) current.append('\n');
+            if (setextTitle) {
+                current.append(lines[++i]);
+                if (i < lines.length - 1) current.append('\n');
             }
         }
-        // 按标题行切分（标题保留在各自小节开头）
-        String[] sections = content.split("(?m)(?=^#{1,6}\\s)");
-        return SplitterSupport.mergeAndSplit(sections, textBlockSize, overlapChar);
+        flush(sections, current);
+        return sections;
+    }
+
+    private static void flush(List<String> sections, StringBuilder current) {
+        if (!current.toString().isBlank()) sections.add(current.toString());
+        current.setLength(0);
     }
 }

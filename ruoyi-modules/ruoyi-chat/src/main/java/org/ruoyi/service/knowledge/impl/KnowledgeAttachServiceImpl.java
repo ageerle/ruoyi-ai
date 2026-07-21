@@ -27,12 +27,14 @@ import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
 import org.ruoyi.domain.vo.knowledge.DocFragmentCountVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeAttachVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeReparseVo;
 import org.ruoyi.factory.ResourceLoaderFactory;
 import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
 import org.ruoyi.service.knowledge.IKnowledgeAttachService;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.knowledge.ResourceLoader;
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.springframework.scheduling.annotation.Async;
@@ -184,9 +186,16 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
     @Override
     public void parse(Long id) {
         KnowledgeAttach attach = baseMapper.selectById(id);
-        if (attach == null || (!KnowledgeAttachStatus.WAITING.getCode().equals(attach.getStatus()) && !KnowledgeAttachStatus.FAILED.getCode().equals(attach.getStatus()))) {
+        if (attach == null || KnowledgeAttachStatus.PARSING.getCode().equals(attach.getStatus())) {
             return;
         }
+
+        int claimed = baseMapper.update(null, Wrappers.<KnowledgeAttach>lambdaUpdate()
+            .set(KnowledgeAttach::getStatus, KnowledgeAttachStatus.PARSING.getCode())
+            .set(KnowledgeAttach::getRemark, null)
+            .eq(KnowledgeAttach::getId, id)
+            .ne(KnowledgeAttach::getStatus, KnowledgeAttachStatus.PARSING.getCode()));
+        if (claimed == 0) return;
 
         try {
             attach.setStatus(KnowledgeAttachStatus.PARSING.getCode()); // 解析中
@@ -196,6 +205,16 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
             Long knowledgeId = attach.getKnowledgeId();
             String docId = attach.getDocId();
+            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(knowledgeId);
+            if (knowledgeInfoVo == null) {
+                throw new ServiceException("知识库不存在: " + knowledgeId);
+            }
+            int blockSize = knowledgeInfoVo.getTextBlockSize() == null
+                ? DocumentSplitConfig.DEFAULT_BLOCK_SIZE : knowledgeInfoVo.getTextBlockSize().intValue();
+            int overlap = knowledgeInfoVo.getOverlapChar() == null
+                ? DocumentSplitConfig.DEFAULT_OVERLAP : knowledgeInfoVo.getOverlapChar().intValue();
+            DocumentSplitConfig splitConfig = new DocumentSplitConfig(
+                knowledgeInfoVo.getSeparator(), blockSize, overlap, attach.getType());
             List<KnowledgeFragment> oldFragments = knowledgeFragmentMapper.selectList(
                     Wrappers.<KnowledgeFragment>lambdaQuery().eq(KnowledgeFragment::getDocId, docId));
 
@@ -210,7 +229,7 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             try (InputStream inputStream = new URL(ossDTO.getUrl()).openStream()) {
                 content = resourceLoader.getContent(inputStream);
             }
-            List<String> chunkList = resourceLoader.getChunkList(content, String.valueOf(knowledgeId));
+            List<String> chunkList = resourceLoader.getChunkList(content, splitConfig);
 
             if (CollUtil.isEmpty(chunkList)) {
                 throw new RuntimeException("文档分片结果为空，请检查文档内容或分片器是否支持该文件类型");
@@ -231,7 +250,6 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
                 knowledgeFragment.setCreateTime(new Date());
                 knowledgeFragmentList.add(knowledgeFragment);
             }
-            KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(knowledgeId);
             ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
 
             StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
@@ -274,5 +292,23 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             attach.setRemark(StringUtils.substring(e.getMessage(), 0, 255)); // 保存错误原因，截取防止溢出
             baseMapper.updateById(attach);
         }
+    }
+
+    @Override
+    public KnowledgeReparseVo reparseKnowledge(Long knowledgeId) {
+        List<KnowledgeAttach> attachments = baseMapper.selectList(
+            Wrappers.<KnowledgeAttach>lambdaQuery().eq(KnowledgeAttach::getKnowledgeId, knowledgeId));
+        int submitted = 0;
+        int skipped = 0;
+        IKnowledgeAttachService proxy = SpringUtils.getBean(IKnowledgeAttachService.class);
+        for (KnowledgeAttach attachment : attachments) {
+            if (KnowledgeAttachStatus.PARSING.getCode().equals(attachment.getStatus())) {
+                skipped++;
+            } else {
+                proxy.parse(attachment.getId());
+                submitted++;
+            }
+        }
+        return new KnowledgeReparseVo(submitted, skipped, attachments.size());
     }
 }
