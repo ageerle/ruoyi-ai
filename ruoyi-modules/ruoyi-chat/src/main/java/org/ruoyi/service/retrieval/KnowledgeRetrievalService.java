@@ -31,4 +31,6 @@ public interface KnowledgeRetrievalService {
      * @return 检索结果列表
      */
     List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo);
+
+    void invalidateKnowledge(String kid);
 }
