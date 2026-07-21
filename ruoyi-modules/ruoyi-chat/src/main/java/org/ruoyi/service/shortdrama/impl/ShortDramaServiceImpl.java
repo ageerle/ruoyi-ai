@@ -830,7 +830,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             } catch (Exception e) { log.debug("解析摄影规则失败: {}", e.getMessage()); }
         }
 
-        // 3. 角色信息（名字→年龄性别，附加站位 + @imageN 参考图标记）
+        // 3. 角色信息（名字→年龄性别+视觉描述，附加站位 + @imageN 参考图标记）
         List<CharacterRef> chars = parseCharacterRefs(storyboard.getCharactersJson());
         if (chars != null && !chars.isEmpty()) {
             sb.append("[角色] ");
@@ -842,9 +842,13 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     ? firstNotBlank(ch.getAgeRange(), "") + firstNotBlank(ch.getGender(), "")
                     : ref.getName();
                 sb.append(desc).append("(").append(ref.getName()).append(")");
+                // 附加角色视觉描述，确保文字 prompt 也承载外貌信息，不能全靠参考图
+                if (ch != null && StrUtil.isNotBlank(ch.getVisualDescription())) {
+                    sb.append("，外貌：").append(ch.getVisualDescription());
+                }
                 // 多参考图模式：附加 @imageN 标记
                 if (hasRefImages) {
-                    int imgIdx = findRefImageIndex(refImages, storyboard.getProjectId(), ref.getName());
+                    int imgIdx = findRefImageIndex(refImages, storyboard.getProjectId(), ref.getName(), ref.getAppearance());
                     if (imgIdx >= 0) sb.append("@image").append(imgIdx + 1);
                 }
                 if (StrUtil.isNotBlank(ref.getSlot())) sb.append("在").append(ref.getSlot());
@@ -972,7 +976,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 CharacterRef ref = chars.get(i);
                 sb.append(ref.getName());
                 if (hasRefImages) {
-                    int imageIndex = findRefImageIndex(refImages, storyboard.getProjectId(), ref.getName());
+                    int imageIndex = findRefImageIndex(refImages, storyboard.getProjectId(), ref.getName(), ref.getAppearance());
                     if (imageIndex >= 0) sb.append("仅绑定@image").append(imageIndex + 1);
                 }
             }
@@ -984,7 +988,12 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     /** 在参考图列表中找到指定角色图片的索引 */
     private int findRefImageIndex(java.util.List<String> refImages, Long projectId, String characterName) {
-        String targetUrl = findCharacterImageUrl(projectId, characterName);
+        return findRefImageIndex(refImages, projectId, characterName, null);
+    }
+
+    /** 在参考图列表中找到指定角色（含形象标识）图片的索引 */
+    private int findRefImageIndex(java.util.List<String> refImages, Long projectId, String characterName, String appearance) {
+        String targetUrl = findCharacterImageUrl(projectId, characterName, appearance);
         if (StrUtil.isBlank(targetUrl)) return -1;
         for (int i = 0; i < refImages.size(); i++) {
             if (targetUrl.equals(refImages.get(i))) return i;
