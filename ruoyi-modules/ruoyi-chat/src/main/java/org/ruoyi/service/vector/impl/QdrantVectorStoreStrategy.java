@@ -84,7 +84,12 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
     }
 
     private int getModelDimension(String modelName) {
-        return chatModelService.selectModelByName(modelName).getModelDimension();
+        var modelConfig = chatModelService.selectModelByName(modelName);
+        if (modelConfig == null || modelConfig.getModelDimension() == null) {
+            log.warn("无法解析模型 {} 的向量维度，使用默认值 1024", modelName);
+            return 1024;
+        }
+        return modelConfig.getModelDimension();
     }
 
     @Override
