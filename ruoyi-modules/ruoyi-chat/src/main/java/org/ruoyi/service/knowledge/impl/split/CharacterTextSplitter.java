@@ -49,10 +49,14 @@ public class CharacterTextSplitter implements TextSplitter {
         }
 
         List<String> chunkList = new ArrayList<>();
-        if (content.contains(knowledgeSeparator) && StringUtils.isNotBlank(knowledgeSeparator)) {
-            // 按自定义分隔符切分
-            String[] chunks = content.split(knowledgeSeparator);
-            chunkList.addAll(Arrays.asList(chunks));
+        if (StringUtils.isNotBlank(knowledgeSeparator) && content.contains(knowledgeSeparator)) {
+            // 按自定义分隔符切分（字面量匹配，避免分隔符被当作正则）
+            String[] chunks = content.split(java.util.regex.Pattern.quote(knowledgeSeparator));
+            for (String chunk : chunks) {
+                if (StringUtils.isNotBlank(chunk)) {
+                    chunkList.add(chunk.trim());
+                }
+            }
         } else {
             int indexMin = 0;
             int len = content.length();
