@@ -25,6 +25,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class EmbeddingModelFactory {
 
+    /**
+     * 厂商 providerCode → Spring Bean 名称映射
+     * 处理 providerCode 与 @Component 注册名不一致的情况
+     */
+    private static final Map<String, String> PROVIDER_BEAN_MAPPING = Map.of(
+            "qianwen", "alibailian"
+    );
+
     private final ApplicationContext applicationContext;
 
     private final IChatModelService chatModelService;
@@ -116,8 +124,10 @@ public class EmbeddingModelFactory {
      */
     private BaseEmbedModelService createModelInstance(String factory, ChatModelVo config) {
         try {
+            // 解析实际的 Bean 名称（处理 providerCode 与 @Component 注册名不一致的情况）
+            String beanName = PROVIDER_BEAN_MAPPING.getOrDefault(factory, factory);
             // 从Spring上下文中获取模型实例
-            BaseEmbedModelService model = applicationContext.getBean(factory, BaseEmbedModelService.class);
+            BaseEmbedModelService model = applicationContext.getBean(beanName, BaseEmbedModelService.class);
             // 配置模型参数
             model.configure(config);
             // 增加嵌入模型监听器
