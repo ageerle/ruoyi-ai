@@ -17,6 +17,7 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.PartialThinking;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
@@ -685,6 +686,17 @@ public class ChatServiceFacade implements IChatService {
                 // 3. 转发给外部 handler（Workflow 等模块可处理）
                 if (externalHandler != null) {
                     externalHandler.onPartialResponse(partialResponse);
+                }
+            }
+
+            @Override
+            public void onPartialThinking(PartialThinking partialThinking) {
+                // 发送推理内容到 SSE（前端通过 reasoning 事件监听）
+                SseMessageUtils.sendReasoning(userId, partialThinking.text());
+
+                // 转发给外部 handler
+                if (externalHandler != null) {
+                    externalHandler.onPartialThinking(partialThinking);
                 }
             }
 
