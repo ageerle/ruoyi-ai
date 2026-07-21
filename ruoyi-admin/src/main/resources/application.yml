@@ -301,11 +301,12 @@ warm-flow:
 vector-store:
   # 向量存储类型 可选(weaviate/milvus/qdrant)
   # 如需修改向量库类型，请修改此配置值!
-  type: milvus
+  # 注意：需与 docker-compose 实际部署的向量库保持一致（当前 compose 内置 weaviate，映射端口 28080）
+  type: weaviate
   # Weaviate配置
   weaviate:
     protocol: http
-    host: 127.0.0.1:6038
+    host: 127.0.0.1:28080
     classname: LocalKnowledge
   # Milvus配置
   milvus:
