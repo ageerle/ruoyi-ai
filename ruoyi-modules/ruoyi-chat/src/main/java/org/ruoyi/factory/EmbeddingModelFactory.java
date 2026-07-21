@@ -77,13 +77,22 @@ public class EmbeddingModelFactory {
 
     /**
      * 刷新模型缓存
-     * 根据给定的嵌入模型ID从缓存中移除对应的模型
+     * 根据给定的嵌入模型ID解析模型名称后，从缓存中移除对应的模型
      *
      * @param embeddingModelId 嵌入模型的唯一标识ID
      */
     public void refreshModel(Long embeddingModelId) {
-        // 从模型缓存中移除指定ID的模型
-        modelCache.remove(embeddingModelId);
+        ChatModelVo modelConfig = chatModelService.queryById(embeddingModelId);
+        if (modelConfig != null) {
+            modelCache.remove(modelConfig.getModelName());
+        }
+    }
+
+    /**
+     * 按模型名称刷新缓存
+     */
+    public void refreshModelByName(String embeddingModelName) {
+        modelCache.remove(embeddingModelName);
     }
 
     /**

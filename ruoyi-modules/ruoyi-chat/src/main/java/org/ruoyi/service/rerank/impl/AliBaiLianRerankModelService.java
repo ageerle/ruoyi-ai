@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component("qianwenRerank")
+@org.springframework.context.annotation.Scope("prototype")
 public class AliBaiLianRerankModelService implements RerankModelService {
 
     private final OkHttpClient okHttpClient;
