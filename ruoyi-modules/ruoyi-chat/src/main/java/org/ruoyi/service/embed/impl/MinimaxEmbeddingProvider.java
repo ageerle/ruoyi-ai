@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
  * @date 2026/3/21
  */
 @Component("minimax")
+@org.springframework.context.annotation.Scope("prototype")
 public class MinimaxEmbeddingProvider extends OpenAiEmbeddingProvider {
 
 }

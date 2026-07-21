@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component("zhipuRerank")
+@org.springframework.context.annotation.Scope("prototype")
 public class ZhiPuRerankModelService implements RerankModelService {
 
     private final OkHttpClient okHttpClient;

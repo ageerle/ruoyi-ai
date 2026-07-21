@@ -1131,7 +1131,8 @@ CREATE TABLE `knowledge_attach`  (
                                      `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
                                      `knowledge_id` bigint NOT NULL COMMENT '知识库ID',
                                      `oss_id` bigint NULL DEFAULT NULL COMMENT '对象存储ID',
-                                     `doc_id` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '文档ID',
+                                     `doc_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '文档ID',
+                                     `file_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '文件SHA-256摘要',
                                      `name` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '附件名称',
                                      `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '附件类型',
                                      `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '部门',
@@ -1143,7 +1144,8 @@ CREATE TABLE `knowledge_attach`  (
                                      `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户Id',
                                      `status` tinyint NULL DEFAULT 0 COMMENT '解析状态: 0待解析, 1解析中, 2已解析, 3解析失败',
                                      PRIMARY KEY (`id`) USING BTREE,
-                                     UNIQUE INDEX `idx_kname`(`knowledge_id` ASC, `name` ASC) USING BTREE
+                                     UNIQUE INDEX `idx_kname`(`knowledge_id` ASC, `name` ASC) USING BTREE,
+                                     UNIQUE INDEX `uk_knowledge_file_hash`(`knowledge_id`, `file_hash`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2033199209203183619 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识库附件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1156,8 +1158,9 @@ CREATE TABLE `knowledge_attach`  (
 DROP TABLE IF EXISTS `knowledge_fragment`;
 CREATE TABLE `knowledge_fragment`  (
                                        `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+                                       `fid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '向量库片段ID',
                                        `idx` int NOT NULL COMMENT '片段索引下标',
-                                       `doc_id` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '文档ID',
+                                       `doc_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '文档ID',
                                        `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '文档内容',
                                        `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '部门',
                                        `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
@@ -1168,6 +1171,9 @@ CREATE TABLE `knowledge_fragment`  (
                                        `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户Id',
                                        `knowledge_id` bigint NULL DEFAULT NULL COMMENT '知识库ID',
                                        PRIMARY KEY (`id`) USING BTREE,
+                                       UNIQUE INDEX `uk_fid`(`fid`) USING BTREE,
+                                       INDEX `idx_doc_id`(`doc_id`) USING BTREE,
+                                       INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
                                        FULLTEXT INDEX `ft_content`(`content`) WITH PARSER `ngram`
 ) ENGINE = InnoDB AUTO_INCREMENT = 2033199209131880451 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
 
@@ -1206,7 +1212,9 @@ CREATE TABLE `knowledge_info`  (
                                    `enable_hybrid` tinyint(1) NULL DEFAULT 0 COMMENT '是否启用混合检索',
                                    `hybrid_alpha` double NULL DEFAULT 0.5 COMMENT '混合检索权重比例 (0.0=纯向量, 1.0=纯关键词)',
                                    `system_prompt` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '系统提示词',
-                                   PRIMARY KEY (`id`) USING BTREE
+                                   PRIMARY KEY (`id`) USING BTREE,
+                                   INDEX `idx_tenant_user` (`tenant_id`, `user_id`) USING BTREE,
+                                   INDEX `idx_tenant_share` (`tenant_id`, `share`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2033198818050781187 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------

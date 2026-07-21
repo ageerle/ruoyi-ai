@@ -80,9 +80,10 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
         String retrievalResult;
         String mode = config.getRetrievalMode() != null ? config.getRetrievalMode().toLowerCase() : "vector";
 
-        // 目前只支持向量检索，图谱检索需要依赖graph模块
-        if ("graph".equals(mode) || "hybrid".equals(mode)) {
-            log.warn("Graph retrieval mode is not supported in workflow-api module, falling back to vector retrieval");
+        // 图谱检索需要依赖 graph 模块，暂不支持；vector/hybrid 由统一检索服务处理
+        if ("graph".equals(mode)) {
+            log.warn("Graph retrieval mode is not supported");
+            throw new UnsupportedOperationException("GraphRAG retrieval is not supported");
         }
 
         retrievalResult = retrieveFromVector(config, finalQuery);
@@ -203,18 +204,75 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
     }
 
     /**
-     * 从向量库检索
+     * 从向量库检索（复用聊天模块的统一检索服务：向量 + 可选混合检索 + 可选重排）
      */
     private String retrieveFromVector(KnowledgeRetrievalNodeConfig config, String query) {
         try {
-
-            // 获取知识库信息以获取embedding模型配置
             Long knowledgeId = Long.parseLong(config.getKnowledgeId());
 
-            // 合并结果
-            String mergedResult = "根据知识库id + query 查询知识库内容";
+            org.ruoyi.service.knowledge.IKnowledgeInfoService knowledgeInfoService =
+                SpringUtil.getBean(org.ruoyi.service.knowledge.IKnowledgeInfoService.class);
+            org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo kb = knowledgeInfoService.queryById(knowledgeId);
+            if (kb == null) {
+                log.error("Knowledge base not found: {}", knowledgeId);
+                return "错误：知识库不存在, id=" + knowledgeId;
+            }
 
-            return mergedResult;
+            org.ruoyi.common.chat.service.chat.IChatModelService chatModelService =
+                SpringUtil.getBean(org.ruoyi.common.chat.service.chat.IChatModelService.class);
+            org.ruoyi.common.chat.domain.vo.chat.ChatModelVo embModel =
+                chatModelService.selectModelByName(kb.getEmbeddingModel());
+            if (embModel == null) {
+                log.error("Embedding model not found: {}", kb.getEmbeddingModel());
+                return "错误：知识库未配置有效的向量模型";
+            }
+
+            // 组装检索参数：节点配置优先，混合检索/重排继承知识库配置
+            org.ruoyi.domain.bo.vector.QueryVectorBo bo = new org.ruoyi.domain.bo.vector.QueryVectorBo();
+            bo.setQuery(query);
+            bo.setKid(String.valueOf(knowledgeId));
+            bo.setMaxResults(config.getTopK() != null ? config.getTopK() : kb.getRetrieveLimit());
+            bo.setSimilarityThreshold(config.getSimilarityThreshold() != null
+                ? config.getSimilarityThreshold() : kb.getSimilarityThreshold());
+            bo.setEmbeddingModelName(kb.getEmbeddingModel());
+            bo.setVectorModelName(kb.getVectorModel());
+            bo.setApiKey(embModel.getApiKey());
+            bo.setBaseUrl(embModel.getApiHost());
+
+            String mode = config.getRetrievalMode() != null ? config.getRetrievalMode().toLowerCase() : "vector";
+            boolean enableHybrid = "hybrid".equals(mode)
+                || (kb.getEnableHybrid() != null && kb.getEnableHybrid() == 1);
+            bo.setEnableHybrid(enableHybrid);
+            bo.setHybridAlpha(kb.getHybridAlpha());
+            bo.setEnableRerank(kb.getEnableRerank() != null && kb.getEnableRerank() == 1);
+            bo.setRerankModelName(kb.getRerankModel());
+            bo.setRerankTopN(kb.getRerankTopN());
+            bo.setRerankScoreThreshold(kb.getRerankScoreThreshold());
+
+            org.ruoyi.service.retrieval.KnowledgeRetrievalService retrievalService =
+                SpringUtil.getBean(org.ruoyi.service.retrieval.KnowledgeRetrievalService.class);
+            java.util.List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> results = retrievalService.retrieve(bo);
+            if (results == null || results.isEmpty()) {
+                log.info("Knowledge retrieval returned no results, kid={}, query={}", knowledgeId, query);
+                return "";
+            }
+
+            // 合并结果
+            boolean returnSource = config.getReturnSource() == null || config.getReturnSource();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < results.size(); i++) {
+                org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo vo = results.get(i);
+                sb.append(i + 1).append(". ").append(vo.getContent());
+                if (returnSource && StringUtils.isNotBlank(vo.getSourceName())) {
+                    sb.append("（来源: ").append(vo.getSourceName());
+                    if (vo.getScore() != null) {
+                        sb.append(String.format(", 相关度: %.3f", vo.getScore()));
+                    }
+                    sb.append("）");
+                }
+                sb.append("\n");
+            }
+            return sb.toString().trim();
         } catch (NumberFormatException e) {
             log.error("Invalid knowledge base ID format: {}", config.getKnowledgeId(), e);
             return "错误：知识库ID格式无效";

@@ -19,6 +19,7 @@ import java.util.Set;
  * @Description: 阿里百炼基础嵌入模型（兼容openai）
  */
 @Component("alibailian")
+@org.springframework.context.annotation.Scope("prototype")
 public class AliBaiLianBaseEmbedProvider extends OpenAiEmbeddingProvider {
 
     private ChatModelVo chatModelVo;

@@ -77,6 +77,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -161,7 +162,8 @@ public class ChatServiceFacade implements IChatService {
             throw new IllegalArgumentException("模型不存在: " + chatRequest.getModel());
         }
 
-        // 2. 构建上下文消息列表
+        // 2. 构建上下文消息列表（系统提示词 + 历史消息 + 当前用户消息）
+        //    注意：RAG 检索增强统一在 handleAgentChat 中执行一次，此处不再重复检索
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest, agentVo);
 
         chatRequest.setEmitter(emitter);
@@ -282,12 +284,20 @@ public class ChatServiceFacade implements IChatService {
             .responseStrategy(SupervisorResponseStrategy.SUMMARY);
         SupervisorAgent supervisor = supervisorBuilder.build();
 
-        // 知识库增强：智能体绑定了知识库时，对 supervisor 输入做一次 RAG 增强
+        // 知识库增强：智能体绑定了知识库时，对 supervisor 输入做一次 RAG 增强（全程唯一一次检索）
         String augmentedInput = augmentAgentInput(chatRequest, agentVo);
-        // 智能体自定义系统提示词：supervisor builder 不支持 systemMessage，前置到输入
-        String prompt = (agentVo != null && StringUtils.isNotBlank(agentVo.getSystemPrompt()))
-            ? agentVo.getSystemPrompt() + "\n\n" + augmentedInput
-            : augmentedInput;
+        // 组装最终 prompt：系统提示词 → 多轮历史 → RAG 增强后的当前提问
+        StringBuilder promptBuilder = new StringBuilder();
+        if (agentVo != null && StringUtils.isNotBlank(agentVo.getSystemPrompt())) {
+            promptBuilder.append(agentVo.getSystemPrompt()).append("\n\n");
+        }
+        String historyText = formatHistoryMessages(chatRequest.getContextMessages(), chatRequest.getContent());
+        if (StringUtils.isNotBlank(historyText)) {
+            promptBuilder.append("以下是本次会话的历史对话，请结合上下文理解用户最新提问：\n")
+                .append(historyText).append("\n\n");
+        }
+        promptBuilder.append(augmentedInput);
+        String prompt = promptBuilder.toString();
 
         String tokenValue = chatRequest.getTokenValue();
 
@@ -316,8 +326,9 @@ public class ChatServiceFacade implements IChatService {
      * 兜底 MCP 工具装配（无智能体时使用，保留原有 3 个硬编码客户端逻辑）
      */
     private ToolProvider buildDefaultMcpToolProvider(Long userId) {
+        String npxCommand = resolveNpxCommand();
         McpTransport playwrightTransport = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y", "@playwright/mcp@latest"))
+            .command(List.of(npxCommand, "-y", "@playwright/mcp@latest"))
             .logEvents(true)
             .build();
         McpClient playwrightMcpClient = new DefaultMcpClient.Builder()
@@ -327,7 +338,7 @@ public class ChatServiceFacade implements IChatService {
 
         String userDir = System.getProperty("user.dir");
         McpTransport filesystemTransport = new StdioMcpTransport.Builder()
-            .command(List.of("C:\\Program Files\\nodejs\\npx.cmd", "-y",
+            .command(List.of(npxCommand, "-y",
                 "@modelcontextprotocol/server-filesystem", userDir))
             .logEvents(true)
             .build();
@@ -339,6 +350,14 @@ public class ChatServiceFacade implements IChatService {
         return McpToolProvider.builder()
             .mcpClients(List.of(playwrightMcpClient, filesystemMcpClient))
             .build();
+    }
+
+    private String resolveNpxCommand() {
+        String configured = System.getProperty("mcp.npx.command");
+        if (StringUtils.isNotBlank(configured)) return configured;
+        String fromEnv = System.getenv("MCP_NPX_COMMAND");
+        if (StringUtils.isNotBlank(fromEnv)) return fromEnv;
+        return System.getProperty("os.name", "").toLowerCase().contains("win") ? "npx.cmd" : "npx";
     }
 
     /**
@@ -476,27 +495,7 @@ public class ChatServiceFacade implements IChatService {
             messages.add(SystemMessage.from(agentVo.getSystemPrompt()));
         }
 
-        // 1. 初始化当前用户消息
-        UserMessage userMessage = UserMessage.userMessage(chatRequest.getContent());
-
-        // 2. 知识库检索增强 (RAG)：智能体的 knowledgeIds 优先，回退到请求的 knowledgeId
-        List<Long> knowledgeIds = collectKnowledgeIds(chatRequest, agentVo);
-        if (knowledgeIds != null && !knowledgeIds.isEmpty()) {
-            RetrievalAugmentor augmentor = buildMultiKnowledgeAugmentor(knowledgeIds);
-            if (augmentor != null) {
-                log.info("执行多知识库 RAG 流程: kids={}", knowledgeIds);
-                Metadata metadata = Metadata.from(userMessage, chatRequest.getSessionId(), new ArrayList<>());
-                AugmentationRequest augmentationRequest = new AugmentationRequest(userMessage, metadata);
-                AugmentationResult result = augmentor.augment(augmentationRequest);
-                ChatMessage augmented = result.chatMessage();
-                if (augmented instanceof UserMessage) {
-                    userMessage = (UserMessage) augmented;
-                    log.debug("RAG 增强完成，UserMessage 已注入背景知识");
-                }
-            }
-        }
-
-        // 3. 从数据库查询历史对话消息（放在前面）
+        // 1. 从数据库查询历史对话消息（放在前面）
         if (chatRequest.getSessionId() != null) {
             MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
             if (memory != null) {
@@ -508,10 +507,35 @@ public class ChatServiceFacade implements IChatService {
             }
         }
 
-        // 4. 添加经过增强的用户消息（放在最后）
-        messages.add(userMessage);
+        // 2. 添加当前用户消息（放在最后；RAG 增强在 handleAgentChat 中统一执行，避免重复检索）
+        messages.add(UserMessage.userMessage(chatRequest.getContent()));
 
         return messages;
+    }
+
+    /**
+     * 将上下文消息格式化为多轮对话文本（供只接受 String 输入的 Supervisor 使用）。
+     * 跳过 SystemMessage（系统提示词单独前置）与最后一条当前用户消息（单独做 RAG 增强后拼接）。
+     */
+    private String formatHistoryMessages(List<ChatMessage> contextMessages, String currentContent) {
+        if (contextMessages == null || contextMessages.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        int limit = contextMessages.size();
+        // 最后一条是当前用户消息，不纳入历史（避免与增强后的输入重复）
+        if (limit > 0 && contextMessages.get(limit - 1) instanceof UserMessage) {
+            limit--;
+        }
+        for (int i = 0; i < limit; i++) {
+            ChatMessage msg = contextMessages.get(i);
+            if (msg instanceof UserMessage userMsg) {
+                sb.append("用户: ").append(userMsg.singleText()).append("\n");
+            } else if (msg instanceof AiMessage aiMsg) {
+                sb.append("助手: ").append(aiMsg.text()).append("\n");
+            }
+        }
+        return sb.toString().trim();
     }
 
     /**
@@ -580,18 +604,35 @@ public class ChatServiceFacade implements IChatService {
 
         @Override
         public List<Content> retrieve(Query query) {
-            List<Content> all = new ArrayList<>();
-            for (ContentRetriever r : delegates) {
-                try {
-                    List<Content> part = r.retrieve(query);
-                    if (part != null) {
-                        all.addAll(part);
-                    }
-                } catch (Exception e) {
-                    log.warn("复合检索子检索器异常: {}", e.getMessage());
+            List<CompletableFuture<List<Content>>> futures = delegates.stream()
+                    .map(r -> CompletableFuture.supplyAsync(() -> {
+                        try {
+                            List<Content> part = r.retrieve(query);
+                            return part == null ? List.<Content>of() : part;
+                        } catch (Exception e) {
+                            log.warn("复合检索子检索器异常: {}", e.getMessage());
+                            return List.<Content>of();
+                        }
+                    })).toList();
+            Map<String, Content> unique = new LinkedHashMap<>();
+            for (CompletableFuture<List<Content>> future : futures) {
+                for (Content content : future.join()) {
+                    String key = content.textSegment().metadata().getString("kid") + "|"
+                            + content.textSegment().metadata().getString("docId") + "|"
+                            + content.textSegment().metadata().getString("fid");
+                    if (key.endsWith("null|null|null")) key = content.textSegment().text();
+                    unique.putIfAbsent(key, content);
                 }
             }
-            return all;
+            List<Content> bounded = new ArrayList<>();
+            int chars = 0;
+            for (Content content : unique.values()) {
+                int next = content.textSegment().text().length();
+                if (bounded.size() >= 20 || chars + next > 24000) break;
+                bounded.add(content);
+                chars += next;
+            }
+            return bounded;
         }
     }
 
