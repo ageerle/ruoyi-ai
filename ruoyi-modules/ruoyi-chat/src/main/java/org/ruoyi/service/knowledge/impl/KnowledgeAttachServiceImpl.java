@@ -215,8 +215,6 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
                 ? DocumentSplitConfig.DEFAULT_OVERLAP : knowledgeInfoVo.getOverlapChar().intValue();
             DocumentSplitConfig splitConfig = new DocumentSplitConfig(
                 knowledgeInfoVo.getSeparator(), blockSize, overlap, attach.getType());
-            List<KnowledgeFragment> oldFragments = knowledgeFragmentMapper.selectList(
-                    Wrappers.<KnowledgeFragment>lambdaQuery().eq(KnowledgeFragment::getDocId, docId));
 
             // 获取文件信息并下载
             List<OssDTO> ossDTOs = ossService.selectByIds(String.valueOf(attach.getOssId()));
@@ -262,12 +260,11 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
             storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
             try {
+                // 写入新向量前，先按 docId 清理该文档的旧向量：
+                // 历史数据的片段 fid 为迁移脚本回填的 MD5 值，与向量库中实际存储的 fid 不一致，
+                // 按 fid 删除无法命中旧向量，会导致重复向量累积；按 docId 清理对三种向量库均一致有效。
+                vectorStoreService.removeByDocId(docId, String.valueOf(knowledgeId));
                 vectorStoreService.storeEmbeddings(storeEmbeddingBo);
-                for (KnowledgeFragment old : oldFragments) {
-                    if (StringUtils.isNotBlank(old.getFid())) {
-                        vectorStoreService.removeByFid(old.getFid(), String.valueOf(knowledgeId));
-                    }
-                }
             } catch (Exception vectorError) {
                 for (String newFid : fids) {
                     try {

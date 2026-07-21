@@ -1,6 +1,14 @@
 -- RAG metadata migration (MySQL 8). Safe to execute repeatedly.
+-- 注意：MySQL 8 不支持 ALTER TABLE ... ADD COLUMN IF NOT EXISTS（仅 MariaDB 支持），
+-- 因此列的增量添加统一用 information_schema 守卫 + PREPARE 实现幂等。
+SET @add_file_hash_col = IF(EXISTS(
+    SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE()
+    AND table_name = 'knowledge_attach' AND column_name = 'file_hash'),
+    'SELECT 1',
+    'ALTER TABLE `knowledge_attach` ADD COLUMN `file_hash` varchar(64) NULL DEFAULT NULL COMMENT ''文件SHA-256摘要'' AFTER `doc_id`');
+PREPARE stmt FROM @add_file_hash_col; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 ALTER TABLE `knowledge_attach`
-    ADD COLUMN IF NOT EXISTS `file_hash` varchar(64) NULL DEFAULT NULL COMMENT '文件SHA-256摘要' AFTER `doc_id`,
     MODIFY COLUMN `doc_id` varchar(32) NULL DEFAULT NULL COMMENT '文档ID';
 
 SET @add_file_hash = IF(EXISTS(
@@ -9,8 +17,14 @@ SET @add_file_hash = IF(EXISTS(
     'SELECT 1', 'ALTER TABLE `knowledge_attach` ADD UNIQUE INDEX `uk_knowledge_file_hash` (`knowledge_id`, `file_hash`)');
 PREPARE stmt FROM @add_file_hash; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+SET @add_fid_col = IF(EXISTS(
+    SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE()
+    AND table_name = 'knowledge_fragment' AND column_name = 'fid'),
+    'SELECT 1',
+    'ALTER TABLE `knowledge_fragment` ADD COLUMN `fid` varchar(32) NULL DEFAULT NULL COMMENT ''向量库片段ID'' AFTER `id`');
+PREPARE stmt FROM @add_fid_col; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 ALTER TABLE `knowledge_fragment`
-    ADD COLUMN IF NOT EXISTS `fid` varchar(32) NULL DEFAULT NULL COMMENT '向量库片段ID' AFTER `id`,
     MODIFY COLUMN `doc_id` varchar(32) NULL DEFAULT NULL COMMENT '文档ID';
 
 UPDATE `knowledge_fragment`
