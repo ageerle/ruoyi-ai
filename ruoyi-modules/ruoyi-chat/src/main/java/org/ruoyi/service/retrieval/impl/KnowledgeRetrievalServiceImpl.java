@@ -76,6 +76,8 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         }
         log.info("开始知识库检索, kid={}, query={}", queryVectorBo.getKid(), queryVectorBo.getQuery());
 
+        String retrievalInputPayload = traceActive()
+                ? RagTracePayloadBuilder.retrievalInputSummary(queryVectorBo) : null;
         List<KnowledgeRetrievalVo> finalResults = TraceNodeTemplate.withNode(traceRecordService, traceProperties,
                 "retrieval", RagTraceNodeTypes.NODE_RETRIEVAL,
                 KnowledgeRetrievalServiceImpl.class.getName(), "retrieve",
@@ -206,8 +208,10 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
      */
     private List<KnowledgeRetrievalVo> performRerank(QueryVectorBo queryVectorBo, List<KnowledgeRetrievalVo> coarseResults) {
         int topN = queryVectorBo.getRerankTopN() != null ? queryVectorBo.getRerankTopN() : queryVectorBo.getMaxResults();
+        String rerankInputPayload = traceActive()
+                ? RagTracePayloadBuilder.rerankInputSummary(queryVectorBo, coarseResults.size(), topN) : null;
         TraceNodeHandle traceNode = startTraceNode("rerank", RagTraceNodeTypes.NODE_RERANK, "performRerank",
-                RagTracePayloadBuilder.rerankInputSummary(queryVectorBo, coarseResults.size(), topN));
+                rerankInputPayload);
         try {
             RerankModelService rerankModel = rerankModelFactory.createModel(queryVectorBo.getRerankModelName());
             
@@ -322,6 +326,10 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
             log.warn("写入 RAG 检索 trace 节点失败，traceId={}, nodeId={}", traceId, nodeId, e);
             return null;
         }
+    }
+
+    private boolean traceActive() {
+        return traceProperties.isEnabled() && StringUtils.isNotBlank(TraceContext.getTraceId());
     }
 
     private void finishTraceNode(TraceNodeHandle traceNode, String status, Throwable error, String outputPayload) {

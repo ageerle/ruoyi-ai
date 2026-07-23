@@ -337,7 +337,8 @@ public class ChatServiceFacade implements IChatService {
                         result, RoleType.ASSISTANT.getName(), chatRequest.getModel());
                 }
                 if (llmSpan != null) {
-                    llmSpan.finishSuccess();
+                    llmSpan.finishSuccess(RagTracePayloadBuilder.streamOutputSummary(
+                        result == null ? 0 : result.length()));
                 }
                 finishTraceRun(traceRun, TraceConstants.STATUS_SUCCESS, null);
             } catch (Exception e) {

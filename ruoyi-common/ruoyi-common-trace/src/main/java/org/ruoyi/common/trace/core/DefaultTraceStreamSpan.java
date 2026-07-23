@@ -43,26 +43,26 @@ public class DefaultTraceStreamSpan implements TraceStreamSpan {
     }
 
     @Override
-    public void finishSuccess() {
-        finish(TraceConstants.STATUS_SUCCESS, null);
+    public void finishSuccess(String outputPayload) {
+        finish(TraceConstants.STATUS_SUCCESS, null, outputPayload);
     }
 
     @Override
     public void finishError(Throwable throwable) {
-        finish(TraceConstants.STATUS_ERROR, TracePayloadUtils.error(throwable, traceProperties));
+        finish(TraceConstants.STATUS_ERROR, TracePayloadUtils.error(throwable, traceProperties), null);
     }
 
     @Override
     public void finishCancelledIfRunning() {
-        finish(TraceConstants.STATUS_CANCELLED, null);
+        finish(TraceConstants.STATUS_CANCELLED, null, null);
     }
 
-    private void finish(String status, String errorMessage) {
+    private void finish(String status, String errorMessage, String outputPayload) {
         if (!finished.compareAndSet(false, true)) {
             return;
         }
         try {
-            traceRecordService.finishNode(traceId, nodeId, status, errorMessage, null,
+            traceRecordService.finishNode(traceId, nodeId, status, errorMessage, outputPayload,
                 new Date(), System.currentTimeMillis() - startMillis);
         } catch (Exception e) {
             log.warn("结束 trace stream span 失败，traceId={}, nodeId={}", traceId, nodeId, e);

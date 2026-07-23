@@ -7,7 +7,14 @@ public interface TraceStreamSpan {
 
     void detach();
 
-    void finishSuccess();
+    /**
+     * 结束成功的流式节点，并可写入输出摘要。
+     */
+    default void finishSuccess() {
+        finishSuccess(null);
+    }
+
+    void finishSuccess(String outputPayload);
 
     void finishError(Throwable throwable);
 
