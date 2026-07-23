@@ -8,9 +8,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import org.ruoyi.agent.manager.TableSchemaManager;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +57,22 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
         String upperSql = sql.trim().toUpperCase();
         if (!upperSql.startsWith("SELECT")) {
             return "Error: Only SELECT queries are allowed for security reasons";
+        }
+
+        // 校验表白名单：未配置表时直接拒绝，已配置则校验 SQL 中引用的表
+        TableSchemaManager schemaManager = SpringUtils.getBean(TableSchemaManager.class);
+        List<String> allowedTables = schemaManager.getAllowedTableNames();
+        if (allowedTables.isEmpty()) {
+            return "Error: 当前未配置可查询的数据库表，无法执行任何SQL查询。请联系管理员配置 AGENT_ALLOWED_TABLES";
+        }
+        Set<String> allowedSet = allowedTables.stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+        Set<String> referencedTables = extractTableNames(upperSql);
+        for (String table : referencedTables) {
+            if (!allowedSet.contains(table.toLowerCase())) {
+                return "Error: 表 " + table + " 不在允许查询的表列表中。允许查询的表: " + String.join(", ", allowedTables);
+            }
         }
 
         try {
@@ -97,6 +118,21 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
             // 3. 必须在 finally 中清除上下文，防止污染其他请求
             DynamicDataSourceContextHolder.clear();
         }
+    }
+
+    /**
+     * 从 SQL 中提取引用的表名（FROM / JOIN 后的标识符）
+     * 覆盖 FROM t1, t2 / FROM t1 JOIN t2 / FROM `t1` 等常见写法
+     */
+    private Set<String> extractTableNames(String upperSql) {
+        Set<String> tables = new java.util.HashSet<>();
+        // 匹配 FROM 或 JOIN 后面的表名（支持反引号包裹）
+        Pattern pattern = Pattern.compile("(?:FROM|JOIN)\\s+`?([A-Z0-9_]+)`?", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(upperSql);
+        while (matcher.find()) {
+            tables.add(matcher.group(1));
+        }
+        return tables;
     }
 
     /**

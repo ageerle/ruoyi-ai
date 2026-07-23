@@ -27,13 +27,13 @@ public class WorkflowRuntime extends BaseEntity {
     @TableField("workflow_id")
     private Long workflowId;
 
-    @TableField(value = "input")
+    @TableField(value = "`input`")
     private String input;
 
-    @TableField(value = "output")
+    @TableField(value = "`output`")
     private String output;
 
-    @TableField("status")
+    @TableField("`status`")
     private Integer status;
 
     @TableField("status_remark")

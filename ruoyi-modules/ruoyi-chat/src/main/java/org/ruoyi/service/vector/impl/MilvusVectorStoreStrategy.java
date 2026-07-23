@@ -12,6 +12,9 @@ import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
 import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
+import io.milvus.v2.client.ConnectConfig;
+import io.milvus.v2.client.MilvusClientV2;
+import io.milvus.v2.service.collection.request.DropCollectionReq;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
@@ -37,13 +40,16 @@ import java.util.stream.IntStream;
 public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     private final KnowledgeAttachMapper knowledgeAttachMapper;
+    private final org.ruoyi.mapper.knowledge.KnowledgeInfoMapper knowledgeInfoMapper;
 
     public MilvusVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                      IChatModelService chatModelService,
                                      EmbeddingModelFactory embeddingModelFactory,
-                                     KnowledgeAttachMapper knowledgeAttachMapper) {
+                                     KnowledgeAttachMapper knowledgeAttachMapper,
+                                     org.ruoyi.mapper.knowledge.KnowledgeInfoMapper knowledgeInfoMapper) {
         super(vectorStoreProperties, embeddingModelFactory, chatModelService);
         this.knowledgeAttachMapper = knowledgeAttachMapper;
+        this.knowledgeInfoMapper = knowledgeInfoMapper;
     }
 
     // 缓存不同集合与 autoFlush 配置的 Milvus 连接
@@ -73,6 +79,10 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
      */
     private int getModelDimension(String modelName) {
         ChatModelVo modelConfig = chatModelService.selectModelByName(modelName);
+        if (modelConfig == null || modelConfig.getModelDimension() == null) {
+            log.warn("无法解析模型 {} 的向量维度，使用默认值 1024", modelName);
+            return 1024;
+        }
         return modelConfig.getModelDimension();
     }
 
@@ -100,9 +110,11 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
         long startTime = System.currentTimeMillis();
 
         // 复用连接，写入场景使用 autoFlush=false 以提升批量插入性能
-        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, dimension, false);
+        // addAll is already batched; flush before returning so newly parsed fragments are immediately searchable.
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, dimension, true);
 
-        IntStream.range(0, chunkList.size()).forEach(i -> {
+        List<TextSegment> segments = new ArrayList<>(chunkList.size());
+        for (int i = 0; i < chunkList.size(); i++) {
             String text = chunkList.get(i);
             String fid = fidList.get(i);
             Metadata metadata = new Metadata();
@@ -110,13 +122,18 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
             metadata.put("kid", kid);
             metadata.put("docId", docId);
 
-            TextSegment textSegment = TextSegment.from(text, metadata);
-            Embedding embedding = embeddingModel.embed(text).content();
+            segments.add(TextSegment.from(text, metadata));
+        }
+        List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
+        if (embeddings.size() != segments.size()) {
+            throw new org.ruoyi.common.core.exception.ServiceException("Embedding 返回数量与分片数量不一致");
+        }
+        for (Embedding embedding : embeddings) {
             // 单位化处理
             float[] vector = embedding.vector();
             normalize(vector);
-            embeddingStore.add(Embedding.from(vector), textSegment);
-        });
+        }
+        embeddingStore.addAll(embeddings, segments);
         long endTime = System.currentTimeMillis();
         log.info("Milvus向量存储完成消耗时间：{}秒", (endTime - startTime) / 1000);
     }
@@ -174,6 +191,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
             if (segment == null) continue;
 
             String docId = segment.metadata().getString("docId");
+            String fid = segment.metadata().getString("fid");
             String sourceName = "未知来源";
             if (docId != null) {
                 KnowledgeAttach attach = knowledgeAttachMapper.selectOne(new LambdaQueryWrapper<KnowledgeAttach>()
@@ -188,6 +206,8 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
             double score = match.score();
 
             resultList.add(org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo.builder()
+                    .id(fid)
+                    .docId(docId)
                     .content(segment.text())
                     .score(score)
                     .sourceName(sourceName)
@@ -200,16 +220,40 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @SneakyThrows
     public void removeById(String id, String modelName) {
         // 注意：此处原逻辑使用 collectionname + id，保持现状
-        int dimension = getModelDimension(modelName);
-        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(vectorStoreProperties.getMilvus().getCollectionname() + id, dimension, false);
-        embeddingStore.remove(id);
+        String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + id;
+        MilvusClientV2 client = new MilvusClientV2(ConnectConfig.builder()
+            .uri(vectorStoreProperties.getMilvus().getUrl()).build());
+        try {
+            client.dropCollection(DropCollectionReq.builder().collectionName(collectionName).build());
+            storeCache.keySet().removeIf(key -> key.startsWith(collectionName));
+            log.info("Milvus collection deleted: {}", collectionName);
+        } catch (Exception e) {
+            log.error("Milvus collection delete failed: {}", collectionName, e);
+            throw new org.ruoyi.common.core.exception.ServiceException("Milvus向量集合删除失败");
+        } finally {
+            client.close();
+        }
+    }
+
+    /**
+     * 根据知识库ID解析其 embedding 模型维度，失败时回退默认 1024
+     */
+    private int getDimensionByKid(String kid) {
+        try {
+            org.ruoyi.domain.entity.knowledge.KnowledgeInfo info = knowledgeInfoMapper.selectById(Long.parseLong(kid));
+            if (info != null && info.getEmbeddingModel() != null) {
+                return getModelDimension(info.getEmbeddingModel());
+            }
+        } catch (Exception e) {
+            log.warn("根据 kid={} 解析向量维度失败，使用默认 1024: {}", kid, e.getMessage());
+        }
+        return 1024;
     }
 
     @Override
     public void removeByDocId(String docId, String kid) {
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
-        // 使用默认维度，因为删除操作不需要精确的维度信息
-        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, 1024, false);
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, getDimensionByKid(kid), true);
         Filter filter = MetadataFilterBuilder.metadataKey("docId").isEqualTo(docId);
         embeddingStore.removeAll(filter);
         log.info("Milvus成功删除 docId={} 的所有向量数据", docId);
@@ -218,8 +262,7 @@ public class MilvusVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public void removeByFid(String fid, String kid) {
         String collectionName = vectorStoreProperties.getMilvus().getCollectionname() + kid;
-        // 使用默认维度，因为删除操作不需要精确的维度信息
-        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, 1024, false);
+        EmbeddingStore<TextSegment> embeddingStore = getMilvusStore(collectionName, getDimensionByKid(kid), true);
         Filter filter = MetadataFilterBuilder.metadataKey("fid").isEqualTo(fid);
         embeddingStore.removeAll(filter);
         log.info("Milvus成功删除 fid={} 的所有向量数据", fid);

@@ -19,6 +19,7 @@ import java.util.Set;
  * @Description: OpenAi嵌入模型
  */
 @Component("openai")
+@org.springframework.context.annotation.Scope("prototype")
 public class OpenAiEmbeddingProvider implements BaseEmbedModelService {
     protected ChatModelVo chatModelVo;
 

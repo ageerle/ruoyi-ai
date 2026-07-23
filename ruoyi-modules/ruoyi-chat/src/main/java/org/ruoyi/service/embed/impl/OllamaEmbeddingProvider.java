@@ -19,6 +19,7 @@ import java.util.Set;
  * @Description: Ollama嵌入模型
  */
 @Component("ollama")
+@org.springframework.context.annotation.Scope("prototype")
 public class OllamaEmbeddingProvider implements BaseEmbedModelService {
     private ChatModelVo chatModelVo;
 

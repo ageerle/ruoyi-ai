@@ -6,6 +6,7 @@ import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.service.knowledge.ResourceLoader;
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.knowledge.TextSplitter;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +39,7 @@ public class ExcelFileLoader implements ResourceLoader {
     }
 
     @Override
-    public List<String> getChunkList(String content, String kid) {
-        return textSplitter.split(content, kid);
+    public List<String> getChunkList(String content, DocumentSplitConfig config) {
+        return textSplitter.split(content, config);
     }
 }

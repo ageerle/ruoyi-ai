@@ -32,10 +32,13 @@ public class OllamaServiceImpl implements AbstractChatService {
 
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
+        boolean thinkingEnabled = Boolean.TRUE.equals(chatRequest.getEnableThinking());
         return OllamaStreamingChatModel.builder()
                 .baseUrl(chatModelVo.getApiHost())
                 .modelName(chatModelVo.getModelName())
                 .listeners(List.of(new MyChatModelListener()))
+                .think(thinkingEnabled)
+                .returnThinking(thinkingEnabled)
                 .build();
     }
 

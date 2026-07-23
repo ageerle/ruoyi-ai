@@ -29,13 +29,13 @@
 
 ## ✨ 核心亮点
 
-|     模块     | 现有能力 
-|:----------:|---
-|  **模型管理**  | 多模型接入(OpenAI/DeepSeek/通义/智谱/MiniMax)、多模态理解、Coze/DIFY/FastGPT平台集成
-|  **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate/Qdrant)  + 文档解析
-|  **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             
-|  **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
-|  **多智能体**  | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型          
+|    模块     | 现有能力 
+|:---------:|---
+| **模型管理**  | 多模型接入(DeepSeek/智谱/MIMO/百炼/OpenAI)、多模态理解、Coze/DIFY/FastGPT/RAGFlow平台集成
+| **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate/Qdrant)  + 文档解析
+| **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态                             
+| **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点  
+| **智能体管理** | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型,可以灵活搭配工具,skills          
 
 
 ### 项目源码
@@ -45,6 +45,9 @@
 | 🔧 后端服务  | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
 | 🎨 用户前端  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
 | 🛠️ 管理后台 | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
+| 🎬 短剧平台  | [ruoyi-drama](https://github.com/ageerle/ruoyi-drama) | [ruoyi-drama](https://gitee.com/ageerle/ruoyi-drama) | [ruoyi-drama](https://gitcode.com/ageerle/ruoyi-drama)   |
+| 🤖 编程助手  | [ruoyi-copilot](https://github.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitee.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitcode.com/ageerle/ruoyi-copilot) |
+| 📱 小程序端  | [ruoyi-uniapp](https://github.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitee.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitcode.com/ageerle/ruoyi-uniapp) |
 
 ### 合作项目
 | 项目名称           | GitHub 仓库                                             | Gitee 仓库                                             
@@ -213,15 +216,15 @@ docker-compose -f docker-compose-all.yaml restart [服务名]
   <img src="docs/image/sponsor/atlascloud_banner.png" alt="Atlas Cloud" width="160" height="80">
 </a>
 
-[访问Atlas Cloud官网](https://www.atlascloud.ai?ref=89F97E) · [编程计划优惠](https://www.atlascloud.ai/console/coding-plan)
+[访问Atlas Cloud官网](https://www.atlascloud.ai?ref=89F97E&utm_source=github&utm_campaign=ruoyi-drama) · [编程计划优惠](https://www.atlascloud.ai/console/coding-plan)
 全模态 AI 推理平台，为开发者提供统一的 AI API，支持视频生成、图像生成和大语言模型。一次接入，即可访问 **300+ 精选模型**。
 
 <a href="https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai">
   <img src="docs/image/sponsor/huoshan.png" alt="火山引擎 CodingPlan" width="160" height="80">
 </a>
 
-[火山引擎 CodingPlan 开发者计划](https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai)
-火山引擎是字节跳动旗下的云与 AI 服务平台，火山方舟提供豆包大模型、DeepSeek 等多种模型的 API 接入，为开发者提供一站式 AI 开发与推理服务。
+[注册即领2500万Tokens，立即前往](https://www.volcengine.com/activity/ai618?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai)
+享字节自研豆包模型+满血版开源 SOTA模型，覆盖文本、VLM、图像生成，全模态一站配齐：Seed-2.1、Seedream-5.0、GLM-5.2、DeepSeek等。不止编程、更能解决 Agent 复杂长程任务！
 
 
 ## 💬 社区交流

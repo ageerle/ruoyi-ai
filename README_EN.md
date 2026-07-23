@@ -47,6 +47,9 @@
 | 🔧 Backend  | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
 | 🎨 User Frontend  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
 | 🛠️ Admin Panel | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
+| 🎬 Drama | [ruoyi-drama](https://github.com/ageerle/ruoyi-drama) | [ruoyi-drama](https://gitee.com/ageerle/ruoyi-drama) | |
+| 🤖 Copilot | [ruoyi-copilot](https://github.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitee.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitcode.com/ageerle/ruoyi-copilot) |
+| 📱 Mini-App | [ruoyi-uniapp](https://github.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitee.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitcode.com/ageerle/ruoyi-uniapp) |
 
 ### Partner Projects
 | Project Name           | GitHub Repository                                             | Gitee Repository |
@@ -174,6 +177,34 @@ docker-compose -f docker-compose-all.yaml logs -f [service-name]
 # Restart a service
 docker-compose -f docker-compose-all.yaml restart [service-name]
 ```
+
+### MiniMax Configuration
+
+The built-in MiniMax provider accepts one API Host value and selects the matching protocol adapter. Use a Base URL from this table:
+
+| Region | OpenAI-compatible Base URL | Anthropic-compatible Base URL |
+| --- | --- | --- |
+| Global | `https://api.minimax.io/v1` | `https://api.minimax.io/anthropic` |
+| China | `https://api.minimaxi.com/v1` | `https://api.minimaxi.com/anthropic` |
+
+For Anthropic-compatible requests, configure the Base URL ending in `/anthropic`. Do not append `/v1` or `/v1/messages`; the provider adapter derives the request path internally.
+
+| Model ID | Total context | Input modalities | Thinking |
+| --- | ---: | --- | --- |
+| `MiniMax-M3` | 1,000,000 tokens | Text, image, video | Adaptive or disabled |
+| `MiniMax-M2.7` | 204,800 tokens | Text | Always on |
+
+Current pay-as-you-go prices are in USD per million tokens:
+
+| Model | Service tier and input range | Input | Output | Cache read | Cache write |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `MiniMax-M3` | Standard, up to 512,000 input tokens | $0.30 | $1.20 | $0.06 | Not listed |
+| `MiniMax-M3` | Standard, over 512,000 input tokens | $0.60 | $2.40 | $0.12 | Not listed |
+| `MiniMax-M3` | Priority, up to 512,000 input tokens | $0.45 | $1.80 | $0.09 | Not listed |
+| `MiniMax-M3` | Priority, over 512,000 input tokens | $0.90 | $3.60 | $0.18 | Not listed |
+| `MiniMax-M2.7` | Standard | $0.30 | $1.20 | $0.06 | $0.375 |
+
+See the [official API overview](https://platform.minimax.io/docs/api-reference/api-overview) and [pay-as-you-go pricing](https://platform.minimax.io/docs/guides/pricing-paygo) for current details.
 
 ## 📚 Documentation
 

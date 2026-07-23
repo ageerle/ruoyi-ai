@@ -20,6 +20,10 @@ server:
       # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
       worker: 256
 
+--- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
+chat:
+  default-model: deepseek-v4-flash
+
 captcha:
   # 是否启用验证码校验
   enable: false
@@ -35,7 +39,7 @@ captcha:
 # 日志配置
 logging:
   level:
-    org.ruoyi: @logging.level@
+    org.ruoyi: ${LOGGING_LEVEL_ORG_RUOYI:info}
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
@@ -75,7 +79,7 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: @profiles.active@
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   # 文件上传
   servlet:
     multipart:
@@ -125,6 +129,7 @@ security:
     - /*/api-docs/**
     - /warm-flow-ui/config
     - /workflow/run
+    - /coding/**
 # 多租户配置
 tenant:
   # 是否开启
@@ -314,11 +319,12 @@ warm-flow:
 vector-store:
   # 向量存储类型 可选(weaviate/milvus/qdrant)
   # 如需修改向量库类型，请修改此配置值!
-  type: milvus
+  # 注意：需与 docker-compose 实际部署的向量库保持一致（当前 compose 内置 weaviate，映射端口 28080）
+  type: weaviate
   # Weaviate配置
   weaviate:
     protocol: http
-    host: 127.0.0.1:6038
+    host: 127.0.0.1:28080
     classname: LocalKnowledge
   # Milvus配置
   milvus:
@@ -331,3 +337,38 @@ vector-store:
     collectionname: LocalKnowledge
     api-key:
     use-tls: false
+
+# 短剧成片合成
+short-drama:
+  composition:
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    ffprobe-path: ${FFPROBE_PATH:ffprobe}
+    fps: ${SHORT_DRAMA_COMPOSITION_FPS:30}
+    audio-sample-rate: ${SHORT_DRAMA_COMPOSITION_AUDIO_SAMPLE_RATE:48000}
+    video-codec: ${SHORT_DRAMA_COMPOSITION_VIDEO_CODEC:libx264}
+    audio-codec: ${SHORT_DRAMA_COMPOSITION_AUDIO_CODEC:aac}
+    preset: ${SHORT_DRAMA_COMPOSITION_PRESET:medium}
+    crf: ${SHORT_DRAMA_COMPOSITION_CRF:20}
+    audio-bitrate: ${SHORT_DRAMA_COMPOSITION_AUDIO_BITRATE:192k}
+    max-clips: ${SHORT_DRAMA_COMPOSITION_MAX_CLIPS:100}
+    max-transition-seconds: ${SHORT_DRAMA_COMPOSITION_MAX_TRANSITION_SECONDS:2.0}
+    minimum-output-bytes: ${SHORT_DRAMA_COMPOSITION_MINIMUM_OUTPUT_BYTES:1024}
+    max-process-output-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_PROCESS_OUTPUT_BYTES:1048576}
+    max-source-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_SOURCE_BYTES:536870912}
+    max-total-source-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_TOTAL_SOURCE_BYTES:2147483648}
+    probe-timeout: ${SHORT_DRAMA_COMPOSITION_PROBE_TIMEOUT:30s}
+    process-timeout: ${SHORT_DRAMA_COMPOSITION_PROCESS_TIMEOUT:30m}
+    job-stale-after: ${SHORT_DRAMA_COMPOSITION_JOB_STALE_AFTER:45m}
+    watermark-font-file: ${SHORT_DRAMA_COMPOSITION_WATERMARK_FONT_FILE:}
+    worker-core-size: ${SHORT_DRAMA_COMPOSITION_WORKER_CORE_SIZE:1}
+    worker-max-size: ${SHORT_DRAMA_COMPOSITION_WORKER_MAX_SIZE:2}
+    worker-queue-capacity: ${SHORT_DRAMA_COMPOSITION_WORKER_QUEUE_CAPACITY:8}
+    storage-mode: ${SHORT_DRAMA_COMPOSITION_STORAGE_MODE:local}
+    local-output-directory: ${SHORT_DRAMA_COMPOSITION_LOCAL_OUTPUT_DIRECTORY:logs/short-drama-compositions}
+    download:
+      connect-timeout: ${SHORT_DRAMA_DOWNLOAD_CONNECT_TIMEOUT:30s}
+      call-timeout: ${SHORT_DRAMA_DOWNLOAD_CALL_TIMEOUT:10m}
+      max-redirects: ${SHORT_DRAMA_DOWNLOAD_MAX_REDIRECTS:5}
+      # 生产环境建议配置为视频供应商或 OSS/CDN 域名，多个值用逗号分隔。
+      allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_ALLOWED_HOSTS:}
+      fake-ip-allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_FAKE_IP_ALLOWED_HOSTS:atlas-media.oss-us-west-1.aliyuncs.com}

@@ -42,4 +42,9 @@ public class ImageContext {
     @Min(value = 0, message = "随机数种子不能小于0")
     @Max(value = 2147483647, message = "随机数种子不能大于2147483647")
     private Integer seed;
+
+    /**
+     * 参考图 URL（图生图用）
+     */
+    private String image;
 }

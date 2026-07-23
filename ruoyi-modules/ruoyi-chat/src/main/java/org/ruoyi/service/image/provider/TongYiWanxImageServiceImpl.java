@@ -33,7 +33,7 @@ public class TongYiWanxImageServiceImpl extends AbstractImageGenerationService {
     private final static String IMAGE_DEFAULT_RESOLUTION = "1280*1280";
 
     @Override
-    protected String doGenerateImage(ChatModelVo chatModelVo, String prompt, String size, Integer seed) {
+    protected String doGenerateImage(ChatModelVo chatModelVo, String prompt, String size, Integer seed, String image) {
         // 构建万相模型对象
         var param = (ImageSynthesisParam) buildImageModel(chatModelVo);
         // 设置图片大小和提示词以及随机数种子

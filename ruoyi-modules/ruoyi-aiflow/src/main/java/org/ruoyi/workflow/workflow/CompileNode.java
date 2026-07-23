@@ -16,6 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CompileNode {
     protected String id;
+    @Builder.Default
     protected Boolean conditional = false;
 
     /**
@@ -24,5 +25,6 @@ public class CompileNode {
      * 2. 当前节点为条件分支节点，下游节点为多个节点，实际执行时只会执行一条
      * 两种节点根据是否GraphCompileNode来区分
      */
+    @Builder.Default
     protected List<CompileNode> nextNodes = new ArrayList<>();
 }

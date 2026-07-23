@@ -37,7 +37,6 @@ public final class RagTracePayloadBuilder {
         payload.put("contentLength", length(request.getContent()));
         payload.put("contextMessageCount", request.getContextMessages() == null ? null : request.getContextMessages().size());
         payload.put("enableWorkFlow", request.getEnableWorkFlow());
-        payload.put("isResume", request.getIsResume());
         payload.put("enableThinking", request.getEnableThinking());
         return TracePayloadUtils.toJson(payload);
     }
