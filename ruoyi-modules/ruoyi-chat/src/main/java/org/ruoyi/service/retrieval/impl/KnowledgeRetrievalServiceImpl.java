@@ -81,7 +81,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         List<KnowledgeRetrievalVo> finalResults = TraceNodeTemplate.withNode(traceRecordService, traceProperties,
                 "retrieval", RagTraceNodeTypes.NODE_RETRIEVAL,
                 KnowledgeRetrievalServiceImpl.class.getName(), "retrieve",
-                RagTracePayloadBuilder.retrievalInputSummary(queryVectorBo),
+                retrievalInputPayload,
                 () -> retrieveUncached(queryVectorBo),
                 RagTracePayloadBuilder::retrievalOutputSummary);
         cache(cacheKey, finalResults);
