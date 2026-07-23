@@ -33,20 +33,6 @@ public final class TracePayloadUtils {
     private TracePayloadUtils() {
     }
 
-    public static String input(Object value, TraceProperties properties) {
-        if (value == null || properties == null || !properties.getPayload().isRecordDetail()) {
-            return null;
-        }
-        return truncate(asString(value), properties.getPayload().getMaxInputLength());
-    }
-
-    public static String output(Object value, TraceProperties properties) {
-        if (value == null || properties == null || !properties.getPayload().isRecordDetail()) {
-            return null;
-        }
-        return truncate(asString(value), properties.getPayload().getMaxOutputLength());
-    }
-
     public static String error(Throwable throwable, TraceProperties properties) {
         if (throwable == null) {
             return null;
@@ -92,9 +78,5 @@ public final class TracePayloadUtils {
             // 非 JSON 字符串，返回包含原始文本的 Map
             return Collections.singletonMap("_raw", json);
         }
-    }
-
-    private static String asString(Object value) {
-        return value instanceof String str ? str : toJson(value);
     }
 }

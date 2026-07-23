@@ -72,7 +72,6 @@ import org.ruoyi.domain.vo.agent.AgentVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.service.core.LangChain4jMcpToolProviderService;
-import org.ruoyi.mcp.service.core.ToolProviderFactory;
 import org.ruoyi.observability.*;
 import org.ruoyi.service.agent.IAgentService;
 import org.ruoyi.service.chat.AbstractChatService;
@@ -81,7 +80,6 @@ import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
-import org.ruoyi.service.vector.VectorStoreService;
 import org.ruoyi.trace.RagTraceNodeTypes;
 import org.ruoyi.trace.RagTracePayloadBuilder;
 import org.springframework.stereotype.Service;
@@ -120,8 +118,6 @@ public class ChatServiceFacade implements IChatService {
 
     private final IKnowledgeInfoService knowledgeInfoService;
 
-    private final VectorStoreService vectorStoreService;
-
     private final KnowledgeRetrievalService knowledgeRetrievalService;
 
     private final SseEmitterManager sseEmitterManager;
@@ -130,7 +126,6 @@ public class ChatServiceFacade implements IChatService {
 
     private final IWorkFlowStarterService workFlowStarterService;
 
-    private final ToolProviderFactory toolProviderFactory;
 
     private final IAgentService agentService;
 
@@ -156,13 +151,13 @@ public class ChatServiceFacade implements IChatService {
      */
     public SseEmitter sseChat(ChatRequest chatRequest) {
 
-        // 4. 具体的服务实现
+        // 具体的服务实现
         Long userId = LoginHelper.getUserId();
         String tokenValue = StpUtil.getTokenValue();
-        SseEmitter emitter = sseEmitterManager.connect(userId, tokenValue);
+        // 每个会话一个 SSE 连接，避免同用户多会话串台
+        SseEmitter emitter = sseEmitterManager.connect(String.valueOf(chatRequest.getSessionId()));
 
-        // 0. 智能体解析：传入 agentId 时按智能体绑定的模型覆盖 model 字段
-        //    （前端默认走智能体；enableThinking 不再作为对话模式开关，Supervisor 多 Agent 编排成为默认智能体路径）
+        // 智能体解析：传入 agentId 时按智能体绑定的模型覆盖 model 字段
         AgentVo agentVo = null;
         if (chatRequest.getAgentId() != null) {
             agentVo = agentService.queryById(chatRequest.getAgentId());
@@ -176,14 +171,14 @@ public class ChatServiceFacade implements IChatService {
             }
         }
 
-        // 1. 根据模型名称查询完整配置
+        // 根据模型名称查询完整配置
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         if (chatModelVo == null) {
             throw new IllegalArgumentException("模型不存在: " + chatRequest.getModel());
         }
 
-        // 2. 构建上下文消息列表（系统提示词 + 历史消息 + 当前用户消息）
-        //    注意：RAG 检索增强统一在 handleAgentChat 中执行一次，此处不再重复检索
+        // 构建上下文消息列表（系统提示词 + 历史消息 + 当前用户消息）
+        // 注意：RAG 检索增强统一在 handleAgentChat 中执行一次，此处不再重复检索
         List<ChatMessage> contextMessages = buildContextMessages(chatRequest, agentVo);
 
         chatRequest.setEmitter(emitter);
@@ -242,13 +237,14 @@ public class ChatServiceFacade implements IChatService {
         ChatModel plannerModel = chatService.buildChatModel(chatModelVo);
 
         Long userId = chatRequest.getUserId();
+        String sessionId = String.valueOf(chatRequest.getSessionId());
 
         // 工具装配：智能体有关联工具ID时按ID装配，否则回退到原有硬编码 MCP 客户端
         ToolProvider toolProvider;
         if (agentVo != null && agentVo.getMcpToolIds() != null && !agentVo.getMcpToolIds().isEmpty()) {
             toolProvider = langChain4jMcpToolProviderService.getToolProvider(agentVo.getMcpToolIds());
         } else {
-            toolProvider = buildDefaultMcpToolProvider(userId);
+            toolProvider = buildDefaultMcpToolProvider(sessionId);
         }
 
         // Skills 装配：智能体有勾选技能名时按名过滤磁盘 skills，否则加载全部
@@ -321,16 +317,14 @@ public class ChatServiceFacade implements IChatService {
         promptBuilder.append(augmentedInput);
         String prompt = promptBuilder.toString();
 
-        String tokenValue = chatRequest.getTokenValue();
-
         // 异步执行 supervisor，避免阻塞 HTTP 请求线程导致 SSE 事件被缓冲
         CompletableFuture.runAsync(() -> {
             TraceStreamSpan llmSpan = null;
             try (TraceScope ignored = openTraceScope(traceRun, userId)) {
                 llmSpan = startLlmCallSpan(traceRun, chatRequest);
                 String result = supervisor.invoke(prompt);
-                SseMessageUtils.sendContent(userId, result);
-                SseMessageUtils.sendDone(userId);
+                SseMessageUtils.sendContent(sessionId, result);
+                SseMessageUtils.sendDone(sessionId);
                 // 保存助手回复到数据库（智能体对话为默认路径后，需在此落库以保留历史）
                 if (StringUtils.isNotBlank(result)) {
                     chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(),
@@ -347,12 +341,12 @@ public class ChatServiceFacade implements IChatService {
                 }
                 finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
                 log.error("Supervisor 执行失败", e);
-                SseMessageUtils.sendError(userId, e.getMessage());
+                SseMessageUtils.sendError(sessionId, e.getMessage());
             } finally {
                 if (llmSpan != null) {
                     llmSpan.detach();
                 }
-                SseMessageUtils.completeConnection(userId, tokenValue);
+                SseMessageUtils.completeConnection(sessionId);
             }
         });
         return chatRequest.getEmitter();
@@ -461,8 +455,10 @@ public class ChatServiceFacade implements IChatService {
 
     /**
      * 兜底 MCP 工具装配（无智能体时使用，保留原有 3 个硬编码客户端逻辑）
+     *
+     * @param sessionId 会话ID，用于 MCP 工具事件按会话推送 SSE
      */
-    private ToolProvider buildDefaultMcpToolProvider(Long userId) {
+    private ToolProvider buildDefaultMcpToolProvider(String sessionId) {
         String npxCommand = resolveNpxCommand();
         McpTransport playwrightTransport = new StdioMcpTransport.Builder()
             .command(List.of(npxCommand, "-y", "@playwright/mcp@latest"))
@@ -470,7 +466,7 @@ public class ChatServiceFacade implements IChatService {
             .build();
         McpClient playwrightMcpClient = new DefaultMcpClient.Builder()
             .transport(playwrightTransport)
-            .listener(new MyMcpClientListener(userId))
+            .listener(new MyMcpClientListener(sessionId))
             .build();
 
         String userDir = System.getProperty("user.dir");
@@ -481,7 +477,7 @@ public class ChatServiceFacade implements IChatService {
             .build();
         McpClient filesystemMcpClient = new DefaultMcpClient.Builder()
             .transport(filesystemTransport)
-            .listener(new MyMcpClientListener(userId))
+            .listener(new MyMcpClientListener(sessionId))
             .build();
 
         return McpToolProvider.builder()
@@ -566,16 +562,15 @@ public class ChatServiceFacade implements IChatService {
 
         // 4. 获取用户信息
         Long userId = LoginHelper.getUserId();
-        String tokenValue = StpUtil.getTokenValue();
 
-        // 5. 建立 SSE 连接（用于前端监听）
-        sseEmitterManager.connect(userId, tokenValue);
+        // 5. 建立 SSE 连接（用于前端监听，按会话隔离）
+        sseEmitterManager.connect(String.valueOf(chatRequest.getSessionId()));
 
         // 保存用户消息
         chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
 
         // 6. 创建组合 handler：同时发送到 SSE 和外部 handler
-        StreamingChatResponseHandler combinedHandler = createCombinedHandler(userId, tokenValue, externalHandler);
+        StreamingChatResponseHandler combinedHandler = createCombinedHandler(String.valueOf(chatRequest.getSessionId()), externalHandler);
 
         // 7. 发起对话
         StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
@@ -799,12 +794,11 @@ public class ChatServiceFacade implements IChatService {
     /**
      * 创建组合响应处理器 - 同时发送到 SSE 和外部 handler
      *
-     * @param userId          用户ID
-     * @param tokenValue      会话令牌
+     * @param sessionId       会话ID（SSE 按会话隔离推送）
      * @param externalHandler 外部响应处理器（可为 null）
      * @return 组合的流式响应处理器
      */
-    protected StreamingChatResponseHandler createCombinedHandler(Long userId, String tokenValue,
+    protected StreamingChatResponseHandler createCombinedHandler(String sessionId,
                                                                   StreamingChatResponseHandler externalHandler) {
         return new StreamingChatResponseHandler() {
 
@@ -817,7 +811,7 @@ public class ChatServiceFacade implements IChatService {
                 messageBuffer.append(partialResponse);
 
                 // 2. 发送内容事件到 SSE（前端可通过 SSE 监听）
-                SseMessageUtils.sendContent(userId, partialResponse);
+                SseMessageUtils.sendContent(sessionId, partialResponse);
 
                 // 3. 转发给外部 handler（Workflow 等模块可处理）
                 if (externalHandler != null) {
@@ -828,7 +822,7 @@ public class ChatServiceFacade implements IChatService {
             @Override
             public void onPartialThinking(PartialThinking partialThinking) {
                 // 发送推理内容到 SSE（前端通过 reasoning 事件监听）
-                SseMessageUtils.sendReasoning(userId, partialThinking.text());
+                SseMessageUtils.sendReasoning(sessionId, partialThinking.text());
 
                 // 转发给外部 handler
                 if (externalHandler != null) {
@@ -840,10 +834,10 @@ public class ChatServiceFacade implements IChatService {
             public void onCompleteResponse(ChatResponse completeResponse) {
                 try {
                     // 1. 发送完成事件
-                    SseMessageUtils.sendDone(userId);
+                    SseMessageUtils.sendDone(sessionId);
 
                     // 2. 关闭 SSE 连接
-                    SseMessageUtils.completeConnection(userId, tokenValue);
+                    SseMessageUtils.completeConnection(sessionId);
 
                     // 3. 转发给外部 handler
                     if (externalHandler != null) {
@@ -857,7 +851,7 @@ public class ChatServiceFacade implements IChatService {
             @Override
             public void onError(Throwable error) {
                 // 发送错误事件
-                SseMessageUtils.sendError(userId, error.getMessage());
+                SseMessageUtils.sendError(sessionId, error.getMessage());
                 log.error("流式响应错误: {}", error.getMessage(), error);
 
                 // 转发给外部 handler

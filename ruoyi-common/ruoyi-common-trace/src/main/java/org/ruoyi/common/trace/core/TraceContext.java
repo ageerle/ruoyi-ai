@@ -96,14 +96,6 @@ public final class TraceContext {
         }
     }
 
-    /**
-     * 为未来的跨线程上下文传播保留的拷贝入口，避免共享可变栈。
-     */
-    public static Deque<String> copyNodeStack() {
-        Deque<String> stack = NODE_STACK.get();
-        return stack == null ? new ArrayDeque<>() : new ArrayDeque<>(stack);
-    }
-
     public static void clear() {
         TRACE_ID.remove();
         BUSINESS_TYPE.remove();

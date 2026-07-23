@@ -146,6 +146,9 @@ tenant:
     - sys_client
     - sys_oss_config
     - flow_spel
+    # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
+    - trace_run
+    - trace_node
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
@@ -238,15 +241,6 @@ trace:
   # 关闭后所有埋点代码会直接透传业务逻辑，不写库、不创建上下文，零性能开销
   enabled: true
   payload:
-    # 是否记录方法真实入参和返回值，默认 false（仅存摘要）
-    # 仅对 @TraceNode 注解方式生效，编程式埋点使用 TracePayloadBuilder 手动构建的摘要不受此开关影响
-    # true → 自动序列化原始入参/返回值，截断后写入 input_payload / output_payload
-    # false → 只存 nodeName / 耗时 / 状态等元信息，input_payload / output_payload 为空
-    record-detail: false
-    # input payload 最大字符长度，超过部分会被截断丢弃
-    max-input-length: 1000
-    # output payload 最大字符长度，超过部分会被截断丢弃
-    max-output-length: 2000
     # 错误信息最大字符长度（格式: "异常类名: 异常消息"），超过部分会被截断丢弃
     max-error-length: 1000
 

@@ -56,10 +56,10 @@ public class WorkflowStarter implements IWorkFlowStarterService {
     public SseEmitter streaming(User user, String workflowUuid, List<ObjectNode> userInputs, Long sessionId) {
         // 获取用户ID
         Long userId = LoginHelper.getUserId();
-        // 获取登录Token
+        // 获取登录Token（仅透传给 WfState，工作流 SSE 通过 emitter 直发，不串台）
         String tokenValue = StpUtil.getTokenValue();
-        // 根据用户ID和Token连接SSE对象
-        SseEmitter sseEmitter = sseEmitterManager.connect(userId, tokenValue);
+        // 根据会话ID连接SSE对象（每会话一个连接，避免同用户多会话串台）
+        SseEmitter sseEmitter = sseEmitterManager.connect(String.valueOf(sessionId));
         if (!sseEmitterHelper.checkOrComplete(user, sseEmitter)) {
             return sseEmitter;
         }

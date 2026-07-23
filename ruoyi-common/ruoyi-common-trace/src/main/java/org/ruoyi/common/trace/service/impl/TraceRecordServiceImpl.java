@@ -134,9 +134,6 @@ public class TraceRecordServiceImpl implements TraceRecordService {
         detail.setRun(run);
 
         List<TraceNodeVo> nodes = listNodes(traceId);
-        if (nodes != null) {
-            nodes.forEach(this::enrichNodeVo);
-        }
         // 返回扁平列表，前端自行按 parentNodeId 建树
         detail.setNodes(nodes != null ? nodes : new ArrayList<>());
 

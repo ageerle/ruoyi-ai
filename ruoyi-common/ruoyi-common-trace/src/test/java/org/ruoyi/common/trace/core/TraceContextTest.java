@@ -3,8 +3,6 @@ package org.ruoyi.common.trace.core;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Deque;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -43,15 +41,5 @@ class TraceContextTest {
         TraceContext.popNode();
         assertNull(TraceContext.currentNodeId());
         assertEquals(0, TraceContext.depth());
-    }
-
-    @Test
-    void copyNodeStackShouldReturnIndependentDeque() {
-        TraceContext.pushNode("root");
-        Deque<String> copy = TraceContext.copyNodeStack();
-        copy.push("child");
-
-        assertEquals("root", TraceContext.currentNodeId());
-        assertEquals("child", copy.peek());
     }
 }
