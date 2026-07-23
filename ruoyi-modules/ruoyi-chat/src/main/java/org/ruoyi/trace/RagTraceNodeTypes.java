@@ -14,5 +14,4 @@ public final class RagTraceNodeTypes {
     public static final String NODE_RETRIEVAL = "RETRIEVAL";
     public static final String NODE_RERANK = "RERANK";
     public static final String NODE_LLM_CALL = "LLM_CALL";
-    public static final String NODE_STREAM = "STREAM";
 }

@@ -26,4 +26,14 @@ public class SseMessageDto implements Serializable {
      * 需要发送的消息
      */
     private String message;
+
+    /**
+     * 按会话定向推送的会话ID（非空时优先按会话路由，忽略 userIds）
+     */
+    private String sessionId;
+
+    /**
+     * 结构化事件（按会话定向推送时使用，message 为兼容旧逻辑保留）
+     */
+    private SseEventDto eventDto;
 }

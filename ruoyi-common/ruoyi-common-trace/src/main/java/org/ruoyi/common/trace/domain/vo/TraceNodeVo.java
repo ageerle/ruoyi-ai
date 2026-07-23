@@ -8,7 +8,6 @@ import org.ruoyi.common.trace.domain.TraceNode;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,16 +38,14 @@ public class TraceNodeVo implements Serializable {
     private Long durationMs;
     private String errorMessage;
 
-    /** 原始 payload 字符串（兼容旧版），新代码请使用 parsedInput */
+    /** 原始 input payload 字符串，parsedInput 解析失败时回退使用 */
     private String inputPayload;
 
-    /** 原始 payload 字符串（兼容旧版），新代码请使用 parsedOutput */
+    /** 原始 output payload 字符串，parsedOutput 解析失败时回退使用 */
     private String outputPayload;
 
-    /** 原始 metadata 字符串（兼容旧版），新代码请使用 parsedMetadata */
+    /** 原始 metadata 字符串，parsedMetadata 解析失败时回退使用 */
     private String metadata;
-
-    private List<TraceNodeVo> children;
 
     // ======================== 展示用计算字段 ========================
 

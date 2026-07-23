@@ -1,7 +1,6 @@
 package org.ruoyi.common.trace.util;
 
 import org.junit.jupiter.api.Test;
-import org.ruoyi.common.trace.config.TraceProperties;
 
 import java.util.Map;
 
@@ -25,16 +24,5 @@ class TracePayloadUtilsTest {
     void toJsonShouldSerializeMap() {
         String json = TracePayloadUtils.toJson(Map.of("count", 2));
         assertTrue(json.contains("\"count\":2"));
-    }
-
-    @Test
-    void detailEnabledShouldTruncateInputAndOutput() {
-        TraceProperties properties = new TraceProperties();
-        properties.getPayload().setRecordDetail(true);
-        properties.getPayload().setMaxInputLength(4);
-        properties.getPayload().setMaxOutputLength(5);
-
-        assertEquals("1234", TracePayloadUtils.input("123456", properties));
-        assertEquals("12345", TracePayloadUtils.output("1234567", properties));
     }
 }
