@@ -56,6 +56,16 @@ import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
+import org.ruoyi.common.trace.config.TraceProperties;
+import org.ruoyi.common.trace.constant.TraceConstants;
+import org.ruoyi.common.trace.core.DefaultTraceStreamSpan;
+import org.ruoyi.common.trace.core.TraceContext;
+import org.ruoyi.common.trace.core.TraceScope;
+import org.ruoyi.common.trace.core.TraceStreamSpan;
+import org.ruoyi.common.trace.domain.TraceNode;
+import org.ruoyi.common.trace.domain.TraceRun;
+import org.ruoyi.common.trace.service.TraceRecordService;
+import org.ruoyi.common.trace.util.TracePayloadUtils;
 import org.ruoyi.config.agent.SkillsPathResolver;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.agent.AgentVo;
@@ -72,15 +82,20 @@ import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
 import org.ruoyi.service.vector.VectorStoreService;
+import org.ruoyi.trace.RagTraceNodeTypes;
+import org.ruoyi.trace.RagTracePayloadBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 聊天服务门面层
@@ -120,6 +135,10 @@ public class ChatServiceFacade implements IChatService {
     private final IAgentService agentService;
 
     private final LangChain4jMcpToolProviderService langChain4jMcpToolProviderService;
+
+    private final TraceRecordService traceRecordService;
+
+    private final TraceProperties traceProperties;
 
     /**
      * 内存实例缓存，避免同一会话重复创建
@@ -176,8 +195,10 @@ public class ChatServiceFacade implements IChatService {
         // 保存用户消息
         chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
 
+        TraceRunHandle traceRun = Boolean.TRUE.equals(chatRequest.getEnableWorkFlow())
+            ? null : startRagTraceRun(chatRequest, userId);
         // 3. 路由对话模式：工作流对话 / 智能体对话（两者均返回各自的 SseEmitter）
-        return handleSpecialChatModes(chatRequest, agentVo);
+        return handleSpecialChatModes(chatRequest, agentVo, traceRun);
     }
 
     /**
@@ -187,7 +208,7 @@ public class ChatServiceFacade implements IChatService {
      * @param agentVo    智能体配置（可为 null）
      * @return 对应模式的 SseEmitter
      */
-    private SseEmitter handleSpecialChatModes(ChatRequest chatRequest, AgentVo agentVo) {
+    private SseEmitter handleSpecialChatModes(ChatRequest chatRequest, AgentVo agentVo, TraceRunHandle traceRun) {
         // 模式1：工作流对话（前端应用市场选工作流后携带 workFlowRunner）
         if (Boolean.TRUE.equals(chatRequest.getEnableWorkFlow())) {
             log.info("处理工作流对话,会话: {}", chatRequest.getSessionId());
@@ -203,7 +224,7 @@ public class ChatServiceFacade implements IChatService {
             );
         }
         // 模式2：智能体对话（默认走 Supervisor 多 Agent 编排）
-        return handleAgentChat(chatRequest, agentVo);
+        return handleAgentChat(chatRequest, agentVo, traceRun);
     }
 
     /**
@@ -212,7 +233,7 @@ public class ChatServiceFacade implements IChatService {
      * @param chatRequest 聊天请求
      * @param agentVo    智能体配置（可为 null，无智能体时用请求 model 兜底）
      */
-    private SseEmitter handleAgentChat(ChatRequest chatRequest, AgentVo agentVo) {
+    private SseEmitter handleAgentChat(ChatRequest chatRequest, AgentVo agentVo, TraceRunHandle traceRun) {
         ChatModelVo chatModelVo = chatRequest.getChatModelVo();
 
         // 配置监督者模型：统一按 providerCode 走对应 AbstractChatService.buildChatModel，
@@ -304,7 +325,9 @@ public class ChatServiceFacade implements IChatService {
 
         // 异步执行 supervisor，避免阻塞 HTTP 请求线程导致 SSE 事件被缓冲
         CompletableFuture.runAsync(() -> {
-            try {
+            TraceStreamSpan llmSpan = null;
+            try (TraceScope ignored = openTraceScope(traceRun, userId)) {
+                llmSpan = startLlmCallSpan(traceRun, chatRequest);
                 String result = supervisor.invoke(prompt);
                 SseMessageUtils.sendContent(userId, result);
                 SseMessageUtils.sendDone(userId);
@@ -313,14 +336,127 @@ public class ChatServiceFacade implements IChatService {
                     chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(),
                         result, RoleType.ASSISTANT.getName(), chatRequest.getModel());
                 }
+                if (llmSpan != null) {
+                    llmSpan.finishSuccess(RagTracePayloadBuilder.streamOutputSummary(
+                        result == null ? 0 : result.length()));
+                }
+                finishTraceRun(traceRun, TraceConstants.STATUS_SUCCESS, null);
             } catch (Exception e) {
+                if (llmSpan != null) {
+                    llmSpan.finishError(e);
+                }
+                finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
                 log.error("Supervisor 执行失败", e);
                 SseMessageUtils.sendError(userId, e.getMessage());
             } finally {
+                if (llmSpan != null) {
+                    llmSpan.detach();
+                }
                 SseMessageUtils.completeConnection(userId, tokenValue);
             }
         });
         return chatRequest.getEmitter();
+    }
+
+    private TraceRunHandle startRagTraceRun(ChatRequest chatRequest, Long userId) {
+        if (!traceProperties.isEnabled()) {
+            return null;
+        }
+
+        String traceId = UUID.randomUUID().toString().replace("-", "");
+        long startMillis = System.currentTimeMillis();
+        TraceRun run = new TraceRun();
+        run.setTraceId(traceId);
+        run.setTraceName(RagTraceNodeTypes.TRACE_NAME_RAG_CHAT);
+        run.setBusinessType(RagTraceNodeTypes.BUSINESS_TYPE_RAG_CHAT);
+        run.setBusinessId(chatRequest.getSessionId() == null ? null : chatRequest.getSessionId().toString());
+        run.setUserId(userId);
+        run.setTenantId(safeGetTenantId());
+        run.setStatus(TraceConstants.STATUS_RUNNING);
+        run.setStartTime(new Date(startMillis));
+        run.setMetadata(RagTracePayloadBuilder.chatRequestSummary(chatRequest));
+
+        try {
+            traceRecordService.startRun(run);
+        } catch (Exception e) {
+            log.warn("写入 RAG chat trace run 失败，traceId={}", traceId, e);
+        }
+        return new TraceRunHandle(traceId, startMillis, run.getBusinessId(), run.getTenantId());
+    }
+
+    private TraceScope openTraceScope(TraceRunHandle traceRun, Long userId) {
+        if (traceRun == null) {
+            return null;
+        }
+        return TraceContext.begin(traceRun.traceId, RagTraceNodeTypes.BUSINESS_TYPE_RAG_CHAT,
+            traceRun.businessId, userId, traceRun.tenantId);
+    }
+
+    private TraceStreamSpan startLlmCallSpan(TraceRunHandle traceRun, ChatRequest chatRequest) {
+        if (traceRun == null || StringUtils.isBlank(TraceContext.getTraceId())) {
+            return null;
+        }
+
+        String nodeId = UUID.randomUUID().toString().replace("-", "");
+        long startMillis = System.currentTimeMillis();
+        TraceNode node = new TraceNode();
+        node.setTraceId(traceRun.traceId);
+        node.setNodeId(nodeId);
+        node.setParentNodeId(TraceContext.currentNodeId());
+        node.setDepth(TraceContext.depth());
+        node.setNodeName("llm-call");
+        node.setNodeType(RagTraceNodeTypes.NODE_LLM_CALL);
+        node.setClassName(ChatServiceFacade.class.getName());
+        node.setMethodName("handleAgentChat");
+        node.setStatus(TraceConstants.STATUS_RUNNING);
+        node.setStartTime(new Date(startMillis));
+        node.setInputPayload(RagTracePayloadBuilder.streamInputSummary(chatRequest));
+
+        try {
+            traceRecordService.startNode(node);
+            TraceContext.pushNode(nodeId);
+            return new DefaultTraceStreamSpan(traceRecordService, traceProperties, traceRun.traceId, nodeId, startMillis);
+        } catch (Exception e) {
+            log.warn("写入 LLM trace 节点失败，traceId={}, nodeId={}", traceRun.traceId, nodeId, e);
+            return null;
+        }
+    }
+
+    private void finishTraceRun(TraceRunHandle traceRun, String status, Throwable error) {
+        if (traceRun == null || !traceRun.finished.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            traceRecordService.finishRun(traceRun.traceId, status, TracePayloadUtils.error(error, traceProperties),
+                new Date(), System.currentTimeMillis() - traceRun.startMillis);
+        } catch (Exception e) {
+            log.warn("结束 RAG chat trace run 失败，traceId={}", traceRun.traceId, e);
+        }
+    }
+
+    private String safeGetTenantId() {
+        try {
+            return LoginHelper.getTenantId();
+        } catch (Exception e) {
+            log.warn("获取 trace tenantId 失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private static final class TraceRunHandle {
+
+        private final String traceId;
+        private final long startMillis;
+        private final String businessId;
+        private final String tenantId;
+        private final AtomicBoolean finished = new AtomicBoolean(false);
+
+        private TraceRunHandle(String traceId, long startMillis, String businessId, String tenantId) {
+            this.traceId = traceId;
+            this.startMillis = startMillis;
+            this.businessId = businessId;
+            this.tenantId = tenantId;
+        }
     }
 
     /**
@@ -732,4 +868,3 @@ public class ChatServiceFacade implements IChatService {
         };
     }
 }
-

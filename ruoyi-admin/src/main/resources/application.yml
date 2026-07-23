@@ -232,6 +232,24 @@ xss:
   excludeUrls:
     - /system/notice
 
+--- # 链路追踪配置
+trace:
+  # 是否启用链路追踪，默认 true
+  # 关闭后所有埋点代码会直接透传业务逻辑，不写库、不创建上下文，零性能开销
+  enabled: true
+  payload:
+    # 是否记录方法真实入参和返回值，默认 false（仅存摘要）
+    # 仅对 @TraceNode 注解方式生效，编程式埋点使用 TracePayloadBuilder 手动构建的摘要不受此开关影响
+    # true → 自动序列化原始入参/返回值，截断后写入 input_payload / output_payload
+    # false → 只存 nodeName / 耗时 / 状态等元信息，input_payload / output_payload 为空
+    record-detail: false
+    # input payload 最大字符长度，超过部分会被截断丢弃
+    max-input-length: 1000
+    # output payload 最大字符长度，超过部分会被截断丢弃
+    max-output-length: 2000
+    # 错误信息最大字符长度（格式: "异常类名: 异常消息"），超过部分会被截断丢弃
+    max-error-length: 1000
+
 --- # 分布式锁 lock4j 全局配置
 lock4j:
   # 获取分布式锁超时时间，默认为 3000 毫秒
