@@ -21,6 +21,7 @@ import java.util.Set;
  * @Description: 智谱AI嵌入模型
  */
 @Component("zhipu")
+@org.springframework.context.annotation.Scope("prototype")
 public class ZhipuAiEmbeddingProvider implements BaseEmbedModelService {
     protected ChatModelVo chatModelVo;
 

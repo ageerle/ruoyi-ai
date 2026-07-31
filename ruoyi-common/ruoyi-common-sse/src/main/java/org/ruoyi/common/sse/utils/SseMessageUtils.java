@@ -94,6 +94,15 @@ public class SseMessageUtils {
     }
 
     /**
+     * 完成指定会话的SSE连接
+     *
+     * @param sessionId 会话ID
+     */
+    public static void completeConnection(String sessionId) {
+        MANAGER.disconnect(sessionId);
+    }
+
+    /**
      * 向指定的SSE会话发送结构化事件
      *
      * @param userId   要发送消息的用户id
@@ -107,6 +116,22 @@ public class SseMessageUtils {
     }
 
     /**
+     * 向指定会话发送结构化事件（通过 Redis 广播，跨实例可达）
+     *
+     * @param sessionId 会话ID
+     * @param eventDto  SSE事件对象
+     */
+    public static void sendEvent(String sessionId, SseEventDto eventDto) {
+        if (!isEnable() || sessionId == null) {
+            return;
+        }
+        SseMessageDto dto = new SseMessageDto();
+        dto.setSessionId(sessionId);
+        dto.setEventDto(eventDto);
+        MANAGER.publishMessage(dto);
+    }
+
+    /**
      * 发送内容事件
      *
      * @param userId  用户ID
@@ -114,6 +139,16 @@ public class SseMessageUtils {
      */
     public static void sendContent(Long userId, String content) {
         sendEvent(userId, SseEventDto.content(content));
+    }
+
+    /**
+     * 向指定会话发送内容事件
+     *
+     * @param sessionId 会话ID
+     * @param content   内容
+     */
+    public static void sendContent(String sessionId, String content) {
+        sendEvent(sessionId, SseEventDto.content(content));
     }
 
     /**
@@ -127,12 +162,31 @@ public class SseMessageUtils {
     }
 
     /**
+     * 向指定会话发送推理内容事件
+     *
+     * @param sessionId        会话ID
+     * @param reasoningContent 推理内容
+     */
+    public static void sendReasoning(String sessionId, String reasoningContent) {
+        sendEvent(sessionId, SseEventDto.reasoning(reasoningContent));
+    }
+
+    /**
      * 发送完成事件
      *
      * @param userId 用户ID
      */
     public static void sendDone(Long userId) {
         sendEvent(userId, SseEventDto.done());
+    }
+
+    /**
+     * 向指定会话发送完成事件
+     *
+     * @param sessionId 会话ID
+     */
+    public static void sendDone(String sessionId) {
+        sendEvent(sessionId, SseEventDto.done());
     }
 
     /**
@@ -143,6 +197,16 @@ public class SseMessageUtils {
      */
     public static void sendError(Long userId, String error) {
         sendEvent(userId, SseEventDto.error(error));
+    }
+
+    /**
+     * 向指定会话发送错误事件
+     *
+     * @param sessionId 会话ID
+     * @param error     错误信息
+     */
+    public static void sendError(String sessionId, String error) {
+        sendEvent(sessionId, SseEventDto.error(error));
     }
 
     /**

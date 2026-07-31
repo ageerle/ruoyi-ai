@@ -41,6 +41,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -205,6 +207,11 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         storage.download(sysOss.getFileName(), response.getOutputStream(), response::setContentLengthLong);
     }
 
+    @Override
+    public void downloadFile(Long ossId, HttpServletResponse response) throws IOException {
+        download(ossId, response);
+    }
+
     /**
      * 上传 MultipartFile 到对象存储服务，并保存文件信息到数据库
      *
@@ -240,6 +247,18 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     public OssDTO uploadFile(MultipartFile file) {
         SysOssVo sysOssVo = upload(file);
         return BeanUtil.toBean(sysOssVo, OssDTO.class);
+    }
+
+    @Override
+    public OssDTO uploadFile(File file) {
+        SysOssVo sysOssVo = upload(file);
+        return BeanUtil.toBean(sysOssVo, OssDTO.class);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Boolean deleteFile(Long ossId) {
+        return deleteWithValidByIds(List.of(ossId), false);
     }
 
     /**
@@ -319,12 +338,59 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     public SysOssVo upload(File file) {
         String originalfileName = file.getName();
         String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
+        // OssClient deletes the file after upload, so capture metadata first.
+        long fileSize = file.length();
         OssClient storage = OssFactory.instance();
-        UploadResult uploadResult = storage.uploadSuffix(file, suffix);
+        String configKey = storage.getConfigKey();
         SysOssExt ext1 = new SysOssExt();
-        ext1.setFileSize(file.length());
+        ext1.setFileSize(fileSize);
+        UploadResult uploadResult = storage.uploadSuffix(file, suffix);
         // 保存文件信息
-        return buildResultEntity(originalfileName, suffix, storage.getConfigKey(), uploadResult, ext1);
+        return buildResultEntity(originalfileName, suffix, configKey, uploadResult, ext1, storage);
+    }
+
+    @NotNull
+    private SysOssVo buildResultEntity(String originalfileName, String suffix, String configKey,
+                                       UploadResult uploadResult, SysOssExt ext1, OssClient storage) {
+        Long insertedOssId = null;
+        try {
+            SysOss oss = new SysOss();
+            oss.setUrl(uploadResult.getUrl());
+            oss.setFileSuffix(suffix);
+            oss.setFileName(uploadResult.getFilename());
+            oss.setOriginalName(originalfileName);
+            oss.setService(configKey);
+            oss.setExt1(JsonUtils.toJsonString(ext1));
+            if (baseMapper.insert(oss) != 1) {
+                throw new ServiceException("保存OSS文件元数据失败");
+            }
+            insertedOssId = oss.getOssId();
+            if (insertedOssId == null) {
+                throw new ServiceException("保存OSS文件元数据失败");
+            }
+            SysOssVo sysOssVo = MapstructUtils.convert(oss, SysOssVo.class);
+            return this.matchingUrl(sysOssVo);
+        } catch (RuntimeException | Error failure) {
+            cleanupFailedUpload(insertedOssId, uploadResult.getFilename(), storage, failure);
+            throw failure;
+        }
+    }
+
+    private void cleanupFailedUpload(Long ossId, String objectKey, OssClient storage, Throwable failure) {
+        if (ossId != null) {
+            try {
+                baseMapper.deleteById(ossId);
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+        }
+        if (StringUtils.isNotBlank(objectKey)) {
+            try {
+                storage.delete(objectKey);
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+        }
     }
 
     @NotNull

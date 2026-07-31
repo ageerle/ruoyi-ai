@@ -1,5 +1,6 @@
 package org.ruoyi.enums;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -7,12 +8,25 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for ChatModeType enum
  */
+@Tag("dev")
 class ChatModeTypeTest {
 
     @Test
     void minimaxEnumExists() {
         ChatModeType minimax = ChatModeType.MINIMAX;
         assertNotNull(minimax);
+    }
+
+    @Test
+    void difyEnumExists() {
+        ChatModeType dify = ChatModeType.DIFY;
+        assertNotNull(dify);
+    }
+
+    @Test
+    void cozeEnumExists() {
+        ChatModeType coze = ChatModeType.COZE;
+        assertNotNull(coze);
     }
 
     @Test
@@ -23,6 +37,16 @@ class ChatModeTypeTest {
     @Test
     void minimaxDescription_isMiniMax() {
         assertEquals("MiniMax", ChatModeType.MINIMAX.getDescription());
+    }
+
+    @Test
+    void difyDescription_isDify() {
+        assertEquals("Dify", ChatModeType.DIFY.getDescription());
+    }
+
+    @Test
+    void cozeDescription_isCoze() {
+        assertEquals("Coze", ChatModeType.COZE.getDescription());
     }
 
     @Test

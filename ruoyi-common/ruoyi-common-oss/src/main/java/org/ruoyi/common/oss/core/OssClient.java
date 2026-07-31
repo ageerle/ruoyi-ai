@@ -310,7 +310,7 @@ public class OssClient {
             client.deleteObject(
                 x -> x.bucket(properties.getBucketName())
                     .key(removeBaseUrl(path))
-                    .build());
+                    .build()).join();
         } catch (Exception e) {
             throw new OssException("删除文件失败，请检查配置信息:[" + e.getMessage() + "]");
         }

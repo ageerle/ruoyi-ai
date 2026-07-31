@@ -29,13 +29,13 @@ public class WorkflowRuntimeNode extends BaseEntity {
     @TableField("node_id")
     private Long nodeId;
 
-    @TableField(value = "input")
+    @TableField(value = "`input`")
     private String input;
 
-    @TableField(value = "output")
+    @TableField(value = "`output`")
     private String output;
 
-    @TableField("status")
+    @TableField("`status`")
     private Integer status;
 
     @TableField("status_remark")

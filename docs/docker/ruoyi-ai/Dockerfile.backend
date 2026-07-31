@@ -20,6 +20,22 @@ RUN mvn clean package -Pprod -DskipTests
 # 最终运行镜像
 FROM eclipse-temurin:17-jre-alpine
 
+RUN set -eux; \
+    apk add --no-cache ffmpeg; \
+    for filter in scale pad fps setsar format tpad trim settb setpts xfade \
+        aresample aformat apad atrim asetpts anullsrc concat acrossfade; do \
+        ffmpeg -hide_banner -filters 2>/dev/null | grep -Eq "[[:space:]]${filter}[[:space:]]"; \
+    done; \
+    ffmpeg -hide_banner -h filter=xfade 2>&1 | grep -q dissolve; \
+    ffmpeg -hide_banner -h filter=xfade 2>&1 | grep -q fadeblack; \
+    ffmpeg -hide_banner -h filter=xfade 2>&1 | grep -q slideleft; \
+    ffmpeg -hide_banner -encoders 2>/dev/null | grep -Eq '[[:space:]]libx264[[:space:]]'; \
+    ffmpeg -hide_banner -encoders 2>/dev/null | grep -Eq '[[:space:]]aac[[:space:]]'; \
+    ffprobe -hide_banner -version >/dev/null
+
+ENV FFMPEG_PATH=/usr/bin/ffmpeg \
+    FFPROBE_PATH=/usr/bin/ffprobe
+
 # 设置工作目录
 WORKDIR /app
 
@@ -27,10 +43,10 @@ WORKDIR /app
 COPY --from=builder /build/ruoyi-admin/target/ruoyi-admin.jar ./ruoyi-admin.jar
 
 # 创建日志目录
-RUN mkdir -p /ruoyi/server/logs
+RUN mkdir -p /ruoyi/server/logs /ruoyi/server/temp
 
 # 暴露端口
 EXPOSE 6039
 
 # 启动命令
-ENTRYPOINT ["java", "-jar", "ruoyi-admin.jar", "--spring.profiles.active=prod"]
+ENTRYPOINT ["java", "-Djava.io.tmpdir=/ruoyi/server/temp", "-jar", "ruoyi-admin.jar", "--spring.profiles.active=prod"]

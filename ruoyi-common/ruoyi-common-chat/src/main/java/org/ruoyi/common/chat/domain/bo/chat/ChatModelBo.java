@@ -1,10 +1,12 @@
 package org.ruoyi.common.chat.domain.bo.chat;
 
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.chat.entity.chat.ChatModel;
+import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
@@ -28,16 +30,19 @@ public class ChatModelBo extends BaseEntity {
     /**
      * 模型分类
      */
+    @NotBlank(message = "模型分类不能为空", groups = { AddGroup.class, EditGroup.class })
     private String category;
 
     /**
      * 模型名称
      */
+    @NotBlank(message = "模型名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String modelName;
 
     /**
      * 模型供应商
      */
+    @NotBlank(message = "模型供应商不能为空", groups = { AddGroup.class, EditGroup.class })
     private String providerCode;
 
     /**

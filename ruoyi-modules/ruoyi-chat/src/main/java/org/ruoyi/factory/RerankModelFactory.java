@@ -55,12 +55,22 @@ public class RerankModelFactory {
 
     /**
      * 刷新模型缓存
-     * 根据给定的模型ID从缓存中移除对应的模型
+     * 根据给定的模型ID解析模型名称后，从缓存中移除对应的模型
      *
      * @param modelId 模型的唯一标识ID
      */
     public void refreshModel(Long modelId) {
-        modelCache.remove(modelId);
+        ChatModelVo modelConfig = chatModelService.queryById(modelId);
+        if (modelConfig != null) {
+            modelCache.remove(modelConfig.getModelName());
+        }
+    }
+
+    /**
+     * 按模型名称刷新缓存
+     */
+    public void refreshModelByName(String modelName) {
+        modelCache.remove(modelName);
     }
 
     /**

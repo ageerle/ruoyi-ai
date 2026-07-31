@@ -6,9 +6,9 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.entity.User;
 import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
-import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
+import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.workflow.entity.*;
 import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.service.*;
@@ -56,10 +56,12 @@ public class WorkflowStarter implements IWorkFlowStarterService {
     public SseEmitter streaming(User user, String workflowUuid, List<ObjectNode> userInputs, Long sessionId) {
         // 获取用户ID
         Long userId = LoginHelper.getUserId();
-        // 获取登录Token
+        // 获取登录Token（仅透传给 WfState，工作流 SSE 通过 emitter 直发，不串台）
         String tokenValue = StpUtil.getTokenValue();
-        // 根据用户ID和Token连接SSE对象
-        SseEmitter sseEmitter = sseEmitterManager.connect(userId, tokenValue);
+        // 获取当前租户ID（@Async 线程不继承请求线程的租户上下文，需显式透传）
+        String tenantId = TenantHelper.getTenantId();
+        // 根据会话ID连接SSE对象（每会话一个连接，避免同用户多会话串台）
+        SseEmitter sseEmitter = sseEmitterManager.connect(String.valueOf(sessionId));
         if (!sseEmitterHelper.checkOrComplete(user, sseEmitter)) {
             return sseEmitter;
         }
@@ -71,41 +73,33 @@ public class WorkflowStarter implements IWorkFlowStarterService {
             sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, A_WF_DISABLED.getInfo());
             return sseEmitter;
         }
-        self.asyncRun(user, workflow, userInputs, sseEmitter, userId, tokenValue, sessionId);
+        self.asyncRun(user, workflow, userInputs, sseEmitter, userId, tokenValue, sessionId, tenantId);
         return sseEmitter;
     }
 
     @Async
-    public void asyncRun(User user, Workflow workflow, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue, Long sessionId) {
-        log.info("WorkflowEngine run,userId:{},workflowUuid:{},userInputs:{}", user.getId(), workflow.getUuid(), userInputs);
-        List<WorkflowComponent> components = workflowComponentService.getAllEnable();
-        List<WorkflowNode> nodes = workflowNodeService.lambdaQuery()
-                .eq(WorkflowNode::getWorkflowId, workflow.getId())
-                .eq(WorkflowNode::getIsDeleted, false)
-                .list();
-        List<WorkflowEdge> edges = workflowEdgeService.lambdaQuery()
-                .eq(WorkflowEdge::getWorkflowId, workflow.getId())
-                .eq(WorkflowEdge::getIsDeleted, false)
-                .list();
-        WorkflowEngine workflowEngine = new WorkflowEngine(workflow,
-                sseEmitterHelper, components, nodes, edges,
-                workflowRuntimeService, workflowRuntimeNodeService);
-        workflowEngine.run(user, userInputs, sseEmitter, userId, tokenValue, sessionId);
-    }
-
-    @Async
-    public void resumeFlow(String runtimeUuid, String userInput, SseEmitter sseEmitter) {
-        WorkflowEngine workflowEngine = InterruptedFlow.RUNTIME_TO_GRAPH.get(runtimeUuid);
-        if (null == workflowEngine) {
-            log.error("工作流恢复执行时失败,runtime:{}", runtimeUuid);
-            throw new BaseException(A_WF_RESUME_FAIL.getInfo());
+    public void asyncRun(User user, Workflow workflow, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue, Long sessionId, String tenantId) {
+        // @Async 线程不继承请求线程的租户上下文, 显式设置, 避免租户缓存/隔离逻辑异常
+        if (tenantId != null) {
+            TenantHelper.setDynamic(tenantId);
         }
-        // 如果SSE连接对象不为空传入该对象（Chat调用工作流对话使用）
-        if (null != sseEmitter){
-            workflowEngine.setSseEmitter(sseEmitter);
-            // 为了让每个节点都可以发送模板消息 保持SSE对象一致（以防出现向已关闭的SSE对象发送消息）
-            workflowEngine.getWfState().setSseEmitter(sseEmitter);
+        try {
+            log.info("WorkflowEngine run,userId:{},workflowUuid:{},userInputs:{}", user.getId(), workflow.getUuid(), userInputs);
+            List<WorkflowComponent> components = workflowComponentService.getAllEnable();
+            List<WorkflowNode> nodes = workflowNodeService.lambdaQuery()
+                    .eq(WorkflowNode::getWorkflowId, workflow.getId())
+                    .eq(WorkflowNode::getIsDeleted, false)
+                    .list();
+            List<WorkflowEdge> edges = workflowEdgeService.lambdaQuery()
+                    .eq(WorkflowEdge::getWorkflowId, workflow.getId())
+                    .eq(WorkflowEdge::getIsDeleted, false)
+                    .list();
+            WorkflowEngine workflowEngine = new WorkflowEngine(workflow,
+                    sseEmitterHelper, components, nodes, edges,
+                    workflowRuntimeService, workflowRuntimeNodeService);
+            workflowEngine.run(user, userInputs, sseEmitter, userId, tokenValue, sessionId);
+        } finally {
+            TenantHelper.clearDynamic();
         }
-        workflowEngine.resume(userInput);
     }
 }

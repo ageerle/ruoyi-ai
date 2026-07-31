@@ -2,7 +2,6 @@ package org.ruoyi.workflow.workflow;
 
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
@@ -20,7 +19,6 @@ import org.ruoyi.common.chat.factory.ImageServiceFactory;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
 import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
-import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.data.NodeIODataContent;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
@@ -86,22 +84,6 @@ public class WorkflowUtil{
         }
 
         return result;
-    }
-
-    public static String getHumanFeedbackTip(String nodeUuid, List<WorkflowNode> wfNodes) {
-        WorkflowNode wfNode = wfNodes.stream()
-            .filter(item -> item.getUuid().equals(nodeUuid))
-            .findFirst().orElse(null);
-        if (null == wfNode) {
-            return "";
-        }
-        String wfNodeNodeConfig = wfNode.getNodeConfig();
-        if (StrUtil.isBlank(wfNodeNodeConfig)) {
-            return "";
-        }
-        Map<String, Object> map = JsonUtil.toMap(wfNodeNodeConfig);
-        Object tip = map.getOrDefault("tip", "");
-        return String.valueOf(tip);
     }
 
     public void streamingInvokeLLM(WfState wfState, WfNodeState state, WorkflowNode node, String modelName,

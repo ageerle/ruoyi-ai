@@ -37,6 +37,9 @@ public class KnowledgeAttach extends BaseEntity {
      */
     private String docId;
 
+    /** SHA-256 content digest used for upload idempotency. */
+    private String fileHash;
+
     /**
      * 附件名称
      */

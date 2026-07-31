@@ -32,6 +32,16 @@ public class SseEmitterManager {
      */
     private final static String SSE_TOPIC = "global:sse";
 
+    /**
+     * 按会话维度管理：每个会话一个 SSE 连接，用于对话流式响应
+     * Key: sessionId
+     */
+    private final static Map<String, SseEmitter> SESSION_EMITTERS = new ConcurrentHashMap<>();
+
+    /**
+     * 按用户维度管理：全局通知、站内信等场景，一个用户可有多个连接（按 token 区分）
+     * Key: userId, Value: token -> SseEmitter
+     */
     private final static Map<Long, Map<String, SseEmitter>> USER_TOKEN_EMITTERS = new ConcurrentHashMap<>();
 
     public SseEmitterManager() {
@@ -39,6 +49,98 @@ public class SseEmitterManager {
         SpringUtils.getBean(ScheduledExecutorService.class)
             .scheduleWithFixedDelay(this::sseMonitor, 60L, 60L, TimeUnit.SECONDS);
     }
+
+    // ======================== 会话维度（对话流式响应） ========================
+
+    /**
+     * 建立与指定会话的 SSE 连接，每个会话仅保留一个连接，重复建连会替换旧连接。
+     *
+     * @param sessionId 会话ID
+     * @return SseEmitter 实例
+     */
+    public SseEmitter connect(String sessionId) {
+        if (sessionId == null) {
+            throw new IllegalArgumentException("sessionId 不能为空");
+        }
+        // 关闭已存在的 SseEmitter，保证每个会话只有一个活跃连接
+        SseEmitter oldEmitter = SESSION_EMITTERS.remove(sessionId);
+        if (oldEmitter != null) {
+            oldEmitter.complete();
+        }
+
+        SseEmitter emitter = new SseEmitter(86400000L);
+        SESSION_EMITTERS.put(sessionId, emitter);
+
+        emitter.onCompletion(() -> removeSessionEmitter(sessionId, emitter));
+        emitter.onTimeout(() -> removeSessionEmitter(sessionId, emitter));
+        emitter.onError(e -> removeSessionEmitter(sessionId, emitter));
+
+        try {
+            emitter.send(SseEmitter.event().comment("connected"));
+        } catch (IOException e) {
+            SESSION_EMITTERS.remove(sessionId);
+        }
+        return emitter;
+    }
+
+    /**
+     * 断开指定会话的 SSE 连接
+     *
+     * @param sessionId 会话ID
+     */
+    public void disconnect(String sessionId) {
+        if (sessionId == null) {
+            return;
+        }
+        SseEmitter emitter = SESSION_EMITTERS.remove(sessionId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event().comment("disconnected"));
+            } catch (Exception exception) {
+                log.error(exception.getMessage());
+            }
+            emitter.complete();
+        }
+    }
+
+    /**
+     * 向指定会话发送结构化事件
+     *
+     * @param sessionId 会话ID
+     * @param eventDto  SSE事件对象
+     */
+    public void sendEvent(String sessionId, SseEventDto eventDto) {
+        if (sessionId == null || eventDto == null) {
+            return;
+        }
+        SseEmitter emitter = SESSION_EMITTERS.get(sessionId);
+        if (emitter == null) {
+            log.warn("【SSE发送失败】sessionId: {} 没有活跃的SSE连接", sessionId);
+            return;
+        }
+        try {
+            log.debug("【SSE发送】sessionId: {}, event: {}", sessionId, eventDto.getEvent());
+            emitter.send(SseEmitter.event()
+                .name(eventDto.getEvent())
+                .data(JSONUtil.toJsonStr(eventDto)));
+        } catch (Exception e) {
+            log.error("【SSE发送失败】sessionId: {}, error: {}", sessionId, e.getMessage());
+            removeSessionEmitter(sessionId, emitter);
+        }
+    }
+
+    private void removeSessionEmitter(String sessionId, SseEmitter emitter) {
+        boolean removed = SESSION_EMITTERS.remove(sessionId, emitter);
+        if (removed) {
+            try {
+                emitter.complete();
+            } catch (Exception ignore) {
+                // 忽略重复关闭异常
+            }
+        }
+    }
+
+    // ======================== 用户维度（全局通知） ========================
 
     /**
      * 建立与指定用户的 SSE 连接
@@ -154,6 +256,23 @@ public class SseEmitterManager {
 
         // 循环结束后统一清理空用户，避免并发修改异常
         toRemoveUsers.forEach(USER_TOKEN_EMITTERS::remove);
+
+        // 会话维度心跳：发送失败的连接移除
+        if (!SESSION_EMITTERS.isEmpty()) {
+            SESSION_EMITTERS.entrySet().removeIf(entry -> {
+                try {
+                    entry.getValue().send(heartbeat);
+                    return false;
+                } catch (Exception ex) {
+                    try {
+                        entry.getValue().complete();
+                    } catch (Exception ignore) {
+                        // 忽略重复关闭异常
+                    }
+                    return true;
+                }
+            });
+        }
     }
 
     /**
@@ -243,9 +362,11 @@ public class SseEmitterManager {
         SseMessageDto broadcastMessage = new SseMessageDto();
         broadcastMessage.setMessage(sseMessageDto.getMessage());
         broadcastMessage.setUserIds(sseMessageDto.getUserIds());
+        broadcastMessage.setSessionId(sseMessageDto.getSessionId());
+        broadcastMessage.setEventDto(sseMessageDto.getEventDto());
         RedisUtils.publish(SSE_TOPIC, broadcastMessage, consumer -> {
-            log.info("SSE发送主题订阅消息topic:{} session keys:{} message:{}",
-                SSE_TOPIC, sseMessageDto.getUserIds(), sseMessageDto.getMessage());
+            log.info("SSE发送主题订阅消息topic:{} session:{} session keys:{} message:{}",
+                SSE_TOPIC, sseMessageDto.getSessionId(), sseMessageDto.getUserIds(), sseMessageDto.getMessage());
         });
     }
 

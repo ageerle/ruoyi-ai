@@ -2,8 +2,9 @@ package org.ruoyi.integration;
 
 import dev.langchain4j.model.chat.StreamingChatModel;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.service.chat.impl.provider.MinimaxServiceImpl;
@@ -26,45 +27,28 @@ class MinimaxIntegrationTest {
         apiKey = System.getenv("MINIMAX_API_KEY");
     }
 
-    @Test
-    void buildStreamingChatModel_withRealApiKey_M27() {
+    @ParameterizedTest
+    @CsvSource({
+        "https://api.minimax.io/v1, MiniMax-M3, false",
+        "https://api.minimax.io/v1, MiniMax-M2.7, true",
+        "https://api.minimaxi.com/v1, MiniMax-M3, true",
+        "https://api.minimaxi.com/v1, MiniMax-M2.7, true",
+        "https://api.minimax.io/anthropic, MiniMax-M3, false",
+        "https://api.minimax.io/anthropic, MiniMax-M2.7, true",
+        "https://api.minimaxi.com/anthropic, MiniMax-M3, true",
+        "https://api.minimaxi.com/anthropic, MiniMax-M2.7, true"
+    })
+    void buildStreamingChatModel_withConfiguredApiKey(
+        String apiHost, String modelName, boolean enableThinking) {
         ChatModelVo modelVo = new ChatModelVo();
-        modelVo.setApiHost("https://api.minimax.io/v1");
+        modelVo.setApiHost(apiHost);
         modelVo.setApiKey(apiKey);
-        modelVo.setModelName("MiniMax-M2.7");
+        modelVo.setModelName(modelName);
 
         ChatRequest request = new ChatRequest();
-        request.setEnableThinking(false);
+        request.setEnableThinking(enableThinking);
 
         StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model, "Should create streaming model with real API key");
-    }
-
-    @Test
-    void buildStreamingChatModel_withRealApiKey_M25() {
-        ChatModelVo modelVo = new ChatModelVo();
-        modelVo.setApiHost("https://api.minimax.io/v1");
-        modelVo.setApiKey(apiKey);
-        modelVo.setModelName("MiniMax-M2.5");
-
-        ChatRequest request = new ChatRequest();
-        request.setEnableThinking(false);
-
-        StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model, "Should create streaming model with M2.5");
-    }
-
-    @Test
-    void buildStreamingChatModel_withRealApiKey_M25Highspeed() {
-        ChatModelVo modelVo = new ChatModelVo();
-        modelVo.setApiHost("https://api.minimax.io/v1");
-        modelVo.setApiKey(apiKey);
-        modelVo.setModelName("MiniMax-M2.5-highspeed");
-
-        ChatRequest request = new ChatRequest();
-        request.setEnableThinking(false);
-
-        StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
-        assertNotNull(model, "Should create streaming model with M2.5-highspeed");
+        assertNotNull(model, "Should create streaming model for " + modelName + " at " + apiHost);
     }
 }

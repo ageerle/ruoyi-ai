@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
  * @Description: 硅基流动（兼容 OpenAi）
  */
 @Component("siliconflow")
+@org.springframework.context.annotation.Scope("prototype")
 public class SiliconFlowEmbeddingProvider extends OpenAiEmbeddingProvider {
 
 }

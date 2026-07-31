@@ -19,7 +19,6 @@ import static org.bsc.langgraph4j.StateGraph.END;
 import static org.bsc.langgraph4j.StateGraph.START;
 import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
-import static org.ruoyi.workflow.workflow.WfComponentNameEnum.HUMAN_FEEDBACK;
 
 /**
  * 负责构建工作流运行所依赖的状态图�?
@@ -27,7 +26,6 @@ import static org.ruoyi.workflow.workflow.WfComponentNameEnum.HUMAN_FEEDBACK;
 @Slf4j
 public class WorkflowGraphBuilder {
 
-    private final Map<Long, WorkflowComponent> componentIndex;
     private final Map<String, WorkflowNode> nodeIndex;
     private final Map<String, List<WorkflowEdge>> edgesBySource;
     private final Map<String, List<WorkflowEdge>> edgesByTarget;
@@ -46,8 +44,6 @@ public class WorkflowGraphBuilder {
             List<WorkflowEdge> edges,
             WorkflowNodeRunner nodeRunner,
             WfState wfState) {
-        this.componentIndex = components.stream()
-                .collect(Collectors.toMap(WorkflowComponent::getId, Function.identity(), (origin, ignore) -> origin));
         this.nodeIndex = nodes.stream()
                 .collect(Collectors.toMap(WorkflowNode::getUuid, Function.identity(), (origin, ignore) -> origin));
         this.edgesBySource = edges.stream().collect(Collectors.groupingBy(WorkflowEdge::getSourceNodeUuid));
@@ -217,14 +213,6 @@ public class WorkflowGraphBuilder {
         WorkflowNode wfNode = getNodeByUuid(stateGraphNodeUuid);
         stateGraph.addNode(stateGraphNodeUuid, node_async(state -> nodeRunner.run(wfNode, state)));
         stateGraphList.add(stateGraph);
-
-        WorkflowComponent component = componentIndex.get(wfNode.getWorkflowComponentId());
-        if (component == null) {
-            throw new BaseException(ErrorEnum.A_PARAMS_ERROR.getInfo());
-        }
-        if (HUMAN_FEEDBACK.getName().equals(component.getName())) {
-            wfState.addInterruptNode(stateGraphNodeUuid);
-        }
     }
 
     private void addEdgeToStateGraph(StateGraph<WfNodeState> stateGraph, String source, String target) throws GraphStateException {

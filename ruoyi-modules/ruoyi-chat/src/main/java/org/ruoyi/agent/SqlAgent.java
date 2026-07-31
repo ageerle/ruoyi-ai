@@ -30,6 +30,9 @@ public interface SqlAgent {
         - You MUST ALWAYS use queryAllTables first to query all tables in the database before executing any SQL queries
         - Only after understanding the database schema can you construct and execute appropriate SQL queries
         - This is mandatory and applies to all queries without exception
+        - If queryAllTables returns NO tables or an empty list, you MUST NOT call executeSql or queryTableSchema
+        - When no tables are available, inform the user: "当前未配置可查询的数据库表，请联系管理员配置"
+        - NEVER attempt to execute any SQL query (including SELECT * FROM xxx) without first confirming available tables
         """)
     @UserMessage("""
         Answer the following question: {{query}}

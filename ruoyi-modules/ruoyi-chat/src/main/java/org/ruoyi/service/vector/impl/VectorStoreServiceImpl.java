@@ -6,6 +6,8 @@ import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.factory.VectorStoreStrategyFactory;
+import org.ruoyi.mapper.knowledge.KnowledgeInfoMapper;
+import org.ruoyi.domain.entity.knowledge.KnowledgeInfo;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import java.util.List;
 public class VectorStoreServiceImpl implements VectorStoreService {
 
     private final VectorStoreStrategyFactory strategyFactory;
+    private final KnowledgeInfoMapper knowledgeInfoMapper;
 
 
     /**
@@ -33,9 +36,23 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         return strategyFactory.getStrategy();
     }
 
+    private VectorStoreService getStrategy(String type) {
+        return strategyFactory.getStrategy(type);
+    }
+
+    private String vectorTypeForKid(String kid) {
+        try {
+            KnowledgeInfo info = knowledgeInfoMapper.selectById(Long.parseLong(kid));
+            return info == null ? null : info.getVectorModel();
+        } catch (Exception e) {
+            log.warn("无法解析知识库向量类型, kid={}", kid, e);
+            return null;
+        }
+    }
+
     @Override
     public void createSchema(String kid, String modelName) {
-        VectorStoreService strategy = getCurrentStrategy();
+        VectorStoreService strategy = getStrategy(vectorTypeForKid(kid));
         strategy.createSchema(kid, modelName);
     }
 
@@ -43,7 +60,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
         log.info("存储向量数据: kid={}, docId={}, 数据条数={}",
                 storeEmbeddingBo.getKid(), storeEmbeddingBo.getDocId(), storeEmbeddingBo.getChunkList().size());
-        VectorStoreService strategy = getCurrentStrategy();
+        VectorStoreService strategy = getStrategy(storeEmbeddingBo.getVectorStoreName());
         strategy.storeEmbeddings(storeEmbeddingBo);
     }
 
@@ -51,35 +68,35 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
         log.info("查询向量数据: kid={}, query={}, maxResults={}",
                 queryVectorBo.getKid(), queryVectorBo.getQuery(), queryVectorBo.getMaxResults());
-        VectorStoreService strategy = getCurrentStrategy();
+        VectorStoreService strategy = getStrategy(queryVectorBo.getVectorModelName());
         return strategy.getQueryVector(queryVectorBo);
     }
 
     @Override
     public List<KnowledgeRetrievalVo> search(QueryVectorBo queryVectorBo) {
         log.info("执行测试搜索: kid={}, query={}", queryVectorBo.getKid(), queryVectorBo.getQuery());
-        VectorStoreService strategy = getCurrentStrategy();
+        VectorStoreService strategy = getStrategy(queryVectorBo.getVectorModelName());
         return strategy.search(queryVectorBo);
     }
 
     @Override
     public void removeById(String id, String modelName) {
         log.info("根据ID删除向量数据: id={}, modelName={}", id, modelName);
-        VectorStoreService strategy = getCurrentStrategy();
+        VectorStoreService strategy = getStrategy(modelName);
         strategy.removeById(id, modelName);
     }
 
     @Override
     public void removeByDocId(String docId, String kid) {
         log.info("根据docId删除向量数据: docId={}, kid={}", docId, kid);
-        VectorStoreService strategy = getCurrentStrategy();
+        VectorStoreService strategy = getStrategy(vectorTypeForKid(kid));
         strategy.removeByDocId(docId, kid);
     }
 
     @Override
     public void removeByFid(String fid, String kid) {
         log.info("根据fid删除向量数据: fid={}, kid={}", fid, kid);
-        VectorStoreService strategy = getCurrentStrategy();
+        VectorStoreService strategy = getStrategy(vectorTypeForKid(kid));
         strategy.removeByFid(fid, kid);
     }
 }

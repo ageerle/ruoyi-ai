@@ -28,6 +28,11 @@ public class KnowledgeFragment extends BaseEntity {
     private Long id;
 
     /**
+     * 向量库片段ID（与向量库中的 fid 元数据对应，用于向量定位与混合检索融合）
+     */
+    private String fid;
+
+    /**
      * 文档ID-用于关联文本块信息
      */
     private String docId;

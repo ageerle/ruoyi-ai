@@ -31,6 +31,11 @@ public class KnowledgeFragmentVo implements Serializable {
     private Long id;
 
     /**
+     * 向量库片段ID
+     */
+    private String fid;
+
+    /**
      * 文档ID-用于关联文本块信息
      */
     private String docId;

@@ -1,6 +1,7 @@
 package me.zhyd.oauth.request;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import me.zhyd.oauth.cache.AuthStateCache;
 import me.zhyd.oauth.config.AuthConfig;
 import me.zhyd.oauth.config.AuthSource;
@@ -37,11 +38,11 @@ public abstract class AbstractAuthWeChatEnterpriseRequest extends AuthDefaultReq
     public AuthToken getAccessToken(AuthCallback authCallback) {
         String response = doGetAuthorizationCode(accessTokenUrl(null));
 
-        JSONObject object = this.checkResponse(response);
+        JsonNode object = this.checkResponse(response);
 
         return AuthToken.builder()
-            .accessToken(object.getString("access_token"))
-            .expireIn(object.getIntValue("expires_in"))
+            .accessToken(object.get("access_token").asText())
+            .expireIn(object.get("expires_in").asInt())
             .code(authCallback.getCode())
             .build();
     }
@@ -49,26 +50,26 @@ public abstract class AbstractAuthWeChatEnterpriseRequest extends AuthDefaultReq
     @Override
     public AuthUser getUserInfo(AuthToken authToken) {
         String response = doGetUserInfo(authToken);
-        JSONObject object = this.checkResponse(response);
+        JsonNode object = this.checkResponse(response);
 
         // 返回 OpenId 或其他，均代表非当前企业用户，不支持
         // https://github.com/justauth/JustAuth/issues/227 修复bug
-        if (!object.containsKey("userid")) {
+        if (!object.has("userid")) {
             throw new AuthException(AuthResponseStatus.UNIDENTIFIED_PLATFORM, source);
         }
-        String userId = object.getString("userid");
-        String userTicket = object.getString("user_ticket");
-        JSONObject userDetail = getUserDetail(authToken.getAccessToken(), userId, userTicket);
+        String userId = object.get("userid").asText();
+        String userTicket = object.has("user_ticket") ? object.get("user_ticket").asText() : null;
+        JsonNode userDetail = getUserDetail(authToken.getAccessToken(), userId, userTicket);
 
+        // rawUserInfo 为 JustAuth 的 fastjson 类型字段, 项目内无消费方, 不再设置
         return AuthUser.builder()
-            .rawUserInfo(userDetail)
-            .username(userDetail.getString("name"))
-            .nickname(userDetail.getString("alias"))
-            .avatar(userDetail.getString("avatar"))
-            .location(userDetail.getString("address"))
-            .email(userDetail.getString("email"))
+            .username(userDetail.has("name") ? userDetail.get("name").asText() : null)
+            .nickname(userDetail.has("alias") ? userDetail.get("alias").asText() : null)
+            .avatar(userDetail.has("avatar") ? userDetail.get("avatar").asText() : null)
+            .location(userDetail.has("address") ? userDetail.get("address").asText() : null)
+            .email(userDetail.has("email") ? userDetail.get("email").asText() : null)
             .uuid(userId)
-            .gender(AuthUserGender.getWechatRealGender(userDetail.getString("gender")))
+            .gender(AuthUserGender.getWechatRealGender(userDetail.has("gender") ? userDetail.get("gender").asText() : null))
             .token(authToken)
             .source(source.toString())
             .build();
@@ -78,16 +79,21 @@ public abstract class AbstractAuthWeChatEnterpriseRequest extends AuthDefaultReq
      * 校验请求结果
      *
      * @param response 请求结果
-     * @return 如果请求结果正常，则返回JSONObject
+     * @return 如果请求结果正常，则返回JsonNode
      */
-    private JSONObject checkResponse(String response) {
-        JSONObject object = JSONObject.parseObject(response);
+    private JsonNode checkResponse(String response) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode object = objectMapper.readTree(response);
 
-        if (object.containsKey("errcode") && object.getIntValue("errcode") != 0) {
-            throw new AuthException(object.getString("errmsg"), source);
+            if (object.has("errcode") && object.get("errcode").asInt() != 0) {
+                throw new AuthException(object.get("errmsg").asText(), source);
+            }
+
+            return object;
+        } catch (Exception e) {
+            throw new AuthException("解析响应失败: " + e.getMessage(), source);
         }
-
-        return object;
     }
 
 
@@ -127,28 +133,39 @@ public abstract class AbstractAuthWeChatEnterpriseRequest extends AuthDefaultReq
      * @param userTicket  成员票据，用于获取用户信息或敏感信息
      * @return 用户详情
      */
-    private JSONObject getUserDetail(String accessToken, String userId, String userTicket) {
-        // 用户基础信息
-        String userInfoUrl = UrlBuilder.fromBaseUrl("https://qyapi.weixin.qq.com/cgi-bin/user/get")
-            .queryParam("access_token", accessToken)
-            .queryParam("userid", userId)
-            .build();
-        String userInfoResponse = new HttpUtils(config.getHttpConfig()).get(userInfoUrl).getBody();
-        JSONObject userInfo = checkResponse(userInfoResponse);
+    private JsonNode getUserDetail(String accessToken, String userId, String userTicket) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
 
-        // 用户敏感信息
-        if (StringUtils.isNotEmpty(userTicket)) {
-            String userDetailUrl = UrlBuilder.fromBaseUrl("https://qyapi.weixin.qq.com/cgi-bin/auth/getuserdetail")
+            // 用户基础信息
+            String userInfoUrl = UrlBuilder.fromBaseUrl("https://qyapi.weixin.qq.com/cgi-bin/user/get")
                 .queryParam("access_token", accessToken)
+                .queryParam("userid", userId)
                 .build();
-            JSONObject param = new JSONObject();
-            param.put("user_ticket", userTicket);
-            String userDetailResponse = new HttpUtils(config.getHttpConfig()).post(userDetailUrl, param.toJSONString()).getBody();
-            JSONObject userDetail = checkResponse(userDetailResponse);
+            String userInfoResponse = new HttpUtils(config.getHttpConfig()).get(userInfoUrl).getBody();
+            JsonNode userInfo = checkResponse(userInfoResponse);
 
-            userInfo.putAll(userDetail);
+            // 用户敏感信息
+            if (StringUtils.isNotEmpty(userTicket)) {
+                String userDetailUrl = UrlBuilder.fromBaseUrl("https://qyapi.weixin.qq.com/cgi-bin/auth/getuserdetail")
+                    .queryParam("access_token", accessToken)
+                    .build();
+
+                // 构建请求参数
+                String paramJson = objectMapper.createObjectNode()
+                    .put("user_ticket", userTicket)
+                    .toString();
+
+                String userDetailResponse = new HttpUtils(config.getHttpConfig()).post(userDetailUrl, paramJson).getBody();
+                JsonNode userDetail = checkResponse(userDetailResponse);
+
+                // 合并两个JsonNode
+                ((com.fasterxml.jackson.databind.node.ObjectNode) userInfo).setAll((com.fasterxml.jackson.databind.node.ObjectNode) userDetail);
+            }
+            return userInfo;
+        } catch (Exception e) {
+            throw new AuthException("获取用户详情失败: " + e.getMessage(), source);
         }
-        return userInfo;
     }
 
 }

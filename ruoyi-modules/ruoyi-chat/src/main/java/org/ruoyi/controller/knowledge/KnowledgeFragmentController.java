@@ -107,7 +107,9 @@ public class KnowledgeFragmentController extends BaseController {
     /**
      * 检索测试
      */
+    @SaCheckPermission("system:fragment:list")
     @PostMapping("/retrieval")
+    @RepeatSubmit()
     public R<List<KnowledgeRetrievalVo>> retrieval(@RequestBody KnowledgeFragmentBo bo) {
         return R.ok(knowledgeFragmentService.retrieval(bo));
     }

@@ -22,12 +22,4 @@ public interface IWorkFlowStarterService {
      * @return 流式输出结果
      */
     SseEmitter streaming(User user, String workflowUuid, List<ObjectNode> userInputs, Long sessionId);
-
-    /**
-     * 恢复工作流
-      * @param runtimeUuid 运行时UUID
-     * @param userInput 用户输入
-     * @param sseEmitter SSE连接对象
-     */
-    void resumeFlow(String runtimeUuid, String userInput, SseEmitter sseEmitter);
 }

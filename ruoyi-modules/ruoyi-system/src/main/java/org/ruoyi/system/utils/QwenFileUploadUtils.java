@@ -1,6 +1,7 @@
 package org.ruoyi.system.utils;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.ruoyi.common.core.utils.StringUtils;
 
@@ -42,9 +43,11 @@ public class QwenFileUploadUtils {
             if (StringUtils.isEmpty(responseBody)){
                 throw new ServerException("上传失败：响应体为空");
             }
-            JSONObject jsonObject = JSONObject.parseObject(responseBody);
+            // 使用Jackson解析JSON
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(responseBody);
             // 千问返回的 fileId
-            return jsonObject.getString("id");
+            return jsonNode.get("id").asText();
         }
     }
 }

@@ -338,7 +338,10 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
         user.setUpdateBy(0L);
         SysUser sysUser = MapstructUtils.convert(user, SysUser.class);
         sysUser.setTenantId(tenantId);
-        return baseMapper.insert(sysUser) > 0;
+        boolean rows = baseMapper.insert(sysUser) > 0;
+        // 回写主键，调用方（注册服务、mpLogin）需要用 userId 绑定默认角色或登录
+        user.setUserId(sysUser.getUserId());
+        return rows;
     }
 
     /**

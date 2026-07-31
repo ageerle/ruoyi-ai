@@ -108,82 +108,39 @@ public class WorkflowEngine {
 
             MemorySaver saver = new MemorySaver();
             CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver)
-                    .interruptBefore(wfState.getInterruptNodes().toArray(String[]::new))
                     .build();
             app = mainStateGraph.compile(compileConfig);
             RunnableConfig invokeConfig = RunnableConfig.builder().build();
-            exe(invokeConfig, false);
+            exe(invokeConfig);
         } catch (Exception e) {
             errorWhenExe(e);
         }
     }
 
-    private void exe(RunnableConfig invokeConfig, boolean resume) {
+    private void exe(RunnableConfig invokeConfig) {
         //不使用langgraph4j state的update相关方法，无需传入input
-        AsyncGenerator<NodeOutput<WfNodeState>> outputs = app.stream(resume ? null : Map.of(), invokeConfig);
+        AsyncGenerator<NodeOutput<WfNodeState>> outputs = app.stream(Map.of(), invokeConfig);
         streamingResult(wfState, outputs, sseEmitter);
 
         StateSnapshot<WfNodeState> stateSnapshot = app.getState(invokeConfig);
-        String nextNode = stateSnapshot.config().nextNode().orElse("");
-        //还有下个节点，表示进入中断状态，等待用户输入后继续执�?
-        if (StringUtils.isNotBlank(nextNode) && !nextNode.equalsIgnoreCase(END)) {
-            // 获取提示模板
-            String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.HUMAN_FEED_BACK.getValue());
-            // 获取人机交互提示信息
-            String intTip = nodeMessageTemplate + WorkflowUtil.getHumanFeedbackTip(nextNode, wfNodes);
-            //将等待输入信息[事件与提示词]发送到到客户端
-            SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_WAIT_FEEDBACK_BY_" + nextNode + "]", intTip);
-            // 保存提示信息到Chat信息记录中（对话使用）
-            WorkflowMessageUtil.saveWorkflowMessage(wfState, intTip);
-            InterruptedFlow.RUNTIME_TO_GRAPH.put(wfState.getUuid(), this);
-            //更新状�?
-            wfState.setProcessStatus(WORKFLOW_PROCESS_STATUS_WAITING_INPUT);
-            workflowRuntimeService.updateOutput(wfRuntimeResp.getId(), wfState);
-        } else {
-            WorkflowRuntime updatedRuntime = workflowRuntimeService.updateOutput(wfRuntimeResp.getId(), wfState);
-            // 保存成功会话信息
-            wfNodes.stream().filter(item -> stateSnapshot.node().equals(item.getUuid()))
-                .findFirst().ifPresent(wfNode -> {
-                    // 获取节点模板提示词信息
-                    String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.END.getValue());
-                    // 发送SSE消息驱动事件和保存会话
-                    WorkflowMessageUtil.notifyAndStoreMessage(wfState, sseEmitter, wfNode, nodeMessageTemplate);
-            });
-            // 发送结束消息
-            sseEmitterHelper.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
-            // 发送驱动消息事件
-            InterruptedFlow.RUNTIME_TO_GRAPH.remove(wfState.getUuid());
-        }
-    }
-
-    /**
-     * 中断流程等待用户输入时，会进行暂停状态，用户输入后调用本方法执行流程剩余部分
-     *
-     * @param userInput 用户输入
-     */
-    public void resume(String userInput) {
-        RunnableConfig invokeConfig = RunnableConfig.builder().build();
-        try {
-            app.updateState(invokeConfig, Map.of(HUMAN_FEEDBACK_KEY, userInput), null);
-            exe(invokeConfig, true);
-        } catch (Exception e) {
-            errorWhenExe(e);
-        } finally {
-            //有可能多次接收人机交互，待整个流程完全执行后才能删除
-            if (wfState.getProcessStatus() != WORKFLOW_PROCESS_STATUS_WAITING_INPUT) {
-                InterruptedFlow.RUNTIME_TO_GRAPH.remove(wfState.getUuid());
-            }
-        }
+        wfState.setProcessStatus(WORKFLOW_PROCESS_STATUS_SUCCESS);
+        WorkflowRuntime updatedRuntime = workflowRuntimeService.updateOutput(wfRuntimeResp.getId(), wfState);
+        wfNodes.stream().filter(item -> stateSnapshot.node().equals(item.getUuid()))
+            .findFirst().ifPresent(wfNode -> {
+                String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.END.getValue());
+                WorkflowMessageUtil.notifyAndStoreMessage(wfState, sseEmitter, wfNode, nodeMessageTemplate);
+        });
+        sseEmitterHelper.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
     }
 
     private void errorWhenExe(Exception e) {
         log.error("error", e);
         String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.EXCEPTION.getValue());
         String errorMsg = e.getMessage();
-        if (errorMsg.contains("parallel node doesn't support conditional branch")) {
+        if (errorMsg != null && errorMsg.contains("parallel node doesn't support conditional branch")) {
             errorMsg = "并行节点中不能包含条件分�?";
         }
-        errorMsg = nodeMessageTemplate + errorMsg;
+        errorMsg = nodeMessageTemplate + (errorMsg != null ? errorMsg : e.getClass().getSimpleName());
         // 保存会话信息且发送驱动消息事件
         WorkflowMessageUtil.saveWorkflowMessage(wfState, errorMsg);
         sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
@@ -265,12 +222,12 @@ public class WorkflowEngine {
                 String node = streamingOutput.node();
                 String chunk = streamingOutput.chunk();
                 log.info("node:{},chunk:{}", node, chunk);
-                Map<String, String> strMap = new HashMap<>();
-                strMap.put("ck", chunk);
-//                SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", strMap.toString());
-
                 SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", chunk);
             } else {
+                // __END__ 是 langgraph4j 的终止伪节点, 无对应业务节点状态, 跳过
+                if (END.equals(out.node())) {
+                    continue;
+                }
                 AbstractWfNode abstractWfNode = wfState.getCompletedNodes().stream()
                         .filter(item -> item.getNode().getUuid().endsWith(out.node())).findFirst().orElse(null);
                 if (null != abstractWfNode) {

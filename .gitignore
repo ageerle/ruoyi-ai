@@ -45,6 +45,7 @@ nbdist/
 *.xml.versionsBackup
 *.swp
 data/
+logs/
 
 !*/build/*.java
 !*/build/*.html
@@ -52,3 +53,4 @@ data/
 
 .flattened-pom.xml
 /.claude/settings.local.json
+/docs/docker/milvus/volumes/

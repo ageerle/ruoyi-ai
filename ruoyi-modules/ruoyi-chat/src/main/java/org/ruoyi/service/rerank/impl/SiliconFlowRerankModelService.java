@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component("siliconflowRerank")
+@org.springframework.context.annotation.Scope("prototype")
 public class SiliconFlowRerankModelService implements RerankModelService {
 
     private static final String DEFAULT_BASE_URL = "https://api.siliconflow.cn/v1/rerank";

@@ -6,6 +6,7 @@ import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.ruoyi.service.knowledge.ResourceLoader;
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.knowledge.TextSplitter;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +33,7 @@ public class PdfFileLoader implements ResourceLoader {
     }
 
     @Override
-    public List<String> getChunkList(String content, String kid) {
-        return characterTextSplitter.split(content, kid);
+    public List<String> getChunkList(String content, DocumentSplitConfig config) {
+        return characterTextSplitter.split(content, config);
     }
 }

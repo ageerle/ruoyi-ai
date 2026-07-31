@@ -16,23 +16,13 @@ public enum WfComponentNameEnum {
 
     TONGYI_WANX("Tongyiwanx"),
 
-    DOCUMENT_EXTRACTOR("DocumentExtractor"),
-
-    KEYWORD_EXTRACTOR("KeywordExtractor"),
-
     FAQ_EXTRACTOR("FaqExtractor"),
 
     KNOWLEDGE_RETRIEVER("KnowledgeRetrieval"),
 
     SWITCHER("Switcher"),
 
-    CLASSIFIER("Classifier"),
-
-    TEMPLATE("Template"),
-
     GOOGLE_SEARCH("Google"),
-
-    HUMAN_FEEDBACK("HumanFeedback"),
 
     MAIL_SEND("MailSend"),
 

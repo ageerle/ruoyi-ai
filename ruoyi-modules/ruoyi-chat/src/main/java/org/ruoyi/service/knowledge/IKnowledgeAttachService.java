@@ -5,6 +5,7 @@ import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.domain.bo.knowledge.KnowledgeAttachBo;
 import org.ruoyi.domain.bo.knowledge.KnowledgeInfoUploadBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeAttachVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeReparseVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -79,4 +80,6 @@ public interface IKnowledgeAttachService {
      * @param id 附件ID
      */
     void parse(Long id);
+
+    KnowledgeReparseVo reparseKnowledge(Long knowledgeId);
 }

@@ -41,14 +41,14 @@ public class MyMcpClientListener implements McpClientListener {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final Long userId;
+    private final String sessionId;
 
-    public MyMcpClientListener(Long userId) {
-        this.userId = userId;
+    public MyMcpClientListener(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     public MyMcpClientListener() {
-        this.userId = null;
+        this.sessionId = null;
     }
 
     // ==================== 工具执行 ====================
@@ -146,8 +146,8 @@ public class MyMcpClientListener implements McpClientListener {
      * 推送 MCP 事件到前端
      */
     private void pushMcpEvent(String name, String status, String result) {
-        if (userId == null) {
-            log.warn("userId 为空，无法推送 MCP 事件");
+        if (sessionId == null) {
+            log.warn("sessionId 为空，无法推送 MCP 事件");
             return;
         }
         try {
@@ -157,7 +157,7 @@ public class MyMcpClientListener implements McpClientListener {
             content.put("result", result);
 
             String json = OBJECT_MAPPER.writeValueAsString(content);
-            SseMessageUtils.sendEvent(userId, SseEventDto.builder()
+            SseMessageUtils.sendEvent(sessionId, SseEventDto.builder()
                 .event("mcp")
                 .content(json)
                 .build());

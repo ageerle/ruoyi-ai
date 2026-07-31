@@ -3,7 +3,9 @@ package org.ruoyi.service.knowledge.impl.loader;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.service.knowledge.ResourceLoader;
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.knowledge.TextSplitter;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -22,18 +24,16 @@ public class TextFileLoader implements ResourceLoader {
 
     @Override
     public String getContent(InputStream inputStream) {
-        String stringBuffer = "";
         try (InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
              BufferedReader bufferedReader = new BufferedReader(reader)) {
-            stringBuffer = bufferedReader.lines().collect(Collectors.joining());
+            return bufferedReader.lines().collect(Collectors.joining("\n"));
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceException("读取文本文件失败", e);
         }
-        return stringBuffer;
     }
 
     @Override
-    public List<String> getChunkList(String content, String kid) {
-        return textSplitter.split(content, kid);
+    public List<String> getChunkList(String content, DocumentSplitConfig config) {
+        return textSplitter.split(content, config);
     }
 }

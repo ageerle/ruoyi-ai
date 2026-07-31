@@ -25,15 +25,15 @@ public abstract class AbstractImageGenerationService implements IImageGeneration
         String size = imageContext.getSize();
         // 获取随机数种子
         Integer seed = imageContext.getSeed();
-        return doGenerateImage(chatModelVo, prompt, size, seed);
+        // 获取参考图（图生图用）
+        String image = imageContext.getImage();
+        return doGenerateImage(chatModelVo, prompt, size, seed, image);
     }
 
     /**
      * 执行生成图片（钩子方法 - 子类必须实现）
-     *
-     * @param prompt 提示词
      */
-    protected abstract String doGenerateImage(ChatModelVo chatModelVo, String prompt, String size, Integer seed);
+    protected abstract String doGenerateImage(ChatModelVo chatModelVo, String prompt, String size, Integer seed, String image);
 
     /**
      * 构建具体厂商的 ImageModel（原生SDK 非langchain4j-dashscope版）

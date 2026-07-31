@@ -14,6 +14,7 @@ import org.ruoyi.observability.MyChatModelListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 
 
@@ -28,11 +29,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ZhiPuChatServiceImpl implements AbstractChatService {
 
+    private static final int MAX_TOKENS = 65536;
+
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return ZhipuAiStreamingChatModel.builder()
             .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())
+            .maxToken(MAX_TOKENS)
+            .readTimeout(Duration.ofSeconds(300))
             .listeners(List.of(new MyChatModelListener()))
             .build();
     }
@@ -42,6 +47,8 @@ public class ZhiPuChatServiceImpl implements AbstractChatService {
         return ZhipuAiChatModel.builder()
             .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())
+            .maxToken(MAX_TOKENS)
+            .readTimeout(Duration.ofSeconds(300))
             .build();
     }
 

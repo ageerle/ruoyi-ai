@@ -4,7 +4,6 @@ import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.enums.RoleType;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.ConfigService;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StringUtils;
@@ -12,6 +11,7 @@ import org.ruoyi.workflow.entity.WorkflowNode;
 import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.WorkflowUtil;
+import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -38,17 +38,20 @@ public class WorkflowMessageUtil {
 
 
     /**
-     * 获取节点的响应模板
+     * 获取节点的响应模板 <br/>
+     * 优先读取 sys_config 配置(可在系统管理-配置管理中自定义),
+     * 未配置时回退到枚举内置默认模板, 模板仅为展示文案, 缺失不应中断工作流执行
      * @param configKey 参数Key
      * @return 返回模板样式
      */
     public static String getNodeMessageTemplate(String configKey){
         ConfigService configService = SpringUtil.getBean(ConfigService.class);
         String configValue = configService.getConfigValue(configKey);
-        if (StringUtils.isEmpty(configValue)) {
-            throw new ServiceException("请先配置该节点的响应模板");
+        if (StringUtils.isNotEmpty(configValue)) {
+            return configValue;
         }
-        return configValue;
+        log.warn("sys_config 未配置节点响应模板 [{}], 已回退使用内置默认模板", configKey);
+        return NodeMessageTemplateEnum.getDefaultTemplate(configKey);
     }
 
     /**

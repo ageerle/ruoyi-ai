@@ -3,6 +3,14 @@ package org.ruoyi.service.retrieval.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.common.trace.config.TraceProperties;
+import org.ruoyi.common.trace.constant.TraceConstants;
+import org.ruoyi.common.trace.core.TraceContext;
+import org.ruoyi.common.trace.core.TraceNodeTemplate;
+import org.ruoyi.common.trace.domain.TraceNode;
+import org.ruoyi.common.trace.service.TraceRecordService;
+import org.ruoyi.common.trace.util.TracePayloadUtils;
 import org.ruoyi.domain.bo.rerank.RerankRequest;
 import org.ruoyi.domain.bo.rerank.RerankResult;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
@@ -13,10 +21,15 @@ import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
 import org.ruoyi.service.rerank.RerankModelService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.ruoyi.service.vector.VectorStoreService;
+import org.ruoyi.trace.RagTraceNodeTypes;
+import org.ruoyi.trace.RagTracePayloadBuilder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -34,12 +47,17 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
     private final VectorStoreService vectorStoreService;
     private final RerankModelFactory rerankModelFactory;
     private final KnowledgeFragmentMapper fragmentMapper;
+    private final TraceRecordService traceRecordService;
+    private final TraceProperties traceProperties;
 
     /**
      * 粗召回默认扩大倍数
      * 如果启用重排序，粗召回会获取更多结果供重排序筛选
      */
     private static final int RERANK_EXPANSION_FACTOR = 3;
+    private static final long CACHE_TTL_MILLIS = TimeUnit.MINUTES.toMillis(5);
+    private static final int CACHE_MAX_ENTRIES = 1000;
+    private final Map<String, CacheEntry> retrievalCache = new ConcurrentHashMap<>();
 
     @Override
     public List<String> retrieveTexts(QueryVectorBo queryVectorBo) {
@@ -51,7 +69,26 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
 
     @Override
     public List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo) {
+        String cacheKey = cacheKey(queryVectorBo);
+        CacheEntry cached = retrievalCache.get(cacheKey);
+        if (cached != null && System.currentTimeMillis() - cached.createdAt < CACHE_TTL_MILLIS) {
+            return copyResults(cached.results);
+        }
         log.info("开始知识库检索, kid={}, query={}", queryVectorBo.getKid(), queryVectorBo.getQuery());
+
+        String retrievalInputPayload = traceActive()
+                ? RagTracePayloadBuilder.retrievalInputSummary(queryVectorBo) : null;
+        List<KnowledgeRetrievalVo> finalResults = TraceNodeTemplate.withNode(traceRecordService, traceProperties,
+                "retrieval", RagTraceNodeTypes.NODE_RETRIEVAL,
+                KnowledgeRetrievalServiceImpl.class.getName(), "retrieve",
+                retrievalInputPayload,
+                () -> retrieveUncached(queryVectorBo),
+                RagTracePayloadBuilder::retrievalOutputSummary);
+        cache(cacheKey, finalResults);
+        return copyResults(finalResults);
+    }
+
+    private List<KnowledgeRetrievalVo> retrieveUncached(QueryVectorBo queryVectorBo) {
 
         // 1. 粗召回阶段 (向量检索 + 关键词搜索)
         List<KnowledgeRetrievalVo> coarseResults = performCoarseRetrieval(queryVectorBo);
@@ -68,18 +105,20 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
 
         // 3. 重排序阶段 (可选)
         List<KnowledgeRetrievalVo> finalResults = coarseResults;
-        if (Boolean.TRUE.equals(queryVectorBo.getEnableRerank()) &&
-                StringUtils.isNotBlank(queryVectorBo.getRerankModelName())) {
+        boolean rerankApplied = Boolean.TRUE.equals(queryVectorBo.getEnableRerank()) &&
+                StringUtils.isNotBlank(queryVectorBo.getRerankModelName());
+        if (rerankApplied) {
             finalResults = performRerank(queryVectorBo, coarseResults);
         }
 
         // 4. 应用分值阈值过滤 (重排分值或 RRF 分值)
-        double threshold = queryVectorBo.getRerankScoreThreshold() != null ? 
-                         queryVectorBo.getRerankScoreThreshold() : 0.0;
-        
-        return finalResults.stream()
-                .filter(res -> res.getScore() >= threshold)
-                .collect(Collectors.toList());
+        if (rerankApplied && queryVectorBo.getRerankScoreThreshold() != null) {
+            double threshold = queryVectorBo.getRerankScoreThreshold();
+            finalResults = finalResults.stream()
+                    .filter(res -> res.getScore() != null && res.getScore() >= threshold)
+                    .collect(Collectors.toList());
+        }
+        return finalResults;
     }
 
     /**
@@ -132,7 +171,8 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                     List<KnowledgeFragmentVo> fragments = fragmentMapper.searchByKeyword(kid, queryVectorBo.getQuery(), finalTargetMaxResults);
                     return fragments.stream().map(f -> {
                         KnowledgeRetrievalVo vo = new KnowledgeRetrievalVo();
-                        vo.setId(f.getId().toString());
+                        // 优先使用 fid 作为融合标识（与向量侧一致），历史数据无 fid 时回退主键
+                        vo.setId(StringUtils.isNotBlank(f.getFid()) ? f.getFid() : f.getId().toString());
                         vo.setContent(f.getContent());
                         vo.setDocId(f.getDocId());
                         vo.setIdx(f.getIdx());
@@ -155,7 +195,11 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
 
         } catch (Exception e) {
             log.error("混合检索执行失败，回退到纯向量检索: {}", e.getMessage(), e);
-            return vectorStoreService.search(copyOf(queryVectorBo, targetMaxResults));
+            try {
+                return vectorStoreService.search(copyOf(queryVectorBo, targetMaxResults));
+            } catch (Exception vectorError) {
+                throw new ServiceException("知识库检索不可用：向量与混合检索均失败");
+            }
         }
     }
 
@@ -163,6 +207,11 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
      * 重排序阶段
      */
     private List<KnowledgeRetrievalVo> performRerank(QueryVectorBo queryVectorBo, List<KnowledgeRetrievalVo> coarseResults) {
+        int topN = queryVectorBo.getRerankTopN() != null ? queryVectorBo.getRerankTopN() : queryVectorBo.getMaxResults();
+        String rerankInputPayload = traceActive()
+                ? RagTracePayloadBuilder.rerankInputSummary(queryVectorBo, coarseResults.size(), topN) : null;
+        TraceNodeHandle traceNode = startTraceNode("rerank", RagTraceNodeTypes.NODE_RERANK, "performRerank",
+                rerankInputPayload);
         try {
             RerankModelService rerankModel = rerankModelFactory.createModel(queryVectorBo.getRerankModelName());
             
@@ -171,8 +220,6 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                     .collect(Collectors.toList());
 
             // topN 默认为 maxResults
-            int topN = queryVectorBo.getRerankTopN() != null ? queryVectorBo.getRerankTopN() : queryVectorBo.getMaxResults();
-
             RerankRequest rerankRequest = RerankRequest.builder()
                     .query(queryVectorBo.getQuery())
                     .documents(contents)
@@ -182,24 +229,32 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
             RerankResult rerankResult = rerankModel.rerank(rerankRequest);
 
             // 写回分数并记录原始分
+            List<KnowledgeRetrievalVo> reranked = new ArrayList<>();
             for (RerankResult.RerankDocument doc : rerankResult.getDocuments()) {
                 if (doc.getIndex() != null && doc.getIndex() < coarseResults.size()) {
                     KnowledgeRetrievalVo vo = coarseResults.get(doc.getIndex());
                     vo.setRawScore(vo.getScore());
                     vo.setScore(doc.getRelevanceScore());
+                    reranked.add(vo);
                 }
             }
 
             // 按新分排序
-            coarseResults.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+            reranked.sort((a, b) -> b.getScore().compareTo(a.getScore()));
             
             // 截断到 topN
-            return coarseResults.subList(0, Math.min(topN, coarseResults.size()));
+            List<KnowledgeRetrievalVo> results = reranked.subList(0, Math.min(topN, reranked.size()));
+            finishTraceNode(traceNode, TraceConstants.STATUS_SUCCESS, null,
+                    RagTracePayloadBuilder.rerankOutputSummary(results));
+            return results;
 
         } catch (Exception e) {
             log.error("重排序流程失败: {}", e.getMessage());
             int limit = queryVectorBo.getMaxResults() != null ? queryVectorBo.getMaxResults() : 10;
-            return coarseResults.subList(0, Math.min(limit, coarseResults.size()));
+            List<KnowledgeRetrievalVo> fallback = coarseResults.subList(0, Math.min(limit, coarseResults.size()));
+            finishTraceNode(traceNode, TraceConstants.STATUS_ERROR, e,
+                    RagTracePayloadBuilder.rerankOutputSummary(fallback));
+            return fallback;
         }
     }
 
@@ -242,6 +297,56 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         return fusedResults;
     }
 
+    private TraceNodeHandle startTraceNode(String nodeName, String nodeType, String methodName, String inputPayload) {
+        if (!traceProperties.isEnabled() || StringUtils.isBlank(TraceContext.getTraceId())) {
+            return null;
+        }
+
+        String traceId = TraceContext.getTraceId();
+        String nodeId = UUID.randomUUID().toString().replace("-", "");
+        long startMillis = System.currentTimeMillis();
+        TraceNode node = new TraceNode();
+        node.setTraceId(traceId);
+        node.setNodeId(nodeId);
+        node.setParentNodeId(TraceContext.currentNodeId());
+        node.setDepth(TraceContext.depth());
+        node.setNodeName(nodeName);
+        node.setNodeType(nodeType);
+        node.setClassName(KnowledgeRetrievalServiceImpl.class.getName());
+        node.setMethodName(methodName);
+        node.setStatus(TraceConstants.STATUS_RUNNING);
+        node.setStartTime(new Date(startMillis));
+        node.setInputPayload(inputPayload);
+
+        try {
+            traceRecordService.startNode(node);
+            TraceContext.pushNode(nodeId);
+            return new TraceNodeHandle(traceId, nodeId, startMillis);
+        } catch (Exception e) {
+            log.warn("写入 RAG 检索 trace 节点失败，traceId={}, nodeId={}", traceId, nodeId, e);
+            return null;
+        }
+    }
+
+    private boolean traceActive() {
+        return traceProperties.isEnabled() && StringUtils.isNotBlank(TraceContext.getTraceId());
+    }
+
+    private void finishTraceNode(TraceNodeHandle traceNode, String status, Throwable error, String outputPayload) {
+        if (traceNode == null || !traceNode.finished.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            traceRecordService.finishNode(traceNode.traceId, traceNode.nodeId, status,
+                    TracePayloadUtils.error(error, traceProperties), outputPayload,
+                    new Date(), System.currentTimeMillis() - traceNode.startMillis);
+        } catch (Exception e) {
+            log.warn("结束 RAG 检索 trace 节点失败，traceId={}, nodeId={}", traceNode.traceId, traceNode.nodeId, e);
+        } finally {
+            TraceContext.popNode();
+        }
+    }
+
     private QueryVectorBo copyOf(QueryVectorBo original, int maxResults) {
         QueryVectorBo copy = new QueryVectorBo();
         copy.setQuery(original.getQuery());
@@ -252,5 +357,57 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         copy.setApiKey(original.getApiKey());
         copy.setBaseUrl(original.getBaseUrl());
         return copy;
+    }
+
+    @Override
+    public void invalidateKnowledge(String kid) {
+        if (StringUtils.isBlank(kid)) {
+            retrievalCache.clear();
+        } else {
+            retrievalCache.keySet().removeIf(key -> key.startsWith(kid + "|"));
+        }
+    }
+
+    private void cache(String key, List<KnowledgeRetrievalVo> results) {
+        if (retrievalCache.size() >= CACHE_MAX_ENTRIES) {
+            long now = System.currentTimeMillis();
+            retrievalCache.entrySet().removeIf(e -> now - e.getValue().createdAt >= CACHE_TTL_MILLIS);
+            if (retrievalCache.size() >= CACHE_MAX_ENTRIES) {
+                retrievalCache.clear();
+            }
+        }
+        retrievalCache.put(key, new CacheEntry(System.currentTimeMillis(), copyResults(results)));
+    }
+
+    private String cacheKey(QueryVectorBo bo) {
+        return String.join("|", Objects.toString(bo.getKid(), ""), Objects.toString(bo.getQuery(), ""),
+                Objects.toString(bo.getMaxResults(), ""), Objects.toString(bo.getVectorModelName(), ""),
+                Objects.toString(bo.getEmbeddingModelName(), ""), Objects.toString(bo.getSimilarityThreshold(), ""),
+                Objects.toString(bo.getEnableHybrid(), ""), Objects.toString(bo.getHybridAlpha(), ""),
+                Objects.toString(bo.getEnableRerank(), ""), Objects.toString(bo.getRerankModelName(), ""),
+                Objects.toString(bo.getRerankTopN(), ""), Objects.toString(bo.getRerankScoreThreshold(), ""));
+    }
+
+    private List<KnowledgeRetrievalVo> copyResults(List<KnowledgeRetrievalVo> source) {
+        return source.stream().map(vo -> KnowledgeRetrievalVo.builder()
+                .id(vo.getId()).docId(vo.getDocId()).knowledgeId(vo.getKnowledgeId()).idx(vo.getIdx())
+                .content(vo.getContent()).score(vo.getScore()).originalIndex(vo.getOriginalIndex())
+                .rawScore(vo.getRawScore()).sourceName(vo.getSourceName()).build()).collect(Collectors.toList());
+    }
+
+    private record CacheEntry(long createdAt, List<KnowledgeRetrievalVo> results) { }
+
+    private static final class TraceNodeHandle {
+
+        private final String traceId;
+        private final String nodeId;
+        private final long startMillis;
+        private final AtomicBoolean finished = new AtomicBoolean(false);
+
+        private TraceNodeHandle(String traceId, String nodeId, long startMillis) {
+            this.traceId = traceId;
+            this.nodeId = nodeId;
+            this.startMillis = startMillis;
+        }
     }
 }

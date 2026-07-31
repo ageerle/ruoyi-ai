@@ -1,13 +1,13 @@
 package org.ruoyi.workflow.workflow.node.mailSend;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.JSONValidator;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.entity.WorkflowNode;
+import org.ruoyi.workflow.util.JsonUtil;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
 import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
@@ -41,10 +41,25 @@ public class MailSendNode extends AbstractWfNode {
             String input = getDataFromInput(inputs);
             // 判断是否为JSON格式(LLM输出转换 由LLM生成格式)
             if (StringUtils.isNotBlank(input) && isJson(input)) {
-                JSONObject inputJson = JSON.parseObject(input);
-                JSONObject configJson = (JSONObject) JSON.toJSON(config);
-                configJson.putAll(inputJson);
-                config = configJson.toJavaObject(MailSendNodeConfig.class);
+                try {
+                    // 使用统一的 JsonUtil 进行解析
+                    JsonNode inputJson = JsonUtil.toJsonNode(input);
+                    if (inputJson != null) {
+                        // 使用 JsonUtil 内部的 ObjectMapper 进行合并
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        // 将config转换为JsonNode
+                        JsonNode configJson = objectMapper.valueToTree(config);
+                        // 合并两个JSON节点
+                        JsonNode mergedJson = objectMapper.readerForUpdating(configJson).readValue(inputJson);
+                        // 转换回config对象
+                        config = objectMapper.treeToValue(mergedJson, MailSendNodeConfig.class);
+                    } else {
+                        log.warn("输入 JSON 解析结果为 null，使用原始配置");
+                    }
+                } catch (Exception e) {
+                    log.error("合并邮件配置失败，使用原始配置: {}", e.getMessage(), e);
+                    // 继续使用原始 config，不中断流程
+                }
             }
 
             // 安全获取模板（使用 defaultString 避免 null）
@@ -217,9 +232,10 @@ public class MailSendNode extends AbstractWfNode {
         if (str == null || str.trim().isEmpty()) {
             return false;
         }
-        // 使用 try-with-resources 正确处理 JSONValidator 资源关闭
-        try (JSONValidator validator = JSONValidator.from(str.trim())) {
-            return validator.getType() == JSONValidator.Type.Object;
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.readTree(str.trim());
+            return true;
         } catch (Exception e) {
             log.warn("JSON格式校验失败: {}", e.getMessage());
             return false;

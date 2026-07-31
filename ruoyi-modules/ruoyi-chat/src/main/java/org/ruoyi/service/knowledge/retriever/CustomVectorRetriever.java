@@ -1,6 +1,7 @@
 package org.ruoyi.service.knowledge.retriever;
 
 import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Query;
@@ -55,11 +56,17 @@ public class CustomVectorRetriever implements ContentRetriever {
         queryVectorBo.setRerankScoreThreshold(knowledgeInfoVo.getRerankScoreThreshold());
 
         // 通过统一服务执行检索
-        List<String> nearestList = knowledgeRetrievalService.retrieveTexts(queryVectorBo);
+        var nearestList = knowledgeRetrievalService.retrieve(queryVectorBo);
 
         // 将结果包装为标准的 Content 返回
         return nearestList.stream()
-                .map(text -> Content.from(TextSegment.from(text)))
+                .map(vo -> {
+                    Metadata metadata = new Metadata();
+                    metadata.put("kid", String.valueOf(knowledgeInfoVo.getId()));
+                    metadata.put("docId", Objects.toString(vo.getDocId(), ""));
+                    metadata.put("fid", Objects.toString(vo.getId(), ""));
+                    return Content.from(TextSegment.from(vo.getContent(), metadata));
+                })
                 .collect(Collectors.toList());
     }
 }

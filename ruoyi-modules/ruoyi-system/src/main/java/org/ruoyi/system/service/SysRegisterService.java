@@ -1,5 +1,6 @@
 package org.ruoyi.system.service;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,12 @@ public class SysRegisterService {
     private final ISysUserService userService;
     private final SysUserMapper userMapper;
     private final CaptchaProperties captchaProperties;
+    private final ISysConfigService configService;
+
+    /**
+     * 注册默认角色配置 key，值为角色 ID；未配置或为空则不绑定角色。
+     */
+    private static final String DEFAULT_ROLE_CONFIG_KEY = "sys.register.defaultRoleId";
 
     /**
      * 注册
@@ -68,7 +75,25 @@ public class SysRegisterService {
         if (!regFlag) {
             throw new UserException("user.register.error");
         }
+        // 绑定默认角色（未配置则跳过，不影响注册流程）
+        bindDefaultRole(tenantId, sysUser.getUserId());
         recordLogininfor(tenantId, username, Constants.REGISTER, MessageUtils.message("user.register.success"));
+    }
+
+    /**
+     * 读取配置 sys.register.defaultRoleId 并为新用户绑定默认角色。
+     * 配置为空或角色 ID 无效时静默跳过。
+     */
+    private void bindDefaultRole(String tenantId, Long userId) {
+        if (userId == null) {
+            return;
+        }
+        Long defaultRoleId = TenantHelper.dynamic(tenantId, () ->
+            Convert.toLong(configService.selectConfigByKey(DEFAULT_ROLE_CONFIG_KEY), null));
+        if (defaultRoleId == null) {
+            return;
+        }
+        userService.insertUserAuth(userId, new Long[]{defaultRoleId});
     }
 
     /**

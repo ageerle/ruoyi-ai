@@ -17,7 +17,7 @@ public class ResourceLoaderFactory {
     private final ExcelTextSplitter excelTextSplitter;
 
     public ResourceLoader getLoaderByFileType(String fileType) {
-        fileType = StringUtils.removeStart(fileType, ".");
+        fileType = StringUtils.lowerCase(StringUtils.removeStart(StringUtils.trim(fileType), "."));
         if (FileTypeConstants.isTextFile(fileType)) {
             return new TextFileLoader(characterTextSplitter);
         } else if (FileTypeConstants.isWord(fileType)) {

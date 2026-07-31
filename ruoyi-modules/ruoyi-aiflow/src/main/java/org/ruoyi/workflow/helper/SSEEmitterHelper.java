@@ -55,8 +55,13 @@ public class SSEEmitterHelper {
             } else {
                 sseEmitter.send(msg);
             }
+        } catch (IllegalStateException ise) {
+            // SSE连接已关闭（用户刷新页面、关闭标签页或重新提交）
+            log.warn("SSE emitter already completed for event [{}], ignoring", name);
+            COMPLETED_SSE.put(sseEmitter, Boolean.TRUE);
         } catch (IOException ioException) {
             log.error("stream onNext error", ioException);
+            COMPLETED_SSE.put(sseEmitter, Boolean.TRUE);
         }
     }
 

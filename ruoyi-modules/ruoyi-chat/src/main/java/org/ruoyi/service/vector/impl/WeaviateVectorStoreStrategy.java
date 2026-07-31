@@ -3,6 +3,7 @@ package org.ruoyi.service.vector.impl;
 import cn.hutool.json.JSONObject;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.data.segment.TextSegment;
 
 import io.weaviate.client.WeaviateClient;
 import lombok.SneakyThrows;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Component;
 import io.weaviate.client.Config;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.v1.batch.api.ObjectsBatchDeleter;
+import io.weaviate.client.v1.batch.api.ObjectsBatcher;
+import io.weaviate.client.v1.data.model.WeaviateObject;
 import io.weaviate.client.v1.batch.model.BatchDeleteResponse;
 import io.weaviate.client.v1.filters.Operator;
 import io.weaviate.client.v1.filters.WhereFilter;
@@ -43,8 +46,12 @@ import java.util.Map;
 @Component
 public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
-    private WeaviateClient client;
+    private volatile WeaviateClient client;
     private final KnowledgeAttachMapper knowledgeAttachMapper;
+    /**
+     * 已确认存在的 class 缓存，避免每次检索都全量拉取 schema
+     */
+    private final java.util.Set<String> knownClasses = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                        IChatModelService chatModelService,
@@ -54,6 +61,22 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         this.knowledgeAttachMapper = knowledgeAttachMapper;
     }
 
+    /**
+     * 懒加载单例客户端，避免 remove 等方法在未调用 createSchema 时 NPE
+     */
+    private WeaviateClient getClient() {
+        if (client == null) {
+            synchronized (this) {
+                if (client == null) {
+                    String protocol = vectorStoreProperties.getWeaviate().getProtocol();
+                    String host = vectorStoreProperties.getWeaviate().getHost();
+                    client = new WeaviateClient(new Config(protocol, host));
+                }
+            }
+        }
+        return client;
+    }
+
     @Override
     public String getVectorStoreType() {
         return "weaviate";
@@ -61,13 +84,12 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void createSchema(String kid, String embeddingModelName) {
-        String protocol = vectorStoreProperties.getWeaviate().getProtocol();
-        String host = vectorStoreProperties.getWeaviate().getHost();
         String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
-        // 创建 Weaviate 客户端
-        client = new WeaviateClient(new Config(protocol, host));
+        if (knownClasses.contains(className)) {
+            return;
+        }
         // 检查类是否存在，如果不存在就创建 schema
-        Result<Schema> schemaResult = client.schema().getter().run();
+        Result<Schema> schemaResult = getClient().schema().getter().run();
         Schema schema = schemaResult.getResult();
         boolean classExists = false;
         for (WeaviateClass weaviateClass : schema.getClasses()) {
@@ -88,13 +110,15 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                                     Property.builder().name("docId").dataType(Collections.singletonList("text")).build())
                     )
                     .build();
-            Result<Boolean> createResult = client.schema().classCreator().withClass(build).run();
+            Result<Boolean> createResult = getClient().schema().classCreator().withClass(build).run();
             if (createResult.hasErrors()) {
                 log.error("Schema 创建失败: {}", createResult.getError());
+                throw new ServiceException("Weaviate Schema 创建失败: " + createResult.getError());
             } else {
                 log.info("Schema 创建成功: {}", className);
             }
         }
+        knownClasses.add(className);
     }
 
     @Override
@@ -107,10 +131,16 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         String docId = storeEmbeddingBo.getDocId();
         log.info("向量存储条数记录: {}", chunkList.size());
         long startTime = System.currentTimeMillis();
+        List<TextSegment> segments = chunkList.stream().map(TextSegment::from).toList();
+        List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
+        if (embeddings.size() != chunkList.size()) {
+            throw new ServiceException("Embedding 返回数量与分片数量不一致");
+        }
+        ObjectsBatcher batcher = getClient().batch().objectsBatcher();
         for (int i = 0; i < chunkList.size(); i++) {
             String text = chunkList.get(i);
             String fid = fidList.get(i);
-            Embedding embedding = embeddingModel.embed(text).content();
+            Embedding embedding = embeddings.get(i);
             Map<String, Object> properties = Map.of(
                     "text", text,
                     "fid", fid,
@@ -121,11 +151,13 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             normalize(vectorArray);
             Float[] vector = toObjectArray(vectorArray);
 
-            client.data().creator()
-                    .withClassName(vectorStoreProperties.getWeaviate().getClassname() + kid)
-                    .withProperties(properties)
-                    .withVector(vector)
-                    .run();
+            batcher.withObject(WeaviateObject.builder()
+                    .className(vectorStoreProperties.getWeaviate().getClassname() + kid)
+                    .properties(properties).vector(vector).build());
+        }
+        Result<?> batchResult = batcher.run();
+        if (batchResult.hasErrors()) {
+            throw new ServiceException("Weaviate 批量写入失败: " + batchResult.getError());
         }
         long endTime = System.currentTimeMillis();
         log.info("向量存储完成消耗时间：" + (endTime - startTime) / 1000 + "秒");
@@ -169,7 +201,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 queryVectorBo.getMaxResults()
         );
 
-        Result<GraphQLResponse> result = client.graphQL().raw().withQuery(graphQLQuery).run();
+        Result<GraphQLResponse> result = getClient().graphQL().raw().withQuery(graphQLQuery).run();
         List<String> resultList = new ArrayList<>();
         if (result != null && !result.hasErrors()) {
             Object data = result.getResult().getData();
@@ -211,6 +243,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 "  Get {\n" +
                 "    %s(nearVector: {vector: [%s]} limit: %d) {\n" +
                 "      text\n" +
+                "      fid\n" +
                 "      docId\n" +
                 "      _additional {\n" +
                 "        distance\n" +
@@ -223,7 +256,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 queryVectorBo.getMaxResults()
         );
 
-        Result<GraphQLResponse> result = client.graphQL().raw().withQuery(graphQLQuery).run();
+        Result<GraphQLResponse> result = getClient().graphQL().raw().withQuery(graphQLQuery).run();
         List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> resultList = new ArrayList<>();
 
         if (result != null && !result.hasErrors()) {
@@ -236,6 +269,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 Map<String, Object> map = (Map<String, Object>) obj;
                 String content = (String) map.get("text");
                 String docId = (String) map.get("docId");
+                String fid = (String) map.get("fid");
 
                 Map<String, Object> additional = (Map<String, Object>) map.get("_additional");
                 Double distance = Double.valueOf(String.valueOf(additional.get("distance")));
@@ -253,6 +287,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 }
 
                 resultList.add(org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo.builder()
+                        .id(fid)
+                        .docId(docId)
                         .content(content)
                         .score(score)
                         .sourceName(sourceName)
@@ -265,12 +301,10 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     @SneakyThrows
     public void removeById(String id, String modelName) {
-        String protocol = vectorStoreProperties.getWeaviate().getProtocol();
-        String host = vectorStoreProperties.getWeaviate().getHost();
         String className = vectorStoreProperties.getWeaviate().getClassname();
         String finalClassName = className + id;
-        WeaviateClient client = new WeaviateClient(new Config(protocol, host));
-        Result<Boolean> result = client.schema().classDeleter().withClassName(finalClassName).run();
+        Result<Boolean> result = getClient().schema().classDeleter().withClassName(finalClassName).run();
+        knownClasses.remove(finalClassName);
         if (result.hasErrors()) {
             log.error("失败删除向量: " + result.getError());
             throw new ServiceException("失败删除向量数据!");
@@ -288,7 +322,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 .operator(Operator.Equal)
                 .valueText(docId)
                 .build();
-        ObjectsBatchDeleter deleter = client.batch().objectsBatchDeleter();
+        ObjectsBatchDeleter deleter = getClient().batch().objectsBatchDeleter();
         Result<BatchDeleteResponse> result = deleter.withClassName(className)
                 .withWhere(whereFilter)
                 .run();
@@ -308,7 +342,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 .operator(Operator.Equal)
                 .valueText(fid)
                 .build();
-        ObjectsBatchDeleter deleter = client.batch().objectsBatchDeleter();
+        ObjectsBatchDeleter deleter = getClient().batch().objectsBatchDeleter();
         Result<BatchDeleteResponse> result = deleter.withClassName(className)
                 .withWhere(whereFilter)
                 .run();

@@ -12,8 +12,6 @@
 #
 # 镜像仓库地址: crpi-31mraxd99y2gqdgr.cn-beijing.personal.cr.aliyuncs.com/ruoyi_ai
 
-version: '3.8'
-
 services:
   # ==================== MySQL 数据库 ====================
   mysql:
@@ -30,7 +28,10 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      # Force TCP: during first-time initialization MySQL exposes a temporary
+      # socket-only server. A socket ping would mark the service healthy before
+      # the real network listener (used by the backend) is ready.
+      test: ["CMD", "mysqladmin", "ping", "--protocol=tcp", "-h", "127.0.0.1", "-u", "root", "-proot"]
       interval: 15s
       timeout: 10s
       retries: 10

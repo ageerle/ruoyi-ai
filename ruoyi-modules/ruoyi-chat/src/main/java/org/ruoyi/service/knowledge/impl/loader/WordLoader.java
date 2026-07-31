@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.ruoyi.service.knowledge.ResourceLoader;
+import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.knowledge.TextSplitter;
 import org.springframework.stereotype.Component;
 
@@ -32,8 +33,8 @@ public class WordLoader implements ResourceLoader {
     }
 
     @Override
-    public List<String> getChunkList(String content, String kid) {
-        return textSplitter.split(content, kid);
+    public List<String> getChunkList(String content, DocumentSplitConfig config) {
+        return textSplitter.split(content, config);
     }
 
 }

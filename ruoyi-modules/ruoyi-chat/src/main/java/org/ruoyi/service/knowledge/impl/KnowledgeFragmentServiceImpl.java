@@ -40,6 +40,7 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
     private final IKnowledgeInfoService knowledgeInfoService;
     private final IChatModelService chatModelService;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
+    private final org.ruoyi.service.vector.VectorStoreService vectorStoreService;
 
     /**
      * 查询知识片段
@@ -114,7 +115,11 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
     public Boolean updateByBo(KnowledgeFragmentBo bo) {
         KnowledgeFragment update = MapstructUtils.convert(bo, KnowledgeFragment.class);
         validEntityBeforeSave(update);
-        return baseMapper.updateById(update) > 0;
+        boolean updated = baseMapper.updateById(update) > 0;
+        if (updated && update.getKnowledgeId() != null) {
+            knowledgeRetrievalService.invalidateKnowledge(String.valueOf(update.getKnowledgeId()));
+        }
+        return updated;
     }
 
     /**
@@ -135,6 +140,14 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if(isValid){
             //TODO 做一些业务上的校验,判断是否需要校验
+        }
+        // 删除 DB 片段前，同步删除向量库中对应向量
+        List<KnowledgeFragment> fragments = baseMapper.selectByIds(ids);
+        for (KnowledgeFragment fragment : fragments) {
+            if (StringUtils.isNotBlank(fragment.getFid()) && fragment.getKnowledgeId() != null) {
+                vectorStoreService.removeByFid(fragment.getFid(), String.valueOf(fragment.getKnowledgeId()));
+                knowledgeRetrievalService.invalidateKnowledge(String.valueOf(fragment.getKnowledgeId()));
+            }
         }
         return baseMapper.deleteByIds(ids) > 0;
     }
