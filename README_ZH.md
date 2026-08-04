@@ -18,7 +18,9 @@
 *开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模式、RAG技术和流程编排能力*
 
 **[English](README.md)** | **[📖 使用文档](https://doc.ruoyiai.chat/)** |
-**[🚀 在线体验](https://web.ruoyiai.chat/)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
+**[🚀 开源版在线体验](https://web.ruoyiai.chat/)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
+
+> 该地址为 RuoYi AI 开源版体验环境，与商业版服务入口和运行环境相互独立。
 
 </div>
 

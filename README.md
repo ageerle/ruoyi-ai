@@ -18,7 +18,9 @@
 *An out-of-the-box full-stack AI platform supporting multi-agent collaboration, Supervisor mode orchestration, and multiple decision models, with advanced RAG technology and visual workflow orchestration capabilities*
 
 **[中文](README_ZH.md)** | **[📖 Documentation](https://doc.ruoyiai.chat/)** |
-**[🚀 Live Demo](https://web.ruoyiai.chat/)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
+**[🚀 Open-source Live Demo](https://web.ruoyiai.chat/)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
+
+> This is the RuoYi AI open-source demo environment, kept separate from the commercial edition's service entry and runtime environment.
 
 </div>
 
