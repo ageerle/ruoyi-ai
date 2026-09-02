@@ -22,7 +22,7 @@ public interface WebSearchAgent {
         使用指南：
         - 搜索信息时使用 bing_search
         - 需要详细网页内容时使用 crawl_webpage
-        - 需要交互操作（登录、点击、填写表单）时使用 Playwright 工具
+        - 需要交互操作（登录、点击、填写表单）时使用 Playwright 工具，结束请使用playwright_close关闭已打开的浏览器
         - 在回答中注明信息来源
         """)
     @UserMessage("{{query}}")

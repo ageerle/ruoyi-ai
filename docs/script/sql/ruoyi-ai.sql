@@ -1330,6 +1330,7 @@ INSERT INTO `mcp_tool_info` VALUES (4, 'query_all_tables', '', 'BUILTIN', 'ENABL
 INSERT INTO `mcp_tool_info` VALUES (5, 'execute_sql_query', '', 'BUILTIN', 'ENABLED', NULL, '000000', -1, -1, '2026-03-10 21:21:09', -1, '2026-06-22 16:34:29', '0');
 INSERT INTO `mcp_tool_info` VALUES (6, 'query_table_schema', '', 'BUILTIN', 'ENABLED', NULL, '000000', -1, -1, '2026-03-10 21:21:09', -1, '2026-06-22 16:34:29', '0');
 INSERT INTO `mcp_tool_info` VALUES (7, 'bing-cn-mcp-server', '必应中文联网查询工具，支持实时搜索和网页内容抓取。内置工具：bing_search、fetch_webpage。', 'LOCAL', 'ENABLED', '{\n  \"command\": \"npx\",\n  \"args\": [\n    \"-y\",\n    \"bing-cn-mcp\"\n  ]\n}\n', '000000', -1, -1, '2026-06-22 16:33:22', -1, '2026-06-22 16:33:22', '0');
+INSERT INTO `mcp_tool_info` VALUES (11, 'playwright', '真实浏览器操作（如登录、点击搜索等）', 'LOCAL', 'ENABLED', '{"command": "npx", "args": ["-y", "@playwright/mcp@latest", "--isolated"]}', '000000', 103, 1, '2026-09-02 21:08:04', 1, '2026-09-02 21:08:04', '0');
 
 -- ----------------------------
 -- Table structure for short_drama_character
