@@ -1,9 +1,9 @@
 ---
-source: 基于 v3 Prompt §10 审计日志规则 + 开发说明书 §13 演示数据 + 4 个奖金算例
+source: 基于 v3 Prompt §10 审计日志规则 + 开发说明书 §13 演示数据 + 4 个奖金算例 + 验收清单 v2.1（235 条 AC）
 collected: 2026-09-04
 generated_by: Claude Code（基于已知数据点 + V3 规则自动生成）
 status: ✅ 已生成
-note: ZK-IPD 未发现现成 mock-data.js；本文件由 Claude Code 基于已确认的 4 个算例 + 13 角色 + 3 项目 + V3 决策表（全部已确认）综合生成
+note: ZK-IPD 未发现现成 mock-data.js；本文件由 Claude Code 基于已确认的 4 个算例 + 13 角色 + 3 项目 + V3 决策表（全部已确认）+ 验收清单 v2.1（235 条 AC）综合生成
 ---
 
 # IPD 产品经理管理系统 — 演示数据
