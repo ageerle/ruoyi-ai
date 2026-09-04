@@ -162,6 +162,7 @@ Compose ports: MySQL `23306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 |---|---|---|---|
 | `sensitive-field-guard.cjs` | PreToolUse | Write / Edit / MultiEdit | **阻断** `.env*` / `application-prod.yml` / 含 PEM 私钥内容；**警告** JWT secret / 明文 password 字面量 |
 | `pom-edit-hint.cjs` | PostToolUse | Write / Edit / MultiEdit 命中 `**/pom.xml` | **不阻断**，stderr 提示 5 类同步项（langchain4j 多 BOM 对齐、annotation processor、grpc 版本、flatten 插件、surefire groups） |
+| `block-dangerous-git.sh` | PreToolUse | Bash | **阻断** `git push` / `git push --force` / `git reset --hard` / `git clean -f[d]` / `git branch -D` / `git checkout .` / `git restore .`（来自 mattpocock-skills `git-guardrails-claude-code`） |
 
 调试命令：
 

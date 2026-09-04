@@ -21,7 +21,10 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
-.claude
+# .claude/ 项目级配置（hook / agent / skill / settings.json）保留入库
+# 仅忽略本地 override（settings.local.json 与本地缓存）
+/.claude/settings.local.json
+/.claude/flow/
 .github
 !.github/
 !.github/workflows/
@@ -57,3 +60,16 @@ logs/
 .flattened-pom.xml
 /.claude/settings.local.json
 /docs/docker/milvus/volumes/
+
+# Ruflo local secrets and runtime data
+.env
+.env.local
+.env.*.local
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/sessions/
+
+# Codex local configuration
+.codex/
+# Claude Flow runtime data
+# Environment variables
