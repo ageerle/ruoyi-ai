@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 + Langchain4j 技术栈，叠加 12 条硬约束 + 49 页 IPD 业务页面 + 69 动作 + 5 Gate 双签 + KPI / 奖金池核算。
+**本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 + Langchain4j 技术栈，叠加 11 条硬约束（G-01~G-11） + 49 页 IPD 业务页面 + 69 动作 + 5 Gate 双签 + KPI / 奖金池核算。
 
 - **基线**：Spring Boot 3.5.8 + Java 17 + Langchain4j 1.17.2 + Langgraph4j。Parent Maven project (revision `3.1.0`)。多租户、多模型（DeepSeek / Zhipu / OpenAI / etc.）、RAG、MCP tools、Supervisor-mode 多 agent。
 - **目标**：IPD 产品经理管理系统。详见 `README-IPD-OVERRIDE.md`（优先级高于本文件）和 `docs/开发说明/`（产品设计）+ `docs/ipd-系统说明/`（改造工程指南）。
@@ -240,20 +240,18 @@ node docs/wiki/wiki-lint.cjs
 
 改造时**先查 wiki**了解 RuoYi-AI 基线实现，再读 `docs/ipd-系统说明/naming-convention.md` 和 `type-mapping.md` 决定新代码怎么写。
 
-### 外部资源骨架（IPD 改造关键事实源）
+### 外部资源（IPD 改造关键事实源，原文已填充）
 
-开发说明书引用的 10 个**外部资源**不在本仓库（等 Gavin 提供原文后填充）。骨架文件在 `docs/ipd-系统说明/外部资源/`：
+7 个核心外部资源原文已入库 `docs/ipd-系统说明/外部资源/`（v2 / 历史件已清理，git 历史可查）：
 
-- `IPD系统_AI开发主Prompt_v3.md` ⭐⭐⭐⭐⭐（1369 行 v3 原文）
-- `IPD系统_六阶段标准动作清单_v3.md` ⭐⭐⭐⭐⭐（69 动作 seed）
+- `IPD系统_AI开发主Prompt_v3.md` ⭐⭐⭐⭐⭐（1377 行，唯一权威规格）
+- `IPD系统_六阶段标准动作清单_v3.md` ⭐⭐⭐⭐⭐（69 动作：深管 42 / 轻管 27）
 - `IPD系统_五大Gate评审要素_v1.md` ⭐⭐⭐⭐（33 项要素 + 14 否决项）
-- `IPD系统_验收清单.md` ⭐⭐⭐⭐（237 条 AC）
-- `IPD系统_开发执行规则_AI必读.md` ⭐⭐⭐⭐⭐（11 条硬约束）
+- `IPD系统_验收清单.md` ⭐⭐⭐⭐（237 条 AC，v2.1）
+- `IPD系统_开发执行规则_AI必读.md` ⭐⭐⭐⭐⭐（11 条硬约束 G-01~G-11）
 - `IPD系统_冲突裁决与最终待确认清单.md` ⭐⭐⭐⭐
-- `IPD系统_待确认决策表_v2.md` ⭐⭐⭐
-- `assets_公共规范-通用.md` ⭐⭐
-- `design-specs_后台-RuoYi-AI.md` ⭐⭐
-- `mock-data.js` ⭐⭐⭐⭐
+- `IPD系统_待确认决策表_v2.md` ⭐⭐⭐（33 项决策已全部回填 v3）
+- 另有 `assets_公共规范-通用.md` / `design-specs_后台-RuoYi-AI.md`（前端规范）与 `mock-data.js`（演示数据，Q2=回款口径）
 
 详见 `docs/ipd-系统说明/fork-原与外部资源清单.md`。
 
