@@ -217,3 +217,16 @@ done
 npx claude-flow swarm init --topology hierarchical-mesh --max-agents 8
 npx claude-flow hooks route --task "<任务描述>"
 ```
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues（gh CLI）—— origin 是 `wilson323/ruoyi-ai`，upstream 是 `ageerle/ruoyi-ai`。详见 `docs/agents/issue-tracker-github.md`。
+
+### Triage labels
+
+5 个默认标签（needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix）+ 本仓库补充的阶段 / 模块 / 紧急度标签。详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+Single-context 布局（仓库根）。当前未创建 `CONTEXT.md`（按 mattpocock skill 「proceed silently」原则懒加载）。engineering skills 通过 `docs/agents/domain.md` 的「文档地图」了解仓库。详见 `docs/agents/domain.md`。
