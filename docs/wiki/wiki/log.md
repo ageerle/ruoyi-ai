@@ -60,3 +60,15 @@
   - wiki/modules/chat-mcp-tools.md（6 个内置工具 / ExecuteCommand 安全风险 / BuiltinToolProvider 模式）
 - **lint 结果**: 99 通过 / 0 失败 / 0 孤立 raw
 - **git**: 77 文件暂存（未自动 commit）
+
+### batch-11: 多模态 + common 详解 + CI
+- **ingest**: 4 个多模态 abstract（视频/音频/图像/embedding）+ 3 个 common 关键（ExcelDictFormat/TenantHelper/SensitiveService）
+- **compile**: 6 篇扩展 wiki
+  - wiki/modules/chat-multimodal.md（18 个多模态文件全索引）
+  - wiki/modules/common-core-utilities.md（4 模块：core + json + doc + excel）
+  - wiki/modules/common-security-auth.md（4 模块：security + satoken + encrypt + sensitive）
+  - wiki/modules/common-data.md（4 模块：mybatis + redis + tenant + trace）
+  - wiki/modules/common-communication.md（7 模块：web + sse + websocket + oss + mail + sms + social）
+  - wiki/modules/common-business.md（5 模块：log + job + ratelimiter + idempotent + translation）
+- **CI**: .github/workflows/wiki-lint.yml（GitHub Actions 自动验证）
+- **lint 结果**: 121 通过 / 0 失败 / 0 孤立 raw

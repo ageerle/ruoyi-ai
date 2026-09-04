@@ -1,0 +1,50 @@
+# Wiki Lint — RuoYi-AI 项目知识库完整性检查
+# 触发：push / PR 修改 docs/wiki/ 下任何文件
+# 检查项：每篇 wiki 文章的 raw: 字段列出的文件都存在；
+#         每篇 wiki 文章含 topic / title / updated frontmatter；
+#         没有孤立的 raw 文件（被任何 wiki 引用过）
+
+name: wiki-lint
+
+on:
+  push:
+    paths:
+      - 'docs/wiki/**'
+      - '.github/workflows/wiki-lint.yml'
+  pull_request:
+    paths:
+      - 'docs/wiki/**'
+
+jobs:
+  lint:
+    name: wiki-lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Run wiki-lint
+        run: node docs/wiki/wiki-lint.cjs
+
+      - name: Show lint output
+        if: always()
+        run: |
+          echo "=== wiki-lint summary ==="
+          if [ -f docs/wiki/wiki/index.md ]; then
+            echo "Total articles:"
+            find docs/wiki/wiki -name '*.md' \
+              -not -name 'index.md' \
+              -not -name 'log.md' \
+              | wc -l
+            echo "Total raw files:"
+            find docs/wiki/raw -name '*.md' \
+              -not -name '.gitkeep' \
+              | wc -l
+          fi
