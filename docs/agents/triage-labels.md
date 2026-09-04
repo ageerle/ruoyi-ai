@@ -23,13 +23,17 @@ Edit the right-hand column to match whatever vocabulary you actually use.
 | `bug` | 代码缺陷 | 任何代码 / 配置错误 |
 | `enhancement` | 功能增强 | 新功能或改进 |
 | `documentation` | 文档变更 | 仅改文档（不动代码） |
-| `p0` / `p1` / `p2` / `p3` / `p4` | P0–P4 阶段（IPD 二开） | 任何 IPD 二开任务 |
+| `priority-urgent` / `priority-high` / `priority-medium` / `priority-low` | 优先级（issue 紧急度） | 任何 task |
+| `stage-p0` / `stage-p1` / `stage-p2` / `stage-p3` / `stage-p4` | 构建阶段（对应开发说明书 §11 P0–P4） | 任何 IPD 二开任务 |
 | `chat` / `aiflow` / `system` / `common` / `infra` | 模块标签（对应 `ruoyi-modules/*`） | 模块相关任务 |
 | `ipd` | IPD 二开相关 | 任何改造任务 |
-| `urgent` | 紧急 | 阻塞性问题 |
-| `low-priority` | 低优先 | 不急的事 |
+| `urgent` | 紧急（保留，与 priority-urgent 共用） | 阻塞性问题 |
 
-**复合标签规则**：一个 issue 可以同时打多个标签（如 `["needs-triage", "p0", "ipd"]` 表示「P0 阶段的 IPD 二开任务，待 triage」）。
+**重要约束**：issue 标签前缀化（`stage-p0`、`priority-urgent`），避免与开发说明书 P0–P4 阶段同名冲突。
+
+**复合标签规则**：一个 issue 可以同时打多个标签（如 `["needs-triage", "stage-p0", "ipd"]` 表示「P0 阶段 IPD 二开任务，待 triage」）。
+
+**与开发说明书章节对应**：`stage-p<N>` 与开发说明书 §11「构建顺序 P0 → P4」一一对应。详见 `docs/开发说明/开发说明书.md` §11。
 
 ## 自动化建议
 

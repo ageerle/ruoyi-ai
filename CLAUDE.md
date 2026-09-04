@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**RuoYi-AI** — enterprise-grade AI assistant platform. Spring Boot 3.5.8 + Java 17 + Langchain4j 1.17.2 + Langgraph4j. Parent Maven project (revision `3.1.0`) that builds into a single deployable backend service (port `6039`). Multi-tenant, multi-model (DeepSeek / Zhipu / OpenAI / etc.), supports RAG, MCP tools, visual workflow orchestration, and Supervisor-mode multi-agent orchestration. Frontend is split into separate repos (`ruoyi-web`, `ruoyi-admin`); this repo is backend-only.
+**本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 + Langchain4j 技术栈，叠加 12 条硬约束 + 49 页 IPD 业务页面 + 69 动作 + 5 Gate 双签 + KPI / 奖金池核算。
+
+- **基线**：Spring Boot 3.5.8 + Java 17 + Langchain4j 1.17.2 + Langgraph4j。Parent Maven project (revision `3.1.0`)。多租户、多模型（DeepSeek / Zhipu / OpenAI / etc.）、RAG、MCP tools、Supervisor-mode 多 agent。
+- **目标**：IPD 产品经理管理系统。详见 `README-IPD-OVERRIDE.md`（优先级高于本文件）和 `docs/开发说明/`（产品设计）+ `docs/ipd-系统说明/`（改造工程指南）。
+- **前端**：拆分独立仓库（`ruoyi-web` / `ruoyi-admin`）；本仓库只含后端。
+- **核心信念**：**业务规则高于文档惯例，文档惯例高于系统实现**——开发说明书 G-04 硬约束。
 
 ## Build & Run
 
@@ -156,7 +161,7 @@ Compose ports: MySQL `23306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 
 ### Hooks（机器执行，最硬约束）
 
-写在 `.claude/helpers/*.cjs`，被 `.claude/settings.json` 引用。所有 hook 都通过 `node --check` + 端到端 12 项回归测试。
+写在 `.claude/helpers/*.cjs`（Node.js hook）和 `.claude/hooks/*.sh`（Bash hook），被 `.claude/settings.json` 引用。所有 hook 都通过 `node --check` / `bash -n` + 端到端 12+ 项回归测试。
 
 | Hook | 类型 | 触发 | 行为 |
 |---|---|---|---|
@@ -189,6 +194,7 @@ echo $?  # 期望: 2（阻断）
 for f in .claude/skills/{ai-module-add,api-contract,db-migration,gen-test}/SKILL.md \
          .claude/agents/*.md; do [ -f "$f" ] && echo "✅ $f"; done
 node --check .claude/helpers/*.cjs
+bash -n .claude/hooks/*.sh
 
 # 2. settings.json 合法性 + hook 引用
 node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"
@@ -200,7 +206,56 @@ node -e 'const j=require("/Users/mac/.claude.json").projects["/Users/mac/Documen
 for a in code-reviewer langchain4j-agent-reviewer performance-analyzer security-reviewer; do
   grep -q "^## 边界" .claude/agents/$a.md && echo "✅ $a" || echo "❌ $a 缺边界节"
 done
+
+# 5. Wiki 知识库完整性（karpathy-llm-wiki 验证）
+node docs/wiki/wiki-lint.cjs
+
+# 6. IPD 改造合规（ipd-系统说明 自动生成的检查脚本在 docs/ipd-系统说明/改造检查清单.md）
+# 手动检查 10 项 grep + CI 集成见 .github/workflows/ipd-migration-check.yml（待新增）
 ```
+
+### IPD 改造必读（任何二开前必读）
+
+按优先级读这 4 个文件：
+
+1. **`README-IPD-OVERRIDE.md`**（仓库根）—— 改造方向总览，优先级**高于**根目录 README.md
+2. **`docs/开发说明/spec/_公共规范.md`** —— UI / 视觉 / 文案 / 术语「宪法」
+3. **`docs/开发说明/spec/_导航地图.md`** —— 49 页清单 + 跳转关系 + 权限矩阵
+4. **`docs/ipd-系统说明/改造检查清单.md`** —— 静态检查 + CI 集成方案
+
+完整阅读路径详见 `README-IPD-OVERRIDE.md` §6。
+
+**禁止**：改 `docs/开发说明/` 现有任何文件（产品设计文档是「圣经」，不动）。所有修复方案在 `docs/ipd-系统说明/` 下新增。
+
+### Wiki 知识库（RuoYi-AI 基线）
+
+按 karpathy-llm-wiki 工作流生成：
+
+- **入口**：`docs/wiki/wiki/index.md`（21 篇文章清单）
+- **模块详解**：`docs/wiki/wiki/modules/<name>.md`（18 篇：admin / chat / aiflow / system / workflow / generator / common + 扩展）
+- **跨模块主题**：`docs/wiki/wiki/cross-cutting/<name>.md`（3 篇：架构 / 多租户 / 部署）
+- **自动化栈**：`docs/wiki/wiki/automation/claude-code-setup.md`
+- **原始材料**：`docs/wiki/raw/<topic>/*.md`（60 个 verbatim 源文件）
+- **lint 验证**：`node docs/wiki/wiki-lint.cjs`（每次改 wiki 跑一次）
+
+改造时**先查 wiki**了解 RuoYi-AI 基线实现，再读 `docs/ipd-系统说明/naming-convention.md` 和 `type-mapping.md` 决定新代码怎么写。
+
+### 外部资源骨架（IPD 改造关键事实源）
+
+开发说明书引用的 10 个**外部资源**不在本仓库（等 Gavin 提供原文后填充）。骨架文件在 `docs/ipd-系统说明/外部资源/`：
+
+- `IPD系统_AI开发主Prompt_v3.md` ⭐⭐⭐⭐⭐（1369 行 v3 原文）
+- `IPD系统_六阶段标准动作清单_v3.md` ⭐⭐⭐⭐⭐（69 动作 seed）
+- `IPD系统_五大Gate评审要素_v1.md` ⭐⭐⭐⭐（33 项要素 + 14 否决项）
+- `IPD系统_验收清单.md` ⭐⭐⭐⭐（237 条 AC）
+- `IPD系统_开发执行规则_AI必读.md` ⭐⭐⭐⭐⭐（11 条硬约束）
+- `IPD系统_冲突裁决与最终待确认清单.md` ⭐⭐⭐⭐
+- `IPD系统_待确认决策表_v2.md` ⭐⭐⭐
+- `assets_公共规范-通用.md` ⭐⭐
+- `design-specs_后台-RuoYi-AI.md` ⭐⭐
+- `mock-data.js` ⭐⭐⭐⭐
+
+详见 `docs/ipd-系统说明/fork-原与外部资源清单.md`。
 
 ### Ruflo 多智能体协同底座
 
