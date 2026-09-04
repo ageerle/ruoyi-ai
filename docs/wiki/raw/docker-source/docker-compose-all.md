@@ -1,0 +1,199 @@
+---
+source: file:///Users/mac/Documents/ruoyi-ai/docs/docker/ruoyi-ai/docker-compose-all.yaml
+collected: 2026-09-04
+published: 2026-09-04
+topic: docker-source
+---
+
+# docker-compose-all.yaml
+
+```yaml
+# RuoYi-AI 一键启动全部服务
+# 使用方式: docker-compose up -d
+#
+# 包含服务:
+#   - MySQL 8.0 (数据库，包含初始化SQL)
+#   - Redis 6.2 (缓存)
+#   - Weaviate (向量数据库)
+#   - MinIO (对象存储)
+#   - RuoYi-Backend (后端服务)
+#   - RuoYi-Admin (管理端前端)
+#   - RuoYi-Web (用户端前端)
+#
+# 镜像仓库地址: ghcr.io/ageerle
+
+services:
+  # ==================== MySQL 数据库 ====================
+  mysql:
+    # GHCR 镜像（包含初始化SQL）
+    image: ghcr.io/${IMAGE_OWNER:-ageerle}/ruoyi-ai-mysql:${RUIYI_VERSION:-latest}
+    container_name: ruoyi-ai-mysql
+    restart: always
+    ports:
+      - "23306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ruoyi-ai-agent
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # Force TCP: during first-time initialization MySQL exposes a temporary
+      # socket-only server. A socket ping would mark the service healthy before
+      # the real network listener (used by the backend) is ready.
+      test: ["CMD", "mysqladmin", "ping", "--protocol=tcp", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - ruoyi-net
+
+  # ==================== Redis 缓存 ====================
+  redis:
+    image: redis:6.2
+    container_name: ruoyi-ai-redis
+    restart: always
+    ports:
+      - "26379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ruoyi-net
+
+  # ==================== Weaviate 向量数据库 ====================
+  weaviate:
+    image: semitechnologies/weaviate:1.30.0
+    container_name: ruoyi-ai-weaviate
+    restart: always
+    ports:
+      - "28080:8080"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none
+      ENABLE_MODULES: text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai
+      CLUSTER_HOSTNAME: node1
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    networks:
+      - ruoyi-net
+
+  # ==================== MinIO 对象存储 ====================
+  minio:
+    image: minio/minio:latest
+    container_name: ruoyi-ai-minio
+    restart: always
+    ports:
+      - "29000:9000"
+      - "29090:9090"
+    environment:
+      MINIO_ROOT_USER: ruoyi
+      MINIO_ROOT_PASSWORD: ruoyi123
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9090"
+    networks:
+      - ruoyi-net
+
+  # ==================== RuoYi-AI 后端服务 ====================
+  backend:
+    image: ghcr.io/${IMAGE_OWNER:-ageerle}/ruoyi-ai-backend:${RUIYI_VERSION:-latest}
+    container_name: ruoyi-ai-backend
+    restart: always
+    ports:
+      - "26039:6039"
+    environment:
+      TZ: Asia/Shanghai
+      # MySQL 配置
+      SPRING_DATASOURCE_DYNAMIC_PRIMARY: master
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_DRIVERCLASSNAME: com.mysql.cj.jdbc.Driver
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://mysql:3306/ruoyi-ai-agent?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: root
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: root
+      # Redis 配置
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_DATABASE: 0
+      # Allow large presentation files for knowledge-base ingestion.
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 600MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 620MB
+      VECTOR_STORE_TYPE: weaviate
+      VECTOR_STORE_WEAVIATE_PROTOCOL: http
+      VECTOR_STORE_WEAVIATE_HOST: weaviate:8080
+      # 日志配置
+      LOGGING_LEVEL_ORG_RUOYI: info
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: warn
+      SYS_UPLOAD_PATH: /ruoyi/upload
+    volumes:
+      - logs-data:/ruoyi/server/logs
+      - upload-data:/ruoyi/upload
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - ruoyi-net
+
+  # ==================== RuoYi-AI 管理端前端 ====================
+  admin-frontend:
+    image: ghcr.io/${IMAGE_OWNER:-ageerle}/ruoyi-ai-admin:${RUIYI_VERSION:-latest}
+    container_name: ruoyi-ai-admin
+    restart: always
+    ports:
+      - "25666:5666"
+    environment:
+      # 后端 API 地址 - 运行时动态配置（无需重新构建镜像）
+      # nginx upstream 配置不需要 http:// 前缀，直接使用 host:port
+      UPSTREAM_HOST: backend:6039
+    # 资源限制 - 防止 CPU 和内存耗尽
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    depends_on:
+      - backend
+    networks:
+      - ruoyi-net
+
+  # ==================== RuoYi-AI 用户端前端 ====================
+  web-frontend:
+    image: ghcr.io/${IMAGE_OWNER:-ageerle}/ruoyi-ai-web:${RUIYI_VERSION:-latest}
+    container_name: ruoyi-ai-web
+    restart: always
+    ports:
+      - "25137:5137"
+    environment:
+      UPSTREAM_URL: http://backend:6039
+    depends_on:
+      - backend
+    networks:
+      - ruoyi-net
+
+# ==================== 网络配置 ====================
+networks:
+  ruoyi-net:
+    driver: bridge
+
+# ==================== 数据卷配置 ====================
+volumes:
+  mysql-data:
+  redis-data:
+  weaviate-data:
+  minio-data:
+  logs-data:
+  upload-data:
+
+```

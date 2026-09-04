@@ -1,0 +1,59 @@
+---
+source: file:///Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/entity/WorkflowNode.java
+collected: 2026-09-04
+published: 2026-09-04
+topic: aiflow-source
+---
+
+# WorkflowNode.java
+
+```java
+package org.ruoyi.workflow.entity;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.ruoyi.common.chat.entity.BaseEntity;
+
+import java.io.Serial;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName(value = "t_workflow_node", autoResultMap = true)
+@Schema(title = "工作流定义-节点 | workflow definition node")
+public class WorkflowNode extends BaseEntity {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    @TableField("uuid")
+    private String uuid;
+
+    @TableField("workflow_id")
+    private Long workflowId;
+
+    @TableField("workflow_component_id")
+    private Long workflowComponentId;
+
+    @TableField("title")
+    private String title;
+
+    @TableField("remark")
+    private String remark;
+
+    @TableField(value = "input_config")
+    private String inputConfig;
+
+    @TableField(value = "node_config")
+    private String nodeConfig;
+
+    @TableField("position_x")
+    private Double positionX;
+
+    @TableField("position_y")
+    private Double positionY;
+}
+
+```

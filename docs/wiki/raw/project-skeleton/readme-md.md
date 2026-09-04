@@ -1,0 +1,291 @@
+---
+source: https://github.com/ageerle/ruoyi-ai
+collected: 2026-09-04
+published: 2026-09-04
+topic: project-skeleton
+---
+
+# README.md
+
+```
+markdown
+# RuoYi AI
+
+<div align="center">
+
+[![Contributors][contributors-shield]][contributors-url] [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url] [![Issues][issues-shield]][issues-url] [![MIT License][license-shield]][license-url]
+
+
+<p align="center">
+  <a href="https://trendshift.io/repositories/13209">
+    <img src="https://trendshift.io/api/badge/repositories/13209" alt="GitHub Trending">
+  </a>
+</p>
+
+<img src="docs/image/logo.png" alt="RuoYi AI Logo" width="120" height="120">
+
+### Enterprise-Grade AI Assistant Platform
+
+*An out-of-the-box full-stack AI platform supporting multi-agent collaboration, Supervisor mode orchestration, and multiple decision models, with advanced RAG technology and visual workflow orchestration capabilities*
+
+**[中文](README_ZH.md)** | **[📖 Documentation](https://doc.ruoyiai.chat/)** |
+**[🚀 Live Demo](https://web.ruoyiai.chat/)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
+
+</div>
+
+
+## 🚀 Live Demo
+
+| Service | URL | Default Account |
+|---|---|---|
+| Admin Panel | http://129.226.199.247:25666 | admin / admin123 |
+| User Frontend | http://129.226.199.247:25137 | admin / admin123 |
+| Commercial Edition | https://web.ruoyiai.chat | WeChat QR code login |
+
+## ✨ Core Features
+
+| Module | Current Capabilities |
+|:---:|---|
+| **Model Management** | Multi-model integration (DeepSeek/Zhipu/MIMO/Bailian/OpenAI), multi-modal understanding, Coze/DIFY/FastGPT/RAGFlow platform integration |
+| **Knowledge Management** | Local RAG + Vector DB (Milvus/Weaviate/Qdrant) + Document parsing |
+| **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem |
+| **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model calls, email sending, manual review, and other nodes |
+| **Multi-Agent** | Agent framework based on Langchain4j, Supervisor mode orchestration, supports multiple decision models, can flexibly combine tools and skills |
+
+### Project Repositories
+
+| Module     | GitHub Repository                                             | Gitee Repository                                             | GitCode Repository                                             |
+|----------|-------------------------------------------------------|------------------------------------------------------|--------------------------------------------------------|
+| 🔧 Backend  | [ruoyi-ai](https://github.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitee.com/ageerle/ruoyi-ai)       | [ruoyi-ai](https://gitcode.com/ageerle/ruoyi-ai)       |
+| 🎨 User Frontend  | [ruoyi-web](https://github.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitee.com/ageerle/ruoyi-web)     | [ruoyi-web](https://gitcode.com/ageerle/ruoyi-web)     |
+| 🛠️ Admin Panel | [ruoyi-admin](https://github.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitee.com/ageerle/ruoyi-admin) | [ruoyi-admin](https://gitcode.com/ageerle/ruoyi-admin) |
+| 🎬 Drama | [ruoyi-drama](https://github.com/ageerle/ruoyi-drama) | [ruoyi-drama](https://gitee.com/ageerle/ruoyi-drama) | [ruoyi-drama](https://gitcode.com/ageerle/ruoyi-drama) |
+| 🤖 Copilot | [ruoyi-copilot](https://github.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitee.com/ageerle/ruoyi-copilot) | [ruoyi-copilot](https://gitcode.com/ageerle/ruoyi-copilot) |
+| 📱 Mini-App | [ruoyi-uniapp](https://github.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitee.com/ageerle/ruoyi-uniapp) | [ruoyi-uniapp](https://gitcode.com/ageerle/ruoyi-uniapp) |
+
+### Partner Projects
+| Project Name           | GitHub Repository                                             | Gitee Repository |
+|----------------|-------------------------------------------------------|------------------------------------------------------|
+| element-plus-x | [element-plus-x](https://github.com/element-plus-x/Element-Plus-X)       | [element-plus-x](https://gitee.com/he-jiayue/element-plus-x)       |
+
+## 🛠️ Technical Architecture
+
+### Core Framework
+- **Backend**: Spring Boot 3.5.8 + Langchain4j
+- **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate/Qdrant)
+- **Frontend**: Vue 3 + Vben Admin + element-plus-x
+- **Security**: Sa-Token + JWT dual-layer security
+- **Document Processing**: PDF, Word, Excel parsing, intelligent image analysis
+- **Real-time Communication**: WebSocket real-time communication, SSE streaming response
+- **System Monitoring**: Comprehensive logging system, performance monitoring, service health checks
+
+## 🐳 Docker Deployment
+
+This project provides two Docker deployment methods:
+
+### Method 1: One-click Start All Services (Recommended)
+
+Use `docker-compose-all.yaml` to start all services at once (including backend, admin panel, user frontend, and dependencies):
+
+```bash
+# Requirements: Docker Engine and Docker Compose V2
+
+# Clone the v3.1.0 release
+git clone --depth 1 --branch v3.1.0 https://github.com/ageerle/ruoyi-ai.git
+cd ruoyi-ai
+
+# Pin the image version. Public GHCR images do not require docker login.
+cp docs/docker/ruoyi-ai/.env.example docs/docker/ruoyi-ai/.env
+sed -i 's/^RUIYI_VERSION=.*/RUIYI_VERSION=v3.1.0/' docs/docker/ruoyi-ai/.env
+
+# Pull pre-built images from GHCR and start all services
+docker compose --env-file docs/docker/ruoyi-ai/.env \
+  -f docs/docker/ruoyi-ai/docker-compose-all.yaml pull
+docker compose --env-file docs/docker/ruoyi-ai/.env \
+  -f docs/docker/ruoyi-ai/docker-compose-all.yaml up -d
+
+# Check service status
+docker compose --env-file docs/docker/ruoyi-ai/.env \
+  -f docs/docker/ruoyi-ai/docker-compose-all.yaml ps
+
+# Access services (replace SERVER_IP with the server address)
+# Admin Panel: http://SERVER_IP:25666 (admin / admin123)
+# User Frontend: http://SERVER_IP:25137
+# Backend API: http://SERVER_IP:26039
+```
+
+The default Compose file also publishes MySQL (`23306`), Redis (`26379`),
+Weaviate (`28080`), and MinIO (`29000`/`29090`). For production deployments,
+change the default MySQL and MinIO passwords and expose only the application
+ports through the firewall or a reverse proxy.
+
+To upgrade to another published release, update `RUIYI_VERSION` in
+`docs/docker/ruoyi-ai/.env`, then run `docker compose pull` and
+`docker compose up -d` with the same `--env-file` and `-f` options. Do not use
+`docker compose down -v` unless you intend to delete persistent data volumes.
+
+### Method 2: Step-by-step Deployment (Source Build)
+
+If you need to build backend services from source, follow these steps:
+
+#### Step 1: Deploy Backend Service
+
+```bash
+# Enter backend project directory
+cd ruoyi-ai
+
+# Start backend service (build from source)
+docker-compose up -d --build
+
+# Wait for backend service to start
+docker-compose logs -f backend
+```
+
+#### Step 2: Deploy Admin Panel
+
+```bash
+# Enter admin panel project directory
+cd ruoyi-admin
+
+# Build and start admin panel
+docker-compose up -d --build
+
+# Access admin panel
+# URL: http://localhost:5666
+```
+
+#### Step 3: Deploy User Frontend (Optional)
+
+```bash
+# Enter user frontend project directory
+cd ruoyi-web
+
+# Build and start user frontend
+docker-compose up -d --build
+
+# Access user frontend
+# URL: http://localhost:5137
+```
+
+### Service Ports
+
+| Service | One-click Port | Step-by-step Port | Description |
+|------|-------------|-------------|------|
+| Admin Panel | 25666 | 5666 | Admin backend access |
+| User Frontend | 25137 | 5137 | User frontend access |
+| Backend Service | 26039 | 6039 | Backend API service |
+| MySQL | 23306 | 23306 | Database service |
+| Redis | 26379 | 6379 | Cache service |
+| Weaviate | 28080 | 28080 | Vector database |
+| MinIO API | 29000 | 9000 | Object storage API |
+| MinIO Console | 29090 | 9090 | Object storage console |
+
+## 📚 Documentation
+
+Want to learn more about installation, deployment, configuration, and secondary development?
+
+**👉 [Complete Documentation](https://doc.ruoyiai.chat/)**
+
+## 🤝 Contributing
+
+We warmly welcome community contributions! Whether you are a seasoned developer or just getting started, you can contribute to the project 💪
+
+### How to Contribute
+
+1. **Fork** the project to your account
+2. **Create a branch** (`git checkout -b feature/new-feature-name`)
+3. **Commit your changes** (`git commit -m 'Add new feature'`)
+4. **Push to the branch** (`git push origin feature/new-feature-name`)
+5. **Create a Pull Request**
+
+> 💡 **Tip**: We recommend submitting PRs to GitHub, we will automatically sync to other code hosting platforms
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+Thanks to the following excellent open-source projects for their support:
+- [Langchain4j](https://github.com/langchain4j/langchain4j) - Powerful Java LLM development framework
+- [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - Mature enterprise-level rapid development framework
+- [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - Modern Vue admin template
+
+## 💎 Sponsors
+
+**Thanks to the following sponsors for supporting this project:**
+
+<a href="https://www.atlascloud.ai?ref=89F97E">
+  <img src="docs/image/sponsor/atlascloud_banner.png" alt="Atlas Cloud" width="160" height="80">
+</a>
+
+[Visit Atlas Cloud](https://www.atlascloud.ai?ref=89F97E&utm_source=github&utm_campaign=ruoyi-drama) · [Coding Plan Promotion](https://www.atlascloud.ai/console/coding-plan)
+A full-modal AI inference platform that gives developers a unified AI API, supporting video generation, image generation, and LLMs. Connect once to access **300+ curated models**.
+
+<a href="https://www.volcengine.com/activity/codingplan?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai">
+  <img src="docs/image/sponsor/huoshan.png" alt="Volcengine CodingPlan" width="160" height="80">
+</a>
+
+[Sign up to claim 25 million tokens — go now](https://www.volcengine.com/activity/ai618?utm_campaign=hw&utm_content=hw&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ageerle-ruoyi-ai)
+Enjoy ByteDance's in-house Doubao models plus full-power open-source SOTA models, covering text, VLM, and image generation — all modalities in one stop: Seed-2.1, Seedream-5.0, GLM-5.2, DeepSeek, and more. Not just for coding — it can also tackle complex long-horizon Agent tasks!
+
+## 💬 Community Chat
+
+<div align="center">
+
+<table>
+<tr>
+<td align="center">
+<img src="docs/image/wx.png" alt="WeChat QR Code" width="200" height="200"><br>
+<strong>Scan to add author on WeChat</strong><br>
+<em>Join group for learning</em>
+</td>
+<td align="center">
+<img src="docs/image/douyin.png" alt="Douyin QR Code" width="200" height="200"><br>
+<strong>Douyin Video Tutorials</strong><br>
+<em>Open Douyin, scan & follow to watch video tutorials</em>
+</td>
+<td align="center">
+<img src="docs/image/qq.png" alt="QQ Group QR Code" width="200" height="200"><br>
+<strong>QQ Tech Exchange Group</strong><br>
+<em>Technical discussion</em>
+</td>
+
+</tr>
+</table>
+
+</div>
+
+---
+
+<div align="center">
+
+**[⭐ Star to Support](https://github.com/ageerle/ruoyi-ai)** • **[Fork to Contribute](https://github.com/ageerle/ruoyi-ai/fork)** • **[📚 中文](README_ZH.md)** • **[📖 Complete Documentation](https://doc.ruoyiai.chat/)**
+
+*Built with ❤️, maintained by the RuoYi AI open-source community*
+
+</div>
+
+<!-- Badge Links -->
+
+[contributors-shield]: https://img.shields.io/github/contributors/ageerle/ruoyi-ai.svg?style=flat-square
+
+[contributors-url]: https://github.com/ageerle/ruoyi-ai/graphs/contributors
+
+[forks-shield]: https://img.shields.io/github/forks/ageerle/ruoyi-ai.svg?style=flat-square
+
+[forks-url]: https://github.com/ageerle/ruoyi-ai/network/members
+
+[stars-shield]: https://img.shields.io/github/stars/ageerle/ruoyi-ai.svg?style=flat-square
+
+[stars-url]: https://github.com/ageerle/ruoyi-ai/stargazers
+
+[issues-shield]: https://img.shields.io/github/issues/ageerle/ruoyi-ai.svg?style=flat-square
+
+[issues-url]: https://github.com/ageerle/ruoyi-ai/issues
+
+[license-shield]: https://img.shields.io/github/license/ageerle/ruoyi-ai.svg?style=flat-square
+
+[license-url]: https://github.com/ageerle/ruoyi-ai/blob/main/LICENSE
+
+```
