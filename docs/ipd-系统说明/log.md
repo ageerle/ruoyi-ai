@@ -340,3 +340,19 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - **修复**：IpdServiceExceptionAdvice 新增 @ExceptionHandler(IpdAuthInputException.class) → 4xx PARAM_INVALID（ApiV1Response）。
 - **验证**：IpdAuthServiceTest 10/10 + IpdAuthChangePasswordExceptionTest 6/6 + IpdAuthLoginAuditTest 5/5 + Api01AcceptanceTest 4/4 + IpdBusinessExceptionTest 5/5 = 30/30 GREEN，BUILD SUCCESS。
 - **注**：本轮 IpdAuthServiceTest 两处滞后断言（期望 ServiceException）同步对齐 P0-7.2 已定契约（IpdAuthInputException），与第七轮修复一致，非契约变更。
+
+
+---
+
+## 第七轮+ 2026-09-05 — P0-7.2 / P0-8.1 报告再校准归属登记（root-94ae 主协调会话期间）
+
+- **会话**: 本会话（root-94ae 协调下）
+- **基线 HEAD**: 7092b9e5
+- **登记时间**: 2026-09-05T08:38 PDT
+- **写权限范围**: 仅 docs/ipd-系统说明/验收/*-ERRATA-20260905.md（审计交付物）
+- **不动**: 开发计划-看板镜像.md、log.md 既有内容、manage.py、Java 源码、本地看板状态（镜像与 SSOT 由主协调会话串行写，本会话只做只读探针 + 证据交付）
+- **交付物**:
+  - P0-7.2-ERRATA-20260905.md — stale 描述：IpdAuthService.changePassword() 第112行实抛 IpdAuthInputException.Reason.CURRENT_PASSWORD_INCORRECT 而非 ServiceException；Controller catch 是活代码；PASSWORD_CHANGE_REJECTED 审计可达。原报告 P0 缺陷章节应撤销，AC-AUTH-03 子项升级为静态满足。
+  - P0-8.1-ERRATA-20260905.md — stale 描述：must_change_pwd 端到端四节点全在主仓（IpdMockDataInitializer L97 → Person L48-49 → IpdAuthService.scopeOf L45 → IpdPermission L93），加改密清零 L118 闭环。AC-2 从部分满足升级为静态满足。
+- **下一轮交付方**: P0-7.2 / P0-8.1 状态同步由主协调会话在 inreview 流程内决定（结合修复后 30/30 GREEN + errata 静态证据）。
+- **OPS-09 登记**: 本会话本轮未创建新卡、未重复执行同指令、未绕过并发写单一写入者约束。
