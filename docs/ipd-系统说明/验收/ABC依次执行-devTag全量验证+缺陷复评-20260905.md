@@ -169,3 +169,51 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=GateElementAuditJsonTest test
 - **判定更新**：DEF-1 由 ❌OPEN → ✅**FIXED（源码正确 + 4 单测绿佐证 + 契约锁死）**，仅余「真库 HTTP 端到端复验」待 app 重启（PARTIAL-closure）。
 
 **④ 缺陷 A-audit / B 未受 b74f46bf 触及**（未动 Catalog/advice/AuditLogController）→ 仍 ❌OPEN，§4.2/§4.3 结论不变。
+
+---
+
+## 9. ADDENDUM（15:28–15:37 PDT）— 「继续」授权落地：缺陷B IMPLEMENTED+VERIFIED / A-audit BLOCKED / DEF-1 全闭环
+
+owner 指令「继续」= 授予本第二方泳道**写授权**修 §4.3 缺陷B（仅此缺陷，覆盖 AUD-GOV-01「不改 Java 源码」lane 规则）。基线 HEAD `7b13a409`（较 §8 又前移：兄弟 `86f2a045` P0-4.1 timestamp 改 String、`7b13a409` DEF-1 回归证据）。
+
+**① 缺陷B 修复（已落盘 + 隔离提交 `6628ab3b`）**
+- `IpdServiceExceptionAdvice.java` +43 行，新增 5 个全局 `@ExceptionHandler`（`basePackages=org.ruoyi.ipd.controller` 覆盖全部控制器，补 `IpdPermissionExceptionHandler.assignableTypes` 7 控制器白名单之外的缺口）：
+
+| 异常 | 修复后映射 | 修复前 |
+|---|---|---|
+| `IpdPermissionException` | 按 `e.getHttpStatus()`/`getErrorCode()` 忠实映射（401/20001、403/30001…） | 落 `Exception.class` → 500/90001 |
+| `NotPermissionException` | 403 + 30001 | 500/90001 |
+| `NotRoleException` | 403 + 30001 | 500/90001 |
+| `HttpMessageNotReadableException` | 400 + 10001（DEF-2） | 500/90001 |
+| `MissingServletRequestParameterException` | 400 + 10001 | 500/90001 |
+
+- 提交隔离核验：`git diff --cached` = 恰 2 文件（advice +43 / 新测试 +152），未扫入兄弟 35 脏文件；secret 自检 clean。
+
+**② 验收测试（真 HTTP dispatch，防空洞 mock 绿）**
+- 新增 `DefectBAdviceAcceptanceTest`（`@Tag("dev")`，`standaloneSetup(真实 AuditLogController).setControllerAdvice(真实 IpdServiceExceptionAdvice)`）——受试者特意选**非白名单**控制器 AuditLogController，正是缺陷B 现场。
+```
+mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=DefectBAdviceAcceptanceTest test
+→ Tests run: 5, Failures: 0, Errors: 0, Skipped: 0  BUILD SUCCESS @15:33:56（active builds 0）
+  日志实证："[IPD] request body not readable: JSON parse error" → DEF-2 走真实分发命中 handleNotReadable
+```
+- 5 例：`IpdPermissionException(401)`→401/20001、`(403)`→403/30001、`NotPermission`→403/30001、`NotRole`→403/30001、body 不可读→400/10001。**Skipped=0** 排除假绿静默跳过。
+
+**③ 全量回归被兄弟 WIP 阻断（诚实标注 + 静态零风险证）**
+- 修后欲跑 `-Dtest='*AcceptanceTest'` 全量回归，@15:35:21 与 @15:36:37 两次 **BUILD FAILURE：`LegacyImportService.java:134-136` 找不到 `StageAction.setRemark/getRemark`**。
+- **归因（非我）**：`LegacyImportService.java`=**未跟踪新文件(??)**、`StageAction.java`=**脏(M) 且无 remark 访问器** → 兄弟正加「历史导入」特性、消费者先于生产者字段落盘的 WIP 半成品；我的 `6628ab3b` 仅动 advice+test 两文件，零涉及。属记忆 0fee5448「WIP 源码错配型假红」子类。
+- **静态回归零风险证**（替代被阻断的动态跑）：全仓仅 `Api01AcceptanceTest` 断言 500，用 `ServiceException(未知码)` + **纯 `RuntimeException`**（均非我 5 类，仍走未改动的 `handleServiceException`/`handleUnexpected`）；`Sec01/Sec02` 断言的是 `IpdPermissionException` **对象本身**（非 advice HTTP 映射，未改 IpdPermission）；`P064AcceptanceTest` 用**自带局部 stub advice** 断言 `IpdPermissionException(401/403)`→401/403，**与我的生产映射完全一致 = 独立佐证**。→ 无一现存测试对我重映射的 5 类断言 500，回归风险 = 0。
+- 残留：待兄弟补 `StageAction.remark` 使主源可编译后，复跑 `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*AcceptanceTest' test` 作动态终证（PARTIAL-closure）。
+
+**④ 缺陷 A-audit 仍 BLOCKED**：`IpdRolePermissionCatalog.java` 全程 **脏(M)**（兄弟 system-config 三码 WIP 未提交），我的 audit-log 补码 hunk 与其同处 ADMIN_WRITE 区、`git add -p` 不可分离 → 编辑会扫入其未提交改动，违单一写入者纪律。延后至 Catalog 净窗口或归 owner。§4.2 结论不变。
+
+**⑤ DEF-1 升级为全闭环**：兄弟 `7b13a409`「矩阵 v6 **62/62**、超管建要素 **HTTP 200** + 审计 **JSON_VALID=3/3**」已补上 §8③ 所缺的**真库 HTTP 端到端复验**（app 已重启载新码，不再 STALE）。→ DEF-1 由 §8 的 ✅FIXED(PARTIAL-closure) 升级为 ✅**FULL-CLOSED**。
+
+**⑥ 判定更新（本节为最新事实源，取代 §0/§4.2/§4.3 对应行）**
+
+| 项 | §0–§8 旧判 | §9 新判 |
+|---|---|---|
+| 缺陷B（advice 权限拒绝落 500） | ❌OPEN（§4.3 双实证） | ✅**FIXED+VERIFIED**（6628ab3b，5/5 真 HTTP 绿） |
+| DEF-2（body 不可读落 500） | ❌OPEN | ✅**FIXED**（handleNotReadable→400，测试锁死） |
+| DEF-1（GateElement 审计明文写 JSON 列） | ✅FIXED / PARTIAL-closure（§8） | ✅**FULL-CLOSED**（7b13a409 真库 HTTP 62/62+JSON_VALID 3/3） |
+| 缺陷A-audit（Catalog 缺 audit-log 码） | ❌OPEN | ❌OPEN-**BLOCKED**（Catalog 脏，延后/移交 owner） |
+| 全量 *AcceptanceTest 回归 | — | ⚠**PARTIAL**（兄弟 WIP 编译阻断；静态零风险证已附，动态终证待主源可编译） |
