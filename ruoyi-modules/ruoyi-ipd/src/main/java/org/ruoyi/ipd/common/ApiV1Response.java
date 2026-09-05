@@ -1,12 +1,13 @@
 package org.ruoyi.ipd.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import org.slf4j.MDC;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * IPD 统一响应（v3 TS-09）。与基线 {@code R<T>}（code=200）不混用：本类 code=0 为成功。
@@ -24,7 +25,17 @@ public class ApiV1Response<T> implements Serializable {
     private int code;
     private String message;
     private T data;
-    private Date timestamp;
+    /**
+     * 统一 UTC ISO-8601 瞬时（秒级精度，时区无关）。
+     * P0-4.1：大整数 ID = 全局 BigNumberSerializer 保真；时间 = ISO-8601 字符串，避免 epoch millis 数字。
+     * <p>用自定义 {@link InstantIso8601Serializer} 而非全局 {@code @JsonFormat} + JavaTimeModule，
+     * 是因为裸 {@code new ObjectMapper()}（如 advice/Api03 测试路径）不会自动注册
+     * {@code com.fasterxml.jackson.datatype:jackson-datatype-jsr310}，会抛
+     * {@code InvalidDefinitionException: Java 8 date/time type java.time.Instant not supported by default}。
+     * 显式绑定 serializer 后，三种 ObjectMapper 形态（裸 / JavaTimeModule / advice MockMvc）输出完全一致。
+     */
+    @JsonSerialize(using = InstantIso8601Serializer.class)
+    private Instant timestamp;
     private String traceId;
 
     public static <T> ApiV1Response<T> ok(T data) {
@@ -60,7 +71,7 @@ public class ApiV1Response<T> implements Serializable {
         ApiV1Response<T> r = new ApiV1Response<>();
         r.code = code;
         r.message = message;
-        r.timestamp = new Date();
+        r.timestamp = Instant.now();
         r.traceId = traceId != null ? traceId
             : (MDC.get("traceId") != null ? MDC.get("traceId") : MDC.get("X-Trace-Id"));
         return r;
@@ -71,7 +82,7 @@ public class ApiV1Response<T> implements Serializable {
         r.code = code;
         r.message = message;
         r.data = data;
-        r.timestamp = new Date();
+        r.timestamp = Instant.now();
         r.traceId = MDC.get("traceId") != null ? MDC.get("traceId") : MDC.get("X-Trace-Id");
         return r;
     }
