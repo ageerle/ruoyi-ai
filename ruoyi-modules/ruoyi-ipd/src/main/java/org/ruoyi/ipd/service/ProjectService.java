@@ -42,6 +42,7 @@ public class ProjectService {
     private final ProjectMapper projectMapper;
     private final ProductMapper productMapper;
     private final AuditLogService auditLogService;
+    private final GateEngine gateEngine;
 
     @Transactional(rollbackFor = Exception.class)
     public Project create(Project project, Long operatorId) {
@@ -89,7 +90,7 @@ public class ProjectService {
         return project;
     }
 
-    /** 阶段推进：线性下一阶段；进入 LAUNCH 前置校验上市日期已录（BR-IPD-08 起算原点） */
+    /** 阶段推进：门禁校验（BR-IPD-06，P1-5 GateEngine 接管）+ LAUNCH 前置上市日期（BR-IPD-08） */
     @Transactional(rollbackFor = Exception.class)
     public Project advanceStage(Long projectId, Long operatorId) {
         Project project = require(projectId);
@@ -97,6 +98,7 @@ public class ProjectService {
         if (next == null) {
             throw new ServiceException("已处于最终阶段 LIFECYCLE");
         }
+        gateEngine.check(project, project.getCurrentStage());
         if ("LAUNCH".equals(next) && project.getLaunchDate() == null) {
             throw new ServiceException("进入 LAUNCH 前必须录入上市日期（后置指标起算原点）");
         }

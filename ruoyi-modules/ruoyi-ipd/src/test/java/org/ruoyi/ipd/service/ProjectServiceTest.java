@@ -37,12 +37,14 @@ class ProjectServiceTest {
     private ProductMapper productMapper;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private GateEngine gateEngine;
 
     private ProjectService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projectMapper, productMapper, auditLogService);
+        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine);
     }
 
     private Project base(String level, String coefficient, String reason) {
