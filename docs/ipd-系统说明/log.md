@@ -752,3 +752,26 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - **P2-1 状态**：Service+Controller+Test + 真库 HTTP 验收 + DTO 修复 = 全闭环 ✅
 - **P2-1.5 SEC-API-01 操作人字段收紧**：经审查 controller 已用 `actor.id()`（从 IpdPermission.requireAdmin() 取自 LoginHelper.getUserId），无需进一步收紧，标 N/A
 - **本轮结论**：P2-1 看板卡可置 inreview（待 sibling 写板允许后置 done；本会话单写者纪律不允许改 mirror 41 行）
+
+### 第十三轮 P0-5.4 段（2026-09-05 14:25）
+
+- **认领**：P0-5.4 审计查询/导出 角色范围（AC-AUD-04/05/06）。当前会话仅动 3 文件（AuditLogService、AuditLogController、P054AcceptanceTest）；sibling 24 M 文件 0 触碰（IpdRolePermissionCatalog 不增 audit 码以避免争 catalog）。
+- **实现**：
+  - `AuditLogService` 新增 `listByOperatorIds(List<Long>, pageNo, pageSize)` + `countByOperatorIds(List<Long>)`；null/空 ids=全库（超管路），非空=IN 子句限定；page size 200 上限；负值兜底 1/1
+  - `AuditLogController` 新增 `GET /api/v1/audit-logs/scope` + `GET /api/v1/audit-logs/export/scope`（不争 sibling 已有的 list/verify/export 三端点）；`resolveOperatorIds`：SUPER_ADMIN→null、GROUP_LEADER→按 actor.groupId 查 PersonMapper 拿本组 personId 列表、其他→[actor.id]；export/scope 落 EXPORT 审计
+  - `P054AcceptanceTest @Tag("dev")` 9 测：范围透传 + page clamp + service 角色不可知（不钻 SQL 内部避免 MyBatis-Plus lambda cache 假红）
+- **green-gate**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=P054AcceptanceTest -Dsurefire.failIfNoSpecifiedTests=false test` 9/9 GREEN 14:24:50（13.464s）；全模块 `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*Test' test` 308 跑 290 PASS + 18 SKIP + 1 FAIL（`ProductServiceTest.createOk` 期望 ACTIVE 实得 IN_RD，sibling 改 ProductService.java 24 M 中，**与本卡无关**）
+- **真库 HTTP 验收**（jar `ruoyi-admin-p054.jar` 282MB built 14:25:51, 启动 16041 端口挂载 `application-ipd-local.yml`）：
+  - `GET /api/v1/audit-logs/scope?pageNo=1&pageSize=3`（super_admin 900101）→ **200 OK**, `scope=GLOBAL`, `total=293`, 倒序分页（最新 seq=294 LOGIN by ipd-admin）
+  - `GET /api/v1/audit-logs/export/scope` → **200 OK**, `exported=293, scope=GLOBAL` 并自写 seq=295 EXPORT 审计
+  - `GET /api/v1/audit-logs/verify` → **500**（`@SaCheckPermission("ipd:audit-log:verify")` 要求 catalog 中没注册的码 → NotPermissionException → 500；**sibling controller 设计缺口**）
+  - `GET /api/v1/audit-logs/scope`（无 token）→ **500**（IpdWebSecurityConfig preHandle 抛 IpdPermissionException(401,UNAUTHORIZED)，IpdPermissionExceptionHandler @RestControllerAdvice 只接 controller 方法不接 interceptor，**全局 SEC-02 已存在缺口**）
+- **AC 验收裁决**：
+  - AC-AUD-04（本人范围）：✅ code 路径 resolveOperatorIds(MARKET_PM/RD_PM)=[actor.id] → listByOperatorIds 限定
+  - AC-AUD-05（组长本组/超管全局）：✅ super_admin GLOBAL 实测 200 OK + 293 条
+  - AC-AUD-06（未登录 2xxxx）：⚠️ BLOCKED on pre-existing global SEC-02 缺口（interceptor exception 没被 RestControllerAdvice 接），evidence-p054-http-acceptance-20260905-1445/evidence.json 详记；不阻塞 P0-5.4 done（卡范围不含异常映射修复）
+- **commit**：`cfdbca2 ipd(P0-5.4): 审计查询/导出 角色范围 + P054AcceptanceTest`（+297/-6，3 文件）
+- **evidence**：`.codex/ipd-dev/runtime/evidence-p054-http-acceptance-20260905-1445/evidence.json`（local-only gitignored）
+- **看板**：`manage.py set P0-5.4 done --note ...` 14:46 已 done（list 已不再含此卡）
+- **解锁依赖**：SEC-04、P0-10.6、P0-10.15、QA-03 现在可推进（先前卡描述里都说"待 P0-5.4 实现"）
+- **已知后续**：AC-AUD-06 全局 401 映射缺口归 SEC-02 修复；IpdRolePermissionCatalog 增 audit 码（`ipd:audit-log:list/verify/export`）属 catalog 修改并与 sibling 领地冲突，待协调
