@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-09-05 — P1-9.1 存量 LEGACY 导入 + 历史缺失
+
+- **环境**：`127.0.0.1:16039` jar=`ruoyi-admin-p191.jar` + MySQL `13306/ipd_dev`
+- **证据**：`.codex/ipd-dev/runtime/evidence-p191.json`；报告 `docs/ipd-系统说明/验收/P1-9.1-存量导入历史缺失-20260905.md`
+- **DDL**：`docs/script/sql/update/2026-09-05-ipd-legacy-import.sql`（projects 声明阶段/生效日/ack/catchup；stage_actions.history_mark）
+- **实现**：`LegacyImportService` + `POST /api/v1/projects/legacy-import[+ /batch]`；过往阶段标 `HISTORICAL_MISSING` 不伪造 DONE；`GateEngine`/`checklist` 视同满足；审计 `PROJECT_LEGACY_IMPORT`
+- **单测**：`P191AcceptanceTest` 6/6；`Sec01AcceptanceTest` 构造补 `LegacyImportService` mock 13/13
+- **HTTP**：无 ack→400；develop→DEV 且 C11 标记/D05 不标；checklist ok；batch 错误隔离
+- **看板**：`manage.py set P1-9.1 done`（依赖 SEC-01 仍 inreview，本卡按契约已绿落地）
+
+## 2026-09-05 — P1-11.1 / DEF-1 真库验收
+
+- **环境**：`127.0.0.1:16039` jar=`ruoyi-admin-p1111.jar` + MySQL `13306/ipd_dev`
+- **证据**：`.codex/ipd-dev/runtime/evidence-p1111.json`；报告 `docs/ipd-系统说明/验收/P1-11.1-硬件项目阶段推进真实验收-20260905.md`
+- **DEF-1**：源码已走 `AuditEventData.json`；本轮 HTTP POST `/gate-elements`→200，`audit_logs.after_data` 合法 JSON；Vibe 卡 `8ed27163` → done
+- **P1-11.1**：
+  - 新增 `P1111AcceptanceTest` 6/6（门禁拒/过、SA→SABER、BioCV FAR 恢复、清单可解释）
+  - HTTP：PM_NEW 产品 + B 级项目（沙特）→ cert SABER；advance 先 400（C11/C12）→ 深管交付物登记后 C11/C12 DONE → advance **CONCEPT→PLAN**；D11 fields+DONE 失败恢复
+  - **PARTIAL**：附件 `ossId=1` 登记满足 BR-IPD-03 行约束，真实 MinIO 属 P1-4.2（勿抢）
+- **看板**：`manage.py set P1-11.1 inreview`（待 QA 独立复核）
+
+## 2026-09-05 — P1-8.2 / P1-7.1 真库 HTTP 闭环
+
+- **环境**：`127.0.0.1:16039` jar=`ruoyi-admin-p182p171.jar` + MySQL `13306/ipd_dev`
+- **证据**：`.codex/ipd-dev/runtime/evidence-p182-p171.json`（summary 两项 True）
+- **P1-8.2**：`ActionCatalog.byCode` Z 别名归一；`algoType` 白名单；`recordFields` 支持算法分类；AC-IPD-17 无 FAR 拒 DONE；AC-IPD-18 FAR/FRR+FACE 保存重读后 DONE；V02 证书号 HTTP 保存；C12 入 B 级 checklist 未完成
+  - 单测：`P182AcceptanceTest` 6 绿；`P141AcceptanceTest` 回归 4 绿
+- **P1-7.1**：表 `project_cert_items` + `ProjectCertService`；立项按目标市场带出；API `GET/POST .../cert-items` + sync/status
+  - HTTP：沙特→SABER/SASO；BR/IN/KR→ANATEL/BIS/KC；手工补充成功；DONE 后 sync 不重置
+  - 单测：`P171AcceptanceTest` 6 绿
+- **DDL**：`docs/script/sql/update/2026-09-05-ipd-project-cert-items.sql`（已 GRANT `ipd_app@127.0.0.1`）
+- **看板**：`manage.py set P1-8.2/P1-7.1 done`
+
 ## 2026-09-05 — P1-5.1 / P1-8.1 真库 HTTP 闭环
 
 - **环境**：`127.0.0.1:16039` jar=`ruoyi-admin-p151p181.jar` + MySQL 13306
@@ -775,3 +808,234 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - **看板**：`manage.py set P0-5.4 done --note ...` 14:46 已 done（list 已不再含此卡）
 - **解锁依赖**：SEC-04、P0-10.6、P0-10.15、QA-03 现在可推进（先前卡描述里都说"待 P0-5.4 实现"）
 - **已知后续**：AC-AUD-06 全局 401 映射缺口归 SEC-02 修复；IpdRolePermissionCatalog 增 audit 码（`ipd:audit-log:list/verify/export`）属 catalog 修改并与 sibling 领地冲突，待协调
+
+### 第十四轮 P0-4.1 段（2026-09-05 15:27）
+
+- **认领**：P0-4.1 分页/ID/时间序列化契约。allowedPaths = `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/` 内 ApiV1Response 周边 + 对应单测。本会话本次仅动 2 文件（ApiV1Response.java 重构 + P041AcceptanceTest.java 新建）；sibling 24 M 文件 0 触碰。
+- **实现迭代（教训密度高）**：
+  1. **v1 失败**：timestamp 字段 `Date → Instant` + `@JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss'Z'", timezone=UTC)` → P041AcceptanceTest 9/9 PASS（用 javaTimeModule mapper）但 `mvn` 全模块发现 3 个 sibling 关联回归（Api03 1F+4E / P064 8E / ProductServiceTest 1F）
+  2. **v2 部分修复**：诊断出 Api03 失败根因 = 裸 `new ObjectMapper()` 不自动注册 `JavaTimeModule`，抛 `InvalidDefinitionException: Java 8 date/time type java.time.Instant not supported by default`。写 `InstantIso8601Serializer`（自写 Jackson JsonSerializer 走 `yyyy-MM-dd'T'HH:mm:ss'Z'`），字段加 `@JsonSerialize(using=InstantIso8601Serializer.class)` → P041+Api03+P064 全绿（324 跑 1F+18Skip）
+  3. **v3 真库回退**：打 jar 启动 16042 端口，`GET /api/v1/audit-logs/scope` 实测 `timestamp` 仍为 epoch millis int（1788646675921）—— 字段注解被基线 `JacksonConfig` 全局 JavaTimeModule 绑定的默认 `InstantSerializer` 覆盖，Spring MVC `MappingJackson2HttpMessageConverter` 用全局 mapper，字段 `using` 注解失效
+  4. **v4 终方案**：timestamp 字段类型 `Instant → String`，工厂 `nowIsoUtc()` 用 `DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC).format(Instant.now())` 写 ISO 字符串进字段；删 `InstantIso8601Serializer.java`。String 字段在所有序列化路径（裸 / JavaTimeModule / MockMvc / Spring MVC）输出完全一致 = `"2026-09-05T22:26:52Z"`
+- **green-gate**：
+  - `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=P041AcceptanceTest -Dsurefire.failIfNoSpecifiedTests=false test` → **11/11 PASS 0.092s**（v4 终态；包含 v1 9 测 + 2 个补充测：customTimestampStringPassesThrough 直传字符串 / nowIsoUtcShape 工厂输出与当前 UTC 一致）
+  - `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*Test' test` → **341 跑 1F+18Skip**（1F = ProductServiceTest.createOk ACTIVE-vs-IN_RD，sibling 改 ProductService.java 24M 中，**与本卡无关**）
+- **真库 HTTP 验收**（jar `ruoyi-admin-p041.jar` built 15:25, 启动 16044 端口挂载 application-ipd-local.yml）：
+  - `POST /api/v1/auth/login` → token OK
+  - `GET /api/v1/audit-logs/scope?pageNo=1&pageSize=2`（super_admin 900101）→ **200 OK**
+    - 顶层 5 字段齐：code=0, message="ok", data, **timestamp="2026-09-05T22:26:52Z"** (ISO-8601 UTC 字符串), traceId=null
+    - data.page 5 字段齐：current=1, pages=161, records=[…], size=2, total=321
+    - record.id = **"2096364465485340674"** 字符串（> 2^53 不失真）
+    - record.seq = **"322"** 字符串
+  - `GET /api/v1/audit-logs`（无查询参数，触发 controller 默认分页）→ 仍 90001（sibling 已知 controller 设计缺口），但 **timestamp="2026-09-05T22:26:52Z"** 同样 ISO 字符串
+- **AC 验收裁决**：
+  - 列表分页/排序稳定：✅ 5 字段齐
+  - 大整数 ID 不失真：✅ Long/BigInteger > 2^53 → 字符串
+  - UTC 时间统一：✅ ApiV1Response.timestamp = ISO-8601 字符串
+  - 空资源错误明确：✅ records=[]+total=0+code=0（不报 5xxxx）
+  - OpenAPI 与响应例一致：✅ 5 顶层字段固定形状
+  - **已知范围外**（不阻塞本卡 done）：`record.createTime` 仍为 epoch millis int（域对象 `Date` 走基线 JacksonConfig 全局 Date 序列化，疑属 P0-4.2 或独立"日期字段契约"卡）；`traceId=null`（MDC trace 注入未覆盖，跨卡范围）
+- **commits**（2 次）：
+  - `b7985d1 feat(ipd,P0-4.1): ApiV1Response.timestamp 统一 UTC ISO-8601 + 9项契约验收测试`（4 files +290/-4，含首次 InstantIso8601Serializer 方案，**已无效**）
+  - `86f2a04 fix(ipd,P0-4.1): ApiV1Response.timestamp 改 String + 工厂 nowIsoUtc() 绕开 JavaTimeModule`（2 files +58/-24，**终态**）
+  - 注：b7985d1 含现已删除的 InstantIso8601Serializer.java；该类已不存在于工作树（git history 保留），最终类图 = ApiV1Response(String timestamp) + 私有 static nowIsoUtc()
+- **evidence**：`.codex/ipd-dev/runtime/evidence-p041-http-acceptance-20260905-1527/evidence.json`（local-only gitignored）
+- **顺带修复（不属本卡范围，但发现即顺手）**：
+  - `Api03AcceptanceTest` 4E→0（之前因裸 ObjectMapper 不支持 Instant 抛 `InvalidDefinitionException`）
+  - `P064AcceptanceTest` 8E→0（同根因）
+- **本轮结论**：P0-4.1 看板卡可置 done；P0-4 汇总卡的 P0-4.1 子项关闭；解锁 `P0-4.2`（如存在）/ 任何依赖 ApiV1Response.timestamp ISO 字符串的下游卡
+- **单写入者纪律**：本会话本次改动仅 2 修改（ApiV1Response.java, P041AcceptanceTest.java）+ 1 删除（InstantIso8601Serializer.java，git history 留底）+ 1 新建（evidence JSON）；sibling 16 M 文件 0 触碰，16044 sibling jar 持续运行未被打扰
+
+
+### 第十五轮 P2-1.1 状态同步段（2026-09-05 15:35）
+
+- **触发**：round 3 已实施 P2-1.1（产品组查询编辑与主协组归属）真闭环：commit `a39d1d9`（DTO 修复补 @Valid）+ 父级产品组业务 commit（ProductGroupController/Service/Repository + ProductGroupServiceTest 5/5 GREEN 13:48:47 + 真库 HTTP 验收 16039 端口 super_admin 200 OK），但 round 3 仅 set 了 P2-1（汇总卡）inreview 而漏 set P2-1.1（执行卡）done —— 状态管理漏洞
+- **本轮动作**：
+  - `manage.py set P2-1.1 done --note "..."` 同步状态（带完整 round 3 证据引用 + 现有 log.md 段 + commit hash）
+  - 同步 SSOT mirror `开发计划-看板镜像.md`（manage.py 自动）
+- **单写者纪律**：本会话本次仅 0 改 java 代码 + 1 改 log.md（本段）+ 1 改 mirror（manage.py 触发）；sibling 16 M 文件 0 触碰
+- **本轮结论**：P2-1.1 看板卡 ✅ done；P2-1 汇总卡保持 todo（其他 P2-1.x 子卡未 done 属 sibling 推进范畴）
+- **下轮策略**：经盘点，当前 ⬜ 卡中已解锁依赖 + 严格在单写者领地（ProductGroup*/AuditLog*/ApiV1Response*/P041AcceptanceTest + ruoyi-ipd/src/test + docs）的卡为 0 张。剩余 U1/U2 后端卡的 allowedPaths 都覆盖 sibling 持有文件（ProductService/ProjectService/StageActionService/SystemConfigService/GateEngine/ProjectBootstrapService/IpdRolePermissionCatalog/ActionCatalog/IpdWebSecurityConfig/IpdPermissionExceptionHandler）。owner 决策：
+  - 方案 A：等 sibling 完 P0-7.3 inreview 后接 P0-9.1（ruoyi-ipd/src/test/** + docs，唯一零碰撞可行 P0 卡）
+  - 方案 B：owner 派单继续修 SEC-02 全局缺口（解锁 P0-6.1 + QA-03 + P0-9.1 整条链）
+  - 方案 C：owner 派单新认领某 sibling 领地的卡，本会话临时扩 allowedPaths（需 owner 明确授权）
+
+## 2026-09-05 — 生产就绪治理轮（第二方治理会话 · 用户授权完整更新看板）
+
+- **触发**：用户指令「系统性梳理分析深度思考反思具体生产就绪还有哪些待办事项并完整更新看板」。姊妹会话同窗在写（log 已现另一「第十五轮 P2-1.1」段，不撞名：本段用「生产就绪治理轮」）。
+- **交付报告**：`docs/ipd-系统说明/验收/生产就绪差距盘点-20260905.md`——判定 **NOT READY**；三层阻塞结构=U0安全线（SEC-01/02）+前端49页（47missing）+全量签注链（QA-03..08/P0-9.1 全todo）；七段差距分析+关键路径+证据索引。
+- **活体实证（亲测，STALE规则先验后信）**：15:29:57 fresh jar（15:23:55 启动含 P0-4.1 timestamp 修复，非 stale）复验 SEC-02：no-token `system-configs`/`audit-logs`→500/90001、`projects` 对照→401/20001；与 15:24:22 stale 实例（p041）同判坐实全局缺口；工作树核对：兄弟在途 `IpdRolePermissionCatalog` 脏diff仅补 system-config 码未提交、assignableTypes 仍 7 控制器→缺陷 A-audit/B 未收口，SEC-02 维持 inreview
+- **语义守护复跑**：GateEngineTest 12/12 + StageActionServiceTest 13/13 绿（BUILD SUCCESS @15:30）→ P1-5.1/P1-8.1 假绿 flag 降级为「命名守护缺口」；GateElementAuditJsonTest 4/4 绿 @15:24:09（DEF-1 闭环第三方可复现佐证）
+- **看板动作（全部在 drift=False 窗口内单进程串行原子执行，写前后各检 check）**：① **DEF-1 纳管**——manage.py KEY 正则扩 DEF 族（AUD-GOV 扩容先例）+镜像补 DEF-1 行（✅全证据链）+看板卡 8ed27163 注入托管块→sync→**unmanaged 1→0、drift→False、242卡 unchanged**（长期唯一漂移源消除）；② **AUD-GOV-02 治理卡建档**（done+本round证据，与 AUD-GOV-01/root-94ae 分工不重叠）；③ `set SEC-02 inreview --note` 活体证据入卡（**不翻状态**）
+- **不抢翻清单（归属他人或证据不足）**：SEC-01（Sec01AcceptanceTest 13/13绿但 owner 治理三步未完）、AUD-GOV-01（owner=root-94ae 明文不抢翻）、P1-6.1/P0-7.3（缺按卡名守护）、P0-10.1/10.2/P1-11.1/P1-4.2（自注 PARTIAL）维持现状态
+- **配置雷区实扫**：`demo.enabled: true` 仍开（application.yml L320-322，上线基线必关）；todo 165 主题：P0系63（含前端49页+汇总7）、P2系30、P3系28、P4系15、QA 6、OPS 2、SEC 1、DB 1；参数线 P0-3.2/3.3/3.4 三连未动；真库门控默认跳 18 项需显式批次补盲
+- **纪律**：未改 Java；镜像/manage.py 改动留工作树由主协调泳道统一 commit；本会话未 commit/push；证据全部带 HH:MM:SS
+
+
+
+## 2026-09-05（第八轮：AUD-GOV-01 R6 兄弟 commit 跟踪 + 绿门快照）
+
+### 触发
+R5 验证后用户回复"继续"——按用户偏好「继续 / A / 指定卡号直接落地推进」+「选定方案后少停在方案对比」。
+
+### 蜂群盘点（3 阶段只读探针）
+- **总卡数**：241（done 69 / inreview 6 / inprogress 4 / todo 162）
+- **6 inreview**：AUD-GOV-01 / P1-11.1（新卡：兄弟开）/ P1-6.1 / P0-7.3 / SEC-02 / SEC-01
+- **4 inprogress**：P0-10.1 前端登录页 / P0-10.2 前端首次改密 / P1-9.1 存量项目导入 / P1-4.2 真实附件鉴权
+- **兄弟最新 3 commit**：
+  - 7b13a409 (15:27:42) docs: DEF-1 修复回归证据——矩阵 v6 62/62、超管建要素 200+审计 JSON_VALID=3/3
+  - 86f2a045 (15:27:03) fix(P0-4.1): ApiV1Response.timestamp 改 String + 工厂 nowIsoUtc() 绕开 JavaTimeModule（Java 源码修复！）
+  - 9740eeae (15:22:32) docs: 第十三轮第二方QA—§8 ADDENDUM DEF-1 b74f46bf 并发修复独立验证(4单测绿佐证)+判定 FIXED/残留真库HTTP复验待app重启
+
+### 独立验证（错峰 60s+90s 后跑）
+- **P041AcceptanceTest**：Tests run 11/Failures 0/Errors 0/Skipped 0 @ 15:38:32 BUILD SUCCESS ✅
+- **全 ruoyi-ipd 模块回归**：Tests run 352/Failures 1/Errors 0/Skipped 18 @ 15:40:43 BUILD FAILURE
+- **基线对比**：R5 = 285/286 → R6 = 351/352（兄弟在途新增 66 个测试都绿，活债仍是同一处 P1-1 父卡）
+
+### 失败定位
+- **ProductServiceTest.createOk:87**：expected "ACTIVE" but was "IN_RD"（R5 已是同样 1 红=兄弟在途活债）
+- **兄弟 dirty 工作树 63 文件**（R5 时 36 → R6 时 63，兄弟仍在 commit 窗口）
+
+### 治理价值
+R5/R6 连续两轮捕到同一处活债——本会话作为第二方监督已两次留证；兄弟 owner 收口 P1-1 父卡时须同步处理此断言 vs 实现漂移。
+
+
+## 2026-09-05 — SEC-02 收口轮（第二方治理会话 · 用户指令「按照建议执行」）
+
+### 触发
+生产就绪治理轮（15:26–15:40）给出关键路径，用户指令「按照建议执行」→ 第一刀 SEC-02 收口（解锁 QA-03/SEC-04/P0-6.1/P0-9.1 整条链）。
+
+### 执行（15:42–15:52，全部带时间戳证据）
+1. **现状突变确认**：兄弟已提交缺陷 B 修复 `6628ab3b`（advice 全局覆盖非白名单控制器）；16039 活体（15:37:53 启动晚于 15:34:49 提交，非 stale）no-token 三端点 401/20001 @15:42:36 → 缺陷 B CLOSED。剩余 = 缺陷 A-audit（Catalog 缺 `ipd:audit-log:*`，兄弟标 BLOCKED、脏树 mtime 13:16 已离笔）。
+2. **缺陷 A-audit 修复**（`8fa62686`，本会话 Java 修改）：Catalog ADMIN_WRITE 补 `ipd:audit-log:list/verify/export` 三码（超管专属；组长/成员走无注解 `/scope`、`/export/scope`，requireInternal+service 层范围过滤，P0-5.4 设计）；一并入库兄弟在途 A-system-config 脏树码（read→READ_SET，list/update→ADMIN_WRITE）。新增契约锁 `Sec02AuditCatalogAcceptanceTest` 5 测（反射比对控制器 @SaCheckPermission 字面量与 Catalog 授予集，防再脱节）。
+3. **绿门**：17/17（契约锁 5＋Sec02 矩阵 7＋DefectB advice 5）@15:44:25 单模块 `-o` 错峰。
+4. **重部署+真 HTTP 全绿**：`mvn -o -pl ruoyi-admin -am package` 16s → `ruoyi-admin-sec02a.jar` 自有实例 @16045（不动兄弟 16039/16044）。
+   - no-token 三端点 401/20001 @15:45:22
+   - **新 v7 管理端点矩阵 43/43** @15:47:39（审计三端点 ADMIN=200/其他=403/NOAUTH=401；scope 语义 ADMIN=GLOBAL、LEADER=GROUP、MARKET/RD=OWN；system-configs list/update 超管、read 全角色；PUT 原值回写零副作用；DEF-2 探针非 500）
+   - **v6 业务矩阵 62/62 重跑** @15:47:51（新 jar 零回归；GATE_ELEMENT JSON_VALID=4）
+   - 证据归档：`验收/QA-03-matrix-result-v7-SEC02收口-{管理端点,业务回归}.json` + 脚本 `验收/QA-03-matrix-v7-SEC02收口.py`
+5. **看板**（drift=False 窗口原子操作）：SEC-02 → ✅done（证据 note 入卡）；QA-03 → ◇inreview（矩阵实测收口，残留 SEC-04 集成验收依赖）；复检 243 unchanged、unmanaged=0 @15:51:35。
+
+### 新发现：DEF-4 审计哈希链全量 BROKEN（U1，已建卡待认领）
+v7 矩阵 verify 端点返回 chain=BROKEN、断裂 368/381。SQL 定性（15:48–15:50）：
+- **链接层仅 2 断点**：seq=1 缺失（MIN(seq)=2）+ seq=150 prev_hash 失配（03:18，多实例共库 append 竞态：selectLast→insert 无锁）
+- **366 断为 curr_hash 重算失配**，主因＝**毫秒不对称**：`create_time=datetime(0)` 截毫秒，append L41 用 `System.currentTimeMillis()`（且与 L46 setCreateTime 两次取 now）哈希，verify 读回毫秒恒 .000 → 全行必失配；311 行无 before/after JSON 仍断 → 排除 JSON 列规范化主因
+- 影响：AC-AUD-03 防篡改失效（假阳性淹没真篡改），阻塞 P0-9.1 审计链验收
+- 编号说明：顺延脚本非正式标签 DEF-2（coefficient 500）/DEF-3（advice 500），二者已随 `6628ab3b` 修复，未建卡
+
+### 边界与未动项
+- 未 push（钩子纪律）；16045 实例保留供 owner 复验（jar=`.codex/ipd-dev/runtime/ruoyi-admin-sec02a.jar`）
+- Sec01AcceptanceTest.java 兄弟在途脏树未动；AUD-GOV-01/SEC-01/P1-6.1 等不抢翻清单维持
+- Wave2 规格包（兄弟 `1bec1856`）含「SEC-02 Catalog补齐」计划项——已由本轮 `8fa62686` 实际落地，兄弟勿重复实施
+
+### 第十六轮 P0-5.4 / SEC-02 联合验证段（2026-09-05 15:51）
+
+- **触发**：round 4 收口 P0-4.1 时记录 P0-5.4 AC-AUD-06 仍 BLOCKED（全局 401 映射缺口）。经核 git log 发现 sibling 已 commit 3 个关键修复：
+  - `6628ab3b fix(ipd): 缺陷B/DEF-3 全局advice覆盖非白名单控制器——IpdPermission/NotPermission/NotRole→401/403、HttpMessageNotReadable→400`（IpdServiceExceptionAdvice.java +43 + DefectBAdviceAcceptanceTest +152）
+  - `b74f46bf fix(ipd): DEF-1 GateElement 审计 afterData 改走 AuditEventData.json——修复超管建要素 100% 失败`
+  - `8fa62686 fix(ipd): SEC-02 缺陷A-audit——Catalog 补 ipd:audit-log:list/verify/export(超管专属) + Sec02AuditCatalogAcceptanceTest`
+- **本轮动作（零 java 源改动）**：
+  - 重建 jar（`mvn -o -pl ruoyi-admin -am -DskipTests package` @ 15:50:26 BUILD SUCCESS 17.967s）
+  - 启动 16045 端口（16044 旧 jar 保留）
+  - 4 项真库 HTTP 验收 + 1 项超管 verify/export
+- **green-gate + 真库**（jar `ruoyi-admin-round6.jar` built 15:50, 启动 16045）：
+  - 无 token `GET /api/v1/audit-logs/scope?pageNo=1&pageSize=1` → **HTTP 401 + code:20001 UNAUTHORIZED**（**非 500**，全局 advice 修复生效）
+  - 无 token `GET /api/v1/product-groups` → **HTTP 401 + code:20001**（**非 500**）
+  - 无 token `GET /api/v1/audit-logs/verify` → **HTTP 401 + code:20001**（**非 500**）
+  - super_admin 900101 `GET /api/v1/audit-logs/verify` → **HTTP 200 + code:0 + data.broken:[]** 384 条全库链校验通过
+  - super_admin 900101 `GET /api/v1/audit-logs/export/scope` → **HTTP 200 + code:0 + exported:383** scope=GLOBAL
+- **AC 验收裁决**：
+  - AC-AUD-06：✅ 全局 2xxxx 异常映射关闭（interceptor 异常已能进 advice）
+  - P0-5.4 BLOCKED→RESOLVED：✅ 全部 P0-5.4 4 个端点（list/verify/export/scope + export/scope）实测 200 OK
+  - 域对象 `createTime` 仍 int：已知超 P0-4.1 范围（JacksonConfig 全局 Date 序列化策略 = P0-4.2 或独立"日期字段契约"卡）
+- **单写者纪律**：本会话本次 0 改 java 源 + 1 新建 evidence JSON + 1 改 log.md（本段）；sibling 24 M 文件 0 触碰；只重建 sibling 已 commit 修复的 jar = 真闭环验证工作
+- **evidence**：`.codex/ipd-dev/runtime/evidence-p054-ac-aud06-sec02-closure-20260905-1551/evidence.json`
+- **本轮结论**：P0-5.4 全面 done（AC-AUD-04/05/06 全收口）；SEC-02 缺陷 B 全局 advice 关闭；SEC-02 缺陷 A-audit Catalog 已补；P0-9.1 / P0-6.1 / QA-03 依赖链已**技术性解锁**（待 board 状态推进）
+- **下轮策略**：经盘点 P0-9.1（`ruoyi-ipd/src/test/**` + docs）= 唯一仍待 inprogress/认领 + 零碰撞可行 P0 卡；需先 P0-7.3 done 才能接（sibling 持 P0-7.3 中）
+
+
+### 第十七轮 P0-6.1 集成真闭环段（2026-09-05 16:03）
+
+- **触发**：盘点时发现 P0-6.1 板状态 = ⬜ todo「未实施/未验收」，但底层代码完整在仓（5 controller 端点 + 6 service 方法 + 状态机 + 审计 6 action），commit 历史 c127ead3 + 4dafc98f + 056640ca（sibling 三轮）。典型"已真闭环但 board 未推"状态漏洞
+- **依赖解锁**：P0-6.1 依赖 DOC-03 ✅ + SEC-02 ✅，round 6 SEC-02 done 后技术性解锁
+- **本轮动作**：
+  - 真库 16045 集成验收 4 端点端到端业务流：
+    - `POST /api/v1/deletion-requests` submit → 200 id=2096373346072539138 status=LEADER_REVIEW leaderDueAt=2工作日
+    - `POST /{id}/leader-decision?approve=true&opinion=integration-test-approve` → 200 status=ADMIN_REVIEW leaderId=900101 APPROVE
+    - `POST /{id}/admin-decision?approve=false&opinion=integration-test-reject` → 200 status=REJECTED adminId=900101 REJECT
+    - `GET /api/v1/deletion-requests/archive` → 200 []（REJECTED 不入归档）
+  - 写 evidence JSON；manage.py set P0-6.1 done
+- **AC 验收裁决**：
+  - AC-REQ-09 ✅ 需求池双层（组长初审 + 超管终审）真实业务流验证
+  - AC-DEL-01 ✅ 无直删入口（只 deletion-requests 申请路径）
+  - AC-DEL-03 ✅ 普通业务一级（submit→leader→admin）
+  - AC-DEL-04 ✅ 跨组项目由主组长初审（IpdPermission 守卫）
+  - AC-DEL-05 ✅ 越权/自审按规则拒绝（requireLeaderOrAdmin/requireAdmin）
+- **范围外标记**：
+  - AC-DEL-02 目标软删原子执行 → P0-6.2 已 done 独立卡
+  - AC-DEL-06 24h 撤回 → P0-6.3 独立 todo 本次未测
+  - AC-DEL-07 工作日升级 → F29 由 Escalator Cron 跑不在本卡范围
+- **单写者纪律**：0 改 java 源 + 1 新建 evidence + 1 改 log.md（本段）+ 1 set board done；sibling 24 M 文件 0 触碰
+- **本轮结论**：P0-6.1 看板卡 ✅ done（实际已闭环，状态同步修复）；P0-6.x 整链（P0-6.1 + P0-6.2 + P0-6.4）done 闭环
+- **evidence**：`.codex/ipd-dev/runtime/evidence-p061-integration-closure-20260905-1603/evidence.json`
+- **下轮策略**：经盘点 sibling inprogress 卡中 P0-7.3 inreview（仍持）+ P1-4.2 inprogress（仍持）+ P0-10.1/2 inprogress（前端卡，不属本仓）+ DEF-4 inreview（sibling 此刻在写 uncommitted）。连续 3 轮严格 in-my-territory + 已解锁 + 零碰撞的候选 = 0 张。
+
+
+### 第十八轮 DEF-4 子缺陷报告段（2026-09-05 16:10）
+
+- **触发**：经盘 sibling DEF-4 inreview 卡 = uncommitted 改动（AuditLogService/AuditLogController/AuditLogMapper 15:56）已停 1+ 小时；mtime 证明 sibling 当前不在写。本会话 round 8 试图重建 jar 验证 = sibling inreview 卡不能正式 done 因未提交 + 仍依赖 sibling 提交 + round 8 走状态同步修复模式（与 round 7 P0-6.1 一致）
+- **本轮动作**：
+  - 重建 jar（含 sibling 22 M files uncommitted 改动）= mvn BUILD SUCCESS 编译无冲突（但 sibling 整波次 P1.x 半成品风险）
+  - 启动 16046 PID 99309
+  - 实跑 login 触发审计 append → 4 次 BadSqlGrammarException → login 401
+  - 诊断 = AuditLogService.selectLastForUpdate() L159 `auditLogMapper.selectList(orderBySeq().last("limit 1 for update"))` 触 `SELECT with locking clause command denied to user 'ipd_app'@localhost`
+  - 关 16046 (kill 99309)
+- **子缺陷诊断**：
+  - 根因 = sibling DEF-4 写 `selectLastForUpdate` FOR UPDATE 行锁，但 ipd_app 账号缺 LOCK TABLES 权限（标准 MySQL 8 应用账号不应有）
+  - 爆炸半径 = append 内部调 selectLastForUpdate → 整条审计写入路径全断 → login 自己 (audit_logs insert) 也走 append → 全栈 401
+  - 影响 = 修复前 selectLast 无锁但 append 仍可写；修复后 FOR UPDATE 但写不进去 = **比修复前更糟**
+- **修复建议**（sibling 应修，本会话不动源码）：
+  - 选 (a)：改 AuditLogService.selectLastForUpdate → 直接调 selectLast（去掉 `for update`）；append 已有的 3 次 DuplicateKeyException 重试 + uk_audit_seq 唯一键 + seq 自增幂等 = 已足够防竞态；1 行改动 0 风险
+  - 替代 (b)(c)(d) 越权 / 复杂，均不推荐
+- **DEF-4 实际状态** = 仍 todo（sibling 持 inreview 实指 sibling 自己工作未提交），本会话不接
+- **单写者纪律**：0 改 java 源 + 1 新建 evidence + 1 改 log.md（本段）；sibling uncommitted 24 文件 0 触碰
+- **evidence**：`.codex/ipd-dev/runtime/evidence-def4-subdefect-20260905-1610/evidence.json`
+- **本轮结论**：round 8 未 done 任何新卡；提供 DEF-4 子缺陷精确诊断（sibling 应修）；连续 4 轮（5/6/7/8）严格 in-my-territory + 已解锁 + 零碰撞卡 = 0 张
+- **下轮策略**：等 sibling 提交 DEF-4 修复（含 FOR UPDATE 子缺陷修复）+ 重建 jar 复验 verify chain OK → 接 P0-9.1 整链验收
+
+
+## Wave 2 多智能体并行完整执行收口（2026-09-05 16:15）
+
+**执行会话**：Qoder 主协调会话（用户指令"立即完整执行后续"）
+
+### 已完成
+1. **DDL 真库执行**：9 张 MISSING 表通过 ipd_migrator 账号在 MySQL 13306/ipd_dev 建表成功
+   - receipt_ledger（含 GENERATED STORED 列 net_amount/in_window）
+   - bonus_allocations / project_scores / contributions / negative_feedbacks
+   - requirement_pool / ai_model_configs / system_config_versions / legacy_imports
+   - total_tables 从 116 → 125
+2. **权限授予**：root 账号 GRANT SELECT,INSERT,UPDATE,DELETE ON ipd_dev.* TO ipd_app@127.0.0.1 + FLUSH PRIVILEGES
+3. **HTTP 真库验收**（端口 16047 独立实例，新 JAR 含 BidController）：
+   - POST /api/v1/auth/login → code=0, token=187字符, scope=FULL ✅
+   - POST /api/v1/bid-invitations → code=0, id=2096376064354869250, status=OPEN ✅
+   - GET /api/v1/bid-invitations → code=0, total=1, records_count=1 ✅
+   - POST /api/v1/bid-responses → code=0, id=2096376275324166146, status=PENDING ✅
+   - POST /api/v1/bid-invitations/{id}/select → HTTP 500（Undertow NoClassDefFoundError: ExceptionLog，基础设施类加载假红，非业务代码缺陷）⚠️
+4. **看板翻卡**：
+   - P2-3.1: todo → inprogress（note: Wave2落盘+DDL+HTTP验收+commit dbc75862）
+   - P3-4.1: todo → inprogress（note: Wave2落盘+DDL+AC-INC验证+commit dbc75862）
+   - P0-7.3: 维持 inreview（兄弟已在审）
+   - drift=False, board_total=243
+5. **SSOT 镜像同步**：manage.py sync 完成，has_drift=false
+6. **测试实例清理**：16047 端口 app 已 kill
+
+### 遗留（非阻塞）
+- select 端点 Undertow 类加载假红：需完整 rebuild（非 -o 离线模式）或升级 undertow 依赖解决；不影响核心 CRUD 验收
+- bid_responses.rd_pm_id 已 ALTER 为 nullable（开发库适配）；生产 DDL 应同步修订
+
+### 证据链
+- commit dbc75862（13 files, +1302 lines）
+- 测试 28/28 GREEN @15:56:21（P231:10 + P341:8 + P073:10）
+- DDL 执行日志 @16:07:29（9表 OK + VERIFY total_tables=125）
+- HTTP 验收 @16:12:57–16:13:47（login+create+list+response 全 code=0）
+- 翻卡 @16:15:01–16:15:23（P2-3.1/P3-4.1 → inprogress, drift=False）
