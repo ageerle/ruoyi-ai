@@ -113,14 +113,27 @@ class P064AcceptanceTest {
         }
     }
 
+    /**
+     * DEF-8 回归锁：归档区过滤必须 NULL 安全。
+     *
+     * <p>原断言只检查 {@code contains("NOT LIKE")}，属于「只锁 SQL 文本、不锁语义」的**假绿**：
+     * {@code NULL NOT LIKE '%x%'} 在 SQL 三值逻辑下为 NULL，remark 默认 NULL 的行会被整条排除，
+     * 归档区恒空，而本用例依旧全绿。现在额外锁住 {@code IS NULL} 与 {@code OR} 的嵌套形状。
+     *
+     * <p>注意：Mockito 不会真执行 SQL，本用例只是**形状锁**；「归档区真能查到 DELETED 行」的
+     * 语义证据由真库脚本给出：{@code docs/ipd-系统说明/验收/P0-9.1-业务链真实验收-20260905.py}
+     * 的 L5「归档区列表可见该申请」+ 真库对照 {@code SUM(remark NOT LIKE ...)} vs
+     * {@code SUM(remark IS NULL OR remark NOT LIKE ...)}。
+     */
     @Test
-    void archiveListReturnsOnlyNonPurgedEntries() {
+    void archiveListFilterIsNullSafeForUnpurgedRemark() {
         List<DeletionRequest> list = service.listArchive();
         assertThat(list).hasSize(2);
         ArgumentCaptor<Wrapper<DeletionRequest>> cap = ArgumentCaptor.forClass(Wrapper.class);
         verify(deletionRequestMapper, times(1)).selectList(cap.capture());
         String sql = cap.getValue().getSqlSegment();
-        assertThat(sql).contains("status").contains("NOT LIKE");
+        // DEF-8：必须同时具备 IS NULL 放行分支与 NOT LIKE 排除分支，且两者以 OR 相连
+        assertThat(sql).contains("status").contains("IS NULL").contains("OR").contains("NOT LIKE");
         LambdaQueryWrapper<DeletionRequest> wrapper = (LambdaQueryWrapper<DeletionRequest>) cap.getValue();
         assertThat(wrapper.getParamNameValuePairs().values())
             .contains("DELETED", "%" + DeletionArchiveService.PURGED_MARK + "%");
