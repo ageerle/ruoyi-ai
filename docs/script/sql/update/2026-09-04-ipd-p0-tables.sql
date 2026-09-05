@@ -414,7 +414,7 @@ create table bid_responses
 (
     id             bigint       not null comment '主键（雪花）',
     invitation_id  bigint       not null,
-    rd_pm_id       bigint       not null,
+    rd_pm_id       bigint       null     comment '研发PM ID（应标时可为空，遴选后回填）',
     response_note  varchar(500) null,
     status         varchar(16)  not null default 'PENDING' comment 'PENDING|ACCEPTED|REJECTED|WITHDRAWN',
     responded_at   datetime     null,
