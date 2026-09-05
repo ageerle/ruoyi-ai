@@ -97,8 +97,8 @@ class P143AcceptanceTest {
         assertThat(log.getEntityType()).isEqualTo("STAGE_ACTION");
         assertThat(log.getEntityId()).isEqualTo(1L);
         assertThat(log.getReason()).isEqualTo("完成");
-        assertThat(log.getBeforeData()).contains("status=IN_PROGRESS");
-        assertThat(log.getAfterData()).contains("status=DONE");
+        assertThat(log.getBeforeData()).contains("\"status\":\"IN_PROGRESS\"");
+        assertThat(log.getAfterData()).contains("\"status\":\"DONE\"");
     }
 
     @Test

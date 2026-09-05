@@ -179,7 +179,8 @@ public class StageActionService {
         auditLogService.append(AuditLog.builder()
             .operatorName(operator).operatorRole("PM")
             .action("CREATE").entityType("DELIVERABLE").entityId(d.getId())
-            .afterData("action=" + a.getActionCode() + ";file=" + fileName)
+            .afterData("{\"actionCode\":\"" + a.getActionCode() + "\",\"file\":\""
+                + fileName.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}")
             .build());
         return d;
     }
@@ -217,9 +218,11 @@ public class StageActionService {
     }
 
     private static String statusSnapshot(StageAction a) {
-        return "actionCode=" + a.getActionCode() + ";status=" + a.getStatus()
-            + ";version=" + a.getVersion()
-            + (a.getActualDoneAt() == null ? "" : ";actualDoneAt=" + a.getActualDoneAt().getTime());
+        // audit_logs.before_data/after_data 为 MySQL JSON 列，必须写合法 JSON
+        return "{\"actionCode\":\"" + a.getActionCode() + "\",\"status\":\"" + a.getStatus()
+            + "\",\"version\":" + a.getVersion()
+            + (a.getActualDoneAt() == null ? "" : ",\"actualDoneAt\":" + a.getActualDoneAt().getTime())
+            + "}";
     }
 
     private static Long actorIdOf(String operator) {
