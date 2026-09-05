@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.common;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.slf4j.MDC;
 
@@ -12,6 +13,7 @@ import java.util.Date;
  * 形状：{ code, message, data, timestamp, traceId }
  */
 @Data
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class ApiV1Response<T> implements Serializable {
 
     @Serial
@@ -39,6 +41,17 @@ public class ApiV1Response<T> implements Serializable {
 
     public static <T> ApiV1Response<T> fail(int code, String message) {
         return build(code, message, null);
+    }
+
+    /** API-01：advice 显式注入 traceId；MDC 不可达时由调用方兜底。 */
+    public static <T> ApiV1Response<T> fail(int code, String message, String traceId) {
+        ApiV1Response<T> r = new ApiV1Response<>();
+        r.code = code;
+        r.message = message;
+        r.timestamp = new Date();
+        r.traceId = traceId != null ? traceId
+            : (MDC.get("traceId") != null ? MDC.get("traceId") : MDC.get("X-Trace-Id"));
+        return r;
     }
 
     private static <T> ApiV1Response<T> build(int code, String message, T data) {
