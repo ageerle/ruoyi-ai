@@ -18,8 +18,16 @@
 - **注释清理**：ProductController 类注释、CertTemplateController `remove` 的 `@param operatorId` 改写。
 - **纪律遵守**：错峰+单模块+离线 `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Xxx test`（不带 -am 不带 clean，符合 OPS-09 假红/假绿双向防护）；commit 前 `mvn -o -pl ruoyi-modules/ruoyi-ipd test` 复核全模块绿。
 - **红绿纪律**：先确认 SecApi01OperatorIdContractTest 修复前 FAIL（13 个 offender）→ 修复后 PASS（1/1 GREEN）。
-- **验证结果**：`Tests run: 243, Failures: 0, Errors: 0, Skipped: 18`（P131DatabaseIntegrationTest 需真库，依设计跳过）。关键 acceptance：P062 5/5, P064 10/10, P111 11/11, P131 46/46, P143 11/11, P032 3/3, Api01 4/4, SecApi01 1/1 全部 GREEN。
+- **验证结果（commit-时复测 08:46）**：`Tests run: 243, Failures: 0, Errors: 0, Skipped: 18`（P131DatabaseIntegrationTest 需真库，依设计跳过）。关键 acceptance：P062 5/5, P064 10/10, P111 11/11, P131 46/46, P143 11/11, P032 3/3, Api01 4/4, SecApi01 1/1 全部 GREEN。
+- **post-commit 绿门禁（08:50 实际跑出）**：`Tests run: 245, Failures: 3, Errors: 1, Skipped: 18`——P111 11 跑 3 失败 1 错误。**根因不在本 commit**：失败落在 sibling 泳道 `ProjectService.java`（unstaged, +CoefficientChangeService AC-INC-15c 强制 S/A/B 默认系数）与 `P111AcceptanceTest.java`（unstaged, sibling 同步测试期望）。**证据链**：
+  - 我 commit `85a74c7` 内 6 files 不含 `ProjectService.java` / `CoefficientChangeService.java` / `P111AcceptanceTest.java`（git show --stat 已证）
+  - 失败信息 `"S/B 非默认系数须走双PM提议+产品组长确认（AC-INC-15c）"` 源码出处 `CoefficientChangeService` + `IpdPermissionCode`（不在我 commit 范围）
+  - 期间 08:46→08:50 sibling 注入 P1-2.1 在途实施，符合 OPS-09 假红防护预期
+  - 本会话 own 范围（5 controller + 1 IpdAuthServiceTest 断言）继续 GREEN：SecApi01OperatorIdContractTest 1/1 + IpdAuthServiceTest 10/10 重测均 PASS（错峰单模块离线 8:50 复跑证实）
+- **决策**：按 OPS-09 + single-writer，不抢 sibling 泳道。**不**修 P111 / 不回退 ProjectService，等 sibling 收口（按镜像 P1-2.1 owner = 兄弟会话）。
 - **commit**：`85a74c76e725c7a83e2d94761a2d36b66a5ceada`（6 files, +107/-214）。
+- **本会话 own-scope 绿门禁（08:52:48→08:52:57 PDT 复跑证实）**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=SecApi01OperatorIdContractTest,IpdAuthServiceTest test` → BUILD SUCCESS, Tests run: 11, Failures: 0, Errors: 0（SecApi01 1/1 + IpdAuthServiceTest 10/10 全部 GREEN）。本会话 commit 内变更已经过红绿纪律事后验证。
+- **全模块绿门禁结论**：post-commit 整体 `mvn -o -pl ruoyi-modules/ruoyi-ipd test` 不绿（P111 4 项失败归属 sibling 注入的 P1-2.1 AC-INC-15c 系数校验），但**本会话 own 范围**（5 controller + 1 IpdAuthServiceTest）已绿；剩余红 100% 属 sibling 泳道，按 OPS-09 让路，**不**回退、不抢改、不关闭 sibling 卡。
 - **看板**：本次 commit 后 `manage.py check` → has_drift:false / board_total:240 / unmanaged_cards:[]（零漂移）。SEC-API-01 状态已在镜像行 295 标记 ✅（兄弟会话实施，2026-09-05 登记），本轮为最终代码层清零。
 - **未越权**：未触碰 sibling 在改的 `IpdServiceExceptionAdvice.java` / `IpdPermission.java` / 域类 / DTO / service / executor / 文档 / 镜像 / 看板，符合 single-writer 纪律。
 - **单写入者声明**：本会话 2026-09-05 09:00 起 own 范围仅限 `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/{Project,Product,StageAction,GateElement,CertTemplate}Controller.java` + `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/IpdAuthServiceTest.java` + log.md 本条目。
