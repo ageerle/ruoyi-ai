@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-09-05 — 第十一轮 SEC-API-01 最终收口 + 滞后断言对齐（commit 85a74c7）
+
+- **SEC-API-01 客户端 operatorId 参数清零**：5 个 Controller 共 13 个写接口移除 `@RequestParam Long operatorId`，改用 `LoginHelper.getUserId()` / `LoginHelper.getUserIdStr()`。
+  - ProjectController: `create` / `changeStatus` / `advanceStage`（3 个）
+  - ProductController: `create` / `bindProject` / `changeStatus`（3 个）
+  - StageActionController: `transit` / `addDeliverable`（2 个，含 `String.valueOf(operatorId)` → `getUserIdStr()`）
+  - GateElementController: `create` / `update` / `disable`（3 个）
+  - CertTemplateController: `create` / `remove`（2 个）
+- **P0-7.2 滞后断言对齐**：`IpdAuthServiceTest.changePassword` / `changePasswordMinLength` 两个断言由 `ServiceException` 改为 `IpdAuthInputException`，对应 P0-7.2 收口后 service 层新抛异常的契约。
+- **注释清理**：ProductController 类注释、CertTemplateController `remove` 的 `@param operatorId` 改写。
+- **纪律遵守**：错峰+单模块+离线 `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Xxx test`（不带 -am 不带 clean，符合 OPS-09 假红/假绿双向防护）；commit 前 `mvn -o -pl ruoyi-modules/ruoyi-ipd test` 复核全模块绿。
+- **红绿纪律**：先确认 SecApi01OperatorIdContractTest 修复前 FAIL（13 个 offender）→ 修复后 PASS（1/1 GREEN）。
+- **验证结果**：`Tests run: 243, Failures: 0, Errors: 0, Skipped: 18`（P131DatabaseIntegrationTest 需真库，依设计跳过）。关键 acceptance：P062 5/5, P064 10/10, P111 11/11, P131 46/46, P143 11/11, P032 3/3, Api01 4/4, SecApi01 1/1 全部 GREEN。
+- **commit**：`85a74c76e725c7a83e2d94761a2d36b66a5ceada`（6 files, +107/-214）。
+- **看板**：本次 commit 后 `manage.py check` → has_drift:false / board_total:240 / unmanaged_cards:[]（零漂移）。SEC-API-01 状态已在镜像行 295 标记 ✅（兄弟会话实施，2026-09-05 登记），本轮为最终代码层清零。
+- **未越权**：未触碰 sibling 在改的 `IpdServiceExceptionAdvice.java` / `IpdPermission.java` / 域类 / DTO / service / executor / 文档 / 镜像 / 看板，符合 single-writer 纪律。
+- **单写入者声明**：本会话 2026-09-05 09:00 起 own 范围仅限 `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/{Project,Product,StageAction,GateElement,CertTemplate}Controller.java` + `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/IpdAuthServiceTest.java` + log.md 本条目。
+
 ## 2026-09-05 — 依次执行①P1-2.1 ②P0-6.2 Gate/证书旁路（Mock 58 绿）
 
 - **① P1-2.1**：四基准+模板/市场/主组必填；S/A/B 默认系数；AC-INC-12~15b；强制 DRAFT；`P121AcceptanceTest` 7 绿。看板 `84d194ab` 保持 inprogress/PARTIAL。
@@ -355,4 +373,19 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
   - P0-7.2-ERRATA-20260905.md — stale 描述：IpdAuthService.changePassword() 第112行实抛 IpdAuthInputException.Reason.CURRENT_PASSWORD_INCORRECT 而非 ServiceException；Controller catch 是活代码；PASSWORD_CHANGE_REJECTED 审计可达。原报告 P0 缺陷章节应撤销，AC-AUTH-03 子项升级为静态满足。
   - P0-8.1-ERRATA-20260905.md — stale 描述：must_change_pwd 端到端四节点全在主仓（IpdMockDataInitializer L97 → Person L48-49 → IpdAuthService.scopeOf L45 → IpdPermission L93），加改密清零 L118 闭环。AC-2 从部分满足升级为静态满足。
 - **下一轮交付方**: P0-7.2 / P0-8.1 状态同步由主协调会话在 inreview 流程内决定（结合修复后 30/30 GREEN + errata 静态证据）。
+- **OPS-09 登记**: 本会话本轮未创建新卡、未重复执行同指令、未绕过并发写单一写入者约束。
+
+---
+
+## 第十轮 2026-09-05 — 全局闭环治理 AUD-GOV-01 第二方独立复核（Qoder 独立复核会话 r2）
+
+- **会话**: 独立复核会话（root-94ae 主协调之外的第二方）
+- **基线 HEAD**: 7092b9e5（随动）　**登记时间**: 2026-09-05T08:45 PDT
+- **写权限范围**: 仅新增 docs/ipd-系统说明/验收/全局独立复核-20260905-r2.md + drift 归零窗口内一次性 set AUD-GOV-01（登记本轮证据）
+- **不动**: 任何 Java 源码（遵 SSOT L311 用户本轮边界）、log.md 既有内容、manage.py、其他看板卡
+- **独立验证（错峰/单模块/无 -am 无 clean）**: 08:35 test-compile 假红（StageActionController 缺 RequestParam import，兄弟在途）→ 08:36 BUILD SUCCESS 自愈；08:37 IpdAuthServiceTest 10/0 + IpdAuthChangePasswordExceptionTest 6/6 = 16/16 全绿。
+- **关键发现**: API-03 修复方向已落地（advice 增 IpdAuthInputException→PARAM_INVALID(10001)→HTTP400 handler），但 Api03AcceptanceTest（MockMvc 真实 HTTP 反例）仍缺失 → 未闭环，禁仅凭服务层绿关闭（假绿防护）；实施归兄弟 owner，本会话不抢改。
+- **看板治理观测**: reconcile 一度卡死（P0-6.2 未纳管 + P1-2.1 重复 2 卡）约 6 分钟自愈至 drift:False 240/240；捕捉 08:39–08:41 归零窗口 set AUD-GOV-01，写后 check exit 0，零新漂移。
+- **交付物**: 验收/全局独立复核-20260905-r2.md（盘点/独立验证/API-03 缺口/看板卡死自愈/治理清单/风险/看板处置）。
+- **用户裁决**: 维持治理护栏（不越界改 Java、不扩大蜂群）+ 暂不推送 origin。
 - **OPS-09 登记**: 本会话本轮未创建新卡、未重复执行同指令、未绕过并发写单一写入者约束。
