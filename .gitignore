@@ -73,3 +73,12 @@ logs/
 .codex/
 # Claude Flow runtime data
 # Environment variables
+# Runtime state / swarm / daemon caches (not deliverables)
+.swarm/
+.cursor/
+.zvec-grep/
+ruvector.db
+.claude-flow/daemon-state.json
+.claude-flow/policy/state.json
+ruoyi-ai/
+.agents/skills/
