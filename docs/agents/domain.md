@@ -53,21 +53,19 @@ Multi-context repo (presence of `CONTEXT-MAP.md` at the root):
 - `AGENTS.md` —— mattpocock-skills 装的 agent 规范
 
 ### 改造设计
-- `docs/开发说明/开发说明书.md` —— 1305 行 + 12 条硬约束 + 业务规则 + 数据模型 + API 契约 + 49 页规格
+- `docs/开发说明/开发说明书.md` —— 1305 行 + 11 条硬约束（G-01~G-11）+ 业务规则 + 数据模型 + API 契约 + 49 页规格
 - `docs/开发说明/spec/_导航地图.md` —— 49 页清单 + 跳转关系 + 权限矩阵
 - `docs/开发说明/spec/_公共规范.md` —— UI / 视觉 / 文案 / 术语「宪法」
 
 ### 改造工程（新增）
-- `docs/ipd-系统说明/drift-audit-report.md` —— 漂移审计（基线 vs 目标）
+- `docs/ipd-系统说明/开发文档一致性报告.md` —— 文档一致性审计（§六 为终局口径）
 - `docs/ipd-系统说明/改造检查清单.md` —— 静态检查 + CI 集成
 - `docs/ipd-系统说明/type-mapping.md` —— PostgreSQL → MySQL 字段类型映射
 - `docs/ipd-系统说明/naming-convention.md` —— 表命名 + 字段命名 + API 路径
 
-### 外部资源骨架（待填充）
-- `docs/ipd-系统说明/外部资源/IPD系统_AI开发主Prompt_v3.md`
-- `docs/ipd-系统说明/外部资源/IPD系统_六阶段标准动作清单_v3.md`
-- `docs/ipd-系统说明/外部资源/IPD系统_五大Gate评审要素_v1.md`
-- ...（共 10 个骨架文件）
+### 外部资源（原文已填充，2026-09-04）
+- `docs/ipd-系统说明/外部资源/`：7 个核心（v3 Prompt / 六阶段清单 v3 / 五大Gate要素 / 验收清单 v2.1 = 237 条 AC / AI必读 / 冲突裁决 / 决策表 v2）+ 前端规范 2 件 + `mock-data.js`（Q2 = 回款口径）
+- 清单与适配状态见 `fork-原与外部资源清单.md`
 
 ### RuoYi-AI 基线知识
 - `docs/wiki/wiki/index.md` —— 21 篇文章清单

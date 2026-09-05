@@ -109,7 +109,6 @@
 │   │
 │   ├── ipd-系统说明/                      ← 本次新增：二开漂移审计 + 改造指南（**这是你做改造时的工作手册**）
 │   │   ├── README.md                    本目录总览（怎么读、各文件用途）
-│   │   ├── drift-audit-report.md        drift 审计报告（哪些一致 / 哪些冲突）
 │   │   ├── 改造检查清单.md              静态检查脚本路径修正 + CI 集成
 │   │   ├── type-mapping.md               PostgreSQL → MySQL 类型映射表
 │   │   ├── naming-convention.md          Sys* vs 文档名的命名约定
@@ -200,7 +199,7 @@
 
 **第 4 步**：读 `docs/开发说明/开发说明书.md`（主文档），60 分钟，理解业务规则 + 数据模型 + API + 构建顺序
 
-**第 5 步**：读 `docs/ipd-系统说明/drift-audit-report.md`，20 分钟，知道哪些一致 / 哪些冲突
+**第 5 步**：读 `docs/ipd-系统说明/开发文档一致性报告.md`，20 分钟，掌握跨文档一致性终局口径（§六）
 
 **第 6 步**：根据要做的工作，读对应模块的 `docs/wiki/wiki/modules/*.md` 理解 RuoYi-AI 基线
 

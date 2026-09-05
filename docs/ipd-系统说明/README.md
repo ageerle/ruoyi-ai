@@ -10,7 +10,6 @@
 docs/ipd-系统说明/
 ├── README.md                       ← 你在这里
 ├── 开发文档一致性报告.md             ← 跨文档一致性审计（2026-09-04 完成）
-├── drift-audit-report.md           ← Drift Audit 报告（哪些一致 / 哪些冲突）
 ├── 改造检查清单.md                  ← 静态检查脚本路径修正 + CI 集成方案
 ├── type-mapping.md                  ← PostgreSQL → MySQL 字段类型映射表
 ├── naming-convention.md             ← Sys* 风格 vs 文档命名约定
@@ -37,7 +36,6 @@ docs/ipd-系统说明/
 | 文件 | 何时读 | 谁写 | 谁读 |
 |---|---|---|---|
 | `README.md`（本文件） | 第一次接触本目录 | Claude Code | 所有 |
-| `drift-audit-report.md` | 改造前 / 阶段验收 | Claude Code | 二开 owner |
 | `改造检查清单.md` | 提交 PR 前 / CI 失败排查 | Claude Code | 二开工程师 |
 | `type-mapping.md` | 设计新表字段时 | Claude Code | 后端工程师 |
 | `naming-convention.md` | 设计新表 / 新 controller 时 | Claude Code | 后端工程师 |
@@ -51,7 +49,7 @@ docs/ipd-系统说明/
 ### 路径 A：第一次做改造（推荐）
 
 1. **本文件**（README.md）—— 5 分钟，建立心智模型
-2. **`drift-audit-report.md`** —— 30 分钟，理解基线 vs 目标的所有差异
+2. **`开发文档一致性报告.md`** —— 30 分钟，理解跨文档一致性终局口径（§六）
 3. **`改造检查清单.md`** —— 20 分钟，知道哪些检查项必须做
 4. **按需读**：`type-mapping.md` / `naming-convention.md` —— 边写代码边查
 5. **`fork-原与外部资源清单.md`** —— 评估与上游同步时
@@ -101,7 +99,7 @@ RuoYi-AI 仓库根
 | 文档 G-04 与 v3 冲突 → 引用 v3 裁定 | Gavin | 改 `docs/开发说明/` |
 | RuoYi-AI 上游重大更新 | Claude Code | update `fork-原与外部资源清单.md` |
 | 完成 P 阶段验收 | 二开 owner | update `改造检查清单.md` |
-| 新增 drift 发现 | Claude Code | update `drift-audit-report.md` + `开发文档一致性报告.md` |
+| 新增 drift 发现 | Claude Code | update `开发文档一致性报告.md`（附轮次记录） |
 | 新增 IPD 业务表 / 接口 | 后端工程师 | 遵循 `type-mapping.md` + `naming-convention.md` |
 | 硬约束数量 / 业务规则 / 算例值变化 | 二开 owner + Claude Code | update `开发文档一致性报告.md` §C |
 
