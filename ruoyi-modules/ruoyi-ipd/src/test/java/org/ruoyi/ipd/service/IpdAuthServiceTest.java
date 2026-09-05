@@ -124,7 +124,7 @@ class IpdAuthServiceTest {
         when(personMapper.selectById(7L)).thenReturn(p);
 
         assertThatThrownBy(() -> service.changePassword(7L, "bad-old", "newPassword1"))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdAuthInputException.class)
             .hasMessageContaining("原密码");
 
         service.changePassword(7L, "plain", "newPassword1");
@@ -136,7 +136,7 @@ class IpdAuthServiceTest {
     @DisplayName("新密码最短 8 位")
     void changePasswordMinLength() {
         assertThatThrownBy(() -> service.changePassword(7L, "plain", "short1"))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdAuthInputException.class)
             .hasMessageContaining("8 位");
     }
 
