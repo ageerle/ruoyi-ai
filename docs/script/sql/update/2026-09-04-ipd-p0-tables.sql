@@ -172,7 +172,6 @@ create table stage_actions
     status         varchar(16)   not null default 'NOT_STARTED' comment '状态 NOT_STARTED|IN_PROGRESS|DONE|DELAYED|NA',
     is_blocking    char(1)       not null default '0' comment '是否阻断跳阶（1是）',
     actual_done_at datetime      null     comment '实际完成时间（轻管核心字段 BR-IPD-05）',
-    remark         varchar(200)  null,
     far_value      decimal(10,6) null     comment 'D11/Z01 BioCV 误识率 FAR',
     frr_value      decimal(10,6) null     comment 'D11/Z01 BioCV 拒识率 FRR',
     cert_no        varchar(64)   null     comment 'V02 认证证书编号',
