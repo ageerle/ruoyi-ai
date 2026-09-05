@@ -133,7 +133,7 @@ public class StageActionService {
         }
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int ensureBioComplianceMount(Long projectId) {
         Long bioCount = stageActionMapper.selectCount(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
@@ -165,7 +165,7 @@ public class StageActionService {
         return 1;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Deliverable addDeliverable(Long actionId, String fileName, Long ossId, String operator) {
         StageAction a = getById(actionId);
         Deliverable d = Deliverable.builder()
@@ -189,7 +189,7 @@ public class StageActionService {
      * 1 次 selectList（取项目所有已有 action codes）+ 1 次 insertBatch（批量插入剩余）。
      * 69 动作 CONCEPT 阶段 = 138 IO → 2 IO，P99 下降 ~250ms → ~20ms。
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int instantiate(Long projectId, Long stageId, String stage) {
         Set<String> existingCodes = stageActionMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()

@@ -35,8 +35,9 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ApiV1Response<Project> create(@RequestBody Project project, @RequestParam Long operatorId) {
-        return ApiV1Response.ok(projectService.create(project, operatorId));
+    public ApiV1Response<Project> create(@RequestBody org.ruoyi.ipd.dto.ProjectCreateReq req, @RequestParam Long operatorId) {
+        // CODE-01：白名单 DTO，code/currentStage/status/source 由服务端定，客户端不可注入
+        return ApiV1Response.ok(projectService.create(req.toEntity(), operatorId));
     }
 
     @PostMapping("/{id}/status")

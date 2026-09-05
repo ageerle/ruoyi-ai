@@ -31,15 +31,16 @@ public class GateElementController {
     }
 
     @PostMapping
-    public ApiV1Response<GateElement> create(@RequestBody GateElement element, @RequestParam Long operatorId) {
-        return ApiV1Response.ok(gateElementService.create(element, String.valueOf(operatorId)));
+    public ApiV1Response<GateElement> create(@RequestBody org.ruoyi.ipd.dto.GateElementCreateReq req, @RequestParam Long operatorId) {
+        // CODE-01：白名单 DTO，id/tenantId/delFlag 不可注入
+        return ApiV1Response.ok(gateElementService.create(req.toEntity(), String.valueOf(operatorId)));
     }
 
     @PostMapping("/{id}/update")
-    public ApiV1Response<GateElement> update(@PathVariable Long id, @RequestBody GateElement patch,
+    public ApiV1Response<GateElement> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.GateElementUpdateReq req,
                                              @RequestParam Long operatorId) {
-        patch.setId(id);
-        return ApiV1Response.ok(gateElementService.update(patch, String.valueOf(operatorId)));
+        // CODE-01：白名单 DTO，gateCode/elementCode 编码不可改
+        return ApiV1Response.ok(gateElementService.update(req.toPatch(id), String.valueOf(operatorId)));
     }
 
     /** 停用（禁删：在途判定引用证据链） */

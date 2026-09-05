@@ -36,8 +36,14 @@ public class ProductController {
     }
 
     @PostMapping
-    public ApiV1Response<Product> create(@RequestBody Product product, @RequestParam Long operatorId) {
-        return ApiV1Response.ok(productService.create(product, operatorId));
+    public ApiV1Response<Product> create(@RequestBody org.ruoyi.ipd.dto.ProductCreateReq req, @RequestParam Long operatorId) {
+        // CODE-01：白名单 DTO；source 三路枚举校验（BR-PROD-01），projectId/status 不可注入
+        String src = req.source();
+        if (src != null && !src.isBlank()
+            && !Product.SRC_ADMIN_IMPORT.equals(src) && !Product.SRC_PM_NEW.equals(src)) {
+            throw new org.ruoyi.common.core.exception.ServiceException("产品来源非法（允许 ADMIN_IMPORT|PM_NEW）: " + src);
+        }
+        return ApiV1Response.ok(productService.create(req.toEntity(), operatorId));
     }
 
     @PostMapping("/{id}/bind-project")
