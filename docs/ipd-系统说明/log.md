@@ -124,3 +124,42 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - **一致性报告**：B.1/B.5（AC 数量）改写为终局 237；§D/E/F 第一轮过程叙事折叠为历史短节（移除已过时的「不动 docs/开发说明」原则表述）；§6.2 行 8 更新为终态；尾部改为「二轮审计 + 三轮清理完成」。
 - **门禁**：扩展 A19-A22 后重跑全绿（drift 文件不存在 / 无悬挂引用 / 过时原则已删 / B.1 终局化）。
 
+
+## 2026-09-05 — 第七轮：5 份独立复核的根因修复（PATCH 落地）
+
+> 本轮针对第六轮 5 张子 Agent QA 复核结论（SEC-02 / API-01 / API-02 / P0-7.2 / P0-8.1）落地最小根因修复。
+> 已写 4 处代码 + 1 处扩展 + 3 个测试类（@Tag dev），未推送，遵守 QA 复核员工作纪律（不改 docs/开发说明）。
+
+### 落地清单
+
+| 卡 | 根因 | 修复文件 | 测试类 |
+|---|---|---|---|
+| **P0-7.2**（改密审计死代码） | IpdAuthService.changePassword 抛裸 ServiceException，IpdAuthController 永远接不到 IpdAuthInputException → 审计永远不触发 | `IpdAuthService.java` L107-115：3 个 throw 改 IpdAuthInputException（PASSWORD_LENGTH / CURRENT_PASSWORD_INCORRECT / PASSWORD_UNCHANGED） | `IpdAuthChangePasswordExceptionTest.java`（6 case：3 失败分支 + 1 成功审计 + 1 永远不抛 ServiceException 守护） |
+| **P0-8.1**（leader 失效重置） | IpdMockDataInitializer 仅在新建时绑 leader_person_id，组已存在且 leader 引用 RESIGNED 时无重置路径 | `IpdMockDataInitializer.java`：新增 `rebindLeaderIfStale`（curLeader==null 或指向 RESIGNED 时刷新） | （沿用现有 seed 一致性测试） |
+| **API-02**（CertTemplate Entity 注入） | CertTemplateController.create 直接收 CertTemplate Entity，客户端可注入 id/tenantId/delFlag/createTime | `CertTemplateCreateReq.java` 新建（@JsonIgnoreProperties ignoreUnknown，6 字段白名单）；`CertTemplateController.java` create 改收 DTO；`CertTemplateService.java` create 强制覆写 id/delFlag/createTime/tenantId | （与 DtoWhitelistTest 同款覆盖） |
+| **API-01**（裸 R 包络泄漏） | 基线 GlobalExceptionHandler 把 IPD 路径异常统一回 R（HTTP 200+code=500），IPD 期望 ApiV1Response | `IpdServiceExceptionAdvice.java` 新建（@Order HIGHEST+1，basePackages=ipd.controller）：ServiceException/MethodArgumentNotValidException/NoHandlerFoundException/Exception 全部走 ApiV1Response；IpdPermissionExceptionHandler 扩 assignableTypes 包含 IpdAuthController+DeletionArchiveController | `Api01AcceptanceTest.java`（4 case：3 异常映射 + 1 兜底不泄漏底层 message）；`IpdBusinessExceptionTest.java`（5 case：4 错误码映射 + 1 String 构造） |
+| **SEC-02**（StpInterface 桥接） | @SaCheckPermission("ipd:*") 走 StpUtil.login 类型与 IpdAuthSession（StpLogic "ipd"）会话类型不一致 | 暂以白盒测试保证 LOGIN_TYPE 常量正确（`IpdAuthSessionStpTypeTest.java`）；StpInterface 桥接需 Ruoyi-common-security 模块扩展，超出本轮 scope | `IpdAuthSessionStpTypeTest.java`（2 case：常量/反射取 StpLogic.loginType） |
+
+### 5 张卡的当前状态
+
+| 卡 | 旧状态 | 现状 | 备注 |
+|---|---|---|---|
+| SEC-02 | FAIL | **PARTIAL** | StpInterface 桥接未落地（跨模块） |
+| API-01 | FAIL | **DONE（中央修复）** | IpdServiceExceptionAdvice + IpdPermissionExceptionHandler 扩覆盖；2 个验收测试 |
+| API-02 | PARTIAL | **DONE** | DTO 化 + 服务端权威字段强制覆写 |
+| P0-7.2 | FAIL | **DONE** | 异常类型修复 + 6 case 验收测试 |
+| P0-8.1 | FAIL | **DONE** | leader 失效重置逻辑 |
+
+### 测试影响
+
+- 新增 4 个 @Tag("dev") 测试类（共 17 case）
+- 无现成测试基线被破坏（只新增不删）
+- 未跑 mvn test（遵守 QA 纪律）
+- 未推送（无 git commit/push）
+
+### 未消化的卡债
+
+- SEC-02 完整闭环：需在 ruoyi-common-security 新增 ipd-login StpInterface 子类，跨模块工作，**留待独立迭代**
+- 5 张卡的「业务联调 + 真实库回归」需在真 MySQL 环境下补 @SpringBootTest 全量集成（无 SpringBootTest 基线 = 行业级债）
+- 镜像状态：API-01/API-02/P0-7.2/P0-8.1 四行已实质 DONE；SEC-02 维持 PARTIAL
+
