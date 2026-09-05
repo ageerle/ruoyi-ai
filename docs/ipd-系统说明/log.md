@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-05 — SEC-API-02：StpInterface 桥接使 @SaCheckPermission 对 ipd 生效（方案 A）
+
+- **根因**：基线 `security.excludes` 含 `/api/v1/**`，SaInterceptor 不进 IPD；且注解未设 `type=ipd` 时落到默认 `login` StpLogic；全局 `SaPermissionImpl` 只认 sys_user。
+- **落地**：
+  - `IpdRolePermissionCatalog`：personType→权限码矩阵（与 `IpdPermission.require*` 对齐）
+  - `IpdStpInterfaceBridge` + `@Primary` Bean：`loginType=ipd` 查 Person；否则委托 `SaPermissionImpl`
+  - 全部 IPD Controller `@SaCheckPermission(..., type = IpdAuthSession.LOGIN_TYPE)`
+  - `IpdWebSecurityConfig`：登录拦截 + `SaInterceptor` 注解鉴权
+  - `NotPermissionException`/`NotRoleException` → ApiV1 403
+- **验证**：`SecApi02StpInterfaceTest` + `IpdAuthSessionStpTypeTest` + `SecApi01OperatorIdContractTest` → 7 tests GREEN
+- **看板**：`d00ae4e7-5e07-42df-b519-fba9fe623ba0` → done
+
 ## 2026-09-05 — 第六轮：三 Agent 审查 P0 清零（5 卡 TDD 闭环 / 6 commits）
 
 - 3 专业 agent 并行审查（security/performance/code review）产出 9 P0 → 拆 5 张修复卡（PERF-01/02/03 + SEC-AUD-01 + CODE-01），本轮全部 TDD 闭环清零：
@@ -184,4 +196,20 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
   5. API-02: CertTemplateController 补 CertTemplateCreateRequest.java DTO（含 @JsonIgnoreProperties），4 个 DTO record 补 JSR-303 注解，Api02AcceptanceTest 归仓。
 - **本轮不做**（non-goals）：不改产品圣经 docs/开发说明/**、不修编译错误的实体缺失 getter（编译已通过）、不修 src/test/java 缺失的 4 个 AcceptanceTest 归仓（专项工作）、不 git push（pre-commit hook 阻断）。
 - **HEAD**：34e62d9d（继承自 9453105c 精化版计划镜像）；本轮工作树 60+ 文件变更待 commit（6 份验收报告 + log.md + 镜像修正 + 29 个 java 改动）。
+
+
+
+### 第七轮 green gate 验证（mvn test 19.338s）
+
+执行命令：mvn test -Dtest='P062AcceptanceTest,P064AcceptanceTest,P131AcceptanceTest,P143AcceptanceTest' -pl ruoyi-modules/ruoyi-ipd -Dsurefire.failIfNoSpecifiedTests=false
+
+结果：
+- P062AcceptanceTest: 5/5 PASS
+- P064AcceptanceTest: 10/10 PASS
+- P143AcceptanceTest: 10/10 PASS
+- P131AcceptanceTest: 46/46 PASS
+- 合计: Tests run: 71, Failures: 0, Errors: 0, Skipped: 0
+- BUILD SUCCESS
+
+结论：71/71 PASS。早先观察到的 Person/Product/CertTemplate 实体 "找不到 Lombok getter" 编译警告被证实为 stale——实际 mvn compile -pl ruoyi-modules/ruoyi-ipd = BUILD SUCCESS，所有 71 个测试全绿。IpdBusinessException extends RuntimeException（已不继承 final ServiceException）后相关 advice 链正常工作。
 
