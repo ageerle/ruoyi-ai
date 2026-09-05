@@ -39,12 +39,14 @@ class ProjectServiceTest {
     private AuditLogService auditLogService;
     @Mock
     private GateEngine gateEngine;
+    @Mock
+    private ProjectBootstrapService projectBootstrapService;
 
     private ProjectService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine);
+        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService);
     }
 
     private Project base(String level, String coefficient, String reason) {
@@ -93,6 +95,7 @@ class ProjectServiceTest {
         assertThat(created.getCurrentStage()).isEqualTo("CONCEPT");
         assertThat(created.getStatus()).isEqualTo("DRAFT");
         assertThat(product50().getProjectId()).isEqualTo(created.getId());
+        verify(projectBootstrapService).bootstrap(created.getId(), 1L);
         verify(auditLogService).append(any());
     }
 
