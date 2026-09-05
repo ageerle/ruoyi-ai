@@ -1039,3 +1039,53 @@ v7 矩阵 verify 端点返回 chain=BROKEN、断裂 368/381。SQL 定性（15:48
 - DDL 执行日志 @16:07:29（9表 OK + VERIFY total_tables=125）
 - HTTP 验收 @16:12:57–16:13:47（login+create+list+response 全 code=0）
 - 翻卡 @16:15:01–16:15:23（P2-3.1/P3-4.1 → inprogress, drift=False）
+
+---
+
+## 2026-09-05 DEF-4 审计哈希链闭环 + DEF-5 新缺陷发现（第二方治理会话，16:04–16:26）
+
+> 用户指令「按照建议执行」= 生产就绪报告 §六 关键路径。第 1 刀 SEC-02 已于 15:51 闭环（§SEC-02 收口轮），本节为第 2 刀 DEF-4。
+
+### 四层根因（逐层剥离，前次仅识别到 ①②③）
+1. **verifyChain 结构性全断**：误用 `orderByDesc` wrapper + 硬编码 GENESIS/seq=1 起点 → 368 断裂中 366 为遍历方向错误所致的假断（368=当时全量行数）。
+2. **写读毫秒不对称**：`create_time` 列 `datetime(0)`，append 用 `currentTimeMillis` 参与哈希、且原实现两次取 `now`。
+3. **无锁竞态**：`selectLast → insert` 多实例共库无串行化，实证 seq=150 prev 失配（03:18）。
+4. **第四层（本轮新发现，最关键）**：MySQL `datetime(0)` 对毫秒是**四舍五入**（≥.500 进位到下一秒），而修复用的 `secondMillis` 是**截断** → 约半数新行读回时间 +1s → 重算哈希失配。
+   - 实测证据：`tz_probe` 临时表 INSERT `.400/.500/.700/.999` → 存 `.000/.001(进位)/.001/.001`。
+   - 真库证据：seq=406/407（REBUILD_CHAIN 行，新代码所写）在 rebuild 后**立即断裂**，且第 2 次 rebuild 修完又断在同 seq → 排除并发污染，定位为写入侧自污染。
+   - 修复：`append` 写库前 `createTime` 毫秒归零（`new Date(secondMillis(base))`），存读同值。
+
+### 架构约束适配（DB 层最小权限）
+- `ipd_app` 表级对 `audit_logs` 仅 `SELECT, INSERT`（G-02 只追加意图）→ `SELECT ... FOR UPDATE` 报 `SELECT with locking clause command denied` → login 500/90001。
+- 适配：append 竞态防护改**纯 `DuplicateKeyException` 重试**（`uk_audit_seq` 冲突自愈，权限内可跑）；长期方案 = QA-04 泳道 `audit_log_chain_heads` 原子递增（兄弟归属，本类不引用）。
+- `rebuildChain` 走临时授权：GRANT UPDATE @16:13:48 → 重建 → REVOKE @16:19:44（持权 ~6min）。
+
+### 提交链
+| commit | 内容 |
+|---|---|
+| `7cae2138` | 三修复（毫秒对称/升序锚定/竞态防护）+ 超管 `POST /api/v1/audit-logs/rebuild-chain` + `AuditChainSymmetryTest` 7 测 |
+| `c23fd1f2` | 适配 DB 最小权限：append 去 FOR UPDATE 改纯重试 |
+| `5b95a9d0` | 第四层根因：append 写库前毫秒归零；测试 `dbTruncated`→`dbRounded` 校正库语义 + 新增 ≥.500 进位契约测（8 测） |
+
+### 验收证据（16045 自有实例 `ruoyi-admin-def4.jar`，PID 64280 @16:18:33）
+- 单测：`AuditChainSymmetryTest` **8/8 绿** @16:18:05（Skipped=0）。
+- 真 HTTP：`DEF-4-审计链自洽验证-20260905.py` **24/24 ALL PASS** @16:21/16:23——rebuild fixed=404→`chain=OK` 断裂 0；6 次连续 `export/scope` 写入后仍 OK（第四层根因回归锁）；rebuild 幂等 fixed=0；seq 零跳号零重复；`rebuild-chain` 越权矩阵 NOAUTH 401/20001、MARKET/LEADER/RD 403/30001、ADMIN 200。
+- SEC-02 无回归：v7 矩阵复跑 **43/43 PASS** @16:24:41，且 `verify链状态=OK 断裂数=0`（SEC-02 收口时为 BROKEN/368）。
+- 库态：修复前 397 行/395 断裂 → 修复后 424 行/**0 断裂**（含兄弟实例并发写入行）。
+- 归档：`验收/DEF-4-审计链自洽验证-20260905.py`、`验收/DEF-4-审计链自洽验证结果-20260905.json`、`验收/QA-03-matrix-result-v7复跑-DEF4修复后-20260905.json`。
+
+### 新发现 DEF-5（U1，已建卡 todo，未自行修复）
+- **现象**：以 `ipd_app` 身份 `UPDATE audit_logs ... WHERE 1=0` 与 `DELETE FROM audit_logs WHERE 1=0` 均 exit 0 **放行**（零副作用探测 @16:22:04）。
+- **根因**：MySQL 权限**累加**（全局→库→表→列，任一上层授予即生效）。`SHOW GRANTS` 并存库级 `GRANT SELECT,INSERT,UPDATE,DELETE ON ipd_dev.*` 与表级 `GRANT SELECT,INSERT ON ipd_dev.audit_logs` → 库级 DML 覆盖表级收紧，**G-02「只追加」的 DB 层强制实际未生效**。
+- **连带解释**：DEF-4 期间对表级 UPDATE 的临时 GRANT/REVOKE 对运行时**无实效**（REVOKE 后 rebuild 仍 fixed=5）；而 FOR UPDATE 被拒属另一路径（锁定读检查表级权限，当时表级未授 UPDATE）。
+- **修复方向**：REVOKE 库级 DML 改全逐表授权（表级 grant 列表已近乎完备，须先比对 `information_schema.tables` 与 `mysql.tables_priv` 差集确保零功能回归），或触发器/只写视图隔离。
+- **未自行执行的原因**：直接 REVOKE 立即影响全部在跑实例（16039/16044/16045/81711），需停写窗口 + 全量回归；涉全局 DB 权限，建议归 QA-04 DB 结构泳道或 SEC 线（与 P1-4.2 迁移权限设计同源）。
+- 探测项已固化入 `DEF-4-审计链自洽验证-20260905.py` 的 **M8b**（当前 0/2 PASS，修复后应转 PASS）。
+
+### 看板
+- DEF-4 → **done ✅**（证据 note 入卡）；DEF-5 → **新建 todo ⬜**（发现 note 入卡）；镜像同步修正 DEF-4 行 `AuditHashChain` 路径笔误（`security/`→`util/`）。
+- `manage.py check`：board_total 243→**244**，unmanaged_cards=[]，**drift=false**。
+
+### 遗留（非阻塞）
+- 兄弟旧 jar 实例（16039 @15:37:53 / 16044 @15:25:58 / 81711 @15:51:03）均不含 `5b95a9d0`，若继续写审计会再产毫秒污染行 → **全实例升级 jar 后需复跑一次 rebuild 终验**（`AuditLogController.rebuildChain` javadoc 已预警运维顺序）。
+- 登录限流：同 IP 同账号 60 秒最多 5 次（`IpdAuthController` @RateLimiter），批量验证脚本须控制 login 频次或改用 `export/scope` 等非登录写入源。
