@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-05 — 第六轮：三 Agent 审查 P0 清零（5 卡 TDD 闭环 / 6 commits）
+
+- 3 专业 agent 并行审查（security/performance/code review）产出 9 P0 → 拆 5 张修复卡（PERF-01/02/03 + SEC-AUD-01 + CODE-01），本轮全部 TDD 闭环清零：
+  - **PERF-01**（c515b142）：ProjectService.nextCode 加 synchronized + DDL uk_projects_code/uk_projects_product（2026-09-05-ipd-perf01-nextcode-unique.sql）；50 并发取号唯一性测试 GREEN。
+  - **SEC-AUD-01 S2**（3f759dc9）：login 4 类失败分支（BAD_CREDENTIALS/RESIGNED/DISABLED/STATUS_ABNORMAL）补 auditFail 写审计，走 AuditLogService REQUIRES_NEW 独立提交；P0-1 changePassword 审计被回滚经核实为伪问题（append 已 REQUIRES_NEW）。
+  - **PERF-03**（537c71dc）：StageActionService.instantiate 由循环 selectCount×N+insert×N 改 1 次 selectList（in-memory Set 查重）+ 1 次 insertBatch(200)；138 IO→2 IO。
+  - **CODE-01**（4756a9fc）：StageActionService 3 处裸 @Transactional 补 rollbackFor（反射测试防回归）；新增 dto 包 4 record Req（@JsonIgnoreProperties 白名单），3 Controller 4 处 Entity 入参替换，服务端权威字段（code/status/source/gateCode 等）注入面归零。
+  - **PERF-02**（d168c04f）：**用户裁决配置变更立即生效（不允许 TTL 窗口）**——SystemConfigService 加 ConcurrentHashMap 只读缓存 + invalidate/invalidateAll 写穿透失效；computeIfAbsent 防击穿 + Optional.empty() 防穿透；单 JVM 定位，多实例需 Redis 广播。
+- 附带战场清理：恢复被外部进程反复清理的 auth 链 8 个支撑类（backup/.codex 冻结源，不同血统不可混用）；IpdAuthService 增补 scopeOf+PASSWORD_CHANGE_REQUIRED；P064 Sa-Token 1.44 API 名修复（d064dc05）。
+- 本轮共 22 个新测试全绿；未推送；任务状态同步本机看板（5 卡 done）。
+- 残留入口：SEC-AUD-01 refresh 审计+freeze 授权（地基已就位）/ SEC-01 operatorId 会话接管 / P0-3.2 参数后台端 / check_ipd.py 从 git 历史恢复 / PERF-01 DuplicateKeyException 异常语义。
+
 ## 2026-09-04 — 初始建立
 
 ### 创建文件
