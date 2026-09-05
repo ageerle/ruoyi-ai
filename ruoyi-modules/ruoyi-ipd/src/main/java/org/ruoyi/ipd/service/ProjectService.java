@@ -43,6 +43,7 @@ public class ProjectService {
     private final ProductMapper productMapper;
     private final AuditLogService auditLogService;
     private final GateEngine gateEngine;
+    private final ProjectBootstrapService projectBootstrapService;
 
     @Transactional(rollbackFor = Exception.class)
     public Project create(Project project, Long operatorId) {
@@ -72,6 +73,8 @@ public class ProjectService {
         // 产品回填 1:1 关联
         product.setProjectId(project.getId());
         productMapper.updateById(product);
+        // P1-3.1：bootstrap 六阶段 + 69 动作实例；同事务内执行（PERF-01 取号已 synchronized 保护）
+        projectBootstrapService.bootstrap(project.getId(), operatorId);
         audit(project.getId(), project.getName(), operatorId, "PROJECT_CREATE");
         return project;
     }

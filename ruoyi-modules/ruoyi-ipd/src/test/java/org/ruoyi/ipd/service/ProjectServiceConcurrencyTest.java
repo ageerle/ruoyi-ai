@@ -44,12 +44,14 @@ class ProjectServiceConcurrencyTest {
     private AuditLogService auditLogService;
     @Mock
     private GateEngine gateEngine;
+    @Mock
+    private ProjectBootstrapService projectBootstrapService;
 
     private ProjectService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine);
+        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService);
     }
 
     @Test
