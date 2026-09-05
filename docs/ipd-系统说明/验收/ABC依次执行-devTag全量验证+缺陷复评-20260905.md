@@ -268,3 +268,34 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*AcceptanceTest' test
 | 缺陷A-audit（Catalog 缺码） | ❌OPEN-BLOCKED | ❌OPEN-**BLOCKED**（live 403/30001 坐实缺口；Catalog 仍脏，移交 owner/净窗口） |
 
 > 探针脚本：`.codex/ipd-dev/defectB-live-verify.sh`（只读、gitignored scratch，复用 SEC-02 dev-seed 凭据）。全程未写库、未重启共享 app、未碰兄弟 36 脏文件。
+
+---
+
+## §11 ADDENDUM — 缺陷 A-audit 解封并由兄弟提交修复 + 本 QA 独立离线复验（15:50–15:52）
+
+> §10④/§9④ 判 A-audit「OPEN-BLOCKED（Catalog 全程脏）」。本节记录其在 §10 快照后**数秒内被兄弟提交解封并修复**，以及本第二方 QA 的**独立离线复验**（只读探针 + scoped 测试，未编辑 Catalog，守单一写入者）。
+
+**① 解封 + 修复归属（兄弟提交，非本 QA）**
+- `IpdRolePermissionCatalog.java` 于 **15:50:08 转 CLEAN**：兄弟提交 `8fa62686`「fix(ipd): SEC-02 缺陷A-audit——Catalog 补 ipd:audit-log:list/verify/export(超管专属)+Sec02AuditCatalogAcceptanceTest 契约锁5测」落地。
+- `git blame` 确认 Catalog L65-72（system-config 二码 + audit-log 三码 + A-audit 注释）均由 `8fa62686` 添加。ADMIN_WRITE 区现含 `ipd:audit-log:list/verify/export`，与 `AuditLogController` 三端点 `@SaCheckPermission`（L57 list / L69 verify / L81 export）字面量完全对齐。
+- **本 QA 未编辑 Catalog**：A-audit 修复由兄弟（Catalog 活跃写入者）完成，本 QA 转为**独立复验**其正确性——符合「只读探针 + 证据交付」泳道，不违单一写入者。
+
+**② 独立离线复验（scoped，错峰/单模块/无-am/无clean）**
+```
+mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Sec02AuditCatalogAcceptanceTest test
+→ Tests run: 5, Failures: 0, Errors: 0, Skipped: 0  BUILD SUCCESS @15:51:47（active builds 0）
+```
+- `Sec02AuditCatalogAcceptanceTest`（@Tag dev，反射比对控制器注解字面量↔Catalog 授予集）5 测全绿、**Skipped=0**（排除假绿）：① AuditLogController 每个 @SaCheckPermission 字面量（list/verify/export）均被 SUPER_ADMIN 持有；② SystemConfigController 三码均被 SUPER_ADMIN 持有；③ 审计三码**超管专属**——组长/市场PM/研发PM 均不持有（未过度授权）；④ system-config：read 全员可读、list/update 超管专属；⑤ 未知/空角色→空权限集。
+- 主源随该测试编译通过 → 早先（§9③）的兄弟 WIP 编译错（LegacyImportService/StageAction）未再现。
+
+**③ live-app A-audit 复验仍待 owner 重启（诚实边界）**
+- 运行 app `:16039`（pid76237/start **15:37:53**）**早于** `8fa62686`（15:50:08）→ app **未载** A-audit 三码。这正是 §10② 中「超管 /audit-logs → 403/30001」的成因（15:43 时源码与 app 均未补码，§10④ 证据在当时准确）。
+- 修复后 live 正例（超管 /audit-logs 应 **200** 而非 403）需 owner 从 HEAD ≥ `8fa62686` 重启 app 后复验；**离线契约测试已锁 Catalog↔控制器对齐**，live 复验是部署确认的最后一道（勿擅自重启共享实例）。
+
+**④ 判定再更新（本节为 A-audit 最终事实源，取代 §9④/§10④/§10⑥ 对应行）**
+
+| 项 | §10 判 | §11 终判 |
+|---|---|---|
+| 缺陷A-audit（Catalog 缺码） | ❌OPEN-BLOCKED（Catalog 脏） | ✅**FIXED（兄弟 8fa62686）+ VERIFIED（本 QA 离线 5/5@15:51:47）**；live-app 正例待 owner 重启 |
+
+> 至此 SEC-02 三缺陷全部收口：缺陷B（§10 双证闭合）、DEF-2（§9 单测锁）、A-audit（§11 兄弟修+本QA离线验）。本 QA 全程只读探针 + scoped 测试 + 隔离提交，未编辑 Catalog/未重启共享 app/未写库。
