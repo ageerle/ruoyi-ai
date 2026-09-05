@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.ProductService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +36,7 @@ public class ProductController {
      * @param keyword 可选关键字
      * @return 产品列表
      */
-    @SaCheckPermission("ipd:product:list")
+    @SaCheckPermission(value = "ipd:product:list", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<Product>> list(@RequestParam(required = false) String keyword) {
         return ApiV1Response.ok(productService.list(keyword));
@@ -47,7 +48,7 @@ public class ProductController {
      * @param id 产品 ID
      * @return 产品详情
      */
-    @SaCheckPermission("ipd:product:query")
+    @SaCheckPermission(value = "ipd:product:query", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{id}")
     public ApiV1Response<Product> get(@PathVariable Long id) {
         return ApiV1Response.ok(productService.getById(id));
@@ -59,7 +60,7 @@ public class ProductController {
      * @param req 白名单创建 DTO
      * @return 新建后的产品
      */
-    @SaCheckPermission("ipd:product:add")
+    @SaCheckPermission(value = "ipd:product:add", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
     public ApiV1Response<Product> create(@RequestBody org.ruoyi.ipd.dto.ProductCreateReq req) {
         String src = req.source();
@@ -78,7 +79,7 @@ public class ProductController {
      * @param projectId 项目 ID
      * @return 空成功体
      */
-    @SaCheckPermission("ipd:product:edit")
+    @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/bind-project")
     public ApiV1Response<Void> bindProject(@PathVariable Long id, @RequestParam Long projectId) {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
@@ -93,7 +94,7 @@ public class ProductController {
      * @param status 目标状态
      * @return 空成功体
      */
-    @SaCheckPermission("ipd:product:edit")
+    @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/status")
     public ApiV1Response<Void> changeStatus(@PathVariable Long id, @RequestParam String status) {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
