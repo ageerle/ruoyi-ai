@@ -107,6 +107,40 @@ public class DeletionRequestController {
         return ApiV1Response.ok(archiveService.purge(id));
     }
 
+    /**
+     * 申请人撤回：限申请人本人在 24h 内、未终态；超 24h 不可撤回（AC-DEL-06）。
+     * 权限用 SUBMIT 码 + actor.id 必须等于 requesterId（应用层兜底防越权自审）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/{id}/withdraw")
+    public ApiV1Response<DeletionRequest> withdraw(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(deletionRequestService.withdraw(id, actor.id()));
+    }
+
+    /**
+     * 组长逾期升级：扫 LEADER_REVIEW 状态 + leaderDueAt 已过 → 转 ADMIN_REVIEW（AC-DEL-07）。
+     * 超管专属（影响全库删申请，保守授权）；幂等可重复执行（已升级者不再被扫中）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_ADMIN, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/escalate-overdue")
+    public ApiV1Response<java.util.Map<String, Object>> escalateOverdue() {
+        ipdPermission.requireAdmin();
+        int escalated = deletionRequestService.escalateOverdueLeaderReview();
+        return ApiV1Response.ok(java.util.Map.of("escalated", escalated));
+    }
+
+    /**
+     * 超管逾期清单：ADMIN_REVIEW 状态 + adminDueAt 已过（仅查询，不自动通过；AC-DEL-07）。
+     * 超管专属。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_ADMIN, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/overdue-admin-review")
+    public ApiV1Response<java.util.List<DeletionRequest>> listOverdueAdminReview() {
+        ipdPermission.requireAdmin();
+        return ApiV1Response.ok(deletionRequestService.listOverdueAdminReview());
+    }
+
     /** 提交删除申请入参。 */
     public record SubmitReq(String entityType, Long entityId, String reason, String snapshot) {
     }
