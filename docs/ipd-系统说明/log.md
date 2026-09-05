@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-09-05 — P1-2.1 / AC-INC-15c / P0-6.2 失败路径 真库 HTTP 闭环
+
+- **环境**：`127.0.0.1:16039` + MySQL `13306/ipd_dev` + Redis `16379`；jar=`ruoyi-admin-a70dd749.jar`（`start_new_session`）
+- **证据**：`.codex/ipd-dev/runtime/evidence-p121-p062-inc15c.json`（summary 三项全 True）；失败路径另见 `evidence-p062-fail-not-deleted.json`
+- **P1-2.1**：立项缺系数 → DRAFT + 默认 1.5 + 奖金池 375000；S=2.5 / create 带 1.8 拒；双路并发编码唯一（PRJ-2026-006/007）
+- **AC-INC-15c**：`coefficient_change_requests` DDL+API；双PM提议 → 组长确认 → 项目系数 1.8；`ipd_app@127.0.0.1` 表级 GRANT
+- **P0-6.2 失败路径**：unsupported_probe 终审 → 10001；DB 仍 `ADMIN_REVIEW`（非 DELETED）
+- **附修**：`UserActionListener` 跳过 loginType≠login（修 jwt loginType 无效阻断登录）；`ProjectService.create` 编码冲突独立事务重试；`CoefficientChangeController` 用 `IpdActor` 非 LoginHelper；`IpdAuthSession.maxLoginCount=-1`
+- **单测**：ProjectService* + CoefficientChange + P121 → 17 绿（错峰单模块）
+- **看板**：`manage.py set P1-2.1/P0-6.2 done`；`check` has_drift=false
+
 ## 2026-09-05 — 第十一轮 SEC-API-01 最终收口 + 滞后断言对齐（commit 85a74c7）
 
 - **SEC-API-01 客户端 operatorId 参数清零**：5 个 Controller 共 13 个写接口移除 `@RequestParam Long operatorId`，改用 `LoginHelper.getUserId()` / `LoginHelper.getUserIdStr()`。
@@ -423,15 +434,20 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - `git log` + file path 查每个 7 张卡对应的真实 commit
 - 7 张镜像行 source_status 字段从「兄弟会话已落地」升级为「真实 commit 落地」/「证据不足降级」
 - `commit a0a2d54` docs(ipd): 核验7张纳管卡证据——真实commit挂载+DB-02降级inreview
+- **Bug发现**：第一轮编辑把 真实commit落地 写到了 cell[2] (acceptance 列)，manage.py 读 source_status 在 cell[3]——`plan()` 仍返回旧文
+- **修复**：写 `abfcca2` fix(ipd): 修正7张卡cell[2]/[3]错位——acceptance↔source_status互换
 - DB-02 看板卡 status 同步从 done → inreview（中间被 sibling 覆回一次，再 PUT 修正）
 
 ### 结果
 - 看板：240/240 managed, 0 unmanaged, has_drift=false
-- done 52, inreview 8 (DB-02 转入 inreview)
-- 用户偏好"不沿用未验证的完成标记"已实操：DB-02 证据不足不再伪完成
+- done 53, todo 176, inreview 8, inprogress 3（DB-02 转入 inreview）
+- **done 卡的证据分布**：git-hash 39 (was 33), integration 8, asserted-only 6（6 个剩余是有完整 Codex验收/实测文本的合法卡，regex 无法识别而已）
+- 用户偏好"不沿用未验证的完成标记"已实操：DB-02 证据不足不再伪完成；AUD-09 自身 commit 9453105 挂上
 
 ### 经验
 - on-board 兄弟会话卡时必须 grep 真实 commit，不能仅看 board card 的"✅"符号
 - 工作树 M/untracked 状态不算"已落地"——必须 git commit
 - "已 merge 入 X 验证"是合法的完成模式，但要在 source_status 里说清楚合并到哪里
 - 看板 card status 会因 sibling sync 重新被 mirror 覆盖——降级需要 PUT 后立即 verify
+| $(date "+%H:%M") | `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Sec02AcceptanceTest test` | Tests run 7 / **Failures 0** / Errors 0 | Sec02AcceptanceTest 7/7 绿：6 身份×3 组归属/canAccessGroup/requireAdmin/requireLeaderOrAdmin/未登录/EXTERNAL/FROZEN 覆盖；real-http-probe.sh 6×9 矩阵就位 | Sec02AcceptanceTest 真路由挂载真实现真测试；SEC-02 报告追写 9 段，residualGap 由 5 降至 3（3 控制器范围过滤/真实库种子/16039 窗口属主协调域）；状态保持 inreview/KEEP_PARTIAL 不翻 done |
+| 09:12 | `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Sec02AcceptanceTest test` | Tests run 7 / **Failures 0** / Errors 0 | Sec02AcceptanceTest 7/7 绿：6 身份×3 组归属/canAccessGroup/requireAdmin/requireLeaderOrAdmin/未登录/EXTERNAL/FROZEN 覆盖 | Sec02AcceptanceTest 真路由挂载真实现真测试；SEC-02 报告追写 9 段，residualGap 由 5 降至 3（3 控制器范围过滤/真实库种子/16039 窗口属主协调域）；状态保持 inreview/KEEP_PARTIAL 不翻 done |
