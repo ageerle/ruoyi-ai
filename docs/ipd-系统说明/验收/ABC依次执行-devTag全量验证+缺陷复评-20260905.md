@@ -226,3 +226,45 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*AcceptanceTest' test
 ```
 - 含 `DefectBAdviceAcceptanceTest` 5/5、`Api01` 4/4、`P064` 10/10、`Sec01` 13/13、`P054` 9/9 等 22 个验收类全绿；**Skipped=0** 排除假绿。③ 的静态零风险证被动态终证坐实——缺陷B advice 改动对 189 条现存验收零回归。
 - **判定再更新**：§9⑥ 表「全量 *AcceptanceTest 回归」⚠PARTIAL → ✅**COMPLETE（189/189 绿）**。缺陷B 收口证据链完整：单类 5/5（15:33:56）+ 全量 189/189（15:39:44）双时间戳。
+
+---
+
+## §10 ADDENDUM — 真库 HTTP 端到端复验（15:43–15:47，缺陷B 收口最后一道）
+
+> 承接 §9：MockMvc dispatch 已锁契约（单类 5/5 + 全量 189/189）。本节补**真库 HTTP 端到端复验**——直接 curl 运行中的 app（:16039），确认客户端真收到的 status/code 与契约一致，堵「单测绿但线上未部署/未生效」的最后一道假绿。
+
+**① app 新鲜度锚定（先证被测 app 载我的修复，再验行为）**
+- `:16039` pid=76237 start=**15:37:53**，晚于我的修复 `6628ab3b`（15:34:49）；但主源 15:35–15:39 曾被兄弟 WIP 阻断编译，启动时刻 jar 归属存疑 → **不轻信启动时间，改用行为探针定性**（遵 stale-app 教训）。
+- 决定性探针：缺陷B 修复会把 no-token `/audit-logs/scope` 从 **500/90001 翻成 401/20001**。实测 = **401/20001** → **app 确载 `6628ab3b`（FRESH）**；响应体 `timestamp` 为 UTC ISO（`...T22:43:36Z`）→ 佐证 P0-4.1 亦已部署。
+
+**② 真库 HTTP 复验矩阵（全部只读；复用 SEC-02 dev-seed 凭据，见 `bootstrap-accounts.json` / `sec02-rbac-matrix-probe.sh`）**
+
+| 探针（:16039 fresh app） | 触发路径 | 实测 | 修复前 |
+|---|---|---|---|
+| no-token `GET /audit-logs/scope` | `requireInternal`→`IpdPermissionException(401,UNAUTHORIZED)` | **401 / 20001** ✓ | 500/90001 |
+| no-token `GET /system-configs` | 同上（非白名单控制器） | **401 / 20001** ✓ | 500/90001 |
+| 超管 `GET /audit-logs`（老 list） | `@SaCheckPermission`→`NotPermissionException` | **403 / 30001** ✓ | 500/90001 |
+| 超管 `GET /audit-logs/verify` | 同上 | **403 / 30001** ✓ | 500/90001 |
+| 超管 `GET /audit-logs/export` | 同上 | **403 / 30001** ✓ | 500/90001 |
+| 超管 `GET /audit-logs/scope` | `requireInternal`→`IpdPermissionException(403,ACCOUNT_PASSWORD_CHANGE_REQUIRED)` | **403 / 20003** ✓ | 500/90001 |
+
+**③ 关键洞见——handleIpdPermission 保真透传（非硬编码）**
+- `/scope`→**20003** vs `/audit-logs`→**30001**：同为超管、同经缺陷B 新 handler，却返回**各自异常自带的 errorCode**（20003=首登改密 / 30001=NotPermission）→ 实证 `handleIpdPermission` **忠实透传 `e.getErrorCode()`**，非一刀切 403。三种码（20001/30001/20003）在真库 HTTP 上全部正确。
+- **缺陷B 在真库 HTTP 端到端坐实 FIXED**：非白名单控制器（AuditLog/SystemConfig）的身份/角色拒绝不再塌缩 500/90001，全部按契约映射 401/403。§9 MockMvc 契约证 + 本节真库 HTTP 证 = **双证据链闭合**。
+
+**④ 顺带再坐实 A-audit 缺口（live 实证，非静态推断）**
+- 超管在老三端点 `/audit-logs`(list)/`/verify`/`/export` 全部 **403/30001**（`NotPermissionException`）→ 因 `IpdRolePermissionCatalog` 缺 `ipd:audit-log:*` 码，超管未获授权。**A-audit 缺口在运行 app 上被具体坐实**（此前仅静态推断）。修复动作仍 BLOCKED（Catalog 全程脏 M，见 §9④）。
+
+**⑤ 诚实边界（两点未竟，均非缺陷B 范畴）**
+- 超管 seed 处 `mustChangePwd=1` 态 → `/scope` 的 **200/GLOBAL 正例**被 20003 前置拦截（未走到 scope 逻辑），非缺陷；正例待超管改密后或由 owner 用非首登态账号复验。
+- `陈市场`（MARKET_PM）登录返回 `token_len=0` → MARKET_PM 活体 RBAC 差异化**本轮未再验**；历史由 SEC-02/QA-03 覆盖（矩阵 62/62）。
+
+**⑥ 判定再更新（本节为缺陷B 最终事实源，取代 §9⑥ 对应行）**
+
+| 项 | §9 判 | §10 终判 |
+|---|---|---|
+| 缺陷B（advice 权限拒绝落 500） | ✅FIXED+VERIFIED（MockMvc 5/5+189/189） | ✅**FIXED+VERIFIED（MockMvc 契约 + 真库 HTTP 端到端双证闭合）** |
+| DEF-2（body 不可读落 500） | ✅FIXED（单测锁死） | ✅FIXED（同 advice 部署；真库未单独探 body，单测已锁契约） |
+| 缺陷A-audit（Catalog 缺码） | ❌OPEN-BLOCKED | ❌OPEN-**BLOCKED**（live 403/30001 坐实缺口；Catalog 仍脏，移交 owner/净窗口） |
+
+> 探针脚本：`.codex/ipd-dev/defectB-live-verify.sh`（只读、gitignored scratch，复用 SEC-02 dev-seed 凭据）。全程未写库、未重启共享 app、未碰兄弟 36 脏文件。
