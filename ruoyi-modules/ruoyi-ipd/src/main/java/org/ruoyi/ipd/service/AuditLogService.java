@@ -27,7 +27,9 @@ import java.util.List;
  *       否则写入用毫秒、verify 读回恒 .000 → 全行重算必失配；</li>
  *   <li>verifyChain 升序遍历＋锚定库内首行（原实现误用降序 wrapper 且硬编码 GENESIS/seq=1，
  *       结构性全行断判）；</li>
- *   <li>append 尾行 FOR UPDATE 当前读＋唯一键冲突重试：多实例共库串行化，防 prev/seq 竞态断链。</li>
+ *   <li>append 唯一键冲突重试：DB 层最小权限（ipd_app 对 audit_logs 仅 SELECT,INSERT，
+ *       G-02 只追加的强制）禁 FOR UPDATE 当前读，竞态防护 = uk_audit_seq 冲突自愈重试；
+ *       长期方案 = QA-04 泳道 audit_log_chain_heads 原子递增（归属兄弟，本类不引用）。</li>
  * </ol>
  *
  * <p>P0-5.4 补范围查询/导出：{@link #listByOperatorIds} / {@link #countByOperatorIds}
@@ -55,7 +57,8 @@ public class AuditLogService {
         }
         DuplicateKeyException conflict = null;
         for (int attempt = 0; attempt < APPEND_MAX_ATTEMPTS; attempt++) {
-            AuditLog last = selectLastForUpdate();
+            // DEF-4：无 FOR UPDATE（DB 最小权限禁锁定读），靠 uk_audit_seq 冲突重试自愈
+            AuditLog last = selectLast();
             String prevHash = last != null ? nvl(last.getCurrHash()) : AuditHashChain.GENESIS;
             long seq = (last != null && last.getSeq() != null ? last.getSeq() : 0L) + 1;
             draft.setSeq(seq);
@@ -65,7 +68,7 @@ public class AuditLogService {
                 auditLogMapper.insert(draft);
                 return draft;
             } catch (DuplicateKeyException e) {
-                // 多实例共库：uk_audit_seq 冲突说明他实例已抢先尾行，重读重试（当前读可见新尾）
+                // 多实例共库：uk_audit_seq 冲突说明他实例已抢先尾行，重读重试
                 conflict = e;
             }
         }
@@ -151,12 +154,6 @@ public class AuditLogService {
 
     private AuditLog selectLast() {
         List<AuditLog> list = auditLogMapper.selectList(orderBySeq().last("limit 1"));
-        return list.isEmpty() ? null : list.get(0);
-    }
-
-    /** DEF-4：尾行当前读＋行锁，串行化多实例并发 append（重试兜底见 {@link #append}）。 */
-    private AuditLog selectLastForUpdate() {
-        List<AuditLog> list = auditLogMapper.selectList(orderBySeq().last("limit 1 for update"));
         return list.isEmpty() ? null : list.get(0);
     }
 
