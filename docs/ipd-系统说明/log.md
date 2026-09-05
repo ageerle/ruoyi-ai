@@ -397,3 +397,41 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - **交付物**: 验收/全局独立复核-20260905-r2.md（盘点/独立验证/API-03 缺口/看板卡死自愈/治理清单/风险/看板处置）。
 - **用户裁决**: 维持治理护栏（不越界改 Java、不扩大蜂群）+ 暂不推送 origin。
 - **OPS-09 登记**: 本会话本轮未创建新卡、未重复执行同指令、未绕过并发写单一写入者约束。
+
+## 2026-09-05（第五轮：证据核验——不沿用未验证完成标记）
+
+### 触发
+用户指令"不沿用未验证的完成标记"——运行 `audit_evidence.py` 审查 51 张 done 卡的证据质量。
+
+### 发现
+- 13 张 done 卡为 "asserted-only" 状态（无 git hash / 无测试数 / 无 build success / 无 integration 词）
+- 其中 **7 张是本会话 onboarding 时登记的**：SEC-API-01/02 / RISK-01..04 / DB-02
+- 这 7 张卡的 source_status 仅写"兄弟会话实施完成；本轮纳管登记"，**无真实 commit 链接**
+
+### 证据核对
+| 卡 | 真实 commit | 工作树状态 | 处理 |
+|---|---|---|---|
+| SEC-API-01 | 85a74c76 (operatorId清零) | 追加 3 controller M/3 untracked | ✅ 挂载 commit + 标注追加待 commit |
+| SEC-API-02 | 1ec31f5d (StpInterfaceBridge) | clean | ✅ 挂载 commit |
+| RISK-01 | c515b142 + 44a31683 (nextCode锁) | clean | ✅ 挂载 commit |
+| RISK-02 | 5c90fb3e (P0-6.2 软删除) | clean | ✅ 挂载 commit（独立 RISK-02 NOOP 未单独 commit，合并入 P0-6.2） |
+| RISK-03 | 4756a9fc + 06831799 (CODE-01) | clean | ✅ 挂载 commit（独立 RISK-03 未单独 commit，合并入 CODE-01） |
+| RISK-04 | eea24125 (AuditHashChain) | clean | ✅ 挂载 commit |
+| DB-02 | **无 commit** | Product/Project M, CoefficientChangeRequest untracked | ◐ 降级 inreview，待 commit 后恢复 done |
+
+### 实施
+- `git log` + file path 查每个 7 张卡对应的真实 commit
+- 7 张镜像行 source_status 字段从「兄弟会话已落地」升级为「真实 commit 落地」/「证据不足降级」
+- `commit a0a2d54` docs(ipd): 核验7张纳管卡证据——真实commit挂载+DB-02降级inreview
+- DB-02 看板卡 status 同步从 done → inreview（中间被 sibling 覆回一次，再 PUT 修正）
+
+### 结果
+- 看板：240/240 managed, 0 unmanaged, has_drift=false
+- done 52, inreview 8 (DB-02 转入 inreview)
+- 用户偏好"不沿用未验证的完成标记"已实操：DB-02 证据不足不再伪完成
+
+### 经验
+- on-board 兄弟会话卡时必须 grep 真实 commit，不能仅看 board card 的"✅"符号
+- 工作树 M/untracked 状态不算"已落地"——必须 git commit
+- "已 merge 入 X 验证"是合法的完成模式，但要在 source_status 里说清楚合并到哪里
+- 看板 card status 会因 sibling sync 重新被 mirror 覆盖——降级需要 PUT 后立即 verify
