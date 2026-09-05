@@ -8,10 +8,11 @@ import java.util.Date;
 /**
  * IPD 人员（v3 TS-06 全字段）
  * 角色固定不可跨（B7）；等级仅 HR API 权威源（B6）；组长随 API 同步（A3）
+ * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @TableName(value = "persons", autoResultMap = true)
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
-public class Person extends BaseEntity {
+public class Person extends BaseEntity implements SoftDeletable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     @TableField("name")
@@ -52,6 +53,9 @@ public class Person extends BaseEntity {
     private String tenantId;
     @TableLogic @TableField("del_flag")
     private String delFlag;
+
+    /** 显式覆盖 Lombok 生成的链式 setter（Person 无 @Accessors(chain=true) 但为对称保留显式覆盖）。 */
+    public void setDelFlag(String flag) { this.delFlag = flag; }
     @TableField("remark")
     private String remark;
 }

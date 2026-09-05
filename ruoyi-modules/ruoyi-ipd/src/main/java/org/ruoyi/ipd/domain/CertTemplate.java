@@ -13,6 +13,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 /**
  * 国别认证清单模板库（v3 BR-IPD-05b / 补漏表 M1）
  * 项目选定目标市场后按 country_code 自动带出认证项；超管可维护。
+ * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder
@@ -20,7 +21,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @AllArgsConstructor
 @Accessors(chain = true)
 @TableName(value = "cert_templates", autoResultMap = true)
-public class CertTemplate extends BaseEntity {
+public class CertTemplate extends BaseEntity implements SoftDeletable {
 
     @TableId
     private Long id;
@@ -48,4 +49,7 @@ public class CertTemplate extends BaseEntity {
 
     /** 删除标志 */
     private String delFlag;
+
+    /** 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter，以满足 SoftDeletable.setDelFlag(void) 接口签名。 */
+    public void setDelFlag(String flag) { this.delFlag = flag; }
 }

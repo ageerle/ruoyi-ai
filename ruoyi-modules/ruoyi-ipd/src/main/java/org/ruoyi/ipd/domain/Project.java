@@ -16,6 +16,7 @@ import java.util.Date;
 /**
  * IPD 项目（核心实体）——TS-05 projects
  * 阶段 CONCEPT→PLAN→DEV→VALID→LAUNCH→LIFECYCLE（Gate 门禁在阶段推进时校验，P1-5）
+ * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder
@@ -24,7 +25,7 @@ import java.util.Date;
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "projects", autoResultMap = true)
-public class Project extends BaseEntity {
+public class Project extends BaseEntity implements SoftDeletable {
 
     @TableId
     private Long id;
@@ -88,4 +89,7 @@ public class Project extends BaseEntity {
 
     /** 删除标志（删除走两级审核引擎） */
     private String delFlag;
+
+    /** 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter，以满足 SoftDeletable.setDelFlag(void) 接口签名。 */
+    public void setDelFlag(String flag) { this.delFlag = flag; }
 }

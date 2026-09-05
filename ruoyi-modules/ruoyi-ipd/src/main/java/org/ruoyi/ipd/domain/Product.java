@@ -12,6 +12,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 /**
  * IPD 产品——TS-05 products；BR-PROD-01 三路来源（超管导入在售型号 / PM 新增 / 游客「其他」占位）
+ * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder
@@ -20,7 +21,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "products", autoResultMap = true)
-public class Product extends BaseEntity {
+public class Product extends BaseEntity implements SoftDeletable {
 
     public static final String SRC_ADMIN_IMPORT = "ADMIN_IMPORT";
     public static final String SRC_PM_NEW = "PM_NEW";
@@ -55,4 +56,7 @@ public class Product extends BaseEntity {
 
     /** 删除标志（0正常 1删除；删除走两级审核引擎，禁物理删除 G-02） */
     private String delFlag;
+
+    /** 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter，以满足 SoftDeletable.setDelFlag(void) 接口签名。 */
+    public void setDelFlag(String flag) { this.delFlag = flag; }
 }
