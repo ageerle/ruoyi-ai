@@ -12,7 +12,7 @@
 
 ## 构建 / 测试（每条都吃过亏）
 
-- 只在仓库根执行 `mvn`（父 POM 管 `<modules>`）；不要进子模块目录单独构建。
+- 只在仓库根执行 `mvn`（父 POM 管 `<modules>`）；不要进子模块目录单独构建。Maven 装在 `/Users/mac/tools/maven/bin/mvn`（3.9.11）、JDK 17 在 `/Users/mac/tools/jdk-17/Contents/Home`，都不在精简 PATH 里——非交互 shell 先补 `export PATH="$HOME/tools/maven/bin:$PATH"` 和 `export JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"`，否则依次报 `mvn: command not found` / `Unable to locate a Java Runtime`。
 - **假绿陷阱**：Surefire 按 `<groups>${profiles.active}</groups>` 过滤（pom.xml:472），默认 dev profile 下没有 `@Tag("dev")` 的测试类被**静默跳过**——新测试不加 tag，"测试全绿"毫无意义。
 - `demo.enabled=true`（application.yml:293）拦截写操作，返回"演示模式，不允许操作"（白名单见 demo.excludes，application.yml:297）；真实开发先关掉（application-dev.yml 覆盖或 `-Ddemo.enabled=false`）。
 - 多租户默认开启：新建"租户共享"表必须登记 application.yml 的 `tenant.excludes`（application.yml:148），否则查询被自动追加租户过滤，表现为"数据查不到"。
