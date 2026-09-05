@@ -1,0 +1,116 @@
+package org.ruoyi.ipd.security;
+
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * SEC-API-02：personType → Sa-Token 权限码目录。
+ * <p>
+ * 对齐 {@link IpdPermissionCode} 与 Controller 字面量；粒度与 {@link IpdPermission#require*} 一致：
+ * 注解层做粗粒度门禁，对象级/专业锁定仍由 require* 叠加。
+ */
+public final class IpdRolePermissionCatalog {
+
+    /** 全体内部角色可读的查询类权限。 */
+    private static final Set<String> READ_SET = Set.of(
+        IpdPermissionCode.OPERATION_MODULE_PROJECT,
+        IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY,
+        IpdPermissionCode.OPERATION_PRODUCT_GROUP,
+        "ipd:product:query",
+        IpdPermissionCode.OPERATION_STAGE_ACTION,
+        IpdPermissionCode.OPERATION_CERT_TEMPLATE,
+        IpdPermissionCode.OPERATION_GATE_ELEMENT,
+        IpdPermissionCode.OPERATION_GATE_REVIEW
+    );
+
+    /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
+    private static final Set<String> BUSINESS_WRITE = Set.of(
+        IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE,
+        IpdPermissionCode.OPERATION_PRODUCT_GROUP_CREATE,
+        IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT,
+        IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE,
+        IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE,
+        IpdPermissionCode.OPERATION_STAGE_ACTION_INSTANTIATE,
+        IpdPermissionCode.OPERATION_GATE_REVIEW_INITIATE,
+        IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE
+    );
+
+    /** 仅市场侧可建项（对齐 requireProjectCreator）。 */
+    private static final Set<String> PROJECT_CREATE = Set.of(
+        IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE
+    );
+
+    /** 仅 SUPER_ADMIN：Gate/证书模板写 + 归档 purge。 */
+    private static final Set<String> ADMIN_WRITE = Set.of(
+        IpdPermissionCode.OPERATION_GATE_ELEMENT_CREATE,
+        IpdPermissionCode.OPERATION_GATE_ELEMENT_UPDATE,
+        IpdPermissionCode.OPERATION_GATE_ELEMENT_DISABLE,
+        IpdPermissionCode.OPERATION_CERT_TEMPLATE_CREATE,
+        IpdPermissionCode.OPERATION_CERT_TEMPLATE_DELETE,
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_ARCHIVE,
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_PURGE
+    );
+
+    private static final Map<String, Set<String>> BY_ROLE = Map.of(
+        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, ADMIN_WRITE),
+        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE),
+        "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE),
+        "RD_PM", merge(READ_SET, BUSINESS_WRITE)
+    );
+
+    private IpdRolePermissionCatalog() {
+    }
+
+    /**
+     * 按人员类型解析权限码列表；未知类型返回空列表（拒绝一切注解权限）。
+     *
+     * @param personType Person.personType，如 MARKET_PM
+     * @return 不可变权限码列表
+     */
+    public static List<String> permissionsOf(String personType) {
+        if (personType == null || personType.isBlank()) {
+            return List.of();
+        }
+        Set<String> set = BY_ROLE.get(personType);
+        if (set == null) {
+            return List.of();
+        }
+        return List.copyOf(set);
+    }
+
+    /**
+     * 角色列表：直接回传 personType，便于 @SaCheckRole 扩展。
+     *
+     * @param personType 人员类型
+     * @return 单元素角色列表或空
+     */
+    public static List<String> rolesOf(String personType) {
+        if (personType == null || personType.isBlank() || !BY_ROLE.containsKey(personType)) {
+            return List.of();
+        }
+        return List.of(personType);
+    }
+
+    /**
+     * 判断角色是否具备指定权限码（单测与白盒用）。
+     *
+     * @param personType 人员类型
+     * @param permission 权限码
+     * @return 是否具备
+     */
+    public static boolean has(String personType, String permission) {
+        return permissionsOf(personType).contains(permission);
+    }
+
+    @SafeVarargs
+    private static Set<String> merge(Set<String>... parts) {
+        Set<String> out = new LinkedHashSet<>();
+        for (Set<String> part : parts) {
+            out.addAll(part);
+        }
+        return Collections.unmodifiableSet(out);
+    }
+}
