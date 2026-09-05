@@ -16,6 +16,7 @@ import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AuditLogService;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +35,7 @@ import java.util.Map;
  *   <li>{@code GET  /export}     导出（仅超管）
  *   <li>{@code GET  /scope}      角色范围分页（AC-AUD-04/05；本人/本组/全局）
  *   <li>{@code GET  /export/scope} 角色范围导出（写一条 EXPORT 审计）
+ *   <li>{@code POST /rebuild-chain} DEF-4 链重建（仅超管；重算全链哈希，动作落 REBUILD_CHAIN 审计）
  * </ul>
  *
  * <p>scope 规则：
@@ -128,6 +130,27 @@ public class AuditLogController {
         return ApiV1Response.ok(Map.of(
             "exported", count,
             "scope", operatorIds == null ? "GLOBAL" : (operatorIds.size() == 1 && operatorIds.get(0).equals(actor.id())) ? "OWN" : "GROUP"));
+    }
+
+    /**
+     * DEF-4 链重建（仅超管）：按现行 v1 秒级对称语义重算全链 prev/curr 哈希，业务字段只读。
+     * <p>幂等可重复执行；重建动作本身落一条 REBUILD_CHAIN 审计（独立事务，链尾自洽）。
+     * <p>多实例共库运维顺序：全部实例切含修复 jar 后再执行终验重建，否则旧 jar 毫秒行会再污染。
+     */
+    @SaCheckPermission(value = "ipd:audit-log:verify", type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/rebuild-chain")
+    public ApiV1Response<Map<String, Object>> rebuildChain() {
+        IpdActor actor = ipdPermission.requireAdmin();
+        long fixed = auditLogService.rebuildChain();
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id())
+            .operatorName(actor.name())
+            .operatorRole(actor.role())
+            .action("REBUILD_CHAIN")
+            .entityType("audit_logs")
+            .reason("DEF-4 fixed=" + fixed)
+            .build());
+        return ApiV1Response.ok(Map.of("fixed", fixed));
     }
 
     /**
