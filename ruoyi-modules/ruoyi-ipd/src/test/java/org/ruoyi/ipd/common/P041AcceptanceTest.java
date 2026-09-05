@@ -12,24 +12,28 @@ import org.ruoyi.common.json.handler.BigNumberSerializer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * P0-4.1 验收测试：分页/ID/时间序列化契约
- * <p>契约要点：
+ * P0-4.1 验收测试：分页/ID/时间序列化契约。
  * <ul>
  *   <li>列表分页/排序稳定：ApiV1Response 形态分页键全 5 项（current/size/total/pages/records）</li>
  *   <li>大整数 ID 不失真：Long/BigInteger/BigDecimal &gt; Number.MAX_SAFE_INTEGER → 字符串</li>
- *   <li>UTC 时间统一：timestamp 字段为 ISO-8601 字符串（Instant + UTC）</li>
+ *   <li>UTC 时间统一：timestamp 字段为 ISO-8601 字符串（{@code yyyy-MM-dd'T'HH:mm:ss'Z'}）</li>
  *   <li>空资源错误明确：records=空 + total=0 + code=0，调用方易判</li>
  *   <li>OpenAPI 与响应例一致：5 顶层字段固定（code/message/data/timestamp/traceId）</li>
  * </ul>
  */
 @Tag("dev")
 class P041AcceptanceTest {
+
+    private static final DateTimeFormatter ISO_UTC =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
 
     private static ObjectMapper newIpLikeMapper() {
         JavaTimeModule jt = new JavaTimeModule();
@@ -44,25 +48,34 @@ class P041AcceptanceTest {
     }
 
     @Test
-    @DisplayName("ApiV1Response.timestamp 序列化为 UTC ISO-8601 字符串（不是 epoch millis 数字）")
+    @DisplayName("ApiV1Response.timestamp 工厂方法输出 UTC ISO-8601 字符串（不是 epoch millis 数字）")
     void timestampIsUtcIsoString() throws Exception {
         ObjectMapper m = newIpLikeMapper();
-        Instant fixed = Instant.parse("2026-09-05T14:30:00Z");
+        ApiV1Response<String> r = ApiV1Response.ok("hello");
+        String json = m.writeValueAsString(r);
+        // 形如 "2026-09-05T22:13:45Z"
+        assertThat(json).matches(".*\"timestamp\":\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z\".*");
+        // 拒绝任何 epoch millis 数字
+        assertThat(json).doesNotMatch(".*\"timestamp\":[0-9]{13,}.*");
+    }
+
+    @Test
+    @DisplayName("手工反射写入固定 ISO 字符串后序列化 → 输出完全一致（无 ObjectMapper 干预）")
+    void customTimestampStringPassesThrough() throws Exception {
+        ObjectMapper m = newIpLikeMapper();
         ApiV1Response<String> r = ApiV1Response.ok("hello");
         var f = ApiV1Response.class.getDeclaredField("timestamp");
         f.setAccessible(true);
-        f.set(r, fixed);
+        f.set(r, "2026-09-05T14:30:00Z");
 
         String json = m.writeValueAsString(r);
         assertThat(json).contains("\"timestamp\":\"2026-09-05T14:30:00Z\"");
-        assertThat(json).doesNotContain("\"timestamp\":1");
     }
 
     @Test
     @DisplayName("BigNumberSerializer：超过 JS 安全上限的 Long（POJO 顶层字段）序列化为字符串，不丢精度")
     void longBeyondJsSafeSerializedAsString() throws Exception {
         ObjectMapper m = newIpLikeMapper();
-        // POJO 顶层 Long 字段才能让 Jackson 类型感知走到 BigNumberSerializer（Map<String,Object> 内 Long 被 Object 序列化器接管）
         BigLongPojo p = new BigLongPojo();
         p.id = 2096351556126396418L;  // > 2^53 = 9007199254740992
         p.seq = 2096351556126396418L; // 同样 > 2^53 → 字符串
@@ -77,7 +90,7 @@ class P041AcceptanceTest {
     void longWithinSafeRangeSerializedAsNumber() throws Exception {
         ObjectMapper m = newIpLikeMapper();
         BigLongPojo p = new BigLongPojo();
-        p.id = 100L;  // < 2^53 安全
+        p.id = 100L;
         p.seq = 1L;
 
         String json = m.writeValueAsString(p);
@@ -102,7 +115,6 @@ class P041AcceptanceTest {
     @DisplayName("分页 5 字段：current/size/total/pages/records 齐（IPD IPage 形态）")
     void pageFieldsAreStable() throws Exception {
         ObjectMapper m = newIpLikeMapper();
-        // 模拟 IPD 端点返回的 page 形态（MyBatis-Plus Page 序列化）
         Map<String, Object> paged = Map.of(
             "records", List.of(
                 Map.of("id", "row1", "name", "A"),
@@ -170,24 +182,39 @@ class P041AcceptanceTest {
     }
 
     @Test
-    @DisplayName("JSON 解析回环：序列化字符串再 parse 回 ApiV1Response，timestamp 不丢信息")
+    @DisplayName("JSON 解析回环：序列化字符串再 parse 回 ApiV1Response，timestamp 字符串不丢信息")
     void timestampRoundTrip() throws Exception {
         ObjectMapper m = newIpLikeMapper();
         ApiV1Response<String> original = ApiV1Response.ok("x");
         var f = ApiV1Response.class.getDeclaredField("timestamp");
         f.setAccessible(true);
-        Instant fixed = Instant.parse("2026-01-15T08:00:00Z");
+        String fixed = "2026-01-15T08:00:00Z";
         f.set(original, fixed);
 
         String json = m.writeValueAsString(original);
         var rt = m.readValue(json, ApiV1Response.class);
         var tF = ApiV1Response.class.getDeclaredField("timestamp");
         tF.setAccessible(true);
-        Instant back = (Instant) tF.get(rt);
+        String back = (String) tF.get(rt);
         assertThat(back).isEqualTo(fixed);
     }
 
-    /** 测试 POJO：顶层 Long 字段，触发 Jackson 类型感知序列化（BigNumberSerializer / NumberSerializer）。 */
+    @Test
+    @DisplayName("工厂方法 nowIsoUtc() 产出真实 ISO-8601 格式（与当前 UTC 同一分钟）")
+    void nowIsoUtcShape() {
+        // 现刻 UTC ISO 串
+        String now = ISO_UTC.format(Instant.now());
+        ApiV1Response<String> r = ApiV1Response.ok("x");
+        String t = r.getTimestamp();
+        // 双方都是 yyyy-MM-dd'T'HH:mm:ss'Z' 格式，长度=20
+        assertThat(t).matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
+        // 时间偏差不超过 65 秒（容许分钟边界）
+        long diff = Math.abs(
+            Instant.parse(now).getEpochSecond() - Instant.parse(t).getEpochSecond());
+        assertThat(diff).isLessThan(65);
+    }
+
+    /** 测试 POJO：顶层 Long 字段，触发 Jackson 类型感知序列化。 */
     static class BigLongPojo {
         public Long id;
         public Long seq;
