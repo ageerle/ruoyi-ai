@@ -4,11 +4,14 @@ import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.config.SaTokenConfig;
 import cn.dev33.satoken.context.SaTokenContext;
 import cn.dev33.satoken.context.SaTokenContextForThreadLocal;
+import cn.dev33.satoken.context.mock.SaTokenContextMockUtil;
 import cn.dev33.satoken.dao.SaTokenDao;
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
 import cn.dev33.satoken.filter.SaTokenContextFilterForJakartaServlet;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -38,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -83,6 +87,11 @@ class P064AcceptanceTest {
             new org.apache.ibatis.builder.MapperBuilderAssistant(
                 new com.baomidou.mybatisplus.core.MybatisConfiguration(), "ipd-p064-test"),
             Person.class);
+        // listArchive 的 LambdaQueryWrapper 在 getSqlSegment 时才解析列名（懒求值），需 DeletionRequest 的 lambda cache
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
+            new org.apache.ibatis.builder.MapperBuilderAssistant(
+                new com.baomidou.mybatisplus.core.MybatisConfiguration(), "ipd-p064-test-dr"),
+            DeletionRequest.class);
         oldConfig = SaManager.getConfig(); oldDao = SaManager.getSaTokenDao(); oldContext = SaManager.getSaTokenContext();
         SaManager.setConfig(new SaTokenConfig().setJwtSecretKey(UUID.randomUUID().toString())
             .setTokenName("Authorization").setTokenPrefix("Bearer").setIsReadCookie(false)
@@ -126,15 +135,23 @@ class P064AcceptanceTest {
             .build();
     }
 
-    /** owner 删了全局 advice；本测试自带一个针对 ServiceException → 400 的局部 advice。 */
+    /** owner 删了全局 advice；本测试自带局部 advice，HTTP 映射复用主代码 ApiV1ErrorCode.getHttpStatus。 */
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @RestControllerAdvice
     static class ServiceExceptionAdvice {
         @ExceptionHandler(ServiceException.class)
         public ResponseEntity<ApiV1Response<Void>> service(ServiceException ex) {
-            Integer code = ex.getCode();
-            return ResponseEntity.badRequest().body(ApiV1Response.fail(
-                code != null ? code : ApiV1ErrorCode.PARAM_INVALID.getCode(), ex.getMessage()));
+            ApiV1ErrorCode ec = ApiV1ErrorCode.fromCode(ex.getCode());
+            return ResponseEntity.status(ec.getHttpStatus())
+                .body(ApiV1Response.fail(ec.getCode(), ex.getMessage()));
+        }
+
+        /** 独立 MockMvc 无 Sa-Token 全局过滤器，NotLoginException 在此对齐真实 401 包络。 */
+        @ExceptionHandler(NotLoginException.class)
+        public ResponseEntity<ApiV1Response<Void>> notLogin(NotLoginException ex) {
+            return ResponseEntity.status(ApiV1ErrorCode.UNAUTHORIZED.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.UNAUTHORIZED.getCode(),
+                    ApiV1ErrorCode.UNAUTHORIZED.getMessage()));
         }
     }
 
@@ -146,12 +163,16 @@ class P064AcceptanceTest {
         try { StpUtil.logout(); } catch (Exception ignore) { }
     }
 
-    private void loginAs(Long id) {
+    /** Sa-Token 1.44 单测需显式激活上下文；返回 tokenValue 供 MockMvc 请求头回传。 */
+    private String loginAs(Long id) {
+        SaTokenContextMockUtil.setMockContext();
         StpUtil.login(id);
+        return StpUtil.getTokenValue();
     }
 
     @Test void archiveListReturnsOnlyNonPurgedEntries() throws Exception {
-        // 归档区列表：DELETED + 非 PURGED 前缀的记录才返回
+        // 归档区列表：DELETED + 非 PURGED 前缀的记录才返回（listArchive 现要求超管身份）
+        loginAs(SUPER_ADMIN_ID);
         DeletionArchiveService service = new DeletionArchiveService(deletionRequestMapper, auditLogService, personMapper);
         List<DeletionRequest> list = service.listArchive();
         assertThat(list).hasSize(2);
@@ -160,14 +181,17 @@ class P064AcceptanceTest {
             org.mockito.ArgumentCaptor.forClass(Wrapper.class);
         verify(deletionRequestMapper, times(1)).selectList(cap.capture());
         String sql = cap.getValue().getSqlSegment();
-        assertThat(sql).contains("DELETED");
-        assertThat(sql).contains("PURGED_BY_SUPER_ADMIN");
+        assertThat(sql).contains("status").contains("NOT LIKE");
+        // 条件值在 paramNameValuePairs 中，不在 SQL 片段里
+        LambdaQueryWrapper<DeletionRequest> wrapper = (LambdaQueryWrapper<DeletionRequest>) cap.getValue();
+        assertThat(wrapper.getParamNameValuePairs().values())
+            .contains("DELETED", "%" + DeletionArchiveService.PURGED_MARK + "%");
     }
 
     @Test void purgeRequiresSuperAdminRole() throws Exception {
         // 权限校验：MARKET_PM 调用 purge → 403 FORBIDDEN
-        loginAs(PM_ID);
-        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
+        String token = loginAs(PM_ID);
+        mvc.perform(post("/api/v1/deletion-requests/11/purge").header("Authorization", "Bearer " + token))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
         verify(auditLogService, times(0)).append(any(AuditLog.class));
     }
@@ -180,8 +204,8 @@ class P064AcceptanceTest {
 
     @Test void superAdminCanPurgeAndAuditIsWritten() throws Exception {
         // 超管调用 purge 成功：remark 加 PURGED_ 前缀 + 写一条 PURGE 审计
-        loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
+        String token = loginAs(SUPER_ADMIN_ID);
+        mvc.perform(post("/api/v1/deletion-requests/11/purge").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
 
         // 数据库 update 调用 1 次
@@ -203,30 +227,30 @@ class P064AcceptanceTest {
             .id(20L).entityType("projects").entityId(50L)
             .status(DeletionRequestService.ST_DRAFT).build();
         when(deletionRequestMapper.selectById(20L)).thenReturn(draft);
-        loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/20/purge"))
-            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value(50002));
+        String token = loginAs(SUPER_ADMIN_ID);
+        mvc.perform(post("/api/v1/deletion-requests/20/purge").header("Authorization", "Bearer " + token))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(50002));
         verify(auditLogService, times(0)).append(any(AuditLog.class));
     }
 
     @Test void purgeFailsWhenRecordAlreadyPurged() throws Exception {
         // remark 已有 PURGED_ 前缀 → 50002 不可二次清除
-        loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/12/purge"))
-            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value(50002));
+        String token = loginAs(SUPER_ADMIN_ID);
+        mvc.perform(post("/api/v1/deletion-requests/12/purge").header("Authorization", "Bearer " + token))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(50002));
     }
 
     @Test void purgeFailsWhenRecordNotFound() throws Exception {
         when(deletionRequestMapper.selectById(999L)).thenReturn(null);
-        loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/999/purge"))
-            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value(50001));
+        String token = loginAs(SUPER_ADMIN_ID);
+        mvc.perform(post("/api/v1/deletion-requests/999/purge").header("Authorization", "Bearer " + token))
+            .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value(50001));
     }
 
     @Test void archiveListViaHttpReturnsOkForSuperAdmin() throws Exception {
         // 完整 HTTP 路径验证：超管登录后 GET archive 返回 DELETED 列表
-        loginAs(SUPER_ADMIN_ID);
-        var result = mvc.perform(get("/api/v1/deletion-requests/archive"))
+        String token = loginAs(SUPER_ADMIN_ID);
+        var result = mvc.perform(get("/api/v1/deletion-requests/archive").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk()).andReturn();
         String body = result.getResponse().getContentAsString();
         assertThat(body).contains("\"code\":0");
@@ -238,8 +262,8 @@ class P064AcceptanceTest {
 
     @Test void archiveListForbiddenForNonSuperAdmin() throws Exception {
         // 非超管：403
-        loginAs(PM_ID);
-        mvc.perform(get("/api/v1/deletion-requests/archive"))
+        String token = loginAs(PM_ID);
+        mvc.perform(get("/api/v1/deletion-requests/archive").header("Authorization", "Bearer " + token))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
     }
 
@@ -248,9 +272,13 @@ class P064AcceptanceTest {
         when(deletionRequestMapper.update(isNull(), any(LambdaUpdateWrapper.class)))
             .thenReturn(1).thenReturn(0);
         DeletionArchiveService service = new DeletionArchiveService(deletionRequestMapper, auditLogService, personMapper);
-        // 第一次
+        loginAs(SUPER_ADMIN_ID);
+        // 第一次：update=1 → 成功
         DeletionRequest first = service.purge(11L);
         assertThat(first).isNotNull();
+        verify(auditLogService, times(1)).append(any(AuditLog.class));
+        // 第二次：update=0（notLike 条件挡住并发/重复清除）→ 状态冲突，且不再追加审计
+        assertThatThrownBy(() -> service.purge(11L)).isInstanceOf(ServiceException.class);
         verify(auditLogService, times(1)).append(any(AuditLog.class));
     }
 }
