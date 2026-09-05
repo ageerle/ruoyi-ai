@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.Version;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -40,4 +41,9 @@ public class StageAction extends BaseEntity {
     private String isBioFeature;
     private Date dueDate;
     private Long sopId;
+
+    /** MyBatis-Plus 乐观锁：transit() 并发由 OptimisticLockerInnerInterceptor 拦截；DDL 见 2026-09-05-ipd-p143-optimistic-lock.sql。 */
+    @Version
+    @TableField(value = "version", insertStrategy = FieldStrategy.NOT_NULL)
+    private Integer version;
 }

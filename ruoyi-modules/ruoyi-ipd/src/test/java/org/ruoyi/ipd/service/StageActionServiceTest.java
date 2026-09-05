@@ -58,7 +58,7 @@ class StageActionServiceTest {
     void deepDoneRequiresDeliverable() {
         seed("C01", "DEEP");
         when(deliverableMapper.selectCount(any())).thenReturn(0L);
-        assertThatThrownBy(() -> service.transit(1L, "DONE", "op"))
+        assertThatThrownBy(() -> service.transit(1L, "DONE", "test reason", "op"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("BR-IPD-03");
     }
@@ -68,7 +68,7 @@ class StageActionServiceTest {
     void deepDoneWithDeliverablePasses() {
         seed("C01", "DEEP");
         when(deliverableMapper.selectCount(any())).thenReturn(1L);
-        StageAction out = service.transit(1L, "DONE", "op");
+        StageAction out = service.transit(1L, "DONE", "test reason", "op");
         assertThat(out.getStatus()).isEqualTo("DONE");
         assertThat(out.getActualDoneAt()).isNotNull();
         Mockito.verify(auditLogService).append(any(AuditLog.class));
@@ -78,7 +78,7 @@ class StageActionServiceTest {
     @DisplayName("轻管无完成日期标 DONE 拒绝（BR-IPD-05）")
     void lightDoneRequiresActualDate() {
         seed("C05", "LIGHT");
-        assertThatThrownBy(() -> service.transit(1L, "DONE", "op"))
+        assertThatThrownBy(() -> service.transit(1L, "DONE", "test reason", "op"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("BR-IPD-05");
     }
@@ -87,7 +87,7 @@ class StageActionServiceTest {
     @DisplayName("轻管禁 DELAYED（三字段枚举无延期）")
     void lightNoDelayed() {
         seed("C05", "LIGHT");
-        assertThatThrownBy(() -> service.transit(1L, "DELAYED", "op"))
+        assertThatThrownBy(() -> service.transit(1L, "DELAYED", null, "op"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("轻管动作不支持延期");
     }
@@ -97,9 +97,9 @@ class StageActionServiceTest {
     void lightDoneAndNaPass() {
         StageAction a = seed("C05", "LIGHT");
         a.setActualDoneAt(new Date());
-        assertThat(service.transit(1L, "DONE", "op").getStatus()).isEqualTo("DONE");
+        assertThat(service.transit(1L, "DONE", "test reason", "op").getStatus()).isEqualTo("DONE");
         a.setStatus("IN_PROGRESS");
-        assertThat(service.transit(1L, "NA", "op").getStatus()).isEqualTo("NA");
+        assertThat(service.transit(1L, "NA", "skip reason", "op").getStatus()).isEqualTo("NA");
     }
 
     @Test
@@ -107,12 +107,12 @@ class StageActionServiceTest {
     void d11RequiresFarFrr() {
         StageAction a = seed("D11", "LIGHT");
         a.setActualDoneAt(new Date());
-        assertThatThrownBy(() -> service.transit(1L, "DONE", "op"))
+        assertThatThrownBy(() -> service.transit(1L, "DONE", "test reason", "op"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("FAR/FRR");
         a.setFarValue(new java.math.BigDecimal("0.0001"));
         a.setFrrValue(new java.math.BigDecimal("0.02"));
-        assertThat(service.transit(1L, "DONE", "op").getStatus()).isEqualTo("DONE");
+        assertThat(service.transit(1L, "DONE", "test reason", "op").getStatus()).isEqualTo("DONE");
     }
 
     @Test
@@ -120,12 +120,12 @@ class StageActionServiceTest {
     void v02RequiresCertFields() {
         StageAction a = seed("V02", "LIGHT");
         a.setActualDoneAt(new Date());
-        assertThatThrownBy(() -> service.transit(1L, "DONE", "op"))
+        assertThatThrownBy(() -> service.transit(1L, "DONE", "test reason", "op"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("证书编号");
         a.setCertNo("CE-2026-001");
         a.setCertPassedAt(new Date());
-        assertThat(service.transit(1L, "DONE", "op").getStatus()).isEqualTo("DONE");
+        assertThat(service.transit(1L, "DONE", "test reason", "op").getStatus()).isEqualTo("DONE");
     }
 
     @Test

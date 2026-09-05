@@ -20,10 +20,17 @@ import java.util.Set;
  * 阶段动作实例服务：深轻管分离完成校验（BR-IPD-03/04/05，动作清单 v3）
  *
  * 校验矩阵（以 ActionCatalog 目录为 SSOT，不信任前端）：
- * - 深管 DONE：至少 1 个交付物（deliverables 表未删记录）——BR-IPD-03 强制附件
- * - 轻管 DONE：actual_done_at 必填（三字段登记 BR-IPD-05）；且**不允许 DELAYED**（轻管枚举无延期）
- * - 数值登记（valueFields）：D11=FAR,FRR；V02=CERT_NO,CERT_DATE；L08=项目上市日期前置校验（P1-1 已有 advanceStage 前置，此处不重复）
- * - 阻断跳阶（is_blocking）由 P1-5 GateEngine 消费本表状态，此处只保证状态真实
+ * - 深管 DONE：至少 1 个未删交付物（del_flag=0）——BR-IPD-03 强制附件
+ * - 轻管 DONE：actual_done_at 必填（BR-IPD-05）；且**不允许 DELAYED**（轻管枚举无延期）
+ * - 数值登记（valueFields）：D11=FAR,FRR；V02=CERT_NO,CERT_DATE
+ * - 阻断跳阶（is_blocking）由 P1-5 GateEngine 消费本表状态
+ *
+ * P1-4.3 状态机（仅 /transit 入口，禁止 PATCH status 字段）：
+ * - 深管：NOT_STARTED → IN_PROGRESS → DONE / NA / DELAYED
+ * - 轻管：NOT_STARTED → IN_PROGRESS → DONE / NA（无 DELAYED）
+ * - NA 必传 reason（防绕过）
+ * - 幂等：同 id 同 target 重复 /transit 返回当前状态，不写新审计
+ * - 乐观锁：@Version；并发同 id 仅 1 成功
  */
 @Service
 @RequiredArgsConstructor
@@ -31,6 +38,7 @@ public class StageActionService {
 
     private static final Set<String> LIGHT_STATUSES = Set.of("NOT_STARTED", "IN_PROGRESS", "DONE", "NA");
     private static final Set<String> DEEP_EXTRA_STATUSES = Set.of("DELAYED");
+    private static final Set<String> DEEP_ALLOWED = Set.of("NOT_STARTED", "IN_PROGRESS", "DONE", "NA", "DELAYED");
 
     private final StageActionMapper stageActionMapper;
     private final DeliverableMapper deliverableMapper;
@@ -51,48 +59,66 @@ public class StageActionService {
                 .orderByAsc(StageAction::getActionCode));
     }
 
-    /** 状态流转：NOT_STARTED -> IN_PROGRESS -> DONE/NA（深管另有 DELAYED）；DONE 触发深度+数值双重校验 */
-    @Transactional
-    public StageAction transit(Long id, String target, String operator) {
+    /**
+     * 状态迁移唯一入口（P1-4.3）。
+     * - 状态机白名单（depth + 目标）
+     * - 幂等：当前态 == 目标态 → 直接返回，不写库、不写审计
+     * - NA 必 reason
+     * - DONE 触发深度+数值双重校验
+     * - 乐观锁：@Version，updateById 失败（version 冲突）抛 ServiceException
+     * - 每次成功迁移写审计 action=TRANSIT
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public StageAction transit(Long id, String target, String reason, String operator) {
+        if (target == null) { throw new ServiceException("目标状态不能为空"); }
         StageAction a = getById(id);
         ActionDef def = ActionCatalog.byCode(a.getActionCode());
         boolean deep = "DEEP".equals(a.getDepth());
+
         if (!deep && DEEP_EXTRA_STATUSES.contains(target)) {
             throw new ServiceException("轻管动作不支持延期状态（BR-IPD-05 三字段登记）: " + def.code());
         }
-        Set<String> allowed = deep ? Set.of("NOT_STARTED", "IN_PROGRESS", "DONE", "NA", "DELAYED") : LIGHT_STATUSES;
+        Set<String> allowed = deep ? DEEP_ALLOWED : LIGHT_STATUSES;
         if (!allowed.contains(target)) {
             throw new ServiceException("非法目标状态: " + target);
+        }
+        if (target.equals(a.getStatus())) {
+            return a; // 幂等
+        }
+        if ("NA".equals(target) && (reason == null || reason.isBlank())) {
+            throw new ServiceException("标记 NA 必须填写原因（防绕过 P1-4.3）: " + def.code());
         }
         if ("DONE".equals(target)) {
             validateCompletion(a, def, deep);
         }
+
+        String before = statusSnapshot(a);
         a.setStatus(target);
-        if ("DONE".equals(target)) {
-            if (a.getActualDoneAt() == null) {
-                a.setActualDoneAt(new Date());
-            }
+        a.setUpdateBy(actorIdOf(operator));
+        if ("DONE".equals(target) && a.getActualDoneAt() == null) {
+            a.setActualDoneAt(new Date(Math.floorDiv(System.currentTimeMillis(), 1000L) * 1000L));
         }
         int n = stageActionMapper.updateById(a);
         if (n != 1) {
-            throw new ServiceException("动作状态更新失败: " + def.code());
+            throw new ServiceException("动作状态更新失败：可能并发冲突或记录不存在（P1-4.3 乐观锁）: " + def.code());
         }
         auditLogService.append(AuditLog.builder()
             .operatorName(operator).operatorRole("PM")
-            .action("UPDATE").entityType("STAGE_ACTION").entityId(a.getId())
-            .afterData("status=" + target).reason("BR-IPD-03/04/05")
+            .action("TRANSIT").entityType("STAGE_ACTION").entityId(a.getId())
+            .beforeData(before).afterData(statusSnapshot(a))
+            .reason(reason == null || reason.isBlank() ? "P1-4.3 状态机" : reason)
             .build());
         return a;
     }
 
-    /** 完成前校验：深度规则 + 目录 valueFields 数值登记 */
     private void validateCompletion(StageAction a, ActionDef def, boolean deep) {
         if (deep) {
             Long cnt = deliverableMapper.selectCount(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Deliverable>()
-                    .eq(Deliverable::getActionId, a.getId()));
+                    .eq(Deliverable::getActionId, a.getId())
+                    .eq(Deliverable::getDelFlag, "0"));
             if (cnt == null || cnt == 0) {
-                throw new ServiceException("深管动作完成前必须上传至少 1 个交付物（BR-IPD-03）: " + def.code());
+                throw new ServiceException("深管动作完成前必须上传至少 1 个未删交付物（BR-IPD-03）: " + def.code());
             }
         } else if (a.getActualDoneAt() == null) {
             throw new ServiceException("轻管动作完成必须登记实际完成日期（BR-IPD-05）: " + def.code());
@@ -107,11 +133,6 @@ public class StageActionService {
         }
     }
 
-    /**
-     * C12 强制挂载联动（P1-8，主 Prompt v3 L271：is_bio_feature 驱动 C12 合规审查强制挂载）：
-     * 项目存在任一涉生物特征动作实例而 C12 实例缺失时自动补挂（CONCEPT 阶段语义、深管、阻断）。
-     * 返回补挂数量（0=已挂载或无涉生物动作）。
-     */
     @Transactional
     public int ensureBioComplianceMount(Long projectId) {
         Long bioCount = stageActionMapper.selectCount(
@@ -131,7 +152,7 @@ public class StageActionService {
         ActionDef def = ActionCatalog.byCode("C12");
         StageAction c12Action = StageAction.builder()
             .projectId(projectId)
-            .stageId(null) // 联动补挂按项目维度，阶段归属由调用方（P2 Gate 流程）回填
+            .stageId(null)
             .actionCode(def.code())
             .actionName(def.name())
             .ownerRole(def.ownerRole())
@@ -144,7 +165,6 @@ public class StageActionService {
         return 1;
     }
 
-    /** 交付物登记（深管附件上传的最小真实落点；OSS 集成后补 fileUrl） */
     @Transactional
     public Deliverable addDeliverable(Long actionId, String fileName, Long ossId, String operator) {
         StageAction a = getById(actionId);
@@ -164,7 +184,6 @@ public class StageActionService {
         return d;
     }
 
-    /** 实例化：按项目 + 阶段从目录批量生成动作实例（幂等：同项目同编码跳过） */
     @Transactional
     public int instantiate(Long projectId, Long stageId, String stage) {
         int created = 0;
@@ -191,5 +210,15 @@ public class StageActionService {
             created++;
         }
         return created;
+    }
+
+    private static String statusSnapshot(StageAction a) {
+        return "actionCode=" + a.getActionCode() + ";status=" + a.getStatus()
+            + ";version=" + a.getVersion()
+            + (a.getActualDoneAt() == null ? "" : ";actualDoneAt=" + a.getActualDoneAt().getTime());
+    }
+
+    private static Long actorIdOf(String operator) {
+        try { return Long.parseLong(operator); } catch (NumberFormatException e) { return null; }
     }
 }

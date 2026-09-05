@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * 阶段动作实例接口 /api/v1/stage-actions（深轻管分离 BR-IPD-03/04/05）
- * operatorId 暂取 @RequestParam（P1-2 认证打通后切 LoginHelper，与既有控制器一致）
+ * P1-4.3：状态迁移唯一入口 /transit，禁止 PATCH status 字段
  */
 @RestController
 @RequestMapping("/api/v1/stage-actions")
@@ -30,12 +30,19 @@ public class StageActionController {
         return ApiV1Response.ok(stageActionService.listByProject(projectId));
     }
 
-    /** 状态流转（DONE 时强制深度+数值校验，拒绝仅前端标记） */
+    /**
+     * 状态流转（P1-4.3 唯一入口）。
+     * - 深管：NOT_STARTED/IN_PROGRESS/DONE/NA/DELAYED
+     * - 轻管：NOT_STARTED/IN_PROGRESS/DONE/NA（无 DELAYED）
+     * - NA 必须传 reason；幂等：同 target 返回当前态不写审计
+     * - 乐观锁：并发同 id 重复 /transit 由 MP 仅 1 成功
+     */
     @PostMapping("/{id}/transit")
     public ApiV1Response<StageAction> transit(@PathVariable Long id,
                                               @RequestParam String target,
+                                              @RequestParam(required = false) String reason,
                                               @RequestParam Long operatorId) {
-        return ApiV1Response.ok(stageActionService.transit(id, target, String.valueOf(operatorId)));
+        return ApiV1Response.ok(stageActionService.transit(id, target, reason, String.valueOf(operatorId)));
     }
 
     /** 深管交付物登记（BR-IPD-03 完成前置） */
