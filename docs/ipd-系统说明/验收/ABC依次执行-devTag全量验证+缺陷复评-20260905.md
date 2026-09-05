@@ -16,7 +16,7 @@
 | **B** 缺陷A-system-config | 脏树已补 3 码（未提交） | ◐ 修复中（兄弟权限泳道在途） |
 | **B** 缺陷A-audit | `ipd:audit-log:list/verify/export` **仍缺** Catalog | ❌ **OPEN**（老 3 端点全员 500） |
 | **B** 缺陷B advice | assignableTypes 仍 7 控制器；advice 无 NotPermission handler | ❌ **OPEN**（拒绝塌缩 500/90001） |
-| **B** DEF-1 | GateElementService.audit 明文写 JSON 列 | ❌ **OPEN**，影响面 **create+update+disable** |
+| **B** DEF-1 | GateElementService.audit 明文写 JSON 列 | ❌ OPEN → ✅ **FIXED**（§8：b74f46bf 并发修复+4 单测绿佐证） |
 | **B** DEF-2 | NOAUTH 空体→500 非 401 | ❌ **OPEN**（=缺陷B2） |
 | **B** 缺陷C | 旧探针脚本错用户名 | ✅ 已被 `QA-03-matrix-v5.py` 取代 |
 | **C** SEC-API-02 ✅done | 交付文件 Catalog 仍缺 audit-log 码 | ⚠ **部分假绿**（提请复评） |
@@ -145,3 +145,27 @@ grep -nE "ExceptionHandler" .../advice/IpdServiceExceptionAdvice.java   # 无 No
 grep -nA6 "private void audit" .../service/GateElementService.java      # afterData(明文)
 ```
 时间戳：A 运行 15:13:54–15:14:04 PDT；STALE 探针 ~15:16；本报告写就 15:18–15:19 PDT；HEAD `b7985d16`；active builds 0（错峰）；脏跟踪 31（兄弟在途，未碰）。
+
+---
+
+## 8. ADDENDUM（15:20–15:22 PDT）— DEF-1 已由 b74f46bf 并发修复 + 第二方独立验证
+
+本报告 §4.4 基于 **15:16 源码读取**（当时 DEF-1 OPEN）。写就期间（15:16→15:19）兄弟提交 **`b74f46bf fix(ipd): DEF-1 GateElement 审计 afterData 改走 AuditEventData.json +4 回归单测`**，恰与本会话 §4.4 修复规格**独立收敛**。第二方独立验证：
+
+**① 修复正确性（源码级）**
+- `GateElementService.audit()`：`.afterData(detail)` → `.afterData(AuditEventData.json("detail", detail))`。
+- 新增 `AuditEventData.json(Object... pairs)`：LinkedHashMap + Jackson `writeValueAsString` → 合法 JSON `{"detail":"G1/E01"}`（修复前纯文本 `G1/E01`）→ 满足 MySQL JSON 列。与 §4.4 规格一致。
+- b74f46bf 仅动 `GateElementService.java` + `GateElementAuditJsonTest.java` 两文件。
+
+**② 回归测试佐证（错峰单类，独立复现）**
+```
+mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=GateElementAuditJsonTest test
+→ Tests run: 4, Failures: 0, Errors: 0, Skipped: 0  BUILD SUCCESS @15:21:36（active builds 0）
+```
+- `GateElementAuditJsonTest`（@Tag dev）虽属 Mockito 层，但 `assertValidJson()` 用**真实 `ObjectMapper.readTree(afterData)`** 断言 afterData 为合法 JSON——锁死的正是 DEF-1 违反的契约，**非空洞 mock 绿**（对照：旧 `GateElementServiceTest` 完全 mock 掉 auditLogService、从不校验 afterData，故 5/5 绿却漏 DEF-1）。sibling 亦诚实标注「mock 层；真机 HTTP 证据见 QA-03 报告」。
+
+**③ 残留缺口（诚实标注）**
+- 单测证明 afterData 是合法 JSON（MySQL JSON 列接受的充要条件），但**未做修复后真库 HTTP 端到端复验**（超管 POST /gate-elements→200 + audit_logs 落 1 行）。该复验被 §3 STALE app 阻断（16039 早于 b74f46bf）；建议 owner 重启 app 后用 `QA-03-matrix-v5.py` 重跑 gate-element create 格作最终闭环。
+- **判定更新**：DEF-1 由 ❌OPEN → ✅**FIXED（源码正确 + 4 单测绿佐证 + 契约锁死）**，仅余「真库 HTTP 端到端复验」待 app 重启（PARTIAL-closure）。
+
+**④ 缺陷 A-audit / B 未受 b74f46bf 触及**（未动 Catalog/advice/AuditLogController）→ 仍 ❌OPEN，§4.2/§4.3 结论不变。
