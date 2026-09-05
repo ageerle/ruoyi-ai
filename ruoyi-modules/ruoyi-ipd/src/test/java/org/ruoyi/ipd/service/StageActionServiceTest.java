@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -10,10 +11,12 @@ import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
+import org.ruoyi.ipd.seed.ActionCatalog;
 import org.ruoyi.ipd.service.AuditLogService;
 import org.ruoyi.ipd.domain.AuditLog;
 
 import java.util.Date;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -129,11 +132,16 @@ class StageActionServiceTest {
     }
 
     @Test
-    @DisplayName("instantiate 幂等：同项目同编码已存在全跳过（CONPECT 12 项全查重）")
+    @DisplayName("instantiate 幂等：同项目同编码已存在全跳过（PERF-03 后 1 次 selectList 查重，零插入）")
     void instantiateIdempotent() {
-        when(actionMapper.selectCount(any())).thenReturn(1L); // 连续调用恒返回已存在
-        service.instantiate(100L, 10L, "CONCEPT");
-        Mockito.verify(actionMapper, Mockito.times(12)).selectCount(any()); // CONCEPT 12 项逐条查重
+        List<StageAction> existing = ActionCatalog.byStage("CONCEPT").stream()
+            .map(def -> StageAction.builder().projectId(100L).actionCode(def.code()).build())
+            .toList();
+        when(actionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        int created = service.instantiate(100L, 10L, "CONCEPT");
+        assertThat(created).isZero(); // 幂等：全跳过
+        Mockito.verify(actionMapper, Mockito.times(1)).selectList(any(LambdaQueryWrapper.class)); // 查重 1 IO
+        Mockito.verify(actionMapper, Mockito.never()).insertBatch(any(java.util.Collection.class), any(Integer.class)); // 零插入
     }
 
     @Test
