@@ -1094,3 +1094,51 @@ v7 矩阵 verify 端点返回 chain=BROKEN、断裂 368/381。SQL 定性（15:48
 本次 `git add` 整个 SSOT 镜像文件，顺带入库了兄弟会话**已翻卡到看板 DB 但镜像未提交**的 9 行滞后同步（P2-3.1 `⬜`→`▶ Wave2落盘`、P3-4.1 `⬜`→`▶ Wave2落盘`、P1-3.1 `◇ BLOCKED_DEPENDENCY`→`✅ 真库HTTP闭环`、SEC-01/SEC-02/P0-4.1/P0-5.4/P0-6.1/P1-1.2/P1-11.1/P1-2.2/P1-3.2/P1-4.1/P1-9.1/P2-1.1 备注追加）。
 - 安全性依据：`manage.py sync` 预演对这些卡全部报 `unchanged`（镜像与看板 DB 已一致），`check` 结果 **drift=false**、unmanaged_cards=[] → 属 SSOT 滞后同步，非状态篡改。
 - 本会话自身对镜像的改动仅 2 行：DEF-4 行（状态 `⬜`→`✅ 5b95a9d0`、`AuditHashChain` 路径笔误 `security/`→`util/`、证据列追加闭环结论）+ 新增 DEF-5 行。
+
+### 第十九轮 P0-6.3 真闭环段（2026-09-05 16:33）
+
+- **卡号**：P0-6.3 删除申请 24h 撤回 + 组长超期升级
+- **依赖**：P0-6.1 ✅（round 7）+ OPS-04 ✅ + OPS-05 不依赖
+- **实施**：
+  - DeletionRequestController 补 3 端点：POST /{id}/withdraw (24h 守卫 + requester 守卫) + POST /escalate-overdue (超管超管) + GET /overdue-admin-review (超管)
+  - 复用 sibling service 已实现的 withdraw/escalateOverdueLeaderReview/listOverdueAdminReview 三个方法
+  - P063AcceptanceTest @Tag("dev") 7 测覆盖 AC-DEL-06/07 正反例
+- **单测**：7/7 绿（@Tag("dev")，mockito 隔离 DB）
+- **真库 HTTP 验收**（16049 PID 10394）：
+  - AC-DEL-06 正例：SUBMIT 1 → WITHDRAW 1 → 200 status=WITHDRAWN ✅
+  - AC-DEL-06 终态守卫：WITHDRAW again → 10001 '已终态' ✅
+  - AC-DEL-06 超 24h：SUBMIT 2 + 篡改 create_time -25h → WITHDRAW 2 → 10001 '已超过 24 小时' ✅
+  - AC-DEL-07 升级：SUBMIT 3 + 篡改 leader_due_at -1h → ESCALATE → 200 escalated=1 + ID3 状态变 ADMIN_REVIEW + admin_due_at +2 工作日 ✅
+- **commit**：d10d3bdc feat(ipd): P0-6.3 撤回 + 升级端到端——24h 撤回/组长超期升级/超期清单三端点 + 7 单测
+- **evidence**：.codex/ipd-dev/runtime/evidence-p063-withdraw-escalate-20260905-1633/evidence.json
+- **单写者纪律**：仅改 DeletionRequestController + 新增 P063AcceptanceTest；sibling 24 M files 全 0 触碰；sibling DeletionRequest* mtime 8h 前=不在途无冲突
+- **本轮 done**：P0-6.3（commit d10d3bdc）— 本会话累计真闭环 = 5 张（P0-4.1 + P2-1.1 + P0-5.4 + P0-6.1 + P0-6.3）
+- **下轮策略**：P0-6.4 (归档区 + 通知) 看依赖解锁；或 P0-7.3 等 sibling inreview
+
+
+### Wave 2 遗留项收口（2026-09-05 16:41）
+
+**执行会话**：Qoder 主协调会话（用户指令"完整完成遗留的"）
+
+#### 已完成
+1. **Undertow NoClassDefFoundError 修复**：完整 rebuild（非离线模式 `mvn -pl ruoyi-admin -am package`）解决类加载假红；select 端点从 HTTP 500 → code=0/status=SELECTED ✅
+2. **bid_responses.rd_pm_id DDL 修订**：`docs/script/sql/update/2026-09-04-ipd-p0-tables.sql` 第417行 `not null` → `null comment '研发PM ID（应标时可为空，遴选后回填）'`；已提交
+3. **HTTP 全链路验收补完**（端口 16047，完整 rebuild JAR）：
+   - PUT /api/v1/bid-invitations/{id}/select?responseId=X → code=0, status=SELECTED, selectedResponseId=2096376275324166146 ✅
+   - GET /api/v1/bid-invitations/{id}/responses → code=0, count=1, status=ACCEPTED ✅
+   - PUT /api/v1/bid-invitations/{id}/withdraw → code=90001（正确业务拒绝：状态已SELECTED非OPEN，不可撤回）✅
+4. **验收数据清理**：DELETE bid_responses(id=2096376275324166146) + bid_invitations(id=2096376064354869250)；两表归零 ✅
+5. **测试实例清理**：16047 端口 app 已 kill ✅
+
+#### 最终验收矩阵
+| 端点 | 方法 | 结果 | 备注 |
+|------|------|------|------|
+| /api/v1/auth/login | POST | code=0 | token=187字符, scope=FULL |
+| /api/v1/bid-invitations | POST | code=0 | id=2096376064354869250, status=OPEN |
+| /api/v1/bid-invitations | GET | code=0 | total=1, records_count=1 |
+| /api/v1/bid-responses | POST | code=0 | id=2096376275324166146, status=PENDING |
+| /api/v1/bid-invitations/{id}/select | PUT | code=0 | status=SELECTED ✅ |
+| /api/v1/bid-invitations/{id}/responses | GET | code=0 | count=1, status=ACCEPTED ✅ |
+| /api/v1/bid-invitations/{id}/withdraw | PUT | code=90001 | 正确拒绝（非OPEN状态）✅ |
+
+**Wave 2 全部遗留项收口完成，无阻塞残留。**
