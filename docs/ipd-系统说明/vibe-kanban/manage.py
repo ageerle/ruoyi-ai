@@ -15,7 +15,7 @@ BASE = 'http://127.0.0.1:62250'
 PROJECT = 'ruoyi-ai'
 STATES = {'todo': '⬜', 'inprogress': '▶', 'inreview': '◇', 'done': '✅', 'cancelled': '⊘'}
 KEY = re.compile(r'^(?:P[0-4]-\d+(?:\.\d+)?|(?:OPS-VK|AUD|DOC|SEC(?:-API)?|DATA|API|OPS|QA|RISK|DB)-\d+(?:\.\d+)?)$')
-PRIORITIES = {'U0': '紧急', 'U1': '高', 'U2': '中', 'U3': '后续', '汇总': '汇总'}
+PRIORITIES = {'U0': '紧急', 'U1': '高', 'U2': '中', 'U3': '后续', 'P1': 'P1', 'P2': 'P2', 'P3': 'P3', '汇总': '汇总'}
 
 
 def has_external_blocker(source_status):
