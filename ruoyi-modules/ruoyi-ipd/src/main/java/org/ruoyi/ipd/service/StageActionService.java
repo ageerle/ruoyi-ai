@@ -107,6 +107,43 @@ public class StageActionService {
         }
     }
 
+    /**
+     * C12 强制挂载联动（P1-8，主 Prompt v3 L271：is_bio_feature 驱动 C12 合规审查强制挂载）：
+     * 项目存在任一涉生物特征动作实例而 C12 实例缺失时自动补挂（CONCEPT 阶段语义、深管、阻断）。
+     * 返回补挂数量（0=已挂载或无涉生物动作）。
+     */
+    @Transactional
+    public int ensureBioComplianceMount(Long projectId) {
+        Long bioCount = stageActionMapper.selectCount(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
+                .eq(StageAction::getProjectId, projectId)
+                .eq(StageAction::getIsBioFeature, "1"));
+        if (bioCount == null || bioCount == 0) {
+            return 0;
+        }
+        Long c12 = stageActionMapper.selectCount(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
+                .eq(StageAction::getProjectId, projectId)
+                .eq(StageAction::getActionCode, "C12"));
+        if (c12 != null && c12 > 0) {
+            return 0;
+        }
+        ActionDef def = ActionCatalog.byCode("C12");
+        StageAction c12Action = StageAction.builder()
+            .projectId(projectId)
+            .stageId(null) // 联动补挂按项目维度，阶段归属由调用方（P2 Gate 流程）回填
+            .actionCode(def.code())
+            .actionName(def.name())
+            .ownerRole(def.ownerRole())
+            .depth(def.depth())
+            .status("NOT_STARTED")
+            .isBlocking("1")
+            .isBioFeature("1")
+            .build();
+        stageActionMapper.insert(c12Action);
+        return 1;
+    }
+
     /** 交付物登记（深管附件上传的最小真实落点；OSS 集成后补 fileUrl） */
     @Transactional
     public Deliverable addDeliverable(Long actionId, String fileName, Long ossId, String operator) {

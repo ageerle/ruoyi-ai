@@ -97,4 +97,14 @@ class ActionCatalogTest {
         assertThat(v11.applicable()).isEqualTo("SOL");
         assertThat(v11.blocking()).isFalse();
     }
+    @Test
+    @DisplayName("Z 系别名归一：Z01-05 解析为 D11/V10/C12/V11/V12（主 Prompt v3 L513-517）")
+    void aliasResolution() {
+        assertThat(ActionCatalog.ALIASES).hasSize(5);
+        assertThat(ActionCatalog.resolveCode("Z01")).isEqualTo("D11");
+        assertThat(ActionCatalog.resolveCode("Z03")).isEqualTo("C12");
+        assertThat(ActionCatalog.resolveCode("C01")).isEqualTo("C01"); // 非别名原样
+        // 别名对齐目标动作均在目录内且特性一致：D11 须登记 FAR/FRR
+        assertThat(ActionCatalog.byCode("D11").valueFields()).contains("FAR", "FRR");
+    }
 }

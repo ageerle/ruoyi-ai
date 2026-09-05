@@ -106,6 +106,15 @@ public final class ActionCatalog {
     public static final List<String> B_LEVEL_BLOCKING_CODES = List.of(
         "C11", "P12", "P13", "D05", "L07", "L08", "LC02", "P10", "V02", "C12");
 
+    /** 主 Prompt v3 L513-517 别名对：Z 系为同一动作第二编码（64+5 建制=69 历史口径） */
+    public static final java.util.Map<String, String> ALIASES = java.util.Map.of(
+        "Z01", "D11", "Z02", "V10", "Z03", "C12", "Z04", "V11", "Z05", "V12");
+
+    /** 别名归一：Z 系编码解析为权威编码；未知编码原样返回 */
+    public static String resolveCode(String code) {
+        return ALIASES.getOrDefault(code, code);
+    }
+
     public static List<ActionDef> byStage(String stage) {
         return ALL.stream().filter(a -> a.stage().equals(stage)).toList();
     }

@@ -163,4 +163,28 @@ class StageActionServiceTest {
         assertThat(d.getActionId()).isEqualTo(1L);
         Mockito.verify(auditLogService).append(any(AuditLog.class));
     }
+
+    @Test
+    @DisplayName("C12 强制挂载联动：涉生物项目且 C12 缺失 → 自动补挂（阻断深管）")
+    void c12MountWhenBio() {
+        when(actionMapper.selectCount(any())).thenReturn(1L, 0L);
+        when(actionMapper.insert(any(StageAction.class))).thenAnswer(inv -> {
+            StageAction a = inv.getArgument(0);
+            a.setId(55L);
+            return 1;
+        });
+        assertThat(service.ensureBioComplianceMount(100L)).isEqualTo(1);
+        Mockito.verify(actionMapper).insert(Mockito.argThat((StageAction a) ->
+            "C12".equals(a.getActionCode()) && "1".equals(a.getIsBlocking())));
+    }
+
+    @Test
+    @DisplayName("C12 联动：无涉生物动作不补挂；C12 已挂不重复补挂")
+    void c12MountGuards() {
+        when(actionMapper.selectCount(any())).thenReturn(0L);
+        assertThat(service.ensureBioComplianceMount(100L)).isZero();
+        Mockito.verify(actionMapper, Mockito.never()).insert(org.mockito.ArgumentMatchers.<StageAction>any());
+        when(actionMapper.selectCount(any())).thenReturn(1L, 1L);
+        assertThat(service.ensureBioComplianceMount(100L)).isZero();
+    }
 }
