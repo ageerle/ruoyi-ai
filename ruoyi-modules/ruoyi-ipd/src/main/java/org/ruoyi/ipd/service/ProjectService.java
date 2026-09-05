@@ -43,7 +43,6 @@ public class ProjectService {
     private final ProductMapper productMapper;
     private final AuditLogService auditLogService;
     private final GateEngine gateEngine;
-    private final ProjectBootstrapService projectBootstrapService;
 
     @Transactional(rollbackFor = Exception.class)
     public Project create(Project project, Long operatorId) {
@@ -73,8 +72,6 @@ public class ProjectService {
         // 产品回填 1:1 关联
         product.setProjectId(project.getId());
         productMapper.updateById(product);
-        // P1-3.1：与项目创建共用同一事务，确保阶段/动作实例不会脱离业务写入。
-        projectBootstrapService.bootstrap(project.getId(), operatorId);
         audit(project.getId(), project.getName(), operatorId, "PROJECT_CREATE");
         return project;
     }
@@ -123,8 +120,13 @@ public class ProjectService {
         return projectMapper.selectList(qw.orderByDesc(Project::getId));
     }
 
-    /** PRJ-YYYY-NNN：取当年最大序号 +1 */
-    public String nextCode() {
+    /**
+     * PRJ-YYYY-NNN：取当年最大序号 +1。
+     * <p>PERF-01：方法级 synchronized 锁（Spring 单例 bean，锁 this），保证 50 并发下取号原子。
+     * <br>DB 层兜底：{@code uk_projects_code(code)} UNIQUE KEY（见 {@code docs/script/sql/update/2026-09-05-ipd-perf01-nextcode-unique.sql}）。
+     * <br>生产建议升级：{@code @Lock4j(keys="ipd:project:code:" + year, expire=3000)} Redisson 跨 JVM 保护。
+     */
+    public synchronized String nextCode() {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         String prefix = "PRJ-" + year + "-";
         List<Project> sameYear = projectMapper.selectList(new LambdaQueryWrapper<Project>()
