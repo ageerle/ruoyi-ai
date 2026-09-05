@@ -57,7 +57,7 @@ class IpdSeedConsistencyTest {
     }
 
     @Test
-    @DisplayName("认证模板 = 17 项，覆盖 5 区域（CN/US/EU/SA/AE/IN/KR/JP/AU）")
+    @DisplayName("认证模板 = 21 项（P1-3 增补拉美/国际后）")
     void certCount() throws IOException {
         String sql = seed();
         Matcher m = Pattern.compile("INSERT INTO cert_templates").matcher(sql);
@@ -65,12 +65,14 @@ class IpdSeedConsistencyTest {
         while (m.find()) {
             total++;
         }
-        assertThat(total).isEqualTo(17);
-        for (String cc : new String[]{"'CN'", "'US'", "'EU'", "'SA'", "'AE'", "'IN'", "'KR'", "'JP'", "'AU'"}) {
+        assertThat(total).isEqualTo(21);
+        for (String cc : new String[]{"'CN'", "'US'", "'EU'", "'SA'", "'AE'", "'IN'", "'KR'", "'JP'", "'AU'", "'BR'", "'MX'", "'CB'", "'IEC'"}) {
             assertThat(sql).contains(cc);
         }
         assertThat(sql).contains("SABER/SASO");
         assertThat(sql).contains("GDPR");
+        assertThat(sql).contains("ANATEL");
+        assertThat(sql).contains("IEC 62443");
     }
 
     private int countGate(String sql, String gate) {

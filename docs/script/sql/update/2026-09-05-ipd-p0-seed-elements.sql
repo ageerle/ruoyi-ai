@@ -162,3 +162,16 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cert_templates WHERE country_code = 'J
 INSERT INTO cert_templates (id, country_code, country_name, cert_name, cert_authority, requirement_desc, is_mandatory, create_by, create_time, tenant_id, del_flag)
 SELECT 1948090616, 'AU', '澳洲', 'RCM', NULL, '澳洲合规标志', '1', 1, NOW(), '000000', '0'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cert_templates WHERE country_code = 'AU' AND cert_name = 'RCM');
+INSERT INTO cert_templates (id, country_code, country_name, cert_name, cert_authority, requirement_desc, is_mandatory, create_by, create_time, tenant_id, del_flag)
+SELECT 1948090617, 'BR', '巴西', 'ANATEL', NULL, '巴西电信认证', '1', 1, NOW(), '000000', '0'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cert_templates WHERE country_code = 'BR' AND cert_name = 'ANATEL');
+INSERT INTO cert_templates (id, country_code, country_name, cert_name, cert_authority, requirement_desc, is_mandatory, create_by, create_time, tenant_id, del_flag)
+SELECT 1948090618, 'MX', '墨西哥', 'NOM', NULL, '墨西哥官方标准认证', '1', 1, NOW(), '000000', '0'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cert_templates WHERE country_code = 'MX' AND cert_name = 'NOM');
+INSERT INTO cert_templates (id, country_code, country_name, cert_name, cert_authority, requirement_desc, is_mandatory, create_by, create_time, tenant_id, del_flag)
+SELECT 1948090619, 'CB', '国际', 'CB Scheme', NULL, 'IEC 电工产品互认体系', '0', 1, NOW(), '000000', '0'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cert_templates WHERE country_code = 'CB' AND cert_name = 'CB Scheme');
+INSERT INTO cert_templates (id, country_code, country_name, cert_name, cert_authority, requirement_desc, is_mandatory, create_by, create_time, tenant_id, del_flag)
+SELECT 1948090620, 'IEC', '国际', 'IEC 62443', NULL, '工控安全标准', '0', 1, NOW(), '000000', '0'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cert_templates WHERE country_code = 'IEC' AND cert_name = 'IEC 62443');
+-- P1-3 增补：清单 v3 M1 段漏提取的拉美 2 项 + 国际 2 项，17 到 21

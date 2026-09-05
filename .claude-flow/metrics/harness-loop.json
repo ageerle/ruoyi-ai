@@ -1,0 +1,91 @@
+{
+  "timestamp": "2026-09-04T18:51:31.880Z",
+  "flywheel": {
+    "ran": false,
+    "reason": "opt-in required (RUFLO_HARNESS_LOOP=1)",
+    "generation": 0
+  },
+  "lineage": {
+    "generations": 0,
+    "attempts": 0,
+    "lineage": {
+      "generations": 0,
+      "candidatesEvaluated": 0,
+      "promotions": 0,
+      "rejections": 0,
+      "cumulativeHeldOutImprovement": 0,
+      "rootHash": null,
+      "branches": [],
+      "lineageIntact": false,
+      "allReplayable": true,
+      "nodes": [],
+      "problems": [
+        "expected exactly one immutable root, found 0"
+      ]
+    },
+    "plateau": {
+      "status": "insufficient-data",
+      "window": 5,
+      "medianImprovement": 0,
+      "promotionRate": 0,
+      "varianceShrinking": false,
+      "candidateVariance": 0,
+      "rationale": "need 5 generations, have 0"
+    },
+    "mutation": [],
+    "axisEffectiveness": [
+      {
+        "axis": "alpha",
+        "promotions": 0,
+        "meanDelta": 0
+      },
+      {
+        "axis": "subjectWeight",
+        "promotions": 0,
+        "meanDelta": 0
+      },
+      {
+        "axis": "mmrLambda",
+        "promotions": 0,
+        "meanDelta": 0
+      },
+      {
+        "axis": "bodyWeight",
+        "promotions": 0,
+        "meanDelta": 0
+      },
+      {
+        "axis": "typePenaltyFactor",
+        "promotions": 0,
+        "meanDelta": 0
+      }
+    ],
+    "cumulativeBenchmarkDelta": 0,
+    "cumulativeHumanRelevanceDelta": 0,
+    "humanEvalHash": null,
+    "served": {
+      "championHash": null,
+      "config": null,
+      "servedAt": null,
+      "fromGeneration": null
+    },
+    "champion": {
+      "config": {
+        "alpha": 0.5,
+        "subjectWeight": 2,
+        "mmrLambda": 0.7,
+        "bodyWeight": 1,
+        "typePenaltyFactor": 1
+      },
+      "hash": null
+    },
+    "sequential": {
+      "nextTestIndex": 1,
+      "alphaAllocatedNext": 0.03039635509270134,
+      "thresholdNext": 32.89868133696452,
+      "minInformativePairsNext": 9,
+      "remainingAlphaBudget": 0.05,
+      "alphaTotal": 0.05
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-05T00:39:32.906Z",
+  "projectRoot": "/Users/mac/Documents/ruoyi-ai",
+  "structure": {
+    "hasPackageJson": false,
+    "hasTsConfig": false,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1788568772906
+}
