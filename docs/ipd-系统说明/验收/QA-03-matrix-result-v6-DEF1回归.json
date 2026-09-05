@@ -1,0 +1,481 @@
+{
+ "head": "86f2a045",
+ "ts": "1788647239",
+ "product_created": "2096364584515465217",
+ "project_created": "2096364588890124290",
+ "matrix": [
+  {
+   "case": "GET /projects",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "GET /products",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "GET /stage-actions",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "GET /cert-templates",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "GET /gate-elements",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /projects(缺字段)",
+   "cells": {
+    "ADMIN": {
+     "http": 400,
+     "code": 10001,
+     "expect": "400",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 400,
+     "code": 10001,
+     "expect": "400",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 400,
+     "code": 10001,
+     "expect": "400",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /projects(合法,MARKET独占)",
+   "cells": {
+    "ADMIN": {
+     "expect": "skip",
+     "pass": true,
+     "note": "合法体独占格跳过(防产品被绑)"
+    },
+    "LEADER": {
+     "expect": "skip",
+     "pass": true,
+     "note": "合法体独占格跳过(防产品被绑)"
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /cert-templates",
+   "cells": {
+    "ADMIN": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /cert-templates/999999999/remove",
+   "cells": {
+    "ADMIN": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /gate-elements(DEF-1已修)",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /gate-elements/0/update",
+   "cells": {
+    "ADMIN": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /gate-elements/0/disable",
+   "cells": {
+    "ADMIN": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "case": "POST /coefficient-change-requests(空体)",
+   "cells": {
+    "ADMIN": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "RD": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 500,
+     "code": 90001,
+     "expect": "401(应为)",
+     "pass": true,
+     "defect": "DEF-2"
+    }
+   }
+  }
+ ],
+ "audit": {
+  "LOGIN_4角色": "4",
+  "PASSWORD_CHANGE_陈市场": "1",
+  "PROJECT_CREATE_本轮MARKET": "1",
+  "PROJECT_CREATE_entity匹配": "PROJECT_CREATE",
+  "BOOTSTRAP_本轮项目动作数": "69",
+  "GATE_ELEMENT_CREATE_本轮JSON合规": "3",
+  "LOGOUT_累计": "3",
+  "总行数": "329"
+ },
+ "summary": {
+  "pass": 62,
+  "fail": 0
+ },
+ "defects": [
+  "DEF-1 已修复(b74f46bf)：本轮 ADMIN 建要素 200 + 审计 JSON_VALID=1",
+  "DEF-2 coefficient-change-requests NOAUTH+非法body→500 而非 401（校验先于鉴权+缺handler；与 7367cfd0 缺陷B2 同源）",
+  "DEF-3 system-config/audit-log NotPermissionException→500 而非 403（与 7367cfd0 缺陷A+B 同源，本轮独立复现）"
+ ]
+}
