@@ -34,23 +34,34 @@ public class IpdAuthService {
     private final PersonMapper personMapper;
     private final AuditLogService auditLogService;
 
-    /** 登录：合并用户名/密码错误信息防枚举；状态机映射授权范围 */
+    /** 登录：合并用户名/密码错误信息防枚举；状态机映射授权范围。
+     * <p>SEC-AUD-01：失败分支也写审计 (action=LOGIN_FAIL)，auditLogService.append 走 REQUIRES_NEW
+     * 不受本事务回滚影响，爆破/撞库/离职尝试均有运营/法务可见证据。
+     */
     @Transactional(rollbackFor = Exception.class)
     public LoginResult login(String username, String rawPassword) {
         Person person = personMapper.selectOne(new LambdaQueryWrapper<Person>()
             .eq(Person::getUsername, username).last("limit 1"));
         if (person == null || !BCrypt.checkpw(rawPassword, nvl(person.getPasswordHash()))) {
+            auditFail(person == null ? null : person.getId(), username, "BAD_CREDENTIALS");
             throw new ServiceException("用户名或密码错误");
         }
         if ("RESIGNED".equals(person.getEmploymentStatus())) {
+            auditFail(person.getId(), username, "RESIGNED");
             throw new ServiceException("离职账号禁止登录");
         }
         Scope scope;
         switch (nvl(person.getAccountStatus())) {
             case "ACTIVE", "" -> scope = Scope.FULL;
             case "FROZEN_PENDING_HANDOVER" -> scope = Scope.HANDOVER_ONLY;
-            case "DISABLED" -> { throw new ServiceException("账号已禁用，请联系超管"); }
-            default -> { throw new ServiceException("账号状态异常: " + person.getAccountStatus()); }
+            case "DISABLED" -> {
+                auditFail(person.getId(), username, "DISABLED");
+                throw new ServiceException("账号已禁用，请联系超管");
+            }
+            default -> {
+                auditFail(person.getId(), username, "STATUS_ABNORMAL:" + person.getAccountStatus());
+                throw new ServiceException("账号状态异常: " + person.getAccountStatus());
+            }
         }
         person.setLastLoginAt(new Date());
         personMapper.updateById(person);
@@ -136,6 +147,22 @@ public class IpdAuthService {
             .action(action)
             .entityType("persons")
             .entityId(personId)
+            .createTime(new Date())
+            .build());
+    }
+
+    /**
+     * SEC-AUD-01：登录失败审计。
+     * <p>auditLogService.append 走 REQUIRES_NEW，独立提交，不受 login() REQUIRED 事务回滚影响；
+     * operatorId 在失败分支无可靠身份时记为 null（无法伪造业务身份）。
+     */
+    private void auditFail(Long personId, String username, String reason) {
+        auditLogService.append(AuditLog.builder()
+            .action("LOGIN_FAIL")
+            .entityType("persons")
+            .entityId(personId)
+            .operatorName(username)
+            .reason(reason)
             .createTime(new Date())
             .build());
     }
