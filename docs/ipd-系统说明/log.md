@@ -1089,3 +1089,8 @@ v7 矩阵 verify 端点返回 chain=BROKEN、断裂 368/381。SQL 定性（15:48
 ### 遗留（非阻塞）
 - 兄弟旧 jar 实例（16039 @15:37:53 / 16044 @15:25:58 / 81711 @15:51:03）均不含 `5b95a9d0`，若继续写审计会再产毫秒污染行 → **全实例升级 jar 后需复跑一次 rebuild 终验**（`AuditLogController.rebuildChain` javadoc 已预警运维顺序）。
 - 登录限流：同 IP 同账号 60 秒最多 5 次（`IpdAuthController` @RateLimiter），批量验证脚本须控制 login 频次或改用 `export/scope` 等非登录写入源。
+
+### 提交附注（9f1fb63b 镜像入库范围说明）
+本次 `git add` 整个 SSOT 镜像文件，顺带入库了兄弟会话**已翻卡到看板 DB 但镜像未提交**的 9 行滞后同步（P2-3.1 `⬜`→`▶ Wave2落盘`、P3-4.1 `⬜`→`▶ Wave2落盘`、P1-3.1 `◇ BLOCKED_DEPENDENCY`→`✅ 真库HTTP闭环`、SEC-01/SEC-02/P0-4.1/P0-5.4/P0-6.1/P1-1.2/P1-11.1/P1-2.2/P1-3.2/P1-4.1/P1-9.1/P2-1.1 备注追加）。
+- 安全性依据：`manage.py sync` 预演对这些卡全部报 `unchanged`（镜像与看板 DB 已一致），`check` 结果 **drift=false**、unmanaged_cards=[] → 属 SSOT 滞后同步，非状态篡改。
+- 本会话自身对镜像的改动仅 2 行：DEF-4 行（状态 `⬜`→`✅ 5b95a9d0`、`AuditHashChain` 路径笔误 `security/`→`util/`、证据列追加闭环结论）+ 新增 DEF-5 行。
