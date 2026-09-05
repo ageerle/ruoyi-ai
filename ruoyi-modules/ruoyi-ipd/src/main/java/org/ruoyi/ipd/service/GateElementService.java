@@ -101,11 +101,16 @@ public class GateElementService {
         }
     }
 
+    /**
+     * DEF-1（QA-03 矩阵实测）：after_data 为 MySQL JSON 列，纯文本直写触发
+     * MysqlDataTruncation → 审计与业务同事务回滚，create 从未成功落库。
+     * 统一走 {@link AuditEventData#json} 与全模块审计 JSON 契约对齐。
+     */
     private void audit(String operator, String action, Long id, String detail) {
         auditLogService.append(AuditLog.builder()
             .operatorName(operator).operatorRole("SUPER_ADMIN")
             .action(action).entityType("GATE_ELEMENT").entityId(id)
-            .afterData(detail)
+            .afterData(AuditEventData.json("detail", detail))
             .build());
     }
 }
