@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.StageAction;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.StageActionService;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,8 +50,8 @@ public class StageActionController {
     public ApiV1Response<StageAction> transit(@PathVariable Long id,
                                               @RequestParam String target,
                                               @RequestParam(required = false) String reason) {
-        ipdPermission.requireActionWriter(() -> stageActionService.getById(id));
-        return ApiV1Response.ok(stageActionService.transit(id, target, reason, LoginHelper.getUserIdStr()));
+        IpdActor actor = ipdPermission.requireActionWriter(() -> stageActionService.getById(id));
+        return ApiV1Response.ok(stageActionService.transit(id, target, reason, String.valueOf(actor.id())));
     }
 
     /** 深管交付物登记（BR-IPD-03 完成前置），需 ipd:stage-action:add 权限 */
@@ -60,8 +60,8 @@ public class StageActionController {
     public ApiV1Response<Deliverable> addDeliverable(@PathVariable Long id,
                                                      @RequestParam String fileName,
                                                      @RequestParam(required = false) Long ossId) {
-        ipdPermission.requireActionWriter(() -> stageActionService.getById(id));
-        return ApiV1Response.ok(stageActionService.addDeliverable(id, fileName, ossId, LoginHelper.getUserIdStr()));
+        IpdActor actor = ipdPermission.requireActionWriter(() -> stageActionService.getById(id));
+        return ApiV1Response.ok(stageActionService.addDeliverable(id, fileName, ossId, String.valueOf(actor.id())));
     }
 
     /** 从目录实例化某阶段动作（幂等），返回新建数量，需 ipd:stage-action:add 权限 */

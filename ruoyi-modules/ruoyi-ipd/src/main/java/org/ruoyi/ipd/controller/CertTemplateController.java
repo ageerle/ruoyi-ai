@@ -4,10 +4,10 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.CertTemplate;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.CertTemplateService;
-import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,8 +58,8 @@ public class CertTemplateController {
     @PostMapping
     @SaCheckPermission(value = "ipd:cert-template:add", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<CertTemplate> create(@RequestBody CertTemplate template) {
-        ipdPermission.requireAdmin();
-        return ApiV1Response.ok(certTemplateService.create(template, LoginHelper.getUserId()));
+        IpdActor actor = ipdPermission.requireAdmin();
+        return ApiV1Response.ok(certTemplateService.create(template, actor.id()));
     }
 
     /**
@@ -72,8 +72,8 @@ public class CertTemplateController {
     @PostMapping("/{id}/remove")
     @SaCheckPermission(value = "ipd:cert-template:remove", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> remove(@PathVariable Long id) {
-        ipdPermission.requireAdmin();
-        certTemplateService.remove(id, LoginHelper.getUserId());
+        IpdActor actor = ipdPermission.requireAdmin();
+        certTemplateService.remove(id, actor.id());
         return ApiV1Response.ok(null);
     }
 }

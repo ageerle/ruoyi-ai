@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.ProjectService;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,23 +50,23 @@ public class ProjectController {
     @SaCheckPermission(value = "ipd:project:add", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> create(@RequestBody org.ruoyi.ipd.dto.ProjectCreateReq req) {
         // CODE-01：白名单 DTO，code/currentStage/status/source 由服务端定，客户端不可注入
-        ipdPermission.requireProjectCreator();
-        return ApiV1Response.ok(projectService.create(req.toEntity(), LoginHelper.getUserId()));
+        IpdActor actor = ipdPermission.requireProjectCreator();
+        return ApiV1Response.ok(projectService.create(req.toEntity(), actor.id()));
     }
 
     /** 变更项目状态，需 ipd:project:edit 权限 */
     @PostMapping("/{id}/status")
     @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> changeStatus(@PathVariable Long id, @RequestParam String target) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(projectService.changeStatus(id, target, LoginHelper.getUserId()));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(projectService.changeStatus(id, target, actor.id()));
     }
 
     /** 推进项目阶段，需 ipd:project:edit 权限 */
     @PostMapping("/{id}/advance-stage")
     @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> advanceStage(@PathVariable Long id) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(projectService.advanceStage(id, LoginHelper.getUserId()));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(projectService.advanceStage(id, actor.id()));
     }
 }

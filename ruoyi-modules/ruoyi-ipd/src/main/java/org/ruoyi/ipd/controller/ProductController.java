@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Product;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.ProductService;
@@ -13,14 +14,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 /**
  * 产品接口 /api/v1/products（TS-09 统一响应 code=0）
- * 操作人取自 LoginHelper 当前登录人（SEC-API-01）。
+ * 操作人取自 IPD 会话当前登录人（SEC-API-01）。
  */
 @RestController
 @RequestMapping("/api/v1/products")
@@ -56,16 +56,16 @@ public class ProductController {
             && !Product.SRC_ADMIN_IMPORT.equals(src) && !Product.SRC_PM_NEW.equals(src)) {
             throw new org.ruoyi.common.core.exception.ServiceException("产品来源非法（允许 ADMIN_IMPORT|PM_NEW）: " + src);
         }
-        ipdPermission.requireProductCreator(src);
-        return ApiV1Response.ok(productService.create(req.toEntity(), LoginHelper.getUserId()));
+        IpdActor actor = ipdPermission.requireProductCreator(src);
+        return ApiV1Response.ok(productService.create(req.toEntity(), actor.id()));
     }
 
     /** 绑定项目，需 ipd:product:edit 权限 */
     @PostMapping("/{id}/bind-project")
     @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> bindProject(@PathVariable Long id, @RequestParam Long projectId) {
-        ipdPermission.requireProductWriter(() -> productService.getById(id));
-        productService.bindProject(id, projectId, LoginHelper.getUserId());
+        IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
+        productService.bindProject(id, projectId, actor.id());
         return ApiV1Response.ok(null);
     }
 
@@ -73,8 +73,8 @@ public class ProductController {
     @PostMapping("/{id}/status")
     @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> changeStatus(@PathVariable Long id, @RequestParam String status) {
-        ipdPermission.requireProductWriter(() -> productService.getById(id));
-        productService.changeStatus(id, status, LoginHelper.getUserId());
+        IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
+        productService.changeStatus(id, status, actor.id());
         return ApiV1Response.ok(null);
     }
 }
