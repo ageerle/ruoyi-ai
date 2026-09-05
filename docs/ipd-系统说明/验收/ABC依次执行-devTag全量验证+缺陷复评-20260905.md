@@ -217,3 +217,12 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=DefectBAdviceAcceptanceTest test
 | DEF-1（GateElement 审计明文写 JSON 列） | ✅FIXED / PARTIAL-closure（§8） | ✅**FULL-CLOSED**（7b13a409 真库 HTTP 62/62+JSON_VALID 3/3） |
 | 缺陷A-audit（Catalog 缺 audit-log 码） | ❌OPEN | ❌OPEN-**BLOCKED**（Catalog 脏，延后/移交 owner） |
 | 全量 *AcceptanceTest 回归 | — | ⚠**PARTIAL**（兄弟 WIP 编译阻断；静态零风险证已附，动态终证待主源可编译） |
+
+**⑦ 回归动态终证补记（15:39:44）— PARTIAL → COMPLETE**
+③ 的编译阻断在 15:36→15:39 间被兄弟自愈（`StageAction` 补上 remark 访问器，与 `LegacyImportService` 转为 WIP-一致、主源可编译；二者仍脏/未跟踪但不再冲突）。错峰复跑全量：
+```
+mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*AcceptanceTest' test
+→ Tests run: 189, Failures: 0, Errors: 0, Skipped: 0  BUILD SUCCESS @15:39:44（active builds 0）
+```
+- 含 `DefectBAdviceAcceptanceTest` 5/5、`Api01` 4/4、`P064` 10/10、`Sec01` 13/13、`P054` 9/9 等 22 个验收类全绿；**Skipped=0** 排除假绿。③ 的静态零风险证被动态终证坐实——缺陷B advice 改动对 189 条现存验收零回归。
+- **判定再更新**：§9⑥ 表「全量 *AcceptanceTest 回归」⚠PARTIAL → ✅**COMPLETE（189/189 绿）**。缺陷B 收口证据链完整：单类 5/5（15:33:56）+ 全量 189/189（15:39:44）双时间戳。
