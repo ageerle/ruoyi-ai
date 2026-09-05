@@ -299,3 +299,50 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Sec02AuditCatalogAcceptanceTest test
 | 缺陷A-audit（Catalog 缺码） | ❌OPEN-BLOCKED（Catalog 脏） | ✅**FIXED（兄弟 8fa62686）+ VERIFIED（本 QA 离线 5/5@15:51:47）**；live-app 正例待 owner 重启 |
 
 > 至此 SEC-02 三缺陷全部收口：缺陷B（§10 双证闭合）、DEF-2（§9 单测锁）、A-audit（§11 兄弟修+本QA离线验）。本 QA 全程只读探针 + scoped 测试 + 隔离提交，未编辑 Catalog/未重启共享 app/未写库。
+
+---
+
+## §12 ADDENDUM — 「多智能体并行」收口：2×CodeReview 独立审查 + A-audit live 正例铁证 + 全量回归 222/222（16:00–16:03）
+
+> owner「立即利用多个智能体并行执行确保完整落地」。遵 AGENTS.md 单一写入者 + 只读探针泳道：并行 = 派 **2 个 CodeReview 只读子智能体**（不构建、不改文件，避热树 target/ 假红）分审两修复，主线程并发做 **live 正例探针** + **错峰全量回归**。三轨并发。
+
+**① 并行 CodeReview 独立审查（2 子智能体，均 APPROVE-WITH-NITS）**
+
+| 域 | 提交 | 裁决 | 要点 |
+|---|---|---|---|
+| 缺陷B advice | 6628ab3b | APPROVE-WITH-NITS | 5 映射全对；advice 优先级健全（白名单控制器仍由 HIGHEST 的 IpdPermissionExceptionHandler 胜出，非白名单落 HIGHEST+1，无双重触发，抢占基线 SaTokenExceptionHandler 的 HTTP200+code403 旧错）；对既有 6 handler 零回归；响应体不泄敏；日志得当 |
+| A-audit Catalog | 8fa62686 | APPROVE-WITH-NITS | 三码与控制器 @SaCheckPermission 逐字对齐（L59/71/83↔Catalog L70/71/72）；超管专属与 /scope 设计自洽（端点内亦 requireAdmin）；契约测试反射锁对齐有效；system-config 同构；无租户风险 |
+
+- 缺陷B NIT：handleNotReadable 响应体用固定串（比预想更安全，e.getMessage() 仅进 log）；两 advice 权限映射重复（有意补漏，日后 FORBIDDEN 语义变更需同步两处）。
+- **A-audit MINOR（移交测试 owner/兄弟，本 QA 不改兄弟测试）**：Sec02AuditCatalogAcceptanceTest 未反向守卫 /scope、/export/scope 的「无注解」设计——未来若给 /scope 加 @SaCheckPermission 会破坏 P0-5.4 非超管访问而不报警，建议补一条「scope 端点注解矩阵为空」守卫断言。
+- A-audit 范围外告警：审查时工作树 AuditLogController 一度现两个同签名 rebuildChain()（兄弟未提交 WIP，会致模块编译失败）；16:00 复查已自愈为单个，HEAD 提交版无此方法。属热树 WIP 瞬时态，非本次修复缺陷。
+
+**② A-audit live 正例铁证（源码定序 + :16045 sec02a 实例探针）— 推翻 §11③「待 owner 重启」**
+
+关键：/audit-logs 路径次序恒为 **①@SaCheckPermission(L59，注解先)→ ②方法体 requireAdmin(L64)→requireRoles(L160)→requireInternal→ mustChangePwd 抛 20003(L91-93)**。20003 只可能来自②，而②仅在①通过后到达。
+
+| 实例 | jar/start | 超管 /audit-logs | 含义 |
+|---|---|---|---|
+| :16039（陈旧对照） | p191.jar/15:37:53 | 15:43 → **403/30001** | ①@SaCheckPermission **失败**（Catalog 无码，NotPermission） |
+| :16045（SEC-02 专用） | sec02a.jar/15:45:06 | 16:00 → **403/20003** | ①@SaCheckPermission **通过**（码已授予）→②requireInternal mustChangePwd 门 |
+
+- **30001→20003 跃迁 = A-audit 三码（list/verify/export）在 live app 上确已授予超管、@SaCheckPermission 全过**；唯一挡 200 者是超管种子 mustChangePwd=1（环境态）。/verify、/export 同→20003（同证）。
+- mustChangePwd 为超管种子首登态（IpdMockDataInitializer must_change_pwd=1），改正密属写操作（demo.enabled 拦截 + 扰动共享种子）故不做；A-audit 正例 live 验到「码已授予、@SaCheckPermission 通过」已是种子态允许的最强证据。缺陷B 在 :16045 亦复证：no-token /scope→401/20001（载 6628ab3b）。
+
+**③ 错峰全量回归 @HEAD 4bfac1cd（兄弟 Wave2 落盘后）**
+```
+mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*AcceptanceTest' test
+→ Tests run: 222, Failures: 0, Errors: 0, Skipped: 0  BUILD SUCCESS @16:03:12（active builds 0）
+```
+- 较 §9⑦ 的 189 增至 **222**（兄弟 Wave2 新增 P073/Sec02/P341/P231/P143 等验收类）；**全绿、Skipped=0**（排除假绿）。含 Sec02AuditCatalogAcceptanceTest 5/5（A-audit 契约）+ DefectBAdviceAcceptanceTest 5/5（缺陷B 契约）+ Api01 4/4 + Sec01 13/13 + P064 10/10 + P131 46/46 等。
+- 主源随 Wave2 WIP 编译通过 → 早先 duplicate rebuildChain 瞬时断裂已自愈未再现。**兄弟 Wave2 大落盘对本 QA 已验契约（advice + Catalog）零回归。**
+
+**④ 判定终局（SEC-02 三缺陷全闭环，本节为最终事实源，取代 §11③/§11④）**
+
+| 项 | 终判 | 证据链 |
+|---|---|---|
+| 缺陷B（advice 拒绝落 500） | ✅FIXED+VERIFIED | MockMvc 5/5 + 全量 222/222 + live HTTP 401/403/20003 + CodeReview APPROVE |
+| DEF-2（body 不可读落 500） | ✅FIXED | handleNotReadable→400，单测锁 + CodeReview 确认不泄敏 |
+| A-audit（Catalog 缺码） | ✅FIXED+VERIFIED | 离线契约 5/5 + CodeReview APPROVE + **live 正例铁证 30001→20003（:16045）** |
+
+> 并行执行：2 CodeReview 子智能体（只读审查，无构建/无改文件）+ 主线程 live 探针 + 错峰回归，三轨并发。本 QA 全程未编辑 Java 源码/Catalog、未重启共享 app、未写库；隔离提交仅本报告。**移交项**：①A-audit 测试 /scope 无注解守卫断言（兄弟/测试 owner）；②live 200 正例待超管种子改密或 owner 用非首登态账号（环境态，非缺陷）。
