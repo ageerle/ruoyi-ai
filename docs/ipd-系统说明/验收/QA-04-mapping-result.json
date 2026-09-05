@@ -1,0 +1,916 @@
+{
+  "generated_by": "qa04_ddl_entity_mapping.py",
+  "scope": {
+    "ddl_main": [
+      "2026-09-04-ipd-p0-tables.sql"
+    ],
+    "ddl_incremental": [
+      "2026-09-05-ipd-p143-optimistic-lock.sql",
+      "2026-09-05-ipd-perf01-nextcode-unique.sql",
+      "2026-09-05-ipd-project-cert-items.sql",
+      "2026-09-05-ipd-coefficient-change-requests.sql",
+      "2026-09-05-ipd-launch-date-change-requests.sql",
+      "2026-09-05-ipd-legacy-import.sql"
+    ],
+    "domain_dir": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain"
+  },
+  "summary": {
+    "tables_in_ddl": 29,
+    "entities": 29,
+    "matched": 28,
+    "errors": 8,
+    "warns": 59,
+    "columns_total": 517
+  },
+  "matrix": [
+    {
+      "table": "ai_documents",
+      "entity": "AiDocument",
+      "ddl_columns": 19,
+      "entity_columns": 19,
+      "type_ok": 17,
+      "type_mismatch": 0,
+      "entity_only": [
+        "reviewed_at",
+        "reviewed_by"
+      ],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "allowance_ledgers",
+      "entity": "AllowanceLedger",
+      "ddl_columns": 17,
+      "entity_columns": 16,
+      "type_ok": 15,
+      "type_mismatch": 0,
+      "entity_only": [
+        "stop_start_date"
+      ],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "audit_logs",
+      "entity": "AuditLog",
+      "ddl_columns": 16,
+      "entity_columns": 16,
+      "type_ok": 16,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": []
+    },
+    {
+      "table": "bid_invitations",
+      "entity": "BidInvitation",
+      "ddl_columns": 17,
+      "entity_columns": 15,
+      "type_ok": 15,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "bid_responses",
+      "entity": "BidResponse",
+      "ddl_columns": 14,
+      "entity_columns": 12,
+      "type_ok": 12,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "bonus_pools",
+      "entity": "BonusPool",
+      "ddl_columns": 19,
+      "entity_columns": 19,
+      "type_ok": 17,
+      "type_mismatch": 0,
+      "entity_only": [
+        "calculated_at",
+        "distributed_at"
+      ],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "cert_templates",
+      "entity": "CertTemplate",
+      "ddl_columns": 15,
+      "entity_columns": 14,
+      "type_ok": 14,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark"
+      ]
+    },
+    {
+      "table": "coefficient_change_requests",
+      "entity": "CoefficientChangeRequest",
+      "ddl_columns": 20,
+      "entity_columns": 20,
+      "type_ok": 20,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": []
+    },
+    {
+      "table": "deletion_requests",
+      "entity": "DeletionRequest",
+      "ddl_columns": 24,
+      "entity_columns": 24,
+      "type_ok": 24,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": []
+    },
+    {
+      "table": "deliverables",
+      "entity": "Deliverable",
+      "ddl_columns": 17,
+      "entity_columns": 15,
+      "type_ok": 15,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "gates",
+      "entity": "Gate",
+      "ddl_columns": 17,
+      "entity_columns": 15,
+      "type_ok": 15,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "gate_review_elements",
+      "entity": "GateElement",
+      "ddl_columns": 16,
+      "entity_columns": 13,
+      "type_ok": 13,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "del_flag",
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "gate_reviews",
+      "entity": "GateReview",
+      "ddl_columns": 17,
+      "entity_columns": 15,
+      "type_ok": 15,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "handover_records",
+      "entity": "HandoverRecord",
+      "ddl_columns": 17,
+      "entity_columns": 15,
+      "type_ok": 15,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "kpi_records",
+      "entity": "KpiRecord",
+      "ddl_columns": 19,
+      "entity_columns": 18,
+      "type_ok": 17,
+      "type_mismatch": 0,
+      "entity_only": [
+        "scored_at"
+      ],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "launch_date_change_requests",
+      "entity": "LaunchDateChangeRequest",
+      "ddl_columns": 21,
+      "entity_columns": 21,
+      "type_ok": 21,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": []
+    },
+    {
+      "table": "persons",
+      "entity": "Person",
+      "ddl_columns": 24,
+      "entity_columns": 24,
+      "type_ok": 24,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": []
+    },
+    {
+      "table": "products",
+      "entity": "Product",
+      "ddl_columns": 16,
+      "entity_columns": 15,
+      "type_ok": 15,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark"
+      ]
+    },
+    {
+      "table": "product_groups",
+      "entity": "ProductGroup",
+      "ddl_columns": 13,
+      "entity_columns": 12,
+      "type_ok": 12,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark"
+      ]
+    },
+    {
+      "table": "projects",
+      "entity": "Project",
+      "ddl_columns": 31,
+      "entity_columns": 30,
+      "type_ok": 30,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark"
+      ]
+    },
+    {
+      "table": "project_cert_items",
+      "entity": "ProjectCertItem",
+      "ddl_columns": 20,
+      "entity_columns": 19,
+      "type_ok": 19,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark"
+      ]
+    },
+    {
+      "table": "project_members",
+      "entity": "ProjectMember",
+      "ddl_columns": 18,
+      "entity_columns": 16,
+      "type_ok": 16,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "project_stages",
+      "entity": "ProjectStage",
+      "ddl_columns": 17,
+      "entity_columns": 17,
+      "type_ok": 17,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": []
+    },
+    {
+      "table": "requirements",
+      "entity": "Requirement",
+      "ddl_columns": 21,
+      "entity_columns": 19,
+      "type_ok": 19,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "requirement_changes",
+      "entity": "RequirementChange",
+      "ddl_columns": 16,
+      "entity_columns": 14,
+      "type_ok": 14,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "sop_templates",
+      "entity": "SopTemplate",
+      "ddl_columns": 14,
+      "entity_columns": 12,
+      "type_ok": 12,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "remark",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "stage_actions",
+      "entity": "StageAction",
+      "ddl_columns": 28,
+      "entity_columns": 26,
+      "type_ok": 26,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": [
+        "del_flag",
+        "tenant_id"
+      ]
+    },
+    {
+      "table": "system_configs",
+      "entity": "SystemConfig",
+      "ddl_columns": 14,
+      "entity_columns": 14,
+      "type_ok": 14,
+      "type_mismatch": 0,
+      "entity_only": [],
+      "ddl_only": []
+    }
+  ],
+  "issues": {
+    "errors": [
+      {
+        "level": "ERROR",
+        "code": "TABLE_WITHOUT_ENTITY",
+        "table": "gate_element_results",
+        "detail": "DDL 表无对应 @TableName 实体，26 表映射缺口"
+      },
+      {
+        "level": "ERROR",
+        "code": "ENTITY_WITHOUT_TABLE",
+        "entity": "ReceiptLedger",
+        "table": "receipt_ledger",
+        "detail": "实体声明的表不在仓库 DDL 中"
+      },
+      {
+        "level": "ERROR",
+        "code": "COLUMN_NOT_IN_DDL",
+        "table": "ai_documents",
+        "entity": "AiDocument",
+        "column": "reviewed_by",
+        "detail": "实体字段 Long(reviewed_by) 在 DDL 无对应列（insert/update 将失败）"
+      },
+      {
+        "level": "ERROR",
+        "code": "COLUMN_NOT_IN_DDL",
+        "table": "ai_documents",
+        "entity": "AiDocument",
+        "column": "reviewed_at",
+        "detail": "实体字段 Date(reviewed_at) 在 DDL 无对应列（insert/update 将失败）"
+      },
+      {
+        "level": "ERROR",
+        "code": "COLUMN_NOT_IN_DDL",
+        "table": "allowance_ledgers",
+        "entity": "AllowanceLedger",
+        "column": "stop_start_date",
+        "detail": "实体字段 Date(stop_start_date) 在 DDL 无对应列（insert/update 将失败）"
+      },
+      {
+        "level": "ERROR",
+        "code": "COLUMN_NOT_IN_DDL",
+        "table": "bonus_pools",
+        "entity": "BonusPool",
+        "column": "calculated_at",
+        "detail": "实体字段 Date(calculated_at) 在 DDL 无对应列（insert/update 将失败）"
+      },
+      {
+        "level": "ERROR",
+        "code": "COLUMN_NOT_IN_DDL",
+        "table": "bonus_pools",
+        "entity": "BonusPool",
+        "column": "distributed_at",
+        "detail": "实体字段 Date(distributed_at) 在 DDL 无对应列（insert/update 将失败）"
+      },
+      {
+        "level": "ERROR",
+        "code": "COLUMN_NOT_IN_DDL",
+        "table": "kpi_records",
+        "entity": "KpiRecord",
+        "column": "scored_at",
+        "detail": "实体字段 Date(scored_at) 在 DDL 无对应列（insert/update 将失败）"
+      }
+    ],
+    "warnings": [
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "ai_documents",
+        "entity": "AiDocument",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "ai_documents",
+        "entity": "AiDocument",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "ai_documents",
+        "entity": "AiDocument",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "allowance_ledgers",
+        "entity": "AllowanceLedger",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "allowance_ledgers",
+        "entity": "AllowanceLedger",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "allowance_ledgers",
+        "entity": "AllowanceLedger",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "bid_invitations",
+        "entity": "BidInvitation",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "bid_invitations",
+        "entity": "BidInvitation",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "bid_invitations",
+        "entity": "BidInvitation",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "bid_responses",
+        "entity": "BidResponse",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "bid_responses",
+        "entity": "BidResponse",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "bid_responses",
+        "entity": "BidResponse",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "bonus_pools",
+        "entity": "BonusPool",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "bonus_pools",
+        "entity": "BonusPool",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "bonus_pools",
+        "entity": "BonusPool",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "cert_templates",
+        "entity": "CertTemplate",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "deliverables",
+        "entity": "Deliverable",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "deliverables",
+        "entity": "Deliverable",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "deliverables",
+        "entity": "Deliverable",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "gates",
+        "entity": "Gate",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "gates",
+        "entity": "Gate",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "gates",
+        "entity": "Gate",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "gate_review_elements",
+        "entity": "GateElement",
+        "column": "del_flag",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "gate_review_elements",
+        "entity": "GateElement",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "gate_review_elements",
+        "entity": "GateElement",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DELFLAG_MISMATCH",
+        "table": "gate_review_elements",
+        "entity": "GateElement",
+        "detail": "del_flag DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "gate_review_elements",
+        "entity": "GateElement",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "gate_reviews",
+        "entity": "GateReview",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "gate_reviews",
+        "entity": "GateReview",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "gate_reviews",
+        "entity": "GateReview",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "handover_records",
+        "entity": "HandoverRecord",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "handover_records",
+        "entity": "HandoverRecord",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "handover_records",
+        "entity": "HandoverRecord",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "kpi_records",
+        "entity": "KpiRecord",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "kpi_records",
+        "entity": "KpiRecord",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "kpi_records",
+        "entity": "KpiRecord",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "products",
+        "entity": "Product",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "product_groups",
+        "entity": "ProductGroup",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "projects",
+        "entity": "Project",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "project_cert_items",
+        "entity": "ProjectCertItem",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "project_members",
+        "entity": "ProjectMember",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "project_members",
+        "entity": "ProjectMember",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "project_members",
+        "entity": "ProjectMember",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "requirements",
+        "entity": "Requirement",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "requirements",
+        "entity": "Requirement",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "requirements",
+        "entity": "Requirement",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "requirement_changes",
+        "entity": "RequirementChange",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "requirement_changes",
+        "entity": "RequirementChange",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "requirement_changes",
+        "entity": "RequirementChange",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "sop_templates",
+        "entity": "SopTemplate",
+        "column": "remark",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "sop_templates",
+        "entity": "SopTemplate",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "sop_templates",
+        "entity": "SopTemplate",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "stage_actions",
+        "entity": "StageAction",
+        "column": "del_flag",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "stage_actions",
+        "entity": "StageAction",
+        "column": "tenant_id",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DELFLAG_MISMATCH",
+        "table": "stage_actions",
+        "entity": "StageAction",
+        "detail": "del_flag DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "TENANT_MISMATCH",
+        "table": "stage_actions",
+        "entity": "StageAction",
+        "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "audit_logs",
+        "column": "hash_version",
+        "detail": "ipd_dev 有、仓库 DDL 无"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "system_configs",
+        "column": "source_ref",
+        "detail": "ipd_dev 有、仓库 DDL 无"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "system_configs",
+        "column": "validation_rule",
+        "detail": "ipd_dev 有、仓库 DDL 无"
+      }
+    ]
+  },
+  "live_drift_ipd_dev": {
+    "tables_only_in_ddl": [],
+    "tables_only_in_live": [],
+    "columns": [
+      {
+        "table": "audit_logs",
+        "column": "hash_version",
+        "detail": "ipd_dev 有、仓库 DDL 无"
+      },
+      {
+        "table": "system_configs",
+        "column": "source_ref",
+        "detail": "ipd_dev 有、仓库 DDL 无"
+      },
+      {
+        "table": "system_configs",
+        "column": "validation_rule",
+        "detail": "ipd_dev 有、仓库 DDL 无"
+      }
+    ],
+    "unique_keys": []
+  }
+}
