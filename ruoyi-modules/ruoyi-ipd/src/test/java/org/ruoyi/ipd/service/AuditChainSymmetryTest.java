@@ -47,9 +47,12 @@ class AuditChainSymmetryTest {
     @InjectMocks
     private AuditLogService service;
 
-    /** 库侧截断语义：datetime(0) 抹掉毫秒。 */
-    private static Date dbTruncated(Date d) {
-        return new Date(d.getTime() / 1000L * 1000L);
+    /**
+     * 库侧真实语义：MySQL datetime(0) 对毫秒「四舍五入」（≥.500 进位到下一秒），**非截断**。
+     * 实测证据：INSERT '00:00:00.500' → 存 '00:00:01'（tz_probe 临时表，2026-09-05）。
+     */
+    private static Date dbRounded(Date d) {
+        return new Date((d.getTime() + 500L) / 1000L * 1000L);
     }
 
     /** 构造一行「按秒级对称语义自洽」的链行。 */
@@ -81,8 +84,8 @@ class AuditChainSymmetryTest {
     }
 
     @Test
-    @DisplayName("append→库截毫秒→verify 闭环：链自洽零断裂（毫秒不对称已修）")
-    void appendThenVerifyAfterDbTruncation() {
+    @DisplayName("append→库四舍五入毫秒→verify 闭环：链自洽零断裂（毫秒不对称已修）")
+    void appendThenVerifyAfterDbRounding() {
         Date nowWithMillis = new Date(1788700000123L);
         when(auditLogMapper.selectList(any()))
             .thenReturn(List.of())                                   // append: 空库（GENESIS 首行）
@@ -102,13 +105,44 @@ class AuditChainSymmetryTest {
             .operatorId(9L).operatorName("管理员").operatorRole("SUPER_ADMIN")
             .action("LOGIN").entityType("person").entityId(9L)
             .currHash(saved.getCurrHash())
-            .createTime(dbTruncated(nowWithMillis))                  // 模拟 datetime(0) 截断读回
+            .createTime(dbRounded(saved.getCreateTime()))              // 模拟 datetime(0) 四舍五入读回
             .build();
         assertThat(saved.getPrevHash()).isEqualTo(AuditHashChain.GENESIS);
         assertThat(saved.getCurrHash())
             .isEqualTo(AuditHashChain.computeCurrHash(AuditHashChain.GENESIS, canonicalSecond(dbView)));
 
         // verify 读回库视图 → 零断裂
+        when(auditLogMapper.selectList(any())).thenReturn(List.of(dbView));
+        assertThat(service.verifyChain()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("append 写库前毫秒归零：≥.500 进位场景仍自洽（实测 seq=406/407 REBUILD_CHAIN 断裂根因）")
+    void appendNormalizesMillisToAvoidDbRounding() {
+        // .700 毫秒：datetime(0) 四舍五入会进位到下一秒；若写库前不归零，读回 +1s → 重算哈希失配
+        Date highMillis = new Date(1788700000700L);
+        when(auditLogMapper.selectList(any())).thenReturn(List.of());
+        when(auditLogMapper.insert(any(AuditLog.class))).thenReturn(1);
+
+        AuditLog saved = service.append(AuditLog.builder()
+            .operatorId(9L).operatorName("管理员").operatorRole("SUPER_ADMIN")
+            .action("REBUILD_CHAIN").entityType("audit_logs")
+            .createTime(highMillis)
+            .build());
+
+        // 契约①：写库的 createTime 毫秒已归零 → DB 四舍五入不会再进位（存读同值）
+        assertThat(saved.getCreateTime().getTime() % 1000L).isZero();
+        assertThat(dbRounded(saved.getCreateTime())).isEqualTo(saved.getCreateTime());
+        assertThat(dbRounded(highMillis)).isNotEqualTo(saved.getCreateTime()); // 对照：不归零则差 1s
+
+        // 契约②：库读回视图与写入哈希自洽 → verify 零断裂
+        AuditLog dbView = AuditLog.builder()
+            .id(1L).seq(saved.getSeq()).prevHash(saved.getPrevHash())
+            .operatorId(9L).operatorName("管理员").operatorRole("SUPER_ADMIN")
+            .action("REBUILD_CHAIN").entityType("audit_logs")
+            .currHash(saved.getCurrHash())
+            .createTime(dbRounded(saved.getCreateTime()))
+            .build();
         when(auditLogMapper.selectList(any())).thenReturn(List.of(dbView));
         assertThat(service.verifyChain()).isEmpty();
     }

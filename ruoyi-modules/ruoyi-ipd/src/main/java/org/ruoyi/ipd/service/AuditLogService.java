@@ -23,8 +23,9 @@ import java.util.List;
  *
  * <p>DEF-4 链自洽三修复（2026-09-05）：
  * <ol>
- *   <li>时间戳秒级对称：create_time 列为 datetime(0)，哈希入参统一 {@link #secondMillis} 截秒，
- *       否则写入用毫秒、verify 读回恒 .000 → 全行重算必失配；</li>
+ *   <li>时间戳秒级对称：create_time 列为 datetime(0)，MySQL 对其毫秒是「四舍五入」（≥.500
+ *       进位到下一秒）而哈希入参是截断——因此写库前必须先把 {@code createTime} 毫秒归零，
+ *       否则约半数新行读回时间 +1s → 重算哈希失配（实测 seq=406/407 断裂）；</li>
  *   <li>verifyChain 升序遍历＋锚定库内首行（原实现误用降序 wrapper 且硬编码 GENESIS/seq=1，
  *       结构性全行断判）；</li>
  *   <li>append 唯一键冲突重试：DB 层最小权限（ipd_app 对 audit_logs 仅 SELECT,INSERT，
@@ -48,10 +49,10 @@ public class AuditLogService {
     /** 追加一条审计（独立事务：业务失败不回滚审计） */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public AuditLog append(AuditLog draft) {
-        // DEF-4：先定时间再哈希——写入与验链共用同一 Date（原实现 L41/L46 两次取 now 且毫秒被库截断）
-        if (draft.getCreateTime() == null) {
-            draft.setCreateTime(new Date());
-        }
+        // DEF-4：先定时间再哈希——写入与验链共用同一 Date，且毫秒必须归零后再写库：
+        // datetime(0) 对毫秒四舍五入（≥.500 进位），而 secondMillis 是截断，不归零则读回 +1s 哈希失配
+        Date base = draft.getCreateTime() == null ? new Date() : draft.getCreateTime();
+        draft.setCreateTime(new Date(secondMillis(base)));
         if (draft.getTenantId() == null) {
             draft.setTenantId("000000");
         }
@@ -164,7 +165,7 @@ public class AuditLogService {
             log.getBeforeData(), log.getAfterData(), log.getReason(), secondMillis(log.getCreateTime()));
     }
 
-    /** DEF-4：毫秒→整秒（MySQL datetime(0) 截断语义的 Java 侧对齐）。 */
+    /** DEF-4：毫秒→整秒截断（写库前归零用，避开 MySQL datetime(0) 的四舍五入进位）。 */
     private static long secondMillis(Date d) {
         return d == null ? 0L : d.getTime() / 1000L * 1000L;
     }
