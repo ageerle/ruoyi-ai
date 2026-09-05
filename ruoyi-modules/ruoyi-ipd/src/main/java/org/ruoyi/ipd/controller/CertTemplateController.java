@@ -6,6 +6,7 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.CertTemplate;
 import org.ruoyi.ipd.dto.CertTemplateCreateReq;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.CertTemplateService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +38,7 @@ public class CertTemplateController {
      * @param markets 逗号分隔市场码，如 SA,AE
      * @return 匹配的认证模板
      */
-    @SaCheckPermission("ipd:cert-template:list")
+    @SaCheckPermission(value = "ipd:cert-template:list", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/resolve")
     public ApiV1Response<List<CertTemplate>> resolve(@RequestParam String markets) {
         return ApiV1Response.ok(certTemplateService.resolve(markets.split(",")));
@@ -48,7 +49,7 @@ public class CertTemplateController {
      *
      * @return 模板列表
      */
-    @SaCheckPermission("ipd:cert-template:list")
+    @SaCheckPermission(value = "ipd:cert-template:list", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<CertTemplate>> list() {
         return ApiV1Response.ok(certTemplateService.listAll());
@@ -59,7 +60,7 @@ public class CertTemplateController {
      *
      * @return 国家码 → 数量
      */
-    @SaCheckPermission("ipd:cert-template:list")
+    @SaCheckPermission(value = "ipd:cert-template:list", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/country-counts")
     public ApiV1Response<Map<String, Long>> countryCounts() {
         return ApiV1Response.ok(certTemplateService.countByCountry());
@@ -72,7 +73,7 @@ public class CertTemplateController {
      * @param req 新建模板入参
      * @return 新建模板
      */
-    @SaCheckPermission("ipd:cert-template:add")
+    @SaCheckPermission(value = "ipd:cert-template:add", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
     public ApiV1Response<CertTemplate> create(@RequestBody CertTemplateCreateReq req) {
         IpdActor actor = ipdPermission.requireAdmin();
@@ -85,7 +86,7 @@ public class CertTemplateController {
      * @param id 模板 ID
      * @return 空成功体
      */
-    @SaCheckPermission("ipd:cert-template:remove")
+    @SaCheckPermission(value = "ipd:cert-template:remove", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/remove")
     public ApiV1Response<Void> remove(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireAdmin();
