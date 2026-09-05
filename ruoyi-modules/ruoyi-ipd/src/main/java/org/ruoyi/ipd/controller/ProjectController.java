@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.ProjectService;
@@ -37,7 +38,7 @@ public class ProjectController {
      * @return 项目列表
      */
     @GetMapping
-    @SaCheckPermission(IpdPermissionCode.OPERATION_MODULE_PROJECT)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<Project>> list(@RequestParam(required = false) String keyword) {
         return ApiV1Response.ok(projectService.list(keyword));
     }
@@ -49,7 +50,7 @@ public class ProjectController {
      * @return 项目实体
      */
     @GetMapping("/{id}")
-    @SaCheckPermission(IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> get(@PathVariable Long id) {
         return ApiV1Response.ok(projectService.getById(id));
     }
@@ -61,7 +62,7 @@ public class ProjectController {
      * @return 新建项目
      */
     @PostMapping
-    @SaCheckPermission(IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> create(@RequestBody org.ruoyi.ipd.dto.ProjectCreateReq req) {
         IpdActor actor = ipdPermission.requireProjectCreator();
         return ApiV1Response.ok(projectService.create(req.toEntity(), actor.id()));
@@ -75,7 +76,7 @@ public class ProjectController {
      * @return 更新后项目
      */
     @PostMapping("/{id}/status")
-    @SaCheckPermission(IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> changeStatus(@PathVariable Long id, @RequestParam String target) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(projectService.changeStatus(id, target, actor.id()));
@@ -88,7 +89,7 @@ public class ProjectController {
      * @return 更新后项目
      */
     @PostMapping("/{id}/advance-stage")
-    @SaCheckPermission(IpdPermissionCode.OPERATION_MODULE_PROJECT_ADVANCE_STAGE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_ADVANCE_STAGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> advanceStage(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(projectService.advanceStage(id, actor.id()));

@@ -55,4 +55,13 @@ public class IpdAuthSession {
     public long timeout() {
         return logic.getTokenTimeout();
     }
+
+    /**
+     * 暴露本会话绑定的 StpLogic（loginType=ipd），供注解鉴权与单测校验。
+     *
+     * @return ipd StpLogic 实例
+     */
+    public StpLogic stpLogic() {
+        return logic;
+    }
 }

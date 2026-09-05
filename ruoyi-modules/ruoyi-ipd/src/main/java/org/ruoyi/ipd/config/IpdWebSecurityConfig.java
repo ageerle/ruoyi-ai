@@ -1,22 +1,27 @@
 package org.ruoyi.ipd.config;
 
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.interceptor.SaInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermissionException;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * SEC 兜底：/api/v1/** 业务接口统一走 IPD 会话校验（StpLogic "ipd"），
- * 防止基线 security.excludes 放行 /api/v1/** 后出现匿名访问。
- * 认证入口 /api/v1/auth/login 保持匿名；auth 域其余接口内部自行 checkLogin。
- * 拒绝统一抛 IpdPermissionException(401, UNAUTHORIZED)，由
- * IpdPermissionExceptionHandler 转为 ApiV1Response 包络。
+ * SEC 兜底：/api/v1/** 业务接口统一走 IPD 会话 + 注解鉴权。
+ * <p>
+ * 基线 SecurityConfig 已 exclude /api/v1/**，故此处自行：
+ * <ol>
+ *   <li>登录校验（StpLogic "ipd"）</li>
+ *   <li>SaInterceptor 注解鉴权（@SaCheckPermission type=ipd）</li>
+ * </ol>
+ * 认证入口 /api/v1/auth/login 保持匿名。
  */
 @Configuration
 public class IpdWebSecurityConfig implements WebMvcConfigurer {
@@ -40,6 +45,13 @@ public class IpdWebSecurityConfig implements WebMvcConfigurer {
                 return true;
             }
         }).addPathPatterns("/api/v1/**")
-            .excludePathPatterns("/api/v1/auth/login");
+            .excludePathPatterns("/api/v1/auth/login")
+            .order(Ordered.HIGHEST_PRECEDENCE);
+
+        // 注解鉴权：依赖上一层已完成 ipd 登录；type=ipd 的 @SaCheckPermission 在此生效
+        registry.addInterceptor(new SaInterceptor().isAnnotation(true))
+            .addPathPatterns("/api/v1/**")
+            .excludePathPatterns("/api/v1/auth/login")
+            .order(Ordered.HIGHEST_PRECEDENCE + 1);
     }
 }
