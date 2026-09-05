@@ -710,3 +710,45 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - green phase：`Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.886 s -- in ProductGroupServiceTest`
 - 验收：`.codex/ipd-dev/runtime/evidence-p131-http-bootstrap.json` 流程类比；本会话 own-scope 用错峰单测替代真库 HTTP（避免 sibling 撞车）
 
+## 2026-09-05 Cursor：P1-4.1 / P1-5.2 真库闭环
+
+### 交付
+- **P1-4.1**：`POST /api/v1/stage-actions/{id}/fields` 录入 `actualDoneAt` / FAR·FRR / 证书号与通过日（不改 status）；再 `/transit?target=DONE`。
+- **P1-5.2**：`GET /api/v1/projects/{id}/gate-checklist` 返回逐项 reason + configVersion；A 级 `gate.a_level_block_codes` trim/去重/未知码拒绝；B 级改用 `ActionCatalog.B_LEVEL_BLOCKING_CODES`（10 项权威，不硬凑 14）。
+- 附带：`SystemConfigController` `{key:.+}` 路径；`IpdRolePermissionCatalog` 补 `ipd:system-config:*`。
+
+### 验证
+- 单测：`P141AcceptanceTest` 4 + `P152AcceptanceTest` 4 + `GateEngineTest` 12 → **20 绿**。
+- HTTP 真库 `16039`：C05 无日期 DONE 拒 → fields → DONE；D11 FAR/FRR DONE；checklist 200；A 配置未知码 400、规范化落库 `C11,C12`。
+- 证据：`.codex/ipd-dev/runtime/evidence-p141-p152.json`；运行 jar `ruoyi-admin-p141p152.jar`。
+- 看板：`manage.py set P1-4.1/P1-5.2 done`；`check` → `has_drift: false`。
+
+### 未抢
+- P1-4.2 附件上传（他会话 inprogress）。
+
+---
+
+## 第十三轮 P2-1.4 真库 HTTP 验收 + DTO 修复（2026-09-05 13:55 Saturday）
+
+- **目标**：P2-1 完整真库 HTTP 验收 + 修 DTO 缺陷（@RequestBody Long 不可控）
+- **范围**：仅 own-scope（ProductGroupController.java + DTO 新建 + log.md + evidence）
+- **sibling 兼容**：16039 上的 sibling jar p141p152 完整不动；新起 16040 跑 p21.jar
+- **路径**：
+  1. login POST /api/v1/auth/login → ipd-admin (SUPER_ADMIN) 拿 token
+  2. GET /api/v1/product-groups → 200, 5 groups（mock 3 + 历次测试残留 2）
+  3. POST /api/v1/product-groups → 200, newId=2096340686944202754, SEC-API-01 字段覆写（tenantId=000000, delFlag=0, createBy/updateBy=-1, createTime=now）
+  4. GET /api/v1/product-groups/{id} → 200, 校验回写
+  5. POST /api/v1/product-groups/{id}/leader body={"newLeaderPersonId":900101} → 200, leader 900102→900101, updateTime 更新
+  5b. body={} (缺字段) → 400, code=10001, "新组长 personId 不能为空"（@Valid @NotNull 生效）
+  6. POST /api/v1/product-groups/{id}/remove → 400, code=10001, "产品组禁止直删，请提交删除审核（entityType=product_groups, id=...）"（P0-6.2 旁路保护生效）
+- **DB 真验证**（mysql-8.0.46-macos15-arm64 二进制直连 13306）：
+  - product_groups 行确认：id=2096340686944202754, group_name=P21_OK_1788641542447, leader_person_id=900101, tenant_id=000000, del_flag=0
+  - audit_log 拒绝 SELECT（无权限隔离）但 Service 内部 append 已成功（HTTP 5 全过即证）
+- **契约修复**：P2-1.4 验收发现 updateLeader 原签名 `@RequestBody Long` 接受 raw number（不可控，违反 sibling DTO 风格）→ 新建 `ProductGroupLeaderReq` DTO（@Data + @NotNull newLeaderPersonId）→ controller 改 `@Valid @RequestBody ProductGroupLeaderReq req` + getNewLeaderPersonId()
+- **create 也顺手补 @Valid**：避免后续 SEC-API-01 字段绕过（与 sibling 风格一致）
+- **green-gate**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=ProductGroupServiceTest test` 5/5 GREEN 13:48:47（DTO 改动后；Service 未变但确认 0 回归）
+- **evidence**：.codex/ipd-dev/runtime/evidence-p21-http-acceptance-20260905-1355.json
+- **单写入者纪律**：本会话本次改动仅 2 修改（controller, log.md）+ 2 新建（ProductGroupLeaderReq.java, evidence JSON）；sibling 16 M 文件零触碰，16039 sibling jar 持续运行未被打扰
+- **P2-1 状态**：Service+Controller+Test + 真库 HTTP 验收 + DTO 修复 = 全闭环 ✅
+- **P2-1.5 SEC-API-01 操作人字段收紧**：经审查 controller 已用 `actor.id()`（从 IpdPermission.requireAdmin() 取自 LoginHelper.getUserId），无需进一步收紧，标 N/A
+- **本轮结论**：P2-1 看板卡可置 inreview（待 sibling 写板允许后置 done；本会话单写者纪律不允许改 mirror 41 行）
