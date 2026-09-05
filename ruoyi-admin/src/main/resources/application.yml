@@ -159,6 +159,33 @@ tenant:
     # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
     - trace_run
     - trace_node
+    # IPD 单企业私有部署：26 张业务表统一排除租户过滤（表结构带 tenant_id 默认 000000，无多租户语义）
+    - persons
+    - product_groups
+    - products
+    - projects
+    - project_members
+    - project_stages
+    - stage_actions
+    - deliverables
+    - sop_templates
+    - gate_review_elements
+    - gate_element_results
+    - cert_templates
+    - gates
+    - gate_reviews
+    - requirements
+    - requirement_changes
+    - bid_invitations
+    - bid_responses
+    - deletion_requests
+    - handover_records
+    - audit_logs
+    - kpi_records
+    - allowance_ledgers
+    - bonus_pools
+    - ai_documents
+    - system_configs
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
