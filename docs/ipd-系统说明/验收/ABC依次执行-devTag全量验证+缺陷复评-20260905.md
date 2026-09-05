@@ -346,3 +346,31 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='*AcceptanceTest' test
 | A-audit（Catalog 缺码） | ✅FIXED+VERIFIED | 离线契约 5/5 + CodeReview APPROVE + **live 正例铁证 30001→20003（:16045）** |
 
 > 并行执行：2 CodeReview 子智能体（只读审查，无构建/无改文件）+ 主线程 live 探针 + 错峰回归，三轨并发。本 QA 全程未编辑 Java 源码/Catalog、未重启共享 app、未写库；隔离提交仅本报告。**移交项**：①A-audit 测试 /scope 无注解守卫断言（兄弟/测试 owner）；②live 200 正例待超管种子改密或 owner 用非首登态账号（环境态，非缺陷）。
+
+---
+
+## §13 ADDENDUM — 收口后 DEF-4 新 HEAD 再确认：SEC-02 闭环存续（静态正交 + 动态 scoped 10/10，16:07–16:14）
+
+> §12 收口后 HEAD 又两度前移（兄弟 DEF-4 审计哈希链）：`7cae2138`（毫秒对称+升序锚定+竞态防护+超管链重建端点+AuditChainSymmetryTest 7 契约）→ `c23fd1f2`（append 去 FOR UPDATE 改 uk_audit_seq 冲突重试，仅动 AuditLogService.java +6/-9）。本节确认 SEC-02 三缺陷闭环在 DEF-4 落盘后**存续无回归**（第二方 QA 纯只读 + 定向 scoped 复跑，未编辑任何源码/Catalog）。
+
+**① 静态正交确认（DEF-4 不触 SEC-02 代码路径）**
+- DEF-4 两提交仅动 `AuditLogController`(+23 rebuild-chain 端点)/`AuditLogMapper`/`AuditLogService`/新增 `AuditChainSymmetryTest`；`c23fd1f2` 仅 `AuditLogService.java`。**均未碰** `IpdServiceExceptionAdvice`（缺陷B）与 `IpdRolePermissionCatalog`（A-audit 权限映射）——与 SEC-02 正交。
+- 新 `/rebuild-chain` 端点（AuditLogController L140）**复用已授予的 `ipd:audit-log:verify` 码** → 未引入 A-audit 类新缺口。
+- `git show HEAD(c23fd1f2):Catalog` 确认 system-config list/update + audit-log list/verify/export **五码全存续**（grep -c=5）。
+
+**② 动态定向复跑（错峰窗口，单模块/无-am/无clean，只执行 SEC-02 两契约测试避兄弟 WIP 噪声）**
+```
+mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='Sec02AuditCatalogAcceptanceTest,DefectBAdviceAcceptanceTest' test
+→ Tests run: 10, Failures: 0, Errors: 0, Skipped: 0  BUILD SUCCESS @16:14:01（HEAD c23fd1f2）
+```
+- `Sec02AuditCatalogAcceptanceTest` 5/5（A-audit 契约）+ `DefectBAdviceAcceptanceTest` 5/5（缺陷B 契约），**Skipped=0** 排除假绿。advice 五映射在日志逐条触发正确：401/UNAUTHORIZED、body 不可读→400、NotPermission(audit-log:list)→403、NotRole(SUPER_ADMIN)→403、403/FORBIDDEN。
+- **错峰纪律实证**：内联再校验活跃构建门——16:13:19 首探兄弟构建启动即 **ABORT**（未闯假红、未交叉重写 target/）；16:13:58 窗口开启方复跑，`Nothing to compile - all classes up to date`（兄弟构建已成功编译全树）佐证只读一致性探针结论：删除文件（InstantIso8601Serializer/ApiV1ResponseBareMapperCompatTest）无悬空引用、LegacyImportService.setRemark↔StageAction.remark(L49) 已消解。
+
+**③ 判定（SEC-02 闭环经 DEF-4 两次 HEAD 前移后存续）**
+
+| 项 | §12 终判 | §13 再确认（@c23fd1f2） |
+|---|---|---|
+| 缺陷B（advice 拒绝落 500） | ✅FIXED+VERIFIED | ✅**存续**（scoped 5/5 绿@16:14:01 + advice 五映射日志逐条正确） |
+| A-audit（Catalog 缺码） | ✅FIXED+VERIFIED | ✅**存续**（scoped 5/5 绿 + 五码 HEAD 存续 + rebuild-chain 复用已授 verify 码） |
+
+> 本节纯只读复验：未编辑 Java 源码/Catalog、未重启共享 app、未写库；隔离提交仅本报告。SEC-02 三缺陷闭环经 DEF-4（7cae2138→c23fd1f2）两次 HEAD 前移后，**静态正交 + 动态 scoped 10/10 双确认存续无回归**。
