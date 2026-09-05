@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-09-05 — 依次执行①P1-2.1 ②P0-6.2 Gate/证书旁路（Mock 58 绿）
+
+- **① P1-2.1**：四基准+模板/市场/主组必填；S/A/B 默认系数；AC-INC-12~15b；强制 DRAFT；`P121AcceptanceTest` 7 绿。看板 `84d194ab` 保持 inprogress/PARTIAL。
+- **② P0-6.2 续**：`GateSoftDeleteExecutor`+`GateMapper`；证书 `remove` 禁直删；执行器 5 类含 gates。看板 `84bc6ccc` 续更。
+- **附带**：补回并行会话丢失的 `RequestParam` import（GateElement/Product/StageAction）。
+- **验证**：`P121+ProjectService+P111+P062+DeleteAudit*+CertTemplate+P064` → **Tests run: 58, Failures: 0**
+- **说明**：兄弟会话已有 P1-1.1/P0-6.2 真库 HTTP 证据条目；本轮增量侧重立项校验与 Gate/证书旁路，真库复验未重跑。
+
+## 2026-09-05 — P1-1.1 / P0-6.2 / P1-4.3 真库 HTTP+DB 验收闭环
+
+- **环境**：`127.0.0.1:16039` + MySQL `13306/ipd_dev`；部署 jar=`ruoyi-admin-95300acf.jar`（`start_new_session` 守护，避免 Cursor shell 退出杀进程组）
+- **证据**：`.codex/ipd-dev/runtime/evidence-p111-p062-p143.json`
+- **P1-1.1**：建产品→建项目(HARDWARE/A) 双向绑定；同产品第二项目拒「一个产品仅对应一个项目」(code=10001)；产品 `projectId` 回填一致
+- **P0-6.2**：`adminDecision(approve)` 委托 `DeleteAuditService.approveAndExecute`；HTTP submit→leader→admin；DB `del_flag=1` + 申请 `DELETED` + 审计 `DELETE_EXECUTE`；新增 `DeletionRequestController` 审批入口
+- **P1-4.3**：深管 C01 无交付物 DONE 拒 BR-IPD-03；`P143AcceptanceTest` 补 AC-IPD-01/16/19/23/24
+- **看板**：`2a5a2287` / `84bc6ccc` / `782610d1` → done
+
 ## 2026-09-05 — SEC-API-02：StpInterface 桥接使 @SaCheckPermission 对 ipd 生效（方案 A）
 
 - **根因**：基线 `security.excludes` 含 `/api/v1/**`，SaInterceptor 不进 IPD；且注解未设 `type=ipd` 时落到默认 `login` StpLogic；全局 `SaPermissionImpl` 只认 sys_user。
@@ -213,3 +230,113 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 
 结论：71/71 PASS。早先观察到的 Person/Product/CertTemplate 实体 "找不到 Lombok getter" 编译警告被证实为 stale——实际 mvn compile -pl ruoyi-modules/ruoyi-ipd = BUILD SUCCESS，所有 71 个测试全绿。IpdBusinessException extends RuntimeException（已不继承 final ServiceException）后相关 advice 链正常工作。
 
+## 第八轮 2026-09-05 20:50 root-94ae P131 真库验收 + sibling 集成窗口诊断
+
+> 本块由第十轮会话从被截断前的工作树副本逐字恢复（原文件已被同会话第九轮覆写冲掉，非 git 已提交内容）。
+
+**关键发现**:
+1. P131DatabaseIntegrationTest 与 P131AcceptanceTest 跳过根因 = 类级 @EnabledIfSystemProperty(ipd.scope.mysql.enabled=true) + @BeforeEach 读 ipd.scope.mysql.{clientConfig,driverJar}
+2. 修复命令: mvn test -Dtest=P131AcceptanceTest -Dipd.scope.mysql.enabled=true -Dipd.scope.mysql.clientConfig=$PWD/.codex/ipd-dev/config/mysql-app.cnf -Dipd.scope.mysql.driverJar=$HOME/.m2/repository/com/mysql/mysql-connector-j/9.6.0/mysql-connector-j-9.6.0.jar
+3. P131AcceptanceTest 46/46 PASS (真库13306, 1.372s) — 覆盖 P1-3.1 全部 AC: 创建项目 CONCEPT→LIFECYCLE 六阶段 + 69 动作实例
+4. P131DatabaseIntegrationTest 18/18 PASS (8.561s) — 独立回滚精细化验证
+5. dep P1-2.1=todo(未实施), P1-3.1 严格不能翻 done, 但 P1-3.1 自身 46 项测试全绿
+
+**sibling 集成窗口**:
+- .codex/ruflo/global-20260905/bootstrap-integration/ 已整合至主树工作区
+- 新增 PASS: IpdBusinessExceptionTest / Api01AcceptanceTest / IpdAuthSessionStpTypeTest / IpdSeedConsistencyTest
+- 现有 P062/P064/P131/P143 验收测试在 sibling 改造后 100% error (IpdAuth 域类方法签名变化) — 集成窗口临时状态
+- 决策: 等待 sibling 完成 IpdAuth 集成, 不强行翻 done, 避免覆盖
+
+**P1-6.1 集成冲突** (承接上轮):
+- candidate 仅 3 文件 (GateElementService + P161AcceptanceTest + GateElementServiceTest)
+- 依赖 IpdBusinessException (untracked sibling) + ApiV1ErrorCode 改造 + advice 包, 单兵移植触发编译错
+- 收口权归还 sibling
+
+**真正独立可收口 (4 张, 等 sibling 窗口后回归)**:
+- P0-7.2 (dep P0-7.1 done) → P072AcceptanceTest
+- P0-8.1 (dep OPS-02+DOC-05 done) → P081AcceptanceTest
+- P1-5.1 (dep P1-3.1) → P151AcceptanceTest
+- P1-8.1 (dep P1-3.1) → P181AcceptanceTest
+
+**下一步**: 等 sibling 完成后回归全部 Acceptance + 翻 P1-3.1/P1-5.1/P1-8.1 done + 启动 P0-6.2 实施
+
+## 第九轮 2026-09-05 21:20 root-94ae green gate 复测 — 编译失败, gate broken
+
+> 本块由第十轮会话从被截断后的 12 行副本保留（删去了原文件首行残留的字面量 `undefined`）。
+
+**前置**: 第八轮 P131AcceptanceTest 46/46 PASS (1.372s, 真库 13306) 已记录到 P1-3.1 卡
+**复测**: 第九轮执行 mvn -pl ruoyi-modules/ruoyi-ipd test -Dtest=P131AcceptanceTest -Dipd.scope.mysql.*=...
+**结果**: BUILD FAILURE (compilation error)
+**根因**: P064AcceptanceTest.java:91 调 new DeletionRequestController(DeletionArchiveService) 单参, 但 sibling 改 DeletionRequestController 为 3 参构造器 (DeletionArchiveService, DeletionRequestService, IpdPermission), 错误:"实际参数列表和形式参数列表长度不同"
+**传播**: 整个 ruoyi-ipd 模块 testCompile 失败, 33 个测试类全部 0 tests executed
+**所有权**: P064AcceptanceTest.java + DeletionRequestController.java 均为 sibling 蜂群在主树工作区未提交集成, 不在 root-94ae 责任范围
+**行动**: 等待 sibling 完成 DeletionRequestController 全链路 + P064AcceptanceTest 同步更新; root-94ae 不应独立修改 sibling 拥有文件
+**green gate 状态**: BROKEN — 不得宣称 P1-3.1 / P1-5.1 / P1-8.1 done
+**回归条件**: sibling 集成窗口关闭 + 全量 mvn test compile clean 后, root-94ae 用同一命令重跑 P131AcceptanceTest 必须再次 46/46 PASS 才能翻 done
+
+## 第十轮 2026-09-05 08:05–08:35（本机本地时）第三会话：只读验证 + 治理层闭环
+
+> 触发：用户再次要求“全局系统性梳理 + 蜂群并行执行 + 看板同步”。本轮边界经用户明确选定：只读验证 + 治理层，不改 Java 源码，docs 层可 commit 不 push。
+
+### 并发会话实况（本轮亲历，归 OPS-09）
+
+- 同一“全局梳理”指令在本机由 **三个会话** 并行执行：root-94ae（主协调，正在写 Java）、第二方独立复核会话（只读，已产出 `验收/全局独立复核-20260905.md`）、本会话（治理层）。
+- 工作树在 90 秒内脏文件从 8 增至 22；`AuditLogController.java` 被实时改写致 `mvn compile` 报缺失符号（08:12 红）；`LoginLockoutService.java` / `NotificationEvent.java` 短暂存在后被删除；08:26 后 `test-compile` 转 exit 0。**本轮未碰任何 Java 文件**，上述变化均归因于兄弟会话。
+- **数据丢失事件（已恢复）**：`log.md` 被第九轮写入从 HEAD 的 215 行 / 17590 字节 **截断至 12 行 / 1308 字节**，首行残留字面量 `undefined`（模板变量未展开），一至八轮历史全部丢失。本会话从 `git show HEAD:log.md` 恢复正文，并逐字回插第八轮（仅存在于未提交工作树、已从现场读取）与第九轮内容；被截断原文另存 `.codex/vibe-kanban/log-sibling-round9-20260905.md`。
+
+### 独立验证（错峰、单模块、不带 -am 不带 clean）
+
+| 时间 | 命令 | 结果 | 判定 |
+|---|---|---|---|
+| 08:12 | `mvn -o test -pl ruoyi-modules/ruoyi-ipd` | BUILD FAILURE：`LoginLockoutService.java:[21,25] 需要 class、interface、enum 或 record` | 兄弟会话半成品文件被其自行删除后自愈 |
+| 08:25:55 | `mvn -o -pl ruoyi-modules/ruoyi-ipd test -Dtest=IpdAuthServiceTest` | Tests run 10 / **Failures 2** / Errors 0（4 秒） | 确认为真实缺陷，非并发假红 |
+| 08:26:31 | （兄弟会话）同测试类 | 10 / 0 / 0 | 因 **测试断言被改成 IpdAuthInputException** 而转绿，契约缺口仍在 |
+| 08:27 | `mvn -o -q -pl ruoyi-modules/ruoyi-ipd test-compile` | exit 0 | 模块编译已恢复绿 |
+
+### 新发现并建卡（2 张，均 U0）
+
+- **API-03 认证输入异常统一包络映射**：`IpdAuthInputException extends RuntimeException`（final），而 `IpdServiceExceptionAdvice` 仅注册 IpdBusinessException / ServiceException / MethodArgumentNotValid / NoHandlerFound / Exception 五类 handler，grep 确认无 IpdAuthInputException 处理→ 落入 Exception 兜底，返回 **HTTP 500 + code 90001（INTERNAL_ERROR）且丢弃真实消息**；改密输错原密码这种可纠正错误应为 4xx。**用户已裁决修复方向：在 advice 增专用 handler**（不改继承体系、不在测试端迁就现状），并要求补 MockMvc 真实 HTTP 反例。归属建议 root-94ae 集成窗口，本会话不代写。
+- **OPS-09 多会话同仓并发执行窗口管控**：将本轮亲历的假红、假绿、SSOT 截断三类事故固化为条文（单一写入者 / 错峰单模块 / 结论前复查 / 写前重读 / 重复指令先登记归属）；首项交付已落在 `AGENTS.md` 雷区区（假红陷阱 + 并发写单一写入者 + 假绿第二形态）。
+
+### 看板与验收状态
+
+- 写入前基线：238 卡（done 51 / todo 177 / inreview 6 / inprogress 4），`manage.py check` 因 AUD-GOV-01 未纳管而 **exit 1**。
+- 本会话新增 API-03 / OPS-09 后 `sync --apply`：`counts {unchanged: 238, create: 2}`；复查 `check` **exit 0**，240/240 卡与 SSOT 逐卡一致，未纳管卡 0。
+- AUD-GOV-01 未抢状态：其责任泳道仍为 root-94ae，且在本会话盘点期间已由主协调会话自行纳管入库（镜像 301 行），按 OPS-09 条文不重复接管。
+- 未翻卡：6 张 inreview（SEC-02 / P1-3.1 / P1-5.1 / P1-8.1 / P0-7.3 / P1-6.1）需真实 HTTP+DB 错峰回归才能收口；本轮 green gate 仍按第九轮判定为 BROKEN（P064 testCompile 构造器签名冲突），不得据 08:26 的绿灯翻 done。
+
+### 下一轮入口
+
+1. green gate 回归：等 sibling 将 `DeletionRequestController` 3 参构造器与 `P064AcceptanceTest` 同批提交后重跑全量 `@Tag dev`，再谈 inreview 6 卡。
+2. API-03 实施（advice handler + Api03AcceptanceTest 正反例）；验收禁止以 500/90001 作为期望。
+3. OPS-09 尚待验证：下一轮全局梳理开工前需声明 own 的卡号集合，并实测 `check` 与 `log.md` 行数未回退。
+
+
+## 第九轮 2026-09-05（Qoder主会话：全局闭环治理 AUD-GOV-01）
+
+**盘点**: 镜像与本地板 reconcile 基本同步；发现本轮任务卡 AUD-GOV-01（inprogress）未纳管；工作树处于活跃 sibling 集成窗口（IpdAuth 域类签名在变、编译快照不稳定），依既往蜂群事故教训不抢源码，转读验证+看板/文档治理。
+
+**完成动作**:
+1. 看板治理: 镜像新增 AUD-GOV-01 行; manage.py KEY 正则扩 AUD-GOV（沿用 SEC-API/RISK/DB 先例）; 注入 ruoyi-plan 托管块后 sync --apply，终态 drift: False，240/240 unchanged（含 sibling 新增 2 卡）。
+2. 代码修复: IpdAuthServiceTest.changePassword/changePasswordMinLength 两处滞后断言（期望 ServiceException）对齐第七轮 P0-7.2 已定契约（IpdAuthInputException）; 回归 IpdAuthServiceTest 10/10 + IpdAuthChangePasswordExceptionTest 6/6 + IpdAuthLoginAuditTest 5/5 全绿。
+3. 全量回归取证: mvn -pl ruoyi-modules/ruoyi-ipd test = 235 tests，修复后仅余 1 失败 —— SecApi01OperatorIdContractTest.noClientOperatorIdParam（ProjectController create/changeStatus/advanceStage 仍收客户端 operatorId，该文件 sibling 编辑中）。
+4. 看板同步: SEC-01 → inreview（登记残留证据）; AUD-GOV-01 → inreview（待独立复核）。
+
+**风险登记**:
+- SEC-API-01 收口残留（ProjectController operatorId）: 收口权在活跃 sibling，禁抢改。
+- SystemConfigController/AuditLogController 两个 untracked Controller 为「简化落地」半成品: SystemConfigController.update 未真正写回值仅失效缓存，commit 前须补真实写路径（映射 P0-3.2/P0-5.4）。
+- P064 testCompile 失败（3 参构造器传播）与 green gate BROKEN 与上方 root-94ae 简报一致: 回归条件为 sibling 窗口关闭。
+- P1-2.1 仍 todo，阻塞 P1-3.1/5.1/8.1 翻 done。
+
+**本轮不做**: 不改产品圣经 docs/开发说明/**; 不抢改 sibling 正在编辑的文件; 不 git push。
+
+---
+
+条目顺序说明（OPS-09 现场事实）：上方「第十轮」位于文件中部，是因为本会话从 HEAD 恢复 `log.md` 后，Qoder 主会话并发追加了它的「第九轮（全局闭环治理 AUD-GOV-01）」条目。两块的轮次编号各自计数，未重排顺序以免再次互相覆盖。另：本会话期间看板一度出现 `[P1-2.1]` 重复卡与三张 U0 卡托管块丢失（P1-1.1 / P1-4.3 / P0-6.2），已归并与恢复，`check` 终态 exit 0（240/240）；详见 `验收/重复卡归并-20260905.md`。
+
+### 第九轮补充（同日）：API-01 链 HTTP 层缺口修复
+
+- **发现**：IpdAuthInputException extends RuntimeException 且 IpdServiceExceptionAdvice 无专用 handler → 改密参数错误（原密码不符/长度不足）落入兜底 Exception handler，返回 HTTP 500 + INTERNAL_ERROR，违反 API-01「认证输入错误应 4xx」契约。
+- **修复**：IpdServiceExceptionAdvice 新增 @ExceptionHandler(IpdAuthInputException.class) → 4xx PARAM_INVALID（ApiV1Response）。
+- **验证**：IpdAuthServiceTest 10/10 + IpdAuthChangePasswordExceptionTest 6/6 + IpdAuthLoginAuditTest 5/5 + Api01AcceptanceTest 4/4 + IpdBusinessExceptionTest 5/5 = 30/30 GREEN，BUILD SUCCESS。
+- **注**：本轮 IpdAuthServiceTest 两处滞后断言（期望 ServiceException）同步对齐 P0-7.2 已定契约（IpdAuthInputException），与第七轮修复一致，非契约变更。
