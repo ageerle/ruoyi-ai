@@ -6,6 +6,7 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.StageActionService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +36,7 @@ public class StageActionController {
      * @param projectId 项目 ID
      * @return 阶段动作列表
      */
-    @SaCheckPermission("ipd:stage-action:list")
+    @SaCheckPermission(value = "ipd:stage-action:list", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<StageAction>> list(@RequestParam Long projectId) {
         return ApiV1Response.ok(stageActionService.listByProject(projectId));
@@ -49,7 +50,7 @@ public class StageActionController {
      * @param reason NA 等原因说明
      * @return 更新后的动作
      */
-    @SaCheckPermission("ipd:stage-action:edit")
+    @SaCheckPermission(value = "ipd:stage-action:edit", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/transit")
     public ApiV1Response<StageAction> transit(@PathVariable Long id,
                                               @RequestParam String target,
@@ -67,7 +68,7 @@ public class StageActionController {
      * @param ossId    可选 OSS 文件 ID
      * @return 新建交付物
      */
-    @SaCheckPermission("ipd:stage-action:add")
+    @SaCheckPermission(value = "ipd:stage-action:add", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/deliverables")
     public ApiV1Response<Deliverable> addDeliverable(@PathVariable Long id,
                                                      @RequestParam String fileName,
@@ -85,7 +86,7 @@ public class StageActionController {
      * @param stage     阶段编码
      * @return 新建数量
      */
-    @SaCheckPermission("ipd:stage-action:add")
+    @SaCheckPermission(value = "ipd:stage-action:add", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/instantiate")
     public ApiV1Response<Integer> instantiate(@RequestParam Long projectId,
                                               @RequestParam Long stageId,

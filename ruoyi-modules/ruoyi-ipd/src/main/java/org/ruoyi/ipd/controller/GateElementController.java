@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.GateElement;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.GateElementService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +36,7 @@ public class GateElementController {
      * @param gate 可选 Gate 码，如 G1
      * @return 要素列表
      */
-    @SaCheckPermission("ipd:gate-element:list")
+    @SaCheckPermission(value = "ipd:gate-element:list", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<GateElement>> list(@RequestParam(required = false) String gate) {
         return ApiV1Response.ok(gateElementService.listByGate(gate));
@@ -47,7 +48,7 @@ public class GateElementController {
      * @param req 白名单创建 DTO
      * @return 新建要素
      */
-    @SaCheckPermission("ipd:gate-element:add")
+    @SaCheckPermission(value = "ipd:gate-element:add", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
     public ApiV1Response<GateElement> create(@RequestBody org.ruoyi.ipd.dto.GateElementCreateReq req) {
         IpdActor actor = ipdPermission.requireAdmin();
@@ -61,7 +62,7 @@ public class GateElementController {
      * @param req 白名单更新 DTO
      * @return 更新后要素
      */
-    @SaCheckPermission("ipd:gate-element:edit")
+    @SaCheckPermission(value = "ipd:gate-element:edit", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/update")
     public ApiV1Response<GateElement> update(@PathVariable Long id,
                                              @RequestBody org.ruoyi.ipd.dto.GateElementUpdateReq req) {
@@ -75,7 +76,7 @@ public class GateElementController {
      * @param id 要素 ID
      * @return 停用后要素
      */
-    @SaCheckPermission("ipd:gate-element:remove")
+    @SaCheckPermission(value = "ipd:gate-element:remove", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/disable")
     public ApiV1Response<GateElement> disable(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireAdmin();
