@@ -9,8 +9,11 @@ import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.util.Calendar;
@@ -45,16 +48,60 @@ public class ProjectService {
     private final AuditLogService auditLogService;
     private final GateEngine gateEngine;
     private final ProjectBootstrapService projectBootstrapService;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional(rollbackFor = Exception.class)
+    /** 奖金池比例（BR-INC-04）：目标销售额 × 5% × 差异化系数 */
+    public static final BigDecimal BONUS_POOL_RATE = new BigDecimal("0.05");
+    private static final Set<String> TEMPLATE_TYPES = Set.of("HARDWARE", "SOFTWARE", "SOLUTION");
+    private static final BigDecimal DEFAULT_COEF_S = new BigDecimal("1.5");
+    private static final BigDecimal DEFAULT_COEF_A = new BigDecimal("1.0");
+    private static final BigDecimal DEFAULT_COEF_B = new BigDecimal("0.8");
+    /** 编码冲突（TOCTOU：nextCode 与 insert 非同一原子临界区）最大重试次数 */
+    private static final int CODE_CONFLICT_MAX_RETRY = 8;
+
+    /**
+     * 创建项目（P1-2.1：四基准 + 模板/市场/主组必填；系数默认/区间；状态强制 DRAFT）。
+     * <p>对 {@code uk_projects_code} 冲突做独立事务重试：READ_COMMITTED 下
+     * synchronized(nextCode) 无法覆盖「取号→提交」窗口，HTTP 并发会撞号。
+     *
+     * @param project    客户端白名单字段已映射的实体
+     * @param operatorId 操作人
+     * @return 落库后的项目（含编码与 CONCEPT/DRAFT）
+     */
     public Project create(Project project, Long operatorId) {
+        validateBaselinesAndTemplate(project);
+        applyLevelCoefficientDefaults(project);
         validateLevelAndCoefficient(project);
         if (project.getProductId() == null) {
             throw new ServiceException("项目必须归属产品（产品:项目 = 1:1）");
         }
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        for (int attempt = 1; attempt <= CODE_CONFLICT_MAX_RETRY; attempt++) {
+            try {
+                return tx.execute(status -> insertNewProject(project, operatorId));
+            } catch (DuplicateKeyException ex) {
+                project.setId(null);
+                project.setCode(null);
+            }
+        }
+        throw new ServiceException("项目编码冲突，请重试");
+    }
+
+    /**
+     * 单次事务内：校验产品 1:1、取号、插入、回填、bootstrap、审计。
+     *
+     * @param project    待插入项目（无 id/code）
+     * @param operatorId 操作人
+     * @return 落库项目
+     */
+    private Project insertNewProject(Project project, Long operatorId) {
         Product product = productMapper.selectById(project.getProductId());
         if (product == null || "1".equals(product.getDelFlag())) {
             throw new ServiceException("归属产品不存在: " + project.getProductId());
+        }
+        // P1-1.1：创建入口与 bind 入口一致拒绝游客占位（AC-PROD / GUEST_OTHER）
+        if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
+            throw new ServiceException("游客「其他」占位产品不可关联项目");
         }
         if (product.getProjectId() != null) {
             throw new ServiceException("一个产品仅对应一个项目");
@@ -66,9 +113,8 @@ public class ProjectService {
         }
         project.setCode(nextCode());
         project.setCurrentStage("CONCEPT");
-        if (isBlank(project.getStatus())) {
-            project.setStatus("DRAFT");
-        }
+        // P1-2.1：草稿初始状态由服务端强制设置，忽略客户端注入
+        project.setStatus("DRAFT");
         if (isBlank(project.getSource())) {
             project.setSource("NEW");
         }
@@ -81,6 +127,20 @@ public class ProjectService {
         projectBootstrapService.bootstrap(project.getId(), operatorId);
         audit(project.getId(), project.getName(), operatorId, "PROJECT_CREATE");
         return project;
+    }
+
+    /**
+     * BR-INC-04：奖金池 = 目标销售额 × 5% × 差异化系数（AC-INC-12/13/14 算例）。
+     *
+     * @param targetSales  目标销售额（元）
+     * @param coefficient  差异化系数
+     * @return 奖金池金额
+     */
+    public static BigDecimal computeBonusPool(BigDecimal targetSales, BigDecimal coefficient) {
+        if (targetSales == null || coefficient == null) {
+            throw new ServiceException("计算奖金池需要目标销售额与差异化系数");
+        }
+        return targetSales.multiply(BONUS_POOL_RATE).multiply(coefficient);
     }
 
     /** 状态机迁移（非法迁移拒绝） */
@@ -154,6 +214,57 @@ public class ProjectService {
         return prefix + String.format("%03d", max + 1);
     }
 
+    /**
+     * P1-2.1：模板类型 / 目标市场 / 主组 / 四基准值必填与范围。
+     *
+     * @param project 待校验项目
+     */
+    private void validateBaselinesAndTemplate(Project project) {
+        if (isBlank(project.getName())) {
+            throw new ServiceException("项目名称必填");
+        }
+        if (isBlank(project.getTemplateType()) || !TEMPLATE_TYPES.contains(project.getTemplateType())) {
+            throw new ServiceException("模板类型非法（允许 HARDWARE|SOFTWARE|SOLUTION）");
+        }
+        if (isBlank(project.getTargetMarkets())) {
+            throw new ServiceException("目标市场必填（驱动认证清单 M1）");
+        }
+        if (project.getMainGroupId() == null) {
+            throw new ServiceException("主组必填（BR-ORG-01：市场PM 所在产品组）");
+        }
+        if (project.getTargetSalesAmount() == null
+            || project.getTargetSalesAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ServiceException("立项目标销售额必填且须大于 0（四基准/奖金池基数）");
+        }
+        if (project.getTargetChannelCount() == null || project.getTargetChannelCount() < 0) {
+            throw new ServiceException("立项目标渠道商数必填且不可为负");
+        }
+        if (project.getTargetNps() == null) {
+            throw new ServiceException("立项 NPS 目标必填（四基准）");
+        }
+        if (project.getTargetSceneCount() == null || project.getTargetSceneCount() < 0) {
+            throw new ServiceException("立项目标场景数必填且不可为负");
+        }
+    }
+
+    /**
+     * AC-INC-12/13/14：未录入系数时写入级别默认值（S=1.5 / A=1.0 / B=0.8）。
+     *
+     * @param project 待填默认系数的项目
+     */
+    private void applyLevelCoefficientDefaults(Project project) {
+        String level = project.getLevel();
+        if (project.getLevelCoefficient() != null) {
+            return;
+        }
+        switch (level == null ? "" : level) {
+            case "S" -> project.setLevelCoefficient(DEFAULT_COEF_S);
+            case "A" -> project.setLevelCoefficient(DEFAULT_COEF_A);
+            case "B" -> project.setLevelCoefficient(DEFAULT_COEF_B);
+            default -> { /* 非法级别留给 validateLevelAndCoefficient */ }
+        }
+    }
+
     private void validateLevelAndCoefficient(Project project) {
         String level = project.getLevel();
         if (!"S".equals(level) && !"A".equals(level) && !"B".equals(level)) {
@@ -161,26 +272,45 @@ public class ProjectService {
         }
         BigDecimal coefficient = project.getLevelCoefficient();
         switch (level) {
-            case "S" -> requireCoefficient(coefficient, "1.5", "2.0");
-            case "B" -> requireCoefficient(coefficient, "0.6", "0.8");
+            case "S" -> requireCoefficient(coefficient, "1.5", "2.0", "S 级系数区间为 1.5–2.0");
+            case "B" -> requireCoefficient(coefficient, "0.6", "0.8", "B 级系数区间为 0.6–0.8");
             case "A" -> {
-                if (coefficient != null) {
-                    throw new ServiceException("A 级差异化系数固定语义，不接受录入");
+                // AC-INC-15b：A 固定 1.0；客户端显式录入非 1.0 拒绝；服务端默认已写 1.0
+                if (coefficient == null || coefficient.compareTo(DEFAULT_COEF_A) != 0) {
+                    throw new ServiceException("A 级为固定 1.0 不可改");
                 }
             }
             default -> throw new ServiceException("项目级别非法");
         }
-        if (("S".equals(level) || "B".equals(level)) && isBlank(project.getLevelCoefficientReason())) {
-            throw new ServiceException("S/B 级系数定值理由必填（写审计）");
+        // AC-INC-15c：立项仅落默认档；非默认须走双PM提议+产品组长确认
+        if ("S".equals(level) && coefficient.compareTo(DEFAULT_COEF_S) != 0) {
+            throw new ServiceException("S/B 非默认系数须走双PM提议+产品组长确认（AC-INC-15c）");
+        }
+        if ("B".equals(level) && coefficient.compareTo(DEFAULT_COEF_B) != 0) {
+            throw new ServiceException("S/B 非默认系数须走双PM提议+产品组长确认（AC-INC-15c）");
         }
     }
 
-    private void requireCoefficient(BigDecimal coefficient, String min, String max) {
+    /**
+     * 校验 S/B 系数区间（AC-INC-15 / AC-INC-15c 共用文案）。
+     *
+     * @param level       S|B
+     * @param coefficient 提议系数
+     */
+    public static void validateCoefficientRange(String level, BigDecimal coefficient) {
+        switch (level == null ? "" : level) {
+            case "S" -> requireCoefficient(coefficient, "1.5", "2.0", "S 级系数区间为 1.5–2.0");
+            case "B" -> requireCoefficient(coefficient, "0.6", "0.8", "B 级系数区间为 0.6–0.8");
+            default -> throw new ServiceException("仅 S/B 级可校验差异化系数区间");
+        }
+    }
+
+    private static void requireCoefficient(BigDecimal coefficient, String min, String max, String tip) {
         if (coefficient == null) {
             throw new ServiceException("该级别差异化系数必填");
         }
         if (coefficient.compareTo(new BigDecimal(min)) < 0 || coefficient.compareTo(new BigDecimal(max)) > 0) {
-            throw new ServiceException("差异化系数超出区间 [" + min + ", " + max + "]: " + coefficient);
+            throw new ServiceException(tip);
         }
     }
 

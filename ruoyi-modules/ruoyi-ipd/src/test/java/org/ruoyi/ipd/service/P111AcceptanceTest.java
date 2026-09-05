@@ -14,6 +14,7 @@ import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import java.math.BigDecimal;
 
@@ -51,7 +52,8 @@ class P111AcceptanceTest {
     void setUp() {
         productService = new ProductService(productMapper, projectMapper, auditLogService);
         projectService = new ProjectService(
-            projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService);
+            projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService,
+            NoopTransactionManager.INSTANCE);
     }
 
     private Product aliveProduct(Long id, String source, Long projectId) {
@@ -79,9 +81,16 @@ class P111AcceptanceTest {
         p.setName("人脸门禁 S 级");
         p.setProductId(50L);
         p.setTemplateType("HARDWARE");
+        p.setTargetMarkets("[\"SA\"]");
+        p.setMainGroupId(7L);
         p.setLevel("S");
-        p.setLevelCoefficient(new BigDecimal("1.8"));
-        p.setLevelCoefficientReason("旗舰");
+        // AC-INC-15c：立项仅落默认档（S=1.5）；非默认系数须走双PM提议，不得在创建入口直传
+        p.setLevelCoefficient(new BigDecimal("1.5"));
+        p.setLevelCoefficientReason("默认档");
+        p.setTargetSalesAmount(new BigDecimal("5000000"));
+        p.setTargetChannelCount(10);
+        p.setTargetNps(70);
+        p.setTargetSceneCount(5);
         return p;
     }
 
@@ -224,5 +233,17 @@ class P111AcceptanceTest {
         ArgumentCaptor<Product> cap = ArgumentCaptor.forClass(Product.class);
         verify(productMapper).updateById(cap.capture());
         assertThat(cap.getValue().getProjectId()).isEqualTo(501L);
+    }
+
+    @Test
+    @DisplayName("创建入口拒绝 GUEST_OTHER 占位产品（与 bind 入口一致）")
+    void createProjectRejectsGuestOtherProduct() {
+        Product guest = aliveProduct(50L, Product.SRC_GUEST_OTHER, null);
+        when(productMapper.selectById(50L)).thenReturn(guest);
+
+        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("其他");
+        verify(projectMapper, never()).insert(any(Project.class));
     }
 }

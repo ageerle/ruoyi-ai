@@ -85,15 +85,16 @@ public class CertTemplateService {
         return template;
     }
 
+    /**
+     * 禁止直删旁路（P0-6.2 / G-02）：认证模板须走删除审核引擎。
+     *
+     * @param id         模板 ID（仅用于错误上下文）
+     * @param operatorId 操作人（保留签名兼容，不执行删除）
+     * @throws ServiceException 始终拒绝，提示走 DeletionRequest
+     */
     @Transactional(rollbackFor = Exception.class)
     public void remove(Long id, Long operatorId) {
-        CertTemplate template = certTemplateMapper.selectById(id);
-        if (template == null || "1".equals(template.getDelFlag())) {
-            throw new ServiceException("认证模板不存在: " + id);
-        }
-        template.setDelFlag("1");
-        certTemplateMapper.updateById(template);
-        audit(id, template.getCountryName() + "/" + template.getCertName(), operatorId, "CERT_TPL_REMOVE");
+        throw new ServiceException("认证模板禁止直删，请提交删除审核（entityType=cert_templates, id=" + id + "）");
     }
 
     private void audit(Long id, String name, Long operatorId, String action) {

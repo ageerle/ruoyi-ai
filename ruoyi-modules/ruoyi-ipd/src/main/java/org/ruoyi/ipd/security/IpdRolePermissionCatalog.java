@@ -15,7 +15,7 @@ import java.util.Set;
 public final class IpdRolePermissionCatalog {
 
     /** 全体内部角色可读的查询类权限。 */
-    private static final Set<String> READ_SET = Set.of(
+    private static final Set<String> READ_SET = unique(
         IpdPermissionCode.OPERATION_MODULE_PROJECT,
         IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY,
         IpdPermissionCode.OPERATION_PRODUCT_GROUP,
@@ -27,7 +27,7 @@ public final class IpdRolePermissionCatalog {
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
-    private static final Set<String> BUSINESS_WRITE = Set.of(
+    private static final Set<String> BUSINESS_WRITE = unique(
         IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE,
         IpdPermissionCode.OPERATION_PRODUCT_GROUP_CREATE,
         IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT,
@@ -35,28 +35,37 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE,
         IpdPermissionCode.OPERATION_STAGE_ACTION_INSTANTIATE,
         IpdPermissionCode.OPERATION_GATE_REVIEW_INITIATE,
-        IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE
+        IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE,
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT,
+        IpdPermissionCode.OPERATION_COEFFICIENT_PROPOSE
+    );
+
+    /** 组长初审删除申请 + 系数定值确认。 */
+    private static final Set<String> DELETION_LEADER = unique(
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER,
+        IpdPermissionCode.OPERATION_COEFFICIENT_CONFIRM
     );
 
     /** 仅市场侧可建项（对齐 requireProjectCreator）。 */
-    private static final Set<String> PROJECT_CREATE = Set.of(
+    private static final Set<String> PROJECT_CREATE = unique(
         IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE
     );
 
-    /** 仅 SUPER_ADMIN：Gate/证书模板写 + 归档 purge。 */
-    private static final Set<String> ADMIN_WRITE = Set.of(
+    /** 仅 SUPER_ADMIN：Gate/证书模板写 + 归档 purge + 删除终审。 */
+    private static final Set<String> ADMIN_WRITE = unique(
         IpdPermissionCode.OPERATION_GATE_ELEMENT_CREATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT_UPDATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT_DISABLE,
         IpdPermissionCode.OPERATION_CERT_TEMPLATE_CREATE,
         IpdPermissionCode.OPERATION_CERT_TEMPLATE_DELETE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_ARCHIVE,
-        IpdPermissionCode.OPERATION_DELETION_REQUEST_PURGE
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_PURGE,
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_ADMIN
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
-        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, ADMIN_WRITE),
-        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE),
+        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE),
+        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER),
         "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE),
         "RD_PM", merge(READ_SET, BUSINESS_WRITE)
     );
@@ -111,6 +120,18 @@ public final class IpdRolePermissionCatalog {
         for (Set<String> part : parts) {
             out.addAll(part);
         }
+        return Collections.unmodifiableSet(out);
+    }
+
+    /**
+     * 构建去重权限集合（IpdPermissionCode 中多个常量可映射同一字面量）。
+     *
+     * @param codes 权限码
+     * @return 不可变集合
+     */
+    private static Set<String> unique(String... codes) {
+        Set<String> out = new LinkedHashSet<>();
+        Collections.addAll(out, codes);
         return Collections.unmodifiableSet(out);
     }
 }

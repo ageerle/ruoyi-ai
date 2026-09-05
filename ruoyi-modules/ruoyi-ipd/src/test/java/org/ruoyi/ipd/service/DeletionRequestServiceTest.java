@@ -36,12 +36,15 @@ class DeletionRequestServiceTest {
     private SystemConfigService systemConfigService;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private DeleteAuditService deleteAuditService;
 
     private DeletionRequestService service;
 
     @BeforeEach
     void setUp() {
-        service = new DeletionRequestService(deletionRequestMapper, systemConfigService, auditLogService);
+        service = new DeletionRequestService(
+            deletionRequestMapper, systemConfigService, auditLogService, deleteAuditService);
     }
 
     private DeletionRequest saved(Long id, String status, Date createTime, Date leaderDueAt) {
@@ -108,16 +111,21 @@ class DeletionRequestServiceTest {
     }
 
     @Test
-    @DisplayName("超管通过 → DELETED 并记 executedAt")
+    @DisplayName("超管通过 → 委托 DeleteAuditService.approveAndExecute（P0-6.2 原子软删）")
     void adminApproveExecutes() {
         DeletionRequest request = saved(9L, DeletionRequestService.ST_ADMIN_REVIEW, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(request);
+        DeletionRequest executed = saved(9L, DeletionRequestService.ST_DELETED, new Date(), null);
+        executed.setExecutedAt(new Date());
+        executed.setAdminDecision("APPROVE");
+        when(deleteAuditService.approveAndExecute(9L, 2L)).thenReturn(executed);
 
         DeletionRequest after = service.adminDecision(9L, 2L, true, "同意删除");
 
         assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_DELETED);
         assertThat(after.getExecutedAt()).isNotNull();
         assertThat(after.getAdminDecision()).isEqualTo("APPROVE");
+        verify(deleteAuditService).approveAndExecute(9L, 2L);
     }
 
     @Test

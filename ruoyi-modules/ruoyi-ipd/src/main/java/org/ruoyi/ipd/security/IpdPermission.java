@@ -162,6 +162,15 @@ public class IpdPermission {
         return actor;
     }
 
+    /**
+     * 组长或超管（删除初审等）。
+     *
+     * @return 当前操作人
+     */
+    public IpdActor requireLeaderOrAdmin() {
+        return requireRoles("GROUP_LEADER", "SUPER_ADMIN");
+    }
+
     private static IpdPermissionException denied() {
         return new IpdPermissionException(403, ApiV1ErrorCode.FORBIDDEN);
     }

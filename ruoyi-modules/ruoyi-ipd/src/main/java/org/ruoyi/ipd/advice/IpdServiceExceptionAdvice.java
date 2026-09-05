@@ -6,6 +6,7 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.service.IpdAuthInputException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
@@ -58,6 +59,14 @@ public class IpdServiceExceptionAdvice {
         log.warn("[IPD] not found: {}", e.getRequestURL());
         return ResponseEntity.status(ApiV1ErrorCode.NOT_FOUND.getHttpStatus())
             .body(ApiV1Response.fail(ApiV1ErrorCode.NOT_FOUND, "资源不存在"));
+    }
+
+    @ExceptionHandler(IpdAuthInputException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleIpdAuthInput(IpdAuthInputException e) {
+        // 认证输入错误（原密码不符/密码强度不足等）属 4xx 参数/凭据问题，不得落入兜底 500。
+        log.warn("[IPD] auth input rejected: {}", e.getMessage());
+        return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
+            .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

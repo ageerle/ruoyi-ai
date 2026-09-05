@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import java.util.List;
 import java.util.Set;
@@ -51,7 +52,8 @@ class ProjectServiceConcurrencyTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService);
+        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine,
+            projectBootstrapService, NoopTransactionManager.INSTANCE);
     }
 
     @Test

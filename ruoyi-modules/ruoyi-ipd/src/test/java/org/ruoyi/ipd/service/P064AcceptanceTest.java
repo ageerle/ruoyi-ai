@@ -88,7 +88,9 @@ class P064AcceptanceTest {
         when(deletionRequestMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenReturn(1);
 
         service = new DeletionArchiveService(deletionRequestMapper, auditLogService, ipdPermission);
-        mvc = MockMvcBuilders.standaloneSetup(new DeletionRequestController(service, ipdPermission))
+        DeletionRequestService deletionRequestService = mock(DeletionRequestService.class);
+        mvc = MockMvcBuilders.standaloneSetup(
+                new DeletionRequestController(service, deletionRequestService, ipdPermission))
             .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(json))
             .setControllerAdvice(new ArchiveAdvice())
             .build();

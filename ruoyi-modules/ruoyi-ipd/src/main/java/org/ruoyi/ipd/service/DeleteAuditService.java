@@ -6,6 +6,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.service.executor.CertTemplateSoftDeleteExecutor;
+import org.ruoyi.ipd.service.executor.GateSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.PersonSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.ProductSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.ProjectSoftDeleteExecutor;
@@ -133,13 +134,14 @@ public class DeleteAuditService {
         return executorsByType.keySet();
     }
 
-    // 显式列出 4 个内置类型，让 IDE/编译器在缺实现时给出警告
+    // 显式列出内置类型，让 IDE/编译器在缺实现时给出警告
     @SuppressWarnings("unused")
     private static final List<Class<?>> REGISTERED_EXECUTORS = List.of(
         ProjectSoftDeleteExecutor.class,
         ProductSoftDeleteExecutor.class,
         PersonSoftDeleteExecutor.class,
-        CertTemplateSoftDeleteExecutor.class
+        CertTemplateSoftDeleteExecutor.class,
+        GateSoftDeleteExecutor.class
     );
 
     /** 静态类型约束：确保所有受支持类型都实现 {@link SoftDeletable} */
@@ -148,7 +150,8 @@ public class DeleteAuditService {
             org.ruoyi.ipd.domain.Project.class,
             org.ruoyi.ipd.domain.Product.class,
             org.ruoyi.ipd.domain.Person.class,
-            org.ruoyi.ipd.domain.CertTemplate.class
+            org.ruoyi.ipd.domain.CertTemplate.class,
+            org.ruoyi.ipd.domain.Gate.class
         };
         for (Class<?> c : mustImplement) {
             if (!SoftDeletable.class.isAssignableFrom(c)) {

@@ -34,8 +34,16 @@ public interface IpdPermissionCode {
 
     String OPERATION_DELETION_REQUEST_ARCHIVE = "ipd:deletion-request:archive";
     String OPERATION_DELETION_REQUEST_PURGE = "ipd:deletion-request:purge";
+    String OPERATION_DELETION_REQUEST_SUBMIT = "ipd:deletion-request:submit";
+    String OPERATION_DELETION_REQUEST_LEADER = "ipd:deletion-request:leader";
+    String OPERATION_DELETION_REQUEST_ADMIN = "ipd:deletion-request:admin";
 
     String OPERATION_GATE_REVIEW = "ipd:gate-review:list";
     String OPERATION_GATE_REVIEW_INITIATE = "ipd:gate-review:add";
     String OPERATION_GATE_REVIEW_APPROVE = "ipd:gate-review:edit";
+
+    /** AC-INC-15c：双PM 联合提议系数 */
+    String OPERATION_COEFFICIENT_PROPOSE = "ipd:coefficient:propose";
+    /** AC-INC-15c：产品组长确认系数 */
+    String OPERATION_COEFFICIENT_CONFIRM = "ipd:coefficient:confirm";
 }

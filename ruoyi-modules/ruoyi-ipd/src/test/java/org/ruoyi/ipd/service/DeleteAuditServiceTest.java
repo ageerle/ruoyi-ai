@@ -16,15 +16,18 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CertTemplate;
 import org.ruoyi.ipd.domain.DeletionRequest;
+import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CertTemplateMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.service.executor.CertTemplateSoftDeleteExecutor;
+import org.ruoyi.ipd.service.executor.GateSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.PersonSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.ProductSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.ProjectSoftDeleteExecutor;
@@ -54,6 +57,7 @@ class DeleteAuditServiceTest {
     @Mock private ProductMapper productMapper;
     @Mock private PersonMapper personMapper;
     @Mock private CertTemplateMapper certTemplateMapper;
+    @Mock private GateMapper gateMapper;
 
     private DeleteAuditService service;
 
@@ -61,15 +65,17 @@ class DeleteAuditServiceTest {
     static void initMybatisMeta() {
         // 让 MyBatis-Plus LambdaUpdateWrapper 能识别 Person 实体
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-test"), Person.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-gate"), Gate.class);
     }
 
     @BeforeEach
     void setUp() {
         service = new DeleteAuditService(deletionRequestMapper, auditLogService, List.of(
-            new ProjectSoftDeleteExecutor(projectMapper),
-            new ProductSoftDeleteExecutor(productMapper),
+            new ProjectSoftDeleteExecutor(projectMapper, productMapper),
+            new ProductSoftDeleteExecutor(productMapper, projectMapper),
             new PersonSoftDeleteExecutor(personMapper),
-            new CertTemplateSoftDeleteExecutor(certTemplateMapper)
+            new CertTemplateSoftDeleteExecutor(certTemplateMapper),
+            new GateSoftDeleteExecutor(gateMapper)
         ));
     }
 
@@ -206,10 +212,28 @@ class DeleteAuditServiceTest {
     }
 
     @Test
-    @DisplayName("P0-6.2.9 supportedEntityTypes 列出全部 4 种类型")
+    @DisplayName("P0-6.2.9 supportedEntityTypes 列出全部 5 种类型")
     void supportedEntityTypesListed() {
         assertThat(service.supportedEntityTypes())
-            .containsExactlyInAnyOrder("projects", "products", "persons", "cert_templates");
+            .containsExactlyInAnyOrder("projects", "products", "persons", "cert_templates", "gates");
+    }
+
+    @Test
+    @DisplayName("P0-6.2.13 Gate 审批通过 → softDelete + audit（AC-DEL-02）")
+    void gateApproveExecutes() {
+        DeletionRequest req = pending(30L, "gates", 500L);
+        when(deletionRequestMapper.selectById(30L)).thenReturn(req);
+        when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
+        Gate gate = Gate.builder().id(500L).gateCode("G1").delFlag("0").build();
+        when(gateMapper.selectById(500L)).thenReturn(gate);
+        when(gateMapper.updateById(any(Gate.class))).thenReturn(1);
+
+        service.approveAndExecute(30L, 99L);
+
+        ArgumentCaptor<Gate> cap = ArgumentCaptor.forClass(Gate.class);
+        verify(gateMapper).updateById(cap.capture());
+        assertThat(cap.getValue().getDelFlag()).isEqualTo("1");
+        verify(auditLogService).append(any(AuditLog.class));
     }
 
     @Test

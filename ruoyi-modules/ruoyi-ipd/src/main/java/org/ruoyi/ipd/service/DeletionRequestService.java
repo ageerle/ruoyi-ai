@@ -18,8 +18,8 @@ import java.util.List;
  * 状态机：DRAFT → LEADER_REVIEW → ADMIN_REVIEW → DELETED / REJECTED；终态不可逆。
  * 期限：组长 2 工作日（deletion.leaderDeadlineDays）、超管 2 工作日（deletion.adminDeadlineDays），
  *       组长逾期自动升级超管；撤回时限 deletion.withdrawHours=24。
- * ⚠️ 本引擎只负责申请流与判定记录；DELETED 后的目标行软删除由各域服务在 execute 钩子后自行完成
- *    （引擎不感知各表结构），全程写审计。
+ * P0-6.2：超管通过必须经 {@link DeleteAuditService#approveAndExecute} 原子软删目标行（AC-DEL-02），
+ * 禁止仅改申请态为 DELETED。
  */
 @Service
 @RequiredArgsConstructor
@@ -35,6 +35,7 @@ public class DeletionRequestService {
     private final DeletionRequestMapper deletionRequestMapper;
     private final SystemConfigService systemConfigService;
     private final AuditLogService auditLogService;
+    private final DeleteAuditService deleteAuditService;
 
     /** 提交删除申请：存快照、进组长初审、算期限、写审计 */
     @Transactional(rollbackFor = Exception.class)
@@ -93,20 +94,31 @@ public class DeletionRequestService {
         return request;
     }
 
-    /** 超管终审：APPROVE → DELETED（目标行软删除由域服务执行）；REJECT → 终态 */
+    /**
+     * 超管终审。
+     * <p>APPROVE → 委托 {@link DeleteAuditService#approveAndExecute}：申请态 + 目标软删 + 审计同事务；
+     * REJECT → 仅标 REJECTED 并写审计（不触碰目标行）。
+     *
+     * @param requestId 申请 ID
+     * @param adminId   超管 ID
+     * @param approve   true=通过并软删；false=驳回
+     * @param opinion   意见（驳回时写入审计 reason 后缀）
+     * @return 终态申请
+     */
     @Transactional(rollbackFor = Exception.class)
     public DeletionRequest adminDecision(Long requestId, Long adminId, boolean approve, String opinion) {
         DeletionRequest request = getOrThrow(requestId);
         requireStatus(request, ST_ADMIN_REVIEW);
-        request.setAdminId(adminId);
-        request.setAdminDecision(approve ? "APPROVE" : "REJECT");
-        request.setAdminDecidedAt(new Date());
-        request.setStatus(approve ? ST_DELETED : ST_REJECTED);
         if (approve) {
-            request.setExecutedAt(new Date());
+            // P0-6.2 / AC-DEL-02：必须走原子软删，禁止只改申请态
+            return deleteAuditService.approveAndExecute(requestId, adminId);
         }
+        request.setAdminId(adminId);
+        request.setAdminDecision("REJECT");
+        request.setAdminDecidedAt(new Date());
+        request.setStatus(ST_REJECTED);
         deletionRequestMapper.updateById(request);
-        audit(request.getEntityType(), request.getEntityId(), adminId, approve ? "DELETE_ADMIN_APPROVE" : "DELETE_ADMIN_REJECT", request.getId());
+        audit(request.getEntityType(), request.getEntityId(), adminId, "DELETE_ADMIN_REJECT", request.getId());
         return request;
     }
 

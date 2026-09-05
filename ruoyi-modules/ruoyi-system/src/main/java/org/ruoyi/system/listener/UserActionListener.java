@@ -37,10 +37,26 @@ public class UserActionListener implements SaTokenListener {
     private final SysLoginService loginService;
 
     /**
+     * 基线在线用户/登录日志仅处理 sys_user（StpUtil.TYPE=login）。
+     * IPD Person 使用独立 loginType=ipd 的 JWT；若此处用 StpUtil.getExtra 解析，
+     * 会在 maxLoginCount 踢旧会话时抛「jwt loginType 无效」并阻断登录。
+     *
+     * @param loginType Sa-Token 账号体系标识
+     * @return true 表示应由本监听器处理
+     */
+    private boolean isBaselineLoginType(String loginType) {
+        return StpUtil.TYPE.equals(loginType);
+    }
+
+    /**
      * 每次登录时触发
      */
     @Override
     public void doLogin(String loginType, Object loginId, String tokenValue, SaLoginParameter loginParameter) {
+        if (!isBaselineLoginType(loginType)) {
+            log.info("skip baseline doLogin for loginType={}, userId={}", loginType, loginId);
+            return;
+        }
         UserAgent userAgent = UserAgentUtil.parse(ServletUtils.getRequest().getHeader("User-Agent"));
         String ip = ServletUtils.getClientIP();
         UserOnlineDTO dto = new UserOnlineDTO();
@@ -81,6 +97,10 @@ public class UserActionListener implements SaTokenListener {
      */
     @Override
     public void doLogout(String loginType, Object loginId, String tokenValue) {
+        if (!isBaselineLoginType(loginType)) {
+            log.info("skip baseline doLogout for loginType={}, userId={}", loginType, loginId);
+            return;
+        }
         String tenantId = Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
@@ -93,6 +113,10 @@ public class UserActionListener implements SaTokenListener {
      */
     @Override
     public void doKickout(String loginType, Object loginId, String tokenValue) {
+        if (!isBaselineLoginType(loginType)) {
+            log.info("skip baseline doKickout for loginType={}, userId={}", loginType, loginId);
+            return;
+        }
         String tenantId = Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
@@ -105,6 +129,10 @@ public class UserActionListener implements SaTokenListener {
      */
     @Override
     public void doReplaced(String loginType, Object loginId, String tokenValue) {
+        if (!isBaselineLoginType(loginType)) {
+            log.info("skip baseline doReplaced for loginType={}, userId={}", loginType, loginId);
+            return;
+        }
         String tenantId = Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);

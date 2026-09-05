@@ -191,13 +191,27 @@ class P143AcceptanceTest {
     }
 
     @Test
-    @DisplayName("轻管 PENDING→NA 带 reason 通过；NA 同样审计")
-    void lightNaPasses() {
-        seedLight("C05", "NOT_STARTED");
-        StageAction out = service.transit(1L, "NA", "不适用", "op");
-        assertThat(out.getStatus()).isEqualTo("NA");
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService, times(1)).append(cap.capture());
-        assertThat(cap.getValue().getAction()).isEqualTo("TRANSIT");
+    @DisplayName("AC-IPD-01：深管 C01 无交付物直接 DONE ⇒ 拒绝（BR-IPD-03）")
+    void acIpd01DeepDoneWithoutDeliverableRejected() {
+        seedDeep("C01", "IN_PROGRESS");
+        when(deliverableMapper.selectCount(any())).thenReturn(0L);
+        assertThatThrownBy(() -> service.transit(1L, "DONE", "完成", "op"))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("深管动作完成前必须上传至少 1 个未删交付物");
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("AC-IPD-16/19/23/24：深管 C12/V10/V12/C10 无交付物同样拒绝 DONE")
+    void deepCodesRequireDeliverableBeforeDone() {
+        for (String code : new String[]{"C12", "V10", "V12", "C10"}) {
+            seedDeep(code, "IN_PROGRESS");
+            when(deliverableMapper.selectCount(any())).thenReturn(0L);
+            assertThatThrownBy(() -> service.transit(1L, "DONE", "完成", "op"))
+                .as("code=%s", code)
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("BR-IPD-03");
+        }
+        verify(auditLogService, never()).append(any(AuditLog.class));
     }
 }

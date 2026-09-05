@@ -1,5 +1,7 @@
 package org.ruoyi.ipd.domain;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -36,7 +38,8 @@ public class Project extends BaseEntity implements SoftDeletable {
     /** 项目名称 */
     private String name;
 
-    /** 归属产品（1:1 唯一 Q5，uk_projects_product） */
+    /** 归属产品（1:1 唯一 Q5，uk_projects_product）；软删对端时需可写 null */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long productId;
 
     /** 模板类型 HARDWARE|SOFTWARE|SOLUTION */

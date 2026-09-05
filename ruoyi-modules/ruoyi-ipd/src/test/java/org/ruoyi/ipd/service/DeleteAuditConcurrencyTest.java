@@ -11,6 +11,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
+import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.service.executor.ProjectSoftDeleteExecutor;
 
@@ -39,12 +40,13 @@ class DeleteAuditConcurrencyTest {
     @Mock private DeletionRequestMapper deletionRequestMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private ProjectMapper projectMapper;
+    @Mock private ProductMapper productMapper;
 
     @Test
     @DisplayName("P0-6.2.C1 两个超管并发 approveAndExecute：恰好 1 成功 + 1 抛异常")
     void concurrentApprovalSingleWinner() throws InterruptedException {
         DeleteAuditService service = new DeleteAuditService(deletionRequestMapper, auditLogService, List.of(
-            new ProjectSoftDeleteExecutor(projectMapper)
+            new ProjectSoftDeleteExecutor(projectMapper, productMapper)
         ));
 
         DeletionRequest req = pending();

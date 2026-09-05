@@ -24,6 +24,7 @@ import org.ruoyi.ipd.domain.ProjectStage;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.support.NoopTransactionManager;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
@@ -38,6 +39,7 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.math.BigDecimal;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -431,7 +433,7 @@ class P131DatabaseIntegrationTest {
                 observed.set(true);
                 return null;
             }).when(audit).append(any(AuditLog.class));
-            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap));
+            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, NoopTransactionManager.INSTANCE));
             Project result = service.create(request, OPERATOR);
             assertThat(result.getId()).isPositive();
             assertThat(observed.get()).isTrue();
@@ -459,7 +461,7 @@ class P131DatabaseIntegrationTest {
                 observed.set(true);
                 throw original;
             }).when(audit).append(any(AuditLog.class));
-            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap));
+            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, NoopTransactionManager.INSTANCE));
             assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR)))).isSameAs(original);
             assertThat(observed.get()).isTrue();
             assertThat(request.getId()).isPositive();
@@ -559,9 +561,19 @@ class P131DatabaseIntegrationTest {
         return project;
     }
 
+    /**
+     * 构造满足 P1-2.1 基线校验的创建请求（目标市场 JSON、主组、四基准）。
+     *
+     * @param product  已插入产品主键
+     * @param template HARDWARE|SOFTWARE|SOLUTION
+     * @return 待 ProjectService.create 落库的项目实体
+     */
     private Project createRequest(long product, String template) {
         return Project.builder().name("P131-create-" + product).productId(product).templateType(template)
-            .level("A").tenantId("000000").delFlag("0").build();
+            .targetMarkets("[\"CN\",\"SA\"]").level("A").mainGroupId(900001L)
+            .targetSalesAmount(new BigDecimal("5000000"))
+            .targetChannelCount(10).targetNps(50).targetSceneCount(5)
+            .tenantId("000000").delFlag("0").build();
     }
 
     private long id(String table) {

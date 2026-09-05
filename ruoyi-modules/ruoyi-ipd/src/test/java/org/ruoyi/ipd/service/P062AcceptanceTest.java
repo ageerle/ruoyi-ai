@@ -15,16 +15,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CertTemplate;
 import org.ruoyi.ipd.domain.DeletionRequest;
+import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.SoftDeletable;
 import org.ruoyi.ipd.mapper.CertTemplateMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.service.executor.CertTemplateSoftDeleteExecutor;
+import org.ruoyi.ipd.service.executor.GateSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.PersonSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.ProductSoftDeleteExecutor;
 import org.ruoyi.ipd.service.executor.ProjectSoftDeleteExecutor;
@@ -51,38 +54,45 @@ class P062AcceptanceTest {
     @Mock private ProductMapper productMapper;
     @Mock private PersonMapper personMapper;
     @Mock private CertTemplateMapper certTemplateMapper;
+    @Mock private GateMapper gateMapper;
 
     private DeleteAuditService service;
 
     @BeforeAll
     static void initMeta() {
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-test"), Person.class);
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "P062-test");
+        TableInfoHelper.initTableInfo(assistant, Person.class);
+        TableInfoHelper.initTableInfo(assistant, Product.class);
+        TableInfoHelper.initTableInfo(assistant, Project.class);
+        TableInfoHelper.initTableInfo(assistant, Gate.class);
     }
 
     @BeforeEach
     void setUp() {
         service = new DeleteAuditService(deletionRequestMapper, auditLogService, List.of(
-            new ProjectSoftDeleteExecutor(projectMapper),
-            new ProductSoftDeleteExecutor(productMapper),
+            new ProjectSoftDeleteExecutor(projectMapper, productMapper),
+            new ProductSoftDeleteExecutor(productMapper, projectMapper),
             new PersonSoftDeleteExecutor(personMapper),
-            new CertTemplateSoftDeleteExecutor(certTemplateMapper)
+            new CertTemplateSoftDeleteExecutor(certTemplateMapper),
+            new GateSoftDeleteExecutor(gateMapper)
         ));
     }
 
     @Test
-    @DisplayName("P0-6.2.A1 4 个核心实体类型都实现 SoftDeletable 接口")
+    @DisplayName("P0-6.2.A1 5 个核心实体类型都实现 SoftDeletable 接口")
     void allEntitiesImplementSoftDeletable() {
         assertThat(SoftDeletable.class.isAssignableFrom(Project.class)).isTrue();
         assertThat(SoftDeletable.class.isAssignableFrom(Product.class)).isTrue();
         assertThat(SoftDeletable.class.isAssignableFrom(Person.class)).isTrue();
         assertThat(SoftDeletable.class.isAssignableFrom(CertTemplate.class)).isTrue();
+        assertThat(SoftDeletable.class.isAssignableFrom(Gate.class)).isTrue();
     }
 
     @Test
-    @DisplayName("P0-6.2.A2 4 类实体各 1 次 approve → 恰好 4 条 audit")
+    @DisplayName("P0-6.2.A2 5 类实体各 1 次 approve → 恰好 5 条 audit")
     void auditCountEqualsExecutions() {
-        for (int i = 0; i < 4; i++) {
-            String type = List.of("projects", "products", "persons", "cert_templates").get(i);
+        for (int i = 0; i < 5; i++) {
+            String type = List.of("projects", "products", "persons", "cert_templates", "gates").get(i);
             Long targetId = (long) (1000 + i);
             DeletionRequest req = DeletionRequest.builder()
                 .id((long) (i + 1)).entityType(type).entityId(targetId).reason("AC")
@@ -111,10 +121,15 @@ class P062AcceptanceTest {
                     when(certTemplateMapper.selectById(targetId)).thenReturn(c);
                     when(certTemplateMapper.updateById(any(CertTemplate.class))).thenReturn(1);
                 }
+                case "gates" -> {
+                    Gate g = Gate.builder().id(targetId).gateCode("G1").delFlag("0").build();
+                    when(gateMapper.selectById(targetId)).thenReturn(g);
+                    when(gateMapper.updateById(any(Gate.class))).thenReturn(1);
+                }
             }
             service.approveAndExecute(req.getId(), 99L);
         }
-        verify(auditLogService, times(4)).append(any(AuditLog.class));
+        verify(auditLogService, times(5)).append(any(AuditLog.class));
     }
 
     @Test

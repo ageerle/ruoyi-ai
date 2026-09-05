@@ -20,8 +20,15 @@ public class IpdAuthSession {
         this.personMapper = personMapper;
     }
 
+    /**
+     * 建立 IPD Person 会话（loginType=ipd）。
+     * maxLoginCount=-1：避免与基线 UserActionListener（仅认 login）在踢旧会话时交叉解析 JWT。
+     *
+     * @param person 已通过口令校验的 Person
+     * @return JWT 字符串
+     */
     public String login(Person person) {
-        logic.login(person.getId(), new SaLoginParameter().setDeviceType("pc"));
+        logic.login(person.getId(), new SaLoginParameter().setDeviceType("pc").setMaxLoginCount(-1));
         logic.getTokenSession().set("ipdPersonId", person.getId());
         // Bind to the credential snapshot that passed authentication, not a later database reload.
         logic.getTokenSession().set("ipdCredentialMarker", SecureUtil.sha256(person.getPasswordHash()));

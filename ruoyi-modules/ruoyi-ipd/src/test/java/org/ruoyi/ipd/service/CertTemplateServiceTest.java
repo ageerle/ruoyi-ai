@@ -83,19 +83,15 @@ class CertTemplateServiceTest {
     }
 
     @Test
-    @DisplayName("create 成功 + 审计；remove 软删 + 审计")
+    @DisplayName("create 成功 + 审计；remove 禁止直删旁路（P0-6.2）")
     void createAndRemove() {
         when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         CertTemplate created = service.create(tpl("CN", "中国", "SRRC", "1"), 1L);
         assertThat(created.getIsMandatory()).isEqualTo("1");
         verify(auditLogService).append(any());
 
-        CertTemplate existing = tpl("CN", "中国", "SRRC", "1");
-        when(mapper.selectById(1L)).thenReturn(existing);
-        service.remove(1L, 1L);
-        assertThat(existing.getDelFlag()).isEqualTo("1");
-
-        assertThatThrownBy(() -> service.remove(99L, 1L))
-            .isInstanceOf(ServiceException.class).hasMessageContaining("不存在");
+        assertThatThrownBy(() -> service.remove(1L, 1L))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("禁止直删");
     }
 }

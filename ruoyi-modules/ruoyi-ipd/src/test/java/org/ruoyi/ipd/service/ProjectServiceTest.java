@@ -13,6 +13,7 @@ import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -46,7 +47,8 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService);
+        service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine,
+            projectBootstrapService, NoopTransactionManager.INSTANCE);
     }
 
     private Project base(String level, String coefficient, String reason) {
@@ -54,9 +56,15 @@ class ProjectServiceTest {
         p.setName("人脸门禁 S 级");
         p.setProductId(50L);
         p.setTemplateType("HARDWARE");
+        p.setTargetMarkets("[\"SA\"]");
+        p.setMainGroupId(7L);
         p.setLevel(level);
         p.setLevelCoefficient(coefficient == null ? null : new BigDecimal(coefficient));
         p.setLevelCoefficientReason(reason);
+        p.setTargetSalesAmount(new BigDecimal("5000000"));
+        p.setTargetChannelCount(10);
+        p.setTargetNps(70);
+        p.setTargetSceneCount(5);
         return p;
     }
 
@@ -83,40 +91,44 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("创建成功：S 1.8 + 理由 → 编码/CONCEPT/DRAFT 回填 + 产品 1:1 回填")
+    @DisplayName("创建成功：S 默认 1.5 → 编码/CONCEPT/DRAFT 回填 + 产品 1:1 回填")
     void createOk() {
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         when(projectMapper.selectList(any())).thenReturn(List.of());
 
-        Project created = service.create(base("S", "1.8", "旗舰差异化"), 1L);
+        Project created = service.create(base("S", null, null), 1L);
 
         assertThat(created.getCode()).matches("PRJ-\\d{4}-\\d{3}");
         assertThat(created.getCurrentStage()).isEqualTo("CONCEPT");
         assertThat(created.getStatus()).isEqualTo("DRAFT");
+        assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.5");
         assertThat(product50().getProjectId()).isEqualTo(created.getId());
         verify(projectBootstrapService).bootstrap(created.getId(), 1L);
         verify(auditLogService).append(any());
     }
 
     @Test
-    @DisplayName("系数校验：S 越下界 1.4 / B 越上界 0.9 / A 带系数 → 全拒")
+    @DisplayName("系数校验：S 越下界 1.4 / B 越上界 0.9 / A 带非 1.0 系数 → 全拒")
     void coefficientRange() {
         assertThatThrownBy(() -> service.create(base("S", "1.4", "x"), 1L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("1.5");
         assertThatThrownBy(() -> service.create(base("B", "0.9", "x"), 1L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("0.8");
-        assertThatThrownBy(() -> service.create(base("A", "1.0", null), 1L))
+        assertThatThrownBy(() -> service.create(base("A", "1.2", null), 1L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("A 级");
     }
 
     @Test
-    @DisplayName("S/B 理由必填；S 无系数必填")
+    @DisplayName("AC-INC-15c：S 非默认须走流程；默认 1.5 可无理由")
     void reasonAndCoefficientRequired() {
-        assertThatThrownBy(() -> service.create(base("S", "1.8", null), 1L))
-            .isInstanceOf(ServiceException.class).hasMessageContaining("理由必填");
-        assertThatThrownBy(() -> service.create(base("S", null, "x"), 1L))
-            .isInstanceOf(ServiceException.class).hasMessageContaining("必填");
+        assertThatThrownBy(() -> service.create(base("S", "1.8", "旗舰"), 1L))
+            .isInstanceOf(ServiceException.class).hasMessageContaining("AC-INC-15c");
+        when(productMapper.selectById(50L)).thenReturn(product50());
+        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(projectMapper.selectList(any())).thenReturn(List.of());
+        assertThat(service.create(base("S", null, null), 1L).getLevelCoefficient())
+            .isEqualByComparingTo("1.5");
     }
 
     @Test
@@ -124,7 +136,7 @@ class ProjectServiceTest {
     void oneToOneGuard() {
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
-        assertThatThrownBy(() -> service.create(base("S", "1.8", "x"), 1L))
+        assertThatThrownBy(() -> service.create(base("S", null, null), 1L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("1:1");
     }
 
