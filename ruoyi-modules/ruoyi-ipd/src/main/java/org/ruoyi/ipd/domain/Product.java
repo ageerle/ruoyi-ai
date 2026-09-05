@@ -1,0 +1,58 @@
+package org.ruoyi.ipd.domain;
+
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+
+/**
+ * IPD 产品——TS-05 products；BR-PROD-01 三路来源（超管导入在售型号 / PM 新增 / 游客「其他」占位）
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Accessors(chain = true)
+@EqualsAndHashCode(callSuper = true)
+@TableName(value = "products", autoResultMap = true)
+public class Product extends BaseEntity {
+
+    public static final String SRC_ADMIN_IMPORT = "ADMIN_IMPORT";
+    public static final String SRC_PM_NEW = "PM_NEW";
+    public static final String SRC_GUEST_OTHER = "GUEST_OTHER";
+
+    @TableId
+    private Long id;
+
+    /** 产品编码 */
+    private String productCode;
+
+    /** 产品名称 */
+    private String productName;
+
+    /** 在售型号编码（超管导入） */
+    private String modelCode;
+
+    /** 来源 ADMIN_IMPORT|PM_NEW|GUEST_OTHER */
+    private String source;
+
+    /** 关联项目（1:1 唯一，uk_products_project） */
+    private Long projectId;
+
+    /** 归属产品组 */
+    private Long groupId;
+
+    /** 状态 ACTIVE|INACTIVE */
+    private String status;
+
+    /** 租户ID */
+    private String tenantId;
+
+    /** 删除标志（0正常 1删除；删除走两级审核引擎，禁物理删除 G-02） */
+    private String delFlag;
+}
