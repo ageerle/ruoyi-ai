@@ -23,7 +23,8 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_STAGE_ACTION,
         IpdPermissionCode.OPERATION_CERT_TEMPLATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT,
-        IpdPermissionCode.OPERATION_GATE_REVIEW
+        IpdPermissionCode.OPERATION_GATE_REVIEW,
+        "ipd:system-config:read"
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -51,7 +52,7 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE
     );
 
-    /** 仅 SUPER_ADMIN：Gate/证书模板写 + 归档 purge + 删除终审。 */
+    /** 仅 SUPER_ADMIN：Gate/证书模板写 + 系统参数 + 全量审计 + 归档 purge + 删除终审。 */
     private static final Set<String> ADMIN_WRITE = unique(
         IpdPermissionCode.OPERATION_GATE_ELEMENT_CREATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT_UPDATE,
@@ -60,7 +61,15 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_CERT_TEMPLATE_DELETE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_ARCHIVE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_PURGE,
-        IpdPermissionCode.OPERATION_DELETION_REQUEST_ADMIN
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_ADMIN,
+        "ipd:system-config:list",
+        "ipd:system-config:update",
+        // SEC-02 缺陷 A-audit：AuditLogController 旧三端点 @SaCheckPermission 要求下列码；
+        // 未登记时全员（含超管）NotPermission→AC-AUD-02 不可能过。组长/成员走无注解的
+        // /scope、/export/scope（requireInternal + service 层角色范围过滤，P0-5.4）。
+        "ipd:audit-log:list",
+        "ipd:audit-log:verify",
+        "ipd:audit-log:export"
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
