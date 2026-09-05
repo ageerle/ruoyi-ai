@@ -26,13 +26,29 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IpdAuthService {
 
-    public enum Scope { FULL, HANDOVER_ONLY, NONE }
+    public enum Scope { FULL, PASSWORD_CHANGE_REQUIRED, HANDOVER_ONLY, NONE }
 
     public record LoginResult(Person person, Scope scope, boolean mustChangePwd) {
     }
 
     private final PersonMapper personMapper;
     private final AuditLogService auditLogService;
+
+    /** 授权范围判定（IpdPermission 拦截器 / IpdAuthController me+refresh 复用）。
+     * <p>映射：DISABLED/RESIGNED/状态异常→NONE；ACTIVE+mustChangePwd=1→PASSWORD_CHANGE_REQUIRED；
+     * FROZEN_PENDING_HANDOVER→HANDOVER_ONLY；其余 ACTIVE→FULL。与 login() 状态机同源。 */
+    public Scope scopeOf(Person person) {
+        if (person == null || person.getId() == null) return Scope.NONE;
+        if ("RESIGNED".equals(person.getEmploymentStatus())) return Scope.NONE;
+        switch (nvl(person.getAccountStatus())) {
+            case "ACTIVE", "" -> {
+                if ("1".equals(nvl(person.getMustChangePwd()))) return Scope.PASSWORD_CHANGE_REQUIRED;
+                return Scope.FULL;
+            }
+            case "FROZEN_PENDING_HANDOVER" -> { return Scope.HANDOVER_ONLY; }
+            default -> { return Scope.NONE; }
+        }
+    }
 
     /** 登录：合并用户名/密码错误信息防枚举；状态机映射授权范围。
      * <p>SEC-AUD-01：失败分支也写审计 (action=LOGIN_FAIL)，auditLogService.append 走 REQUIRES_NEW
