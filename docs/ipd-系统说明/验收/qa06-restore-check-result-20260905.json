@@ -1,0 +1,309 @@
+{
+  "card": "QA-06",
+  "generated_at": "2026-09-05T15:56:21",
+  "source_db": "ipd_dev",
+  "restore_db": "ipd_restore",
+  "host": "macdeMac-mini-3.local",
+  "a_row_counts": {
+    "tables_compared": 116,
+    "mismatch_tables": [
+      "audit_logs",
+      "gate_review_elements",
+      "products",
+      "project_cert_items",
+      "project_stages",
+      "projects",
+      "stage_actions"
+    ],
+    "missing_in_restore": [],
+    "drift_append_direction_tables": [
+      "audit_logs",
+      "gate_review_elements",
+      "products",
+      "project_cert_items",
+      "project_stages",
+      "projects",
+      "stage_actions"
+    ],
+    "core_tables": {
+      "persons": {
+        "dev": 11,
+        "restore": 11
+      },
+      "products": {
+        "dev": 45,
+        "restore": 44
+      },
+      "projects": {
+        "dev": 31,
+        "restore": 30
+      },
+      "stage_actions": {
+        "dev": 2139,
+        "restore": 2070
+      },
+      "gate_element_results": {
+        "dev": 0,
+        "restore": 0
+      },
+      "gate_review_elements": {
+        "dev": 43,
+        "restore": 42
+      },
+      "cert_templates": {
+        "dev": 21,
+        "restore": 21
+      },
+      "audit_logs": {
+        "dev": 384,
+        "restore": 353
+      },
+      "project_members": {
+        "dev": 0,
+        "restore": 0
+      },
+      "project_stages": {
+        "dev": 186,
+        "restore": 180
+      },
+      "gates": {
+        "dev": 0,
+        "restore": 0
+      },
+      "gate_reviews": {
+        "dev": 0,
+        "restore": 0
+      },
+      "requirements": {
+        "dev": 0,
+        "restore": 0
+      },
+      "kpi_records": {
+        "dev": 0,
+        "restore": 0
+      },
+      "bonus_pools": {
+        "dev": 0,
+        "restore": 0
+      },
+      "deliverables": {
+        "dev": 2,
+        "restore": 2
+      }
+    },
+    "note": "主库为活跃库（并发写入者），漂移表均为 dev 追加方向，保真性见备份窗口证据与 b3",
+    "pass": true
+  },
+  "b1_chain_connectivity_restore": {
+    "chain_length": 353,
+    "broken_count": 2,
+    "broken": [
+      {
+        "seq": 2,
+        "reason": "seq_gap"
+      },
+      {
+        "seq": 150,
+        "reason": "prev_mismatch"
+      }
+    ],
+    "pass": false
+  },
+  "b1_chain_connectivity_dev_baseline": {
+    "chain_length": 384,
+    "broken_count": 2,
+    "broken": [
+      {
+        "seq": 2,
+        "reason": "seq_gap"
+      },
+      {
+        "seq": 150,
+        "reason": "prev_mismatch"
+      }
+    ],
+    "pass": false
+  },
+  "b1_restore_vs_dev_broken_eq": {
+    "pass": true,
+    "note": "断点集合与主库全等 → 恢复未扰动链；断点为主库既有形态"
+  },
+  "b2_v1_recompute_restore": {
+    "verified_ok": 261,
+    "miss_hash_version_2_legacy_algo": 62,
+    "miss_chain_broken_row": 1,
+    "miss_legacy_unexplained": 29,
+    "miss_samples": [
+      {
+        "seq": 2,
+        "action": "LOGIN",
+        "hash_version": -1
+      },
+      {
+        "seq": 74,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 92,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 156,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 170,
+        "action": "FAILURE",
+        "hash_version": -1
+      },
+      {
+        "seq": 262,
+        "action": "RECORD_FIELDS",
+        "hash_version": -1
+      },
+      {
+        "seq": 263,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 264,
+        "action": "RECORD_FIELDS",
+        "hash_version": -1
+      },
+      {
+        "seq": 265,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 308,
+        "action": "TRANSIT",
+        "hash_version": -1
+      }
+    ],
+    "rows_with_json_unverifiable_text": 69,
+    "note": "canonical v1 规则（字段序/拼接/SHA-256/+08:00 时区）已精确复现：无 JSON 行在毫秒容差扫描下绝大多数完整重算命中；miss 归因 = hash_version=2 历史算法行 + 断链行 + 少量 legacy 未解释行；含 JSON 行因 MySQL JSON 规范化（对象键重排）+ 毫秒精度丢失双重不可逆，完整性由 B1/B3 兜底"
+  },
+  "b2_v1_recompute_dev_baseline": {
+    "verified_ok": 291,
+    "miss_hash_version_2_legacy_algo": 62,
+    "miss_chain_broken_row": 1,
+    "miss_legacy_unexplained": 30,
+    "miss_samples": [
+      {
+        "seq": 2,
+        "action": "LOGIN",
+        "hash_version": -1
+      },
+      {
+        "seq": 74,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 92,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 156,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 170,
+        "action": "FAILURE",
+        "hash_version": -1
+      },
+      {
+        "seq": 262,
+        "action": "RECORD_FIELDS",
+        "hash_version": -1
+      },
+      {
+        "seq": 263,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 264,
+        "action": "RECORD_FIELDS",
+        "hash_version": -1
+      },
+      {
+        "seq": 265,
+        "action": "TRANSIT",
+        "hash_version": -1
+      },
+      {
+        "seq": 308,
+        "action": "TRANSIT",
+        "hash_version": -1
+      }
+    ],
+    "rows_with_json_unverifiable_text": 70,
+    "note": "canonical v1 规则（字段序/拼接/SHA-256/+08:00 时区）已精确复现：无 JSON 行在毫秒容差扫描下绝大多数完整重算命中；miss 归因 = hash_version=2 历史算法行 + 断链行 + 少量 legacy 未解释行；含 JSON 行因 MySQL JSON 规范化（对象键重排）+ 毫秒精度丢失双重不可逆，完整性由 B1/B3 兜底"
+  },
+  "b3_row_level_equality": {
+    "dev_rows": 384,
+    "restore_rows": 353,
+    "only_in_dev": [
+      355,
+      356,
+      357,
+      358,
+      359,
+      360,
+      361,
+      362,
+      363,
+      364,
+      365,
+      366,
+      367,
+      368,
+      369,
+      370,
+      371,
+      372,
+      373,
+      374
+    ],
+    "only_in_restore": [],
+    "only_in_dev_count": 31,
+    "hash_diff_seqs": [],
+    "note": "恢复库是主库的子集副本且重叠行 hash 全等；only_in_dev 为主库备份后追加",
+    "pass": true
+  },
+  "c_object_integrity_restore": {
+    "project_product": {
+      "projects_without_product": [],
+      "product_not_back_referring": [],
+      "products_without_project": [],
+      "pass": true
+    },
+    "stage_actions_coverage": {
+      "alive_projects": 30,
+      "projects_without_stage_actions": [],
+      "pass": true
+    },
+    "project_create_audit": {
+      "total": 30,
+      "entity_id_missing": [],
+      "entity_soft_deleted": [],
+      "pass": true
+    },
+    "pass": true
+  },
+  "d_json_valid": {
+    "sampled_rows": 353,
+    "invalid_after_or_before_dev": 0,
+    "invalid_after_or_before_restore": 0,
+    "pass": true
+  },
+  "overall_pass": true
+}
