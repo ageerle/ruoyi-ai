@@ -233,4 +233,37 @@ class DeleteAuditServiceTest {
         assertThat(captured.getReason()).isEqualTo("deletion_request:21");
         assertThat(captured.getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_EXECUTE);
     }
+
+    @Test
+    @DisplayName("P0-6.2.11 目标已软删 → DELETE_NOOP 且不重复 UPDATE")
+    void alreadyDeletedWritesNoopAudit() {
+        DeletionRequest req = pending(22L, "projects", 1300L);
+        when(deletionRequestMapper.selectById(22L)).thenReturn(req);
+        when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
+        Project project = Project.builder().id(1300L).code("P").name("T").delFlag("1").build();
+        when(projectMapper.selectById(1300L)).thenReturn(project);
+
+        service.approveAndExecute(22L, 99L);
+
+        verify(projectMapper, never()).updateById(any(Project.class));
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+    }
+
+    @Test
+    @DisplayName("P0-6.2.12 目标不存在 → DELETE_NOOP")
+    void missingEntityWritesNoopAudit() {
+        DeletionRequest req = pending(23L, "projects", 1400L);
+        when(deletionRequestMapper.selectById(23L)).thenReturn(req);
+        when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
+        when(projectMapper.selectById(1400L)).thenReturn(null);
+
+        service.approveAndExecute(23L, 99L);
+
+        verify(projectMapper, never()).updateById(any(Project.class));
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+    }
 }

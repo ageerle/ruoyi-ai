@@ -217,12 +217,22 @@ public class StageActionService {
         return toCreate.size();
     }
 
+    /**
+     * 序列化动作状态快照为合法 JSON（供审计 before/after）。
+     * 使用 {@link AuditEventData} 避免手工拼接在 actionCode/status 含引号时写出非法 JSON。
+     */
     private static String statusSnapshot(StageAction a) {
-        // audit_logs.before_data/after_data 为 MySQL JSON 列，必须写合法 JSON
-        return "{\"actionCode\":\"" + a.getActionCode() + "\",\"status\":\"" + a.getStatus()
-            + "\",\"version\":" + a.getVersion()
-            + (a.getActualDoneAt() == null ? "" : ",\"actualDoneAt\":" + a.getActualDoneAt().getTime())
-            + "}";
+        if (a.getActualDoneAt() == null) {
+            return AuditEventData.json(
+                "actionCode", a.getActionCode(),
+                "status", a.getStatus(),
+                "version", a.getVersion());
+        }
+        return AuditEventData.json(
+            "actionCode", a.getActionCode(),
+            "status", a.getStatus(),
+            "version", a.getVersion(),
+            "actualDoneAt", a.getActualDoneAt().getTime());
     }
 
     private static Long actorIdOf(String operator) {

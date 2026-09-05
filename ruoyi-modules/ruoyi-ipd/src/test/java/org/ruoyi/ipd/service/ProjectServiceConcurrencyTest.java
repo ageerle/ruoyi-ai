@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
  *
  * <p>回归 nextCode() 在 50 并发线程下的取号唯一性。
  * 修复前：selectList(likeRight) + 内存求 max + insert，无锁 → 50 并发必重复（RED 已验证）。
- * 修复后：方法级 synchronized 锁（Spring 单例 bean 锁 this）+ DB UNIQUE KEY uk_projects_code(code) 兜底。
+ * 修复后：方法级 synchronized（单测无 AOP）+ 生产 @Lock4j 跨 JVM + DB UNIQUE KEY uk_projects_code。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)

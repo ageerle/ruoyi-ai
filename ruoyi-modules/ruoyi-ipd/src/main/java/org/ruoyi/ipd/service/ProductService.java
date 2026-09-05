@@ -57,17 +57,39 @@ public class ProductService {
         return product;
     }
 
-    /** 关联项目到已有产品（1:1：项目与产品互斥占用） */
+    /**
+     * 关联项目到已有产品（产品:项目 = 1:1，两端同事务维护）。
+     * <p>AC-PROD-01：已挂项目的产品再关联第二个项目 ⇒ 拒绝「一个产品仅对应一个项目」。
+     * <p>GUEST_OTHER 占位不可绑定；软删项目/产品拒绝；同 id 重绑幂等成功不写二次审计。
+     *
+     * @param productId  产品 ID
+     * @param projectId  目标项目 ID
+     * @param operatorId 操作人
+     */
     @Transactional(rollbackFor = Exception.class)
     public void bindProject(Long productId, Long projectId, Long operatorId) {
         Product product = require(productId);
-        checkProjectNotTaken(projectId);
-        Project project = projectMapper.selectById(projectId);
-        if (project == null) {
-            throw new ServiceException("项目不存在: " + projectId);
+        if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
+            throw new ServiceException("游客「其他」占位产品不可关联项目");
         }
+        if (product.getProjectId() != null) {
+            if (product.getProjectId().equals(projectId)) {
+                return;
+            }
+            throw new ServiceException("一个产品仅对应一个项目");
+        }
+        Project project = requireProject(projectId);
+        if (project.getProductId() != null && !project.getProductId().equals(productId)) {
+            throw new ServiceException("该项目已关联其他产品（产品:项目 = 1:1）");
+        }
+        checkProjectNotTaken(projectId);
+
         product.setProjectId(projectId);
         productMapper.updateById(product);
+        if (!productId.equals(project.getProductId())) {
+            project.setProductId(productId);
+            projectMapper.updateById(project);
+        }
         audit(productId, product.getProductName(), operatorId, "PRODUCT_BIND_PROJECT");
     }
 
@@ -101,6 +123,20 @@ public class ProductService {
             throw new ServiceException("产品不存在: " + id);
         }
         return product;
+    }
+
+    /**
+     * 加载未软删项目，用于 1:1 绑定。
+     *
+     * @param id 项目主键
+     * @return 存活项目
+     */
+    private Project requireProject(Long id) {
+        Project project = projectMapper.selectById(id);
+        if (project == null || "1".equals(project.getDelFlag())) {
+            throw new ServiceException("项目不存在: " + id);
+        }
+        return project;
     }
 
     private void checkProjectNotTaken(Long projectId) {

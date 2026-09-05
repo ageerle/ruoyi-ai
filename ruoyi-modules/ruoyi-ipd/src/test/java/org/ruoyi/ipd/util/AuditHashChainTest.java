@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * hash 链纯函数单测（@Tag("dev") 必打：Surefire groups 过滤，无 tag 静默跳过）
@@ -70,5 +71,44 @@ class AuditHashChainTest {
         String fakeC2 = AuditHashChain.canonical(2L, 9L, "张三", "MARKET_PM", "DELETE", "projects", 1L,
             "{}", "{\"k\":2}", null, T0 + 1);
         assertThat(AuditHashChain.computeCurrHash(h1, fakeC2)).isNotEqualTo(h2);
+    }
+
+    @Test
+    @DisplayName("RISK-04 A：canonical 与 canonicalV1 字节完全一致（历史链零破坏）")
+    void canonicalEqualsCanonicalV1() {
+        String viaDefault = AuditHashChain.canonical(1L, 9L, "张三", "MARKET_PM", "CREATE", "projects", 100L,
+            null, "{\"k\":1}", "测试原因", T0);
+        String viaV1 = AuditHashChain.canonicalV1(1L, 9L, "张三", "MARKET_PM", "CREATE", "projects", 100L,
+            null, "{\"k\":1}", "测试原因", T0);
+        assertThat(viaDefault).isEqualTo(viaV1).doesNotStartWith(AuditHashChain.V2_PREFIX);
+        assertThat(AuditHashChain.ACTIVE_CANONICAL_VERSION).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("RISK-04 A：canonicalV2 带 v2| 前缀且与 v1 隔离")
+    void canonicalV2PrefixedAndIsolated() {
+        String v1 = AuditHashChain.canonicalV1(1L, 9L, "张三", "MARKET_PM", "CREATE", "projects", 100L,
+            null, "{\"k\":1}", "测试原因", T0);
+        String v2 = AuditHashChain.canonicalV2(1L, 9L, "张三", "MARKET_PM", "CREATE", "projects", 100L,
+            null, "{\"k\":1}", "测试原因", T0, "{\"ext\":true}");
+        assertThat(v2).startsWith(AuditHashChain.V2_PREFIX).isNotEqualTo(v1).endsWith("|{\"ext\":true}");
+        assertThat(AuditHashChain.computeCurrHash(AuditHashChain.GENESIS, v2))
+            .isNotEqualTo(AuditHashChain.computeCurrHash(AuditHashChain.GENESIS, v1));
+    }
+
+    @Test
+    @DisplayName("RISK-04 A：canonicalByVersion 路由 1/2，未知版本拒绝")
+    void canonicalByVersionRouting() {
+        String v1 = AuditHashChain.canonicalByVersion(1, 1L, 9L, "张三", "MARKET_PM", "CREATE", "projects", 1L,
+            null, null, null, T0, "{\"ignored\":true}");
+        String v2 = AuditHashChain.canonicalByVersion(2, 1L, 9L, "张三", "MARKET_PM", "CREATE", "projects", 1L,
+            null, null, null, T0, "{\"ext\":1}");
+        assertThat(v1).isEqualTo(AuditHashChain.canonicalV1(1L, 9L, "张三", "MARKET_PM", "CREATE", "projects", 1L,
+            null, null, null, T0));
+        assertThat(v2).startsWith(AuditHashChain.V2_PREFIX);
+        assertThatThrownBy(() ->
+                AuditHashChain.canonicalByVersion(9, 1L, null, null, null, "X", "y", null, null, null, null, T0, null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("不支持的 canonical 版本");
     }
 }

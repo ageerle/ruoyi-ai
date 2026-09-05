@@ -105,11 +105,14 @@ public class IpdAuthService {
     @Transactional(rollbackFor = Exception.class)
     public void changePassword(Long personId, String oldRaw, String newRaw) {
         if (newRaw == null || newRaw.length() < 8) {
-            throw new ServiceException("新密码长度至少 8 位");
+            throw new IpdAuthInputException(IpdAuthInputException.Reason.PASSWORD_LENGTH);
         }
         Person person = personMapper.selectById(personId);
         if (person == null || !BCrypt.checkpw(oldRaw, nvl(person.getPasswordHash()))) {
-            throw new ServiceException("原密码错误");
+            throw new IpdAuthInputException(IpdAuthInputException.Reason.CURRENT_PASSWORD_INCORRECT);
+        }
+        if (BCrypt.checkpw(newRaw, nvl(person.getPasswordHash()))) {
+            throw new IpdAuthInputException(IpdAuthInputException.Reason.PASSWORD_UNCHANGED);
         }
         person.setPasswordHash(BCrypt.hashpw(newRaw));
         person.setMustChangePwd("0");

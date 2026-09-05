@@ -69,8 +69,13 @@ public class CertTemplateService {
         if (dup != null && dup > 0) {
             throw new ServiceException("该国家已存在同名认证项: " + template.getCertName());
         }
-        if (template.getId() == null) {
-            template.setCreateTime(new Date());
+        // SEC-API-01：服务端权威字段强制覆写，防客户端注入 id/tenantId/delFlag/createTime/updateTime
+        template.setId(null);
+        template.setCreateTime(new Date());
+        template.setUpdateTime(null);
+        template.setDelFlag("0");
+        if (isBlank(template.getTenantId())) {
+            template.setTenantId("000000");
         }
         if (isBlank(template.getIsMandatory())) {
             template.setIsMandatory("1");

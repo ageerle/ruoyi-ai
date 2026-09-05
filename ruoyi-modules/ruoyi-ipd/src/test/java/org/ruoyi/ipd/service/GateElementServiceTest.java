@@ -10,7 +10,6 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.GateElement;
 import org.ruoyi.ipd.mapper.GateElementMapper;
-import org.ruoyi.ipd.service.AuditLogService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

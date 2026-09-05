@@ -23,4 +23,12 @@ public interface SoftDeleteExecutor<T> {
      * 实体不存在或 del_flag 已为 "1" 时不得抛业务异常（幂等）。
      */
     void softDelete(Long id);
+
+    /**
+     * 判断目标是否已处于软删/不存在态（供 DELETE_NOOP 审计，必须在 softDelete 之前调用）。
+     *
+     * @param id 实体主键
+     * @return true=不存在或 del_flag 已为 "1"；false=仍可执行真实软删
+     */
+    boolean isDeleted(Long id);
 }

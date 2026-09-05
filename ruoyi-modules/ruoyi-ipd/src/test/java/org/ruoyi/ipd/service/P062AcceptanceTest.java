@@ -135,4 +135,41 @@ class P062AcceptanceTest {
         verify(projectMapper).updateById(cap.capture());
         assertThat(cap.getValue().getDelFlag()).isEqualTo("1");
     }
+
+    @Test
+    @DisplayName("P0-6.2.A4 目标已软删 → DELETE_NOOP 且不重复 UPDATE")
+    void alreadyDeletedIsNoop() {
+        DeletionRequest req = DeletionRequest.builder()
+            .id(1L).entityType("projects").entityId(2000L).requesterId(1L)
+            .status(DeletionRequestService.ST_ADMIN_REVIEW).build();
+        when(deletionRequestMapper.selectById(1L)).thenReturn(req);
+        when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
+        Project project = Project.builder().id(2000L).code("P").delFlag("1").build();
+        when(projectMapper.selectById(2000L)).thenReturn(project);
+
+        service.approveAndExecute(1L, 99L);
+
+        verify(projectMapper, times(0)).updateById(any(Project.class));
+        ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(auditCap.capture());
+        assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+    }
+
+    @Test
+    @DisplayName("P0-6.2.A5 目标不存在 → DELETE_NOOP")
+    void missingTargetIsNoop() {
+        DeletionRequest req = DeletionRequest.builder()
+            .id(2L).entityType("products").entityId(3000L).requesterId(1L)
+            .status(DeletionRequestService.ST_ADMIN_REVIEW).build();
+        when(deletionRequestMapper.selectById(2L)).thenReturn(req);
+        when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
+        when(productMapper.selectById(3000L)).thenReturn(null);
+
+        service.approveAndExecute(2L, 99L);
+
+        verify(productMapper, times(0)).updateById(any(Product.class));
+        ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(auditCap.capture());
+        assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+    }
 }

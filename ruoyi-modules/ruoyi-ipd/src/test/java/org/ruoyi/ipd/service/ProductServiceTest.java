@@ -89,7 +89,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("bindProject：项目存在且未占用 → 回填关联")
+    @DisplayName("bindProject：项目存在且未占用 → 两端回填关联")
     void bindProjectOk() {
         Product p = product("PM_NEW", null, null);
         p.setId(3L);
@@ -98,10 +98,12 @@ class ProductServiceTest {
         when(productMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         Project project = new Project();
         project.setId(9L);
+        project.setDelFlag("0");
         when(projectMapper.selectById(9L)).thenReturn(project);
 
         service.bindProject(3L, 9L, 1L);
         assertThat(p.getProjectId()).isEqualTo(9L);
+        assertThat(project.getProductId()).isEqualTo(3L);
     }
 
     @Test

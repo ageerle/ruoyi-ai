@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -54,6 +55,9 @@ public class ProjectService {
         Product product = productMapper.selectById(project.getProductId());
         if (product == null || "1".equals(product.getDelFlag())) {
             throw new ServiceException("归属产品不存在: " + project.getProductId());
+        }
+        if (product.getProjectId() != null) {
+            throw new ServiceException("一个产品仅对应一个项目");
         }
         Long taken = projectMapper.selectCount(new LambdaQueryWrapper<Project>()
             .eq(Project::getProductId, project.getProductId()).eq(Project::getDelFlag, "0"));
@@ -125,10 +129,14 @@ public class ProjectService {
 
     /**
      * PRJ-YYYY-NNN：取当年最大序号 +1。
-     * <p>PERF-01：方法级 synchronized 锁（Spring 单例 bean，锁 this），保证 50 并发下取号原子。
-     * <br>DB 层兜底：{@code uk_projects_code(code)} UNIQUE KEY（见 {@code docs/script/sql/update/2026-09-05-ipd-perf01-nextcode-unique.sql}）。
-     * <br>生产建议升级：{@code @Lock4j(keys="ipd:project:code:" + year, expire=3000)} Redisson 跨 JVM 保护。
+     * <p>PERF-01 / RISK-01：双层保护——
+     * <ul>
+     *   <li>{@code @Lock4j}：Redisson 跨 JVM（生产多实例经 Spring 代理生效）</li>
+     *   <li>{@code synchronized}：同 JVM 兜底（单测 {@code new ProjectService()} 无 AOP 时仍原子）</li>
+     *   <li>DB：{@code uk_projects_code(code)} UNIQUE KEY 最终兜底</li>
+     * </ul>
      */
+    @Lock4j(keys = {"'ipd:project:code'"}, expire = 5000, acquireTimeout = 3000)
     public synchronized String nextCode() {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         String prefix = "PRJ-" + year + "-";

@@ -41,4 +41,16 @@ public class CertTemplateSoftDeleteExecutor implements SoftDeleteExecutor<CertTe
             throw new ServiceException("认证模板软删除未更新唯一记录: id=" + id);
         }
     }
+
+    /**
+     * 判断认证模板是否已软删或不存在。
+     *
+     * @param id 模板主键
+     * @return true 表示应记 DELETE_NOOP
+     */
+    @Override
+    public boolean isDeleted(Long id) {
+        CertTemplate cert = certTemplateMapper.selectById(id);
+        return cert == null || "1".equals(cert.getDelFlag());
+    }
 }

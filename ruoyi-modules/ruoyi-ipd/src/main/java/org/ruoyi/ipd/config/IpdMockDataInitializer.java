@@ -45,9 +45,23 @@ public class IpdMockDataInitializer implements ApplicationRunner {
         ensurePerson("刘研发", "EMP2002", "RD_PM", groupId, "L3", "研发PM（Mock）");
         ensurePerson("赵市场", "EMP2003", "MARKET_PM", groupId2, "L3", "市场PM（Mock）");
         ensurePerson("孙研发", "EMP2004", "RD_PM", groupId2, "L3", "研发PM（Mock）");
-        productGroupMapper.updateById(ProductGroup.builder().id(groupId).leaderPersonId(leader1).build());
-        productGroupMapper.updateById(ProductGroup.builder().id(groupId2).leaderPersonId(leader2).build());
+        // P0-8.1：仅当 group 当前 leader 引用失效（空/null/指向 RESIGNED）时刷新 leader_person_id，
+        // 避免覆盖人工已设置的合法 leader（幂等跳过已设置）
+        rebindLeaderIfStale(groupId, leader1);
+        rebindLeaderIfStale(groupId2, leader2);
         log.info("[IPD] Mock 人员/产品组初始化完成（幂等跳过已存在）");
+    }
+
+    /** 若 group 当前 leader 引用空或指向 RESIGNED person，重置为新 leader；否则保持原绑定 */
+    private void rebindLeaderIfStale(Long groupId, Long newLeaderId) {
+        ProductGroup g = productGroupMapper.selectById(groupId);
+        if (g == null) return;
+        Long curLeader = g.getLeaderPersonId();
+        if (curLeader != null) {
+            Person p = personMapper.selectById(curLeader);
+            if (p != null && !"RESIGNED".equals(p.getEmploymentStatus())) return;
+        }
+        productGroupMapper.updateById(ProductGroup.builder().id(groupId).leaderPersonId(newLeaderId).build());
     }
 
     private Long ensureGroup(String name) {

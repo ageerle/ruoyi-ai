@@ -41,4 +41,16 @@ public class ProductSoftDeleteExecutor implements SoftDeleteExecutor<Product> {
             throw new ServiceException("产品软删除未更新唯一记录: id=" + id);
         }
     }
+
+    /**
+     * 判断产品是否已软删或不存在。
+     *
+     * @param id 产品主键
+     * @return true 表示应记 DELETE_NOOP
+     */
+    @Override
+    public boolean isDeleted(Long id) {
+        Product product = productMapper.selectById(id);
+        return product == null || "1".equals(product.getDelFlag());
+    }
 }

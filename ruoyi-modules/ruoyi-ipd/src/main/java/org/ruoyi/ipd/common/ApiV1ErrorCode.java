@@ -1,11 +1,6 @@
 package org.ruoyi.ipd.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 /** IPD 统一错误码；HTTP 映射以 DOC-06 §2.2 为准，不按数字段或异常消息猜测。 */
-@Getter
-@AllArgsConstructor
 public enum ApiV1ErrorCode {
     OK(0, "ok"),
 
@@ -34,6 +29,23 @@ public enum ApiV1ErrorCode {
 
     private final int code;
     private final String message;
+
+    /**
+     * @param code    业务码
+     * @param message 默认文案
+     */
+    ApiV1ErrorCode(int code, String message) {
+        this.code = code;
+        this.message = message;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public String getMessage() {
+        return message;
+    }
 
     public int getHttpStatus() {
         return switch (this) {

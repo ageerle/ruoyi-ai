@@ -20,6 +20,58 @@ import java.util.function.Supplier;
 @Component
 @RequiredArgsConstructor
 public class IpdPermission {
+    /** 项目列表 */
+    public static final String PROJECT_LIST = "ipd:project:list";
+    /** 项目详情 */
+    public static final String PROJECT_QUERY = "ipd:project:query";
+    /** 新建项目 */
+    public static final String PROJECT_ADD = "ipd:project:add";
+    /** 变更项目状态 */
+    public static final String PROJECT_STATUS = "ipd:project:status";
+    /** 推进项目阶段 */
+    public static final String PROJECT_ADVANCE = "ipd:project:advance";
+
+    /** 产品列表 */
+    public static final String PRODUCT_LIST = "ipd:product:list";
+    /** 产品详情 */
+    public static final String PRODUCT_QUERY = "ipd:product:query";
+    /** 新建产品 */
+    public static final String PRODUCT_ADD = "ipd:product:add";
+    /** 产品绑定项目 */
+    public static final String PRODUCT_BIND = "ipd:product:bind";
+    /** 变更产品状态 */
+    public static final String PRODUCT_STATUS = "ipd:product:status";
+
+    /** 阶段动作列表 */
+    public static final String STAGE_ACTION_LIST = "ipd:stage-action:list";
+    /** 阶段动作状态流转 */
+    public static final String STAGE_ACTION_TRANSIT = "ipd:stage-action:transit";
+    /** 登记交付物 */
+    public static final String STAGE_ACTION_DELIVERABLE = "ipd:stage-action:deliverable";
+    /** 实例化阶段动作 */
+    public static final String STAGE_ACTION_INSTANTIATE = "ipd:stage-action:instantiate";
+
+    /** 认证模板查询 */
+    public static final String CERT_TEMPLATE_LIST = "ipd:cert-template:list";
+    /** 新建认证模板 */
+    public static final String CERT_TEMPLATE_ADD = "ipd:cert-template:add";
+    /** 移除认证模板 */
+    public static final String CERT_TEMPLATE_REMOVE = "ipd:cert-template:remove";
+
+    /** Gate 要素列表 */
+    public static final String GATE_ELEMENT_LIST = "ipd:gate-element:list";
+    /** 新建 Gate 要素 */
+    public static final String GATE_ELEMENT_ADD = "ipd:gate-element:add";
+    /** 更新 Gate 要素 */
+    public static final String GATE_ELEMENT_EDIT = "ipd:gate-element:edit";
+    /** 停用 Gate 要素 */
+    public static final String GATE_ELEMENT_DISABLE = "ipd:gate-element:disable";
+
+    /** 归档区列表 */
+    public static final String DELETION_ARCHIVE = "ipd:deletion:archive";
+    /** 超管二次确认清除 */
+    public static final String DELETION_PURGE = "ipd:deletion:purge";
+
     private static final Set<String> INTERNAL_ROLES = Set.of("MARKET_PM", "RD_PM", "GROUP_LEADER", "SUPER_ADMIN");
     private final IpdAuthSession session;
     private final IpdAuthService authService;

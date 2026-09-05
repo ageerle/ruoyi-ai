@@ -47,4 +47,16 @@ public class PersonSoftDeleteExecutor implements SoftDeleteExecutor<Person> {
             throw new ServiceException("人员软删除未更新唯一记录: id=" + id);
         }
     }
+
+    /**
+     * 判断人员是否已软删或不存在。
+     *
+     * @param id 人员主键
+     * @return true 表示应记 DELETE_NOOP
+     */
+    @Override
+    public boolean isDeleted(Long id) {
+        Person person = personMapper.selectById(id);
+        return person == null || "1".equals(person.getDelFlag());
+    }
 }

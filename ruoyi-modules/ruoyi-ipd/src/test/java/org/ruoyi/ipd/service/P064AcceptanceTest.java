@@ -1,36 +1,25 @@
 package org.ruoyi.ipd.service;
 
-import cn.dev33.satoken.SaManager;
-import cn.dev33.satoken.config.SaTokenConfig;
-import cn.dev33.satoken.context.SaTokenContext;
-import cn.dev33.satoken.context.SaTokenContextForThreadLocal;
-import cn.dev33.satoken.context.mock.SaTokenContextMockUtil;
-import cn.dev33.satoken.dao.SaTokenDao;
-import cn.dev33.satoken.exception.NotLoginException;
-import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
-import cn.dev33.satoken.filter.SaTokenContextFilterForJakartaServlet;
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.controller.DeletionRequestController;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
-import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
-import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.security.IpdPermissionException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -38,7 +27,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,63 +43,35 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * P0-6.4 归档区与最终清除验收（AC-DEL-08）。
- * - 归档列表只显示 DELETED + 未 PURGED
- * - 清除 API 必须 SUPER_ADMIN 身份（第二级校验，不依赖 IpdPermission）
- * - 二次确认清除写最终审计（与软删除审计区分）
- * - 同一记录二次清除 → 状态冲突 50002
- * - 仅 audit.append 调用次数增加 1（与软删除审计独立）
- *
- * 采用独立 MockMvc + Sa-Token 真 JWT + PersonMapper 验证身份。
- * 不依赖 owner 的 IpdAuthConfiguration interceptor（已被简化）。
+ * SEC-API-01：身份经 IpdPermission.requireAdmin，不再依赖 StpUtil。
  */
 @Tag("dev")
 class P064AcceptanceTest {
 
     private final ObjectMapper json = new ObjectMapper();
     private DeletionRequestMapper deletionRequestMapper;
-    private PersonMapper personMapper;
     private AuditLogService auditLogService;
-    private Person superAdmin;
-    private Person marketPm;
+    private IpdPermission ipdPermission;
     private MockMvc mvc;
-    private SaTokenConfig oldConfig;
-    private SaTokenDao oldDao;
-    private SaTokenContext oldContext;
+    private DeletionArchiveService service;
 
     private static final long SUPER_ADMIN_ID = 100L;
-    private static final long PM_ID = 200L;
+    private static final IpdActor ADMIN =
+        new IpdActor(SUPER_ADMIN_ID, "超管", "SUPER_ADMIN", 1L);
 
     @BeforeEach
     void setup() {
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
             new org.apache.ibatis.builder.MapperBuilderAssistant(
-                new com.baomidou.mybatisplus.core.MybatisConfiguration(), "ipd-p064-test"),
-            Person.class);
-        // listArchive 的 LambdaQueryWrapper 在 getSqlSegment 时才解析列名（懒求值），需 DeletionRequest 的 lambda cache
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
-            new org.apache.ibatis.builder.MapperBuilderAssistant(
                 new com.baomidou.mybatisplus.core.MybatisConfiguration(), "ipd-p064-test-dr"),
             DeletionRequest.class);
-        oldConfig = SaManager.getConfig(); oldDao = SaManager.getSaTokenDao(); oldContext = SaManager.getSaTokenContext();
-        SaManager.setConfig(new SaTokenConfig().setJwtSecretKey(UUID.randomUUID().toString())
-            .setTokenName("Authorization").setTokenPrefix("Bearer").setIsReadCookie(false)
-            .setIsReadBody(false).setIsShare(false).setTimeout(900).setIsPrint(false));
-        SaManager.setSaTokenDao(new SaTokenDaoDefaultImpl());
-        SaManager.setSaTokenContext(new SaTokenContextForThreadLocal());
 
         deletionRequestMapper = mock(DeletionRequestMapper.class);
-        personMapper = mock(PersonMapper.class);
         auditLogService = mock(AuditLogService.class);
+        ipdPermission = mock(IpdPermission.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(call -> call.getArgument(0));
+        when(ipdPermission.requireAdmin()).thenReturn(ADMIN);
 
-        superAdmin = Person.builder().id(SUPER_ADMIN_ID).name("超管").username("super_admin")
-            .personType("SUPER_ADMIN").accountStatus("ACTIVE").employmentStatus("ACTIVE").delFlag("0").build();
-        marketPm = Person.builder().id(PM_ID).name("PM").username("pm")
-            .personType("MARKET_PM").accountStatus("ACTIVE").employmentStatus("ACTIVE").delFlag("0").build();
-        when(personMapper.selectById(SUPER_ADMIN_ID)).thenReturn(superAdmin);
-        when(personMapper.selectById(PM_ID)).thenReturn(marketPm);
-
-        // 归档区列表 mock：1 条 DELETED + 1 条已 PURGED
         DeletionRequest deleted = DeletionRequest.builder()
             .id(11L).entityType("projects").entityId(99L)
             .status(DeletionRequestService.ST_DELETED)
@@ -127,18 +87,16 @@ class P064AcceptanceTest {
         when(deletionRequestMapper.selectById(12L)).thenReturn(purged);
         when(deletionRequestMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenReturn(1);
 
-        DeletionArchiveService service = new DeletionArchiveService(deletionRequestMapper, auditLogService, personMapper);
-        mvc = MockMvcBuilders.standaloneSetup(new DeletionRequestController(service))
+        service = new DeletionArchiveService(deletionRequestMapper, auditLogService, ipdPermission);
+        mvc = MockMvcBuilders.standaloneSetup(new DeletionRequestController(service, ipdPermission))
             .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(json))
-            .setControllerAdvice(new ServiceExceptionAdvice())
-            .addFilters(new SaTokenContextFilterForJakartaServlet())
+            .setControllerAdvice(new ArchiveAdvice())
             .build();
     }
 
-    /** owner 删了全局 advice；本测试自带局部 advice，HTTP 映射复用主代码 ApiV1ErrorCode.getHttpStatus。 */
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @RestControllerAdvice
-    static class ServiceExceptionAdvice {
+    static class ArchiveAdvice {
         @ExceptionHandler(ServiceException.class)
         public ResponseEntity<ApiV1Response<Void>> service(ServiceException ex) {
             ApiV1ErrorCode ec = ApiV1ErrorCode.fromCode(ex.getCode());
@@ -146,71 +104,48 @@ class P064AcceptanceTest {
                 .body(ApiV1Response.fail(ec.getCode(), ex.getMessage()));
         }
 
-        /** 独立 MockMvc 无 Sa-Token 全局过滤器，NotLoginException 在此对齐真实 401 包络。 */
-        @ExceptionHandler(NotLoginException.class)
-        public ResponseEntity<ApiV1Response<Void>> notLogin(NotLoginException ex) {
-            return ResponseEntity.status(ApiV1ErrorCode.UNAUTHORIZED.getHttpStatus())
-                .body(ApiV1Response.fail(ApiV1ErrorCode.UNAUTHORIZED.getCode(),
-                    ApiV1ErrorCode.UNAUTHORIZED.getMessage()));
+        @ExceptionHandler(IpdPermissionException.class)
+        public ResponseEntity<ApiV1Response<Void>> denied(IpdPermissionException ex) {
+            return ResponseEntity.status(ex.getHttpStatus())
+                .body(ApiV1Response.fail(ex.getErrorCode().getCode(), ex.getErrorCode().getMessage()));
         }
     }
 
-    @AfterEach
-    void tearDown() {
-        if (oldContext != null) SaManager.setSaTokenContext(oldContext);
-        if (oldDao != null) SaManager.setSaTokenDao(oldDao);
-        if (oldConfig != null) SaManager.setConfig(oldConfig);
-        try { StpUtil.logout(); } catch (Exception ignore) { }
-    }
-
-    /** Sa-Token 1.44 单测需显式激活上下文；返回 tokenValue 供 MockMvc 请求头回传。 */
-    private String loginAs(Long id) {
-        SaTokenContextMockUtil.setMockContext();
-        StpUtil.login(id);
-        return StpUtil.getTokenValue();
-    }
-
-    @Test void archiveListReturnsOnlyNonPurgedEntries() throws Exception {
-        // 归档区列表：DELETED + 非 PURGED 前缀的记录才返回（listArchive 现要求超管身份）
-        loginAs(SUPER_ADMIN_ID);
-        DeletionArchiveService service = new DeletionArchiveService(deletionRequestMapper, auditLogService, personMapper);
+    @Test
+    void archiveListReturnsOnlyNonPurgedEntries() {
         List<DeletionRequest> list = service.listArchive();
         assertThat(list).hasSize(2);
-        // 验证 SQL 过滤条件：notLike remark 'PURGED_BY_SUPER_ADMIN:%'
-        org.mockito.ArgumentCaptor<Wrapper<DeletionRequest>> cap =
-            org.mockito.ArgumentCaptor.forClass(Wrapper.class);
+        ArgumentCaptor<Wrapper<DeletionRequest>> cap = ArgumentCaptor.forClass(Wrapper.class);
         verify(deletionRequestMapper, times(1)).selectList(cap.capture());
         String sql = cap.getValue().getSqlSegment();
         assertThat(sql).contains("status").contains("NOT LIKE");
-        // 条件值在 paramNameValuePairs 中，不在 SQL 片段里
         LambdaQueryWrapper<DeletionRequest> wrapper = (LambdaQueryWrapper<DeletionRequest>) cap.getValue();
         assertThat(wrapper.getParamNameValuePairs().values())
             .contains("DELETED", "%" + DeletionArchiveService.PURGED_MARK + "%");
     }
 
-    @Test void purgeRequiresSuperAdminRole() throws Exception {
-        // 权限校验：MARKET_PM 调用 purge → 403 FORBIDDEN
-        String token = loginAs(PM_ID);
-        mvc.perform(post("/api/v1/deletion-requests/11/purge").header("Authorization", "Bearer " + token))
+    @Test
+    void purgeRequiresSuperAdminRole() throws Exception {
+        when(ipdPermission.requireAdmin())
+            .thenThrow(new IpdPermissionException(403, ApiV1ErrorCode.FORBIDDEN));
+        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
         verify(auditLogService, times(0)).append(any(AuditLog.class));
     }
 
-    @Test void purgeRequiresAuthenticated() throws Exception {
-        // 未登录：401 UNAUTHORIZED
+    @Test
+    void purgeRequiresAuthenticated() throws Exception {
+        when(ipdPermission.requireAdmin())
+            .thenThrow(new IpdPermissionException(401, ApiV1ErrorCode.UNAUTHORIZED));
         mvc.perform(post("/api/v1/deletion-requests/11/purge"))
             .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value(20001));
     }
 
-    @Test void superAdminCanPurgeAndAuditIsWritten() throws Exception {
-        // 超管调用 purge 成功：remark 加 PURGED_ 前缀 + 写一条 PURGE 审计
-        String token = loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/11/purge").header("Authorization", "Bearer " + token))
+    @Test
+    void superAdminCanPurgeAndAuditIsWritten() throws Exception {
+        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
-
-        // 数据库 update 调用 1 次
         verify(deletionRequestMapper, times(1)).update(isNull(), any(LambdaUpdateWrapper.class));
-        // 审计调用 1 次（PURGE 独立审计）
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService, times(1)).append(auditCap.capture());
         AuditLog audit = auditCap.getValue();
@@ -221,63 +156,53 @@ class P064AcceptanceTest {
         assertThat(audit.getReason()).contains("purge_by:100");
     }
 
-    @Test void purgeFailsWhenStatusIsNotDeleted() throws Exception {
-        // 状态非 DELETED → 50002 STATE_CONFLICT
+    @Test
+    void purgeFailsWhenStatusIsNotDeleted() throws Exception {
         DeletionRequest draft = DeletionRequest.builder()
             .id(20L).entityType("projects").entityId(50L)
             .status(DeletionRequestService.ST_DRAFT).build();
         when(deletionRequestMapper.selectById(20L)).thenReturn(draft);
-        String token = loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/20/purge").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/api/v1/deletion-requests/20/purge"))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(50002));
         verify(auditLogService, times(0)).append(any(AuditLog.class));
     }
 
-    @Test void purgeFailsWhenRecordAlreadyPurged() throws Exception {
-        // remark 已有 PURGED_ 前缀 → 50002 不可二次清除
-        String token = loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/12/purge").header("Authorization", "Bearer " + token))
+    @Test
+    void purgeFailsWhenRecordAlreadyPurged() throws Exception {
+        mvc.perform(post("/api/v1/deletion-requests/12/purge"))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(50002));
     }
 
-    @Test void purgeFailsWhenRecordNotFound() throws Exception {
+    @Test
+    void purgeFailsWhenRecordNotFound() throws Exception {
         when(deletionRequestMapper.selectById(999L)).thenReturn(null);
-        String token = loginAs(SUPER_ADMIN_ID);
-        mvc.perform(post("/api/v1/deletion-requests/999/purge").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/api/v1/deletion-requests/999/purge"))
             .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value(50001));
     }
 
-    @Test void archiveListViaHttpReturnsOkForSuperAdmin() throws Exception {
-        // 完整 HTTP 路径验证：超管登录后 GET archive 返回 DELETED 列表
-        String token = loginAs(SUPER_ADMIN_ID);
-        var result = mvc.perform(get("/api/v1/deletion-requests/archive").header("Authorization", "Bearer " + token))
+    @Test
+    void archiveListViaHttpReturnsOkForSuperAdmin() throws Exception {
+        var result = mvc.perform(get("/api/v1/deletion-requests/archive"))
             .andExpect(status().isOk()).andReturn();
-        String body = result.getResponse().getContentAsString();
-        assertThat(body).contains("\"code\":0");
-        // 列表 SQL 已过滤 PURGED 前缀
-        org.mockito.ArgumentCaptor<Wrapper<DeletionRequest>> cap =
-            org.mockito.ArgumentCaptor.forClass(Wrapper.class);
-        verify(deletionRequestMapper, times(1)).selectList(cap.capture());
+        assertThat(result.getResponse().getContentAsString()).contains("\"code\":0");
+        verify(deletionRequestMapper, times(1)).selectList(any(Wrapper.class));
     }
 
-    @Test void archiveListForbiddenForNonSuperAdmin() throws Exception {
-        // 非超管：403
-        String token = loginAs(PM_ID);
-        mvc.perform(get("/api/v1/deletion-requests/archive").header("Authorization", "Bearer " + token))
+    @Test
+    void archiveListForbiddenForNonSuperAdmin() throws Exception {
+        when(ipdPermission.requireAdmin())
+            .thenThrow(new IpdPermissionException(403, ApiV1ErrorCode.FORBIDDEN));
+        mvc.perform(get("/api/v1/deletion-requests/archive"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
     }
 
-    @Test void purgeAtomicUpdateRaceResilience() throws Exception {
-        // 并发清除同一记录：第一次 update 返回 1 → 成功；第二次返回 0（被乐观锁挡住）→ 状态冲突
+    @Test
+    void purgeAtomicUpdateRaceResilience() {
         when(deletionRequestMapper.update(isNull(), any(LambdaUpdateWrapper.class)))
             .thenReturn(1).thenReturn(0);
-        DeletionArchiveService service = new DeletionArchiveService(deletionRequestMapper, auditLogService, personMapper);
-        loginAs(SUPER_ADMIN_ID);
-        // 第一次：update=1 → 成功
         DeletionRequest first = service.purge(11L);
         assertThat(first).isNotNull();
         verify(auditLogService, times(1)).append(any(AuditLog.class));
-        // 第二次：update=0（notLike 条件挡住并发/重复清除）→ 状态冲突，且不再追加审计
         assertThatThrownBy(() -> service.purge(11L)).isInstanceOf(ServiceException.class);
         verify(auditLogService, times(1)).append(any(AuditLog.class));
     }

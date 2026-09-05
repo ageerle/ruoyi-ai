@@ -39,6 +39,18 @@ public class ApiV1Response<T> implements Serializable {
         return build(errorCode.getCode(), errorCode.getMessage(), null);
     }
 
+    /**
+     * 失败响应，允许覆盖默认文案（校验细节等）。
+     *
+     * @param errorCode 错误码
+     * @param message   对外文案
+     * @param <T>       数据类型
+     * @return 失败包络
+     */
+    public static <T> ApiV1Response<T> fail(ApiV1ErrorCode errorCode, String message) {
+        return build(errorCode.getCode(), message != null ? message : errorCode.getMessage(), null);
+    }
+
     public static <T> ApiV1Response<T> fail(int code, String message) {
         return build(code, message, null);
     }

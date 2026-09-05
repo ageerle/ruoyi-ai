@@ -41,4 +41,16 @@ public class ProjectSoftDeleteExecutor implements SoftDeleteExecutor<Project> {
             throw new ServiceException("项目软删除未更新唯一记录: id=" + id);
         }
     }
+
+    /**
+     * 判断项目是否已软删或不存在。
+     *
+     * @param id 项目主键
+     * @return true 表示应记 DELETE_NOOP
+     */
+    @Override
+    public boolean isDeleted(Long id) {
+        Project project = projectMapper.selectById(id);
+        return project == null || "1".equals(project.getDelFlag());
+    }
 }

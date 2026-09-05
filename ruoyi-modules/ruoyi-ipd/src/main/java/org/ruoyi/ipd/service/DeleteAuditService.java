@@ -101,12 +101,12 @@ public class DeleteAuditService {
             throw new ServiceException("删除申请状态更新失败: id=" + requestId);
         }
 
-        // 步骤 2：在同一事务内执行软删除
-        boolean noop;
+        // 步骤 2：先判定 NOOP，再在同一事务内执行软删除（删后查 del_flag 恒为 1，无法区分）
+        boolean noop = executor.isDeleted(request.getEntityId());
         try {
-            executor.softDelete(request.getEntityId());
-            // 若 executor 幂等返回（实体不存在或 del_flag 已为 "1"），仍写 NOOP 审计便于排查
-            noop = isAlreadyDeleted(executor, request.getEntityId());
+            if (!noop) {
+                executor.softDelete(request.getEntityId());
+            }
         } catch (RuntimeException e) {
             // 关键：不 catch 后吞；让 @Transactional 回滚
             log.warn("[DeleteAudit] softDelete 失败回滚: requestId={}, entity={}, id={}",
@@ -126,19 +126,6 @@ public class DeleteAuditService {
         auditLogService.append(logEntry);
 
         return request;
-    }
-
-    /**
-     * 检测目标实体是否已为软删除态（用于写 NOOP 审计）。
-     * 通过 executor.entityClass() 在执行后用通用 mapper 读取。
-     * 注意：此判断在 softDelete 之后调用——executor 已 setDelFlag("1")，
-     * 因此读到的 del_flag 必为 "1"。但若实体根本不存在，selectById 返回 null。
-     * 这里仅用于日志/审计细化，不影响主流程正确性。
-     */
-    private boolean isAlreadyDeleted(SoftDeleteExecutor<?> executor, Long entityId) {
-        // 为简化：返回 false（由 executor 内的 idempotent 语义覆盖），
-        // 实际生产可对每个 executor 添加 isDeleted(id) 查询；目前 NOOP 仅靠 executor 内部判空返回。
-        return false;
     }
 
     /** 当前已注册的 entity_type（用于校验/调试） */
