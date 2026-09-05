@@ -1,0 +1,122 @@
+package org.ruoyi.ipd.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.domain.BidInvitation;
+import org.ruoyi.ipd.domain.BidResponse;
+import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.service.BidInvitationService;
+import org.ruoyi.ipd.service.BidResponseService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 招标组队 API（P2-3.1 / P2-3.2）
+ *
+ * <p>端点：
+ * <ul>
+ *   <li>POST   /api/v1/bid-invitations          创建招标单（市场PM）</li>
+ *   <li>GET    /api/v1/bid-invitations           分页查询招标单</li>
+ *   <li>GET    /api/v1/bid-invitations/{id}      招标单详情</li>
+ *   <li>PUT    /api/v1/bid-invitations/{id}/publish   发布</li>
+ *   <li>PUT    /api/v1/bid-invitations/{id}/select    遴选应标</li>
+ *   <li>PUT    /api/v1/bid-invitations/{id}/withdraw  撤回（24h内）</li>
+ *   <li>PUT    /api/v1/bid-invitations/{id}/close     关闭</li>
+ *   <li>GET    /api/v1/bid-invitations/{id}/responses 应标列表</li>
+ *   <li>POST   /api/v1/bid-responses             提交应标（研发PM）</li>
+ *   <li>PUT    /api/v1/bid-responses/{id}/withdraw  撤回应标</li>
+ * </ul>
+ */
+@RestController
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
+public class BidController {
+
+    private final BidInvitationService bidInvitationService;
+    private final BidResponseService bidResponseService;
+    private final IpdPermission ipdPermission;
+
+    // ==================== 招标单 ====================
+
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/bid-invitations")
+    public ApiV1Response<BidInvitation> createInvitation(@RequestBody BidInvitation invitation) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.create(invitation));
+    }
+
+    @SaCheckPermission(value = "ipd:project:list", type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/bid-invitations")
+    public ApiV1Response<IPage<BidInvitation>> listInvitations(
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) String status) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.page(pageNo, pageSize, projectId, status));
+    }
+
+    @SaCheckPermission(value = "ipd:project:query", type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/bid-invitations/{id}")
+    public ApiV1Response<BidInvitation> getInvitation(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.getById(id));
+    }
+
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/bid-invitations/{id}/publish")
+    public ApiV1Response<BidInvitation> publishInvitation(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.publish(id));
+    }
+
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/bid-invitations/{id}/select")
+    public ApiV1Response<BidInvitation> selectResponse(
+            @PathVariable Long id,
+            @RequestParam Long responseId) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.selectResponse(id, responseId));
+    }
+
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/bid-invitations/{id}/withdraw")
+    public ApiV1Response<BidInvitation> withdrawInvitation(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.withdraw(id));
+    }
+
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/bid-invitations/{id}/close")
+    public ApiV1Response<BidInvitation> closeInvitation(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.close(id));
+    }
+
+    @SaCheckPermission(value = "ipd:project:query", type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/bid-invitations/{id}/responses")
+    public ApiV1Response<List<BidResponse>> listResponses(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.listResponses(id));
+    }
+
+    // ==================== 应标 ====================
+
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/bid-responses")
+    public ApiV1Response<BidResponse> submitResponse(@RequestBody BidResponse response) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidResponseService.submit(response));
+    }
+
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/bid-responses/{id}/withdraw")
+    public ApiV1Response<BidResponse> withdrawResponse(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidResponseService.withdraw(id));
+    }
+}
