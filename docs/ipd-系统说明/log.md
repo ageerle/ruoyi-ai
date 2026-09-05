@@ -163,3 +163,25 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - 5 张卡的「业务联调 + 真实库回归」需在真 MySQL 环境下补 @SpringBootTest 全量集成（无 SpringBootTest 基线 = 行业级债）
 - 镜像状态：API-01/API-02/P0-7.2/P0-8.1 四行已实质 DONE；SEC-02 维持 PARTIAL
 
+
+
+## 第七轮 2026-09-05（QA独立复核收口 + 镜像优先级修正 + 6张U0/U1卡 inreview）
+
+- **触发**：用户要求系统性梳理全局项目并保持看板状态同步。
+- **关键发现**：
+  - IpdBusinessException 已修正为 extends RuntimeException（不再尝试继承 final ServiceException），ruoyi-ipd 模块 mvn compile = BUILD SUCCESS。
+  - 镜像文档第 296-299 行（RISK-01..04 兄弟会话卡）优先级列原写 P1/P2/P3（阶段编号误用），已修正为 U0/U1/U1/U2（合法优先级集合）。
+  - 6 张 U0/U1 卡的 QA 独立复核已收口（API-01 早期误判已纠正：IpdServiceExceptionAdvice 真实存在，HEAD 已为 cccbd86c 而非镜像声称的 71c24095）。
+- **完成动作**：
+  - 6 份 QA 独立复核报告已落盘到 docs/ipd-系统说明/验收/：API-01 / API-02 / P0-7.2 / P0-8.1 / P1-6.1 / SEC-02 全部 KEEP_PARTIAL。
+  - 6 张看板卡状态已同步更新到 inreview，用 manage.py set 与本地 Vibe-Kanban 双向同步。
+  - 镜像文档 296-299 行 RISK-01..04 优先级列修正（P1→U0/P2→U1/P3→U2），保持 220 张卡零漂移。
+- **下一轮 P0 债务**（按影响排序）：
+  1. P0-7.2: IpdAuthService.changePassword() 第 112 行应改为 throw new IpdAuthInputException(Reason.CURRENT_PASSWORD_INCORRECT)（P0 缺陷，让 PASSWORD_CHANGE_REJECTED 审计分支可达）。
+  2. P0-8.1: P081AcceptanceTest.java 需归入主仓 ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/config/，must_change_pwd 拦截逻辑需在 IpdMockDataInitializer 或其他安全组件中实现。
+  3. P1-6.1: GateElementService 补版本生命周期/复制/历史恢复/409 保护/DB 唯一索引。
+  4. API-01: Api01AcceptanceTest.java 归入主仓 + traceId 注入点补齐。
+  5. API-02: CertTemplateController 补 CertTemplateCreateRequest.java DTO（含 @JsonIgnoreProperties），4 个 DTO record 补 JSR-303 注解，Api02AcceptanceTest 归仓。
+- **本轮不做**（non-goals）：不改产品圣经 docs/开发说明/**、不修编译错误的实体缺失 getter（编译已通过）、不修 src/test/java 缺失的 4 个 AcceptanceTest 归仓（专项工作）、不 git push（pre-commit hook 阻断）。
+- **HEAD**：34e62d9d（继承自 9453105c 精化版计划镜像）；本轮工作树 60+ 文件变更待 commit（6 份验收报告 + log.md + 镜像修正 + 29 个 java 改动）。
+
