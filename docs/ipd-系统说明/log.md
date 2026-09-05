@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-09-05 — P1-5.1 / P1-8.1 真库 HTTP 闭环
+
+- **环境**：`127.0.0.1:16039` jar=`ruoyi-admin-p151p181.jar` + MySQL 13306
+- **证据**：`.codex/ipd-dev/runtime/evidence-p151-p181.json`
+- **P1-5.1**：`GateEngine.check` 只判当前阶段必做集；缺失未实例化拒绝；未来阶段不阻塞；轻管不入必做集
+  - HTTP：B 级 advance 拒（C11/C12）；标 DONE 后未来 P13/D05 未完成仍可进 PLAN；S 级仅 C05 未完成可跳阶
+  - 单测：GateEngineTest 12 绿
+- **P1-8.1**：`ensureBioComplianceMount` 绑定 CONCEPT `stageId`；API `POST /api/v1/stage-actions/ensure-bio-compliance`
+  - HTTP：C12 NA → 不可取消；删 C12 后补挂 stageId=CONCEPT；二次调用幂等 0
+  - 单测：StageActionServiceTest 含 AC-PROD-13
+- **看板**：`manage.py set P1-5.1/P1-8.1 done`
+
+## 2026-09-05 — P1-3.1 六阶段+69动作 真库 HTTP/DB 闭环
+
+- **前置**：P1-2.1 已 done，本卡解阻
+- **HTTP+DB**：`.codex/ipd-dev/runtime/evidence-p131-http-bootstrap.json`
+  - 立项 `PRJ-2026-008` → 六阶段 CONCEPT→LIFECYCLE(sort 10..60) + 69 动作（深42/轻27）+ `PROJECT_CREATE` 审计
+  - 双路并发 `PRJ-2026-009/010` 各 69 动作、跨项目 stage 引用=0
+- **单测**：P131AcceptanceTest 46/46；P131DatabaseIntegrationTest 18/18（修 createRequest 对齐 P1-2.1 基线字段）
+- **看板**：`manage.py set P1-3.1 done`
+
 ## 2026-09-05 — P1-2.1 / AC-INC-15c / P0-6.2 失败路径 真库 HTTP 闭环
 
 - **环境**：`127.0.0.1:16039` + MySQL `13306/ipd_dev` + Redis `16379`；jar=`ruoyi-admin-a70dd749.jar`（`start_new_session`）
@@ -451,3 +472,241 @@ ZK-IPD 下只有「IPD业务闭环核查清单-V1.0.md」（业务核查，非 A
 - 看板 card status 会因 sibling sync 重新被 mirror 覆盖——降级需要 PUT 后立即 verify
 | $(date "+%H:%M") | `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Sec02AcceptanceTest test` | Tests run 7 / **Failures 0** / Errors 0 | Sec02AcceptanceTest 7/7 绿：6 身份×3 组归属/canAccessGroup/requireAdmin/requireLeaderOrAdmin/未登录/EXTERNAL/FROZEN 覆盖；real-http-probe.sh 6×9 矩阵就位 | Sec02AcceptanceTest 真路由挂载真实现真测试；SEC-02 报告追写 9 段，residualGap 由 5 降至 3（3 控制器范围过滤/真实库种子/16039 窗口属主协调域）；状态保持 inreview/KEEP_PARTIAL 不翻 done |
 | 09:12 | `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Sec02AcceptanceTest test` | Tests run 7 / **Failures 0** / Errors 0 | Sec02AcceptanceTest 7/7 绿：6 身份×3 组归属/canAccessGroup/requireAdmin/requireLeaderOrAdmin/未登录/EXTERNAL/FROZEN 覆盖 | Sec02AcceptanceTest 真路由挂载真实现真测试；SEC-02 报告追写 9 段，residualGap 由 5 降至 3（3 控制器范围过滤/真实库种子/16039 窗口属主协调域）；状态保持 inreview/KEEP_PARTIAL 不翻 done |
+
+## 2026-09-05（第六轮：AUD-GOV-01 R3 蜂群盘点——主协调会话身份）
+
+### 触发
+用户指令"系统性梳理全局项目深度思考反思结合看板待办事项利用专业智能体、技能、工具蜂群模式并行完整执行"——本轮即 AUD-GOV-01 卡的核心执行。
+
+### 边界（主协调会话 SSOT 责任面）
+- ✅ 改：SSOT 镜像 + log.md（本会话责任面）
+- ❌ 不改：Java 源码 / manage.py / 任何兄弟 owner 持单泳道 / 新建看板卡 / OPS-09 越权
+
+### 蜂群盘点（三阶段只读探针）
+
+#### 阶段 1：环境基线
+- 工作目录: /Users/mac/Documents/ruoyi-ai  / 分支 main  / HEAD 056640ca「蜂群归仓——系数定值/四基准/软删执行器/审计配置控制器（252 测试全绿）」
+- 工作树差异: 14 文件 333+/82-（其中 .claude-flow state 93 行 = 兄弟 session 进程状态；.swarm/memory.db 共享面写入；GateEngine/StageActionService + Controller + 3 测试 = 兄弟 P1-6.1 / P1-5 在途，未 commit 不得抢改）
+- 镜像 SSOT: docs/ipd-系统说明/开发计划-看板镜像.md（296 KB，30+ 张卡按时间逆序排列）
+- log.md: 44 KB / 已登记五轮闭环
+
+#### 阶段 2：看板 240 张全量盘点
+| 状态 | 数量 | 备注 |
+|---|---|---|
+| done | 53 | 7 张证据不足已 R2 落定（SEC-API-01/02、RISK-01..04）；DB-02 已降级 inreview |
+| todo | 176 | 含汇总卡 P0..P4 + 49 张前端页 P0-10.x + 单项实现卡 |
+| inprogress | 3 | P0-10.1 登录页 / P0-10.2 强制改密 / P1-4.2 真实附件归属鉴权（兄弟持单） |
+| inreview | 5→8 | AUD-GOV-01 / P1-6.1 Gate要素 / P0-7.3 Refresh会话 / SEC-01 操作人 / SEC-02 对象权限 |
+
+#### 阶段 3：可立即推进项识别（卡级依赖分析）
+
+**有前置阻塞不能动的卡（U0/U1 紧急但依赖未满足）**：
+- SEC-04 附件/审计/需求池集成验收 → BLOCKED_DEPENDENCY 待 SEC-02 + P1-4.2 + P0-5.4 + P4-1.4（镜像 L281 显式）
+- P0-3.2 参数管理 API → 待 P0-3.1 系统配置种子 + SEC-01 + API-01
+- P0-5.4 审计验链 API → 待 P0-5.2/P0-5.3 + SEC-02
+- P0-6.1 删除申请分级 → 待 DOC-03 + SEC-02
+- P0-10.x 49 张前端页 → 全部 BLOCKED_DEPENDENCY 待 DOC-09 真实前端仓库确认
+- P1-4.2 真实附件归属 → inprogress（兄弟持单，主协调不抢）
+
+**U2 中汇总卡**（P0-2/3/4 26表DDL、69动作Seed、四算例TDD等）= 顺序执行，须等 U0/U1 紧急卡先收口
+
+**真正可主协调会话推进的卡**：
+1. AUD-GOV-01 本身（本轮已在 inreview，本轮 R3 登记 = 推进证据）
+2. AUD-09 闭环文档/复盘（已 done）
+3. 跨卡依赖分析（已 R2 完成）
+4. log.md / 镜像 SSOT 维护（本卡持续滚动）
+
+### 根因反思（本轮新增）
+
+**根因 1：BLOCKED_DEPENDENCY 雪球效应**
+- 表现：176 张 todo 中 ≥35 张标 ⬜ BLOCKED_DEPENDENCY
+- 根因：U0 紧急卡（SEC/API/AUD）先于汇总卡是治理正确，但 owner 持单 + 单写协调器约束导致兄弟会话前序卡未收口则后续卡永久挂起
+- 治理方案：不试图解卡（违反 OPS-09 单一写入者），而是为每张 BLOCKED 卡补"前置可观测进度"——SSOT 镜像前置列补充真实 commit 链接
+
+**根因 2：52 张 P0-10.x 前端页全部依赖 DOC-09 真实仓库确认**
+- 表现：49 张前端页 + P0-10 汇总 = 整条业务线 zero progress
+- 根因：DOC-09 真实前端仓库 + 构建命令未确认 → 后端即便完成也无法闭环
+- 治理方案：DOC-09 卡升级 U0 紧急，列为第二阻塞链
+
+**根因 3：asserted-only 完成标记风险**
+- 表现：51 张 done 卡中曾有 13 张无真实 commit 链接
+- 治理（已在 R2 收口）：audit_evidence.py + 真实 commit grep + 7 张卡证据补齐 + DB-02 降级
+- 持续监测：每轮 R 重新审计 done 卡证据
+
+### 蜂群执行反馈（用户偏好对齐）
+- ✅ 三阶段只读探针并发（git状态 / 镜像头部 / 看板全量）
+- ✅ 用户偏好「系统性梳理 + 蜂群并行」已实操
+- ✅ 用户偏好「看板状态实时同步」本卡 inreview 状态持续保持
+- ✅ 用户偏好「不绕过单一写入者」本轮零 Java 修改、零新卡、零 OPS-09 越权
+- ❌ 本轮未达成的：未推进任何新代码卡（按主协调会话边界 + 兄弟持单泳道）
+
+### 交付物
+- 本 log.md 第六轮登记
+- SSOT 镜像 AUD-GOV-01 行下一轮回写时补 cell[2] R3 标记
+- 不推送 origin（按 R2 治理护栏）
+
+### 下一刀路径（用户偏好「选定方案后少停在方案对比」）
+1. 若 owner 派单："推进某张 U0 卡的实质实施" → 先看兄弟会话的持单状态，零冲突方可开新 commit 窗口
+2. 若 owner 派单："全局复盘" → 本轮已完成（即可出 R3 报告，无需新写）
+3. 若 owner 派单："治理某条根因" → 进入对应根因的 owner 持单泳道
+4. 默认等待：等兄弟会话 SEC-01 + API-02 + SEC-02 收口后看 SEC-04 是否能解锁
+
+---
+
+## 第十一轮+ 2026-09-05 12:32–12:41 第二方独立复核会话：API-03 收口核验 + inreview 8 卡只读错峰回归
+
+- **会话/边界**: root-94ae 之外的第二方独立复核会话（Qoder）；**未改任何 Java 源码**（用户本轮裁决守只读边界，API-03 不代写仅交付 handoff 规格）；全程**未翻看板状态、未写板、未手改脏镜像**（12:32:25 drift=True + 协调器大 burst，遵 OPS-09「证据优先于写板」）。
+- **热并发实测**: 复核 8 分钟内主协调器 burst——HEAD `c85f4009`→`30a98c39`（`056640ca` 蜂群归仓 252 测试全绿 + `30a98c39` API-03 补 MockMvc 反例）；done 52→57；脏文件 49→15；log.md 392→553 行（兄弟并发追加，本条目锚点追加于当前尾部）。
+- **独立验证（错峰/单模块/无 -am 无 clean，全带时间戳）**:
+  - 12:32:46 & 12:40:11 `test-compile` 两次 BUILD SUCCESS（green gate OK，第九轮 P064 构造器冲突已消解）。
+  - 12:34:49 认证/权限/证书包 **35/35 GREEN**；12:35:36 `P131AcceptanceTest 46 + P131DatabaseIntegrationTest 18 真库 = 64/64 GREEN`（skipped=0，真库 guard 已开）。
+  - 12:40:28 **`Api03AcceptanceTest` 5/5 GREEN**（XML tests=5 skipped=0）+ 批次 40/40 → **API-03 done 独立复核合法（非假绿）**。
+- **真链 HTTP+DB 证据（活体后端 16039 = 兄弟 jar `ruoyi-admin-p151p181.jar`）**:
+  - 12:36:35 改密错原密码 → **HTTP 400 code=10001「原密码错误」**（非 500/90001）；短密码 → 400/10001；refresh 后旧 token → **401 code=20001**（P0-7.3 轮换生效）。
+  - 12:38:58 jshell JDBC 读回 `audit_logs` **seq=170 陈市场 MARKET_PM act=FAILURE reason=原密码错误 12:36:35** → P0-7.2 拒绝审计 REQUIRES_NEW 独立落库未回滚；hash 链 seq168→173 单调。
+- **缺陷精确定位（SEC-02，交 owner 泳道）**: 12:37:23 `SystemConfigController`（`056640ca` 才归仓的前 untracked stub）活体 `PUT/GET /api/v1/system-configs` 无 token 与 MARKET_PM **全部 500/90001**（应 401/403）；12:37:53 隔离对照 `ProjectController`/`ProductController` 401/20001·403/20003 **正确** → 缺陷非系统性，仅限该控制器未纳入 SaInterceptor 安全链。运行 jar 构建于 12:31（早于归仓），需 owner 重建重部署后复验；**真链复验前 SEC-02「全部现存入口隔离」不得整卡 done**。
+- **假绿风险 flag（交 owner 复核）**: P1-5.1（Gate当前阶段和缺失动作阻断）/ P1-8.1（BioCV C12补挂）已翻 done，但**仓内无 `P151/P181AcceptanceTest`**（卡验收要求 @Tag dev + XML tests>0）；运行 jar 名 `ruoyi-admin-p151p181.jar` 暗示走运行时验证，仓内无可复跑验收测试证据。API-02（done，缺 `Api02AcceptanceTest`）/ P0-7.3（inreview，缺 `P073AcceptanceTest`）同属 HTTP 层回归守护缺口。
+- **交付物（三通道，均 net-new 不冲突）**: `验收/inreview-8卡只读回归-20260905.md`（逐卡判定+缺陷定位+时间戳证据）、`验收/API-03-handoff-spec-20260905.md`（handoff 规格，与 owner 实现同向收敛）、`.codex/ruflo/global-20260905/second-party-own-20260905.md`（OPS-09 own 卡集+边界声明）。
+- **OPS-09 登记**: 本会话未创建新卡、未重复执行同指令、未翻状态、未写板、未改 Java、未手改镜像、未 commit/push。
+
+---
+
+## 第十一轮-E 2026-09-05 12:33–12:41 第二方执行会话（Qoder）：API-03 收口实施 + 看板写入
+
+> 与上方「第十一轮+ 第二方独立复核会话」为**同窗并行的两个第二方会话**：彼者守只读边界（未改 Java/未写板/未 commit，做活体 HTTP+DB 探针 + handoff 规格）；**本会话遵用户「立即执行剩余计划」转执行**（写测试 + commit + 写板）。二者互补且相互印证——彼者 12:40:28 独立复核确认本会话 `Api03AcceptanceTest` 5/5 GREEN + API-03 done 合法（非假绿），并以活体 16039 改密错原密码 → HTTP 400/10001「原密码错误」佐证本会话 MockMvc 断言。
+
+- **边界**: 仅新增 + 提交本会话测试文件；不推送 origin（遵前轮裁决）；SSOT 镜像 / log 写而不提交，留协调器归仓；未改任何生产 Java（advice handler 兄弟已提交于 056640ca）。
+- **API-03 收口（头号 U0 → done）**: 新增 `test/advice/Api03AcceptanceTest.java`（141 行，@Tag dev，standaloneSetup 真实 HTTP dispatch 穿真实 IpdServiceExceptionAdvice），5 用例（4 反例 CURRENT_PASSWORD_INCORRECT / PASSWORD_UNCHANGED / 服务层 PASSWORD_LENGTH / @Valid 短密码 → 400+10001 且枚举消息保留；1 正例 → 200+0 + verify revokeAll）。验收集 **25/25 GREEN**（Api03 5/5+Api01 4/4+改密异常 6/6+IpdAuthServiceTest 10/10）Skipped0 @12:34:18；commit **30a98c39**（仅该文件，未扫兄弟 WIP，未推送）；看板 `set API-03 done` update:1 / unchanged:239。
+- **inreview 回归（27/27 GREEN @12:38:04）**: Sec02AcceptanceTest 7/7、SecApi01OperatorIdContractTest 1/1（第九轮 operatorId 残留已随 056640ca 修复）、IpdAuthSessionStpTypeTest 2/2、GateEngineTest 12/12、GateElementServiceTest 5/5。
+- **诚实不假关（防级联）**: SEC-01（枢纽）命名 Sec01AcceptanceTest 缺失 + StageActionController dirty 兄弟在途 → 维持 inreview，仅刷新 note（第九轮"禁抢改"残留 note 已过时）；SEC-02 / P1-6.1 `unresolved_deps=[SEC-01]` 依赖阻塞；P0-7.3 需真实 Sa-Token/Redis。**收口 SEC-01 方可解锁 SEC-02 + P1-6.1**。
+- **看板写入（本会话独有，彼复核会话未写板）**: `set API-03 done`（update:1）；`set SEC-01 inreview` note 刷新（写前 drift 一度 true，reconcile 顺带 SSOT→board update:3，写后 drift false）。终态 **drift false / 240 / unmanaged 0**；done 57 / todo 172 / inreview 5 / inprogress 6。
+- **采纳彼复核会话 live 缺陷 flag（交 owner 泳道）**: SystemConfigController 活体 PUT/GET 无 token 与 MARKET_PM 全 500/90001（应 401/403），运行 jar 构建于 12:31 早于归仓，需 owner 重建重部署后复验，SEC-02 真链复验前不得整卡 done；P1-5.1/P1-8.1 已 done 但仓内无 P151/P181AcceptanceTest（假绿 flag，交 owner 复核）。
+- **交付物**: `验收/全局闭环执行-20260905-r3.md`（本轮执行详情）。
+- **OPS-09**: 错峰（active builds 0）、单模块、无 -am 无 clean、证据带时间戳、写前重读、结论前复查兄弟改写。
+
+
+## 2026-09-05 Cursor：P1-1.2 / P1-2.2 / P1-3.2 真库闭环
+
+- 范围：产品编辑与超管批量导入；项目基准锁定/上市日双签/暂停归档只读；模板适用性裁剪（HW/SW/SOL + V11/C05/C10）。
+- 单测：P112/P122/P132/P131 共 56 绿（`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=P112AcceptanceTest,P122AcceptanceTest,P131AcceptanceTest,P132AcceptanceTest test`）。
+- HTTP：`http://127.0.0.1:16039` jar=`ruoyi-admin-p112p122p132.jar`；证据 `.codex/ipd-dev/runtime/evidence-p112-p122-p132.json` summary 三卡均为 true。
+- DDL：`docs/script/sql/update/2026-09-05-ipd-launch-date-change-requests.sql` + GRANT `ipd_app`。
+
+
+## 2026-09-05（第七轮：AUD-GOV-01 R4 蜂群盘点——SEC-01 收口监督登记）
+
+### 触发
+第六轮登记后用户回复"继续"——按用户偏好「选定方案后少停在方案对比」+「继续 / A / 指定卡号直接落地推进」。
+
+### 蜂群盘点（3 阶段只读探针 + grill-requirements 六维拍板）
+
+#### 阶段 1：兄弟最新 commit 盘
+- **ab7d8fa7** (12:51:59) test(ipd): SEC-01 命名验收测试重建（13 项覆盖 AC-AUTH-08/AC-HR-07/08/AC-GLB-11）—— 308 行新测试
+- **825116ea** (12:45:05) docs: 第十二轮第二方QA独立佐证——API-03/P1-3.1独立复现+全模块263绿+OPS-09收口+3并发会话让路登记
+- **30a98c39** (12:36:01) test(ipd): API-03 补 MockMvc 真实 HTTP 反例(IpdAuthInputException→400/10001,5用例;验收集25/25绿)
+
+#### 阶段 2：独立验证（错峰 35s 后跑单模块无 -am 无 clean）
+- `mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Sec01AcceptanceTest test`
+- **Tests run: 13, Failures: 0, Errors: 0, Skipped: 0** @ 12:56:41 BUILD SUCCESS
+- 13/13 绿覆盖 AC-AUTH-08/AC-HR-07/AC-HR-08/AC-GLB-11 全部正反例
+
+#### 阶段 3：grill-requirements 六维拍板（owner 拍板）
+- **目标** A. 登记 SEC-01 独立验证到 SSOT（推荐）
+- **范围** ✅ 仅写 SSOT 镜像 + log.md（不抢翻 status）
+- **非目标** owner 自填"立即完整执行"（不卡在 non_goals 列表上）
+
+### 真实交付（本轮）
+1. ✅ SSOT 镜像 SEC-01 cell 头部（◇ 状态位保持不动）追加 R4 治理登记段，含 commit ab7d8fa7 引用 + 实测时间戳 12:56:41 + Tests run 13/Failures 0/Errors 0/Skipped 0 完整结果 + AC-AUTH-08/AC-HR-07/08/AC-GLB-11 覆盖声明 + 不抢翻 status 自我声明
+2. ✅ 本 log.md 第七轮标题已 append（含三阶段盘点 + grill-requirements + 真实交付 + 根因 + 下一刀）
+3. ✅ 看板 SEC-01 仍 inreview（未抢翻）—— OPS-09 单一写入者铁律严守
+
+### 根因反思（本轮新增）
+**根因 4：独立验证与 owner 收口分离**
+- 表现：兄弟 owner 已 commit 命名验收测试但还没推 status，本会话作为治理会话须独立验证+登记证据但不抢翻
+- 根因：OPS-09 单一写入者 + grill-requirements 治理护栏
+- 治理方案：建立"独立验证登记"流程——本会话跑 mvn 验证 + 写 SSOT cell 前态登记段 + 不动 status，等兄弟 owner 自己推
+
+### 蜂群执行反馈（用户偏好对齐）
+- ✅ grill-requirements 六维拍板（owner 在 3 题内给方向）
+- ✅ doublecheck_spec 记录 R4 契约
+- ✅ tools.edit 读前置（先 read 镜像前 80 行满足前置检查）
+- ✅ 用户偏好「不抢翻 owner 决策」严守
+- ✅ 用户偏好「蜂群三阶段盘点」实操
+- ✅ 用户偏好「登记后立即 verify」（ed 工具返回了 before/after 全文确认）
+
+### 下一刀路径
+1. 若 owner 派单"推 SEC-01 done"——本会话可代推（已具备 13/13 绿证据），需用 manage.py set SEC-01 done --note
+2. 若 owner 派单"推 API-03 done"——兄弟已推，本会话仅做 SSOT 镜像同步
+3. 若 owner 派单"全局复盘"——本轮已完成，无需新写
+4. 若 owner 派单"治理某条根因"——见根因 1/2/3/4
+5. 默认等待：等兄弟会话在途 controller 改完 commit 后下轮继续盘点
+
+
+
+### 绿门验证（Green Gate 触发的真验证）
+**触发**：本轮 R4 改了 SSOT 镜像 + log.md 199 行，按 Green gate 提示须验证既有基线未回退。
+
+#### 错峰独立验证（65s+90s 后跑）
+- **Sec01AcceptanceTest 单测**：Tests run 13/Failures 0/Errors 0/Skipped 0 @ 13:07:29 BUILD SUCCESS ✅
+- **全 ruoyi-ipd 模块回归**：Tests run 286/Failures 1/Errors 0/Skipped 18 @ 13:09:57 BUILD FAILURE
+
+#### 失败定位
+- **ProductServiceTest.createOk:87**：expected "ACTIVE" but was "IN_RD"
+- **根因（不是 R4 引入）**：兄弟 owner 在途改了 ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProductService.java:57-59（默认 status 从 ACTIVE → ST_IN_RD），但 **ProductServiceTest.java:84-87 断言未同步**——属于兄弟 owner 活债
+- **R4 自身影响**：**零**。R4 仅改 docs/ipd-系统说明/开发计划-看板镜像.md(+18/-9) + log.md(+190)。SSOT 写入不影响 Java 编译/测试。
+
+#### OPS-09 应对
+- ✅ 不动 ProductService.java（兄弟在途 owner 持单）
+- ✅ 不动 ProductServiceTest.java（活债归 owner）
+- ✅ 本会话仅登记发现到 log.md，让兄弟 owner 收口本卡时同步处理
+- 旁证：兄弟 owner 9 个 Java 文件 +471/-45 改动（ProjectController/StageActionController/Product/GateEngine/ProductService/ProjectBootstrap/ProjectService/StageActionService + ActionCatalog）整体未 commit，本会话的回归快照已捕获在途活债
+
+### 治理价值
+绿门触发暴露了兄弟 owner 的"未 commit 破坏性变更"——这是 OPS-09 并发协调器最该捕获的"在途活债快照"。本会话作为第二方监督会话已留证。
+
+---
+
+## 第十三轮 全局系统性梳理与试跑认领（2026-09-05 19:35 Saturday）
+
+**触发**：owner 派单「对当前全局项目进行系统性、闭环式的梳理与执行」+ 选 A + 不干预 + 接受分批 + 建 goal + b + c（试跑 P2-1 认领）。
+
+**goal**：`goal-795615ed-957b-4bff-a6fa-43cce949c34f`（active, max_goal_rounds=30, rounds 0/30）
+
+### 产出（commit `1bf764d7`）
+- **代码 own-scope**（P2-1 产品组 CRUD 试跑认领；red→green 5/5，0.886s）：
+  - `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProductGroupService.java`（新）— listAll/getById/create/updateLeader/remove(拒直删 P0-6.2)
+  - `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductGroupController.java`（新）— `/api/v1/product-groups` 5 端点 + Sa-Token 权限码 `ipd:product:list|add|edit`
+  - `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProductGroupServiceTest.java`（新）— 5 测全绿（list/create 校验/create 重复/create+审计+remove 拒/updateLeader 校验）
+- **治理文档**（新增 3 份）：
+  - `docs/ipd-系统说明/全局系统性梳理-治理推进清单-20260905.md`（§1 盘点/§2 反思/§3 治理清单/§4 同步记录/§5 后续计划）
+  - `docs/ipd-系统说明/开发计划-看板镜像-23卡细分提案-20260905.md`（每张 ⬜ 卡补 allowedPaths/依赖/责任泳道/验证命令/完成证据 5 列 + 子卡细分建议）
+  - `docs/ipd-系统说明/开发计划-看板镜像-5卡差距描述-20260905.md`（每张 ◐ 卡真库差距/真库命令/完成证据）
+
+### 看板实况（盘点结果）
+- 41 张原计划卡：**14 ✅ / 5 ◐ / 23 ⬜**
+- U0 紧急修复 12 张：全部 ✅
+- 23 张 ⬜ 卡：P1-9/10/11（3） + P2-1~8（8） + P3-1~7（7） + P4-1~5（5）
+- 5 张 ◐ 卡：P0-2（数据模型真库实灌）、P0-3（参数管理/校验/版本生效子卡）、P0-8（真实实灌 + 15/14 否决裁决 DOC-05）、P0-9（P0 阶段验收）、P0-10（前端仓库对接 issue 起建）、P1-6（Gate 要素权限/快照/审计/否决定稿）
+
+### 治理缺口（最关键发现）
+**23 张 ⬜ 卡在镜像里全部写的"阶段负责人汇总（不作为执行认领卡）"，没有任何一张拆成可执行子卡——违反"看板任务粒度"偏好**。本轮已补 23+5 卡细分提案（独立文件，**未动镜像既有 41 行**，避免撞 sibling）。
+
+### OPS-09 单写入者严守
+- 本会话**只写** 6 个新文件（3 代码 + 3 文档），**不动** sibling 24 个 unstaged 改动（StageAction*/GateEngine*/Project*Controller/Service 等）
+- 错峰单模块：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=ProductGroupServiceTest -Dsurefire.failIfNoSpecifiedTests=false test`（不带 `-am` 不带 `clean`）
+- `manage.py check` 漂移复核：`has_drift: false`，240 卡零漂移
+
+### 下一步（按 owner 拍板）
+- **本回合已完成**：建 goal、治理清单、23+5 卡细分提案、P2-1 own-scope red→green 5/5、commit `1bf764d7`、漂移复核 0
+- **下一回合建议**：
+  1. 镜像追加段（"治理推进清单引用"段，**不修改 41 行**）— 等 sibling 收口或 24 unstaged 归仓后
+  2. P2-1.4 真库 HTTP 验收（start jar + curl + DB 校验）
+  3. P2-1.5 SEC-API-01 操作人字段收紧（operatorId 改 LoginHelper.getUserId）
+  4. 起新会话认领 P0-2 / P0-3 / P0-8（最易闭环 3 张 ◐ 卡）
+- **物理上不可达（单会话单 turn）**：23 张 ⬜ 全部本回合闭环（每张需真库 + 单测 + commit + manage.py set 串行）
+
+### 红绿纪律证据
+- red phase：`mvn ... test` 编译错 → `[43,13] 找不到符号: 类 ProductGroupService`
+- green phase：`Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.886 s -- in ProductGroupServiceTest`
+- 验收：`.codex/ipd-dev/runtime/evidence-p131-http-bootstrap.json` 流程类比；本会话 own-scope 用错峰单测替代真库 HTTP（避免 sibling 撞车）
+
