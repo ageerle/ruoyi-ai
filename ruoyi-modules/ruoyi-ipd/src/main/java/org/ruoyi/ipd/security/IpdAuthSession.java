@@ -2,6 +2,7 @@ package org.ruoyi.ipd.security;
 
 import cn.dev33.satoken.jwt.StpLogicJwtForSimple;
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.SaTokenException;
 import cn.hutool.crypto.SecureUtil;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.parameter.SaLoginParameter;
@@ -51,7 +52,12 @@ public class IpdAuthSession {
     }
 
     public void revokeAll(Long personId) {
-        logic.logout(personId);
+        try {
+            logic.logout(personId);
+        } catch (SaTokenException ignored) {
+            // 撤销尽力而为：旧 token 失效由 currentPerson 的 credentialMarker 兜底，
+            // 改密业务已成功，不应因会话撤销异常（含 SaJwtException/NotLoginException）返回 500。
+        }
     }
 
     /** P0-7.3：当前请求的 JWT 字符串；用于 refresh 期间做对比。 */

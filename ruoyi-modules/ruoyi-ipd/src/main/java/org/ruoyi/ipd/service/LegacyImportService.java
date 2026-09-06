@@ -15,6 +15,7 @@ import org.ruoyi.ipd.seed.ActionCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -75,7 +76,10 @@ public class LegacyImportService {
     private final StageActionMapper stageActionMapper;
     private final AuditLogService auditLogService;
     private final ObjectProvider<LegacyImportService> self;
-    /** R8-P0-10：并行导入执行器 */
+    /** R8-P0-10：并行导入执行器。2026-09-05 修正：必须具名 mainExecutor——上下文存在多个
+     * @Primary 的 Executor 子类型 bean（aiflow mainExecutor + common-core scheduledExecutorService），
+     * 裸 Executor 构造注入会 NoUniqueBeanDefinitionException（依赖根 lombok.config 的 copyableAnnotations）。 */
+    @Qualifier("mainExecutor")
     private final Executor executor;
 
     /**
