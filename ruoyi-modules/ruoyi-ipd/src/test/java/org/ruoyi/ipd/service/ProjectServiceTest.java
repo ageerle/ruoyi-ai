@@ -150,19 +150,21 @@ class ProjectServiceTest {
         draft.setName("x");
         draft.setStatus("DRAFT");
         draft.setDelFlag("0");
+        draft.setMainGroupId(1L);
         when(projectMapper.selectById(9L)).thenReturn(draft);
 
-        assertThatThrownBy(() -> service.changeStatus(9L, "ACTIVE", 1L))
+        assertThatThrownBy(() -> service.changeStatus(9L, "ACTIVE", 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class).hasMessageContaining("非法迁移");
-        assertThat(service.changeStatus(9L, "TEAMING", 1L).getStatus()).isEqualTo("TEAMING");
+        assertThat(service.changeStatus(9L, "TEAMING", 1L, 1L, "MARKET_PM").getStatus()).isEqualTo("TEAMING");
 
         Project archived = new Project();
         archived.setId(10L);
         archived.setName("y");
         archived.setStatus("ARCHIVED");
         archived.setDelFlag("0");
+        archived.setMainGroupId(1L);
         when(projectMapper.selectById(10L)).thenReturn(archived);
-        assertThatThrownBy(() -> service.changeStatus(10L, "ACTIVE", 1L))
+        assertThatThrownBy(() -> service.changeStatus(10L, "ACTIVE", 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class).hasMessageContaining("非法迁移");
     }
 
@@ -175,8 +177,9 @@ class ProjectServiceTest {
         concept.setStatus("ACTIVE");
         concept.setCurrentStage("CONCEPT");
         concept.setDelFlag("0");
+        concept.setMainGroupId(1L);
         when(projectMapper.selectById(9L)).thenReturn(concept);
-        assertThat(service.advanceStage(9L, 1L).getCurrentStage()).isEqualTo("PLAN");
+        assertThat(service.advanceStage(9L, 1L, 1L, "MARKET_PM").getCurrentStage()).isEqualTo("PLAN");
 
         Project valid = new Project();
         valid.setId(11L);
@@ -184,8 +187,9 @@ class ProjectServiceTest {
         valid.setStatus("ACTIVE");
         valid.setCurrentStage("VALID");
         valid.setDelFlag("0");
+        valid.setMainGroupId(1L);
         when(projectMapper.selectById(11L)).thenReturn(valid);
-        assertThatThrownBy(() -> service.advanceStage(11L, 1L))
+        assertThatThrownBy(() -> service.advanceStage(11L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class).hasMessageContaining("上市日期");
     }
 }
