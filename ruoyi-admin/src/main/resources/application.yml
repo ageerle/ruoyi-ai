@@ -129,7 +129,15 @@ spring:
       p6spy: false
       hikari:
         # 最大连接池数量
-        maxPoolSize: 40
+        # QA-05-P1 P1-1（U0）连接预算约束：基座值必须满足「在跑实例数 × maxPoolSize ≤ max_connections」。
+        # 实测 max_connections=151，本仓常态 4 实例并存（16039/16044/16045/16050）；
+        # 锚点等式 4 × HikariCP 默认 10 = 40 ≡ processlist 中 ipd_app 的 40 个连接（且全为 Sleep 空闲态）
+        # → 常驻连接数由池预留决定、与业务负载无关（零负载也占满），故可据此确定性外推。
+        # 基座取 20（与 prod 现值一致）：4 × 20 = 80，53% 水位，留 71 个连接给压测/运维实例。
+        # 若取 40：4 × 40 = 160 > 151 → ERROR 1040 Too many connections，比池排队雪崩更严重
+        # （新实例根本起不来、运行中实例取不到连接，且 ipd_app 非 SUPER 拿不到 MySQL 保留连接）。
+        # dev 单实例压测若需更大池，请在 application-dev.yml 显式覆盖（dev 现为 40，勿再上调基座）。
+        maxPoolSize: 20
         # 最小空闲连接数量
         minIdle: 10
         # 配置获取连接等待超时的时间：5s 快速失败，避免高并发下 30s 排队雪崩

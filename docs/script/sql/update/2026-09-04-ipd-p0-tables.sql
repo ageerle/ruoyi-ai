@@ -494,8 +494,16 @@ create table audit_logs
     action        varchar(32) not null comment 'CREATE|UPDATE|DELETE|APPROVE|REJECT|HANDOVER|LOGIN...',
     entity_type   varchar(32) not null,
     entity_id     bigint      null,
-    before_data   json        null,
-    after_data    json        null,
+    -- DEF-6（基线回写 @2026-09-05）：以下两列原为 json。MySQL 读回 json 列时会做服务端
+    -- 「规范化渲染」（键按 UTF-8 字节长度→字典序重排、成员间插 ", "、1e3→1000.0），与写入侧
+    -- 用于算 curr_hash 的 Jackson 紧凑串永不相等 → 带载荷的审计行写完即被 verifyChain 判断裂
+    -- （实证 seq 466/485/502，断裂行 100% 携带载荷）。改 longtext 保字节精确往返，不动已冻结哈希协议 v1。
+    -- JSON 合法性的 fail-fast（原由 json 列类型在 DB 层承担，即 DEF-1 护栏）改由应用层
+    -- AuditEventData.requireJson 在 AuditLogService.append 入口复刻，非法载荷仍立即抛出并回滚。
+    -- 活库迁移见 2026-09-05-ipd-audit-payload-longtext.sql；此处回写基线是为使新环境（CI / 他人本地 /
+    -- 生产首次部署）从本 DDL 建库时不再复发 DEF-6——迁移脚本只对已存在的库有效，新库不会去跑 update/。
+    before_data   longtext    null,
+    after_data    longtext    null,
     reason        varchar(500) null,
     prev_hash     char(64)    not null comment '前条 hash（链首为 64 个 0）',
     curr_hash     char(64)    not null comment 'SHA256(prevHash+本条内容)',
