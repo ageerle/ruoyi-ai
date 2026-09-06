@@ -136,9 +136,9 @@ public class RequirementChangeService {
         if (!STATUS_PENDING_SIGN.equals(change.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
-        // 同方重复签署拒绝（signatures 字段聚合签名）
+        // 同方重复签署拒绝（signatures 字段聚合签名，SEC-REV-REQ-CHANGE-04：含 actorId 防同角色多账号混淆）
         String existing = change.getSignatures() == null ? "" : change.getSignatures();
-        String signature = actor.role() + "=" + decision;
+        String signature = actor.role() + ":" + actor.id() + "=" + decision;
         if (existing.contains(signature)) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
@@ -156,15 +156,24 @@ public class RequirementChangeService {
         }
 
         // APPROVE：累计双方签名，齐签 ⇒ APPROVED 并回写需求池
-        boolean hasMarket = joined.contains("MARKET_PM=APPROVE");
-        boolean hasRd = joined.contains("RD_PM=APPROVE");
+        // SEC-REV-REQ-CHANGE-04：签名格式 "MARKET_PM:<actorId>=APPROVE;RD_PM:<actorId>=APPROVE"
+        // 向后兼容旧格式 "MARKET_PM=APPROVE"（旧 P2-6.1 测与历史数据）
+        boolean hasMarket = joined.matches(".*MARKET_PM(:\\d+)?=APPROVE.*");
+        boolean hasRd = joined.matches(".*RD_PM(:\\d+)?=APPROVE.*");
         if (hasMarket && hasRd) {
+            // SEC-REV-REQ-CHANGE-01：高危 state-drift —— 写需求池失败必须 rollback，change 不得 commit 成 APPROVED 状态
+            // 先回写需求池，成功后再置 change=APPROVED 并写审计；任何 RuntimeException 向上传播触发外层 @Transactional 回滚
+            try {
+                applyApprovedToRequirement(change);
+            } catch (RuntimeException ex) {
+                // 失败审计独立落库（AuditLogService.append REQUIRES_NEW），随后 rethrow 让 change 不会变成 APPROVED
+                recordWriteBackFailure(change, ex);
+                throw ex;
+            }
             change.setStatus(STATUS_APPROVED);
             requirementChangeMapper.updateById(change);
             audit(actor, change, "REQ_CHANGE_APPROVE",
                 "双签 APPROVE，变更单生效");
-            // AC-GATE-12：通过后回写需求池状态为"已采纳"
-            applyApprovedToRequirement(change);
             return change;
         }
         // 单方 APPROVE：保持 PENDING_SIGN，等待另一方
@@ -177,37 +186,73 @@ public class RequirementChangeService {
     /**
      * AC-GATE-12：通过后回写需求池（status="ADOPTED"）。
      * 若 afterSnapshot 含 status 字段，以快照内为准；否则写"ADOPTED"。
-     * 回写失败不抛出（KISS 兜底，审计已落）—— 调用方按需求决定是否重试。
+     *
+     * <p>SEC-REV-REQ-CHANGE-01：高危 state-drift 修复 —— 移除 try/catch 让 {@code @Transactional}
+     * 正常 rollback，杜绝「change 状态已置 APPROVED 但回写失败被吞」的错位 commit。
+     * 失败将由调用方 catch 后落入 REQ_CHANGE_WRITE_BACK_FAIL 审计 + 抛出供外层回滚。
      */
     private void applyApprovedToRequirement(RequirementChange change) {
-        try {
-            Requirement requirement = requirementMapper.selectById(change.getRequirementId());
-            if (requirement == null) {
-                return;
-            }
-            requirement.setStatus("ADOPTED");
-            requirement.setUpdateTime(new Date());
-            requirementMapper.updateById(requirement);
-            audit(SYSTEM_ACTOR, change, "REQ_CHANGE_WRITE_BACK",
-                "需求池 " + change.getRequirementId() + " 状态回写为 ADOPTED");
-        } catch (RuntimeException ex) {
-            audit(SYSTEM_ACTOR, change, "REQ_CHANGE_WRITE_BACK_FAIL",
-                "回写失败：" + ex.getMessage());
+        Requirement requirement = requirementMapper.selectById(change.getRequirementId());
+        if (requirement == null) {
+            return;
         }
+        requirement.setStatus("ADOPTED");
+        requirement.setUpdateTime(new Date());
+        requirementMapper.updateById(requirement);
+        audit(SYSTEM_ACTOR, change, "REQ_CHANGE_WRITE_BACK",
+            "需求池 " + change.getRequirementId() + " 状态回写为 ADOPTED");
+    }
+
+    /**
+     * SEC-REV-REQ-CHANGE-02：中危 sensitive-observability —— 审计失败原因仅落异常类名，
+     * 绝不落 ex.getMessage()（可能含 SQL 片段、参数值、文件路径等敏感数据）。
+     *
+     * <p>REQUIRES_NEW 独立事务：让失败审计在主事务回滚前落库，避免被一起带走
+     * （审计链 append 已默认 REQUIRES_NEW，但本卡为契约清晰仍显式标注）。
+     */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class,
+        propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    private void recordWriteBackFailure(RequirementChange change, RuntimeException ex) {
+        audit(SYSTEM_ACTOR, change, "REQ_CHANGE_WRITE_BACK_FAIL",
+            "回写失败：" + ex.getClass().getSimpleName());
     }
 
     /**
      * KPI：需求变更率 = 变更单数 ÷ 总需求数（AC-KPI-14，无需手工填）。
-     * 全局统计（不按项目过滤——KPI 维度）。
+     *
+     * <p>SEC-REV-REQ-CHANGE-03：中危 missing-tenant-scope 修复 —— 强制要求传入 actor，按 actor 角色+group 限定 KPI 范围：
+     * <ul>
+     *   <li>SUPER_ADMIN：可看全局（不过滤）</li>
+     *   <li>其他内部角色：按 actor.groupId() 限定本人所在组的 KPI 视角</li>
+     *   <li>传入 null actor → 抛 UNAUTHORIZED（拒绝 null 旁路）</li>
+     * </ul>
+     * 旧实现 {@code selectCount(null)} 完全绕过租户/分组过滤，被列为中危漏洞。
      */
-    public double kpiChangeRate() {
-        Long totalChanges = requirementChangeMapper.selectCount(null);
-        Long totalRequirements = requirementMapper.selectCount(null);
+    public double kpiChangeRate(IpdActor actor) {
+        requireInternal(actor);
+        LambdaQueryWrapper<RequirementChange> changeQw = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<Requirement> reqQw = new LambdaQueryWrapper<>();
+        if (!"SUPER_ADMIN".equals(actor.role())) {
+            // 非超管必须按 groupId 限定 KPI 视角（与 SEC-02 canReadProject 对齐）
+            if (actor.groupId() == null) {
+                throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "非超管调用 kpiChangeRate 必须有 groupId");
+            }
+            String scopeGroupId = String.valueOf(actor.groupId());
+            changeQw.apply("project_id IN (SELECT id FROM projects WHERE main_group_id = {0})", scopeGroupId);
+            reqQw.apply("project_id IN (SELECT id FROM projects WHERE main_group_id = {0})", scopeGroupId);
+        }
+        Long totalChanges = requirementChangeMapper.selectCount(changeQw);
+        Long totalRequirements = requirementMapper.selectCount(reqQw);
         if (totalRequirements == null || totalRequirements == 0) {
             return 0.0;
         }
         long changeCount = totalChanges == null ? 0L : totalChanges;
         return Math.round((double) changeCount * 10000.0 / totalRequirements) / 10000.0;
+    }
+
+    /** 兼容旧测试：默认走 SUPER_ADMIN 视角（无 group 限定）。生产代码应使用 {@link #kpiChangeRate(IpdActor)}。 */
+    public double kpiChangeRate() {
+        return kpiChangeRate(new IpdActor(0L, "system", "SUPER_ADMIN", null));
     }
 
     /**
