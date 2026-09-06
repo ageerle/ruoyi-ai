@@ -119,7 +119,8 @@ spring:
   # spring.datasource.dynamic.hikari.*（Spring Boot 原生 spring.datasource.hikari.* 不生效）。
   # 此处为未显式配池的 profile（如 ipd-local）提供安全基线：
   # 缺省时 HikariCP 默认 maximumPoolSize=10 + connectionTimeout=30s，并发>10 即排队雪崩。
-  # application-dev.yml / application-prod.yml 以同名键覆盖（prod 维持 maxPoolSize=20 现值）。
+  # application-dev.yml / application-prod.yml 以同名键覆盖
+  # （dev 已升 80；prod 走 application-prod-batch4-bcrypt-hikari.patch 提升至 80，待用户 apply + 压测验证）。
   datasource:
     dynamic:
       # 性能分析插件（有性能损耗 不建议生产环境使用）
@@ -136,7 +137,8 @@ spring:
         # 基座取 20（与 prod 现值一致）：4 × 20 = 80，53% 水位，留 71 个连接给压测/运维实例。
         # 若取 40：4 × 40 = 160 > 151 → ERROR 1040 Too many connections，比池排队雪崩更严重
         # （新实例根本起不来、运行中实例取不到连接，且 ipd_app 非 SUPER 拿不到 MySQL 保留连接）。
-        # dev 单实例压测若需更大池，请在 application-dev.yml 显式覆盖（dev 现为 40，勿再上调基座）。
+        # dev 单实例压测若需更大池，请在 application-dev.yml 显式覆盖
+        # （dev 已按 SEC-HIGH-1 (R9-BC-COST) 升至 80，与 BCrypt cost=10 同步发车；多实例并存时注意 4×80>151 的 1040 预算）。
         maxPoolSize: 20
         # 最小空闲连接数量
         minIdle: 10
@@ -259,6 +261,9 @@ tenant:
     - person_roles
     - coefficient_change_requests
     - cms_content
+    # ①②③（2026-09-05 晚）：审计链分配器锚表——单行 GLOBAL、无 tenant_id 列、无多租户语义；
+    # 不登记则多租户插件对其追加 tenant_id 过滤 → append 锁读不到锚行全断（与 chain_heads Java 同批上线）
+    - audit_log_chain_heads
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
