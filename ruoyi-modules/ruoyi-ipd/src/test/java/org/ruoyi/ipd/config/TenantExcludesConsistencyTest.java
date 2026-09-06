@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,8 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("dev")
 class TenantExcludesConsistencyTest {
 
-    private static final Path APP_YML = Path.of("ruoyi-admin/src/main/resources/application.yml");
-    private static final Path SQL_DIR = Path.of("docs/script/sql/update");
+    private static final Path REPO_ROOT = Path.of(System.getProperty("user.dir"))
+            .getParent().getParent();
+    private static final Path APP_YML = REPO_ROOT.resolve(
+            "ruoyi-admin/src/main/resources/application.yml");
+    private static final Path SQL_DIR = REPO_ROOT.resolve("docs/script/sql/update");
+
+    private static final Pattern CREATE_TABLE_PAT = Pattern.compile(
+        "CREATE TABLE\s+(?:IF NOT EXISTS\s+)?[\`']?([a-z_]+)[\`']?\s*\(",
+        Pattern.CASE_INSENSITIVE);
+    private static final Pattern EXCLUDE_ITEM_PAT = Pattern.compile("^\s*-\s+([a-z_]+)\s*$");
 
     private Set<String> ddlTables() throws IOException {
         Set<String> result = new HashSet<>();
@@ -28,17 +38,12 @@ class TenantExcludesConsistencyTest {
                  .forEach(p -> {
                     try {
                         String content = Files.readString(p);
-                        for (String line : content.split("\\n")) {
-                            String trim = line.trim();
-                            if (trim.startsWith("CREATE TABLE")) {
-                                String cleaned = trim.replaceAll("^CREATE TABLE\\s+", "");
-                                cleaned = cleaned.replaceAll("IF NOT EXISTS\\s+", "");
-                                String name = cleaned.replaceAll("[` (].*", "").toLowerCase();
-                                if (!name.isEmpty() && !name.startsWith("sys_")
-                                    && !name.startsWith("flow_") && !name.startsWith("trace_")
-                                    && !name.startsWith("snail")) {
-                                    result.add(name);
-                                }
+                        Matcher m = CREATE_TABLE_PAT.matcher(content);
+                        while (m.find()) {
+                            String name = m.group(1).toLowerCase();
+                            if (!name.startsWith("sys_") && !name.startsWith("flow_")
+                                && !name.startsWith("trace_") && !name.startsWith("snail")) {
+                                result.add(name);
                             }
                         }
                     } catch (IOException ignored) {}
@@ -49,18 +54,18 @@ class TenantExcludesConsistencyTest {
 
     private Set<String> excludedTables() throws IOException {
         String content = Files.readString(APP_YML);
-        int tenantStart = content.indexOf("# 多租户配置");
-        if (tenantStart < 0) return Set.of();
-        int nextTop = content.indexOf("\\n# ", tenantStart);
-        if (nextTop < 0) nextTop = content.length();
-        String section = content.substring(tenantStart, nextTop);
+        int start = content.indexOf("# 多租户配置");
+        if (start < 0) return Set.of();
+        int end = content.indexOf("\n# ", start);
+        if (end < 0) end = content.length();
+        String section = content.substring(start, end);
         Set<String> result = new HashSet<>();
-        for (String line : section.split("\\n")) {
-            String trim = line.trim();
-            if (trim.startsWith("- ") && !trim.startsWith("- /") && !trim.startsWith("- group:")) {
-                String table = trim.substring(2).trim().toLowerCase();
-                if (!table.isEmpty() && !table.startsWith("sys_")
-                    && !table.startsWith("flow_") && !table.startsWith("trace_")) {
+        for (String line : section.split("\n")) {
+            Matcher m = EXCLUDE_ITEM_PAT.matcher(line);
+            if (m.matches()) {
+                String table = m.group(1).toLowerCase();
+                if (!table.startsWith("sys_") && !table.startsWith("flow_")
+                    && !table.startsWith("trace_")) {
                     result.add(table);
                 }
             }
@@ -81,7 +86,7 @@ class TenantExcludesConsistencyTest {
     }
 
     @Test
-    @DisplayName("R8-P0-1：已知必含表均在 excludes 中")
+    @DisplayName("R8-P0-1：已知缺失表 9 张均在 excludes 中")
     void knownMissingTablesAreCovered() throws IOException {
         Set<String> excluded = excludedTables();
         Set<String> required = new HashSet<>(Arrays.asList(
@@ -92,7 +97,7 @@ class TenantExcludesConsistencyTest {
         Set<String> notFound = new HashSet<>(required);
         notFound.removeAll(excluded);
         assertThat(notFound)
-            .as("以下表未在 tenant.excludes 中，需补登：%s", notFound)
+            .as("以下表未在 tenant.excludes 中：%s", notFound)
             .isEmpty();
     }
 }
