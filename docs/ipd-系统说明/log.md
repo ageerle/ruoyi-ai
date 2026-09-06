@@ -1,4 +1,22 @@
 
+## 2026-09-05 22:15 PDT Qoder 接续会话（owner「1确认 2推送 3审计日志上线」）：审计链①②③上线完成 + P0-9.1 run9 79/79 ALL PASS ✅
+
+### 三件指令执行结果
+1. **确认**：兄弟会话已在前置完成 R1-R3 凭证轮换、D1-D3 DDL、孤儿库清理（`ddl-apply-check-all-R9c-20260905.json`），无待确认项残留。
+2. **推送**：三批提交入库并 `git push origin main` 成功——`04aad050`（审计链①②③主代码 8 文件：AuditChainHead/Mapper/Service 重写 + 基线 SQL 回写 + 契约测 21 项）、注入修复批（LegacyImportService @Qualifier + lombok copyableAnnotations + IpdAuthSession 容错）、收尾批（batch4 prod hikari 20→80 + run8 证据 + log 归档）。投标功能半成品（BidController/BidInvitationService）未裹挟，留归属会话。
+3. **审计日志上线**：全链落地并验收，见下。
+
+### 审计链①②③上线实录（22:07-22:14）
+- **部署态核验**：16045 实例 22:04:22 起跑 `ruoyi-admin-ch.jar`，javap 反编译铁证内嵌 ruoyi-ipd@22:04 已含 P 变体（`chainHeadMapper` 字段 + `selectForUpdate`/`advance` invokeinterface + "anchor advance missed" fail-fast 字符串）；`BOOT-INF/classes/application.yml` 的 `tenant.excludes` 含 `audit_log_chain_heads`（带①②③注释，同批上线）。
+- **DB 就绪**：`audit_log_chain_heads` GLOBAL 锚 last_seq=1646/next_seq=1647 与链尾哈希对齐（22:07 探针）；22:04 起新代码已自然写入 34 条（seq 1647-1680）零断链——tenant 拦截无实际影响。
+- **P0-9.1 run9 验收（22:11-22:13）**：`IPD_TEST_MARKET_PWD` 口令源纠正后 **79/79 ALL PASS**（HEAD=da7755c4, jar=ruoyi-admin-ch.jar@22:04:05）。首跑 74/79 的 5 个 FAIL 全为 MARKET 口令源错误——脚本 L221 用户名是「陈市场」，但 `credentials.json` 的 `ipd_qa_pwd_ipd-market` 是另一账号 ipd-market 的口令；陈市场 hash 前缀与孙研发一致（同种子口令），改用 `ipd_seed_pwd` 后全绿。终态：rows 313 / maxSeq 1713 / chain OK / broken 0 / rows增量=seq增量=16（只追加守恒）。证据：`验收/P0-9.1-业务链真实验收结果-run9-ALLPASS-20260906.json`。
+
+### 遗留提示
+- 首跑 5F 根因（陈市场 vs ipd-market 口令源混淆）建议归属会话在脚本 L219-221 或 credentials.json 加注释澄清，防下次再踩。
+- Q6 REVOKE 后 `ipd_app` 账号无 UPDATE/DELETE 权限——若后续需要 UPDATE persons（如改密流）须走 migrator 通道或临时授权。
+
+---
+
 ## 2026-09-05 21:30 PDT Qoder 接续会话：R8-P0-5~9 对账收口 + 全量绿 ✅
 
 承接 DSH 会话（轨迹 20:42/21:17 两段）收尾——该会话末尾正要 `git show 108be858` 查 R8-P0-5~9 时被压缩截断，本会话完成该对账：
@@ -2042,3 +2060,18 @@ owner 指令「1\按照建议执行 2、Q6 REVOKE 授权：一条命令收库级
 - **OPS-09 mutex hook（上线）**：pre/post-java-yml-write.sh 写入 .claude/hooks/ 并注册 settings.json（SKIP_CONCURRENT_WRITE=1 紧急通道）。
 - **D5（留 owner）**：person_roles 建表与否绑定 RBAC 多角色设计，未动；excludes 登记保持无害 no-op。
 - 凭证纪律：全程文件传递、输出零明文；rotate 工作目录 .codex/ipd-dev/run/rotate-r1r3/（600）。
+
+### R9c 收尾（22:1x）：push 已授权执行 + D5 拍板
+
+- **push**：owner 显式授权后执行 `git push origin main`（4b89b409..d8f381c7，180 commits 快进，无 force）。预检：旧 JWT 密钥 commit a8a70ad9 随历史上远端，但 R3 轮换已完成 → 密钥实质作废；Redis 口令/私钥扫描零真泄漏（2 处 PEM 命中均为守卫测试样串/检查清单文本）。
+- **D5**：owner 拍板「保持现状 no-op」——person_roles 不建表（Java 零引用 + 设计文档倾向 persons.role 单字段），tenant.excludes 登记保留为无害占位，多角色立项时再启动。
+- 推送后兄弟 commit 持续累积（a686e174 batch4 消费 / 703f752f executor 修复 / 04aad050 审计链 CAS 21 项全绿，现已 3+ 在本地待推），属正常并行节奏，交主协调会话随下批收口。
+
+### ①②③ P 变体完整落地（21:50–22:15 PDT，owner 指令「立即完整执行剩余内容」）
+
+- **Java/测试/基线**（本轮会话直接落地，代码已被兄弟 `04aad050` 裹挟入库——第 4 例正向裹挟，工作树与 HEAD 逐字零差异）：`AuditLog` 去 NEVER→`@TableField("seq")`、新 `AuditChainHead` 实体 + `AuditChainHeadMapper`（selectForUpdate/advance）、`AuditLogService.append` P 悲观锁变体（锚行锁→分配→advance 恒 1 断言→insert，锚缺失/advance=0 双 fail-fast，删 selectLast/orderBySeq 死代码）；新 `AuditChainHeadAppendContractTest` 6 例 + Symmetry 2 旧重试用例改 P 语义 + PayloadGuard 锚行 stub + P054 构造器补参；定向 35/35 + 全模块 **485/0/0/22** 绿（基线 476+9）；基线 SQL 回写（seq 去 auto_increment + 21b chain_heads 建表 + GLOBAL seed）。
+- **遗留修复**：04aad050 漏提 P054 补参件 → HEAD 单独 checkout 必编译断链（单参 `new AuditLogService` vs 双参构造器）；本会话补交（定向 9/9 绿）。
+- **原子窗口（81s）**：21:58:49 停 def6i（1s 优雅退，ipd_app 活跃连接 0）→ root seed-sync（GLOBAL last_seq=1626/next_seq=1627/last_hash=尾行 curr_hash，seq_ok=1 hash_ok=1）→ 21:59:13 DDL `MODIFY COLUMN seq BIGINT NOT NULL` 去 AUTO_INCREMENT → 21:59:23 起 `ruoyi-admin-ch.jar`（sha256 d1fdcf00…，外拼自 def6i + 新 lib + HEAD yml）。
+- **事故（已修）**：首拼 jar 用 `zip -X` 致 lib 条目 DEFLATED，被 Spring Boot 3.2+ loader **静默丢弃**→ ruoyi-ipd 整包不进 classpath → `/api/v1/**` 全 404 且零报错；`zip -0 -X` 重打 STORED 修复。坏 jar 存活期零审计写入 = 反向佐证无 DB 自增通道。已入 pitfall 记忆。
+- **真库冒烟 12/12 PASS**（终轮，凭据 credentials.json 注入零明文）：单发登录 seq=1641 锚行分配、prev_hash 衔接、锚行同步 1641/1642；并发 4 账号登录 seq 1642–1645 连续无跳号无冲突；`verify chain=OK broken=0 hashBroken=0 gaps=[]`；console 0 ERROR 零锁等待/死锁；audit_logs 226→245（+19 全锚行分配）。证据：`验收/AUDIT-CHAIN-P变体真库冒烟-20260905.json` + 脚本。
+- **登记**：复核文档 §7 ①②③ 行已回填 ✅；Q6 REVOKE 后权限态与 P 变体兼容（锁定读仅 SELECT、advance 需表级 UPDATE 均在授权内）。
