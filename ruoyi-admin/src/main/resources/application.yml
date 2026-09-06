@@ -251,6 +251,10 @@ tenant:
     - launch_date_change_requests
     - project_cert_items
 
+    # R8-P0-1 补漏：person_roles / coefficient_change_requests / cms_content
+    - person_roles
+    - coefficient_change_requests
+    - cms_content
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
