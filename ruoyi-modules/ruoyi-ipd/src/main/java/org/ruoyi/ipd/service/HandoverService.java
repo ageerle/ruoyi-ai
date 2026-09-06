@@ -70,6 +70,13 @@ public class HandoverService {
      */
     public HandoverRecord initiateOnBehalf(Long projectId, String role, Long toPersonId,
                                            String note, String approvalRef, IpdActor leader) {
+        // SEC-REV-HANDOVER-01：入口加项目归属校验——SUPER_ADMIN 豁免；其他角色必须
+        // leader.groupId == project.mainGroupId（横向越权防护，BR-IPD-02/R8X-CONT-1 同款语义）。
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            throw new ServiceException("项目不存在: " + projectId);
+        }
+        assertSameGroup(leader.role(), leader.groupId(), project.getMainGroupId(), "代移交项目");
         ProjectMember current = memberMapper.selectOne(new LambdaQueryWrapper<ProjectMember>()
             .eq(ProjectMember::getProjectId, projectId)
             .eq(ProjectMember::getRole, role)
@@ -279,12 +286,24 @@ public class HandoverService {
     /**
      * AC-HAND-01d：名下项目全部移交完成 ⇒ DISABLED + 企微解绑。
      * 未全清（名下还有活跃项目）则保持现状（冻结的保持冻结）。
+     *
+     * <p>SEC-REV-HANDOVER-02：原子 UPDATE 替代 selectCount + person update——
+     * 一次 SQL 既关闭该 person 下所有活跃 ProjectMember（exitDate IS NULL → exitDate=now，
+     * exitReason=REMOVED），又通过 affected rows 锁定"原本活跃成员数"。
+     * 0 ⇒ 无活跃成员需要关闭，跳过 disable；>0 ⇒ 原本有活跃成员，现已全部退出，
+     * 接下来 disable person + 企微解绑 + 审计。
+     * MySQL 默认 REPEATABLE READ + 行锁 + 事务保证多次并发调用只一人 disable 成功，
+     * 后续线程看到 updated=0 直接退出，杜绝 TOCTOU 竞态。
+     *
+     * <p>package-private（无 private）便于测试直接调用；不暴露给 controller/service。
      */
-    private void disableIfAllCleared(Long personId, IpdActor operator) {
-        Long remaining = memberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+    void disableIfAllCleared(Long personId, IpdActor operator) {
+        int updated = memberMapper.update(null, new LambdaUpdateWrapper<ProjectMember>()
             .eq(ProjectMember::getPersonId, personId)
-            .isNull(ProjectMember::getExitDate));
-        if (remaining != null && remaining > 0) {
+            .isNull(ProjectMember::getExitDate)
+            .set(ProjectMember::getExitDate, new Date())
+            .set(ProjectMember::getExitReason, "REMOVED"));
+        if (updated == 0) {
             return;
         }
         Person p = personMapper.selectById(personId);
@@ -304,5 +323,19 @@ public class HandoverService {
             .afterData(AuditEventData.json("accountStatus", "DISABLED", "wecomUnbound", true))
             .createTime(new Date())
             .build());
+    }
+
+    /**
+     * SEC-REV-HANDOVER-01：横向越权防护——SUPER_ADMIN 一律通过；
+     * 其他角色必须 actor.groupId == project.mainGroupId。
+     * 语义同 ProjectService.assertSameGroup（避免跨 service 依赖）。
+     */
+    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
+        if ("SUPER_ADMIN".equals(actorRole)) {
+            return;
+        }
+        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
+            throw new ServiceException(roleLabel + "必须归属项目主组（横向越权防护）");
+        }
     }
 }
