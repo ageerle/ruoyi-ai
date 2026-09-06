@@ -25,6 +25,9 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * P1-9.1 / BR-PROD-03：存量 LEGACY 导入。
@@ -44,6 +47,8 @@ public class LegacyImportService {
 
     /** Round 8 / R8-P0-10：批量导入单次最大行数（防连接池打爆） */
     public static final int MAX_BATCH_SIZE = 500;
+    /** Round 8 / R8-P0-10：并发导入最大并行度 */
+    public static final int IMPORT_BATCH_PARALLELISM = 8;
 
     private static final List<String> STAGE_ORDER = List.of(
         "CONCEPT", "PLAN", "DEV", "VALID", "LAUNCH", "LIFECYCLE");
@@ -70,6 +75,8 @@ public class LegacyImportService {
     private final StageActionMapper stageActionMapper;
     private final AuditLogService auditLogService;
     private final ObjectProvider<LegacyImportService> self;
+    /** R8-P0-10：并行导入执行器 */
+    private final Executor executor;
 
     /**
      * 单条存量导入。
@@ -118,31 +125,37 @@ public class LegacyImportService {
      * @param operatorId 操作人
      * @return 逐行结果
      */
+    /**
+     * Round 8 / R8-P0-10：并行导入——按行提交 CompletableFuture，受 IMPORT_BATCH_PARALLELISM 限流。
+     * 业务异常（ServiceException）和数据访问异常（DataAccessException）逐行捕获不影响其他行；
+     * 其它 RuntimeException（连接池耗尽 / DB 挂 / OOM）向上抛，由 Controller 统一处理。
+     */
     public List<LegacyImportRowResult> importBatch(List<LegacyImportReq> rows, Long operatorId) {
         if (rows == null || rows.isEmpty()) {
             throw new ServiceException("导入行不能为空");
         }
         if (rows.size() > MAX_BATCH_SIZE) {
-            // R8-P0-10：防御性二次校验，Controller 层 @Size 兜底
             throw new ServiceException("单次导入最多 " + MAX_BATCH_SIZE + " 行（实际 " + rows.size() + " 行）");
         }
-        List<LegacyImportRowResult> out = new ArrayList<>();
         LegacyImportService proxy = self.getIfAvailable() == null ? this : self.getObject();
+        List<CompletableFuture<LegacyImportRowResult>> futures = new ArrayList<>(rows.size());
         for (int i = 0; i < rows.size(); i++) {
-            try {
-                LegacyImportResult r = proxy.importOne(rows.get(i), operatorId);
-                out.add(new LegacyImportRowResult(i, true, r.project().getId(), null, r.markedCodes()));
-            } catch (ServiceException ex) {
-                // 业务校验异常：可预期，记录后继续
-                out.add(new LegacyImportRowResult(i, false, null, ex.getMessage(), List.of()));
-            } catch (DataAccessException ex) {
-                // 已识别的数据访问异常（主键冲突 / FK 违反等）：记录后继续
-                log.warn("legacy import row {} data access error: {}", i, ex.getMessage());
-                out.add(new LegacyImportRowResult(i, false, null, "数据冲突: " + ex.getMostSpecificCause().getMessage(), List.of()));
-            }
-            // R8-P0-7：其它 RuntimeException（连接池耗尽 / DB 不可用）不再吞，直接向上抛
+            final int idx = i;
+            futures.add(CompletableFuture.supplyAsync(() -> {
+                try {
+                    LegacyImportResult r = proxy.importOne(rows.get(idx), operatorId);
+                    return new LegacyImportRowResult(idx, true, r.project().getId(), null, r.markedCodes());
+                } catch (ServiceException ex) {
+                    return new LegacyImportRowResult(idx, false, null, ex.getMessage(), List.of());
+                } catch (DataAccessException ex) {
+                    log.warn("legacy import row {} data access error: {}", idx, ex.getMessage());
+                    return new LegacyImportRowResult(idx, false, null, "数据冲突: " + ex.getMostSpecificCause().getMessage(), List.of());
+                }
+            }, executor));
         }
-        return out;
+        return futures.stream()
+            .map(CompletableFuture::join)
+            .collect(Collectors.toList());
     }
 
     /**

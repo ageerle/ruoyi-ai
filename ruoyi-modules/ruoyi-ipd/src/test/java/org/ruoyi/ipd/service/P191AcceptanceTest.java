@@ -24,6 +24,8 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,7 +57,8 @@ class P191AcceptanceTest {
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(self.getIfAvailable()).thenReturn(null);
         legacyImportService = new LegacyImportService(
-            projectService, projectMapper, stageActionMapper, auditLogService, self);
+            projectService, projectMapper, stageActionMapper, auditLogService, self,
+            (Runnable r) -> new Thread(r).start());
         gateEngine = new GateEngine(stageActionMapper, configService);
     }
 
