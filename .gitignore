@@ -98,3 +98,9 @@ ruvector.db
 .agents/skills/
 .repowise/
 .repowise-workspace.yaml
+# 工具产物（非业务代码，owner 2026-09-05 第4项裁决=ignore）：
+# Repowise 生成的机器态索引与本仓绝对路径 MCP 配置，换机器/换会话即变脏
+/.repowise-workspace/
+/.mcp.json
+/.claude/CLAUDE.md
+/.vscode/
