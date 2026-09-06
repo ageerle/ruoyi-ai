@@ -72,6 +72,16 @@ public class IpdPermission {
     /** 超管二次确认清除 */
     public static final String DELETION_PURGE = "ipd:deletion:purge";
 
+    /** KPI 考核查询（P3-1.1/1.2/1.3 通用权限码，MARKET_PM/RD_PM/GROUP_LEADER/SUPER_ADMIN 可见） */
+    public static final String KPI_QUERY = "ipd:kpi:query";
+
+    /** P3-8.2 负反馈查询（MARKET_PM/RD_PM/GROUP_LEADER/SUPER_ADMIN 可见；细粒度由 service 二次校验） */
+    public static final String NEGATIVE_FEEDBACK_QUERY = "ipd:negative-feedback:query";
+    /** P3-8.2 负反馈录入（DRAFT 创建；MARKET_PM/RD_PM/GROUP_LEADER/SUPER_ADMIN 均可） */
+    public static final String NEGATIVE_FEEDBACK_CREATE = "ipd:negative-feedback:create";
+    /** P3-8.2 负反馈认定/解除（仅 GROUP_LEADER / SUPER_ADMIN；走 requireLeaderOrAdmin） */
+    public static final String NEGATIVE_FEEDBACK_DECIDE = "ipd:negative-feedback:decide";
+
     private static final Set<String> INTERNAL_ROLES = Set.of("MARKET_PM", "RD_PM", "GROUP_LEADER", "SUPER_ADMIN");
     private final IpdAuthSession session;
     private final IpdAuthService authService;

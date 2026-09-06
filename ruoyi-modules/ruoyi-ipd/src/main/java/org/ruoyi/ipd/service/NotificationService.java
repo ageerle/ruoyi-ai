@@ -71,6 +71,24 @@ public class NotificationService {
         public static final String ACTION_OVERDUE = "ACTION_OVERDUE";
         /** P2-3.3 AC-TEAM-08 招标到期无人应标提示给市场 PM */
         public static final String BID_EXPIRED_NO_RESPONSE = "BID_EXPIRED_NO_RESPONSE";
+        /** P2-5.4 AC-GATE-07 第 3 轮起双方产品组长自动列席 */
+        public static final String GATE_ROUND_OBSERVER = "GATE_ROUND_OBSERVER";
+        /** P2-5.4 AC-GATE-07b 第 5 轮起超管介入 */
+        public static final String GATE_ADMIN_INTERVENE = "GATE_ADMIN_INTERVENE";
+        /** P2-5.4 AC-GATE-08 超期弃权流转结果知会双方 */
+        public static final String GATE_ABSTAINED = "GATE_ABSTAINED";
+        /** P2-5.4 AC-GATE-10 双PM分歧邀请组长仲裁 */
+        public static final String GATE_ARBITRATION_REQUEST = "GATE_ARBITRATION_REQUEST";
+        /** P2-5.4 AC-GATE-10 两组长仲裁一致结果知会双方 */
+        public static final String GATE_ARBITRATION_RESULT = "GATE_ARBITRATION_RESULT";
+        /** P2-5.4 AC-GATE-10 两组不一致升级超管终裁 */
+        public static final String GATE_FINAL_RULING_REQUEST = "GATE_FINAL_RULING_REQUEST";
+        /** P2-5.4 AC-GATE-10 超管终裁结果知会双方 */
+        public static final String GATE_FINAL_RULING_RESULT = "GATE_FINAL_RULING_RESULT";
+        /** P3-8.2 AC-INC-40：负反馈认定执行后知会主责/连带 PM（ACTION） */
+        public static final String NEGATIVE_FEEDBACK_EXECUTED = "NEGATIVE_FEEDBACK_EXECUTED";
+        /** P3-8.2：负反馈解除恢复 bonusEligible 知会主责/连带 PM（FYI） */
+        public static final String NEGATIVE_FEEDBACK_LIFTED = "NEGATIVE_FEEDBACK_LIFTED";
 
         private Types() {
         }

@@ -28,7 +28,17 @@ public final class IpdRolePermissionCatalog {
         // OPS-05：站内通知收件箱（本人；receiver 从会话推导，读写同人）
         IpdPermissionCode.OPERATION_NOTIFICATION_READ,
         // P1-10.1：AI 文档版本链读取
-        IpdPermissionCode.OPERATION_AI_DOCUMENT
+        IpdPermissionCode.OPERATION_AI_DOCUMENT,
+        // 2026-09-06 修全员 403：SOP/AI 模型读码在 Controller 注解里存在但目录未登记，
+        // 连 SUPER_ADMIN 都被 @SaCheckPermission 拒（NotPermission→30001）
+        IpdPermissionCode.OPERATION_SOP_TEMPLATE,
+        IpdPermissionCode.OPERATION_AI_MODEL,
+        // P3-1.1/1.2/1.3：KPI 考核（内部全员可见；对象级 actor 身份在 service 二次校验）
+        "ipd:kpi:query",
+        // P3-6.2：贡献度评定（双 PM 自评 + 各自产品组长可读；细粒度权限在 service 二次校验）
+        "ipd:contribution:query",
+        // P3-8.2：负反馈查询（全员可读）
+        "ipd:negative-feedback:query"
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -46,13 +56,21 @@ public final class IpdRolePermissionCatalog {
         // P1-10.1：AI 文档登记原始输出 / 人工改版 / 人工审核（BR-AI-03）
         IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE,
         IpdPermissionCode.OPERATION_AI_DOCUMENT_REVISE,
-        IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW
+        IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW,
+        // P3-6.2：贡献度评定保存（双 PM 自评）
+        "ipd:contribution:save",
+        // P3-8.2：负反馈录入（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN 均可）
+        "ipd:negative-feedback:create"
     );
 
     /** 组长初审删除申请 + 系数定值确认。 */
     private static final Set<String> DELETION_LEADER = unique(
         IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER,
-        IpdPermissionCode.OPERATION_COEFFICIENT_CONFIRM
+        IpdPermissionCode.OPERATION_COEFFICIENT_CONFIRM,
+        // P3-6.2：产品组长确认贡献度（仅 GROUP_LEADER）
+        "ipd:contribution:confirm",
+        // P3-8.2：负反馈认定/解除（仅 GROUP_LEADER / SUPER_ADMIN）
+        "ipd:negative-feedback:decide"
     );
 
     /** 仅市场侧可建项（对齐 requireProjectCreator）。 */
@@ -79,7 +97,11 @@ public final class IpdRolePermissionCatalog {
         "ipd:audit-log:verify",
         "ipd:audit-log:export",
         // OPS-05：outbox 消费端手动触发（运维观察；正常轮询待 OPS-04 scheduler 合入）
-        IpdPermissionCode.OPERATION_NOTIFICATION_DISPATCH
+        IpdPermissionCode.OPERATION_NOTIFICATION_DISPATCH,
+        // 2026-09-06 补齐注解用码：SOP/AI 模型写与招募超管指派（方法内 requireAdmin 已兜）
+        IpdPermissionCode.OPERATION_SOP_TEMPLATE_EDIT,
+        IpdPermissionCode.OPERATION_AI_MODEL_EDIT,
+        IpdPermissionCode.OPERATION_BID_INVITATION_ADMIN_ASSIGN
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(

@@ -18,12 +18,36 @@ public enum ApiV1ErrorCode {
     ROLE_LOCKED(40004, "角色固定不可跨（市场PM/研发PM）"),
     DELETE_NOT_ALLOWED_DIRECT(40005, "禁止直接删除，须按数据分级完成删除审核"),
     HANDOVER_REQUIRED_BEFORE_DISABLE(40006, "先完成移交才可禁用账号"),
+    PRODUCT_INACTIVE(40401, "产品已下架"),
     RATE_LIMITED(40011, "请求过于频繁，请稍后重试"),
     ATTACHMENT_TOO_LARGE(40012, "附件数量或大小超出限制"),
     AI_BUDGET_EXCEEDED(40013, "AI预算超出限制"),
 
     NOT_FOUND(50001, "资源不存在"),
     STATE_CONFLICT(50002, "状态冲突"),
+
+    /** P3-1.1/1.2/1.3：KPI 周期格式错（应为 YYYY-MM） */
+    KPI_PERIOD_INVALID(50003, "KPI 周期格式应为 YYYY-MM"),
+    /** P3-1.3：KPI 趋势回看期数越界（1~36） */
+    KPI_PERIOD_RANGE_INVALID(50004, "KPI 趋势期数必须在 1~36 区间"),
+    /** P3-6.2：贡献度比例超区间（市场 40%-65%，研发 35%-60%） */
+    CONTRIB_TIER_OUT_OF_RANGE(50005, "贡献度比例超区间（市场 PM 必须在 40%-65%，研发 PM 必须在 35%-60%）"),
+    /** P3-6.2：五维度权重和不等于 100% */
+    CONTRIB_DIM_SUM_NOT_100(50006, "贡献度五维度权重之和必须等于 100%"),
+    /** P3-6.2：贡献度评定入口仅在 G5 上市后 90 天复盘阶段开放 */
+    CONTRIB_NOT_G5_STAGE(50007, "贡献度评定入口仅在 G5 上市后 90 天复盘阶段开放"),
+    /** P3-6.2：贡献度评定权限不足（仅双 PM 自评 + 各自产品组长） */
+    CONTRIB_NOT_AUTHORIZED(50008, "贡献度评定权限不足（仅双 PM 自评 + 各自产品组长）"),
+    /** P3-8.2：负反馈触发情形非法（仅 REWORK_EXCEEDED|QUALITY_ACCIDENT|SPEC_PILE_COPY|MISSED_MARKET_WINDOW） */
+    NF_TRIGGER_TYPE_INVALID(50009, "负反馈触发情形非法（仅 REWORK_EXCEEDED|QUALITY_ACCIDENT|SPEC_PILE_COPY|MISSED_MARKET_WINDOW）"),
+    /** P3-8.2：月份格式错（应为 YYYY-MM） */
+    NF_MONTH_FORMAT_INVALID(50010, "月份格式错（应为 YYYY-MM）"),
+    /** P3-8.2：项目无 MARKET_PM / RD_PM 成员，无法执行负反馈 */
+    NF_NOT_PM(50011, "项目无 MARKET_PM / RD_PM 成员，无法执行负反馈"),
+    /** P3-8.2：同项目同 triggerType 已存在，AC-INC-40 重复事件不重复扣减 */
+    NF_REENTRY_NOT_ALLOWED(50012, "同项目同触发情形已存在负反馈记录（AC-INC-40 重复事件不重复扣减）"),
+    /** P3-8.2：状态机不允许此操作（仅 DRAFT 可 submit；仅 PENDING_DECISION 可 decide；仅 EXECUTED 可 lift） */
+    NF_STATE_INVALID(50013, "负反馈状态机不允许此操作"),
 
     INTERNAL_ERROR(90001, "系统内部错误");
 
@@ -50,15 +74,18 @@ public enum ApiV1ErrorCode {
     public int getHttpStatus() {
         return switch (this) {
             case OK -> 200;
-            case PARAM_INVALID -> 400;
+            case PARAM_INVALID, KPI_PERIOD_INVALID, KPI_PERIOD_RANGE_INVALID,
+                CONTRIB_TIER_OUT_OF_RANGE, CONTRIB_DIM_SUM_NOT_100,
+                NF_TRIGGER_TYPE_INVALID, NF_MONTH_FORMAT_INVALID -> 400;
             case UNAUTHORIZED -> 401;
-            case ACCOUNT_FROZEN_PENDING_HANDOVER, ACCOUNT_PASSWORD_CHANGE_REQUIRED, FORBIDDEN -> 403;
+            case ACCOUNT_FROZEN_PENDING_HANDOVER, ACCOUNT_PASSWORD_CHANGE_REQUIRED, FORBIDDEN,
+                CONTRIB_NOT_AUTHORIZED, NF_NOT_PM -> 403;
             case GATE_NOT_PASSED, DUAL_SIGN_INCOMPLETE, OVER_QUOTA_NOT_REGISTERED, ROLE_LOCKED,
                 DELETE_NOT_ALLOWED_DIRECT, HANDOVER_REQUIRED_BEFORE_DISABLE, STATE_CONFLICT,
-                AI_BUDGET_EXCEEDED -> 409;
+                AI_BUDGET_EXCEEDED, CONTRIB_NOT_G5_STAGE, NF_REENTRY_NOT_ALLOWED, NF_STATE_INVALID -> 409;
             case RATE_LIMITED -> 429;
             case ATTACHMENT_TOO_LARGE -> 413;
-            case NOT_FOUND -> 404;
+            case PRODUCT_INACTIVE, NOT_FOUND -> 404;
             case INTERNAL_ERROR -> 500;
         };
     }
