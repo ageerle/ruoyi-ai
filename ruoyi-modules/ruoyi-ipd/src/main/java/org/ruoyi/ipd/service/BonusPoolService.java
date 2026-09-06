@@ -1,19 +1,22 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import lombok.RequiredArgsConstructor;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.BonusPool;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.BonusPoolMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 /**
- * 奖金池服务（P3-4.2/4.3；AC-INC-16/17/18/19/20/21；BR-INC-04/05/06）
+ * 奖金池服务（P3-4.2/4.3；AC-INC-16/17/18/19/20/21；BR-INC-04/05/06；ZK-IPD-2026-09-06-补）
  *
- * <p>核心规则（AC-INC-17/17b~17h + AC-INC-18~21）：
+ * <p>核心规则（AC-INC-17/17b~17h + AC-INC-18~21 + ZK-IPD Prompt §三.2.1）：
  * <ul>
  *   <li>AC-INC-16：奖金池基数 = 目标销售额 × 5%（bonus.poolRate），不是实际/回款</li>
  *   <li>AC-INC-17~21：达成率阶梯系数，严格按 {@code 达成率 ≥ 阈值} 从高到低匹配；
@@ -21,13 +24,29 @@ import java.util.List;
  *   <li>AC-INC-17h：默认六档 [{Infinity,1.2},{120,1.0},{100,1.0},{85,0.8},{70,0.6},{50,0.3},{0,0.0}]</li>
  *   <li>AC-INC-20：达成率 60% 命中 0.3 档，触发复盘检讨提醒（reviewRequired=true）</li>
  *   <li>AC-INC-21：达成率 45% 命中 0 档，不发放；已发月度津贴不追回（独立规则）</li>
+ *   <li><b>ZK-IPD §三.2.1</b>：奖金池 = 上市后连续 6 个月<b>实际回款</b>金额 × 5% × <b>项目 S/A/B 差异化系数</b>（coefficient，非 tierCoefficient）</li>
  * </ul>
  */
 @Service
-@RequiredArgsConstructor
 public class BonusPoolService {
 
     private final BonusPoolMapper bonusPoolMapper;
+    private final ProjectMapper projectMapper;
+
+    /**
+     * 兼容构造器：仅注入 BonusPoolMapper 的旧测试入口。
+     */
+    public BonusPoolService(BonusPoolMapper bonusPoolMapper) {
+        this(bonusPoolMapper, null);
+    }
+
+    /**
+     * Spring 装配入口（双 Mapper 注入）。
+     */
+    public BonusPoolService(BonusPoolMapper bonusPoolMapper, ProjectMapper projectMapper) {
+        this.bonusPoolMapper = bonusPoolMapper;
+        this.projectMapper = projectMapper;
+    }
 
     /** AC-INC-17h：默认六档阶梯（按阈值降序；第一个达成率 ≥ 阈值命中） */
     private static final BigDecimal[] DEFAULT_THRESHOLDS = {
@@ -119,5 +138,82 @@ public class BonusPoolService {
             new LambdaQueryWrapper<BonusPool>()
                 .eq(BonusPool::getProjectId, projectId)
                 .orderByDesc(BonusPool::getCalculatedAt));
+    }
+
+    /* ----- ZK-IPD Prompt §三.2.1：奖金池 = 实际回款 × 5% × 项目 S/A/B 差异化系数 ----- */
+    /* 差异矩阵 2026-09-06 P0 项：原有 calculateBasePool/FinalPool 用 targetSales +
+       tierCoefficient，违反 ZK-IPD 公式口径。新增方法用 ZK-IPD 口径作为权威计算路径。 */
+
+    /** ZK-IPD §三.2.1 默认 poolRate = 5% */
+    public static final BigDecimal DEFAULT_POOL_RATE = new BigDecimal("0.05");
+
+    /**
+     * ZK-IPD §三.2.1：奖金池 = 实际回款 × poolRate × S/A/B 差异化系数
+     *
+     * <p>与既有 {@link #calculateBasePool} 的区别：
+     * <ul>
+     *   <li>基数：实际回款（actualReceipts），不是目标销售额（targetSales）</li>
+     *   <li>乘数：项目 S/A/B 差异化系数（coefficient），不是达成率阶梯（tierCoefficient）</li>
+     * </ul>
+     *
+     * @param actualReceipts   上市后连续 6 个月实际回款净额
+     * @param levelCoefficient 项目 S/A/B 差异化系数（S 1.5–2.0 / B 0.6–0.8 / A 固定 1.0）
+     * @return 奖金池金额；回款 ≤ 0 返回 ZERO；入参空抛 ServiceException
+     */
+    public BigDecimal calculateBonusPoolByZkFormula(BigDecimal actualReceipts, BigDecimal levelCoefficient) {
+        if (actualReceipts == null) {
+            throw new ServiceException("ZK-IPD §三.2.1：实际回款金额不能为空");
+        }
+        if (levelCoefficient == null) {
+            throw new ServiceException("ZK-IPD §三.2.1：项目 S/A/B 差异化系数不能为空");
+        }
+        if (actualReceipts.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ServiceException("ZK-IPD §三.2.1：实际回款金额不能为负");
+        }
+        if (actualReceipts.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return actualReceipts.multiply(DEFAULT_POOL_RATE).multiply(levelCoefficient);
+    }
+
+    /**
+     * ZK-IPD §三.2.1：构造 BonusPool（系数取自 Project.levelCoefficient，非 tierCoefficient）。
+     *
+     * <p>差异矩阵 2026-09-06 P0 项：既有 {@link #fillDerivedFields} 不读 project.levelCoefficient，
+     * 本方法补齐该字段孤岛——BonusPool.coefficient 必须 = Project.levelCoefficient。
+     *
+     * @param projectId      项目 ID
+     * @param actualReceipts 实际回款金额
+     * @param calculatedAt   计算时间
+     * @param poolRate       奖金池比例（默认 5%）
+     * @return 新建 BonusPool（未持久化）
+     */
+    public BonusPool buildPoolFromProject(Long projectId, BigDecimal actualReceipts,
+                                          Date calculatedAt, BigDecimal poolRate) {
+        if (projectMapper == null) {
+            throw new ServiceException("ProjectMapper 未注入，无法读取项目 S/A/B 差异化系数（ZK-IPD §三.2.1）");
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            throw new ServiceException("项目不存在: " + projectId);
+        }
+        BigDecimal levelCoefficient = project.getLevelCoefficient();
+        if (levelCoefficient == null) {
+            throw new ServiceException("项目 S/A/B 差异化系数未配置（level=" + project.getLevel() + "），无法按 ZK-IPD §三.2.1 计算奖金池");
+        }
+        BigDecimal rate = (poolRate != null) ? poolRate : DEFAULT_POOL_RATE;
+        BigDecimal pool = calculateBonusPoolByZkFormula(actualReceipts, levelCoefficient);
+        return BonusPool.builder()
+            .projectId(projectId)
+            .targetSales(actualReceipts)
+            .poolRate(rate)
+            .basePool(actualReceipts.multiply(rate))
+            .coefficient(levelCoefficient)
+            .achievementRate(null)
+            .tierCoefficient(null)
+            .finalPool(pool)
+            .calculatedAt(calculatedAt)
+            .status("DRAFT")
+            .build();
     }
 }
