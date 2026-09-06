@@ -69,6 +69,11 @@ public class KpiRecord extends BaseEntity implements SoftDeletable {
     private String segment;
 
     /**
+     * 同一人、项目、周期、KPI 类型的追加归集版本。
+     */
+    private Integer revision;
+
+    /**
      * 评分人
      */
     private Long scoredBy;
