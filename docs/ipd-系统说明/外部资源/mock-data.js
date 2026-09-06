@@ -2,8 +2,9 @@
 source: 基于 v3 Prompt §10 审计日志规则 + 开发说明书 §13 演示数据 + 4 个奖金算例 + 验收清单 v2.1（237 条 AC）
 collected: 2026-09-04
 generated_by: Claude Code（基于已知数据点 + V3 规则自动生成）
-status: ✅ 已生成
+status: ✅ 已生成（**奖金池基数口径 2026-09-06 修订：目标销售额 → 实际回款**，依 owner 裁决 [CONSISTENCY-1]，详见审计报告 `前端对接/前后端一致性审计-20260906.md`）
 note: ZK-IPD 未发现现成 mock-data.js；本文件由 Claude Code 基于已确认的 4 个算例 + 13 角色 + 3 项目 + V3 决策表（全部已确认）+ 验收清单 v2.1（237 条 AC）综合生成
+口径裁决附注：演示数据保留 `targetSales/actualSales` 两字段仅作历史比较展示；奖金池基数计算统一以 **actualReceipts（实际回款净额）** 为权威入参（参见 BonusPoolService.calculateBonusPoolByZkFormula）。
 ---
 
 # IPD 产品经理管理系统 — 演示数据
@@ -13,7 +14,7 @@ note: ZK-IPD 未发现现成 mock-data.js；本文件由 Claude Code 基于已�
 > - 6 阶段 69 动作（含 P10 / V02 / D11 / V11 特殊动作）
 > - 5 Gate 双签（33 项要素 + 14 否决项）
 > - L1–L5 津贴（1000 / 1500 / 2000 / 2500 / 3000）
-> - 奖金池公式（目标销售额 × 5% × 系数）
+> - 奖金池公式（**实际回款 × 5% × 系数**——2026-09-06 [CONSISTENCY-1] owner 裁决口径，参见头部 §来源行）
 > - 6 档达成率阶梯（>120 / 100-120 / 85-99.99 / 70-84.99 / 50-69.99 / <50）
 
 ---

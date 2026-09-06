@@ -25,9 +25,15 @@ import java.util.Map;
 /**
  * 奖金池服务（P3-4.2/4.3/4.4；AC-INC-16/17/18/19/20/21；BR-INC-04/05/06；ZK-IPD-2026-09-06-补）
  *
+ * <p><b>口径裁决（2026-09-06 owner 拍板，[CONSISTENCY-1]）</b>：奖金池基数 = <b>上市后连续 6 个月实际回款净额</b> × 5% × S/A/B 系数。
+ * ZK-IPD 完整版 Prompt §三.2 vs 主Prompt Q1+AC-INC-16b 文档分裂结论：取 ZK 口径作为权威（与 owner「严格禁止与 ZK-IPD 不一致」红线一致），
+ * Controller {@link #compute(Long, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal)}
+ * 入口即用 {@link #calculateBonusPoolByZkFormulaWithModifiers}。{@code targetSales} 字段在 BonusPool 实体层仅作历史兼容保留，
+ * 不再作为权威基数来源——落库时由 compute() 写入实际回款值（语义已在 BonusPoolController javadoc 登记）。AC-INC-16 用例需 owner 复审按新口径重写。
+ *
  * <p>核心规则（AC-INC-17/17b~17h + AC-INC-18~21 + ZK-IPD Prompt §三.2）：
  * <ul>
- *   <li>AC-INC-16：奖金池基数 = 目标销售额 × 5%（bonus.poolRate），不是实际/回款</li>
+ *   <li><b>ZK-INC-16</b>（口径更新）：奖金池基数 = 实际回款（actualReceipts）× 5%（DEFAULT_POOL_RATE），不是目标销售额；达成率分子分母同为回款口径（AC-INC-16b）</li>
  *   <li>AC-INC-17~21：达成率阶梯系数，严格按 {@code 达成率 ≥ 阈值} 从高到低匹配；
  *       区间下端点含、上端点不含；不允许浮点等值判定（不写浮点字面量等值 / 不引入容差参数）</li>
  *   <li>AC-INC-17h：默认六档 [{Infinity,1.2},{120,1.0},{100,1.0},{85,0.8},{70,0.6},{50,0.3},{0,0.0}]</li>
@@ -106,8 +112,13 @@ public class BonusPoolService {
     }
 
     /**
-     * AC-INC-16：奖金池基数 = 目标销售额 × bonus.poolRate（默认 0.05）
+     * @deprecated 口径废弃（[CONSISTENCY-1] 2026-09-06 owner 裁决）：
+     * 原 AC-INC-16「目标销售额 × 5%」被 ZK 完整版 Prompt「实际回款 × 5%」覆盖。
+     * Controller {@link #compute} 主入口已迁移至 {@link #calculateBonusPoolByZkFormulaWithModifiers}，
+     * 本方法保留实现仅供旧 P343 测试与历史查询回放兼容；新代码禁止调用。
+     * 替代：{@link #calculateBonusPoolByZkFormula(BigDecimal, BigDecimal)}
      */
+    @Deprecated
     public BigDecimal calculateBasePool(BigDecimal targetSales, BigDecimal poolRate) {
         if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
@@ -116,7 +127,7 @@ public class BonusPoolService {
         return targetSales.multiply(rate);
     }
 
-    /* ============================ P3-4.2 奖金池基数+系数可配置 ============================ */
+    /* --------------------------- P3-4.2 奖金池基数+系数可配置 --------------------------- */
     /* BR-INC-04：bonus.poolRate 实时读；非法拒绝；计算记录参数版本/输入/Decimal 舍入。 */
     /* BR-INC-05：项目 S/A/B 系数（coefficient）：S=1.5~2.0；A=1.0；B=0.6~0.8。 */
 
@@ -203,14 +214,11 @@ public class BonusPoolService {
     }
 
     /**
-     * P3-4.2 BR-INC-04：奖金池基数（实时配置读 + 4 位小数舍入 + 入参/版本/输入记录）。
-     * <pre>
-     *   basePool = targetSales × poolRate
-     *   poolRate 实时读（不缓存，配置变更立即生效）
-     *   结果保留 2 位小数（HALF_UP）
-     *   入参 + poolRate 版本写入入参 payload（version = currentPoolRate.toString）
-     * </pre>
+     * @deprecated 口径废弃（[CONSISTENCY-1] 2026-09-06 owner 裁决）：
+     * 旧 P3-4.2「targetSales × poolRate」被 ZK 完整版 Prompt「actualReceipts × poolRate」覆盖（奖金池基数 = 上市后连续 6 个月实际回款）。
+     * 计算逻辑保留以便 P342 测试回归；新代码请改用 {@link #calculateBonusPoolByZkFormula}。
      */
+    @Deprecated
     public BigDecimal calculateBasePoolConfigurable(BigDecimal targetSales) {
         if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
@@ -222,8 +230,10 @@ public class BonusPoolService {
     }
 
     /**
-     * P3-4.2 BR-INC-04：奖金池基数（入参 poolRate，不读实时配置）
+     * @deprecated 口径废弃（[CONSISTENCY-1] 2026-09-06 owner 裁决）。保留实现供 P342/P343 历史用例回归；
+     * 新代码请改用 {@link #calculateBonusPoolByZkFormula}。
      */
+    @Deprecated
     public BigDecimal calculateBasePoolWithRate(BigDecimal targetSales, BigDecimal poolRate) {
         validatePoolRate(poolRate);
         if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) <= 0) {
@@ -262,8 +272,10 @@ public class BonusPoolService {
     }
 
     /**
-     * 一次性计算并填充 BonusPool 实体的派生字段
+     * @deprecated 口径废弃（[CONSISTENCY-1] 2026-09-06 owner 裁决）。本方法走旧 targetSales 路径已被 ZK 实际回款路径替代；
+     * BonusPool 实体的 targetSales 字段仅作历史兼容保留，不再作为权威基数来源。新代码请改用 {@link #buildPoolFromProject}。
      */
+    @Deprecated
     public BonusPool fillDerivedFields(BonusPool pool) {
         BigDecimal base = calculateBasePool(pool.getTargetSales(), pool.getPoolRate());
         pool.setBasePool(base);
@@ -540,7 +552,7 @@ public class BonusPoolService {
         return result;
     }
 
-    /* ============================ P3-4.4 HTTP 端点收口 ============================ */
+    /* --------------------------- P3-4.4 HTTP 端点收口 --------------------------- */
     /* 公式段（§三.2.1/§三.2.4/§三.2.5）已在前半段闭环，本段只补"持久化 + 状态机 + 审计"
        三个职责，零公式逻辑。状态机：DRAFT → CONFIRMED → DISTRIBUTED（终态）。 */
 
