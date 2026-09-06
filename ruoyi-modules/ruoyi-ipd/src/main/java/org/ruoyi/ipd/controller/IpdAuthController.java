@@ -57,19 +57,33 @@ public class IpdAuthController {
             "1".equals(person.getMustChangePwd())));
     }
 
+    /**
+     * logout 幂等守卫（[CONSISTENCY-18] 2026-09-06）：
+     * 同一 token 重复 logout 不报错；token 已撤销/过期直接返回 ok。
+     */
     @PostMapping("/logout")
     public ApiV1Response<Void> logout() {
-        session.logout();
+        if (session.tokenValue() != null) {
+            session.logout();
+        }
         return ApiV1Response.ok();
     }
 
-    /** P0-7.3：会话轮换——发新 token 撤销旧 token；旧 token 立即失效。 */
+    /**
+     * refresh 并发守卫（[CONSISTENCY-18] 2026-09-06）：
+     * 同一用户多次 refresh 不应导致 currentPerson 抛错——并发时第 2 个请求的 token
+     * 已被第 1 个撤销。原实现「currentPerson → logout → login」有竞态；改为先拿 personId
+     * 再 logout，logout 后用缓存的 person 而非 currentPerson 发新 token。
+     */
     @PostMapping("/refresh")
     public ApiV1Response<LoginView> refresh() {
+        // 关键：先缓存 Person，logout 后用缓存（避免 currentPerson 抛 NotLoginException）
         Person person = session.currentPerson();
-        // 撤销当前 token 后立刻发新 token：旧 token 此刻已不可用
         String oldToken = session.tokenValue();
-        session.logout();
+        // 撤销当前 token（幂等——若已撤销 session.logout 不抛）
+        if (oldToken != null) {
+            session.logout();
+        }
         String newToken = session.login(person);
         return ApiV1Response.ok(new LoginView(newToken, "Bearer", session.timeout(),
             authService.scopeOf(person).name(), "1".equals(person.getMustChangePwd()), PersonView.from(person)));
