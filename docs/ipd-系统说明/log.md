@@ -2105,7 +2105,10 @@ owner 指令「1\按照建议执行 2、Q6 REVOKE 授权：一条命令收库级
 - **[P0-3.3] 参数版本链**（U1，依赖 P0-3.2 done，commit `fc4830f3`）：SystemConfigVersion（valid-time，不继承 BaseEntity 对齐 AuditLog 先例）+ Mapper（append-only 纪律）+ Service（update 3 参事务写链：基线行 v1→闭合开区间行→追加新行；getValueAsOf/resolveAsOf 半开区间 [from,to) 时点解析；listVersions 降序）+ Controller（update 绑会话 actor；GET /{key}/versions、GET /{key}/as-of 超管端点，ISO-8601 双格式）。单测 22/22 绿（P033 14+P032 3 回归+CacheTest 5 回归，22:24:24 BUILD SUCCESS）。CodeReview 蜂群 0C/0H/2M/2L 全修复落码。真库探针：SHOW CREATE 12 列对齐、uk_config_version/idx_config_effective 在位、0 行。**状态 inreview**：真库写入+HTTP 验收未过（BR-真库），补验路径见证据文档 §6。证据：`验收/P0-3.3-参数版本链-验收证据-20260905.md`。
 - **[P0-10.21] 支撑件**：`前端对接/页21-应标-后端API契约-20260905.md`（spec §21 + 兄弟 22:23 代码快照；spec↔实现 7 项差异表 D-1~D-7：提交路径、40001→50002、estimated_days/resource_commitment/major_risks 无独立通道、reconfirm 40002 未实现、solution_summary→responseNote 映射）。目标卡维持 todo：Vue 页面在外部仓，依赖刷新 DOC-09 done / P2-3.2 兄弟在途。
 - **本条目 log 混有兄弟在途 18 行（22:00-22:14 审计链条目）故 log.md 不随 fc4830f3 提交**，待兄弟收口 commit 自然入库。
-
+排队中的高价值目标：
+收口 P2-3.1 / P3-4.1（已落盘但卡还开着——核对证据后转待审）
+P1-4.4 深管逾期提醒（依赖 OPS-05 刚交付，查依赖绿了就接）
+DEF-9 审计链并发断裂修复（U1 缺陷，没人认领）
 ---
 
 ## 2026-09-05 22:25–22:50 PDT Qoder 会话（前端页卡移出待办池 + 全栈仓库拉齐）
@@ -2197,3 +2200,36 @@ owner 指令「1\按照建议执行 2、Q6 REVOKE 授权：一条命令收库级
 - **allowedPaths 超字面登记**：新增 GuestDemand*/PublicPortal*/ProjectMemberMapper 等前缀不在卡面 Requirement*/Product* 清单，共享文件（ApiV1ErrorCode/IpdWebSecurityConfig/Requirement）加法式修改，与兄弟 WIP 零重叠——已在证据文档§五与卡面 note 登记。
 - **遗留**：应用级 HTTP 冒烟待全仓打包窗口（现 boot jar 32720f79 不含本卡代码；MockMvc 已验形状）；限流器单机内存实现（多实例换 Redis）。
 - **批次状态**：「4」批次 4 卡——P4-1.1 ◇ 交付；P1-3.3 ▶ 已认领待开工（兄弟 runner-ops05 已收口 IpdPermission* WIP，错峰窗口开启）；P2-7.3 被 P2-7.1（⬜未做）阻塞；P4-2.1 加密选型待用户拍板（仓内已核实 ruoyi-common-encrypt 现成设施可复用，vs 卡面 BLOCKED_PERMISSION 前提「无加密依赖」已不成立，需改判）。
+
+## 2026-09-05 23:05–23:30 PDT Qoder 会话（owner 排队三连发：P2-3.1/P3-4.1 收口 + P1-4.4 实施 + DEF-9 核验）
+
+owner 排队指令：「收口 P2-3.1 / P3-4.1（核对证据后转待审）；P1-4.4 深管逾期提醒（依赖绿了就接）；DEF-9 审计链并发断裂修复（没人认领）」。
+
+### P2-3.1 / P3-4.1 收口（23:15 双卡转 ◇）
+- 证据四件全在盘：文件（BidInvitation/BidResponse/BidController/P231 + ReceiptLedger 域三层）、commit `dbc75862`、DDL（bid_invitations @ p0-tables.sql + receipt_ledger.sql）、HTTP 验收（卡面历史 code=0 双确认）。
+- 重跑 `P231+P341` 18/18 绿（仓库根/单模块/无-am无clean，XML 双确认@23:15 前一轮）。
+- 双卡 set inreview：注记核验五件套，等 QA 独立复核。
+
+### P1-4.4 实施（23:10 ◇）
+- 依赖核验：P1-4.3 ✅ / OPS-04 ✅（时钟底座，卡面明示「未启用后台业务消费者」→ 注入式 `scanForDate(Date)` 正合，接线属消费者侧后续）/ OPS-05 ◇ 已交付。
+- 新增 `OverdueReminderService`：深管逾期（dueDate 已过且未终态）→ **transit(DELAYED) 状态机唯一入口**（复用 P1-4.3 白名单+审计+乐观锁，actor=SYSTEM，冲突跳过不中断整轮）+ 主责人（在册未退出 ownerRole）`ACTION_OVERDUE` 每日提醒；轻管完全跳过（AC-IPD-13 免打扰）；开关 `action.overdueReminder.enabled` 走 SystemConfig（G-05 零硬编码）。
+- `NotificationService` 增量 `publishDaily`：dedupKey 追加自然日 yyyyMMdd——同日重扫不重发（重复扫描不多通知）、次日可再提醒；撞库走既有 doPublish 的 DuplicateKey 捕获返回既有行，不污染事务。**零改动既有 publish 行为**。
+- `P144AcceptanceTest` 7/7（自动标记/主责人通知/轻管免打扰/已 DELAYED 不重标但每日续提醒/主责人退出只标不催/开关短路/transit 冲突韧性）+ 回归 P143 11/11 + OPS05 15/15 = **33/33 绿@23:08 XML 双确认**。
+- 边界：真库联调与调度接线（OPS-04 消费者侧）留待 QA（BR-真库）。
+
+### DEF-9 核验收口（23:25 ◇，不重写——复用铁律）
+- 现态盘点：A′ 修复（①②③ P 变体）**已由兄弟落地并提交**——`AuditLogService` 锚行 `selectForUpdate(GLOBAL)` 原子分配 seq/prevHash + `advance` 防御断言，NEVER 已去（seq 显式入 INSERT），旧重试循环/DuplicateKeyException 死代码已删；`verifyChainDetailed` GAP/HASH 分列 + Controller verdict（HASH_BROKEN/GAP/BROKEN）透传已备。owner Q2 已拍板 A′（否决设计稿方案 C）。卡未翻系「单一写入者纪律等主协调器」——本轮 owner 点名即授权收口。
+- 测试重跑 35/35 绿@23:20：AuditChainHeadAppendContract 6 + GapHashSplit 5 + Symmetry 8 + PayloadJsonGuard 7 + P054 回归 9。
+- DDL：chain_heads 建表+seed 已回写基线 `p0-tables.sql:518-535`（2026-09-05 回写注记）。
+- **真库铁证@23:25**（PyMySQL socket 探针，凭证不上命令行）：表在；锚行 GLOBAL `last_seq=1734 ≡ max(seq)` 精确同步、`next_seq=1735`；audit_logs 334 行 LAG 窗口探针 **零 prev_hash 断裂**（计数 1 为首行 GENESIS vs LAG NULL 伪象）、**零 seq 空洞**（gap_seqs 空）——历史空洞 1309 经兄弟清库已消。链在真库实际运行且自洽。
+- 残留不伪完成：P0-9.1 HTTP 端点 verifyChain 重跑未做（单测绿≠HTTP 闭环），归 QA-05-P2 互锁 slot 裁决。
+
+### 边界
+- 新增 2 文件（OverdueReminderService + P144AcceptanceTest）+ NotificationService 加法式增量；全部未提交 git（留主协调会话统一收口）；真库全程只读探针；未动兄弟 WIP。
+
+## 2026-09-05 23:00–23:20 PDT reviewer-ipd3 独立复核会话（Qoder 协调会话派）
+
+- **三卡复核收口**（测试独立重跑 43/43 绿 @23:09:32 + 真库只读探针 + commit 态逐条 AC 对照；报告 `验收/*-复核-reviewer-ipd3-20260905.md` 三份）：
+  - **OPS-05 ✅ 复核通过**（e1cc6ae1）：15/15 复现；notification_events 24 列/uk_notify_dedup 回读；五条口径全过。LOW：MAX_RETRIES javadoc「第1/2/3次失败仍FAILED」与实现（第3次即DEAD）不符，纯措辞。
+  - **P1-10.1 ✅ 复核通过**（34c1c835）：14/14 复现；ai_documents 22 列+uk_ai_doc_parent(UNIQUE)；AC-AI-04/06/BR-AI-03 全过。
+  - **P0-3.3 ◇ 复核维持**（fc4830f3）：三缺口实读判定——①版本号解析 API 缺（成立→并入 P0-3.4 或细卡补 resolveVersion）②全键快照聚合体缺（成立→P0-3.4 消化，其卡面明写「快照不静默覆盖」）③**六开关纠偏**：此前 log:2187/镜像补登「仅 A 级必做集间接覆盖」不准——P033 有 7/14 例直接以 bonus.salesSource（六开关之一、AC-GLB-10 主角）跑主场景，真实缺口仅余 5 组键无专测（低风险）。BR-真库挂账维持：16045 活体是 22:04 旧 jar（新端点 No endpoint、老端点 401 对照判定），不可作补验证据；代码写路径+表约束已核，真库 0 行。
