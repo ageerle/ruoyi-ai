@@ -1,11 +1,16 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -31,7 +36,9 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -59,6 +66,15 @@ class P1111AcceptanceTest {
     private GateEngine gateEngine;
     private StageActionService stageActionService;
     private ProjectCertService projectCertService;
+
+    @BeforeAll
+    static void initMeta() {
+        // ProjectCertService 内联构造 LambdaQueryWrapper<ProjectCertItem>，纯 Mockito 环境需预初始化
+        // TableInfo 元数据（lambda cache），否则运行时抛 "can not find lambda cache for this entity"。
+        // 模式对齐同包 P062AcceptanceTest.initMeta()。
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "P1111-test");
+        TableInfoHelper.initTableInfo(assistant, ProjectCertItem.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -112,9 +128,13 @@ class P1111AcceptanceTest {
         when(certTemplateService.resolve(any())).thenReturn(List.of(
             CertTemplate.builder().id(1L).countryCode("SA").countryName("沙特阿拉伯")
                 .certName("SABER/SASO").isMandatory("1").build()));
-        when(certItemMapper.selectCount(any())).thenReturn(0L);
-        when(certItemMapper.insert(any(ProjectCertItem.class))).thenReturn(1);
+        // R8-P0-6 批量契约：sync 走一次性 selectList 判重 + insertBatch，不再逐条 selectCount/insert
+        when(certItemMapper.selectList(any())).thenReturn(List.of());
         assertThat(projectCertService.syncFromProject(p, 9L)).isEqualTo(1);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ProjectCertItem>> cap = ArgumentCaptor.forClass(List.class);
+        verify(certItemMapper).insertBatch(cap.capture(), eq(200));
+        assertThat(cap.getValue()).extracting(ProjectCertItem::getCertName).containsExactly("SABER/SASO");
     }
 
     @Test

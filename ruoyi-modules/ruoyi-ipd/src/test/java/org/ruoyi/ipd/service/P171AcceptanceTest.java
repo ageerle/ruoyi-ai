@@ -1,5 +1,9 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -24,6 +28,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -42,6 +49,15 @@ class P171AcceptanceTest {
     @Mock private AuditLogService auditLogService;
 
     private ProjectCertService service;
+
+    @BeforeAll
+    static void initMeta() {
+        // ProjectCertService 内联构造 LambdaQueryWrapper<ProjectCertItem>，纯 Mockito 环境需预初始化
+        // TableInfo 元数据（lambda cache），否则运行时抛 "can not find lambda cache for this entity"。
+        // 模式对齐同包 P062AcceptanceTest.initMeta()。
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "P171-test");
+        TableInfoHelper.initTableInfo(assistant, ProjectCertItem.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -69,19 +85,18 @@ class P171AcceptanceTest {
         when(certTemplateService.resolve(any())).thenReturn(List.of(
             CertTemplate.builder().id(1L).countryCode("SA").countryName("沙特阿拉伯")
                 .certName("SABER/SASO").isMandatory("1").build()));
-        when(itemMapper.selectCount(any())).thenReturn(0L);
-        when(itemMapper.insert(any(ProjectCertItem.class))).thenAnswer(inv -> {
-            ProjectCertItem i = inv.getArgument(0);
-            i.setId(100L);
-            return 1;
-        });
+        // R8-P0-6 批量契约：sync 走一次性 selectList 判重 + insertBatch，不再逐条 selectCount/insert
+        when(itemMapper.selectList(any())).thenReturn(List.of());
         assertThat(service.syncFromProject(p, 9L)).isEqualTo(1);
-        ArgumentCaptor<ProjectCertItem> cap = ArgumentCaptor.forClass(ProjectCertItem.class);
-        verify(itemMapper).insert(cap.capture());
-        assertThat(cap.getValue().getCertName()).isEqualTo("SABER/SASO");
-        assertThat(cap.getValue().getSource()).isEqualTo("AUTO");
-        assertThat(cap.getValue().getStatus()).isEqualTo("PENDING");
-        assertThat(cap.getValue().getCatalogVersion()).startsWith("tpl-");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ProjectCertItem>> cap = ArgumentCaptor.forClass(List.class);
+        verify(itemMapper).insertBatch(cap.capture(), eq(200));
+        assertThat(cap.getValue()).hasSize(1);
+        ProjectCertItem item = cap.getValue().get(0);
+        assertThat(item.getCertName()).isEqualTo("SABER/SASO");
+        assertThat(item.getSource()).isEqualTo("AUTO");
+        assertThat(item.getStatus()).isEqualTo("PENDING");
+        assertThat(item.getCatalogVersion()).startsWith("tpl-");
     }
 
     @Test
@@ -92,9 +107,15 @@ class P171AcceptanceTest {
             tpl(2L, "BR", "巴西", "ANATEL"),
             tpl(3L, "IN", "印度", "BIS"),
             tpl(4L, "KR", "韩国", "KC")));
-        when(itemMapper.selectCount(any())).thenReturn(0L);
-        when(itemMapper.insert(any(ProjectCertItem.class))).thenReturn(1);
+        // R8-P0-6 批量契约：一次性 selectList 判重 + insertBatch
+        when(itemMapper.selectList(any())).thenReturn(List.of());
         assertThat(service.syncFromProject(p, 9L)).isEqualTo(3);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ProjectCertItem>> cap = ArgumentCaptor.forClass(List.class);
+        verify(itemMapper).insertBatch(cap.capture(), eq(200));
+        assertThat(cap.getValue()).hasSize(3);
+        assertThat(cap.getValue()).extracting(ProjectCertItem::getCertName)
+            .containsExactly("ANATEL", "BIS", "KC");
     }
 
     @Test
@@ -121,13 +142,14 @@ class P171AcceptanceTest {
         Project p = project(13L, "[\"SA\"]");
         when(certTemplateService.resolve(any())).thenReturn(List.of(
             tpl(1L, "SA", "沙特阿拉伯", "SABER/SASO")));
-        when(itemMapper.selectCount(any())).thenReturn(1L);
-        assertThat(service.syncFromProject(p, 9L)).isEqualTo(0);
-        verify(itemMapper, never()).insert(any(ProjectCertItem.class));
-
+        // R8-P0-6 批量契约：已存在项由 selectList 返回（含 DONE 项），sync 判重后跳过、不 insertBatch
         ProjectCertItem done = ProjectCertItem.builder().id(50L).projectId(13L)
             .countryCode("SA").certName("SABER/SASO").status("DONE").delFlag("0").build();
-        // DONE 保持；sync 因已存在不 insert
+        when(itemMapper.selectList(any())).thenReturn(List.of(done));
+        assertThat(service.syncFromProject(p, 9L)).isEqualTo(0);
+        verify(itemMapper, never()).insertBatch(anyCollection(), anyInt());
+
+        // DONE 保持；sync 因已存在不 insertBatch（重入一次验证幂等）
         assertThat(service.syncFromProject(p, 9L)).isEqualTo(0);
         assertThat(done.getStatus()).isEqualTo("DONE");
     }
