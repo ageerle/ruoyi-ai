@@ -349,7 +349,9 @@ public class ApiV1Response<T> {
 }
 ```
 
-**位置**：`ruoyi-admin/src/main/java/org/ruoyi/admin/domain/api/v1/ApiV1Response.java`（新建，不污染 RuoYi-AI 现有 `R.java`）
+**位置**：`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/common/ApiV1Response.java`
+
+> 勘误（2026-09-05 零漂移对账）：原计划落在 `ruoyi-admin/src/main/java/org/ruoyi/admin/domain/api/v1/ApiV1Response.java`（新建，不污染 RuoYi-AI 现有 `R.java`）；实际实现落在 `ruoyi-ipd` 模块的 `org.ruoyi.ipd.common` 包。原路径仓库内不存在（失效引用），保留括号内原始决策语义。
 
 ### 8.2 错误码段（新建 enum）
 
@@ -388,7 +390,9 @@ public enum ApiErrorCode {
 }
 ```
 
-**位置**：`ruoyi-admin/src/main/java/org/ruoyi/admin/enums/ApiErrorCode.java`（新建）
+**位置**：`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/common/ApiV1ErrorCode.java`
+
+> 勘误（2026-09-05 零漂移对账）：原计划 `ruoyi-admin/src/main/java/org/ruoyi/admin/enums/ApiErrorCode.java`（新建）；实际落地为 `ruoyi-ipd` 模块的 `ApiV1ErrorCode`（类名也加了 `V1` 前缀）。原路径与原类名仓库内均不存在。
 
 ---
 
@@ -412,7 +416,8 @@ public enum ApiErrorCode {
 | 日期 | 变更 |
 |---|---|
 | 2026-09-04 | 初始版（Claude Code 自动生成） |
+| 2026-09-05 | 零漂移对账勘误：§8.1 / §8.2 的两处代码位置引用已失效（原写 `ruoyi-admin/...`，实际落在 `ruoyi-modules/ruoyi-ipd/.../ipd/common/`，类名 `ApiErrorCode` → `ApiV1ErrorCode`），已订正为现存路径并保留原始决策语义。证据与判定见 `治理轮/零漂移对账-2026-09-05.md` §三 Δ5。 |
 
 ---
 
-**最后更新**：2026-09-04
+**最后更新**：2026-09-05

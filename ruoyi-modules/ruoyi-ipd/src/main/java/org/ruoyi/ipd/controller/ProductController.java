@@ -67,7 +67,7 @@ public class ProductController {
     @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Product> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.ProductUpdateReq req) {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
-        return ApiV1Response.ok(productService.update(id, req.toPatch(), actor.id()));
+        return ApiV1Response.ok(productService.update(id, req.toPatch(), actor.id(), actor.groupId(), actor.role()));
     }
 
     /**
@@ -89,7 +89,7 @@ public class ProductController {
     @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> bindProject(@PathVariable Long id, @RequestParam Long projectId) {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
-        productService.bindProject(id, projectId, actor.id());
+        productService.bindProject(id, projectId, actor.id(), actor.groupId(), actor.role());
         return ApiV1Response.ok(null);
     }
 
@@ -98,7 +98,7 @@ public class ProductController {
     @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> changeStatus(@PathVariable Long id, @RequestParam String status) {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
-        productService.changeStatus(id, status, actor.id());
+        productService.changeStatus(id, status, actor.id(), actor.groupId(), actor.role());
         return ApiV1Response.ok(null);
     }
 }

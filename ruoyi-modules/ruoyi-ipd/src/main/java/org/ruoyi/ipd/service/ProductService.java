@@ -76,15 +76,20 @@ public class ProductService {
 
     /**
      * P1-1.2：编辑产品基础字段（名称/编码/型号/组）；已绑项目时禁止改来源。
+     * R8X-CONT-1 P0-2：加 actor.groupId == product.groupId 横向越权防护（SUPER_ADMIN 豁免）。
      *
-     * @param productId  产品 ID
-     * @param patch      白名单变更
-     * @param operatorId 操作人
+     * @param productId    产品 ID
+     * @param patch        白名单变更
+     * @param operatorId   操作人 ID
+     * @param actorGroupId 操作人所属产品组
+     * @param actorRole    操作人角色
      * @return 更新后实体
      */
     @Transactional(rollbackFor = Exception.class)
-    public Product update(Long productId, Product patch, Long operatorId) {
+    public Product update(Long productId, Product patch, Long operatorId,
+                          Long actorGroupId, String actorRole) {
         Product product = require(productId);
+        assertSameGroup(actorRole, actorGroupId, product.getGroupId(), "操作人");
         if (patch.getProductName() != null && !patch.getProductName().isBlank()) {
             product.setProductName(patch.getProductName().trim());
         }
@@ -193,13 +198,18 @@ public class ProductService {
         return report;
     }
 
-    /** 状态切换 ON_SALE|IN_RD|INACTIVE|ACTIVE（删除走两级审核引擎） */
+    /**
+     * 状态切换 ON_SALE|IN_RD|INACTIVE|ACTIVE（删除走两级审核引擎）。
+     * R8X-CONT-1 P0-2：加 actor.groupId == product.groupId 横向越权防护（SUPER_ADMIN 豁免）。
+     */
     @Transactional(rollbackFor = Exception.class)
-    public void changeStatus(Long productId, String status, Long operatorId) {
+    public void changeStatus(Long productId, String status, Long operatorId,
+                             Long actorGroupId, String actorRole) {
         if (!Product.STATUSES.contains(status)) {
             throw new ServiceException("产品状态非法: " + status + "（允许 ON_SALE|IN_RD|INACTIVE|ACTIVE）");
         }
         Product product = require(productId);
+        assertSameGroup(actorRole, actorGroupId, product.getGroupId(), "操作人");
         product.setStatus(status);
         productMapper.updateById(product);
         audit(productId, product.getProductName(), operatorId, "PRODUCT_STATUS_" + status);
@@ -209,14 +219,19 @@ public class ProductService {
      * 关联项目到已有产品（产品:项目 = 1:1，两端同事务维护）。
      * <p>AC-PROD-01：已挂项目的产品再关联第二个项目 ⇒ 拒绝「一个产品仅对应一个项目」。
      * <p>GUEST_OTHER 占位不可绑定；软删项目/产品拒绝；同 id 重绑幂等成功不写二次审计。
+     * <p>R8X-CONT-1 P0-2：加 actor.groupId == product.groupId 横向越权防护（SUPER_ADMIN 豁免）。
      *
-     * @param productId  产品 ID
-     * @param projectId  目标项目 ID
-     * @param operatorId 操作人
+     * @param productId    产品 ID
+     * @param projectId    目标项目 ID
+     * @param operatorId   操作人 ID
+     * @param actorGroupId 操作人所属产品组
+     * @param actorRole    操作人角色
      */
     @Transactional(rollbackFor = Exception.class)
-    public void bindProject(Long productId, Long projectId, Long operatorId) {
+    public void bindProject(Long productId, Long projectId, Long operatorId,
+                            Long actorGroupId, String actorRole) {
         Product product = require(productId);
+        assertSameGroup(actorRole, actorGroupId, product.getGroupId(), "操作人");
         if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
             throw new ServiceException("游客「其他」占位产品不可关联项目");
         }
@@ -287,6 +302,19 @@ public class ProductService {
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action(action).entityType("products").entityId(id).reason(name)
             .createTime(new Date()).build());
+    }
+
+    /**
+     * R8X-CONT-1 P0-2：横向越权防护——SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == product.groupId。
+     * 复用 ProjectService.assertSameGroup 语义，本类独享以避免 service 间循环依赖。
+     */
+    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
+        if ("SUPER_ADMIN".equals(actorRole)) {
+            return;
+        }
+        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
+            throw new ServiceException(roleLabel + "必须归属产品组（横向越权防护）");
+        }
     }
 
     private static boolean isBlank(String v) {

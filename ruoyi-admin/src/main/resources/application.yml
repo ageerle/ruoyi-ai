@@ -290,7 +290,9 @@ api-decrypt:
   # AES 加密头标识
   headerFlag: encrypt-key
   # 响应加密公钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
-  # 对应前端解密私钥 MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAmc3CuPiGL/LcIIm7zryCEIbl1SPzBkr75E2VMtxegyZ1lYRD+7TZGAPkvIsBcaMs6Nsy0L78n2qh+lIZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=
+  # 对应前端解密私钥（PEM 字面量已移除以避免 git 历史长期暴露——SEC-NEW-MED-4 Round 9）。
+  # 真值必须通过 ${API_DECRYPT_PRIVATE_KEY} 环境变量注入（见下方 privateKey 行）；
+  # 留空时即便 enabled=true 也会因空私钥启动失败（fail-fast 语义）。
   publicKey: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJnNwrj4hi/y3CCJu868ghCG5dUj8wZK++RNlTLcXoMmdZWEQ/u02RgD5LyLAXGjLOjbMtC+/J9qofpSGTKSx/MCAwEAAQ==
   # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
   # 对应前端加密公钥 通过环境变量 API_DECRYPT_PRIVATE_KEY 注入；留空时即便 enabled=true 也会因空私钥启动失败

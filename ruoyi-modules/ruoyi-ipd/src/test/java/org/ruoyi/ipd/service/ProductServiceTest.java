@@ -47,6 +47,7 @@ class ProductServiceTest {
         p.setSource(source);
         p.setModelCode(modelCode);
         p.setProjectId(projectId);
+        p.setGroupId(1L);
         return p;
     }
 
@@ -101,7 +102,7 @@ class ProductServiceTest {
         project.setDelFlag("0");
         when(projectMapper.selectById(9L)).thenReturn(project);
 
-        service.bindProject(3L, 9L, 1L);
+        service.bindProject(3L, 9L, 1L, 1L, "MARKET_PM");
         assertThat(p.getProjectId()).isEqualTo(9L);
         assertThat(project.getProductId()).isEqualTo(3L);
     }
@@ -115,9 +116,9 @@ class ProductServiceTest {
         p.setDelFlag("0");
         when(productMapper.selectById(3L)).thenReturn(p);
 
-        assertThatThrownBy(() -> service.changeStatus(3L, "DELETED", 1L))
+        assertThatThrownBy(() -> service.changeStatus(3L, "DELETED", 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class).hasMessageContaining("状态非法");
-        service.changeStatus(3L, "INACTIVE", 1L);
+        service.changeStatus(3L, "INACTIVE", 1L, 1L, "MARKET_PM");
         assertThat(p.getStatus()).isEqualTo("INACTIVE");
     }
 }

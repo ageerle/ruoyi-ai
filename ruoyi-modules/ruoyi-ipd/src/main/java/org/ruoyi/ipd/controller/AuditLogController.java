@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.dto.AuditChainVerifyResult;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.security.IpdActor;
@@ -67,15 +68,26 @@ public class AuditLogController {
             new LambdaQueryWrapper<AuditLog>().orderByDesc(AuditLog::getSeq)));
     }
 
-    /** 全链验签：返回断裂 seq 列表（空=链完整） */
+    /**
+     * 全链验签（DEF-9 / 设计稿 G5）：分列报告「哈希断裂」与「seq 空洞」，四态诊断。
+     * <p>{@code broken} 为兼容出口（= 两类合并去重升序，语义与分列改造前逐字一致，
+     * P0-9.1 验收脚本与既有消费者据此无需改）；{@code chain} 由二值升为四态：
+     * {@code OK} / {@code HASH_BROKEN}（curr/prev 哈希不符，可 rebuildChain 修复）/
+     * {@code GAP}（seq 缺行，rebuild 治不了，须补行或改判据）/ {@code BROKEN}（两类并存）。
+     * <p>硬门不放宽：只要存在 GAP 或哈希断裂，{@code chain} 即非 {@code OK}，
+     * 断言 {@code chain==OK} 的验收脚本仍会 FAIL——分列只是让 FAIL 可归因。
+     */
     @SaCheckPermission(value = "ipd:audit-log:verify", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/verify")
     public ApiV1Response<Map<String, Object>> verify() {
         ipdPermission.requireAdmin();
-        List<Long> broken = auditLogService.verifyChain();
+        AuditChainVerifyResult result = auditLogService.verifyChainDetailed();
         return ApiV1Response.ok(Map.of(
-            "broken", broken,
-            "chain", broken.isEmpty() ? "OK" : "BROKEN",
+            "broken", result.mergedBroken(),
+            "hashBroken", result.hashBroken(),
+            "gaps", result.gaps(),
+            "chain", result.verdict(),
+            "total", result.total(),
             "genesis", AuditHashChain.GENESIS));
     }
 

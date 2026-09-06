@@ -65,6 +65,7 @@ class P111AcceptanceTest {
         p.setSource(source);
         p.setProjectId(projectId);
         p.setDelFlag("0");
+        p.setGroupId(1L);
         return p;
     }
 
@@ -102,7 +103,7 @@ class P111AcceptanceTest {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
         when(productMapper.selectById(3L)).thenReturn(product);
 
-        assertThatThrownBy(() -> productService.bindProject(3L, 99L, 1L))
+        assertThatThrownBy(() -> productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("一个产品仅对应一个项目");
         verify(productMapper, never()).updateById(any(Product.class));
@@ -139,7 +140,7 @@ class P111AcceptanceTest {
         when(productMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         when(projectMapper.selectById(9L)).thenReturn(project);
 
-        productService.bindProject(3L, 9L, 1L);
+        productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM");
 
         assertThat(product.getProjectId()).isEqualTo(9L);
         assertThat(project.getProductId()).isEqualTo(3L);
@@ -154,7 +155,7 @@ class P111AcceptanceTest {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
         when(productMapper.selectById(3L)).thenReturn(product);
 
-        productService.bindProject(3L, 9L, 1L);
+        productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM");
 
         verify(productMapper, never()).updateById(any(Product.class));
         verify(auditLogService, never()).append(any());
@@ -166,7 +167,7 @@ class P111AcceptanceTest {
         Product product = aliveProduct(3L, Product.SRC_GUEST_OTHER, null);
         when(productMapper.selectById(3L)).thenReturn(product);
 
-        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L))
+        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("其他");
     }
@@ -179,14 +180,14 @@ class P111AcceptanceTest {
         Project deleted = aliveProject(9L, null);
         deleted.setDelFlag("1");
         when(projectMapper.selectById(9L)).thenReturn(deleted);
-        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L))
+        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("项目不存在");
 
         Product softProduct = aliveProduct(4L, Product.SRC_PM_NEW, null);
         softProduct.setDelFlag("1");
         when(productMapper.selectById(4L)).thenReturn(softProduct);
-        assertThatThrownBy(() -> productService.bindProject(4L, 10L, 1L))
+        assertThatThrownBy(() -> productService.bindProject(4L, 10L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("产品不存在");
     }
@@ -199,7 +200,7 @@ class P111AcceptanceTest {
         when(productMapper.selectById(3L)).thenReturn(product);
         when(projectMapper.selectById(9L)).thenReturn(project);
 
-        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L))
+        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("1:1");
     }
@@ -209,7 +210,7 @@ class P111AcceptanceTest {
     void noMultiProjectPoolAllocation() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
         when(productMapper.selectById(3L)).thenReturn(product);
-        assertThatThrownBy(() -> productService.bindProject(3L, 99L, 1L))
+        assertThatThrownBy(() -> productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("一个产品仅对应一个项目")
             .satisfies(t -> assertThat(t.getMessage()).doesNotContain("分摊").doesNotContain("池"));

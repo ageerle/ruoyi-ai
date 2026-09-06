@@ -26,7 +26,7 @@ class TenantExcludesConsistencyTest {
     private static final Path SQL_DIR = REPO_ROOT.resolve("docs/script/sql/update");
 
     private static final Pattern CREATE_TABLE_PAT = Pattern.compile(
-        "CREATE TABLE\s+(?:IF NOT EXISTS\s+)?[`']?([a-z_]+)[`']?\s*\(",
+        "CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?[`']?([a-z_]+)[`']?\\s*\\(",
         Pattern.CASE_INSENSITIVE);
     private static final Pattern EXCLUDE_ITEM_PAT = Pattern.compile("^\s*-\s+([a-z_]+)\s*$");
 

@@ -93,13 +93,13 @@ class P112AcceptanceTest {
     @DisplayName("编辑产品名称成功；禁止改来源")
     void updateAllowsNameRejectsSourceChange() {
         Product existing = Product.builder().id(5L).productName("旧").source(Product.SRC_PM_NEW)
-            .status(Product.ST_IN_RD).delFlag("0").build();
+            .status(Product.ST_IN_RD).delFlag("0").groupId(1L).build();
         when(productMapper.selectById(5L)).thenReturn(existing);
         when(productMapper.updateById(any(Product.class))).thenReturn(1);
-        Product updated = service.update(5L, Product.builder().productName("新名").build(), 1L);
+        Product updated = service.update(5L, Product.builder().productName("新名").build(), 1L, 1L, "MARKET_PM");
         assertThat(updated.getProductName()).isEqualTo("新名");
         assertThatThrownBy(() -> service.update(5L,
-            Product.builder().source(Product.SRC_ADMIN_IMPORT).build(), 1L))
+            Product.builder().source(Product.SRC_ADMIN_IMPORT).build(), 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("来源");
     }

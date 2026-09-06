@@ -1706,3 +1706,26 @@ O1 双 `@RestControllerAdvice` 同 `basePackages`、三型异常重叠且无 `@O
 
 ### 台账与验证
 全文判据/回滚脚本：`docs/ipd-系统说明/治理轮/全局废弃冗余清理-2026-09-05.md`。验证（错峰 + 单模块 + 无 `-am` 无 `clean`）：`mvn -o -pl ruoyi-modules/ruoyi-aiflow test-compile` rc=0（19:40:50→19:40:54）、`-pl ruoyi-modules/ruoyi-ipd test-compile` rc=0（19:40:58→19:41:08）；`git submodule status` rc=0；rename 均为 0 内容变更；兄弟 2 个 ` D` 文件保持原状未还原。**未跑测试与真库/HTTP 探针**：改动不触达可执行路径；若需“清理后全量绿”，请待 quiet 窗自行跑并核对 surefire `tests run>0 && skipped=0`。
+
+## 2026-09-05（第十一轮：AUD-GOV-01 R8m 兄弟ProductController在途修复）
+
+### 触发
+R8 clean compile 暴露兄弟重构链式断层。
+
+### R8 编译错误谱（3 类）
+1. **P122AcceptanceTest**（R8 已修 ✓）：propose/secondDecision 缺第6参数 → 兄弟 dirty 已补，本会话修了3处
+2. **P032HttpAcceptanceTest**（缓存干扰）：IpdPermissionExceptionHandler 未解析 → clean 后消失 ✓
+3. **ProductController.java**（生产代码）：update/bindProject/changeStatus 调用缺 groupId/role
+
+### 兄弟修复状态（dirty 未 commit）
+- git diff HEAD ProductController.java 显示 3 处调用已更新
+- `update(id, patch, actor.id())` → `update(id, patch, actor.id(), actor.groupId(), actor.role())`
+- `bindProject(id, pid, actor.id())` → `bindProject(id, pid, actor.id(), actor.groupId(), actor.role())`
+- `changeStatus(id, status, actor.id())` → `changeStatus(id, status, actor.id(), actor.groupId(), actor.role())`
+
+### 治理价值
+兄弟重构 ProductService（加 audit 三字段）→ ProductController 在途同步修复。
+本会话作为第二方监督：clean compile 暴露了兄弟未 commit 的修复工作。
+
+### 下一刀
+等兄弟 commit ProductController + 其他 dirty 文件后，错峰重跑全模块回归验证 100% 绿。
