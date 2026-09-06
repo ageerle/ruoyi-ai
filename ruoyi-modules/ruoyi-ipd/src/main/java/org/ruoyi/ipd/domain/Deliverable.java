@@ -29,6 +29,8 @@ public class Deliverable extends BaseEntity implements SoftDeletable {
     private Long uploadedBy;
     private Date uploadedAt;
     /** 软删除标志（0正常 1已删；P1-4.3 已删附件不计 DONE 计数；删除走两级审核，禁物理 DELETE） */
+    @TableLogic
+    @TableField("del_flag")
     private String delFlag;
 
     /** 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter，以满足 SoftDeletable.setDelFlag(void) 接口签名。 */

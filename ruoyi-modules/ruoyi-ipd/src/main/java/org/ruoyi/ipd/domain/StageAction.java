@@ -48,6 +48,13 @@ public class StageAction extends BaseEntity {
     /** 备注（存量替代佐证等） */
     private String remark;
 
+    /**
+     * 软删除标志（0正常 1已删）—— 补 entity 与 DDL 不一致（[SEC-FIX] 2026-09-06）。
+     */
+    @TableLogic
+    @TableField("del_flag")
+    private String delFlag;
+
     /** MyBatis-Plus 乐观锁：transit() 并发由 OptimisticLockerInnerInterceptor 拦截；DDL 见 2026-09-05-ipd-p143-optimistic-lock.sql。 */
     @Version
     @TableField(value = "version", insertStrategy = FieldStrategy.NOT_NULL)
