@@ -18,22 +18,19 @@
     "tables_in_ddl": 29,
     "entities": 29,
     "matched": 28,
-    "errors": 8,
-    "warns": 59,
-    "columns_total": 517
+    "errors": 2,
+    "warns": 65,
+    "columns_total": 526
   },
   "matrix": [
     {
       "table": "ai_documents",
       "entity": "AiDocument",
-      "ddl_columns": 19,
+      "ddl_columns": 21,
       "entity_columns": 19,
-      "type_ok": 17,
+      "type_ok": 19,
       "type_mismatch": 0,
-      "entity_only": [
-        "reviewed_at",
-        "reviewed_by"
-      ],
+      "entity_only": [],
       "ddl_only": [
         "remark",
         "tenant_id"
@@ -42,13 +39,11 @@
     {
       "table": "allowance_ledgers",
       "entity": "AllowanceLedger",
-      "ddl_columns": 17,
+      "ddl_columns": 18,
       "entity_columns": 16,
-      "type_ok": 15,
+      "type_ok": 16,
       "type_mismatch": 0,
-      "entity_only": [
-        "stop_start_date"
-      ],
+      "entity_only": [],
       "ddl_only": [
         "remark",
         "tenant_id"
@@ -57,12 +52,14 @@
     {
       "table": "audit_logs",
       "entity": "AuditLog",
-      "ddl_columns": 16,
+      "ddl_columns": 17,
       "entity_columns": 16,
       "type_ok": 16,
       "type_mismatch": 0,
       "entity_only": [],
-      "ddl_only": []
+      "ddl_only": [
+        "hash_version"
+      ]
     },
     {
       "table": "bid_invitations",
@@ -93,14 +90,11 @@
     {
       "table": "bonus_pools",
       "entity": "BonusPool",
-      "ddl_columns": 19,
+      "ddl_columns": 21,
       "entity_columns": 19,
-      "type_ok": 17,
+      "type_ok": 19,
       "type_mismatch": 0,
-      "entity_only": [
-        "calculated_at",
-        "distributed_at"
-      ],
+      "entity_only": [],
       "ddl_only": [
         "remark",
         "tenant_id"
@@ -207,13 +201,11 @@
     {
       "table": "kpi_records",
       "entity": "KpiRecord",
-      "ddl_columns": 19,
+      "ddl_columns": 20,
       "entity_columns": 18,
-      "type_ok": 17,
+      "type_ok": 18,
       "type_mismatch": 0,
-      "entity_only": [
-        "scored_at"
-      ],
+      "entity_only": [],
       "ddl_only": [
         "remark",
         "tenant_id"
@@ -365,12 +357,15 @@
     {
       "table": "system_configs",
       "entity": "SystemConfig",
-      "ddl_columns": 14,
+      "ddl_columns": 16,
       "entity_columns": 14,
       "type_ok": 14,
       "type_mismatch": 0,
       "entity_only": [],
-      "ddl_only": []
+      "ddl_only": [
+        "source_ref",
+        "validation_rule"
+      ]
     }
   ],
   "issues": {
@@ -387,54 +382,6 @@
         "entity": "ReceiptLedger",
         "table": "receipt_ledger",
         "detail": "实体声明的表不在仓库 DDL 中"
-      },
-      {
-        "level": "ERROR",
-        "code": "COLUMN_NOT_IN_DDL",
-        "table": "ai_documents",
-        "entity": "AiDocument",
-        "column": "reviewed_by",
-        "detail": "实体字段 Long(reviewed_by) 在 DDL 无对应列（insert/update 将失败）"
-      },
-      {
-        "level": "ERROR",
-        "code": "COLUMN_NOT_IN_DDL",
-        "table": "ai_documents",
-        "entity": "AiDocument",
-        "column": "reviewed_at",
-        "detail": "实体字段 Date(reviewed_at) 在 DDL 无对应列（insert/update 将失败）"
-      },
-      {
-        "level": "ERROR",
-        "code": "COLUMN_NOT_IN_DDL",
-        "table": "allowance_ledgers",
-        "entity": "AllowanceLedger",
-        "column": "stop_start_date",
-        "detail": "实体字段 Date(stop_start_date) 在 DDL 无对应列（insert/update 将失败）"
-      },
-      {
-        "level": "ERROR",
-        "code": "COLUMN_NOT_IN_DDL",
-        "table": "bonus_pools",
-        "entity": "BonusPool",
-        "column": "calculated_at",
-        "detail": "实体字段 Date(calculated_at) 在 DDL 无对应列（insert/update 将失败）"
-      },
-      {
-        "level": "ERROR",
-        "code": "COLUMN_NOT_IN_DDL",
-        "table": "bonus_pools",
-        "entity": "BonusPool",
-        "column": "distributed_at",
-        "detail": "实体字段 Date(distributed_at) 在 DDL 无对应列（insert/update 将失败）"
-      },
-      {
-        "level": "ERROR",
-        "code": "COLUMN_NOT_IN_DDL",
-        "table": "kpi_records",
-        "entity": "KpiRecord",
-        "column": "scored_at",
-        "detail": "实体字段 Date(scored_at) 在 DDL 无对应列（insert/update 将失败）"
       }
     ],
     "warnings": [
@@ -483,6 +430,14 @@
         "table": "allowance_ledgers",
         "entity": "AllowanceLedger",
         "detail": "tenant_id DDL存在=True 实体存在=False（无运行时影响，设计分歧）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "audit_logs",
+        "entity": "AuditLog",
+        "column": "hash_version",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
       },
       {
         "level": "WARN",
@@ -870,24 +825,61 @@
       },
       {
         "level": "WARN",
-        "code": "LIVE_DRIFT_COLUMN",
-        "table": "audit_logs",
-        "column": "hash_version",
-        "detail": "ipd_dev 有、仓库 DDL 无"
-      },
-      {
-        "level": "WARN",
-        "code": "LIVE_DRIFT_COLUMN",
+        "code": "DDL_COLUMN_UNMAPPED",
         "table": "system_configs",
+        "entity": "SystemConfig",
         "column": "source_ref",
-        "detail": "ipd_dev 有、仓库 DDL 无"
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
+      },
+      {
+        "level": "WARN",
+        "code": "DDL_COLUMN_UNMAPPED",
+        "table": "system_configs",
+        "entity": "SystemConfig",
+        "column": "validation_rule",
+        "detail": "DDL 列未被实体映射（应用不可读写，info 级）"
       },
       {
         "level": "WARN",
         "code": "LIVE_DRIFT_COLUMN",
-        "table": "system_configs",
-        "column": "validation_rule",
-        "detail": "ipd_dev 有、仓库 DDL 无"
+        "table": "ai_documents",
+        "column": "reviewed_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "ai_documents",
+        "column": "reviewed_by",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "allowance_ledgers",
+        "column": "stop_start_date",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "bonus_pools",
+        "column": "calculated_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "bonus_pools",
+        "column": "distributed_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "level": "WARN",
+        "code": "LIVE_DRIFT_COLUMN",
+        "table": "kpi_records",
+        "column": "scored_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
       }
     ]
   },
@@ -896,19 +888,34 @@
     "tables_only_in_live": [],
     "columns": [
       {
-        "table": "audit_logs",
-        "column": "hash_version",
-        "detail": "ipd_dev 有、仓库 DDL 无"
+        "table": "ai_documents",
+        "column": "reviewed_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
       },
       {
-        "table": "system_configs",
-        "column": "source_ref",
-        "detail": "ipd_dev 有、仓库 DDL 无"
+        "table": "ai_documents",
+        "column": "reviewed_by",
+        "detail": "仓库 DDL 有、ipd_dev 无"
       },
       {
-        "table": "system_configs",
-        "column": "validation_rule",
-        "detail": "ipd_dev 有、仓库 DDL 无"
+        "table": "allowance_ledgers",
+        "column": "stop_start_date",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "table": "bonus_pools",
+        "column": "calculated_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "table": "bonus_pools",
+        "column": "distributed_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
+      },
+      {
+        "table": "kpi_records",
+        "column": "scored_at",
+        "detail": "仓库 DDL 有、ipd_dev 无"
       }
     ],
     "unique_keys": []

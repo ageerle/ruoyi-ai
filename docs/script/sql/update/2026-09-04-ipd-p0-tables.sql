@@ -4,6 +4,9 @@
 --       + docs/开发说明/开发说明书.md §6（公共字段 §6.3）
 -- 适配：docs/ipd-系统说明/type-mapping.md（PG→MySQL：BIGINT 雪花主键 /
 --       DATETIME 存 UTC / DECIMAL 金额禁 float / CHAR(1) 布尔 / JSON 数组）
+-- 回写：2026-09-05 QA-04-D2——6 幻影列（ai_documents/allowance_ledgers/bonus_pools/kpi_records）
+--       + 3 线上漂移列（audit_logs.hash_version、system_configs.source_ref/validation_rule），
+--       增量迁移见同目录 2026-09-05-ipd-qa04d2-*.sql
 -- 租户：单企业私有部署，全表带 tenant_id 默认 '000000'，统一登记 tenant.excludes
 -- 日期：2026-09-04
 -- =====================================================================
@@ -499,6 +502,7 @@ create table audit_logs
     ip_address    varchar(64) null,
     tenant_id     varchar(20) null default '000000',
     create_time   datetime    null default CURRENT_TIMESTAMP comment '创建时间（唯一时间字段，只追加）',
+    hash_version  int         null     comment 'NULL=legacy-v1,2=canonical-json-v2（QA-04-D2 回写线上形态）',
     primary key (id),
     unique key uk_audit_seq (seq)
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 审计日志（只追加+SHA256 hash 链，AC-AUD-01）';
@@ -516,6 +520,7 @@ create table kpi_records
     comprehensive_score decimal(5,2)  null     comment '综合得分（kpi.functionalWeight=0.6/0.4）',
     segment             varchar(16)   null     comment '在研分段',
     scored_by           bigint        null,
+    scored_at           datetime      null     comment '评分日期（QA-04-D2 补列）',
     status              varchar(16)   not null default 'DRAFT',
     create_dept         bigint null, create_by bigint null,
     create_time         datetime null default CURRENT_TIMESTAMP,
@@ -539,6 +544,7 @@ create table allowance_ledgers
     final_amount   decimal(10,2) not null comment '终额（多项目叠加、2 倍封顶 capMultiplier）',
     cap_applied    char(1)       not null default '0' comment '是否触发封顶',
     stop_reason    varchar(255)  null     comment '停发原因（<60 分/无产出 noOutput.days=60）',
+    stop_start_date datetime     null     comment '停发开始日期（QA-04-D2 补列）',
     create_dept    bigint null, create_by bigint null,
     create_time    datetime null default CURRENT_TIMESTAMP,
     update_by      bigint null, update_time datetime null default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
@@ -563,6 +569,8 @@ create table bonus_pools
     final_pool        decimal(18,2) null     comment '最终奖金池',
     distributions     json          null     comment '个人分配结果（五维贡献+绩效系数）',
     status            varchar(16)   not null default 'DRAFT' comment 'DRAFT|CONFIRMED|DISTRIBUTED',
+    calculated_at     datetime      null     comment '计算完成时间（QA-04-D2 补列）',
+    distributed_at    datetime      null     comment '发放时间（QA-04-D2 补列）',
     create_dept       bigint null, create_by bigint null,
     create_time       datetime null default CURRENT_TIMESTAMP,
     update_by         bigint null, update_time datetime null default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
@@ -587,6 +595,8 @@ create table ai_documents
     status            varchar(16)  not null default 'GENERATED' comment 'GENERATED|REVIEWED|ARCHIVED（未审核不可归档）',
     parent_version_id bigint       null     comment '版本链父文档',
     version_no        int          not null default 1,
+    reviewed_by       bigint       null     comment '审核人ID（QA-04-D2 补列）',
+    reviewed_at       datetime     null     comment '审核时间（QA-04-D2 补列）',
     create_dept       bigint null, create_by bigint null,
     create_time       datetime null default CURRENT_TIMESTAMP,
     update_by         bigint null, update_time datetime null default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
@@ -612,6 +622,8 @@ create table system_configs
     tenant_id     varchar(20) null default '000000',
     del_flag      char(1) null default '0',
     remark        varchar(500) null,
+    validation_rule json      null     comment '校验规则（QA-04-D2 回写线上形态）',
+    source_ref    varchar(1024) null    comment '来源引用（QA-04-D2 回写线上形态）',
     primary key (id),
     unique key uk_sc_key (config_key)
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 系统参数（6 项涉钱参数等全部可配置 G-05）';
