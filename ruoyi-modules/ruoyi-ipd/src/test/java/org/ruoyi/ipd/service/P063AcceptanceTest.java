@@ -33,6 +33,11 @@ import static org.mockito.Mockito.when;
  *   - AC-DEL-07：组长审核超期（F29：组长 2 工作日 / 超管 2 工作日）→ 自动升级
  *   - 撤回/升级幂等 + 守卫
  *
+ * HIGH-4 键名校正（Round 9）：line 65/66 setUp() 中 mock 键名原为 deletion.leader.deadlineDays /
+ * deletion.admin.deadlineDays（点分），与生产 DeletionRequestService.java:166/170 的驼峰键名
+ * deletion.leaderDeadlineDays / deletion.adminDeadlineDays 不一致，导致 mock lenient() 拦截
+ * 不到真实键名但因 default fallback 2 不报错，测试假绿。已修正为驼峰键名。
+ *
  * 单测风格（纯 Mockito 隔离 DB），HTTP 真库闭环在 round 9 真跑。
  */
 @Tag("dev")
@@ -62,8 +67,9 @@ class P063AcceptanceTest {
     void setUp() {
         deletionRequestService = new DeletionRequestService(deletionRequestMapper, systemConfigService, auditLogService, deleteAuditService);
         lenient().when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
-        lenient().when(systemConfigService.getIntValue("deletion.leader.deadlineDays", 2)).thenReturn(2);
-        lenient().when(systemConfigService.getIntValue("deletion.admin.deadlineDays", 2)).thenReturn(2);
+        // HIGH-4: 驼峰键名必须与生产 DeletionRequestService.java:166/170 一致
+        lenient().when(systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2)).thenReturn(2);
+        lenient().when(systemConfigService.getIntValue("deletion.adminDeadlineDays", 2)).thenReturn(2);
     }
 
     @Test
@@ -151,6 +157,36 @@ class P063AcceptanceTest {
         List<DeletionRequest> result = deletionRequestService.listOverdueAdminReview();
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getId()).isEqualTo(301L);
+    }
+
+    /**
+     * HIGH-4 防漂移反向用例：直接读生产源码 DeletionRequestService.java，验证 setUp() 中 mock 用的键名
+     * 与生产 getIntValue() 调用键名一致（驼峰 deletion.leaderDeadlineDays / deletion.adminDeadlineDays）。
+     * <p>历史教训：原 mock 键名是点分 deletion.leader.deadlineDays，与生产驼峰不一致，但因 lenient().when()
+     * 的 default fallback 2 不报错，导致 6 个用例假绿。本用例用静态 grep 锁死键名一致性，未来生产键名变更时
+     * 本测试会失败提醒同步 mock 键名（避免再次漂移）。
+     */
+    @Test
+    @DisplayName("HIGH-4 防漂移：mock 键名必须与生产 DeletionRequestService.getIntValue 调用键名一致（驼峰）")
+    void mockKeyNamesMatchProductionSource() throws Exception {
+        java.nio.file.Path prodSrc = java.nio.file.Paths.get(
+            "src/main/java/org/ruoyi/ipd/service/DeletionRequestService.java");
+        assertThat(java.nio.file.Files.exists(prodSrc))
+            .as("生产源码存在: " + prodSrc.toAbsolutePath()).isTrue();
+        String content = java.nio.file.Files.readString(prodSrc);
+        // 验证生产用驼峰键名
+        assertThat(content).contains("getIntValue(\"deletion.leaderDeadlineDays\"");
+        assertThat(content).contains("getIntValue(\"deletion.adminDeadlineDays\"");
+        // 验证生产源码没有点分键名（防止历史 bug 回流）
+        assertThat(content).doesNotContain("deletion.leader.deadlineDays");
+        assertThat(content).doesNotContain("deletion.admin.deadlineDays");
+        // 验证 mock setUp 中已用驼峰键名（不再用点分）
+        assertThat(content).isNotNull(); // 占位避免 import 警告
+        // 本测试类自身不引用点分键名（防漂移门）
+        String testContent = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/test/java/org/ruoyi/ipd/service/P063AcceptanceTest.java")));
+        assertThat(testContent).doesNotContain("deletion.leader.deadlineDays");
+        assertThat(testContent).doesNotContain("deletion.admin.deadlineDays");
     }
 
     private DeletionRequest sampleReq(Long id, Long requesterId, String status) {
