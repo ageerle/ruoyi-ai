@@ -147,7 +147,9 @@ sa-token:
   # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
   is-share: false
   # jwt秘钥
-  jwt-secret-key: abcdefghijklmnopqrstuvwxyz
+  # 注意：dev profile 使用 26 字母占位符仅供本地启动；所有非 local 环境必须通过 SA_TOKEN_JWT_SECRET_KEY 环境变量注入
+  # application-prod.yml 已强制占位符 ${SA_TOKEN_JWT_SECRET_KEY:}（无默认值），启动时未注入即失败
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:abcdefghijklmnopqrstuvwxyz}
 
 # security配置
 security:
@@ -184,7 +186,8 @@ tenant:
     # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
     - trace_run
     - trace_node
-    # IPD 单企业私有部署：26 张业务表统一排除租户过滤（表结构带 tenant_id 默认 000000，无多租户语义）
+    # IPD 单企业私有部署：26+2 张业务表统一排除租户过滤（表结构带 tenant_id 默认 000000，无多租户语义）
+    # 26 张基线表 + 2 张 Round 8 新增表（launch_date_change_requests / project_cert_items）
     - persons
     - product_groups
     - products
@@ -211,6 +214,9 @@ tenant:
     - bonus_pools
     - ai_documents
     - system_configs
+    # Round 8 新增（与上方基线表统一排除租户过滤）
+    - launch_date_change_requests
+    - project_cert_items
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
@@ -254,8 +260,8 @@ api-decrypt:
   # 对应前端解密私钥 MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAmc3CuPiGL/LcIIm7zryCEIbl1SPzBkr75E2VMtxegyZ1lYRD+7TZGAPkvIsBcaMs6Nsy0L78n2qh+lIZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=
   publicKey: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJnNwrj4hi/y3CCJu868ghCG5dUj8wZK++RNlTLcXoMmdZWEQ/u02RgD5LyLAXGjLOjbMtC+/J9qofpSGTKSx/MCAwEAAQ==
   # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
-  # 对应前端加密公钥 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ==
-  privateKey: MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAqhHyZfSsYourNxaY7Nt+PrgrxkiA50efORdI5U5lsW79MmFnusUA355oaSXcLhu5xxB38SMSyP2KvuKNPuH3owIDAQABAkAfoiLyL+Z4lf4Myxk6xUDgLaWGximj20CUf+5BKKnlrK+Ed8gAkM0HqoTt2UZwA5E2MzS4EI2gjfQhz5X28uqxAiEA3wNFxfrCZlSZHb0gn2zDpWowcSxQAgiCstxGUoOqlW8CIQDDOerGKH5OmCJ4Z21v+F25WaHYPxCFMvwxpcw99EcvDQIgIdhDTIqD2jfYjPTY8Jj3EDGPbH2HHuffvflECt3Ek60CIQCFRlCkHpi7hthhYhovyloRYsM+IS9h/0BzlEAuO0ktMQIgSPT3aFAgJYwKpqRYKlLDVcflZFCKY7u3UP8iWi1Qw0Y=
+  # 对应前端加密公钥 通过环境变量 API_DECRYPT_PRIVATE_KEY 注入；留空时即便 enabled=true 也会因空私钥启动失败
+  privateKey: ${API_DECRYPT_PRIVATE_KEY:}
 
 springdoc:
   api-docs:
@@ -358,6 +364,8 @@ demo:
     - /system/attach/**
     - /system/fragment/**
     - /system/info/**
+    # IPD 独立认证体系（与 security.excludes 对齐）：默认 dev profile 演示模式放行 IPD 写操作
+    - /api/v1/**
 --- # warm-flow工作流配置
 warm-flow:
   # 是否开启工作流，默认true
