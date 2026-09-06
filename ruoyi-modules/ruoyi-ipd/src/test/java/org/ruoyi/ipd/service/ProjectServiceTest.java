@@ -165,7 +165,8 @@ class ProjectServiceTest {
         archived.setMainGroupId(1L);
         when(projectMapper.selectById(10L)).thenReturn(archived);
         assertThatThrownBy(() -> service.changeStatus(10L, "ACTIVE", 1L, 1L, "MARKET_PM"))
-            .isInstanceOf(ServiceException.class).hasMessageContaining("非法迁移");
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("已归档");  // ZK-IPD §二.10：归档只读 guard 优先于状态机迁移
     }
 
     @Test
@@ -191,5 +192,56 @@ class ProjectServiceTest {
         when(projectMapper.selectById(11L)).thenReturn(valid);
         assertThatThrownBy(() -> service.advanceStage(11L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class).hasMessageContaining("上市日期");
+    }
+
+    /* ----------------- ZK-IPD §二.10 归档后只读下沉到 service 层 ----------------- */
+
+    @Test
+    @DisplayName("ZK-IPD §二.10：归档项目 updateBaselines 拒绝（service 层下沉）")
+    void archivedProjectUpdateBaselinesRejected() {
+        Project archived = new Project();
+        archived.setId(20L);
+        archived.setName("archived-proj");
+        archived.setStatus("ARCHIVED");
+        archived.setDelFlag("0");
+        archived.setMainGroupId(1L);
+        archived.setTargetSalesAmount(new BigDecimal("100"));
+        archived.setTargetChannelCount(1);
+        archived.setTargetNps(50);
+        archived.setTargetSceneCount(1);
+        when(projectMapper.selectById(20L)).thenReturn(archived);
+        Project patch = new Project();
+        patch.setTargetSalesAmount(new BigDecimal("999999"));
+        assertThatThrownBy(() -> service.updateBaselines(20L, patch, 1L, 1L, "MARKET_PM"))
+            .isInstanceOf(ServiceException.class).hasMessageContaining("已归档");
+    }
+
+    @Test
+    @DisplayName("ZK-IPD §二.10：归档项目 advanceStage 拒绝（service 层下沉）")
+    void archivedProjectAdvanceStageRejected() {
+        Project archived = new Project();
+        archived.setId(21L);
+        archived.setName("archived-proj");
+        archived.setStatus("ARCHIVED");
+        archived.setDelFlag("0");
+        archived.setMainGroupId(1L);
+        archived.setCurrentStage("LIFECYCLE");
+        when(projectMapper.selectById(21L)).thenReturn(archived);
+        assertThatThrownBy(() -> service.advanceStage(21L, 1L, 1L, "MARKET_PM"))
+            .isInstanceOf(ServiceException.class).hasMessageContaining("已归档");
+    }
+
+    @Test
+    @DisplayName("ZK-IPD §二.10：归档项目可读 getById 不抛异常")
+    void archivedProjectReadable() {
+        Project archived = new Project();
+        archived.setId(22L);
+        archived.setName("archived");
+        archived.setStatus("ARCHIVED");
+        archived.setDelFlag("0");
+        archived.setMainGroupId(1L);
+        when(projectMapper.selectById(22L)).thenReturn(archived);
+        // getById 是只读，不应抛异常
+        assertThat(service.getById(22L).getStatus()).isEqualTo("ARCHIVED");
     }
 }

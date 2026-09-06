@@ -149,6 +149,7 @@ public class ProjectService {
     /**
      * 状态机迁移（非法迁移拒绝）；归档不可再迁出。
      * R8X-CONT-1 P0-1：加 actor.groupId == project.mainGroupId 横向越权防护（SUPER_ADMIN 豁免）。
+     * ZK-IPD §二.10：归档后只读下沉 service 层——归档状态禁一切编辑类状态变更。
      *
      * @param projectId    项目 ID
      * @param target       目标状态
@@ -161,6 +162,10 @@ public class ProjectService {
                                 Long actorGroupId, String actorRole) {
         Project project = require(projectId);
         assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        // ZK-IPD §二.10：归档后只读——禁所有迁出（即使变更到 SUSPENDED/ACTIVE 也拒）
+        if ("ARCHIVED".equals(project.getStatus()) && !"ARCHIVED".equals(target)) {
+            throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止迁出");
+        }
         Set<String> allowed = STATUS_TRANSITIONS.getOrDefault(project.getStatus(), Set.of());
         if (!allowed.contains(target)) {
             throw new ServiceException("状态机非法迁移: " + project.getStatus() + " → " + target);
@@ -188,6 +193,10 @@ public class ProjectService {
                                    Long actorGroupId, String actorRole) {
         Project project = require(projectId);
         assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        // ZK-IPD §二.10：归档后只读——禁四基准修改
+        if ("ARCHIVED".equals(project.getStatus())) {
+            throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止修改四基准");
+        }
         if (!"DRAFT".equals(project.getStatus())) {
             throw new ServiceException("四基准在立项后锁定，不可直接修改（P1-2.2）");
         }
@@ -229,6 +238,10 @@ public class ProjectService {
     public Project advanceStage(Long projectId, Long operatorId, Long actorGroupId, String actorRole) {
         Project project = require(projectId);
         assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        // ZK-IPD §二.10：归档后只读——禁阶段推进
+        if ("ARCHIVED".equals(project.getStatus())) {
+            throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止推进阶段");
+        }
         if ("SUSPENDED".equals(project.getStatus()) || "ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("暂停/归档项目禁止推进阶段");
         }

@@ -12,6 +12,7 @@ import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,10 @@ public class BidInvitationService {
         this(bidInvitationMapper, bidResponseMapper, auditLogService, null);
     }
 
+    /**
+     * Spring 装配入口：双构造器并存时必须显式标注，否则容器无法透型尝试无参构造
+     */
+    @Autowired
     public BidInvitationService(BidInvitationMapper bidInvitationMapper,
                                  BidResponseMapper bidResponseMapper,
                                  AuditLogService auditLogService,
@@ -121,13 +126,33 @@ public class BidInvitationService {
     /**
      * 过期扫描（定时任务，PERF-P0-2：单 SQL 条件 UPDATE，消除 N+1 selectCount 与恒等三元冗余）
      * AC-TEAM-08：招标到期无人应标 ⇒ 自动过期
+     * ZK-IPD §四.1.3：到期后通知市场 PM（createBy）重新发起
      */
     @Transactional(rollbackFor = Exception.class)
     public int expireOverdue() {
-        return bidInvitationMapper.update(null, new LambdaUpdateWrapper<BidInvitation>()
+        Date now = new Date();
+        // ZK-IPD §四.1.3：先 selectList 拿受影响行（id + createBy），update 完发通知
+        List<BidInvitation> overdue = bidInvitationMapper.selectList(
+            new LambdaQueryWrapper<BidInvitation>()
+                .eq(BidInvitation::getStatus, "OPEN")
+                .lt(BidInvitation::getExpireAt, now));
+        int affected = bidInvitationMapper.update(null, new LambdaUpdateWrapper<BidInvitation>()
             .set(BidInvitation::getStatus, "EXPIRED")
             .eq(BidInvitation::getStatus, "OPEN")
-            .lt(BidInvitation::getExpireAt, new Date()));
+            .lt(BidInvitation::getExpireAt, now));
+        if (affected > 0 && notificationService != null) {
+            for (BidInvitation inv : overdue) {
+                if (inv.getCreateBy() == null) continue;
+                notificationService.publish(inv.getCreateBy(),
+                    NotificationService.Types.BID_EXPIRED_NO_RESPONSE,
+                    NotificationService.KIND_ACTION,
+                    "bid_invitation", inv.getId(),
+                    "招标已到期",
+                    "招标单「" + inv.getTitle() + "」已到期且无应标，请考虑重新发起或调整条件（ZK-IPD §四.1.3）",
+                    "/bid-invitations/" + inv.getId());
+            }
+        }
+        return affected;
     }
 
     /**

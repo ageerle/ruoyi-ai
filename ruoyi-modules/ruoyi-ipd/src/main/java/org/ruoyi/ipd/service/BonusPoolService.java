@@ -6,6 +6,7 @@ import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +42,9 @@ public class BonusPoolService {
     }
 
     /**
-     * Spring 装配入口（双 Mapper 注入）。
+     * Spring 装配入口（双 Mapper 注入）；多构造器必须显式指定，否则上下文无法实例化。
      */
+    @Autowired
     public BonusPoolService(BonusPoolMapper bonusPoolMapper, ProjectMapper projectMapper) {
         this.bonusPoolMapper = bonusPoolMapper;
         this.projectMapper = projectMapper;
@@ -215,5 +217,78 @@ public class BonusPoolService {
             .calculatedAt(calculatedAt)
             .status("DRAFT")
             .build();
+    }
+
+    /* ----------------- ZK-IPD §三.2.4 奖金分配比例算法 ----------------- */
+
+    /** ZK-IPD §三.2.4：市场 PM 分配比例区间 [40%, 65%] */
+    public static final BigDecimal MARKET_SHARE_MIN = new BigDecimal("0.40");
+    public static final BigDecimal MARKET_SHARE_MAX = new BigDecimal("0.65");
+    /** ZK-IPD §三.2.4：研发 PM 分配比例区间 [35%, 60%] */
+    public static final BigDecimal RD_SHARE_MIN = new BigDecimal("0.35");
+    public static final BigDecimal RD_SHARE_MAX = new BigDecimal("0.60");
+    /** 比例精度容差：用于判定 market+rd 是否 = 1.0 */
+    private static final BigDecimal SUM_TOLERANCE = new BigDecimal("0.0001");
+
+    /**
+     * ZK-IPD §三.2.4：校验市场 PM / 研发 PM 分配比例
+     * <ul>
+     *   <li>市场 PM 占比 ∈ [40%, 65%]</li>
+     *   <li>研发 PM 占比 ∈ [35%, 60%]</li>
+     *   <li>市场 + 研发 = 100%（容差 0.0001）</li>
+     *   <li>上市 90 天复盘后由双 PM + 上级三方最终评定</li>
+     * </ul>
+     *
+     * @param marketShare 市场 PM 分配比例（0.40–0.65）
+     * @param rdShare     研发 PM 分配比例（0.35–0.60）
+     * @return {marketShare, rdShare, sum} 不可变映射
+     * @throws ServiceException 任一校验失败
+     */
+    public java.util.Map<String, BigDecimal> calculateDistribution(BigDecimal marketShare, BigDecimal rdShare) {
+        if (marketShare == null) {
+            throw new ServiceException("ZK-IPD §三.2.4：市场 PM 分配比例不能为空");
+        }
+        if (rdShare == null) {
+            throw new ServiceException("ZK-IPD §三.2.4：研发 PM 分配比例不能为空");
+        }
+        if (marketShare.compareTo(MARKET_SHARE_MIN) < 0 || marketShare.compareTo(MARKET_SHARE_MAX) > 0) {
+            throw new ServiceException("ZK-IPD §三.2.4：市场 PM 分配比例须在 40%-65% 之间，当前 "
+                + marketShare.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() + "%");
+        }
+        if (rdShare.compareTo(RD_SHARE_MIN) < 0 || rdShare.compareTo(RD_SHARE_MAX) > 0) {
+            throw new ServiceException("ZK-IPD §三.2.4：研发 PM 分配比例须在 35%-60% 之间，当前 "
+                + rdShare.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() + "%");
+        }
+        BigDecimal sum = marketShare.add(rdShare);
+        BigDecimal diff = sum.subtract(BigDecimal.ONE).abs();
+        if (diff.compareTo(SUM_TOLERANCE) > 0) {
+            throw new ServiceException("ZK-IPD §三.2.4：市场+研发分配比例总和须为 100%，当前 "
+                + sum.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() + "%");
+        }
+        java.util.Map<String, BigDecimal> result = new java.util.LinkedHashMap<>();
+        result.put("marketShare", marketShare);
+        result.put("rdShare", rdShare);
+        result.put("sum", sum);
+        return result;
+    }
+
+    /**
+     * ZK-IPD §三.2.4：按市场/研发分配比例把奖金池拆分到两位 PM
+     *
+     * @param pool        总奖金池
+     * @param marketShare 市场 PM 占比
+     * @param rdShare     研发 PM 占比
+     * @return {marketAmount, rdAmount} 不可变映射
+     */
+    public java.util.Map<String, BigDecimal> applyDistribution(BigDecimal pool, BigDecimal marketShare, BigDecimal rdShare) {
+        if (pool == null) {
+            throw new ServiceException("ZK-IPD §三.2.4：奖金池金额不能为空");
+        }
+        // 复用 calculateDistribution 区间 + 总和校验
+        calculateDistribution(marketShare, rdShare);
+        java.util.Map<String, BigDecimal> result = new java.util.LinkedHashMap<>();
+        result.put("marketAmount", pool.multiply(marketShare));
+        result.put("rdAmount", pool.multiply(rdShare));
+        return result;
     }
 }

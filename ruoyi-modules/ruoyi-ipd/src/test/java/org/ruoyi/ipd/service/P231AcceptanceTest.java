@@ -126,15 +126,18 @@ class P231AcceptanceTest {
     @Test
     @DisplayName("AC-TEAM-08 过期扫描：单 SQL 条件 UPDATE（PERF-P0-2：消除 N+1 selectCount 与逐行 updateById）")
     void expireOverdue_noResponse_statusExpired() {
+        // ZK-IPD §四.1.3：先 selectList 拿过期单，update 完发通知
+        when(bidInvitationMapper.selectList(any())).thenReturn(java.util.List.of());
         when(bidInvitationMapper.update(any(), any())).thenReturn(1);
 
         int count = bidInvitationService.expireOverdue();
 
         assertThat(count).isEqualTo(1);
         verify(bidInvitationMapper).update(any(), any());
-        // N+1 消除证据：过期扫描不再触碰应标表，也不再逐行 selectList/updateById
+        // N+1 消除证据：过期扫描不再触碰应标表（PERF-P0-2）
         verifyNoInteractions(bidResponseMapper);
-        verify(bidInvitationMapper, never()).selectList(any());
+        // ZK-IPD §四.1.3：selectList 调用一次拿受影响行 + createBy 用于通知
+        verify(bidInvitationMapper).selectList(any());
     }
 
     @Test

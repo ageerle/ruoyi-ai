@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -143,5 +144,74 @@ class BonusPoolZkFormulaTest {
         assertThat(pool.getProjectId()).isEqualTo(100L);
         // finalPool = 10000000 × 0.05 × 1.8 = 900000
         assertThat(pool.getFinalPool()).isEqualByComparingTo(new BigDecimal("900000"));
+    }
+
+    /* ----------------- ZK-IPD §三.2.4 奖金分配比例算法 ----------------- */
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("ZK-IPD §三.2.4：分配比例 50/50 在 [40-65]/[35-60] 区间内通过")
+    void distributionMarketRdWithinRange() {
+        java.math.BigDecimal market = new java.math.BigDecimal("0.50");
+        java.math.BigDecimal rd = new java.math.BigDecimal("0.50");
+        java.util.Map<String, java.math.BigDecimal> result = service.calculateDistribution(market, rd);
+        assertThat(result.get("marketShare")).isEqualByComparingTo("0.50");
+        assertThat(result.get("rdShare")).isEqualByComparingTo("0.50");
+        assertThat(result.get("sum")).isEqualByComparingTo("1.00");
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("ZK-IPD §三.2.4：分配比例 65/35 边界（市场上限/研发下限）通过")
+    void distributionBoundary65Market() {
+        java.util.Map<String, java.math.BigDecimal> result = service.calculateDistribution(
+            new java.math.BigDecimal("0.65"), new java.math.BigDecimal("0.35"));
+        assertThat(result.get("marketShare")).isEqualByComparingTo("0.65");
+        assertThat(result.get("rdShare")).isEqualByComparingTo("0.35");
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("ZK-IPD §三.2.4：分配比例 40/60 边界（市场下限/研发上限）通过")
+    void distributionBoundary40Market() {
+        java.util.Map<String, java.math.BigDecimal> result = service.calculateDistribution(
+            new java.math.BigDecimal("0.40"), new java.math.BigDecimal("0.60"));
+        assertThat(result.get("marketShare")).isEqualByComparingTo("0.40");
+        assertThat(result.get("rdShare")).isEqualByComparingTo("0.60");
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("ZK-IPD §三.2.4：分配比例超 65% 市场被拒（70/30 拒绝）")
+    void distributionMarketExceedsUpperBound() {
+        assertThatThrownBy(() -> service.calculateDistribution(
+                new java.math.BigDecimal("0.70"), new java.math.BigDecimal("0.30")))
+            .isInstanceOf(org.ruoyi.common.core.exception.ServiceException.class)
+            .hasMessageContaining("市场 PM 分配比例");
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("ZK-IPD §三.2.4：分配比例超 60% 研发被拒（50/70 拒绝）")
+    void distributionRdExceedsUpperBound() {
+        // 50% 在市场区间内，70% 触发研发上限拒
+        assertThatThrownBy(() -> service.calculateDistribution(
+                new java.math.BigDecimal("0.50"), new java.math.BigDecimal("0.70")))
+            .isInstanceOf(org.ruoyi.common.core.exception.ServiceException.class)
+            .hasMessageContaining("研发 PM 分配比例");
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("ZK-IPD §三.2.4：分配比例 market+rd ≠ 1.0 被拒（50/40 拒绝）")
+    void distributionSumNotOneRejected() {
+        assertThatThrownBy(() -> service.calculateDistribution(
+                new java.math.BigDecimal("0.50"), new java.math.BigDecimal("0.40")))
+            .isInstanceOf(org.ruoyi.common.core.exception.ServiceException.class)
+            .hasMessageContaining("总和");
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("ZK-IPD §三.2.4：applyDistribution 把 pool 拆给 market/rd，返回金额")
+    void applyDistributionSplitsPool() {
+        java.math.BigDecimal pool = new java.math.BigDecimal("1000000");
+        java.util.Map<String, java.math.BigDecimal> result = service.applyDistribution(
+            pool, new java.math.BigDecimal("0.50"), new java.math.BigDecimal("0.50"));
+        assertThat(result.get("marketAmount")).isEqualByComparingTo("500000");
+        assertThat(result.get("rdAmount")).isEqualByComparingTo("500000");
     }
 }
