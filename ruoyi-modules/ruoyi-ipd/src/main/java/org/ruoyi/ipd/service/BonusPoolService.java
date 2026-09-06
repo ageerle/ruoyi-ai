@@ -1,23 +1,31 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 奖金池服务（P3-4.2/4.3；AC-INC-16/17/18/19/20/21；BR-INC-04/05/06；ZK-IPD-2026-09-06-补）
+ * 奖金池服务（P3-4.2/4.3/4.4；AC-INC-16/17/18/19/20/21；BR-INC-04/05/06；ZK-IPD-2026-09-06-补）
  *
- * <p>核心规则（AC-INC-17/17b~17h + AC-INC-18~21 + ZK-IPD Prompt §三.2.1）：
+ * <p>核心规则（AC-INC-17/17b~17h + AC-INC-18~21 + ZK-IPD Prompt §三.2）：
  * <ul>
  *   <li>AC-INC-16：奖金池基数 = 目标销售额 × 5%（bonus.poolRate），不是实际/回款</li>
  *   <li>AC-INC-17~21：达成率阶梯系数，严格按 {@code 达成率 ≥ 阈值} 从高到低匹配；
@@ -26,6 +34,9 @@ import java.util.List;
  *   <li>AC-INC-20：达成率 60% 命中 0.3 档，触发复盘检讨提醒（reviewRequired=true）</li>
  *   <li>AC-INC-21：达成率 45% 命中 0 档，不发放；已发月度津贴不追回（独立规则）</li>
  *   <li><b>ZK-IPD §三.2.1</b>：奖金池 = 上市后连续 6 个月<b>实际回款</b>金额 × 5% × <b>项目 S/A/B 差异化系数</b>（coefficient，非 tierCoefficient）</li>
+ *   <li><b>ZK-IPD §三.2.5</b>：可叠加 销售达成率阶梯系数 + 个人绩效系数（4 因子全叠加）</li>
+ *   <li><b>ZK-IPD §三.2.4</b>：市场 PM 40-65% / 研发 PM 35-60%，上市 90 天复盘三方评定</li>
+ *   <li><b>P3-4.4</b>：状态机 DRAFT → CONFIRMED → DISTRIBUTED；HTTP 端点收口（compute / freeze / distribute / getById / listByProject）</li>
  * </ul>
  */
 @Service
@@ -393,5 +404,204 @@ public class BonusPoolService {
         result.put("marketAmount", pool.multiply(marketShare));
         result.put("rdAmount", pool.multiply(rdShare));
         return result;
+    }
+
+    /* ============================ P3-4.4 HTTP 端点收口 ============================ */
+    /* 公式段（§三.2.1/§三.2.4/§三.2.5）已在前半段闭环，本段只补"持久化 + 状态机 + 审计"
+       三个职责，零公式逻辑。状态机：DRAFT → CONFIRMED → DISTRIBUTED（终态）。 */
+
+    /** P3-4.4：奖金池状态机 */
+    public static final String STATUS_DRAFT = "DRAFT";
+    public static final String STATUS_CONFIRMED = "CONFIRMED";
+    public static final String STATUS_DISTRIBUTED = "DISTRIBUTED";
+
+    /** 审计事件 action 命名（与 AuditLogService.append 约定） */
+    public static final String ACTION_FREEZE = "BONUS_POOL_FREEZE";
+    public static final String ACTION_DISTRIBUTE = "BONUS_POOL_DISTRIBUTE";
+
+    private AuditLogService auditLogService;
+
+    /**
+     * P3-4.4：注入审计服务（Spring 装配入口）。
+     * 测试构造器 {@link #BonusPoolService(BonusPoolMapper)} / {@link #BonusPoolService(BonusPoolMapper, ProjectMapper)}
+     * 维持不变，新 auditLogService 默认 null——审计相关测试需用 setAuditLogService 注入 mock。
+     */
+    @Autowired(required = false)
+    public void setAuditLogService(AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
+    }
+
+    /**
+     * P3-4.4 §2.1：按项目 + 实际回款 + 销售达成率 + 个人绩效系数计算并落库。
+     *
+     * <p>业务规则：
+     * <ul>
+     *   <li>读 Project.levelCoefficient（G1 双签）→ levelCoefficient</li>
+     *   <li>tierCoefficient 由 achievementRate 推（null → 中性 1.0）</li>
+     *   <li>finalPool = actualReceipts × 5% × levelCoefficient × tierCoefficient × personalCoefficient（§三.2.5 完整公式）</li>
+     *   <li>status = DRAFT；不写审计（compute 是纯计算入口，审计由 freeze/distribute 触发）</li>
+     * </ul>
+     *
+     * @param projectId           项目 ID
+     * @param actualReceipts      实际回款金额（≥0）
+     * @param achievementRate     销售达成率（%，null = 中性）
+     * @param personalCoefficient 个人绩效系数（null = 1.0）
+     * @param poolRate            奖金池比例（null = 0.05）
+     * @return 新建 BonusPool（id 已生成，status=DRAFT）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BonusPool compute(Long projectId,
+                             BigDecimal actualReceipts,
+                             BigDecimal achievementRate,
+                             BigDecimal personalCoefficient,
+                             BigDecimal poolRate) {
+        if (projectId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "项目 ID 不能为空");
+        }
+        if (actualReceipts == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "实际回款金额不能为空");
+        }
+        if (actualReceipts.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "实际回款金额不能为负");
+        }
+        BonusPool pool = buildPoolFromProjectWithAchievement(
+            projectId, actualReceipts, achievementRate, personalCoefficient, new Date(), poolRate);
+        // buildPoolFromProjectWithAchievement 已写 status="DRAFT"，此处冗余置位显式契约
+        pool.setStatus(STATUS_DRAFT);
+        bonusPoolMapper.insert(pool);
+        return pool;
+    }
+
+    /**
+     * P3-4.4 §2.2：冻结/确认奖金池（DRAFT → CONFIRMED）。
+     *
+     * <p>幂等：已是 CONFIRMED/DISTRIBUTED 直接返回当前实体，不写第二条审计。
+     *
+     * @param id     奖金池 ID
+     * @param reason 冻结理由（可空）
+     * @param actor  当前操作人（审计落名）
+     * @return 更新后的 BonusPool
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BonusPool freeze(Long id, String reason, IpdActor actor) {
+        BonusPool pool = requireById(id);
+        if (STATUS_CONFIRMED.equals(pool.getStatus()) || STATUS_DISTRIBUTED.equals(pool.getStatus())) {
+            // 幂等：终态前不再流转
+            return pool;
+        }
+        if (!STATUS_DRAFT.equals(pool.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "当前状态 " + pool.getStatus() + " 不可冻结（仅 DRAFT 可冻结）");
+        }
+        pool.setStatus(STATUS_CONFIRMED);
+        bonusPoolMapper.updateById(pool);
+        appendAudit(actor, ACTION_FREEZE, pool.getId(),
+            "DRAFT→CONFIRMED" + (reason != null ? " reason=" + reason : ""));
+        return pool;
+    }
+
+    /**
+     * P3-4.4 §2.3：分配奖金池（DRAFT/CONFIRMED → DISTRIBUTED）。
+     *
+     * <p>幂等：已是 DISTRIBUTED 直接返回当前实体，不重写审计。
+     * 比例校验走 §三.2.4 calculateDistribution（区段 + 总和双重护栏）。
+     *
+     * @param id          奖金池 ID
+     * @param marketShare 市场 PM 占比
+     * @param rdShare     研发 PM 占比
+     * @param actor       当前操作人（审计落名）
+     * @return 更新后的 BonusPool
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BonusPool distribute(Long id,
+                                BigDecimal marketShare,
+                                BigDecimal rdShare,
+                                IpdActor actor) {
+        BonusPool pool = requireById(id);
+        if (STATUS_DISTRIBUTED.equals(pool.getStatus())) {
+            // 幂等：DISTRIBUTED 终态
+            return pool;
+        }
+        if (!STATUS_DRAFT.equals(pool.getStatus()) && !STATUS_CONFIRMED.equals(pool.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "当前状态 " + pool.getStatus() + " 不可分配（仅 DRAFT/CONFIRMED 可分配）");
+        }
+        // 区间 + 总和校验（ServiceException 抛到 Controller 由 advice 转 IpdBusinessException）
+        calculateDistribution(marketShare, rdShare);
+        BigDecimal finalPool = pool.getFinalPool() == null ? BigDecimal.ZERO : pool.getFinalPool();
+        BigDecimal marketAmount = finalPool.multiply(marketShare);
+        BigDecimal rdAmount = finalPool.multiply(rdShare);
+        // distributions JSON 记录拆分结果（供前端展示 + 后续审计可还原）
+        Map<String, Object> distributionJson = new LinkedHashMap<>();
+        distributionJson.put("marketShare", marketShare);
+        distributionJson.put("rdShare", rdShare);
+        distributionJson.put("marketAmount", marketAmount);
+        distributionJson.put("rdAmount", rdAmount);
+        String before = pool.getStatus();
+        pool.setStatus(STATUS_DISTRIBUTED);
+        pool.setDistributedAt(new Date());
+        try {
+            pool.setDistributions(JsonMapper.builder().build().writeValueAsString(distributionJson));
+        } catch (JsonProcessingException ex) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "分配结果 JSON 序列化失败");
+        }
+        bonusPoolMapper.updateById(pool);
+        appendAudit(actor, ACTION_DISTRIBUTE, pool.getId(),
+            before + "→DISTRIBUTED market=" + marketShare + " rd=" + rdShare);
+        return pool;
+    }
+
+    /**
+     * P3-4.4 §2.4：查询奖金池详情（带软删过滤）。
+     */
+    public BonusPool getById(Long id) {
+        return requireById(id);
+    }
+
+    /**
+     * P3-4.4 §2.5：按项目查询奖金池列表。
+     * 备注：listByProject 已存在上半段（P3-4.2），本卡沿用不破坏；
+     * 过滤 del_flag=0 由 @TableLogic 自动处理。
+     */
+
+    /* ----- 私有工具 ----- */
+
+    /**
+     * 加载并校验奖金池：不存在或软删 → NOT_FOUND。
+     */
+    private BonusPool requireById(Long id) {
+        if (id == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "奖金池 ID 不能为空");
+        }
+        BonusPool pool = bonusPoolMapper.selectById(id);
+        if (pool == null || "1".equals(pool.getDelFlag())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "奖金池不存在: " + id);
+        }
+        return pool;
+    }
+
+    /**
+     * 落审计（freeze/distribute 写动作）。
+     * auditLogService=null 时（测试场景）静默跳过，不抛错——保证 Service 单测不依赖 audit 装配。
+     */
+    private void appendAudit(IpdActor actor, String action, Long entityId, String reason) {
+        if (auditLogService == null || actor == null) {
+            return;
+        }
+        AuditLog draft = AuditLog.builder()
+            .operatorId(actor.id())
+            .operatorName(actor.name())
+            .operatorRole(actor.role())
+            .action(action)
+            .entityType("bonus_pools")
+            .entityId(entityId)
+            .reason(reason)
+            .createTime(new Date())
+            .build();
+        try {
+            auditLogService.append(draft);
+        } catch (RuntimeException ex) {
+            // 审计失败不阻塞业务（v3 TS-08 注释：业务失败不回滚审计；对称地审计失败不回滚业务）
+        }
     }
 }
