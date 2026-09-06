@@ -21,6 +21,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,7 +64,7 @@ class HandoverServiceTest {
     @BeforeEach
     void setUp() {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
-            handoverMapper, auditLogService, projectMemberService);
+            handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE);
     }
 
     private IpdActor adminActor() {
@@ -98,7 +99,7 @@ class HandoverServiceTest {
         when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(java.util.List.of(oldAdmin()));
         when(personMapper.selectById(2L)).thenReturn(newAdmin());
 
-        service.transferSuperAdmin(2L, "工作交接", adminActor());
+        service.transferSuperAdmin(2L, "工作交接", "确认移交管理员", adminActor());
 
         // 原超管被 update(entity, wrapper) 至少一次
         verify(personMapper, atLeastOnce()).update(any(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class));
@@ -117,7 +118,7 @@ class HandoverServiceTest {
     @DisplayName("ZK-IPD §九：移交人不是超管 → 拒绝（横向越权防护）")
     void transferSuperAdminRejectedNonAdmin() {
         IpdActor nonAdmin = new IpdActor(99L, "pm", "MARKET_PM", 7L);
-        assertThatThrownBy(() -> service.transferSuperAdmin(2L, "test", nonAdmin))
+        assertThatThrownBy(() -> service.transferSuperAdmin(2L, "test", "确认移交管理员", nonAdmin))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("超管");
         verify(personMapper, never()).updateById(any(Person.class));
@@ -128,7 +129,7 @@ class HandoverServiceTest {
     @DisplayName("ZK-IPD §九：原超管不存在（系统异常）→ 拒绝")
     void transferSuperAdminNoCurrentAdmin() {
         when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(java.util.List.of());
-        assertThatThrownBy(() -> service.transferSuperAdmin(2L, "test", adminActor()))
+        assertThatThrownBy(() -> service.transferSuperAdmin(2L, "test", "确认移交管理员", adminActor()))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("无在任超管");
     }
@@ -137,7 +138,7 @@ class HandoverServiceTest {
     @DisplayName("ZK-IPD §九：接手人不能是原超管本人")
     void transferSuperAdminSelfRejected() {
         org.mockito.Mockito.lenient().when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(java.util.List.of(oldAdmin()));
-        assertThatThrownBy(() -> service.transferSuperAdmin(1L, "test", adminActor()))
+        assertThatThrownBy(() -> service.transferSuperAdmin(1L, "test", "确认移交管理员", adminActor()))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("接手人不能与原负责人");
     }
@@ -147,7 +148,7 @@ class HandoverServiceTest {
     void transferSuperAdminTargetNotFound() {
         when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(java.util.List.of(oldAdmin()));
         when(personMapper.selectById(2L)).thenReturn(null);
-        assertThatThrownBy(() -> service.transferSuperAdmin(2L, "test", adminActor()))
+        assertThatThrownBy(() -> service.transferSuperAdmin(2L, "test", "确认移交管理员", adminActor()))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("接手人不存在");
     }

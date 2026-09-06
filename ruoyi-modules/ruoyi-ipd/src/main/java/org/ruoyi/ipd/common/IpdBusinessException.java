@@ -30,4 +30,15 @@ public class IpdBusinessException extends RuntimeException {
         super(message);
         this.errorCode = ApiV1ErrorCode.PARAM_INVALID;
     }
+
+    /**
+     * 使用登记错误码与自定义文案构造业务异常。
+     *
+     * @param code 业务错误码
+     * @param message 对外提示
+     */
+    public IpdBusinessException(ApiV1ErrorCode code, String message) {
+        super(message);
+        this.errorCode = code;
+    }
 }

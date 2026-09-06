@@ -21,6 +21,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -68,7 +69,7 @@ class HandoverInitiateAuthTest {
     @BeforeEach
     void setUp() {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
-            handoverMapper, auditLogService, projectMemberService);
+            handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE);
     }
 
     private Project projectInGroup(Long mainGroupId) {

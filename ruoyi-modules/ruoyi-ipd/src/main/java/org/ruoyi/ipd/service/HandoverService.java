@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.HandoverRecord;
 import org.ruoyi.ipd.domain.Person;
@@ -15,8 +16,11 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -49,12 +53,16 @@ public class HandoverService {
     private static final String ST_DRAFT = "DRAFT";
     private static final String ST_COMPLETED = "COMPLETED";
 
+    /** ZK-IPD 页49 原型：超管移交二次确认短语（原型按钮 disabled 直至输入与该短语一致）。 */
+    private static final String CONFIRM_PHRASE = "确认移交管理员";
+
     private final ProjectMemberMapper memberMapper;
     private final PersonMapper personMapper;
     private final ProjectMapper projectMapper;
     private final HandoverMapper handoverMapper;
     private final AuditLogService auditLogService;
     private final ProjectMemberService projectMemberService;
+    private final PlatformTransactionManager transactionManager;
 
     /** 本人发起移交（DRAFT，等待接手人 accept）。 */
     public HandoverRecord initiate(Long projectId, String role, Long toPersonId, String note, IpdActor operator) {
@@ -125,6 +133,88 @@ public class HandoverService {
                 .or().eq(HandoverRecord::getFromPersonId, me.id()))
             .ne(HandoverRecord::getStatus, ST_COMPLETED)
             .orderByAsc(HandoverRecord::getId));
+    }
+
+    // ---------- P2-7.2 批量移交与失败补偿 ----------
+
+    /** 批量移交逐项目结果：COMPLETED / REJECTED（reason 必填）/ SKIPPED_ALREADY_HANDED_OVER。 */
+    public record BatchHandoverResult(Long projectId, String status, String reason) { }
+
+    /**
+     * AC-HAND-04（P2-7.2）：组长/超管代离职人按角色批量移交名下项目。
+     *
+     * <p>口径：
+     * <ul>
+     *   <li>逐项目结果明确：返回每项目 COMPLETED/REJECTED/SKIPPED 及原因</li>
+     *   <li>失败项目保持原归属：单项目在独立事务中执行，拒绝/异常仅回滚该项目，不影响其余</li>
+     *   <li>重试不重复成功项：from 在该项目该角色已无活跃绑定 ⇒ SKIPPED_ALREADY_HANDED_OVER，不重写</li>
+     *   <li>不得提前禁用：disableIfAllCleared 仅在真全清（活跃绑定计数=0）时禁用，
+     *       批量中间态因余留绑定自然跳过（配合下方修正版计数语义）</li>
+     *   <li>AC-HAND-04 历史跟随：只动 project_members / handover_records，项目本体、
+     *   审计、Gate、台账记录零删除零改写，新 PM 在原项目上接续</li>
+     * </ul>
+     *
+     * <p>事务：方法级 NOT_SUPPORTED 挂起类级事务；逐项目用 TransactionTemplate 独立事务，
+     * 内层 {@link #initiateOnBehalf}（REQUIRED）加入，异常标 rollback-only 由模板回滚该项目全部写入。
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public List<BatchHandoverResult> batchHandover(Long fromPersonId, String role, Long toPersonId,
+                                                   String note, String approvalRef,
+                                                   List<Long> projectIds, IpdActor leader) {
+        if (!HANDOVER_ROLES.contains(role)) {
+            throw new ServiceException("角色非法: " + role);
+        }
+        if (fromPersonId == null || fromPersonId.equals(toPersonId)) {
+            throw new ServiceException("原负责人缺失或与接手人相同");
+        }
+        List<Long> targets = (projectIds == null || projectIds.isEmpty())
+            ? memberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
+                    .eq(ProjectMember::getPersonId, fromPersonId)
+                    .eq(ProjectMember::getRole, role)
+                    .isNull(ProjectMember::getExitDate))
+                .stream().map(ProjectMember::getProjectId).distinct().toList()
+            : projectIds;
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        List<BatchHandoverResult> results = new ArrayList<>(targets.size());
+        for (Long projectId : targets) {
+            results.add(handOverOne(tx, projectId, fromPersonId, role, toPersonId, note, approvalRef, leader));
+        }
+        return results;
+    }
+
+    /** 单项目批量单元：幂等跳过/归属校验在事务外只读，写路径整项目独立事务。 */
+    private BatchHandoverResult handOverOne(TransactionTemplate tx, Long projectId, Long fromPersonId,
+                                            String role, Long toPersonId, String note,
+                                            String approvalRef, IpdActor leader) {
+        try {
+            // 重试幂等：from 在该项目该角色已无活跃绑定 ⇒ 上轮已成功，跳过不重写
+            Long active = memberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+                .eq(ProjectMember::getProjectId, projectId)
+                .eq(ProjectMember::getPersonId, fromPersonId)
+                .eq(ProjectMember::getRole, role)
+                .isNull(ProjectMember::getExitDate));
+            if (active == null || active == 0) {
+                return new BatchHandoverResult(projectId, "SKIPPED_ALREADY_HANDED_OVER", "上轮移交已成功，重试跳过");
+            }
+            // 指定 from 语义：在任绑定者必须就是指定原负责人（否则逐项拒绝，保持原归属）
+            ProjectMember current = memberMapper.selectOne(new LambdaQueryWrapper<ProjectMember>()
+                .eq(ProjectMember::getProjectId, projectId)
+                .eq(ProjectMember::getRole, role)
+                .isNull(ProjectMember::getExitDate)
+                .orderByAsc(ProjectMember::getId)
+                .last("LIMIT 1"));
+            if (current == null) {
+                return new BatchHandoverResult(projectId, "REJECTED", "该项目该角色无在任成员");
+            }
+            if (!fromPersonId.equals(current.getPersonId())) {
+                return new BatchHandoverResult(projectId, "REJECTED",
+                    "该项目该角色在任成员(" + current.getPersonId() + ")与指定原负责人不符，保持原归属");
+            }
+            tx.executeWithoutResult(st -> initiateOnBehalf(projectId, role, toPersonId, note, approvalRef, leader));
+            return new BatchHandoverResult(projectId, "COMPLETED", null);
+        } catch (Exception e) {
+            return new BatchHandoverResult(projectId, "REJECTED", e.getMessage());
+        }
     }
 
     // ---------- 内部 ----------
@@ -220,16 +310,21 @@ public class HandoverService {
      * <ul>
      *   <li>移交完成后原超管账号作废失效（accountStatus=DISABLED + wecom 解绑）</li>
      *   <li>新超管 personType 提升为 SUPER_ADMIN</li>
-     *   <li>二次确认（操作人必须本身是超管）</li>
+     *   <li>二次确认：confirmation 必须与页49 原型确认短语一致（防误触，后端强制）</li>
+     *   <li>旧会话即失效：DISABLED 后由 IpdAuthService.scopeOf→NONE + IpdPermission 401
+     *   每请求实时兜底（P0-7.x 已验，登录侧 DISABLED 同拒）</li>
      *   <li>全程审计 SUPER_ADMIN_TRANSFER</li>
      * </ul>
      * 与普通 PM 移交的区别：超管不在任何项目上做 PM 绑定，disableIfAllCleared 不适用；
      * 必须显式把原超管置 DISABLED、不可登录。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void transferSuperAdmin(Long toPersonId, String note, IpdActor operator) {
+    public void transferSuperAdmin(Long toPersonId, String note, String confirmation, IpdActor operator) {
         if (operator == null || !"SUPER_ADMIN".equals(operator.role())) {
             throw new ServiceException("ZK-IPD §九：仅超管本人可发起超管权限移交");
+        }
+        if (!CONFIRM_PHRASE.equals(confirmation)) {
+            throw new ServiceException("确认短语不匹配，二次确认未通过（须输入：" + CONFIRM_PHRASE + "）");
         }
         if (toPersonId == null) {
             throw new ServiceException("ZK-IPD §九：接手人 ID 不能为空");
@@ -237,16 +332,18 @@ public class HandoverService {
         if (toPersonId.equals(operator.id())) {
             throw new ServiceException("接手人不能与原负责人相同");
         }
-        // 找当前在任超管
-        Person currentAdmin = personMapper.selectList(
+        // 找当前在任超管（页49 契约：系统始终只有一名活动超管；多名则为违例存量，拒绝移交并提示收敛）
+        List<Person> admins = personMapper.selectList(
             new LambdaQueryWrapper<Person>()
                 .eq(Person::getPersonType, "SUPER_ADMIN")
-                .eq(Person::getAccountStatus, "ACTIVE")
-                .last("LIMIT 1"))
-            .stream().findFirst().orElse(null);
-        if (currentAdmin == null) {
+                .eq(Person::getAccountStatus, "ACTIVE"));
+        if (admins.isEmpty()) {
             throw new ServiceException("ZK-IPD §九：当前无在任超管（系统异常）");
         }
+        if (admins.size() > 1) {
+            throw new ServiceException("ZK-IPD §九：检测到 " + admins.size() + " 名在任超管（违反单超管不变式），须先收敛至一名再移交");
+        }
+        Person currentAdmin = admins.get(0);
         if (currentAdmin.getId().equals(toPersonId)) {
             throw new ServiceException("接手人不能与原负责人相同");
         }
@@ -287,35 +384,38 @@ public class HandoverService {
      * AC-HAND-01d：名下项目全部移交完成 ⇒ DISABLED + 企微解绑。
      * 未全清（名下还有活跃项目）则保持现状（冻结的保持冻结）。
      *
-     * <p>SEC-REV-HANDOVER-02：原子 UPDATE 替代 selectCount + person update——
-     * 一次 SQL 既关闭该 person 下所有活跃 ProjectMember（exitDate IS NULL → exitDate=now，
-     * exitReason=REMOVED），又通过 affected rows 锁定"原本活跃成员数"。
-     * 0 ⇒ 无活跃成员需要关闭，跳过 disable；>0 ⇒ 原本有活跃成员，现已全部退出，
-     * 接下来 disable person + 企微解绑 + 审计。
-     * MySQL 默认 REPEATABLE READ + 行锁 + 事务保证多次并发调用只一人 disable 成功，
-     * 后续线程看到 updated=0 直接退出，杜绝 TOCTOU 竞态。
+     * <p>SEC-REV-HANDOVER-02（P2-7.3 复核修正版）：FOR UPDATE 锁定该 person 全部活跃绑定行后
+     * 计数——保留原子修订的 TOCTOU 防护意图（行锁串行化并发移交/新增绑定），但语义回归
+     * 「仅真全清（活跃绑定计数=0）才禁用」。此前的原子 UPDATE 版会把余留绑定一并置退出
+     * （updated&gt;0 才继续禁用），名下多项目时提前退出待移交项目绑定并禁用账号，与
+     * AC-HAND-01d「全部移交完成才 DISABLED」及 P2-7.2「不得提前禁用仍有待移交人员」相反。
+     * person 侧 DISABLED 再加 accountStatus=ACTIVE 条件守卫：并发双过计数窗口内仅一人
+     * update 生效（affected=1），后到者 affected=0 直接返回不重复审计。
      *
      * <p>package-private（无 private）便于测试直接调用；不暴露给 controller/service。
      */
     void disableIfAllCleared(Long personId, IpdActor operator) {
-        int updated = memberMapper.update(null, new LambdaUpdateWrapper<ProjectMember>()
+        List<ProjectMember> remaining = memberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
             .eq(ProjectMember::getPersonId, personId)
             .isNull(ProjectMember::getExitDate)
-            .set(ProjectMember::getExitDate, new Date())
-            .set(ProjectMember::getExitReason, "REMOVED"));
-        if (updated == 0) {
+            .last("FOR UPDATE"));
+        if (!remaining.isEmpty()) {
             return;
         }
         Person p = personMapper.selectById(personId);
         if (p == null || "DISABLED".equals(p.getAccountStatus())) {
             return;
         }
-        // updateById 不落 null 字段：企微解绑必须显式 set null
-        personMapper.update(null, new LambdaUpdateWrapper<Person>()
+        // updateById 不落 null 字段：企微解绑必须显式 set null；ACTIVE 守卫防并发重复禁用/审计
+        int disabled = personMapper.update(null, new LambdaUpdateWrapper<Person>()
             .eq(Person::getId, personId)
+            .eq(Person::getAccountStatus, "ACTIVE")
             .set(Person::getAccountStatus, "DISABLED")
             .set(Person::getWecomUserId, null)
             .set(Person::getWecomBoundAt, null));
+        if (disabled == 0) {
+            return;
+        }
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
             .action("ACCOUNT_DISABLED_AFTER_HANDOVER").entityType("person").entityId(personId)

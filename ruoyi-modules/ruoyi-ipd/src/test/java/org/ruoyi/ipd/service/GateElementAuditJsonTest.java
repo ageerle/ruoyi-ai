@@ -12,6 +12,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.GateElement;
+import org.ruoyi.ipd.mapper.AuditLogMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.mapper.GateElementMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,12 +37,16 @@ class GateElementAuditJsonTest {
     private GateElementMapper gateElementMapper;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private AuditLogMapper auditLogMapper;
+
+    private static final IpdActor ACTOR = new IpdActor(1L, "admin", "SUPER_ADMIN", null);
 
     private GateElementService service;
 
     @BeforeEach
     void setUp() {
-        service = new GateElementService(gateElementMapper, auditLogService);
+        service = new GateElementService(gateElementMapper, auditLogService, auditLogMapper);
     }
 
     private AuditLog capturedAudit() {
@@ -49,7 +55,7 @@ class GateElementAuditJsonTest {
         return cap.getValue();
     }
 
-    private static void assertValidJson(String afterData, String expectDetailPart) {
+    private static void assertValidJson(String afterData, String expectDetailPart, AuditLog log) {
         assertThat(afterData).isNotBlank();
         JsonNode node;
         try {
@@ -57,7 +63,11 @@ class GateElementAuditJsonTest {
         } catch (Exception e) {
             throw new AssertionError("afterData 非合法 JSON: " + afterData, e);
         }
-        assertThat(node.get("detail").asText()).contains(expectDetailPart);
+        // DEF-1 契约：afterData 必为合法 JSON（AuditEventData.json 快照扁平结构）
+        assertThat(node.get("gateCode")).isNotNull();
+        assertThat(node.get("elementCode")).isNotNull();
+        // detail 文案自 afterData 拆分后由 reason 承载
+        assertThat(log.getReason()).contains(expectDetailPart);
     }
 
     @Test
@@ -74,13 +84,13 @@ class GateElementAuditJsonTest {
         e.setElementCode("QA03-JSON");
         e.setElementName("QA03要素");
 
-        service.create(e, "900101");
+        service.create(e, ACTOR);
 
         AuditLog log = capturedAudit();
         assertThat(log.getEntityType()).isEqualTo("GATE_ELEMENT");
         assertThat(log.getAction()).isEqualTo("CREATE");
         assertThat(log.getEntityId()).isEqualTo(66L);
-        assertValidJson(log.getAfterData(), "G1/QA03-JSON");
+        assertValidJson(log.getAfterData(), "G1/QA03-JSON", log);
     }
 
     @Test
@@ -92,15 +102,16 @@ class GateElementAuditJsonTest {
         exist.setElementCode("QA03-JSON");
         exist.setElementName("旧名");
         when(gateElementMapper.selectById(66L)).thenReturn(exist);
+        when(gateElementMapper.updateById(any(GateElement.class))).thenReturn(1);
         GateElement patch = new GateElement();
         patch.setId(66L);
         patch.setElementName("新名");
 
-        service.update(patch, "900101");
+        service.update(patch, ACTOR);
 
         AuditLog log = capturedAudit();
         assertThat(log.getAction()).isEqualTo("UPDATE");
-        assertValidJson(log.getAfterData(), "QA03-JSON");
+        assertValidJson(log.getAfterData(), "QA03-JSON", log);
     }
 
     @Test
@@ -110,11 +121,12 @@ class GateElementAuditJsonTest {
         exist.setId(66L);
         exist.setElementCode("QA03-JSON");
         when(gateElementMapper.selectById(66L)).thenReturn(exist);
+        when(gateElementMapper.updateById(any(GateElement.class))).thenReturn(1);
 
-        service.disable(66L, "900101");
+        service.disable(66L, ACTOR);
 
         AuditLog log = capturedAudit();
-        assertValidJson(log.getAfterData(), "disabled");
+        assertValidJson(log.getAfterData(), "disabled", log);
     }
 
     @Test
@@ -124,10 +136,11 @@ class GateElementAuditJsonTest {
         exist.setId(67L);
         exist.setElementCode("X\"Y\\Z");
         when(gateElementMapper.selectById(67L)).thenReturn(exist);
+        when(gateElementMapper.updateById(any(GateElement.class))).thenReturn(1);
 
-        service.disable(67L, "900101");
+        service.disable(67L, ACTOR);
 
         AuditLog log = capturedAudit();
-        assertValidJson(log.getAfterData(), "X\"Y\\Z");
+        assertValidJson(log.getAfterData(), "X\"Y\\Z", log);
     }
 }

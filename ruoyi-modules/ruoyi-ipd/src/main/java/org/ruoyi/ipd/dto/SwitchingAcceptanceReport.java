@@ -46,7 +46,10 @@ public record SwitchingAcceptanceReport(
         Object expected,
         Object actual,
         BigDecimal diff,
-        String note
+        String note,
+        Integer duplicateCount,
+        BigDecimal kpiScoreSum,
+        BigDecimal bonusDistributionSum
     ) {
     }
 }

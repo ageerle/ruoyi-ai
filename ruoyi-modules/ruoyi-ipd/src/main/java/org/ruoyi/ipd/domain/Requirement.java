@@ -87,6 +87,18 @@ public class Requirement extends BaseEntity implements SoftDeletable {
      */
     private Date routedAt;
 
+    /** 客户名称（页38 customerName，P4-1.1 游客需求表单字段） */
+    private String customerName;
+
+    /** 用户输入原始型号文本（其他/未找到记录原输入，P4-1.1 页38 rawModel） */
+    private String rawModel;
+
+    /** 需求接受时间（P4-1.1 业务记录：市场 PM 接受后落库） */
+    private Date acceptedAt;
+
+    /** 要素快照（GateElement 的 JSON 备份，便于后续审计回溯） */
+    private String elementSnapshot;
+
     /**
      * 软删除标志（0正常 1已删）
      */

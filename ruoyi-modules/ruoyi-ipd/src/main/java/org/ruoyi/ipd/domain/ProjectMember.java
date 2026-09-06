@@ -84,4 +84,16 @@ public class ProjectMember extends BaseEntity implements SoftDeletable {
      * 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter
      */
     public void setDelFlag(String flag) { this.delFlag = flag; }
+
+    /** 成员类型 PRIMARY/SUPPORTING（P2-4.2：PRIMARY 参与评级上限判定） */
+    private String memberType;
+
+    /** 达到项目数阈值时的评级委员会审批备案编号（BR-TEAM-07/TEAM-08） */
+    private String approvalRef;
+
+    /** 超管移交专用：移交角色（MARKET_PM / RD_PM） */
+    private String handoverRole;
+
+    /** 移交说明（≤1000字符） */
+    private String note;
 }

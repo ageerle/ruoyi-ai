@@ -91,13 +91,13 @@ public class HandoverController {
         return ApiV1Response.ok(handoverService.inbox(actor).stream().map(HandoverView::from).toList());
     }
 
-    /** P2-7.3：超管权限移交（AC-HAND-07）。仅超管本人可发起，强制 PERSON_TYPE=SUPER_ADMIN 切换 + 审计 SUPER_ADMIN _TRANSFER。 */
-    public record SuperAdminTransferRequest(@NotNull Long toPersonId, String note) { }
+    /** P2-7.3：超管权限移交（AC-HAND-07）。仅超管本人可发起；confirmation 确认短语二次确认（页49 原型：输入「确认移交管理员」）；强制 PERSON_TYPE=SUPER_ADMIN 切换 + 审计 SUPER_ADMIN_TRANSFER；旧会话由 scopeOf→NONE 每请求 401 兕底。 */
+    public record SuperAdminTransferRequest(@NotNull Long toPersonId, String note, @NotBlank String confirmation) { }
 
     @PostMapping("/super-admin")
     public ApiV1Response<Void> transferSuperAdmin(@Valid @RequestBody SuperAdminTransferRequest request) {
         IpdActor actor = permission.requireAdmin();
-        handoverService.transferSuperAdmin(request.toPersonId(), request.note(), actor);
+        handoverService.transferSuperAdmin(request.toPersonId(), request.note(), request.confirmation(), actor);
         return ApiV1Response.ok(null);
     }
 }

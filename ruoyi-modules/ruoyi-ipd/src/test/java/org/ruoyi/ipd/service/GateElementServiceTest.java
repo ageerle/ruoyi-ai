@@ -7,9 +7,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.GateElement;
+import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.ruoyi.ipd.mapper.GateElementMapper;
+import org.ruoyi.ipd.security.IpdActor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,7 +26,10 @@ import static org.mockito.Mockito.when;
 @Tag("dev")
 class GateElementServiceTest {
 
+    private static final IpdActor ACTOR = new IpdActor(1L, "admin", "SUPER_ADMIN", null);
+
     private GateElementMapper mapper;
+    private AuditLogMapper auditLogMapper;
     private AuditLogService auditLogService;
     private GateElementService service;
 
@@ -32,7 +38,8 @@ class GateElementServiceTest {
         mapper = mock(GateElementMapper.class);
         auditLogService = mock(AuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
-        service = new GateElementService(mapper, auditLogService);
+        auditLogMapper = mock(AuditLogMapper.class);
+        service = new GateElementService(mapper, auditLogService, auditLogMapper);
     }
 
     private GateElement e(String code) {
@@ -49,8 +56,9 @@ class GateElementServiceTest {
             x.setId(9L);
             return 1;
         });
-        GateElement out = service.create(e("G1-01"), "admin");
-        assertThat(out.getEnabled()).isEqualTo("1");
+        GateElement out = service.create(e("G1-01"), ACTOR);
+        assertThat(out.getEnabled()).isEqualTo("0");
+        assertThat(out.getStatus()).isEqualTo("draft");
         Mockito.verify(auditLogService).append(any(AuditLog.class));
     }
 
@@ -58,8 +66,8 @@ class GateElementServiceTest {
     @DisplayName("要素编码重复拒绝")
     void duplicateCodeRejected() {
         when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
-        assertThatThrownBy(() -> service.create(e("G1-01"), "admin"))
-            .isInstanceOf(ServiceException.class)
+        assertThatThrownBy(() -> service.create(e("G1-01"), ACTOR))
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("已存在");
     }
 
@@ -67,8 +75,8 @@ class GateElementServiceTest {
     @DisplayName("gateCode 白名单 G1..G5，越界拒绝")
     void gateWhitelist() {
         assertThatThrownBy(() -> service.create(GateElement.builder()
-                .gateCode("G9").elementCode("X").elementName("x").build(), "admin"))
-            .isInstanceOf(ServiceException.class)
+                .gateCode("G9").elementCode("X").elementName("x").build(), ACTOR))
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("G1..G5");
     }
 
@@ -79,9 +87,10 @@ class GateElementServiceTest {
         exist.setId(1L);
         exist.setPassStandard("原标准");
         when(mapper.selectById(1L)).thenReturn(exist);
+        when(mapper.updateById(any(GateElement.class))).thenReturn(1);
         GateElement patch = GateElement.builder().elementName("新名").build();
         patch.setId(1L);
-        GateElement out = service.update(patch, "admin");
+        GateElement out = service.update(patch, ACTOR);
         assertThat(out.getElementName()).isEqualTo("新名");
         assertThat(out.getPassStandard()).isEqualTo("原标准");
     }
@@ -93,7 +102,8 @@ class GateElementServiceTest {
         exist.setId(2L);
         exist.setEnabled("1");
         when(mapper.selectById(2L)).thenReturn(exist);
-        GateElement out = service.disable(2L, "admin");
+        when(mapper.updateById(any(GateElement.class))).thenReturn(1);
+        GateElement out = service.disable(2L, ACTOR);
         assertThat(out.getEnabled()).isEqualTo("0");
         Mockito.verify(auditLogService).append(any(AuditLog.class));
     }

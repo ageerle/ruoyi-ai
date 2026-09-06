@@ -78,4 +78,10 @@ public class GateReview extends BaseEntity implements SoftDeletable {
      * 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter
      */
     public void setDelFlag(String flag) { this.delFlag = flag; }
+
+    /** 签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21） */
+    private Date signDueAt;
+
+    /** 签署期限已延长次数（AC-GATE-21 上限 3） */
+    private Integer signExtensionCount;
 }

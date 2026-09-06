@@ -44,7 +44,7 @@ public class GateElementController {
     public ApiV1Response<GateElement> create(@RequestBody org.ruoyi.ipd.dto.GateElementCreateReq req) {
         // CODE-01：白名单 DTO，id/tenantId/delFlag 不可注入
         IpdActor actor = ipdPermission.requireAdmin();
-        return ApiV1Response.ok(gateElementService.create(req.toEntity(), String.valueOf(actor.id())));
+        return ApiV1Response.ok(gateElementService.create(req.toEntity(), actor));
     }
 
     /** 更新Gate评审要素，需 ipd:gate-element:edit 权限 */
@@ -53,7 +53,7 @@ public class GateElementController {
     public ApiV1Response<GateElement> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.GateElementUpdateReq req) {
         // CODE-01：白名单 DTO，gateCode/elementCode 编码不可改
         IpdActor actor = ipdPermission.requireAdmin();
-        return ApiV1Response.ok(gateElementService.update(req.toPatch(id), String.valueOf(actor.id())));
+        return ApiV1Response.ok(gateElementService.update(req.toPatch(id), actor));
     }
 
     /** 停用Gate评审要素（禁删：在途判定引用证据链），需 ipd:gate-element:remove 权限 */
@@ -61,6 +61,6 @@ public class GateElementController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_DISABLE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<GateElement> disable(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireAdmin();
-        return ApiV1Response.ok(gateElementService.disable(id, String.valueOf(actor.id())));
+        return ApiV1Response.ok(gateElementService.disable(id, actor));
     }
 }

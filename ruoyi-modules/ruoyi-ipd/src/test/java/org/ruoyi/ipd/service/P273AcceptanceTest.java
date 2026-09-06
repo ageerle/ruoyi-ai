@@ -45,8 +45,9 @@ import static org.mockito.Mockito.when;
  * <p>口径：
  * <ul>
  *   <li>仅超管本人可发起：非 SUPER_ADMIN 直接拒绝</li>
- *   <li>原超管 → DISABLED + 企微解绑（作废失效，强制旧会话失活）</li>
- *   <li>新人 → SUPER_ADMIN（personType 切换）</li>
+ *   <li>二次确认：confirmation 必须与页49 原型确认短语一致，否则拒绝（后端强制防误触）</li>
+ *   <li>原超管 → DISABLED + 企微解绑（作废失效，旧会话由 scopeOf→NONE 每请求 401 兕底）</li>
+ *   <li>新人 → SUPER_ADMIN（personType 切换，待办/收件箱按角色动态查询即等效转移）</li>
  *   <li>接手人不能与原超管相同；接手人不能 RESIGNED/DISABLED</li>
  *   <li>审计：SUPER_ADMIN_TRANSFER，含 from/to/原状态/企微解绑</li>
  * </ul>
@@ -74,6 +75,9 @@ class P273AcceptanceTest {
     private static final long RESIGNED_ID = 902L;
     private static final long DISABLED_ID = 903L;
     private static final long SAME_AS_CURRENT = 900L;
+
+    /** 页49 原型确认短语（HandoverService.CONFIRM_PHRASE 同源）。 */
+    private static final String CONFIRM = "确认移交管理员";
 
     private Person currentAdminPerson;
     private Person newAdminPerson;
@@ -104,7 +108,7 @@ class P273AcceptanceTest {
         stubCurrentAdmin(currentAdminPerson);
         when(personMapper.selectById(NEW_ADMIN_ID)).thenReturn(newAdminPerson);
 
-        handoverService.transferSuperAdmin(NEW_ADMIN_ID, "业务调整", CURRENT_ADMIN);
+        handoverService.transferSuperAdmin(NEW_ADMIN_ID, "业务调整", CONFIRM, CURRENT_ADMIN);
 
         // 1) 原超管 → DISABLED + 企微解绑（update(null, wrapper) 而非 updateById）
         ArgumentCaptor<LambdaUpdateWrapper<Person>> origCap = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
@@ -124,11 +128,35 @@ class P273AcceptanceTest {
     }
 
     @Test
+    @DisplayName("二次确认短语错误拒绝：confirmation 与页49 确认短语不符 ⇒ 无写库")
+    void transferSuperAdmin_wrongConfirmation_rejected() {
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, "确认移交", CURRENT_ADMIN))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("确认短语不匹配");
+
+        verify(personMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
+        verify(personMapper, never()).updateById(any(Person.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("二次确认缺失拒绝：confirmation=null ⇒ 无写库")
+    void transferSuperAdmin_missingConfirmation_rejected() {
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, null, CURRENT_ADMIN))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("确认短语不匹配");
+
+        verify(personMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
+        verify(personMapper, never()).updateById(any(Person.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
     @DisplayName("非超管本人拒绝：MARKET_PM 移交 ⇒ 抛异常，无写库")
     void transferSuperAdmin_nonSuperAdmin_rejected() {
         IpdActor notAdmin = new IpdActor(700L, "普通PM", "MARKET_PM", 7L);
 
-        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, notAdmin))
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, CONFIRM, notAdmin))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("仅超管本人");
 
@@ -142,7 +170,7 @@ class P273AcceptanceTest {
     void transferSuperAdmin_sameAsCurrent_rejected() {
         stubCurrentAdmin(currentAdminPerson);
 
-        assertThatThrownBy(() -> handoverService.transferSuperAdmin(SAME_AS_CURRENT, null, CURRENT_ADMIN))
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(SAME_AS_CURRENT, null, CONFIRM, CURRENT_ADMIN))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("接手人不能与原负责人相同");
 
@@ -157,7 +185,7 @@ class P273AcceptanceTest {
         Person resigned = personOf(RESIGNED_ID, "已离职", "GROUP_LEADER", "ACTIVE", "RESIGNED", null);
         when(personMapper.selectById(RESIGNED_ID)).thenReturn(resigned);
 
-        assertThatThrownBy(() -> handoverService.transferSuperAdmin(RESIGNED_ID, null, CURRENT_ADMIN))
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(RESIGNED_ID, null, CONFIRM, CURRENT_ADMIN))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("已离职/禁用");
 
@@ -171,7 +199,7 @@ class P273AcceptanceTest {
         Person disabled = personOf(DISABLED_ID, "已禁用", "GROUP_LEADER", "DISABLED", "ACTIVE", null);
         when(personMapper.selectById(DISABLED_ID)).thenReturn(disabled);
 
-        assertThatThrownBy(() -> handoverService.transferSuperAdmin(DISABLED_ID, null, CURRENT_ADMIN))
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(DISABLED_ID, null, CONFIRM, CURRENT_ADMIN))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("已离职/禁用");
     }
@@ -181,9 +209,24 @@ class P273AcceptanceTest {
     void transferSuperAdmin_noCurrentAdmin_rejected() {
         when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
-        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, CURRENT_ADMIN))
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, CONFIRM, CURRENT_ADMIN))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("当前无在任超管");
+    }
+
+    @Test
+    @DisplayName("多名在任超管拒绝：真库现状 3 名超管（违反单超管不变式）须先收敛，不得静默 LIMIT 1")
+    void transferSuperAdmin_multipleAdmins_rejected() {
+        Person a = personOf(900L, "现任超管", "SUPER_ADMIN", "ACTIVE", "ACTIVE", "wecom-a");
+        Person b = personOf(901L, "另一超管", "SUPER_ADMIN", "ACTIVE", "ACTIVE", "wecom-b");
+        when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(a, b));
+
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, CONFIRM, CURRENT_ADMIN))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("在任超管")
+            .hasMessageContaining("收敛");
+        verify(personMapper, never()).updateById(any(Person.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
     }
 
     @Test
@@ -192,7 +235,7 @@ class P273AcceptanceTest {
         stubCurrentAdmin(currentAdminPerson);
         when(personMapper.selectById(NEW_ADMIN_ID)).thenReturn(null);
 
-        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, CURRENT_ADMIN))
+        assertThatThrownBy(() -> handoverService.transferSuperAdmin(NEW_ADMIN_ID, null, CONFIRM, CURRENT_ADMIN))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("接手人不存在");
     }
@@ -200,7 +243,8 @@ class P273AcceptanceTest {
     // ---------- 造数 ----------
 
     private void stubCurrentAdmin(Person admin) {
-        when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(admin));
+        // sameAsCurrent 用例在查库前即被 operator.id() 对比拦截，stub 不被消费，须 lenient
+        lenient().when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(admin));
     }
 
     private Person personOf(long id, String name, String type, String accountStatus,

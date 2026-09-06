@@ -153,7 +153,7 @@ class Sec01AcceptanceTest {
 
         assertThatThrownBy(() -> gateElementController.disable(1L))
             .satisfies(Sec01AcceptanceTest::assertForbidden);
-        verify(gateElementService, never()).disable(anyLong(), anyString());
+        verify(gateElementService, never()).disable(anyLong(), any(IpdActor.class));
     }
 
     @Test

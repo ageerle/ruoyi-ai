@@ -78,4 +78,10 @@ public class HandoverRecord extends BaseEntity implements SoftDeletable {
      * 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter
      */
     public void setDelFlag(String flag) { this.delFlag = flag; }
+
+    /** 移交角色维度 RD_PM|MARKET_PM（AC-HAND-06 仅目标角色变更） */
+    private String handoverRole;
+
+    /** 移交说明（≤1000字符，spec 字段模型） */
+    private String note;
 }

@@ -104,6 +104,8 @@ class P272AcceptanceTest {
         lenient().when(personMapper.selectById(TO_ID)).thenReturn(candidateRdPm());
         // exitForHandover：每项目 1 次 update，同时驱动全清计数
         lenient().doAnswer(inv -> exited.incrementAndGet()).when(memberMapper).update(any(), any());
+        // disableIfAllCleared 全清禁用：person 侧条件 update（ACTIVE 守卫）放行 1 条
+        lenient().when(personMapper.update(any(), any())).thenReturn(1);
         lenient().when(handoverMapper.selectCount(any())).thenReturn(0L);
         lenient().when(handoverMapper.insert(any(HandoverRecord.class))).thenReturn(1);
         lenient().when(handoverMapper.updateById(any(HandoverRecord.class))).thenReturn(1);
@@ -117,17 +119,15 @@ class P272AcceptanceTest {
             if (pid != null && pid == P3) { return binding(FROM_ID, P3); }
             return binding(FROM_ID, P1);
         });
-        // selectCount：FOR UPDATE=接手人活跃计数；含 role 且含 TO_ID=bindMember 重复预检恒 0（TO_ID 优先，
-        // 因 projectId 常量可能与 FROM_ID 同值如 P1=101）；含 role 且含 FROM_ID=重试幂等检查（默认都未移交过）
+        // selectCount：paramNameValuePairs 填充时序在本环境不稳定（同一构造 map 时有时无），不再解析内容——
+        // FOR UPDATE=接手人活跃计数恒 0；其余默认 1（重试幂等检查=活跃）。重复预检/重试的区分由各用例按
+        // 确定性调用序列覆盖（每项目 handOverOne 重试检查 1 次，COMPLETED 项目 bindMember 预检 1 次）
         lenient().when(memberMapper.selectCount(any())).thenAnswer(inv -> {
             LambdaQueryWrapper<ProjectMember> w = inv.getArgument(0);
             if (w == null) { return 0L; }
             String seg = w.getSqlSegment();
-            Long perId = wrapperPersonId(w);
             if (seg != null && seg.contains("FOR UPDATE")) { return 0L; }
-            if (seg != null && seg.contains("role") && perId != null && perId == TO_ID) { return 0L; }
-            if (seg != null && seg.contains("role") && perId != null && perId == FROM_ID) { return 1L; }
-            return 0L;
+            return 1L;
         });
         // selectList：FOR UPDATE=disableIfAllCleared 全清计数（exited 达到已移交总数才空）；其余=名下枚举
         lenient().when(memberMapper.selectList(any())).thenAnswer(inv -> {
@@ -146,6 +146,12 @@ class P272AcceptanceTest {
     private static Long P1L() { return P1; }
     private static Long P2L() { return P2; }
     private static Long P3L() { return P3; }
+
+    /** 按调用序号从固定序列取 stub 返回值——业务调用序列确定（for 循环逐项目），避免解析 wrapper 内容。 */
+    private static long seqValue(AtomicInteger cnt, long... values) {
+        int i = cnt.getAndIncrement();
+        return i < values.length ? values[i] : 0L;
+    }
 
     /**
      * 从 LambdaQueryWrapper 的 ParamNameValuePair 中按字段名取值——AbstractWrapper.getParamNameValuePairs()
@@ -239,6 +245,15 @@ class P272AcceptanceTest {
     @Test
     @DisplayName("AC-HAND-04：全量批量移交 3 个项目 ⇒ 逐项 COMPLETED，历史零改写，真全清才 DISABLED")
     void batchAllCompletedThenDisabled() {
+        // selectCount 序列：每项目「重试检查=1、重复预检=0」交替 ×3
+        AtomicInteger scCnt = new AtomicInteger();
+        lenient().when(memberMapper.selectCount(any())).thenAnswer(inv -> {
+            LambdaQueryWrapper<ProjectMember> w = inv.getArgument(0);
+            if (w == null) { return 0L; }
+            String seg = w.getSqlSegment();
+            if (seg != null && seg.contains("FOR UPDATE")) { return 0L; }
+            return seqValue(scCnt, 1L, 0L, 1L, 0L, 1L, 0L);
+        });
         List<HandoverService.BatchHandoverResult> results = batch(null);
 
         assertThat(results).hasSize(3).allSatisfy(r -> {
@@ -271,13 +286,20 @@ class P272AcceptanceTest {
     @Test
     @DisplayName("失败项目保持原归属：第 2 个项目归属不符 ⇒ 仅它 REJECTED 不写库，其余照常完成")
     void batchPartialFailureKeepsOwnership() {
+        // 归属校验调用序列（业务确定）：P1 归属、P1 内部反查、P2 归属、P3 归属、P3 内部反查——第 3 次=P2
+        AtomicInteger soCnt = new AtomicInteger();
         lenient().when(memberMapper.selectOne(any())).thenAnswer(inv -> {
+            if (inv.getArgument(0) == null) { return binding(FROM_ID, P1); }
+            return soCnt.getAndIncrement() == 2 ? binding(999L, P2) : binding(FROM_ID, P1);
+        });
+        // selectCount 序列：重试P1=1、预检P1=0、重试P2=1（P2 归属被拒无预检）、重试P3=1、预检P3=0
+        AtomicInteger scCnt = new AtomicInteger();
+        lenient().when(memberMapper.selectCount(any())).thenAnswer(inv -> {
             LambdaQueryWrapper<ProjectMember> w = inv.getArgument(0);
-            if (w == null) { return binding(FROM_ID, P1); }
-            Long pid = wrapperProjectId(w);
-            if (pid != null && pid == P2) { return binding(999L, P2); }
-            if (pid != null && pid == P3) { return binding(FROM_ID, P3); }
-            return binding(FROM_ID, P1);
+            if (w == null) { return 0L; }
+            String seg = w.getSqlSegment();
+            if (seg != null && seg.contains("FOR UPDATE")) { return 0L; }
+            return seqValue(scCnt, 1L, 0L, 1L, 1L, 0L);
         });
 
         List<HandoverService.BatchHandoverResult> results = batch(List.of(P1, P2, P3));
@@ -298,18 +320,14 @@ class P272AcceptanceTest {
     @Test
     @DisplayName("重试不重复成功项：P1 上轮已移交 ⇒ SKIPPED 不重写；P2 正常完成")
     void batchRetrySkipsCompleted() {
+        // selectCount 序列：重试P1=0（上轮已移交 SKIPPED）、重试P2=1、预检P2=0
+        AtomicInteger scCnt = new AtomicInteger();
         lenient().when(memberMapper.selectCount(any())).thenAnswer(inv -> {
             LambdaQueryWrapper<ProjectMember> w = inv.getArgument(0);
             if (w == null) { return 0L; }
             String seg = w.getSqlSegment();
-            Long perId = wrapperPersonId(w);
             if (seg != null && seg.contains("FOR UPDATE")) { return 0L; }
-            if (seg != null && seg.contains("role") && perId != null && perId == TO_ID) { return 0L; }
-            if (seg != null && seg.contains("role") && perId != null && perId == FROM_ID) {
-                Long pp = wrapperProjectId(w);
-                return pp != null && pp == P1 ? 0L : 1L;
-            }
-            return 0L;
+            return seqValue(scCnt, 0L, 1L, 0L);
         });
         // P2 移交后真全清（P1 上轮已清 + P2 本轮清）⇒ DISABLED
         lenient().when(memberMapper.selectList(any())).thenAnswer(inv -> {
@@ -336,6 +354,15 @@ class P272AcceptanceTest {
     @Test
     @DisplayName("不得提前禁用：清单只含部分项目，名下仍有清单外活跃绑定 ⇒ 完成后也不 DISABLED")
     void batchNoPrematureDisable() {
+        // selectCount 序列：重试P1=1、预检P1=0
+        AtomicInteger scCnt = new AtomicInteger();
+        lenient().when(memberMapper.selectCount(any())).thenAnswer(inv -> {
+            LambdaQueryWrapper<ProjectMember> w = inv.getArgument(0);
+            if (w == null) { return 0L; }
+            String seg = w.getSqlSegment();
+            if (seg != null && seg.contains("FOR UPDATE")) { return 0L; }
+            return seqValue(scCnt, 1L, 0L);
+        });
         lenient().when(memberMapper.selectList(any())).thenAnswer(inv -> {
             LambdaQueryWrapper<ProjectMember> w = inv.getArgument(0);
             if (w == null) { return List.of(); }

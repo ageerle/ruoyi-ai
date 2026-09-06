@@ -243,6 +243,13 @@ tenant:
     - cms_content
     - negative_feedbacks
     - requirement_pool
+    # R10 补登：绩效记录/任务、项目跟随、协同圈、Gate 仲裁等 DDL 新表（无多租户语义）
+    - project_score_records
+    - project_score_tasks
+    - project_followers
+    - project_circle_posts
+    - project_circle_comments
+    - gate_arbitrations
     - ai_model_configs
     - system_config_versions
     - legacy_imports

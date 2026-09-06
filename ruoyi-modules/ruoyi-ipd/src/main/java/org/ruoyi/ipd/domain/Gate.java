@@ -75,6 +75,15 @@ public class Gate extends BaseEntity implements SoftDeletable {
     @TableField("del_flag")
     private String delFlag;
 
+    /** 签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21） */
+    private Date signDueAt;
+
+    /** 签署期限已延长次数（AC-GATE-21 上限 1 次） */
+    private Integer signExtensionCount;
+
+    /** 要素快照（GateElement 的 JSON 备份，便于后续审计回溯） */
+    private String elementSnapshot;
+
     /**
      * 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter
      */
