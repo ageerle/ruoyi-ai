@@ -87,6 +87,12 @@ __pycache__/
 ruvector.db
 .claude-flow/daemon-state.json
 .claude-flow/policy/state.json
+# Ruflo 运行时机器态（与 .claude-flow/.gitignore 声明 runtime 目录同一意图）；
+# 保留入库的只有 config.yaml / CAPABILITIES.md / .claude-flow/.gitignore 三个声明件
+.claude-flow/metrics/
+.claude-flow/security/
+.claude-flow/harness-active-policy.json
+.claude-flow/memory-package.json
 # 只指仓库根那个误建的嵌套空仓库；勿用无限定 ruoyi-ai/ —— 曾误吞 docs/docker/ruoyi-ai/** 交付件
 /ruoyi-ai/
 .agents/skills/
