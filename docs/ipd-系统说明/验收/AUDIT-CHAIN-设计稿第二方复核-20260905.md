@@ -132,9 +132,9 @@ ipd_dev 库现态：before_data / after_data = longtext（2e50bb71 的迁移 SQL
 
 | 项 | 内容 | 状态 |
 |---|---|---|
-| ① | `audit_logs.seq` 去 `AUTO_INCREMENT` | 待做（需停写窗口，与 ②③ 同 PR） |
-| ② | 新增 `audit_log_chain_heads` 单行锚表 + 登记 `tenant.excludes` | 待做（需停写窗口，与 ①③ 同 PR） |
-| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | 待做（需停写窗口，与 ①② 同 PR） |
+| ① | `audit_logs.seq` 去 `AUTO_INCREMENT` | **PR 就绪包已交付**（§4.1 迁移 SQL，内嵌禁 auto-apply）；pending 停写窗口执行。现态 seq 仍 `bigint NO UNI auto_increment` |
+| ② | 新增 `audit_log_chain_heads` 单行锚表 + 登记 `tenant.excludes` | **表已由指派兄弟建成**（活库 `ipd_dev` 存在，refined schema：chain_key PK + last_seq/last_hash/next_seq + CHECK），但**完全未接线**（无 Java 引用、seed 陈旧 last_seq=67 vs audit_logs max_seq=1554）；`tenant.excludes` 仍**未登记** chain_heads。PR 就绪包 §4.2 幂等建表 + §4.3 sync-seed + §5 excludes |
+| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | **PR 就绪包已交付需求规格 + 双选项骨架**（§6，悲观 P / 乐观 O **未决**见 §3）；本会话按**单一写入者不落 live Java**（归属 Wave3 Batch-2 QA-05-P2「AuditLogService 作者」）。现态 `AuditLog.java:21` NEVER 仍在、append 旧重试路径仍在 |
 | ④′ | 载荷列 **保持 longtext**（已 apply）+ `AuditEventData.requireJson` 护栏（已提交） | **已完成** |
 | ⑤ | `verifyChain` 拆 HASH_BROKEN / GAP 两类返回 | **已完成**（owner Q2 采纳 A′ 后落地：Service+record `0596c957`/`75fa56fb`、Controller 四态 `ba5c329d`、契约测 `AuditChainGapHashSplitTest` 5 例 `6d3eccf9`；绿门 24/24 Skipped=0，详见下方落地追记） |
 | ⑥ | **基线 DDL 回写 longtext**（§4） | **已完成**（`dd361ef3`，基线两列 json→longtext + 8 行规范化注释） |
@@ -159,6 +159,14 @@ A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确
 - **静态验证 ALL PASS**（`data/coding-harness/artifacts/q5_static_verify.py`，gitignore 本地件，不触共享库/不跑 HTTP）：① `py_compile` 语法门 PASS；② `ast` 抽取真 `chain_gate` 源跑 7 例判据矩阵全 PASS（run7 旧 jar 单空洞→PASS、DEF-6 载荷/未归因/四态 HASH_BROKEN/BROKEN→FAIL、四态 OK/GAP→PASS）；③ sqlite 仿真 LAG 跳号切分：run7 形态 `gap_hist=1 gap_new=0`（历史空洞降级）、注入删 1315 后 `gap_hist=1 gap_new=1`（真漏行仍被捕获）。
 - **对 run7 证据的推演**：run7 的 9 项 FAIL 全为单一 seq 1309 历史空洞驱动（`带载荷=0 空洞后首行=1 未归因=0`）→ Q5 改后 3 处门均降级为 PASS/WARN，同库态 re-run 应得 **83/83 ALL PASS**（check 条目数守恒，未增删）。
 - **边界（不伪称完成）**：脚本改断言为**代码层**；真 HTTP re-run 需 live 实例 + 会 mutate 共享库（改密/删除请求），按单写者 + 热窗纪律**留待主协调器协调窗执行**，本会话不擅自跑、不翻 P0-9.1 板卡（兄弟 `f9442b62` 已在镜像标「业务腿全绿」，本改使该标记获得断言层支撑）。**静态绿 ≠ HTTP 闭环**。
+
+### ①②③ PR 就绪包交付追记（2026-09-05 20:45 PDT，owner「①②③ = 备 PR 不执行、交主协调器」）
+
+- **交付物**：`验收/AUDIT-CHAIN-heads激活-PR就绪包-20260905.md`（只读探针 + 证据交付 + OPS-09 归属登记）。**不含落 live 源码的 Java、不执行 DDL/DML、不停实例、不部署**；迁移 SQL 内嵌文档（非 `docs/script/sql/update/` 独立件，防误 auto-apply 造成「DDL 先上 / Java 后上」写路径 500 landmine）。
+- **recon 材料性发现（改变 ①②③ 性质）**：② chain_heads **已由指派兄弟建成**（活库存在，refined schema，比设计稿方案 A 草图更精细），但**未接线**（无 Java 引用 + seed 陈旧 last_seq=67 vs audit_logs max_seq=1554 + seq 仍 auto_increment）；①③ 仍 pending；该工作在 **Wave3 规格包已指派「AuditLogService 作者」Batch-2 / QA-05-P2 slot**（标「与 DEF-9 互锁」）。
+- **未决设计张力（§3，交指派 owner）**：chain_heads 表注释「transaction-locked allocator」暗示**悲观 FOR UPDATE**，但 DEF-4 记「最小权限禁锁定读」→ CAS 协议 **P（悲观，须确认/授予锁定读权限）vs O（乐观 CAS + 重试，规避权限约束）未决**，本包不臆测。
+- **纪律**：本会话非主协调器，按**单一写入者 + OPS-09**，不写与兄弟 in-flight 设计可能冲突的臆测性 Java CAS；仅交付**非臆测的具体件**（迁移 SQL / tenant.excludes / Java CAS 需求规格与双选项骨架 / 契约测需求 / 原子上线序列），喂给 Batch-2 slot，由主协调器在停写窗口原子集成。
+- **交 owner / 主协调器确认项（PR 包 §10）**：① 归属确认（是否仍由 Batch-2 QA-05-P2 承接；若要本会话代拟完整 Java CAS 须先定 §3 P/O）② CAS 协议 P vs O ③ 陈旧 seed（§4.3 sync-seed，现 last_seq=67 严重落后）是否纳入停写窗口清单。
 
 ---
 
