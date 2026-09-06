@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  *
  * Round 8 / R8-P1-B：assignableTypes 改为 basePackages 全局覆盖，
  * 避免新增 controller（如 LaunchDateChangeController）漏登导致权限拒绝走基线 advice 返回 R&lt;&gt; 而非 IPD ApiV1Response。
+ * SEC-HIGH-3（CWE-693）：basePackages 方案以 CI 防漂移测试固化（PermissionAdviceCoverageTest）——
+ * 静态断言本注解含 basePackages 且模块内所有 @RestController 均落在 org.ruoyi.ipd.controller 包，杜绝再次漏列。
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(basePackages = "org.ruoyi.ipd.controller")
