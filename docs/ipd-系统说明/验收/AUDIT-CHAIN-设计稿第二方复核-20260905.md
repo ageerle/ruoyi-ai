@@ -134,11 +134,11 @@ ipd_dev 库现态：before_data / after_data = longtext（2e50bb71 的迁移 SQL
 |---|---|---|
 | ① | `audit_logs.seq` 去 `AUTO_INCREMENT` | **PR 就绪包已交付**（§4.1 迁移 SQL，内嵌禁 auto-apply）；pending 停写窗口执行。现态 seq 仍 `bigint NO UNI auto_increment` |
 | ② | 新增 `audit_log_chain_heads` 单行锚表 + 登记 `tenant.excludes` | **表已由指派兄弟建成**（活库 `ipd_dev` 存在，refined schema：chain_key PK + last_seq/last_hash/next_seq + CHECK），但**完全未接线**（无 Java 引用、seed 陈旧 last_seq=67 vs audit_logs max_seq=1554）；`tenant.excludes` 仍**未登记** chain_heads。PR 就绪包 §4.2 幂等建表 + §4.3 sync-seed + §5 excludes |
-| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | **PR 就绪包已交付需求规格 + 双选项骨架**（§6，悲观 P / 乐观 O **未决**见 §3）；本会话按**单一写入者不落 live Java**（归属 Wave3 Batch-2 QA-05-P2「AuditLogService 作者」）。现态 `AuditLog.java:21` NEVER 仍在、append 旧重试路径仍在 |
+| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | **已升级为完整双变体 turnkey DRAFT**（蜂群 turnkey 包 §4：ChainHead 实体/Mapper + append 重写 P/O 双变体 + 删除清单补 `orderBySeq()` + 6 条契约测 + 启动自检，CodeReview 1 MAJOR/5 MINOR 全修订）；**CAS 张力已被证据消解**：chain_heads 表级 SELECT 即覆盖锁定读 → **P 无需授权变更即可行**（建议拍 P；O 须 READ_COMMITTED 防 RR 快照失明）。归属不变（Wave3 Batch-2 QA-05-P2）。现态 NEVER 仍在、append 旧重试路径仍在 |
 | ④′ | 载荷列 **保持 longtext**（已 apply）+ `AuditEventData.requireJson` 护栏（已提交） | **已完成** |
 | ⑤ | `verifyChain` 拆 HASH_BROKEN / GAP 两类返回 | **已完成**（owner Q2 采纳 A′ 后落地：Service+record `0596c957`/`75fa56fb`、Controller 四态 `ba5c329d`、契约测 `AuditChainGapHashSplitTest` 5 例 `6d3eccf9`；绿门 24/24 Skipped=0，详见下方落地追记） |
 | ⑥ | **基线 DDL 回写 longtext**（§4） | **已完成**（`dd361ef3`，基线两列 json→longtext + 8 行规范化注释） |
-| ⑦ | **`hash_version` 62 行修正 + 实体补字段 + 一致性契约测**（§5） | 待做（owner Q3：交主协调器，涉 UPDATE append-only 历史行） |
+| ⑦ | **`hash_version` 处置**（原定性：62 行误标 v2 + 实体缺字段 + 一致性测） | **重定性：急性问题已随清库消失**（21:10 现态 207/207 行全 NULL、非 NULL 残留 0；列语义 NULL=legacy-v1 与现行 v1 算法天然一致；`AuditHashChain` 已内置 canonicalV1/V2/byVersion 双版本机制）。残留=休眠列，处置包见蜂群 turnkey 包 §3（三选项，建议 a 维持休眠；若拍 b 随 Batch-2 同批接线） |
 | ⑧ | **存量空洞 seq 610..1308 处置**（补齐或改断言语义），否则 P0-9.1 仍 9 项 FAIL | **已实现「改断言语义」**（owner Q5 采纳「改断言不补行」：P0-9.1 脚本 3 处 GAP 硬门降级为告警——chain 门 / 断裂数门 / seq 零跳号门；静态验证 ALL PASS，详见下方 Q5 落地追记。**live re-run 待协调窗**，未伪称收 done） |
 
 A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确认有载荷检索需求后再排期（届时 payloads 拆表可作为 A′ 的增量演进，不需回退 A′）。
@@ -168,6 +168,14 @@ A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确
 - **纪律**：本会话非主协调器，按**单一写入者 + OPS-09**，不写与兄弟 in-flight 设计可能冲突的臆测性 Java CAS；仅交付**非臆测的具体件**（迁移 SQL / tenant.excludes / Java CAS 需求规格与双选项骨架 / 契约测需求 / 原子上线序列），喂给 Batch-2 slot，由主协调器在停写窗口原子集成。
 - **交 owner / 主协调器确认项（PR 包 §10）**：① 归属确认（是否仍由 Batch-2 QA-05-P2 承接；若要本会话代拟完整 Java CAS 须先定 §3 P/O）② CAS 协议 P vs O ③ 陈旧 seed（§4.3 sync-seed，现 last_seq=67 严重落后）是否纳入停写窗口清单。
 
+### 蜂群并行执行追记（2026-09-05 21:09–21:20 PDT，owner「基于以上利用多个专业智能体并行执行」）
+
+- **编队（盘点→实施→验证→同步四段）**：只读事实探针（本会话 Bash/mysql，全 SELECT/SHOW/grep）→ turnkey 起草（本会话）→ **CodeReview 专业智能体交叉复核**（对照 live 源码审 §2/§4/§5）→ 文档同步 + path-lock 提交。**live 落地仍 gate 主协调器/Batch-2**（单一写入者 + owner「不落 live Java/不执行」框架内作业）。
+- **四项材料性事实更新（F1–F4，铁证见 turnkey 包 §1）**：①**权限模型已被铺好但被库级架空**——audit_logs 表级 S,I（只追加意图已设）+ chain_heads 表级 S,UPDATE（分配器模型），但库级 `S,I,U,D ON ipd_dev.*` 并集架空表级（DEF-5 坐实）；②**CAS 张力消解**——chain_heads 表级 SELECT 覆盖 `FOR UPDATE` 锁定读 → P 无需授权变更；③**⑦ 重定性**——hash_version 列 207/207 全 NULL（清库后），旧「62 行标 v2」急性问题消失，残留=休眠列；④**窗口事实开着 + seed 缺口 1540**——0 实例/0 监听/0 ipd_app 连接，GLOBAL 冻结 67 vs max_seq=1607。
+- **交付物**：`验收/AUDIT-CHAIN-剩余项蜂群turnkey交付包-20260905.md`（Q6 REVOKE runbook + ⑦ 处置包 + ①②③ CAS P/O 完整 DRAFT + seed/窗口刷新 + Q7 重定性 + owner 确认项更新版）。
+- **CodeReview 智能体结论**：可作 Batch-2 输入附 3 前置；**MAJOR-1**（O 变体 RR 快照致 CAS 重试永久失明，100 并发契约测必失败）已修（READ_COMMITTED）并反向强化「拍 P」；5 MINOR（REVOKE 三探针/advance 断言/orderBySeq 补删/GENESIS 兕底/措辞）全部修订入正文；探针亲跑全清。
+- **纪律**：零写库（无 DDL/DML/GRANT/REVOKE）、零实例操作、零 live 源码；log.md 本段留工作树交主协调器。
+
 ---
 
 ## 8. 交 owner 的决策清单（按时序依赖排序）
@@ -179,8 +187,8 @@ A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确
 | **Q3** | **D1 hash 协议**：若选 A′，是否仍切 v2？ | 依赖 §5 三项前置 | 先修 62 行误标 + 补实体字段，**再**谈双版本验；否则 (c) 落地即制造 62 行假断裂 |
 | **Q4** | **DEF-6 收口补充**：基线 DDL 回写（§4） | 决定 DEF-6 能否视为完全闭环 | 回写基线两列为 longtext，与 QA-04-D2「漂移列回写」同实践 |
 | **Q5** | **存量空洞处置**：补齐 seq 610..1308 还是改 P0-9.1 断言语义？ | 决定 P0-9.1 能否从 ◐ 收 done | **owner 已采纳「改断言语义」且已落地**（GAP 降级告警、不补行；脚本改 + 静态验证 ALL PASS，live re-run 待协调窗，详见 §7 Q5 落地追记） |
-| **Q6** | **DEF-5**（库级 grant 架空表级只追加） | 独立，但设计稿建议同 PR 前解决 | 仍待处置，本轮未动 |
-| **Q7** | **16050 实例**：`ruoyi-admin-def6.jar`（18:48:20 启动，不含护栏且 `ruoyi-ipd`/`ruoyi-system` 双双陈旧） | 对已改 longtext 的库是**活的 DEF-1 fail-fast 缺口** | 停掉或换含护栏的 def6i.jar；根因是部署链从陈旧 ~/.m2 解析模块 |
+| **Q6** | **DEF-5**（库级 grant 架空表级只追加） | 独立，可先行 | **已交付 REVOKE runbook**（蜂群 turnkey 包 §2）：铁证（库级 S,I,U,D vs audit_logs 表级 S,I）+ 最小 REVOKE（只收库级 UPDATE,DELETE）+ 安全边界全闭合（125 表/124 表级覆盖、0 view/routine/trigger/event、单 host 变体、0 列级权限）+ 三步验证/回滚。待 owner 授权执行（21:11 探针：0 活跃 ipd_app 连接=理想窗口） |
+| **Q7** | **16050 实例**：`ruoyi-admin-def6.jar`（18:48:20 启动，不含护栏且 `ruoyi-ipd`/`ruoyi-system` 双双陈旧） | 对已改 longtext 的库是**活的 DEF-1 fail-fast 缺口** | 停掉或换含护栏的 def6i.jar；根因是部署链从陈旧 ~/.m2 解析模块。**已重定性 moot**（21:11 全实例停：0 进程/0 监听/0 ipd_app 连接，缺口无载体）→ 转部署纪律（turnkey 包 §6）：下次起实例统一含护栏 jar + 起后冒烟（requireJson 在位 + verify 四态字段在位） |
 
 ---
 
