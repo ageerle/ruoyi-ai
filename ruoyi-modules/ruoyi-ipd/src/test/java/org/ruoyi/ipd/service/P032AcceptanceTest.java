@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.domain.SystemConfig;
 import org.ruoyi.ipd.mapper.SystemConfigMapper;
+import org.ruoyi.ipd.mapper.SystemConfigVersionMapper;
 
 import java.util.List;
 
@@ -26,12 +27,15 @@ import static org.mockito.Mockito.*;
 class P032AcceptanceTest {
 
     private SystemConfigMapper mapper;
+    private SystemConfigVersionMapper versionMapper;
     private SystemConfigService service;
 
     @BeforeEach
     void setup() {
         mapper = mock(SystemConfigMapper.class);
-        service = new SystemConfigService(mapper);
+        // P0-3.3 版本链依赖（P0-3.2 契约测试不触及，仅满足构造器）
+        versionMapper = mock(SystemConfigVersionMapper.class);
+        service = new SystemConfigService(mapper, versionMapper);
     }
 
     @Test

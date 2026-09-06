@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.SystemConfig;
 import org.ruoyi.ipd.mapper.SystemConfigMapper;
+import org.ruoyi.ipd.mapper.SystemConfigVersionMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,11 +36,15 @@ class SystemConfigServiceCacheTest {
     @Mock
     private SystemConfigMapper systemConfigMapper;
 
+    /** P0-3.3 版本链依赖（缓存语义测试不触及，仅满足构造器） */
+    @Mock
+    private SystemConfigVersionMapper systemConfigVersionMapper;
+
     private SystemConfigService service;
 
     @BeforeEach
     void setUp() {
-        service = new SystemConfigService(systemConfigMapper);
+        service = new SystemConfigService(systemConfigMapper, systemConfigVersionMapper);
     }
 
     private SystemConfig row(String key, String value) {
