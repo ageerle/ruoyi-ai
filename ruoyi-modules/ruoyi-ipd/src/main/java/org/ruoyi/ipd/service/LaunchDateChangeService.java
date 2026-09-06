@@ -151,13 +151,10 @@ public class LaunchDateChangeService {
     }
 
     /**
-     * 禁止直接写 launchDate 的守卫（供 ProjectService 调用）。
-     *
-     * @param projectId 项目
+     * R8-AUTO-5:删除 dead code `assertNoDirectLaunchDateMutation`（永远抛异常无 caller）。
+     * 后台安全审查 fail-open / control-regression 建议：要么删除（避免误用），要么改成真正守卫。
+     * 本 commit 删除——项目创建 launchDate 写入由后续 P0-2 (ProjectService groupId 校验) 兜底。
      */
-    public void assertNoDirectLaunchDateMutation(Long projectId) {
-        throw new ServiceException("上市日期须经双签流程修改（AC-INC-33），禁止单方面写入");
-    }
 
     private Project requireWritableProject(Long projectId) {
         Project project = projectMapper.selectById(projectId);
