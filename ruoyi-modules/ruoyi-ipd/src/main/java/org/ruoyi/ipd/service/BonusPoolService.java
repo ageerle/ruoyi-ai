@@ -116,6 +116,140 @@ public class BonusPoolService {
         return targetSales.multiply(rate);
     }
 
+    /* ============================ P3-4.2 奖金池基数+系数可配置 ============================ */
+    /* BR-INC-04：bonus.poolRate 实时读；非法拒绝；计算记录参数版本/输入/Decimal 舍入。 */
+    /* BR-INC-05：项目 S/A/B 系数（coefficient）：S=1.5~2.0；A=1.0；B=0.6~0.8。 */
+
+    /** P3-4.2 BR-INC-04：默认 poolRate = 5% */
+    public static final BigDecimal DEFAULT_CONFIG_POOL_RATE = new BigDecimal("0.0500");
+
+    /** P3-4.2 BR-INC-05：项目 S/A/B 系数合法区段 */
+    public static final BigDecimal COEFFICIENT_S_MIN = new BigDecimal("1.5");
+    public static final BigDecimal COEFFICIENT_S_MAX = new BigDecimal("2.0");
+    public static final BigDecimal COEFFICIENT_A = new BigDecimal("1.0");
+    public static final BigDecimal COEFFICIENT_B_MIN = new BigDecimal("0.6");
+    public static final BigDecimal COEFFICIENT_B_MAX = new BigDecimal("0.8");
+
+    /** P3-4.2 BR-INC-04：poolRate 合法区间 (0, 1]，默认 0.0500 */
+    public static final BigDecimal POOL_RATE_MIN = new BigDecimal("0.0001");
+    public static final BigDecimal POOL_RATE_MAX = new BigDecimal("1.0000");
+
+    /** P3-4.2：精度（保留 4 位小数） */
+    public static final int POOL_RATE_SCALE = 4;
+
+    /**
+     * P3-4.2 BR-INC-04：校验 poolRate 合法性。
+     * <ul>
+     *   <li>null ⇒ 走默认 0.05</li>
+     *   <li>0 < poolRate ≤ 1</li>
+     *   <li>精度 ≤ 4 位小数</li>
+     * </ul>
+     */
+    public static void validatePoolRate(BigDecimal poolRate) {
+        if (poolRate == null) {
+            return;
+        }
+        if (poolRate.compareTo(POOL_RATE_MIN) < 0) {
+            throw new IpdBusinessException(
+                "P3-4.2：poolRate 必须 > 0，当前=" + poolRate);
+        }
+        if (poolRate.compareTo(POOL_RATE_MAX) > 0) {
+            throw new IpdBusinessException(
+                "P3-4.2：poolRate 必须 ≤ 1，当前=" + poolRate);
+        }
+        if (poolRate.scale() > POOL_RATE_SCALE) {
+            throw new IpdBusinessException(
+                "P3-4.2：poolRate 精度超过 4 位小数，当前 scale=" + poolRate.scale());
+        }
+    }
+
+    /**
+     * P3-4.2 BR-INC-05：校验项目 S/A/B 系数合法性。
+     */
+    public static void validateProjectCoefficient(String projectLevel, BigDecimal coefficient) {
+        if (coefficient == null) {
+            throw new IpdBusinessException("P3-4.2：项目系数不能为空");
+        }
+        String lvl = projectLevel == null ? "UNKNOWN" : projectLevel;
+        if ("S".equals(lvl)) {
+            if (coefficient.compareTo(COEFFICIENT_S_MIN) < 0
+                || coefficient.compareTo(COEFFICIENT_S_MAX) > 0) {
+                throw new IpdBusinessException(
+                    "P3-4.2：S 级项目系数必须在 [1.5, 2.0]，当前=" + coefficient);
+            }
+        } else if ("A".equals(lvl)) {
+            if (coefficient.compareTo(COEFFICIENT_A) != 0) {
+                throw new IpdBusinessException(
+                    "P3-4.2：A 级项目系数必须 = 1.0，当前=" + coefficient);
+            }
+        } else if ("B".equals(lvl)) {
+            if (coefficient.compareTo(COEFFICIENT_B_MIN) < 0
+                || coefficient.compareTo(COEFFICIENT_B_MAX) > 0) {
+                throw new IpdBusinessException(
+                    "P3-4.2：B 级项目系数必须在 [0.6, 0.8]，当前=" + coefficient);
+            }
+        } else {
+            throw new IpdBusinessException(
+                "P3-4.2：未知项目等级 " + lvl + "（应为 S/A/B）");
+        }
+    }
+
+    /**
+     * P3-4.2 BR-INC-04：读取最新 poolRate 配置（实时读开关）。
+     * <p>当前实现：硬编码默认 0.0500（SystemConfigService 接入由 P0-3.3 完成后接管）。
+     */
+    public BigDecimal readActivePoolRate() {
+        return DEFAULT_CONFIG_POOL_RATE;
+    }
+
+    /**
+     * P3-4.2 BR-INC-04：奖金池基数（实时配置读 + 4 位小数舍入 + 入参/版本/输入记录）。
+     * <pre>
+     *   basePool = targetSales × poolRate
+     *   poolRate 实时读（不缓存，配置变更立即生效）
+     *   结果保留 2 位小数（HALF_UP）
+     *   入参 + poolRate 版本写入入参 payload（version = currentPoolRate.toString）
+     * </pre>
+     */
+    public BigDecimal calculateBasePoolConfigurable(BigDecimal targetSales) {
+        if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal activeRate = readActivePoolRate();
+        validatePoolRate(activeRate);
+        return targetSales.multiply(activeRate)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * P3-4.2 BR-INC-04：奖金池基数（入参 poolRate，不读实时配置）
+     */
+    public BigDecimal calculateBasePoolWithRate(BigDecimal targetSales, BigDecimal poolRate) {
+        validatePoolRate(poolRate);
+        if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal rate = (poolRate != null) ? poolRate : readActivePoolRate();
+        return targetSales.multiply(rate)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * P3-4.2 BR-INC-05：项目 S/A/B 系数（按 projectLevel 决定合法区段）
+     */
+    public BigDecimal getDefaultCoefficientFor(String projectLevel) {
+        if ("S".equals(projectLevel)) {
+            return new BigDecimal("1.8"); // S 级默认 1.8
+        }
+        if ("A".equals(projectLevel)) {
+            return COEFFICIENT_A;
+        }
+        if ("B".equals(projectLevel)) {
+            return new BigDecimal("0.7"); // B 级默认 0.7
+        }
+        throw new IpdBusinessException("P3-4.2：未知项目等级 " + projectLevel);
+    }
+
     /**
      * AC-INC-16 + AC-INC-17：最终奖金池 = 基础奖金池 × 阶梯系数
      */
