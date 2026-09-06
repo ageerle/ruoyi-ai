@@ -1729,3 +1729,32 @@ R8 clean compile 暴露兄弟重构链式断层。
 
 ### 下一刀
 等兄弟 commit ProductController + 其他 dirty 文件后，错峰重跑全模块回归验证 100% 绿。
+
+## 2026-09-05 19:47–19:55 PDT Qoder 治理会话（第三方）：零漂移对账 + O2 落地 + 对本会话上轮错误结论的订正
+
+用户指令「确保整个项目 0 飘移」（承接上轮 O1–O4）。先把「漂移」定成可测口径：声明与可执行真值不一致，每维必须给命令 + 时间戳 + 数值；并反向确立「无规则被违反的不算漂移」，避免把 0 漂移做成分布式改写。
+
+### 订正（先认自己的错）
+- **本会话上轮在 §六 O1 写的「双 advice 无 `@Order`，靠 Spring 解析顺序决胜」是错的**：`IpdPermissionExceptionHandler.java:21` = `@Order(HIGHEST_PRECEDENCE)`、`IpdServiceExceptionAdvice.java:29` = `@Order(HIGHEST_PRECEDENCE + 1)`，顺序确定且返回体逐字相同。错因：只用 `grep -A3 '@RestControllerAdvice'` 取证，而 `@Order` 恰在其上一行，从未进入 grep 窗口——只 grep 不读文件的教科书式误判。
+- 订正后的真缺陷（仍是冗余件，但性质不同）：14 个 IPD controller 全在 `org.ruoyi.ipd.controller` 包内，而 permission handler 已 `basePackages` 全覆盖 + HIGHEST 优先 → advice 的 `handleIpdPermission`/`handleNotPermission`/`handleNotRole` 三方法**生产不可达**；advice:79-80 与 `DefectBAdviceAcceptanceTest` Javadoc:37/:57 仍把 `assignableTypes` 白名单当前提（R8-P1-B 已改），该测试只 `setControllerAdvice` 一个 advice，绿的是被隔离出来的死代码。补丁规格见台账 §四 P4。
+- 本会话自己台账里的 2 处歧义路径（`vibe-kanban/manage.py`、`docs/script/leave/leave1-6.json`）与 1 处件数笔误（“14 件”实为 13 件）已就地订正；未 `--amend` 提交说明（HEAD 已属兄弟，折叠重写会吞他人 commit）。
+
+### 已归零
+- Δ3／原 O2：`.claude-flow` 下 13 个 Ruflo 运行时派生态件（`metrics/` 10 + `security/audit-status.json` + `harness-active-policy.json` + `memory-package.json`）脱离追踪，磁盘零删除，保留 `config.yaml`/`CAPABILITIES.md`/`.claude-flow/.gitignore` 三件入库——commit **`017d159b`**（摘除与提交同一条命令完成，避开兄弟 `git add -A` 竞态）。
+- Δ5：`naming-convention.md` §8.1/§8.2 两处代码位置引用已失效（文档写 `ruoyi-admin/.../ApiV1Response`、`ApiErrorCode`，实际在 `ruoyi-modules/ruoyi-ipd/.../ipd/common/ApiV1Response.java`、`ApiV1ErrorCode.java`），已勘误为现存路径并保留原始决策语义。
+- Δ1/Δ2/Δ4 复验：上轮 117 项摘除**未被复吸**（实测 6 类路径全 0）、`ls-files -i -c` = 0、`submodule status` rc=0、隔离区与重命名均在位——上轮修复自维持。
+
+### 不能由本会话归零（已出到行补丁）
+- **Δ9 看板仍 `has_drift: True`**：镜像 246 卡全 `unchanged`（已纳管部分零漂移），但在线 `board_total: 278` → **32 张卡未回写镜像**（R8-P0-1…10 / AUD-GOV-* / SEC-NEW-MED-1…4 / SEC-HIGH-1、3 / QA-05-P1…P3 / PERF-P0-1、2 / AUDIT-CHAIN-IMPL-C / QA-04-D1、D2）。镜像是 SSOT 且此刻 ` M` 脏（兄弟 11 行在途），按单一写入者纪律不代写；纳管材料已**机器生成**（标题逐字取自看板快照）：`治理轮/零漂移-看板纳管材料-32卡-2026-09-05.md`。另 `manage.py` 源码 `:175` 本身写明 “Do not delete or adopt them implicitly”，工具设计与纪律一致。
+- Δ10 本地 ahead **135** / behind 0：push 需 owner 明确授权（hook 拦），选里程碑净窗口执行。
+- Δ12 对象库：`.git` 624M 但 pack 仅 69M，loose 540M；8 个 ≥30MB 大对象经 `--find-object` 逐个验证**均无 ref 引用**，`fsck --unreachable` = 1371 blob + 215 commit。原 O4 定案：**不做 `filter-repo`**（活跃 pack 才 69M 收益小；更要害的是本仓以 commit SHA 作审计证据，重写历史会废掉 log/镜像/台账里以百计引用；6+ 会话 + P131 链接工作树 + 双 remote 成本远超 600M），改推 L1 `git gc`（安全）/ L2 `prune --expire=now`（永久失去 215 个不可达提交的恢复路径，需 owner 拍板）。
+- 原 O3 定案：分支与 stash **均保留**——`feat/perf-01-nextcode-unique` 未并入（ ahead 2 commit，11 files +1422/−40，含 673 行 P131 集成测试）；两条 stash 逐 blob 比对 HEAD 全部不同且兄弟自述收口后 pop。**新发现交互风险：这两条 stash 的索引态含 `ruvector.db`/`.swarm/memory.db`/`daemon-state.json`/`policy/state.json`，一旦 pop 会把上轮脱库路径重新带回索引并被 `git add -A` 固化（ignore 不作用于已入索引文件）→ pop 后须立即重跑摘除+同秒提交。**
+- Δ11 工作树脏 14 项属兄弟泳道；其中未跟踪的 `P032HttpAcceptanceTest.java` 语法断裂（`:105/:123/:132 需要';'`）致 `ruoyi-ipd` 整体 test-compile 不可用（HEAD 不含该文件，HEAD 层面无漂移）→ 本会话因此无法跑 O1 所需的红/绿验证，已写明前置条件，不宣称 Java 变更完成。
+
+### 经核查不算漂移（防过度清理）
+- `docs/wiki/**`：仓内权威 `node docs/wiki/wiki-lint.cjs` = **121 通过 / 0 失败 / 0 孤立**；我的通用审计曾误报 46 条 `../raw/...` 失效，是审计工具解析基准错（wiki 链接以 `docs/wiki/` 为根），以 linter 为准。
+- 提交引用完整率 **165/167 ≈ 98.8%**：21 个无法解析的候选逐条定性后仅 2 条真失效（`log.md:1353` `06f1c1aa`、总账 `:333` `32720f79`），其余为看板/项目 UUID 前缀、记忆 id、Codex 任务 id、更长 SHA256 子串，以及 **1 条跨仓引用**（`04bb27d` 实测为 `/Users/mac/Documents/ruoyi-ipd-web` 的 commit）——不属本仓漂移。
+- `验收/` 日期双轨命名（47 个 `20260905` vs 7 个 `2026-09-05`）：`naming-convention.md` 全文无文件名日期格式规定，无规则被违反 → 不改名（改名会断卡面 evidence 引用链）。
+- 镜像 `:9`/`:307` 声明的 5 个配套文档全库无近名文件（非改名而是从未落盘），属兄弟/主协调器写权，只出补丁不代写：`全局实现审计-20260905.md`、`全局需求完整性审计-文档分册-20260905.md`、`验收追溯矩阵-20260905.md`、`vibe-kanban/接入说明.md`、`验收/蜂群并发覆盖原文-20260905.md`（最后一个是“已[全文另存]”却无产物，涉 41 行旧摘要可恢复性，需 owner 定性）。
+
+台账：`治理轮/零漂移对账-2026-09-05.md`（12 维真值表 + 8 维归零 + Z1–Z12 复验 + 回滚）。本轮全部改动为索引/文档层，无磁盘删除、无历史重写、无分支与 stash 变更。

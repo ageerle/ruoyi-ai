@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +26,14 @@ import java.util.Set;
 /**
  * P1-3.1：与项目创建同事务初始化六阶段及完整目录。
  * 锁定项目后按当前读检查完整结构；重试不重建，发现部分或错误结构时保留现场并拒绝补写。
+ *
+ * <p>R8X-CONT-1 P0-3：单项目 bootstrap 从 80 次单条 INSERT（6 阶段 + 69 动作 + 1 project）压到 3 次 SQL：
+ * <ol>
+ *   <li>{@link ProjectStageMapper#insertBatch} 一次插入 6 行 stages（batchSize=100）</li>
+ *   <li>{@link StageActionMapper#insertBatch} 一次插入全部 actions（batchSize=200）</li>
+ *   <li>project INSERT 由 ProjectService.create() 完成，本类不再触发</li>
+ * </ol>
+ * 事务语义保持不变（{@code Propagation.MANDATORY}），失败仍由调用方事务整体回滚。
  */
 @Service
 @RequiredArgsConstructor
@@ -34,6 +43,11 @@ public class ProjectBootstrapService {
         {"DEV", "开发", "30"}, {"VALID", "验证", "40"},
         {"LAUNCH", "发布", "50"}, {"LIFECYCLE", "生命周期", "60"}
     };
+
+    /** R8X-CONT-1 P0-3：阶段批量插入大小（6 阶段 < 100，单批一次性写入） */
+    private static final int STAGE_BATCH_SIZE = 100;
+    /** R8X-CONT-1 P0-3：动作批量插入大小（69 动作 < 200，单批一次性写入） */
+    private static final int ACTION_BATCH_SIZE = 200;
 
     private final ProjectStageMapper projectStageMapper;
     private final StageActionMapper stageActionMapper;
@@ -62,18 +76,34 @@ public class ProjectBootstrapService {
             verifyCompleteGraph(project, stages, actions);
             return 0;
         }
-        Set<Long> stageIds = new HashSet<>();
-        Set<Long> actionIds = new HashSet<>();
+        // R8X-CONT-1 P0-3：阶段批量构建（先收集实体，再一次性批量插入）
+        List<ProjectStage> stageList = new ArrayList<>(STAGES.length);
+        Date now = new Date();
         for (String[] stageDef : STAGES) {
             ProjectStage stage = ProjectStage.builder().projectId(projectId)
                 .stageCode(stageDef[0]).stageName(stageDef[1]).sortOrder(Integer.parseInt(stageDef[2]))
                 .status("NOT_STARTED").tenantId("000000").delFlag("0").build();
-            stage.setCreateTime(new Date());
+            stage.setCreateTime(now);
             stage.setCreateBy(operatorId);
             stage.setUpdateBy(operatorId);
-            requireInsert(projectStageMapper.insert(stage));
+            stageList.add(stage);
+        }
+        // 一次 SQL 批量插入 6 行（MyBatis-Plus ASSIGN_ID 自动回填到实体）
+        if (!projectStageMapper.insertBatch(stageList, STAGE_BATCH_SIZE)) {
+            throw writeFailure();
+        }
+        Set<Long> stageIds = new HashSet<>();
+        for (ProjectStage stage : stageList) {
             requireGeneratedId(stage.getId(), stageIds);
-            for (ActionDef def : ActionCatalog.byStage(stageDef[0])) {
+        }
+        if (stageIds.size() != STAGES.length) throw writeFailure();
+
+        // R8X-CONT-1 P0-3：动作批量构建（依赖已回填的 stageId，再一次性批量插入）
+        List<StageAction> actionList = new ArrayList<>(ActionCatalog.ALL.size());
+        for (int i = 0; i < STAGES.length; i++) {
+            ProjectStage stage = stageList.get(i);
+            String stageCode = STAGES[i][0];
+            for (ActionDef def : ActionCatalog.byStage(stageCode)) {
                 boolean applicable = ActionCatalog.applicableTo(
                     def, project.getTemplateType(), project.getTargetMarkets());
                 StageAction action = StageAction.builder().projectId(projectId).stageId(stage.getId())
@@ -81,14 +111,22 @@ public class ProjectBootstrapService {
                     .depth(ActionCatalog.expectedDepth(def, project.getTemplateType()))
                     .status(applicable ? "NOT_STARTED" : "NA")
                     .isBlocking(def.blocking() ? "1" : "0").isBioFeature(def.bioFeature() ? "1" : "0").build();
-                action.setCreateTime(new Date());
+                action.setCreateTime(now);
                 action.setCreateBy(operatorId);
                 action.setUpdateBy(operatorId);
-                requireInsert(stageActionMapper.insert(action));
-                requireGeneratedId(action.getId(), actionIds);
+                actionList.add(action);
             }
         }
-        if (stageIds.size() != STAGES.length || actionIds.size() != ActionCatalog.ALL.size()) throw writeFailure();
+        // 一次 SQL 批量插入全部 69 行
+        if (!stageActionMapper.insertBatch(actionList, ACTION_BATCH_SIZE)) {
+            throw writeFailure();
+        }
+        Set<Long> actionIds = new HashSet<>();
+        for (StageAction action : actionList) {
+            requireGeneratedId(action.getId(), actionIds);
+        }
+        if (actionIds.size() != ActionCatalog.ALL.size()) throw writeFailure();
+
         return stageIds.size();
     }
 
@@ -130,7 +168,6 @@ public class ProjectBootstrapService {
     }
 
     private static boolean positive(Long id) { return id != null && id > 0; }
-    private static void requireInsert(int count) { if (count != 1) throw writeFailure(); }
     private static void requireGeneratedId(Long id, Set<Long> ids) {
         if (!positive(id) || !ids.add(id)) throw writeFailure();
     }
