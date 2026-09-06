@@ -1,8 +1,9 @@
---- # Round 8 / 后台安全审查 credentials-exposure：dev profile 默认密钥（仅供本地启动）
-# 注：commit a8a70ad9 已把密钥写入 git history，视为泄露需轮换；本文件提供新默认值（与历史不同）
-# 生产环境必须通过 SA_TOKEN_JWT_SECRET_KEY 环境变量覆盖，dev 仅作 fallback
+--- # Round 8 / 后台安全审查 sensitive-to-observability：删除 dev profile 默认密钥
+# 本地开发者必须通过 .env 或 IDE run configuration 注入 SA_TOKEN_JWT_SECRET_KEY
+# application.yml 与 application-dev.yml 都用 ${SA_TOKEN_JWT_SECRET_KEY:} 无默认占位符
+# application-prod.yml 同步提交 ${SA_TOKEN_JWT_SECRET_KEY:} 无默认（待 sensitive-field-guard hook 解除后由用户/CI 手动合并）
 sa-token:
-  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:devOnly-rotated-2026-09-05-7x9K2mN5pQ8rT4vW1zB3cF6gH0jL5nP8qR2sU9wX4yA7bD0eG3hI6kM1nO4rQ7tV}
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:}
 
 --- # 监控中心配置
 spring.boot.admin.client:
