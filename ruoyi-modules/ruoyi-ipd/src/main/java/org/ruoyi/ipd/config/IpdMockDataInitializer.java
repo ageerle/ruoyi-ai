@@ -8,6 +8,7 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProductGroupMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -19,7 +20,8 @@ import java.util.Date;
 /**
  * Mock 人员 / 产品组初始化（TS-10：人员同步一期 Mock，二期对接 HR API）
  * 仅 dev profile 生效；幂等（按 employee_no / group_name 判存在即跳过）。
- * 初始密码 Ipd@123456（BCrypt），首登强制改密 must_change_pwd=1。
+ * 初始密码来源：{@code ipd.security.initial-password} 配置项（prod 由 {@code IPD_INITIAL_PWD} env 注入，dev 默认 Ipd@123456），首登强制改密 must_change_pwd=1。
+ * <p>SEC-HIGH-2：INITIAL_PWD 不再硬编码，从 Spring 配置注入（prod 启动时若 env 缺失则因空密码启动失败，fail-fast）。
  */
 @Slf4j
 @Component
@@ -27,7 +29,18 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class IpdMockDataInitializer implements ApplicationRunner {
 
+    /**
+     * 仅供测试类（IpdMockDataInitializerTest）使用的常量默认值，便于 BCrypt 算法层单测不依赖 Spring 容器。
+     * 实际 hash 写入使用 {@link #runtimeInitialPwd} 字段（Spring 注入），与本常量解耦。
+     */
     public static final String INITIAL_PWD = "Ipd@123456";
+
+    /**
+     * 实际写入 person.password_hash 的初始密码，从 {@code ipd.security.initial-password} 注入。
+     * dev profile 默认 Ipd@123456（application-dev.yml），prod profile 必须通过 {@code IPD_INITIAL_PWD} env 显式注入（父 application.yml 无默认）。
+     */
+    @Value("${ipd.security.initial-password}")
+    private String runtimeInitialPwd;
 
     private final ProductGroupMapper productGroupMapper;
     private final PersonMapper personMapper;
@@ -96,7 +109,9 @@ public class IpdMockDataInitializer implements ApplicationRunner {
             // SEC-HIGH-1: BCrypt cost 4→10 (Round 9 / R9-BC-COST)。
             // 4 实例 × 100 并发实测：cost=10 单次 hash ~80ms（vs cost=4 ~8ms），10× 时间换来防彩虹表攻击。
             // 复测门：100 并发登录路径 P95 < 200ms（已在 application.yml:123-139 dev 基座 40 池 + 5s 超时下验证）。
-            .passwordHash(BCrypt.hashpw(INITIAL_PWD, BCrypt.gensalt(10)))
+            // SEC-HIGH-2: 实际写入密码来自 Spring 注入 runtimeInitialPwd（ipd.security.initial-password 配置项），
+            // 不再硬编码 INITIAL_PWD 常量；dev 默认值与常量一致方便本地启动，prod 必须 env 注入。
+            .passwordHash(BCrypt.hashpw(runtimeInitialPwd, BCrypt.gensalt(10)))
             .mustChangePwd("1")
             .remark(remark)
             .build();

@@ -166,6 +166,14 @@ sa-token:
   # R8 后台安全审查 credentials-exposure：原 commit a8a70ad9 把密钥明文写入 application.yml 历史已可见，需视为泄露并轮换
   jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:}
 
+# IPD 模块配置（SEC-HIGH-2：INITIAL_PWD 挪 env 注入）
+ipd:
+  security:
+    # Mock 初始化器（IpdMockDataInitializer）种子的初始密码来源
+    # 父基线无默认：prod profile 必须在 application-prod.yml 或环境变量 IPD_INITIAL_PWD 显式注入，缺失则 fail-fast
+    # dev profile 在 application-dev.yml 显式覆盖默认值方便本地启动
+    initial-password: ${IPD_INITIAL_PWD:}
+
 # security配置
 security:
   # 排除路径
@@ -223,6 +231,16 @@ tenant:
     - bid_responses
     - deletion_requests
     - handover_records
+    # Round 8 / R8-P0-1：补充 DDL 新增业务表
+    - bonus_allocations
+    - project_scores
+    - contributions
+    - negative_feedbacks
+    - requirement_pool
+    - ai_model_configs
+    - system_config_versions
+    - legacy_imports
+    - receipt_ledger
     - audit_logs
     - kpi_records
     - allowance_ledgers

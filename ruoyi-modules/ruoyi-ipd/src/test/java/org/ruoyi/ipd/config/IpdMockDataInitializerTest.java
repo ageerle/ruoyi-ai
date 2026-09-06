@@ -77,4 +77,29 @@ class IpdMockDataInitializerTest {
         assertThat(content).contains("BCrypt.gensalt(10)");
         assertThat(content).doesNotContain("BCrypt.gensalt(4)");
     }
+
+    /**
+     * SEC-HIGH-2 验证 5：源码 ensurePerson 方法的 passwordHash 调用使用 runtimeInitialPwd 注入字段，
+     * 不再硬编码 INITIAL_PWD 常量。
+     * <p>INITIAL_PWD 常量保留仅供 BCrypt 算法层单测使用（避免起 Spring context），实际 hash 写入用注入字段。
+     * <p>断言仅检查 .passwordHash(BCrypt.hashpw(...)) 调用行，不检查方法注释里的字面提及（文档说明需要）。
+     */
+    @Test
+    @DisplayName("5) HIGH-2: 源码 passwordHash 调用使用 runtimeInitialPwd 注入字段（不再硬编码 INITIAL_PWD）")
+    void sourceUsesRuntimeInitialPwdNotConstant() throws IOException {
+        Path path = Paths.get("src/main/java/org/ruoyi/ipd/config/IpdMockDataInitializer.java");
+        assertThat(Files.exists(path)).as("源码文件存在: " + path.toAbsolutePath()).isTrue();
+        String content = Files.readString(path);
+        // 定位 .passwordHash(BCrypt.hashpw(...)) 调用行（精确到调用括号闭合）
+        int hashCallStart = content.indexOf(".passwordHash(BCrypt.hashpw(");
+        assertThat(hashCallStart).as("应存在 .passwordHash(BCrypt.hashpw(...)) 调用行").isGreaterThan(0);
+        int hashCallEnd = content.indexOf("))", hashCallStart);
+        String hashCall = content.substring(hashCallStart, hashCallEnd + 2);
+        // 调用行第一参数必须是注入字段 runtimeInitialPwd（不能是 INITIAL_PWD 常量）
+        assertThat(hashCall).as(".passwordHash 调用第一参必须是 runtimeInitialPwd").contains("BCrypt.hashpw(runtimeInitialPwd,");
+        assertThat(hashCall).as(".passwordHash 调用行不应出现 INITIAL_PWD 常量").doesNotContain("INITIAL_PWD");
+        // 确认存在 @Value 注入字段
+        assertThat(content).contains("@Value(\"${ipd.security.initial-password}\")");
+        assertThat(content).contains("private String runtimeInitialPwd;");
+    }
 }

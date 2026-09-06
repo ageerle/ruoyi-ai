@@ -8,6 +8,14 @@
 sa-token:
   jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:devOnly-pass-through-baseline-2026-09-05-7x9K2mN5pQ8rT4vW1zB3cF6gH0jL5nP8qR2sU9wX4yA7bD0eG3hI6kM1nO4rQ7t}
 
+--- # IPD 模块配置（SEC-HIGH-2：INITIAL_PWD 挪 env 注入）
+# dev profile 显式覆盖父基线默认值，方便本地启动开箱即用（与 sa-token 同模式）
+# prod profile 走父 application.yml 的 ${IPD_INITIAL_PWD:} 无默认，env 缺失则 fail-fast
+# 注：此 dev 默认值与 IpdMockDataInitializer.INITIAL_PWD 常量一致，保留本地开发零摩擦
+ipd:
+  security:
+    initial-password: ${IPD_INITIAL_PWD:Ipd@123456}
+
 --- # 监控中心配置
 spring.boot.admin.client:
   # 增加客户端开关
