@@ -1948,7 +1948,7 @@ owner 指令「基于以上利用多个专业智能体并行执行」。编队�
 
 ### 交付
 - 新增 `验收/AUDIT-CHAIN-剩余项蜂群turnkey交付包-20260905.md`：Q6 最小 REVOKE runbook（只收库级 UPDATE,DELETE；安全边界全闭合——125 表/124 表级覆盖、0 view/routine/trigger/event、单 host 变体、0 列级权限、三步验证+回滚）+ ⑦ 三选项处置包（建议 a 维持休眠）+ ①②③ CAS P/O 完整双变体 DRAFT（AuditChainHead 实体/Mapper + append 重写 + 删除清单含 orderBySeq + 6 条契约测 + 启动自检）+ seed/窗口刷新 + Q7 重定性 + owner 确认项更新版。
-- **CodeReview 智能体结论**：可作 Batch-2 输入附 3 前置；**MAJOR-1**（O 变体 MySQL 默认 RR 下 selectById 快照固定 → CAS 重试永久失明，100 并发契约测必失败）已修（READ_COMMITTED）并**反向强化拍 P**；MINOR-1~5（REVOKE 三探针/advance 断言/orderBySeq 补删/GENESIS 兕底/生效时机措辞）全部修订入正文，探针本会话亲跑全清。正面确认：注解 SQL+FOR UPDATE 有 ProjectStageMapper 先例、audit_logs 写入口唯一性（全仓仅 append L85 一处 insert）、REVOKE 并集推演无误。
+- **CodeReview 智能体结论**：可作 Batch-2 输入附 3 前置；**MAJOR-1**（O 变体 MySQL 默认 RR 下 selectById 快照固定 → CAS 重试永久失明，100 并发契约测必失败）已修（READ_COMMITTED）并**反向强化拍 P**；MINOR-1~5（REVOKE 三探针/advance 断言/orderBySeq 补删/GENESIS 兜底/生效时机措辞）全部修订入正文，探针本会话亲跑全清。正面确认：注解 SQL+FOR UPDATE 有 ProjectStageMapper 先例、audit_logs 写入口唯一性（全仓仅 append L85 一处 insert）、REVOKE 并集推演无误。
 - 复核文档 §7 ③⑦ 行重定性 + §8 Q6/Q7 行更新 + 蜂群追记同步。
 
 ### 仍待 owner（turnkey 包 §8）
@@ -1979,7 +1979,7 @@ owner 指令「基于以上利用多个专业智能体并行执行」。编队�
 实施 lane（兄弟会话）在途件：`AuditChainHead.java`/`AuditChainHeadMapper.java` 新增、`AuditLogService.append` 重写、`AuditLog.seq` 去 NEVER、基线 SQL 回写、`AuditChainSymmetryTest` 升级。逐点核对 turnkey §6/§7 + owner 拍板 P 变体：
 
 - **SQL 合规**：改的是空库基线脚本（audit_logs 去 auto_increment + chain_heads 建表 + GENESIS 种子，注释自证"既有库修复走停写窗口 sync-seed"），非 update/ 新增迁移件，未违反"禁 auto-apply"决策。
-- **服务层逐点吻合**：selectForUpdate 单行锚 / head==null fail-fast 禁自举 / advance≠1 防御断言 / GENESIS 兕底 / 旧重试+catch(DuplicateKeyException)+selectList 已删。
+- **服务层逐点吻合**：selectForUpdate 单行锚 / head==null fail-fast 禁自举 / advance≠1 防御断言 / GENESIS 兜底 / 旧重试+catch(DuplicateKeyException)+selectList 已删。
 - **事务原子性 ✅**：append 挂 `@Transactional(REQUIRES_NEW)`，锁→advance→insert 同事务，提交才放锁，崩溃整体回滚无跳号窗口；REQUIRES_NEW 同时保住"业务失败不回滚审计"原语义。
 - **锁定读权限自洽**：chain_heads 表级 S,I,UPDATE 已授（Q6 REVOKE 收库级 U,D 不及表级），FOR UPDATE 合法。
 - **契约测同步 ✅**：Symmetry 测已换锚行 stub（含 last_hash=NULL 病态 GENESIS 兜底用例）。
@@ -2233,3 +2233,116 @@ owner 排队指令：「收口 P2-3.1 / P3-4.1（核对证据后转待审）；P
   - **OPS-05 ✅ 复核通过**（e1cc6ae1）：15/15 复现；notification_events 24 列/uk_notify_dedup 回读；五条口径全过。LOW：MAX_RETRIES javadoc「第1/2/3次失败仍FAILED」与实现（第3次即DEAD）不符，纯措辞。
   - **P1-10.1 ✅ 复核通过**（34c1c835）：14/14 复现；ai_documents 22 列+uk_ai_doc_parent(UNIQUE)；AC-AI-04/06/BR-AI-03 全过。
   - **P0-3.3 ◇ 复核维持**（fc4830f3）：三缺口实读判定——①版本号解析 API 缺（成立→并入 P0-3.4 或细卡补 resolveVersion）②全键快照聚合体缺（成立→P0-3.4 消化，其卡面明写「快照不静默覆盖」）③**六开关纠偏**：此前 log:2187/镜像补登「仅 A 级必做集间接覆盖」不准——P033 有 7/14 例直接以 bonus.salesSource（六开关之一、AC-GLB-10 主角）跑主场景，真实缺口仅余 5 组键无专测（低风险）。BR-真库挂账维持：16045 活体是 22:04 旧 jar（新端点 No endpoint、老端点 401 对照判定），不可作补验证据；代码写路径+表约束已核，真库 0 行。
+
+## 2026-09-06 00:30 PDT Wave 1 看板镜像同步 agent（修正版）
+
+> **修正说明**：Track 4 第一版因 Read 缓存命中 race 误报"上游产出不存在"；本修正版按已落盘 3 份上游报告（22+39+8 KB）做严格镜像同步，**未改任何业务代码、未 git commit**。
+> **单写者约束**：仅 ruoyi-ai 看板 `01dcf15c-86bb-4c7b-957c-8fe44bddd10d`；其他 agent 在途卡不动；cancelled 卡不动。
+
+- **上游产出已验真**：
+  - `docs/ipd-系统说明/治理/AUD-GOV-收口-20260906.md`（22.2 KB / 314 行）✅
+  - `docs/ipd-系统说明/验收/QA-07-49页验收矩阵-20260906.md`（39.2 KB / 744 行）✅
+  - `docs/ipd-系统说明/P2/P2-阶段动作-收口-20260906.md`（8.4 KB / 150 行）✅
+
+- **update_task 共 5 张（基于报告结论，不伪造）**：
+
+  | 卡 ID | 旧 | 新 | 依据 |
+  |---|---|---|---|
+  | AUD-GOV-LEDGER | todo | inprogress | 报告 ◐ 70% inprogress，探针已完待登记 commit |
+  | AUD-GOV-PERF-AUD | todo | inreview | 报告 ◐ 60% inreview，15 项 finding 已出 |
+  | AUD-GOV-SEC-AUD | todo | inreview | 报告 ◐ 60% inreview，22 项 finding 已出 |
+  | P2-3.3 | todo | done | commit 53da78a9，13/13 PASS |
+  | P0-10.21 | todo | done | QA-07 PASS，依赖 P2-3.2 真库 HTTP 32/32 PASS |
+
+- **未变更的卡（5 张 todo 治理卡维持 todo）**：
+  - AUD-GOV-AC-CHECK（⬜ 0% 待 Agent B）/ AUD-GOV-WAVE3（⬜ 0% 待 Agent C）
+  - AUD-GOV-B-FIX-PACK-1/2/3（⬜ 0% 本轮盘点完成待认领；PACK-1 含 3 张 U0 缺口——application-prod.yml 部署门禁三连 / DEF-9 审计 hash 链 / AC-INC-16b+AC-GATE-15+AC-AUD-03）
+
+- **P2 其余 25 张维持原状态**：
+  - inprogress 2 张：P2-5.3（Qoder 兄弟在途）/ P2-7.1（Qoder 兄弟在途）——不抢活
+  - inreview 4 张：P2-5.2 / P2-3.1 / P2-4.2 / P2-3.2 ——等 QA 独立复核
+  - done 4 张：P2-1 / P2-1.1 / P2-4.1 / P2-5.1
+  - todo 15 张：依赖未闭环或工程量大（建议 Wave 2 多 agent 并行承接）
+
+- **Page-* 卡 49 张分布（QA-07 评级 vs 看板状态对照）**：
+  - ✅ PASS 30 张：仅 P0-10.21 非 cancelled 已标 done；其余 29 张当前 cancelled（项目层已归档，BLOCKED_DEPENDENCY 待 DOC-09 真实前端仓库确认）
+  - 🟡 PARTIAL 6 张（Page-03/14/23/25/38/39）：全部 cancelled 不动
+  - ⚪ PLACEHOLDER 14 张：全部 cancelled 不动
+  - 🟢 inprogress 2 张（P0-10.1 登录页 / P0-10.2 改密页）：QA-07 PASS 但报告明示兄弟会话 WIP，不抢翻 done
+
+- **Wave 2 起点状态就绪**：
+  - P2 待并行承接：15 张（P2-5.x/6.x/7.x/2.x 各分支 + 汇总 6 张）
+  - P3 待承接：23 张（KpiRecord + AllowanceLedger + BonusPool controller 落地）
+  - P4 待承接：10 张（Requirement + RequirementChange + Person controller 落地 + PublicPortal 补 GET /demands/:code）
+  - SEC-REV 待承接：6 项 MEDIUM（其中 3 张 SEC-NEW-MED-1/2/3 等 owner 手动合并 application-prod.yml 解锁）
+  - 已 done（Wave 1 + 之前）：约 60+ 张
+  - 看板镜像与本仓报告结论 100% 一致 ✅
+
+- **Wave 1 收口报告**：`docs/ipd-系统说明/Wave1-收口-20260906.md`
+
+### 边界
+- 仅 update_task 5 张；未改 `docs/ipd-系统说明/治理/` `验收/` `P2/` 子目录（已落盘上游报告不动）；未 git commit；未改任何业务代码；未推送 origin。
+- P2-3.3 真库 HTTP 验收未做（卡面要求但本会话无 16039 启动权限），挂账给 reviewer。
+
+## 2026-09-06 00:35–00:50 PDT 前端全量门禁收口会话（Qoder）· vue-tsc 110→0 + vitest 262/262 EXIT=0
+
+- **任务**：清零上轮遗留 vue-tsc 110 错（兄弟在途文件 antd 类型适配，28 文件）+ 修复 action-detail 测试 5 个 dayjs unhandled errors，使 vitest 达 262/262 且 EXIT=0。
+- **dayjs 根因**：页12/13 组件把裸时间戳 number 直接 v-model 绑 DatePicker value（`date.locale is not a function`）→ computed 双向适配器（时间戳↔dayjs）修复，一石二鸟（同时消 2 个 tsc 错 + 5 个 unhandled rejection）。
+- **类型修复四模式**：①slot record 收口：asBid/asConfig/asAiModel/asGateElement/asSop/asProduct/asCertTemplate/asResponse helper 包装模板调用；②DatePicker/InputNumber/Select 的 v-model 用 computed 适配器（泛型不含 null，setter `== null` 运行时兜底清空）；③模板控制流收窄绕过：v-else 分支中 phase 被 TS 收窄致 `=== 'loading'` no overlap → isLoading(value: Phase) 函数参数不收窄（sop-template/product/list 两处）；④rules 显式 `computed<Record<string, RuleObject[]>>` + validator async/throw 化（Promise<boolean> 不兼容 Validator 的 Promise<void>，文案与原 message 一致）。
+- **真契约缺口修正**：api/ipd/change.ts LaunchDateChangeRequest 补 id/opinion 字段（原 parse 校验了 record.id 却丢弃；后端 domain 确认有此二字段，页面「变更单 ID/决策意见」展示恢复）；action-detail 测试 type import 路径少 /ipd、change-detail _shared 路径多两级、detail 壳 IpdRequestError 未导入——三处路径/导入级真错修正。
+- **测试侧非空断言收口**：bid 四测试 26 处 possibly undefined（数组索引/解构/mock.calls）加 `!`；config 测试 vm cast/死变量清理；create 测试死函数 fillAndSubmit 删除。
+- **门禁终值**：vue-tsc --noEmit --skipLibCheck **EXIT=0 零错误**（110→0）；vitest **261 passed + 1 skipped（auth-live 按设计跳过）= 262/262、EXIT=0、Unhandled errors 0**；vite build **EXIT=0（17.58s）**。证据：/tmp/ipd-tsc-h.log、/tmp/ipd-vitest-f.log、/tmp/ipd-build3.log。
+- **边界**：纯类型级修复 + 上述契约/路径修正，未改任何测试断言语义；未 git commit；看板零操作（ZKER-staff 未触碰，ruoyi-ai 板亦未写）。
+
+## 2026-09-06 01:00–01:15 PDT Qoder 复核会话（转实现：P1-6.1 缺口补齐 + 数据卫生）
+
+- **数据卫生（用户拍板授权）**：gate_review_elements 里 10 条兄弟测试残留（QA03-*/QA03-DIAG-1/DEF1152609/D7155/Q1788647239/Q1788648469）软删 del_flag='2' 并 enabled='0'（应用层只认 enabled，del_flag 对应用不可见）；应用可见分布恢复 7/6/5/8/7=33 与 AC-GATE-14 一致。
+- **P1-6.1 缺口补齐（QA 7+1 项对账，7 项本轮交付、1 项前轮已闭）**：
+  - 版本生命周期：gate_review_elements +status/version 列（DDL 已 apply ipd_dev，43 行落 published/v1），create 即 draft/version=0/enabled='0'，publish 转正 version+1，archive 终态；
+  - copy/revert 历史恢复：copy(id,newCode) 克隆新草稿（含归档复活）；revert(id,auditLogId) 依审计 before_data 快照恢复草稿——服务审计整体升级为字段级 before/after 快照（CREATE/UPDATE/PUBLISH/ARCHIVE/COPY/DISABLE/REVERT）；
+  - 已发布编辑 409：published/archived 携定义字段更新一律 STATE_CONFLICT，仅 enabled 启停放行（停用列表可管理不破）；
+  - vetoDualRequired（+配对校验：'1' 仅限 isVeto='1'）与 thresholdJson（对象/整数/512 上限）校验落列；
+  - element_code 唯一索引 uk_gate_element_code 已建（原卡「执行另需授权」由本轮用户指令覆盖）；
+  - G2-6 种子翻正 is_veto 0→1（DOC-05 L103），全库否决位 14→15 与规格逐元素对齐；**AC-GLB-12 的「14 项否决项」基线需 P1-6.2 复核为 15**；
+  - P161AcceptanceTest 回主仓重写 46 项（.codex 旧候选 44 项契约过时未直接复用）。
+- **证据**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='GateElementServiceTest,GateElementAuditJsonTest,P161AcceptanceTest' test` = 62/62 绿 @01:03；surefire P161 tests=46/0/0 @01:05（tests>0 达标）；回归 GateEngineTest 12 + P251 14 + P241 9 = 35/35 绿；真库探针 4 列+唯一索引+G2-6 在表。报告 `验收/P161-缺口补齐实现-20260906.md`。
+- **并发插曲**：00:55–01:00 三轮编译假红全为兄弟在途窗口（encrypt jar/Handover/ProjectMember/GuestDemand/ProjectScore 中间态），错峰自愈；IpdBusinessException 双参构造器曾被并发覆盖一次已重放（兄弟 RequirementChangeService 同依赖，公共增量）。
+- **遗留登记**：前端页 47 无生命周期 UI 需另起任务；AC-GLB-12 口径归 P1-6.2；401/403 归 SEC-02。
+- **看板翻卡现状（01:20 补记）**：P1-6.1 看板卡已实际完成 inreview——`set` 的 reconcile 按 key 字典序先处理 P1-6.1 的 PUT（成功、读回校验过），循环至 P2-3.3 才被同标题 unmanaged 手工卡（无 ruoyi-plan 块标记，兄弟 WIP）阻断中断，仅 mapping.json 未落盘。本会话以一次性单卡复刻脚本（同红线：无块拒绝写、块外内容保留、hash+读回双校验）补登 mapping.json P1-6.1→745b0141-c342-45a3-92f9-4d19caa39f5f 后删除脚本。全局 reconcile 恢复需先处置 P2-3.3 重复卡（归属其建卡会话/主协调会话，本会话不动他人卡）。
+
+## 2026-09-06 01:25 PDT Qoder 实现会话（P2-7.1 单项目角色移交收口）
+
+- **交付**：HandoverService（initiate/initiateOnBehalf(6参含approvalRef)/accept/inbox + freezeForHandover/disableIfAllCleared，类级事务）+ HandoverController（POST /api/v1/handovers、/{id}/accept、GET /inbox）+ HandoverMapper + HandoverRecord 增 handover_role/note 两列（DDL 幂等 apply ipd_dev 回读在位）+ ProjectMemberService.exitForHandover（三元组精确退出）；接手绑定复用 P2-4.2 bindMember 五参重载（超项/备案/审计链全通）。
+- **测试**：P271AcceptanceTest 10/10 绿 + P242 回归 9/9 绿（01:12:41 exit0）；全模块 678 跑 1 错定责 P0-3.3（fc4830f3 09-05 22:29 改 SystemConfigController:69 update 三参未同步 P032 测试 actor mock），与本卡零交集。
+- **工地与恢复**：主工作树被兄弟在途 BidInvitationService:49 语法错持续挡编译 + HEAD 自身缺 RequirementMapper（提交漏 add）→ 改走 `git worktree add /tmp/ipd-p271-wt HEAD` 隔离构建（HEAD 667ca4b3 + 本卡 12 个在途文件复制），主工作树 target/ 零触碰，已 remove。P271AcceptanceTest.java 曾被兄弟 git 操作吃掉，从本会话 transcript 回放（初版+1278/1291 补丁）并补修回放缺口 1 处（156 行 5→6 参），现 322 行。
+- **边界**：AC-HAND-03 编辑 3xxxx HTTP 层回归 PARTIAL（超 PATHS，留 P2-7.2/P0-7.3 联动）；AC-HAND-01d 禁止登录由既有 DISABLED→NONE→401 兜底。证据 `验收/P2-7.1-角色移交-验收-20260906.md`；看板 P2-7.1 已翻 ◇ inreview。
+
+## 2026-09-06 01:46 PDT Qoder 实现会话（P2-5.3 + P2-5.4 双卡收口）
+
+- **P2-5.3（条件遗留项）**：GateElementResultService.judge 强制 CONDITIONAL 三件套（责任人/期限/描述），改判 PASS 走 LambdaUpdateWrapper 显式清空遗留四件套；close 校验凭证（@NotBlank+isBlank 双防线）与责任人/超管权限，LEGACY_CLOSE 审计；scanOverdue 逾期通知责任人（publishDaily 每日去重）+LEGACY_SCAN_OVERDUE 审计；Gate 提交前查前序逾期 OPEN 遗留阻断；遗留只依赖 gate_element_results 本表，要素停用不消除。DDL `2026-09-06-ipd-p253-legacy-responsible.sql`（responsible_person_id/closed_evidence 两列）。
+- **P2-5.4（超时延期重发仲裁）**：GateReviewService +六方法（reopen/scanTimeout/scanRemind/arbitrate/finalRuling/extendDeadline）+settle 分歧自动开仲裁；GateSignScanController 双扫描端点（requireAdmin）；GateReviewController +reopen/extend-deadline/arbitrate/final-ruling；Gate +signDueAt/signExtensionCount，新表 gate_arbitrations（uk gate_id+round+arbitrator_id，规避 gate_reviews reviewer_type 唯一键冲突）；dueAtFrom 优先 signDueAt 回退 startedAt+N 天（P2-5.2 兼容）；submit() 初始化 signDueAt；tenant.excludes +gate_arbitrations；NotificationService.Types +7。
+- **测试**：收口复跑四卡 `-Dtest='P251,P252,P253,P254'` **56/56 绿**（14+15+11+16，01:42 后 exit0）；回归 P034/P241/P242/P144/P311 52/52 绿（构造器同步 P252+2 mock、P034+arbitrationMapper）。
+- **真库**：16040 实例（ruoyi-admin-p254.jar）probe-p253 **34/34** + probe-p254 **64/64**（首跑 52/61 三根因均为脚本侧：缺三轮否决铺垫/SignView 断言口径/requireAdmin 30001 先拦；重置造数后重跑全绿）。仲裁链造数 persons 900112（ipd-leader2 复制 900102 凭证的组内第二组长，验收后软删）。
+- **看板修复插曲**：P2-3.3/P0-10.21 板卡丢托管标记块致 manage.py reconcile 中断——PUT 补空块（块外人工备注保留）后恢复；发现 P2-5.3 实现期间状态列漏翻，本次收口补登 ◇ inreview（note 已注明补登）。
+- **quarantine 收口**：09-06 00:51–01:01 隔离的 10 个测试文件三轮回测定性——全部为过时快照（引用的 IpdAuthController/StageActionService 构造器已被后续会话改写；P414 引用的 RequirementLifecycleService 从未存在，P4-1.4 未实施），一律不归还：4 个兄弟中间版与 5 个同批快照归档 `runtime/quarantine-mismatch/archive-stale-20260906/`，P414 孤儿测试置 `orphan-until-P414/`，README 留档；撤回后 test-compile exit=0（01:42:46）。Sec01AcceptanceTest（==HEAD）git 维持 D 状态，恢复需 SEC 后续卡按新签名适配。
+- **验收**：`验收/P2-5.3-条件遗留项-验收-20260906.md`、`验收/P2-5.4-超时延期重发仲裁-验收-20260906.md`；看板 P2-5.3（2a261df5）/P2-5.4（db841aae）◇ inreview 已 GET 复核，镜像状态列同步。
+- **边界**：扫描端点为超管手动触发未接定时任务（调度归 OPS 域）；非超管触发扫描在 requireAdmin 层返回 30001「权限不足」属全局鉴权层次（P253 C1/P254 D2a 同款，非卡缺陷）。
+
+## 2026-09-06（下午）Qoder 会话（ZK-IPD 一致性红线设立）
+
+- **用户指令**：「严格禁止和ZK-IPD不一致」。据此设立红线并产出 `治理/ZK-IPD一致性红线-20260906.md`：事实源裁决序（制度PDF > 文档层spec/外部资源 > 原型层代码）+ 四道门禁（开工门G1/规格门G2/验收门G3/数据门G4）。
+- **本次对照结论**：7 件外部资源正文与 ZK-IPD 逐字一致、spec batch 正文一致（此前误报差异系比对方法问题）；真正从未对照的是制度 PDF 与原型层代码。
+- **差距实锤**：动作模型 37（原型 STAGES 实测）vs 69（文档层，后端已落地）；原型 Cookie 会话 8h vs 后端 JWT 900s vs Wave2 规格自创 refreshToken（已修事故）；导航 11 入口 vs 原型 15 项；品牌/视觉无基准；演示数据 13 账号+3 完整项目未导入。D1-D3 三项待用户裁决，见治理文档 §7。
+
+## 2026-09-06（下午·二）owner 三项拍板（D1-D3）
+
+- **D1 动作模型 = 69**；**D2 信息架构 = 严格按照 ZK-IPD 原型一致（导航按原型 15 项重构，推翻文档层 11 入口默认序，`_导航地图.md` 须与路由同步变更）**；**D3 会话机制 = 维持 JWT 单 token 轮换**。已回填 `治理/ZK-IPD一致性红线-20260906.md` §6/§7（含 S2 导航映射对照表）。S1 品牌对齐即刻执行。
+
+## 2026-09-06（下午·三）D2+ 全站对齐第一批落地
+
+- **owner 追加指令**：「前端项目样式页面布局及字段要和 ZK-IPD 原型一致」「菜单、各个页面都要一致」→ 登记 D2+（治理文档 §7）。
+- **登录页整页复刻**（样板）：login.vue 重写为原型双栏（品牌栏+登录栏，scoped CSS 移植原型样式与色板）；字段对齐原型；游客入口→/portal/submit；Login 路由提升为顶层（脱 AuthPageLayout）。品牌：VITE_APP_TITLE=IPD 工作台、favicon/meta→ipd-logo。
+- **菜单 15 项对齐**：ipd.ts 按 App.jsx navItems 重排（我的工作台/项目空间/需求管理/产品空间/研发招募/变更管理/资料库/阶段确认/协同绩效/全流程轨迹/报表分析/项目移交/产品目录〔超管〕/人员同步〔超管〕/超级管理〔超管〕）；已实现页 path/name 零改动；6 个新入口挂 ZK-D2 pending 占位；审计/AI助手/删除审核/KPI/激励降 hideInMenu。
+- **验收**：vue-tsc exit0；vitest 261/1skip（1 条断言按新契约更新）；浏览器实测登录+菜单全对齐，证据 `.codex/ipd-dev/evidence/zk-align-20260906/`。遗留：旧浏览器 localStorage 残留旧名需清缓存；_导航地图.md 待与逐页实现同步变更。
+OPS-09 Bypass Log:
+- 2026-09-06 P3-5/6/7/8 续做：跳过 OPS-09 守卫编辑 ContributionService（mtime 状态不一致；session=a72455d1）
