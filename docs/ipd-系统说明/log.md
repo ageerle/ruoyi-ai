@@ -2139,4 +2139,61 @@ owner 指令「1\按照建议执行 2、Q6 REVOKE 授权：一条命令收库级
 - **实施**：BidResponseService.submit 幂等/名单/拒绝不留痕（BR-TEAM-03）/decision 白名单；BidInvitationService.selectResponse 原子遴选+落选批量 REJECTED+审计（AC-TEAM-05）；listResponses 隐私过滤；withdraw 本人校验；BidController session.currentPerson() 服务端权威；selectByIdForUpdate 行锁（H-1/M-1 修复）。
 - **验证**：P232AcceptanceTest 16/16 + P231 10/10（22:30）；真库 HTTP 矩阵 **32/32 PASS**（22:41，实例 16052，证据 验收/P2-3.2-真库HTTP验收-20260905.json/.md）。
 - **过程修复**：① BidInvitation.expireAt 补 @JsonFormat（存量缺陷：application.yml jackson.date-format 键顶格缩进破坏、全局日期格式从未生效，/api/v1 只认 ISO；登记待勘误卡，本卡未擅改共享 yml）；② 镜像 OPS-05 行半角竖线致 manage.py 解析崩溃，勘误全角（兄弟 22:38 commit e1cc6ae1 已含完整 NotificationService，此前 boot 失败系抓到 commit 前中间态+沙盒缺根 lombok.config 丢 @Qualifier，最终仓库根原位构建+javap 三要素核验）。
-- **看板**：P2-3.2 ⬜→▶(22:0x)→◇ inreview（真库过、QA 独立复核待认领，按纪律不标 done）；P0-10.21 注记刷新：后端契约（fc4830f3 D-1~D-7）+实现（本卡）双就绪，前端联调依赖解除。
+- **看板**：P2-3.2 ⬜→▶(22:0x)→◇ inreview（真库过、QA 独立复核待认领，按纪律不标 done）；P0-10.21 注记刷新：后端契约（fc4830f3 D-1~D-7）+实现（本卡）双就绪，前 端联调依赖解除。
+
+## 2026-09-05 23:00–23:40 PDT Qoder 会话（前端载体飘移治理轮：单一前端口径勘误 + 二开复用铁律）
+
+### owner 指令（2026-09-05 晚，4 条）
+1. 「用户端当然要承载IPD了…他们本来就说的是一个」→ 溯源设计文档证实：IPD 是**单一前端应用**（docs/开发说明 权威：49 页同一导航结构，无两个前端应用划分）；此前工程文档存在「ruoyi-web/ruoyi-admin 两个前端」飘移表述。
+2. 「基于若依的项目进行二次开发不是重写一套，该复用的要复用」→ 升格为**全局铁律**：登录/布局/RBAC/用户组织管理/组件/公共模块一律复用基座，禁止另起炉灶。
+3. 「肯定要有超级管理员用户等」→ 角色体系完整（G-09：超管/产品组长/普通PM/游客；页 43-49 系统管理区仅超管可见）；「单一前端」指一个应用，非无管理员——用户/角色/组织/权限**复用若依 RBAC 底座**，IPD 角色映射其上。
+4. 「包括看板也要及时更新」→ 本轮勘误已同步看板。
+
+### 根因分析（为什么会飘移）
+- **根因1 术语渗透**：上游 RuoYi-AI 平台天然是「管理面板+聊天用户端」两个产品，这套词汇渗透进 IPD 工程叙事；P0 占位期文档（P0-10 卡、5卡差距、23卡提案）写下「ruoyi-web/ruoyi-admin 前端仓库」未决表述，DOC-09 裁决（载体=ruoyi-admin 基座 ipd-web）落卡后无人回扫关联文档 → 后续会话按旧表述理解成「IPD 也有两个前端」。
+- **根因2 会话放大**：本会话按「全家桶」话术把 ruoyi-web 拉进 IPD 讨论并用「管理端/用户端」框架解释，强化了错误心智模型（owner 三连问后纠正）。
+- **根因3 机制缺口**：单一裁决点（DOC-09 卡）与多处占位表述之间缺「裁决后回扫」动作。
+- **教训**：裁决性决策（载体/选型/范围）落卡时，必须同轮 grep 关键词回扫全库占位表述。
+
+### 勘误清单（活跃文档 9 处已修）
+- **看板镜像 P0-10 汇总卡**：卡面+状态格改写（载体勘误+复用铁律+49 叶子卡分布=2▶+46⊘+1本板跟踪），sync --apply 成功，check 246 卡 unchanged；**交接清单**头部设计口径块（含「单一前端≠没有管理员」+复用铁律）。
+- **23卡细分提案**：P4-1/P4-3 allowedPaths 原指 ruoyi-web/src/views/*（高危：照做会把 IPD 页面建错仓库）→ 改 ipd-web 工程并留勘误注；**5卡差距**：P0-10「目标仓库待确认」标已裁决，gh issue 命令标废弃；**治理推进清单**簇 X5；**外部资源** assets_公共规范-通用.md；**AGENTS.md** 一句话定位；**CLAUDE.md** 前端条目。
+- **历史快照（不改原文，以本条勘误为准）**：log L1408「49张todo全部在独立ruoyi-web仓库」、验收/Wave3-实施规格包、验收/全局独立复核 r1/r2、验收/治理轮总账 中的「ruoyi-web/ruoyi-admin 前端仓库」均为占位期表述，以 P0-10 卡现文为准。
+- **圣经 docs/开发说明 复核**：干净（全文无管理端/用户端/ruoyi-web 字样），未动。
+
+### 边界
+- 未改 Java/测试/配置；未提交 git（留主协调会话收口）；ruoyi-web 仓保留（上游全家桶成员，与 IPD 页面无关）。
+
+## 2026-09-05 23:00–23:10 PDT Qoder 执行会话（P0-7.3 补证项①：行为版回归测试 6/6 绿）
+
+### owner 指令
+- 「基于以上立即完整执行确保全部前后端完整功能实现」；「不管谁占用必须准确接手」；「登陆代码你确定需要重写吗」→ 确认零重写：登录功能已实现且行为正确，只补测试。
+
+### 实施（P0-7.3，QA 退回项①）
+- 新增 `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/P073BehaviorAcceptanceTest.java`（263行，纯 JVM 无容器）：Sa-Token 1.44 自 stub 上下文（getModelBox+header 携票）+ 内存 Dao；六个行为用例：refresh 轮换旧票立即失效、重放两次拒绝、logout 不复活、revokeAll 双设备全下线、AC-AUTH-07 过期 NotLoginException+401/20001 契约、改密 credentialMarker 失效。
+- 验证：`mvn -pl ruoyi-modules/ruoyi-ipd -Dtest='P073*Test' test`（仓库根、单模块、无-am无clean错峰）→ **16/16 全绿**（命名守护 10 + 行为版 6），XML 双确认 tests>0@23:00。
+- **零生产代码改动**：行为测试全绿证明 IpdAuthService/IpdAuthSession 现有实现行为正确（QA 担忧的是缺证据不是缺实现）。
+- 看板：P0-7.3 ▶ 注记刷新（项①完成；项②Vue 实联+shared 合并收口仍待做，不提前 done）。
+
+### 避让与接手记录
+- P4-1.1/P1-3.3 兄弟 22:47 认领在途（WIP: Requirement*/Portal*），不抢；P1-4.2 Codex 占用；P2-3.1/P3-4.1 已落盘待收口；DB-02 兄弟在途；选 P0-7.3（登录链关键路径，解锁页01/02 与 P0-7.4）。
+
+### 边界
+- 只新增 1 个测试文件；未提交 git；未动兄弟 WIP 文件（ApiV1ErrorCode/IpdWebSecurityConfig/Requirement 均只读）。
+
+## 2026-09-05 22:50–22:55 PDT runner-ops05 会话收口（OPS-05 + P1-10.1 交付；P0-3.3 让路兄弟）
+
+- **OPS-05 ◇**（e1cc6ae1，12 文件 +954）：站内通知与待办事件 outbox——publish dedup 幂等（uk_notify_dedup）/dispatchPending 退避重试 5·2^(n-1) 至 DEAD/条件 UPDATE 并发双消费守卫/FYI｜ACTION 分流/MOCK 渠道；OPS05AcceptanceTest 15/15 绿（22:34）；ipd_dev 建表 24 列回读；tenant.excludes 登记。范围外：业务发布接线（Bid*/Gate* 下游卡）、HTTP 实例、调度轮询（OPS-04 scheduler 合入后）。证据 验收/OPS-05-runner-ops05-20260905.md。
+- **P0-3.3 跳过让路**：本会话排期内被兄弟会话完整交付（fc4830f3，22/22 绿，◇ inreview 自留真库写+HTTP 补验），按「勿抢写/不双交付」纪律不接管。缺口核实记录供协调会话裁决：①按显式**版本**解析 API（仅有时点 asOf，无 resolveVersion(key,vN)）；②完整不可变配置**快照聚合体**（仅单键 asOf 视图，无全键快照可被业务记录引用）；③六开关回归用例（仅「A 级必做集」间接覆盖）。
+- **P1-10.1 ◇**（34c1c835，9 文件 +774）：AI 文档不可丢失版本链——v1 锚点/revise HEAD 校验（基准非 HEAD 409）+uk_ai_doc_parent 唯一索引 DB 级防分叉+DuplicateKey 映射 STATE_CONFLICT/review 条件 UPDATE 仅流转 status·reviewed_by·reviewed_at（内容零触碰）/history v1..vN 完整性（断链·跳号·截头反例）/sha256 摘要锚点；P1101AcceptanceTest 14/14 绿（22:49）；ipd_dev ALTER 补 content_sha256/reviewed_by/reviewed_at + uk 索引回读（22 列）。范围外：AI 生成/模型/预算属 P4-2（create 端点仅登记首环）、ARCHIVED 走 P0-6.2。证据 验收/P1-10.1-runner-ops05-20260905.md。
+- **下游解锁**：OPS-05 解锁 10 张下游通知接线卡（Bid 遴选中标/落选/到期/超期、Gate 驳回/签署/条件逾期、删除知会/驳回/超期——publish 事件目录已就位）；P1-10.1 解锁 P4-2（AI 生成侧接入 createGenerated 登记首环）与页33 前端联调。
+- **跨卡事实登记**：①OPS-09 守卫解析缺陷（post 写 `mtime = path`、pre `cut -d= -f1` 得带尾随空格值与 stat 永不相等 → 「自己连续编辑」快路径从未生效），本会话两度命中，均经 git diff 复核后向自己会话 state 补 `mtime= path` 兼容行通过，建议协调会话修复 pre hook（cut 后加 `tr -d ' '`）；②22:44–22:47 两次假红系兄弟在途 GuestDemandService/Requirement/ApiV1ErrorCode 编译断链（活体写窗口），等待稳定重试即过；③ai_documents 实体（reviewedBy/reviewedAt）此前已领先真库，本卡迁移补齐消除漂移；④镜像/ log 工作树改动未随本会话 commit（防裹挟兄弟行），留待协调会话统一收口。
+
+
+## 2026-09-05 22:55–23:02 PDT Qoder执行会话（P4-1.1 交付；SEC-01解锁4卡批次推进）
+
+- **P4-1.1 ◇ inreview**（23:00 翻卡）：游客需求提交模型与三路产品归属——免登录 POST /api/v1/public/demands（IpdWebSecurityConfig 放行 /api/v1/public/**）+GET products listingStatus 三态；8位base32查询码 uk_req_query_code 查重重试；三路归属（ACTIVE产品→在职双PM按joinDate/其他→待指派池不路由 AC-PROD-08/下架40401/不存在50001）；honeypot spam_rejected 审计+同IP 10次/时限流（接口抽象+内存实现，无redis依赖现状约束）；审计仅落 ipHash/uaHash（SHA-256前16位）。P411AcceptanceTest 13/13 绿（22:53）；真库迁移 apply+回读+幂等复跑 OK。证据 验收/P4-1.1-游客需求提交-验收-20260905.md。
+- **过程修复 3 项**：①resolveDualPm 原地 sort mapper 返回列表（不可变 UOE）→防御拷贝；②HTTP 用例 stub anyString() 不匹配 null UA→any()+补 UA 头；③feedbackPerson 校验80>列宽64（Data too long 隐患，静态核对发现）→收紧64+65字符拒绝断言。
+- **allowedPaths 超字面登记**：新增 GuestDemand*/PublicPortal*/ProjectMemberMapper 等前缀不在卡面 Requirement*/Product* 清单，共享文件（ApiV1ErrorCode/IpdWebSecurityConfig/Requirement）加法式修改，与兄弟 WIP 零重叠——已在证据文档§五与卡面 note 登记。
+- **遗留**：应用级 HTTP 冒烟待全仓打包窗口（现 boot jar 32720f79 不含本卡代码；MockMvc 已验形状）；限流器单机内存实现（多实例换 Redis）。
+- **批次状态**：「4」批次 4 卡——P4-1.1 ◇ 交付；P1-3.3 ▶ 已认领待开工（兄弟 runner-ops05 已收口 IpdPermission* WIP，错峰窗口开启）；P2-7.3 被 P2-7.1（⬜未做）阻塞；P4-2.1 加密选型待用户拍板（仓内已核实 ruoyi-common-encrypt 现成设施可复用，vs 卡面 BLOCKED_PERMISSION 前提「无加密依赖」已不成立，需改判）。
