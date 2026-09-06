@@ -4,13 +4,6 @@ import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.NotRoleException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
-import org.ruoyi.ipd.controller.CertTemplateController;
-import org.ruoyi.ipd.controller.DeletionRequestController;
-import org.ruoyi.ipd.controller.GateElementController;
-import org.ruoyi.ipd.controller.IpdAuthController;
-import org.ruoyi.ipd.controller.ProductController;
-import org.ruoyi.ipd.controller.ProjectController;
-import org.ruoyi.ipd.controller.StageActionController;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +14,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * 把 IPD 权限拒绝统一转为 ApiV1Response 包络 + 对应 HTTP 状态码。
  * 优先级 HIGHEST：比基线 SaTokenExceptionHandler / GlobalExceptionHandler 优先。
  * SEC-API-02：同时承接 @SaCheckPermission 抛出的 NotPermissionException。
+ *
+ * Round 8 / R8-P1-B：assignableTypes 改为 basePackages 全局覆盖，
+ * 避免新增 controller（如 LaunchDateChangeController）漏登导致权限拒绝走基线 advice 返回 R&lt;&gt; 而非 IPD ApiV1Response。
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes = {IpdAuthController.class, ProductController.class, ProjectController.class,
-    StageActionController.class, CertTemplateController.class, GateElementController.class,
-    DeletionRequestController.class})
+@RestControllerAdvice(basePackages = "org.ruoyi.ipd.controller")
 public class IpdPermissionExceptionHandler {
 
     /**

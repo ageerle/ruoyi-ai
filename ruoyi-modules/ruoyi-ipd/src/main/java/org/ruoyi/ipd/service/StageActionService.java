@@ -5,13 +5,18 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.domain.ActionDef;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Deliverable;
+import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.domain.ProjectStage;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -43,6 +48,8 @@ public class StageActionService {
     private final StageActionMapper stageActionMapper;
     private final DeliverableMapper deliverableMapper;
     private final AuditLogService auditLogService;
+    private final ProjectStageMapper projectStageMapper;
+    private final ProjectMapper projectMapper;
 
     public StageAction getById(Long id) {
         StageAction a = stageActionMapper.selectById(id);
@@ -72,7 +79,8 @@ public class StageActionService {
     public StageAction transit(Long id, String target, String reason, String operator) {
         if (target == null) { throw new ServiceException("目标状态不能为空"); }
         StageAction a = getById(id);
-        ActionDef def = ActionCatalog.byCode(a.getActionCode());
+        assertProjectWritable(a.getProjectId());
+        ActionDef def = canonicalizeAction(a);
         boolean deep = "DEEP".equals(a.getDepth());
 
         if (!deep && DEEP_EXTRA_STATUSES.contains(target)) {
@@ -87,6 +95,11 @@ public class StageActionService {
         }
         if ("NA".equals(target) && (reason == null || reason.isBlank())) {
             throw new ServiceException("标记 NA 必须填写原因（防绕过 P1-4.3）: " + def.code());
+        }
+        // AC-PROD-13：涉生物场景下 C12 不可取消（NA）
+        if ("NA".equals(target) && "C12".equals(ActionCatalog.resolveCode(a.getActionCode()))
+            && hasBioFeatureActions(a.getProjectId())) {
+            throw new ServiceException("涉生物项目的 C12 生物特征数据合规审查不可取消（AC-PROD-13）");
         }
         if ("DONE".equals(target)) {
             validateCompletion(a, def, deep);
@@ -111,6 +124,127 @@ public class StageActionService {
         return a;
     }
 
+    /**
+     * P1-4.1 / P1-8.2：录入轻管完成日 / BioCV FAR·FRR / 证书 / 算法分类。
+     * 不改 status；完成仍须随后 /transit→DONE。Z 别名写入时归一为权威码。
+     *
+     * @param id           动作实例 ID
+     * @param actualDoneAt 实际完成日（可空表示不改）
+     * @param farValue     FAR（与 frr 成对）
+     * @param frrValue     FRR
+     * @param certNo       证书编号
+     * @param certPassedAt 证书通过日
+     * @param algoType     算法分类（可空；传空串视为未提交）
+     * @param operator     操作者 Person id 字符串
+     * @return 更新后实例
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public StageAction recordFields(Long id, Date actualDoneAt, BigDecimal farValue, BigDecimal frrValue,
+                                    String certNo, Date certPassedAt, String algoType, String operator) {
+        StageAction a = getById(id);
+        assertProjectWritable(a.getProjectId());
+        String before = fieldsSnapshot(a);
+        String rawCode = a.getActionCode();
+        ActionDef def = canonicalizeAction(a);
+        boolean touched = rawCode != null && !def.code().equals(rawCode);
+        String vf = def.valueFields() == null ? "" : def.valueFields();
+
+        if (actualDoneAt != null) {
+            a.setActualDoneAt(new Date(Math.floorDiv(actualDoneAt.getTime(), 1000L) * 1000L));
+            touched = true;
+        }
+        if (farValue != null || frrValue != null) {
+            if (!vf.contains("FAR")) {
+                throw new ServiceException("动作不支持 FAR/FRR 录入: " + def.code());
+            }
+            if (farValue == null || frrValue == null) {
+                throw new ServiceException("FAR/FRR 必须成对登记: " + def.code());
+            }
+            assertRate01(farValue, "FAR");
+            assertRate01(frrValue, "FRR");
+            a.setFarValue(farValue);
+            a.setFrrValue(frrValue);
+            touched = true;
+        }
+        if (certNo != null || certPassedAt != null) {
+            if (!vf.contains("CERT_NO")) {
+                throw new ServiceException("动作不支持证书字段录入: " + def.code());
+            }
+            if (certNo != null) {
+                if (certNo.isBlank()) {
+                    throw new ServiceException("证书编号不能为空: " + def.code());
+                }
+                a.setCertNo(certNo.trim());
+                touched = true;
+            }
+            if (certPassedAt != null) {
+                a.setCertPassedAt(new Date(Math.floorDiv(certPassedAt.getTime(), 1000L) * 1000L));
+                touched = true;
+            }
+        }
+        if (algoType != null && !algoType.isBlank()) {
+            if (!vf.contains("FAR") && !"1".equals(a.getIsBioFeature())) {
+                throw new ServiceException("动作不支持算法分类录入: " + def.code());
+            }
+            try {
+                a.setAlgoType(ActionCatalog.normalizeAlgoType(algoType));
+                touched = true;
+            } catch (IllegalArgumentException ex) {
+                throw new ServiceException(ex.getMessage());
+            }
+        }
+        if (!touched) {
+            throw new ServiceException("未提交任何可写字段（actualDoneAt/FAR·FRR/证书/算法分类）");
+        }
+        a.setUpdateBy(actorIdOf(operator));
+        int n = stageActionMapper.updateById(a);
+        if (n != 1) {
+            throw new ServiceException("字段更新失败：可能并发冲突或记录不存在: " + def.code());
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorName(operator).operatorRole("PM")
+            .action("RECORD_FIELDS").entityType("STAGE_ACTION").entityId(a.getId())
+            .beforeData(before).afterData(fieldsSnapshot(a))
+            .reason("P1-4.1/P1-8.2 完成字段录入")
+            .build());
+        return a;
+    }
+
+    /**
+     * P1-8.2：Z 系编码归一为权威码并回填动作名。
+     *
+     * @param a 动作实例（可能就地改写 actionCode/actionName）
+     * @return 目录定义
+     */
+    private ActionDef canonicalizeAction(StageAction a) {
+        String raw = a.getActionCode();
+        ActionDef def = ActionCatalog.byCode(raw);
+        String resolved = def.code();
+        if (raw != null && !resolved.equals(raw)) {
+            a.setActionCode(resolved);
+            a.setActionName(def.name());
+        }
+        return def;
+    }
+
+    /** FAR/FRR 取值须在 [0,1]。 */
+    private static void assertRate01(BigDecimal v, String label) {
+        if (v.compareTo(BigDecimal.ZERO) < 0 || v.compareTo(BigDecimal.ONE) > 0) {
+            throw new ServiceException(label + " 须在 0~1 之间");
+        }
+    }
+
+    private static String fieldsSnapshot(StageAction a) {
+        return AuditEventData.json(
+            "actionCode", a.getActionCode(),
+            "actualDoneAt", a.getActualDoneAt() == null ? null : a.getActualDoneAt().getTime(),
+            "farValue", a.getFarValue(),
+            "frrValue", a.getFrrValue(),
+            "certNo", a.getCertNo(),
+            "certPassedAt", a.getCertPassedAt() == null ? null : a.getCertPassedAt().getTime(),
+            "algoType", a.getAlgoType());
+    }
+
     private void validateCompletion(StageAction a, ActionDef def, boolean deep) {
         if (deep) {
             Long cnt = deliverableMapper.selectCount(
@@ -133,13 +267,19 @@ public class StageActionService {
         }
     }
 
+    /**
+     * P1-8.1 / AC-PROD-13：项目已有涉生物动作且缺少 C12 时，补挂到 CONCEPT 阶段。
+     * 幂等：无涉生物 / 已有 C12 → 返回 0；新挂返回 1。
+     *
+     * @param projectId 项目主键
+     * @return 新建 C12 条数（0 或 1）
+     */
     @Transactional(rollbackFor = Exception.class)
     public int ensureBioComplianceMount(Long projectId) {
-        Long bioCount = stageActionMapper.selectCount(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
-                .eq(StageAction::getProjectId, projectId)
-                .eq(StageAction::getIsBioFeature, "1"));
-        if (bioCount == null || bioCount == 0) {
+        if (projectId == null || projectId <= 0) {
+            throw new ServiceException("项目ID必须为正数");
+        }
+        if (!hasBioFeatureActions(projectId)) {
             return 0;
         }
         Long c12 = stageActionMapper.selectCount(
@@ -149,20 +289,58 @@ public class StageActionService {
         if (c12 != null && c12 > 0) {
             return 0;
         }
+        Long conceptStageId = resolveConceptStageId(projectId);
         ActionDef def = ActionCatalog.byCode("C12");
         StageAction c12Action = StageAction.builder()
             .projectId(projectId)
-            .stageId(null)
+            .stageId(conceptStageId)
             .actionCode(def.code())
             .actionName(def.name())
             .ownerRole(def.ownerRole())
             .depth(def.depth())
             .status("NOT_STARTED")
-            .isBlocking("1")
+            .isBlocking(def.blocking() ? "1" : "0")
             .isBioFeature("1")
             .build();
+        c12Action.setCreateTime(new Date());
         stageActionMapper.insert(c12Action);
+        if (c12Action.getId() == null || c12Action.getId() <= 0) {
+            throw new ServiceException("C12 补挂失败：未生成主键");
+        }
         return 1;
+    }
+
+    /**
+     * 是否存在未删的涉生物动作（is_bio_feature=1）。
+     *
+     * @param projectId 项目主键
+     * @return true 表示已标记涉生物
+     */
+    public boolean hasBioFeatureActions(Long projectId) {
+        Long bioCount = stageActionMapper.selectCount(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
+                .eq(StageAction::getProjectId, projectId)
+                .eq(StageAction::getIsBioFeature, "1"));
+        return bioCount != null && bioCount > 0;
+    }
+
+    /**
+     * 解析 CONCEPT 阶段实例 ID；缺失则拒绝补挂（避免 stage_id 空违反 NOT NULL）。
+     *
+     * @param projectId 项目主键
+     * @return CONCEPT 阶段主键
+     */
+    private Long resolveConceptStageId(Long projectId) {
+        List<ProjectStage> stages = projectStageMapper.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProjectStage>()
+                .eq(ProjectStage::getProjectId, projectId)
+                .eq(ProjectStage::getStageCode, "CONCEPT")
+                .eq(ProjectStage::getDelFlag, "0")
+                .last("LIMIT 1"));
+        if (stages == null || stages.isEmpty() || stages.get(0).getId() == null) {
+            throw new ServiceException("C12 补挂失败：项目缺少 CONCEPT 阶段实例");
+        }
+        return stages.get(0).getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -179,8 +357,8 @@ public class StageActionService {
         auditLogService.append(AuditLog.builder()
             .operatorName(operator).operatorRole("PM")
             .action("CREATE").entityType("DELIVERABLE").entityId(d.getId())
-            .afterData("{\"actionCode\":\"" + a.getActionCode() + "\",\"file\":\""
-                + fileName.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}")
+            // Round 8 / R8-P1-A：JSON 字符串统一走 AuditEventData.json（避免手工拼接被 DEF-6 requireJson 拦截时 fail-late）
+            .afterData(AuditEventData.json("actionCode", a.getActionCode(), "file", fileName))
             .build());
         return d;
     }
@@ -237,5 +415,23 @@ public class StageActionService {
 
     private static Long actorIdOf(String operator) {
         try { return Long.parseLong(operator); } catch (NumberFormatException e) { return null; }
+    }
+
+    /**
+     * P1-2.2：暂停/归档项目只读——禁止动作状态迁移。
+     *
+     * @param projectId 项目 ID
+     */
+    private void assertProjectWritable(Long projectId) {
+        if (projectId == null) {
+            return;
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project == null || "1".equals(project.getDelFlag())) {
+            throw new ServiceException("项目不存在: " + projectId);
+        }
+        if ("SUSPENDED".equals(project.getStatus()) || "ARCHIVED".equals(project.getStatus())) {
+            throw new ServiceException("暂停/归档项目禁止变更动作状态");
+        }
     }
 }
