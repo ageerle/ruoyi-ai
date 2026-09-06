@@ -305,4 +305,11 @@ management:
       # SEC-NEW-MED-1: dev 调试看完整详情（DB/磁盘等），prod 走父基线 WHEN_AUTHORIZED
       show-details: ALWAYS
 
+--- # websocket（SEC-LOW-4：dev 显式覆盖父基线 allowedOrigins: ''）
+# 父 application.yml 默认空字符串（同源默认），不允许 '*' 通配。
+# dev 调试用本地双端口（前端 80 + 后端 6039）需要允许跨域，显式覆盖 '*'。
+# websocket.enabled=true 时才生效；当前默认 false 不影响 HTTP/SSE。
+websocket:
+  allowedOrigins: '*'
+
 AGENT_ALLOWED_TABLES: ""

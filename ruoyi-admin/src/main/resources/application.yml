@@ -382,7 +382,11 @@ websocket:
   # 路径
   path: /resource/websocket
   # 设置访问源地址
-  allowedOrigins: '*'
+  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
+  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
+  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
+  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
+  allowedOrigins: ''
 
 --- # 演示模式配置
 demo:
