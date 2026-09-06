@@ -122,7 +122,7 @@ public class BidController {
     /**
      * P2-3.3 AC-TEAM-09：超管对挂起超 30 日的招标单直接指派
      */
-    @SaCheckPermission(value = "ipd:admin", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BID_INVITATION_ADMIN_ASSIGN, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/bid-invitations/{id}/admin-assign")
     public ApiV1Response<BidInvitation> adminAssign(
             @PathVariable Long id,
