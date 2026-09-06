@@ -235,6 +235,10 @@ tenant:
     - bonus_allocations
     - project_scores
     - contributions
+    # R9 补登：person_roles / coefficient_change_requests / cms_content 为新 DDL 表，无多租户语义
+    - person_roles
+    - coefficient_change_requests
+    - cms_content
     - negative_feedbacks
     - requirement_pool
     - ai_model_configs
@@ -297,7 +301,7 @@ api-decrypt:
   # 对应前端解密私钥（PEM 字面量已移除以避免 git 历史长期暴露——SEC-NEW-MED-4 Round 9）。
   # 真值必须通过 ${API_DECRYPT_PRIVATE_KEY} 环境变量注入（见下方 privateKey 行）；
   # 留空时即便 enabled=true 也会因空私钥启动失败（fail-fast 语义）。
-  publicKey: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyoQR7Z9ga7EXmJDfpzpjoAP2Y/JaWdM+rEkWjFT64CGby/s79DqTNJJFetZXcW7Wqq1kA5PaZRWNeVmW2UIn235E6r3CDMTxcy01ZwrE1XRlRwtQBc/ftgfylMprcSnR1AsECQ7NX9dDJ8B8i37X+hjAI2Dd2jgv5EG75UOi5l5Qd4voC09XnFE7AOe81caf+6o4B5A11p1Q+m3sPK2PGF8umKmAZa5Mm3/lgCvY/OHj1iPvw24oz9iduKItwmNJkIyNBA6QpsNmlv/Me0LQAxm3MkTOyPYBByry2NYhcEUKXNm2LtMnphq9L1oSQXwzKw2rnOUrO4oFpEsGrsfKmQIDAQAB
+  publicKey: ${API_DECRYPT_PUBLIC_KEY:}
   # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
   # 对应前端加密公钥 通过环境变量 API_DECRYPT_PRIVATE_KEY 注入；留空时即便 enabled=true 也会因空私钥启动失败
   privateKey: ${API_DECRYPT_PRIVATE_KEY:}
