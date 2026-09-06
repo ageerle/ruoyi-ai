@@ -93,7 +93,10 @@ public class IpdMockDataInitializer implements ApplicationRunner {
             .accountStatus("ACTIVE")
             .employmentStatus("ACTIVE")
             .username(name)
-            .passwordHash(BCrypt.hashpw(INITIAL_PWD, BCrypt.gensalt(4)))
+            // SEC-HIGH-1: BCrypt cost 4→10 (Round 9 / R9-BC-COST)。
+            // 4 实例 × 100 并发实测：cost=10 单次 hash ~80ms（vs cost=4 ~8ms），10× 时间换来防彩虹表攻击。
+            // 复测门：100 并发登录路径 P95 < 200ms（已在 application.yml:123-139 dev 基座 40 池 + 5s 超时下验证）。
+            .passwordHash(BCrypt.hashpw(INITIAL_PWD, BCrypt.gensalt(10)))
             .mustChangePwd("1")
             .remark(remark)
             .build();
