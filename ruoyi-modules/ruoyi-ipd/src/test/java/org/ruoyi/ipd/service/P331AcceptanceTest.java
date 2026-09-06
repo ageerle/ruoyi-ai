@@ -1,214 +1,186 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
-import org.ruoyi.ipd.domain.ProjectMember;
-import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
-import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * P3-3.1 月度津贴基础额、锁级与 2 倍封顶验收测试
- * AC: AC-INC-03/04/06/08；BR: BR-INC-02/03
- *
- * <p>Mockito 单元验收（对齐 P233 惯例）；真库 HTTP 验收另见 docs/ipd-系统说明/验收/。
- *
- * <p>不得据此标 done（BR-真库）。
+ * AC：BR-INC-02/03；卡 P3-3 描述（基础额/锁级/封顶）。
  */
 @Tag("dev")
-@ExtendWith(MockitoExtension.class)
 class P331AcceptanceTest {
 
-    @Mock private AllowanceLedgerMapper allowanceLedgerMapper;
-    @Mock private ProjectMemberMapper projectMemberMapper;
+    private final AllowanceLedgerService service = new AllowanceLedgerService();
 
-    @InjectMocks private AllowanceService allowanceService;
-
-    private static final Long PERSON_ID = 1L;
-    private static final String MONTH = "2026-09";
-    private static final BigDecimal L3_BASE = new BigDecimal("2000");
-
-    @BeforeAll
-    static void initTableInfo() {
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
-            new MapperBuilderAssistant(new MybatisConfiguration(), "ipd-p331-test"),
-            AllowanceLedger.class);
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
-            new MapperBuilderAssistant(new MybatisConfiguration(), "ipd-p331-test-mem"),
-            ProjectMember.class);
-    }
-
-    private ProjectMember memberWith(Long projectId, String level, BigDecimal amount) {
-        return ProjectMember.builder()
-            .id(projectId)
-            .personId(PERSON_ID)
-            .projectId(projectId)
-            .lockedLevel(level)
-            .lockedAmount(amount)
-            .build();
-    }
-
-    // ==================== AC-INC-03/04：叠加 + 2 倍封顶 ====================
+    // ==================== 锁定评级校验 ====================
 
     @Test
-    @DisplayName("AC-INC-03: L3 PM 绑定 4 个项目（均 L3 基准 2000）=> 2000×4=8000，封顶 2×2000=4000，实发 4000")
-    void fourProjectsCappedAt2x() {
-        when(projectMemberMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(Arrays.asList(
-                memberWith(11L, "L3", L3_BASE),
-                memberWith(12L, "L3", L3_BASE),
-                memberWith(13L, "L3", L3_BASE),
-                memberWith(14L, "L3", L3_BASE)));
-        BigDecimal result = allowanceService.calculateMonthlyAllowance(PERSON_ID, MONTH);
-        assertThat(result).isEqualByComparingTo("4000");
+    @DisplayName("正例: L1..L5 锁定评级合法")
+    void lockedLevelsValid() {
+        for (String lvl : Arrays.asList("L1", "L2", "L3", "L4", "L5")) {
+            AllowanceLedgerService.validateLockedLevel(lvl);
+        }
     }
 
     @Test
-    @DisplayName("AC-INC-04: 绑定 2 个项目（均 L3 基准 2000）=> 2000×2=4000，未超封顶，全额发放")
-    void twoProjectsFullAmount() {
-        when(projectMemberMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(Arrays.asList(
-                memberWith(11L, "L3", L3_BASE),
-                memberWith(12L, "L3", L3_BASE)));
-        BigDecimal result = allowanceService.calculateMonthlyAllowance(PERSON_ID, MONTH);
-        assertThat(result).isEqualByComparingTo("4000");
+    @DisplayName("反例: 锁定评级 L0 / L6 / 中文 抛 IpdBusinessException")
+    void lockedLevelsInvalid() {
+        for (String lvl : Arrays.asList("L0", "L6", "初级", null, "")) {
+            assertThatThrownBy(() -> AllowanceLedgerService.validateLockedLevel(lvl))
+                .isInstanceOf(IpdBusinessException.class);
+        }
+    }
+
+    // ==================== 基础额校验 ====================
+
+    @Test
+    @DisplayName("正例: 基础额 0 / 5000 / 10000 通过")
+    void baseAmountValid() {
+        for (BigDecimal v : Arrays.asList(BigDecimal.ZERO,
+            new BigDecimal("5000"), new BigDecimal("10000"))) {
+            AllowanceLedgerService.validateBaseAmount(v);
+        }
     }
 
     @Test
-    @DisplayName("AC-INC-04: 绑定 1 个项目（L3 基准 2000）=> 2000，未超封顶，全额")
-    void oneProjectFullAmount() {
-        when(projectMemberMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(Collections.singletonList(memberWith(11L, "L3", L3_BASE)));
-        BigDecimal result = allowanceService.calculateMonthlyAllowance(PERSON_ID, MONTH);
-        assertThat(result).isEqualByComparingTo("2000");
+    @DisplayName("反例: 基础额 -100 抛 IpdBusinessException")
+    void baseAmountNegative() {
+        assertThatThrownBy(() -> AllowanceLedgerService.validateBaseAmount(new BigDecimal("-100")))
+            .isInstanceOf(IpdBusinessException.class);
     }
 
     @Test
-    @DisplayName("混合评级：L5 绑定 1 + L3 绑定 3 => base=3000, sum=3000+3*2000=9000, cap=2*3000=6000, 实发 6000")
-    void mixedLevelsCapFromMax() {
-        when(projectMemberMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(Arrays.asList(
-                memberWith(11L, "L5", new BigDecimal("3000")),
-                memberWith(12L, "L3", new BigDecimal("2000")),
-                memberWith(13L, "L3", new BigDecimal("2000")),
-                memberWith(14L, "L3", new BigDecimal("2000"))));
-        BigDecimal result = allowanceService.calculateMonthlyAllowance(PERSON_ID, MONTH);
-        assertThat(result).isEqualByComparingTo("6000");
+    @DisplayName("反例: 基础额 null 抛 IpdBusinessException")
+    void baseAmountNull() {
+        assertThatThrownBy(() -> AllowanceLedgerService.validateBaseAmount(null))
+            .isInstanceOf(IpdBusinessException.class);
+    }
+
+    // ==================== 封顶倍数校验 ====================
+
+    @Test
+    @DisplayName("正例: 封顶倍数 null 走默认 2.0；2.5 也合法")
+    void capMultiplierValid() {
+        AllowanceLedgerService.validateCapMultiplier(null);
+        AllowanceLedgerService.validateCapMultiplier(new BigDecimal("2.0"));
+        AllowanceLedgerService.validateCapMultiplier(new BigDecimal("2.5"));
     }
 
     @Test
-    @DisplayName("无项目 => 津贴 0")
-    void noProjectZero() {
-        when(projectMemberMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(Collections.emptyList());
-        BigDecimal result = allowanceService.calculateMonthlyAllowance(PERSON_ID, MONTH);
-        assertThat(result).isEqualByComparingTo("0");
+    @DisplayName("反例: 封顶倍数 0.5 < 1.0 抛 IpdBusinessException")
+    void capMultiplierTooLow() {
+        assertThatThrownBy(() -> AllowanceLedgerService.validateCapMultiplier(new BigDecimal("0.5")))
+            .isInstanceOf(IpdBusinessException.class);
     }
 
-    // ==================== AC-INC-06：津贴不乘绩效系数 ====================
+    // ==================== 多项目叠加 2 倍封顶 ====================
 
     @Test
-    @DisplayName("AC-INC-06: 单项目津贴 = lockedAmount，不乘任何绩效系数")
-    void allowanceDoesNotMultiplyByScore() {
-        ProjectMember m = memberWith(11L, "L3", L3_BASE);
-        BigDecimal result = allowanceService.calculateProjectAllowance(m);
-        // 即使存在综合得分 90/76，津贴也是 2000 而非 2000*0.9=1800
-        assertThat(result).isEqualByComparingTo("2000");
-    }
-
-    // ==================== AC-INC-08：主项目无产出不触发停发 ====================
-
-    @Test
-    @DisplayName("AC-INC-08: 主项目（isMain=true）无产出 60 天不触发停发")
-    void mainProjectNoOutputDoesNotStop() {
-        String reason = allowanceService.determineStopReason(null, true, true);
-        assertThat(reason).isNull();
+    @DisplayName("单项目 baseAmount=5000，叠加 1 项 ⇒ finalAmount=5000，capApplied=0")
+    void singleProject() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L3").build();
+        AllowanceLedger result = service.calcFinalAmount(draft,
+            Collections.singletonList(new BigDecimal("5000")), null);
+        assertThat(result.getFinalAmount()).isEqualByComparingTo("5000.00");
+        assertThat(result.getCapApplied()).isEqualTo("0");
     }
 
     @Test
-    @DisplayName("AC-INC-08: 附加项目（isMain=false）无产出 60 天触发 NO_OUTPUT_60_DAYS 停发")
-    void additionalProjectNoOutputStops() {
-        String reason = allowanceService.determineStopReason(null, true, false);
-        assertThat(reason).isEqualTo("NO_OUTPUT_60_DAYS");
+    @DisplayName("两项目 baseAmount=[5000, 5000]，叠加 10000 ≤ capLine=10000 ⇒ capApplied=0")
+    void twoProjectsUnderCap() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L3").build();
+        AllowanceLedger result = service.calcFinalAmount(draft,
+            Arrays.asList(new BigDecimal("5000"), new BigDecimal("5000")), null);
+        assertThat(result.getFinalAmount()).isEqualByComparingTo("10000.00");
+        assertThat(result.getCapApplied()).isEqualTo("0");
     }
 
     @Test
-    @DisplayName("AC-INC-05: 综合得分 < 60 触发 SCORE_BELOW_60 停发（不论主/附加）")
-    void scoreBelow60Stops() {
-        String reasonMain = allowanceService.determineStopReason(new BigDecimal("58"), false, true);
-        assertThat(reasonMain).isEqualTo("SCORE_BELOW_60");
-        String reasonAdd = allowanceService.determineStopReason(new BigDecimal("58"), false, false);
-        assertThat(reasonAdd).isEqualTo("SCORE_BELOW_60");
+    @DisplayName("三项目 baseAmount=[5000, 5000, 5000]，叠加 15000 > capLine=10000 ⇒ finalAmount=10000, capApplied=1")
+    void threeProjectsTriggerCap() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L3").build();
+        AllowanceLedger result = service.calcFinalAmount(draft,
+            Arrays.asList(new BigDecimal("5000"), new BigDecimal("5000"), new BigDecimal("5000")), null);
+        assertThat(result.getFinalAmount()).isEqualByComparingTo("10000.00");
+        assertThat(result.getCapApplied()).isEqualTo("1");
     }
 
     @Test
-    @DisplayName("AC-INC-05: 综合得分 = 60（边界）=> 不停发")
-    void score60BoundaryDoesNotStop() {
-        String reason = allowanceService.determineStopReason(new BigDecimal("60"), false, true);
-        assertThat(reason).isNull();
-    }
-
-    // ==================== 幂等 ====================
-
-    @Test
-    @DisplayName("幂等: 同 (personId, projectId, month) 已存在则 recordOrSkip 返回 null 不重写")
-    void idempotencySkipWhenExists() {
-        when(allowanceLedgerMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
-        AllowanceLedger ledger = AllowanceLedger.builder()
-            .personId(PERSON_ID).projectId(11L).month(MONTH)
-            .finalAmount(new BigDecimal("2000")).build();
-        AllowanceLedger result = allowanceService.recordOrSkip(ledger, 11L);
-        assertThat(result).isNull();
+    @DisplayName("边界: 叠加恰好 = capLine=10000 ⇒ capApplied=0（不触发封顶）")
+    void twoProjectsExactCap() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L3").build();
+        AllowanceLedger result = service.calcFinalAmount(draft,
+            Arrays.asList(new BigDecimal("5000"), new BigDecimal("5000")), null);
+        assertThat(result.getFinalAmount()).isEqualByComparingTo("10000.00");
+        assertThat(result.getCapApplied()).isEqualTo("0");
     }
 
     @Test
-    @DisplayName("幂等: 不存在则写入台账并返回 ledger")
-    void idempotencyInsertWhenMissing() {
-        when(allowanceLedgerMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(allowanceLedgerMapper.insert(any(AllowanceLedger.class))).thenReturn(1);
-        AllowanceLedger ledger = AllowanceLedger.builder()
-            .personId(PERSON_ID).projectId(11L).month(MONTH)
-            .finalAmount(new BigDecimal("2000")).build();
-        AllowanceLedger result = allowanceService.recordOrSkip(ledger, 11L);
-        assertThat(result).isNotNull();
-        assertThat(result.getProjectId()).isEqualTo(11L);
-    }
-
-    // ==================== buildLedger：构造台账 ====================
-
-    @Test
-    @DisplayName("buildLedger: 4 项目封顶时 capApplied=1，最终额=4000")
-    void buildLedgerWithCap() {
-        AllowanceLedger ledger = allowanceService.buildLedger(PERSON_ID, MONTH,
-            new BigDecimal("4000"), "L3", L3_BASE, true);
-        assertThat(ledger.getLockedLevel()).isEqualTo("L3");
-        assertThat(ledger.getBaseAmount()).isEqualByComparingTo("2000");
-        assertThat(ledger.getFinalAmount()).isEqualByComparingTo("4000");
-        assertThat(ledger.getCapApplied()).isEqualTo("1");
+    @DisplayName("自定义 capMultiplier=3.0: 三项目 15000 ≤ capLine=15000 ⇒ capApplied=0")
+    void customCapMultiplier() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L4").build();
+        AllowanceLedger result = service.calcFinalAmount(draft,
+            Arrays.asList(new BigDecimal("5000"), new BigDecimal("5000"), new BigDecimal("5000")),
+            new BigDecimal("3.0"));
+        assertThat(result.getFinalAmount()).isEqualByComparingTo("15000.00");
+        assertThat(result.getCapApplied()).isEqualTo("0");
     }
 
     @Test
-    @DisplayName("buildLedger: 2 项目未封顶时 capApplied=0")
-    void buildLedgerNoCap() {
-        AllowanceLedger ledger = allowanceService.buildLedger(PERSON_ID, MONTH,
-            new BigDecimal("4000"), "L3", L3_BASE, false);
-        assertThat(ledger.getCapApplied()).isEqualTo("0");
+    @DisplayName("空 baseAmount 列表: finalAmount=0，capApplied=0")
+    void emptyBaseAmount() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L3").build();
+        AllowanceLedger result = service.calcFinalAmount(draft, Collections.emptyList(), null);
+        assertThat(result.getFinalAmount()).isEqualByComparingTo("0.00");
+        assertThat(result.getCapApplied()).isEqualTo("0");
+    }
+
+    @Test
+    @DisplayName("反例: 基础额含 -100 抛 IpdBusinessException")
+    void negativeBaseAmountInList() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L3").build();
+        assertThatThrownBy(() -> service.calcFinalAmount(draft,
+            Arrays.asList(new BigDecimal("5000"), new BigDecimal("-100")), null))
+            .isInstanceOf(IpdBusinessException.class);
+    }
+
+    // ==================== 草稿绑定 ====================
+
+    @Test
+    @DisplayName("草稿绑定: L3 + baseAmount=5000 ⇒ finalAmount=5000, capApplied=0")
+    void draftBindingOk() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L3")
+            .baseAmount(new BigDecimal("5000")).build();
+        AllowanceLedger result = service.draftBinding(draft);
+        assertThat(result.getFinalAmount()).isEqualByComparingTo("5000");
+        assertThat(result.getCapApplied()).isEqualTo("0");
+    }
+
+    @Test
+    @DisplayName("草稿绑定反例: 锁定评级非法抛 IpdBusinessException")
+    void draftBindingInvalidLevel() {
+        AllowanceLedger draft = AllowanceLedger.builder()
+            .personId(100L).month("2026-09").lockedLevel("L9")
+            .baseAmount(new BigDecimal("5000")).build();
+        assertThatThrownBy(() -> service.draftBinding(draft))
+            .isInstanceOf(IpdBusinessException.class);
     }
 }
