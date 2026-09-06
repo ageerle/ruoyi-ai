@@ -1,0 +1,105 @@
+{
+  "checkedAt": "2026-09-05T20:47:11-07:00",
+  "credentialSource": ".codex/ipd-dev/config/mysql-client.cnf",
+  "requestedDbs": [
+    "ruoyi-ai",
+    "ipd_dev",
+    "ipd_restore"
+  ],
+  "resolvedDbs": [
+    "ipd_dev",
+    "ipd_restore"
+  ],
+  "allSchemas": [
+    "information_schema",
+    "ipd_audit_test_56c781a76ea4",
+    "ipd_auth_test_64f11d269510",
+    "ipd_dev",
+    "ipd_env_probe_85f3d2da",
+    "ipd_hrtest_320bc4baf8a2",
+    "ipd_hrtest_4751f4e5326d",
+    "ipd_hrtest_ad9a47cfbe29",
+    "ipd_hrtest_b6cb2a3530d7",
+    "ipd_hrtest_b8967de24b02",
+    "ipd_hrtest_bb72ca61e14a",
+    "ipd_hrtest_ea1fdb5471e1",
+    "ipd_ops03_fixture_533ee28e999e",
+    "ipd_ops03_fixture_d812d9c987e3",
+    "ipd_ops03_restore_159f65e25dcc",
+    "ipd_ops03_restore_206f2f89c918",
+    "ipd_ops03_restore_7f754f7854d5",
+    "ipd_ops03_restore_a8579bdc3476",
+    "ipd_ops03_restore_e7c65a1ae9ba",
+    "ipd_ops03_restore_ed7617006954",
+    "ipd_ops04_test_43b90fd8b225",
+    "ipd_ops04_test_4751f4e5326d",
+    "ipd_ops04_test_4c56d3c9cb2c",
+    "ipd_ops04_test_ad9a47cfbe29",
+    "ipd_ops04_test_b6cb2a3530d7",
+    "ipd_p053_test_38989d37d5fe",
+    "ipd_p053_test_ff21a9002ed2",
+    "ipd_p142_migrate_8f401deb31_after",
+    "ipd_p142_migrate_8f401deb31_before",
+    "ipd_p142_migrate_8f401deb31_fresh",
+    "ipd_p142_migrate_8f401deb31_partial",
+    "ipd_p142_test_992f8fce1eb2",
+    "ipd_perf",
+    "ipd_qa04",
+    "ipd_restore",
+    "ipd_restore_49153a49d3b1",
+    "ipd_restore_68423e608051",
+    "mysql",
+    "performance_schema",
+    "sys"
+  ],
+  "detail": [
+    {
+      "db": "ipd_dev",
+      "stage_actions_exists": true,
+      "idx_sa_project_code": null,
+      "stage_actions_indexes": [
+        "idx_sa_code",
+        "idx_sa_project",
+        "idx_sa_stage",
+        "PRIMARY"
+      ],
+      "ldcr_table_exists": true,
+      "uk_ldcr_pending_project": null,
+      "col_pending_project_id": false,
+      "col_version": false,
+      "duplicate_pending_rows": []
+    },
+    {
+      "db": "ipd_restore",
+      "stage_actions_exists": true,
+      "idx_sa_project_code": null,
+      "stage_actions_indexes": [
+        "idx_sa_code",
+        "idx_sa_project",
+        "idx_sa_stage",
+        "PRIMARY"
+      ],
+      "ldcr_table_exists": true,
+      "uk_ldcr_pending_project": null,
+      "col_pending_project_id": false,
+      "col_version": false,
+      "duplicate_pending_rows": []
+    }
+  ],
+  "verdict": [
+    {
+      "db": "ipd_dev",
+      "项5_idx_sa_project_code": "MISSING",
+      "项1a_uk_ldcr_pending_project": "NOT_APPLIED",
+      "项1b_version列": "NOT_APPLIED",
+      "双签表存在": true
+    },
+    {
+      "db": "ipd_restore",
+      "项5_idx_sa_project_code": "MISSING",
+      "项1a_uk_ldcr_pending_project": "NOT_APPLIED",
+      "项1b_version列": "NOT_APPLIED",
+      "双签表存在": true
+    }
+  ]
+}

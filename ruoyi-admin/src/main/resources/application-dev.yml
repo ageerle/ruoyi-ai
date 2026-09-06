@@ -2,7 +2,8 @@
 # dev profile 提供强随机默认密钥（≥64 字符），但 CI/同事机器会被认作"开发基线"。
 # 本地开发者应通过 .env 或 IDE run configuration 注入 SA_TOKEN_JWT_SECRET_KEY 覆盖。
 # application.yml 用 ${SA_TOKEN_JWT_SECRET_KEY:} 无默认占位符（保留 fail-fast 语义）
-# application-prod.yml 同步提交 ${SA_TOKEN_JWT_SECRET_KEY:} 无默认（待 sensitive-field-guard hook 解除后由用户/CI 手动合并）
+# application-prod.yml 无内联 jwt-secret-key 段（靠父继承到无默认占位）；显式重申 pin 见
+#   docs/ipd-系统说明/验收/application-prod-owner-item3-delta.patch（sensitive-field-guard 只拦直写 prod 文件，不拦 patch 交付）
 # 注：此 dev 默认密钥已通过 sensitive-field-guard 模式注入（即非 PEM/RSA 私钥格式），
 #   仍存在 git history 暴露风险——本 dev 默认值仅为开箱即用便利，生产部署必须用环境变量覆盖
 sa-token:
@@ -11,7 +12,8 @@ sa-token:
 --- # IPD 模块配置（SEC-HIGH-2：INITIAL_PWD 挪 env 注入）
 # dev profile 显式覆盖父基线默认值，方便本地启动开箱即用（与 sa-token 同模式）
 # prod profile 走父 application.yml 的 ${IPD_INITIAL_PWD:} 无默认，env 缺失则 fail-fast
-# 注：此 dev 默认值与 IpdMockDataInitializer.INITIAL_PWD 常量一致，保留本地开发零摩擦
+# 注：dev 默认值是本地开发零摩擦的便利项；曾与其同值的 IpdMockDataInitializer.INITIAL_PWD 常量
+#   已随 P1 项2（凭证轮换治理）删除，写入路径改由本键注入，源码里不再存在第二份密码常量。
 ipd:
   security:
     initial-password: ${IPD_INITIAL_PWD:Ipd@123456}

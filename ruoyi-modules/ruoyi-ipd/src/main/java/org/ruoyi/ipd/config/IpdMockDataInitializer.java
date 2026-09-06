@@ -20,8 +20,12 @@ import java.util.Date;
 /**
  * Mock 人员 / 产品组初始化（TS-10：人员同步一期 Mock，二期对接 HR API）
  * 仅 dev profile 生效；幂等（按 employee_no / group_name 判存在即跳过）。
- * 初始密码来源：{@code ipd.security.initial-password} 配置项（prod 由 {@code IPD_INITIAL_PWD} env 注入，dev 默认 Ipd@123456），首登强制改密 must_change_pwd=1。
- * <p>SEC-HIGH-2：INITIAL_PWD 不再硬编码，从 Spring 配置注入（prod 启动时若 env 缺失则因空密码启动失败，fail-fast）。
+ * 初始密码来源：{@code ipd.security.initial-password} 配置项（prod 由 {@code IPD_INITIAL_PWD} env 注入，
+ * dev 默认值只存在于 application-dev.yml，源码不留字面量），首登强制改密 must_change_pwd=1。
+ * <p>SEC-HIGH-2：初始密码不硬编码，从 Spring 配置注入（prod 启动时若 env 缺失则因空密码启动失败，fail-fast）。
+ * <p>P1（owner 2026-09-05 指令项2）：原 {@code public static final INITIAL_PWD} 字面量已删除。
+ * 它自 SEC-HIGH-2 起就不参与任何写库路径（只被 BCrypt 算法层单测引用），
+ * 留着只会让已入仓的 QA 种子口令永久停在 main 源码里；单测改用自备探测串。
  */
 @Slf4j
 @Component
@@ -30,14 +34,9 @@ import java.util.Date;
 public class IpdMockDataInitializer implements ApplicationRunner {
 
     /**
-     * 仅供测试类（IpdMockDataInitializerTest）使用的常量默认值，便于 BCrypt 算法层单测不依赖 Spring 容器。
-     * 实际 hash 写入使用 {@link #runtimeInitialPwd} 字段（Spring 注入），与本常量解耦。
-     */
-    public static final String INITIAL_PWD = "Ipd@123456";
-
-    /**
      * 实际写入 person.password_hash 的初始密码，从 {@code ipd.security.initial-password} 注入。
-     * dev profile 默认 Ipd@123456（application-dev.yml），prod profile 必须通过 {@code IPD_INITIAL_PWD} env 显式注入（父 application.yml 无默认）。
+     * dev profile 默认值见 application-dev.yml；prod profile 必须通过 {@code IPD_INITIAL_PWD} env 显式注入
+     * （父 application.yml 无默认）。本类不再持有任何密码常量。
      */
     @Value("${ipd.security.initial-password}")
     private String runtimeInitialPwd;
@@ -110,7 +109,7 @@ public class IpdMockDataInitializer implements ApplicationRunner {
             // 4 实例 × 100 并发实测：cost=10 单次 hash ~80ms（vs cost=4 ~8ms），10× 时间换来防彩虹表攻击。
             // 复测门：100 并发登录路径 P95 < 200ms（已在 application.yml:123-139 dev 基座 40 池 + 5s 超时下验证）。
             // SEC-HIGH-2: 实际写入密码来自 Spring 注入 runtimeInitialPwd（ipd.security.initial-password 配置项），
-            // 不再硬编码 INITIAL_PWD 常量；dev 默认值与常量一致方便本地启动，prod 必须 env 注入。
+            // 源码不含任何密码字面量；prod 必须 env 注入。
             .passwordHash(BCrypt.hashpw(runtimeInitialPwd, BCrypt.gensalt(10)))
             .mustChangePwd("1")
             .remark(remark)
