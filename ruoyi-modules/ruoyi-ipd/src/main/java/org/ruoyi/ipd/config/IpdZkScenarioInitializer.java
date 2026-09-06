@@ -123,6 +123,7 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
         Project project = seedActiveProject(code, name, templateType, level, "LIFECYCLE", marketPmId, rdPmId, mainGroupId, targetSales);
         project.setStatus("ARCHIVED");
         project.setLifecycleStatus("ARCHIVED");
+        // 治理豁免：ZK 场景种数据，demo 性质不入业务守卫；登记 LaunchDateDualSignGuardAcceptanceTest 白名单
         project.setLaunchDate(daysFromNow(-180));
         projectMapper.updateById(project);
         for (String stage : SIX_STAGES) {

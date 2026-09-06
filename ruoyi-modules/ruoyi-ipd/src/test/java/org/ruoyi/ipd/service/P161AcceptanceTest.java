@@ -450,8 +450,7 @@ class P161AcceptanceTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("archived"));
         mvc.perform(get("/api/v1/gate-elements").param("gate", "G1"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
-        mvc.perform(post("/api/v1/gate-elements/1/copy").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"elementCode\":\"custom-1b\"}"))
+        mvc.perform(post("/api/v1/gate-elements/1/copy").param("newElementCode", "custom-1b"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.status").value("draft"))
             .andExpect(jsonPath("$.data.elementCode").value("custom-1b"));
@@ -478,7 +477,7 @@ class P161AcceptanceTest {
         when(mapper.selectById(1L)).thenReturn(draft().setId(1L).setStatus("draft").setEnabled("0"));
         when(auditLogMapper.selectById(404L)).thenReturn(null);
         controller("SUPER_ADMIN").perform(post("/api/v1/gate-elements/1/revert")
-                .contentType(MediaType.APPLICATION_JSON).content("{\"auditLogId\":404}"))
+                .param("auditLogId", "404"))
             .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value(50001));
         verify(mapper, never()).updateById(any(GateElement.class));
     }
@@ -496,11 +495,9 @@ class P161AcceptanceTest {
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
         mvc.perform(post("/api/v1/gate-elements/1/archive"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
-        mvc.perform(post("/api/v1/gate-elements/1/copy").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"elementCode\":\"x2\"}"))
+        mvc.perform(post("/api/v1/gate-elements/1/copy").param("newElementCode", "x2"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
-        mvc.perform(post("/api/v1/gate-elements/1/revert").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"auditLogId\":1}"))
+        mvc.perform(post("/api/v1/gate-elements/1/revert").param("auditLogId", "1"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
         mvc.perform(post("/api/v1/gate-elements/1/disable"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));

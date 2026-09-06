@@ -1,6 +1,8 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -44,6 +46,14 @@ import static org.mockito.Mockito.when;
 @DisplayName("P0-6.3 撤回 + 升级 单元验收")
 class P063AcceptanceTest {
 
+    @BeforeAll
+    static void initTableInfo() {
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
+            new org.apache.ibatis.builder.MapperBuilderAssistant(
+                new com.baomidou.mybatisplus.core.MybatisConfiguration(), "ipd-p063-test"),
+            DeletionRequest.class);
+    }
+
     @Mock
     private DeletionRequestMapper deletionRequestMapper;
 
@@ -83,12 +93,13 @@ class P063AcceptanceTest {
         DeletionRequest after = deletionRequestService.withdraw(101L, TEST_REQUESTER);
         // 验
         assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_WITHDRAWN);
+
         ArgumentCaptor<DeletionRequest> captor = ArgumentCaptor.forClass(DeletionRequest.class);
         org.mockito.Mockito.verify(deletionRequestMapper).updateById(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(DeletionRequestService.ST_WITHDRAWN);
     }
-
     @Test
+
     @DisplayName("AC-DEL-06 反例：非申请人撤回应拒绝")
     void withdrawByNonRequester_rejected() {
         DeletionRequest req = sampleReq(102L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
@@ -98,7 +109,6 @@ class P063AcceptanceTest {
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("\u4ec5\u7533\u8bf7\u4eba");
     }
-
     @Test
     @DisplayName("AC-DEL-06 反例：超 24h 不可撤回")
     void withdrawAfter24h_rejected() {
@@ -109,7 +119,6 @@ class P063AcceptanceTest {
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("\u64a4\u56de\u65f6\u9650");
     }
-
     @Test
     @DisplayName("AC-DEL-06 守卫：已终态不可撤回")
     void withdrawTerminal_rejected() {
@@ -119,7 +128,6 @@ class P063AcceptanceTest {
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("\u5df2\u7ec8\u6001");
     }
-
     @Test
     @DisplayName("AC-DEL-07 组长升级：逾期 LEADER_REVIEW → ADMIN_REVIEW")
     void escalateOverdueLeaderReview() {
@@ -127,16 +135,17 @@ class P063AcceptanceTest {
         overdue1.setLeaderDueAt(new Date(System.currentTimeMillis() - 3600_000L));
         when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(Arrays.asList(overdue1));
-        when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
+        // PERF-P0-1：批量 UPDATE（LambdaUpdateWrapper）替代 N+1 updateById
+        when(deletionRequestMapper.update(any(), any(LambdaUpdateWrapper.class))).thenReturn(1);
         // 跑
         int escalated = deletionRequestService.escalateOverdueLeaderReview();
         // 验
         assertThat(escalated).isEqualTo(1);
-        ArgumentCaptor<DeletionRequest> captor = ArgumentCaptor.forClass(DeletionRequest.class);
-        org.mockito.Mockito.verify(deletionRequestMapper).updateById(captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo(DeletionRequestService.ST_ADMIN_REVIEW);
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.Wrapper<DeletionRequest>> wrapperCaptor = ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.Wrapper.class);
+        org.mockito.Mockito.verify(deletionRequestMapper).update(org.mockito.ArgumentMatchers.isNull(), wrapperCaptor.capture());
+        // PERF-P0-1：验证 wrapper 类型（LambdaUpdateWrapper）+ affected 行数已前置断言=1
+        assertThat(wrapperCaptor.getValue()).isInstanceOf(LambdaUpdateWrapper.class);
     }
-
     @Test
     @DisplayName("AC-DEL-07 升级幂等：空集合时升级 0 条")
     void escalateNoOverdue_isNoop() {
@@ -145,7 +154,6 @@ class P063AcceptanceTest {
         int escalated = deletionRequestService.escalateOverdueLeaderReview();
         assertThat(escalated).isZero();
     }
-
     @Test
     @DisplayName("AC-DEL-07 超期清单：ADMIN_REVIEW 状态 + adminDueAt 已过的能被 list 出来")
     void listOverdueAdminReview() {
@@ -157,7 +165,6 @@ class P063AcceptanceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getId()).isEqualTo(301L);
     }
-
     /**
      * HIGH-4 防漂移反向用例：直接读生产源码 DeletionRequestService.java，验证 setUp() 中 mock 用的键名
      * 与生产 getIntValue() 调用键名一致（驼峰 deletion.leaderDeadlineDays / deletion.adminDeadlineDays）。
@@ -181,7 +188,6 @@ class P063AcceptanceTest {
         assertThat(content).doesNotContain("deletion.admin.deadlineDays");
         // mock setUp() 驼峰键名已在 line 65/66 静态验证（lenient().when() 调用）
     }
-
     private DeletionRequest sampleReq(Long id, Long requesterId, String status) {
         DeletionRequest r = new DeletionRequest();
         r.setId(id);

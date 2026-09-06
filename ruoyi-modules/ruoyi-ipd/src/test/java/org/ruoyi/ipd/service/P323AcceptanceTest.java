@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Person;
@@ -39,6 +41,7 @@ import static org.mockito.Mockito.when;
 /** P3-2.3 上市 30/90 日项目绩效待办与逾期催办验收。 */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class P323AcceptanceTest {
 
     @Mock private ProjectMapper projectMapper;

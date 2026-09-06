@@ -3,40 +3,30 @@ package org.ruoyi.ipd.common;
 import lombok.Getter;
 
 /**
- * IPD 业务异常（不可继承 final 的 ServiceException）。
- * Advice 按 {@link #errorCode} 映射 HTTP / ApiV1Response。
+ * IPD 业务异常（统一异常治理方向）。
+ *
+ * <p>三种构造语义：
+ * <ul>
+ *   <li>{@link #IpdBusinessException(String)}：单参文案，默认错误码 PARAM_INVALID（取代 ruoyi ServiceException 单参用法）</li>
+ *   <li>{@link #IpdBusinessException(ApiV1ErrorCode)}：单参错误码，文案 = code.message（历史约定）</li>
+ *   <li>{@link #IpdBusinessException(ApiV1ErrorCode, String)}：双参（错误码 + 文案），显式登记业务码</li>
+ * </ul>
  */
 @Getter
 public class IpdBusinessException extends RuntimeException {
 
     private final ApiV1ErrorCode errorCode;
 
-    /**
-     * 使用登记错误码构造业务异常。
-     *
-     * @param code 业务错误码
-     */
-    public IpdBusinessException(ApiV1ErrorCode code) {
-        super(code.getMessage());
-        this.errorCode = code;
-    }
-
-    /**
-     * 自定义文案，默认 PARAM_INVALID。
-     *
-     * @param message 对外提示
-     */
     public IpdBusinessException(String message) {
         super(message);
         this.errorCode = ApiV1ErrorCode.PARAM_INVALID;
     }
 
-    /**
-     * 使用登记错误码与自定义文案构造业务异常。
-     *
-     * @param code 业务错误码
-     * @param message 对外提示
-     */
+    public IpdBusinessException(ApiV1ErrorCode code) {
+        super(code.getMessage());
+        this.errorCode = code;
+    }
+
     public IpdBusinessException(ApiV1ErrorCode code, String message) {
         super(message);
         this.errorCode = code;

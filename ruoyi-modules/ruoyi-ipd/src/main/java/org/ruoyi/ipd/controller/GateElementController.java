@@ -63,4 +63,36 @@ public class GateElementController {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(gateElementService.disable(id, actor));
     }
+
+    /** 发布草稿到 in-use（仅 DRAFT 可发），需 ipd:gate-element:publish 权限 */
+    @PostMapping("/{id}/publish")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_PUBLISH, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<GateElement> publish(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        return ApiV1Response.ok(gateElementService.publish(id, actor));
+    }
+
+    /** 归档已发布要素（运营期下架保留审计链），需 ipd:gate-element:archive 权限 */
+    @PostMapping("/{id}/archive")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_ARCHIVE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<GateElement> archive(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        return ApiV1Response.ok(gateElementService.archive(id, actor));
+    }
+
+    /** 复制要素为新编码（保留原要素历史），需 ipd:gate-element:copy 权限 */
+    @PostMapping("/{id}/copy")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_COPY, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<GateElement> copy(@PathVariable Long id, @RequestParam String newElementCode) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        return ApiV1Response.ok(gateElementService.copy(id, newElementCode, actor));
+    }
+
+    /** 回滚要素到指定审计快照（高危），需 ipd:gate-element:revert 权限 */
+    @PostMapping("/{id}/revert")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_REVERT, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<GateElement> revert(@PathVariable Long id, @RequestParam Long auditLogId) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        return ApiV1Response.ok(gateElementService.revert(id, auditLogId, actor));
+    }
 }

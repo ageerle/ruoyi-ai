@@ -29,6 +29,10 @@ public interface IpdPermissionCode {
     String OPERATION_GATE_ELEMENT_CREATE = "ipd:gate-element:add";
     String OPERATION_GATE_ELEMENT_UPDATE = "ipd:gate-element:edit";
     String OPERATION_GATE_ELEMENT_DISABLE = "ipd:gate-element:remove";
+    String OPERATION_GATE_ELEMENT_PUBLISH = "ipd:gate-element:publish";
+    String OPERATION_GATE_ELEMENT_ARCHIVE = "ipd:gate-element:archive";
+    String OPERATION_GATE_ELEMENT_COPY = "ipd:gate-element:copy";
+    String OPERATION_GATE_ELEMENT_REVERT = "ipd:gate-element:revert";
 
     String OPERATION_DELETION_REQUEST_ARCHIVE = "ipd:deletion-request:archive";
     String OPERATION_DELETION_REQUEST_PURGE = "ipd:deletion-request:purge";
