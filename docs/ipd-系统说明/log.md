@@ -2075,3 +2075,68 @@ owner 指令「1\按照建议执行 2、Q6 REVOKE 授权：一条命令收库级
 - **事故（已修）**：首拼 jar 用 `zip -X` 致 lib 条目 DEFLATED，被 Spring Boot 3.2+ loader **静默丢弃**→ ruoyi-ipd 整包不进 classpath → `/api/v1/**` 全 404 且零报错；`zip -0 -X` 重打 STORED 修复。坏 jar 存活期零审计写入 = 反向佐证无 DB 自增通道。已入 pitfall 记忆。
 - **真库冒烟 12/12 PASS**（终轮，凭据 credentials.json 注入零明文）：单发登录 seq=1641 锚行分配、prev_hash 衔接、锚行同步 1641/1642；并发 4 账号登录 seq 1642–1645 连续无跳号无冲突；`verify chain=OK broken=0 hashBroken=0 gaps=[]`；console 0 ERROR 零锁等待/死锁；audit_logs 226→245（+19 全锚行分配）。证据：`验收/AUDIT-CHAIN-P变体真库冒烟-20260905.json` + 脚本。
 - **登记**：复核文档 §7 ①②③ 行已回填 ✅；Q6 REVOKE 后权限态与 P 变体兼容（锁定读仅 SELECT、advance 需表级 UPDATE 均在授权内）。
+
+---
+
+## 2026-09-05 22:00–22:14 PDT Qoder 会话（①②③ live 联合落地 + P0-9.1 run9 全绿）
+
+接续 21:39 会话。①②③（audit_log_chain_heads 分配器）live 落地的**联合窗口**：多会话在同一工作树接力完成，本段只登记本会话直接执行的部分，全绿执行方为 ch 会话（归属已在证据 json 注明）。
+
+### 本会话直接执行
+- **Executor 冲突修复**：a4023c54 的裸 `Executor` 构造注入在完整上下文下 NoUniqueBeanDefinitionException（aiflow `mainExecutor` 与 common-core `scheduledExecutorService` 双 @Primary，21:31 构建首炸）。修复 = 根 `lombok.config`（copyableAnnotations += Qualifier）+ `LegacyImportService` 字段 `@Qualifier("mainExecutor")`，构造器签名不变、既有测试零改动；javap 字节码核验注解已复制到构造器参数。**主协调器随后收编为 703f752f**（连 IpdAuthSession.revokeAll 容错 SaTokenException 一并提交），da7755c4 完成 ①②③ 收尾（P054 构造器补参）。上轮遗留"IpdAuthSession 未进入发布构建"至此解除。
+- **全量构建 r9c.jar**（22:03，`-pl ruoyi-admin -am`）：与 ch 会话 22:04:05 构建的 ch.jar **ruoyi-ipd 模块字节级一致**（嵌套 jar md5 `fe63fb75...`；AuditChainHead×4、LegacyImportService Qualifier×2、AuditLogService 分配器接线×9 双向核验）。验证方法注记：多模块 fat jar 的 ipd 类在 `BOOT-INF/lib/ruoyi-ipd-3.1.0.jar` 嵌套内，非 `BOOT-INF/classes`。
+- **停写窗口 + seed sync**：停 def6i（已自退）→ 锚行 seed 至 audit_logs 尾行（1626/c47f1694/1627）。后续 live 实例分配从 1627 起连续无跳号（1627→1714+ 与表尾始终同步）。
+- **冒烟（ch 实例@16045）**：R1 新口令 + R3 新 JWT secret 登录 code=0；`verify chain=OK total=246 broken=[]`；**锚行 live 铁证**：单次登录即写审计 seq=1646，锚行 1645→1646 前进。
+
+### P0-9.1 run9（①②③ live 首验）
+- 本会话两轮 74/79，FAIL 全部为 `L1 MARKET (400,10001)` 限流噪声：ch 会话并发跑同套验收（同端口同账号集，"陈市场" 令牌桶 `time=60,count=5` 被双边消耗），连锁 4 项 401；业务主体（L1 三账号/L2 留痕/L3 改密全链/L4/L5 非 MARKET/L6/L7）全 PASS。
+- 按 OPS-09 让路不抢跑；**ch 轮 22:13:20 于同源 ch.jar 上 79/79 ALL PASS**（HEAD=da7755c4）。证据：`docs/ipd-系统说明/验收/P0-9.1-业务链真实验收结果-run9-chainheads-live-ALLPASS-20260906.json`（含归属与两轮噪声说明）。
+- 终态：锚行 1714/1715、audit_logs 314 行（max seq=1714）同步；无痕还原 ✓（孙研发 must_change_pwd=1 + $2a$10$ cost10 种子 hash）。
+- 教训沉淀：**多会话并发验收会互相污染登录限流（key=IP+username，5 次/60s）**，且共用 `/tmp/p091_result.json` 会互相覆写——错峰纪律需覆盖"同脚本并发"，结果文件需按 run 加后缀隔离。
+
+---
+
+## 2026-09-05 22:28 PDT 主协调会话（P0-3.3 参数版本链落地 + P0-10.21 前端契约支撑件 + P2-3.2 撞车让路）
+
+看板驱动轮（目标卡 [P0-10.21] 前端页21：应标）。盘点 drift=0 后识别 P2-3.2 兄弟在途撞车，按单写入者纪律让路，改执 P0-3.3 + P0-10.21 支撑件。
+
+### 本会话直接执行
+- **P2-3.2 让路实录**：22:03 识别兄弟会话在途重写 BidResponseService（decision 通道/BR-TEAM-03 拒绝不留痕/40-500 字校验，与本会话规格分析同构——错误码映射 30001 同号复用 FORBIDDEN、40001→STATE_CONFLICT 50002），删除我方孤儿 DTO（BidResponseDecisionReq.java 创建未满 1 分钟），P2-3.2 归属兄弟；兄弟 22:23 快照已实现主体语义。
+- **[P0-3.3] 参数版本链**（U1，依赖 P0-3.2 done，commit `fc4830f3`）：SystemConfigVersion（valid-time，不继承 BaseEntity 对齐 AuditLog 先例）+ Mapper（append-only 纪律）+ Service（update 3 参事务写链：基线行 v1→闭合开区间行→追加新行；getValueAsOf/resolveAsOf 半开区间 [from,to) 时点解析；listVersions 降序）+ Controller（update 绑会话 actor；GET /{key}/versions、GET /{key}/as-of 超管端点，ISO-8601 双格式）。单测 22/22 绿（P033 14+P032 3 回归+CacheTest 5 回归，22:24:24 BUILD SUCCESS）。CodeReview 蜂群 0C/0H/2M/2L 全修复落码。真库探针：SHOW CREATE 12 列对齐、uk_config_version/idx_config_effective 在位、0 行。**状态 inreview**：真库写入+HTTP 验收未过（BR-真库），补验路径见证据文档 §6。证据：`验收/P0-3.3-参数版本链-验收证据-20260905.md`。
+- **[P0-10.21] 支撑件**：`前端对接/页21-应标-后端API契约-20260905.md`（spec §21 + 兄弟 22:23 代码快照；spec↔实现 7 项差异表 D-1~D-7：提交路径、40001→50002、estimated_days/resource_commitment/major_risks 无独立通道、reconfirm 40002 未实现、solution_summary→responseNote 映射）。目标卡维持 todo：Vue 页面在外部仓，依赖刷新 DOC-09 done / P2-3.2 兄弟在途。
+- **本条目 log 混有兄弟在途 18 行（22:00-22:14 审计链条目）故 log.md 不随 fc4830f3 提交**，待兄弟收口 commit 自然入库。
+
+---
+
+## 2026-09-05 22:25–22:50 PDT Qoder 会话（前端页卡移出待办池 + 全栈仓库拉齐）
+
+### owner 指令
+- 「把 28 张前端页面卡明确划给前端仓库的会话，或者在本板标记『移出待办池』，别让它们继续虚占着 88 这个数字。立即完整执行」；随后澄清：前后端都要完整实现，「该拉取的要拉取完整」「有拉取远程分支吗」。
+- 实测口径：板上未认领前端页卡实际 47 张（P0-10.3~49，用户口中的 28 为概述数）；「88」= 剔除前端卡后的本板真实待办口径。
+
+### 执行结果
+- **移出待办池**：47 张 ⬜ 前端页卡逐卡 `manage.py set ... cancelled` 标 ⊘（canary P0-10.3 + 批量两段；中途 2 次并发让路重试后全过）。**46 张成功；P0-10.21 被兄弟会话收回 ⬜ 跟踪后端契约（fc4830f3 已交付页21 API 契约，待 P2-3.2 联调），尊重在途不抢改**。P0-10.1/2 ▶ 前端会话在做，未动。
+- 卡面注释统一：`移出待办池：整体移交前端仓库会话（DOC-09 正式 Vue 工程，本仓不建 Vue），后端契约就绪以依赖列为准（2026-09-05 owner 指令）`，前态记录全保留；镜像图例补 ⊘ 释义。
+- **数字对账**：镜像 246 纳管卡 → done 90 / todo 95 / inprogress 8 / inreview 7 / cancelled 46，同步零待写；⬜ 待认领池不再含未认领前端页卡。
+- **全栈仓库拉齐**：新克隆 ageerle/ruoyi-web @v3.1.0（d6db114）至 `/Users/mac/Documents/ruoyi-web` 并 unshallow 补全（145 提交 / 全部分支 / 全部标签）；ipd-web refs 补齐核对（上游仅 main+tags，HEAD 仍固定 04bb27d，工作区未动）；后端本仓已有。
+- **交接清单**：`docs/ipd-系统说明/前端对接/前端49页交接清单-20260905.md`——49 页状态表（2 在做 / 17 后端就绪可开工 / 29 等后端 / 1 本板跟踪契约）、三件套工程位置、规格与验收底线。
+
+### 边界
+- 未改任何 Java/测试/配置；未提交 git（留主协调会话收口）；未动兄弟在途文件与 ipd-web 工作区；manage.py 自动备份 plan-before-*.md 留档。
+
+## 复核轮（2026-09-05 22:15–22:40 · Qoder 复核会话 · 用户授权「你来复核等复核的卡」）
+
+- **范围**：5 张 inreview 卡（SEC-01/P0-7.3/P1-6.1/P1-11.1/QA-03），报告 `验收/inreview五卡QA复核-20260905.md`。
+- **SEC-01 → done**（22:33 set）：Sec01AcceptanceTest 13/13 行为断言绿@22:18:45（错峰单模块无-am无clean，@Tag dev 无静默跳过）+ 全库零 `@RequestParam operatorId` + QA-03 矩阵 M1 交叉 403；全模块回归 515 项唯一 err=P032Http NPE，归因兄弟 P0-3.3 WIP（被测 SystemConfig* 在脏清单，19:59 c317629b 曾 9/9 绿），与本卡无关。done 三条件齐。
+- **P0-7.3 维持 inreview 退回补证**：P073AcceptanceTest 10/10 绿但逐项核对全为存在性/权限码目录检查（git dbc75862 首版即命名守护）；refresh 轮换/重放/logout 行为回归主仓缺失，16039 验收环境已关不可复验；退回补行为版测试 + Vue 实联/shared 合并收口。
+- **P1-6.1 维持 inreview 退回执行**：GateElementService 仅 4 方法，07:32 QA 报告 7 缺口全部未补；P161 测试未回主仓仅存 .codex 集成树。
+- **P1-11.1 维持 inreview 等 P1-4.2**：6/6 绿 + 真库业务链 15:29 全过，唯一残留附件字节属 P1-4.2。
+- **QA-03 维持 inreview 残留降为 1**：DEF-4 已闭环（16:24 v7 复跑链 OK 断裂 0 + 22:04 run9 79/79 双时间戳），仅剩 SEC-04。
+- **纪律**：未改 Java 源码；未动兄弟 WIP；看板 drift（33 未纳管卡）非本轮引入，本轮 5 次 set 均成功（镜像+在线板双确认）。
+
+## 2026-09-05 21:30–22:45 PDT Qoder 会话（P2-3.2 应标/遴选落地 + 真库 HTTP 验收 32/32 PASS）
+
+- **实施**：BidResponseService.submit 幂等/名单/拒绝不留痕（BR-TEAM-03）/decision 白名单；BidInvitationService.selectResponse 原子遴选+落选批量 REJECTED+审计（AC-TEAM-05）；listResponses 隐私过滤；withdraw 本人校验；BidController session.currentPerson() 服务端权威；selectByIdForUpdate 行锁（H-1/M-1 修复）。
+- **验证**：P232AcceptanceTest 16/16 + P231 10/10（22:30）；真库 HTTP 矩阵 **32/32 PASS**（22:41，实例 16052，证据 验收/P2-3.2-真库HTTP验收-20260905.json/.md）。
+- **过程修复**：① BidInvitation.expireAt 补 @JsonFormat（存量缺陷：application.yml jackson.date-format 键顶格缩进破坏、全局日期格式从未生效，/api/v1 只认 ISO；登记待勘误卡，本卡未擅改共享 yml）；② 镜像 OPS-05 行半角竖线致 manage.py 解析崩溃，勘误全角（兄弟 22:38 commit e1cc6ae1 已含完整 NotificationService，此前 boot 失败系抓到 commit 前中间态+沙盒缺根 lombok.config 丢 @Qualifier，最终仓库根原位构建+javap 三要素核验）。
+- **看板**：P2-3.2 ⬜→▶(22:0x)→◇ inreview（真库过、QA 独立复核待认领，按纪律不标 done）；P0-10.21 注记刷新：后端契约（fc4830f3 D-1~D-7）+实现（本卡）双就绪，前端联调依赖解除。
