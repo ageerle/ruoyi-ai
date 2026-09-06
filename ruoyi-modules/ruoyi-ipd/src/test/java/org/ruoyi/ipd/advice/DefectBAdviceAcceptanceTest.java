@@ -13,6 +13,7 @@ import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.security.IpdPermissionExceptionHandler;
 import org.ruoyi.ipd.security.IpdPermissionException;
 import org.ruoyi.ipd.service.AuditAttemptService;
 import org.ruoyi.ipd.service.AuditLogService;
@@ -34,12 +35,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 把「非白名单控制器」的身份/角色拒绝忠实映射为对应 4xx，而非落入 {@code Exception.class} 兜底的
  * 500 + code 90001。
  *
- * <p>根因：{@code IpdPermissionExceptionHandler} 以 {@code assignableTypes} 白名单只覆盖 7 个控制器，
+ * <p>根因：{@code IpdPermissionExceptionHandler} 当时以 {@code assignableTypes} 白名单只覆盖 7 个控制器，
  * AuditLog / SystemConfig / Coefficient / LaunchDate 不在其中；这些控制器的
  * {@code requireInternal()/requireAdmin()} 抛出的 {@link IpdPermissionException}、以及
  * {@code @SaCheckPermission} 触发的 {@link NotPermissionException}/{@link NotRoleException}，
  * 修复前统统落兜底 → 500/90001。实测 live {@code GET /api/v1/audit-logs/scope} 无有效身份 → 90001
  * （见第十三轮第二方 QA 报告 §3 STALE 探针）。
+ *
+ * <p>演进（2026-09-05 零漂移对账）：R8-P1-B 已把该 handler 从 {@code assignableTypes} 改为
+ * {@code basePackages = "org.ruoyi.ipd.controller"} 全覆盖，上述“非白名单控制器”前提已不存在；
+ * 权限三型的映射责任现在由 {@link IpdPermissionExceptionHandler}（{@code @Order(HIGHEST_PRECEDENCE)}）
+ * 独占，{@link IpdServiceExceptionAdvice}（{@code HIGHEST+1}）中的重复 handler 属生产不可达死代码，已删除。
+ * 本测试因此<b>同时注册两个 advice</b>，且注册顺序<b>故意与 {@code @Order} 相反</b>：
+ * 只注册被测单 advice 会给出一厢情愿的假绿（已实测：删死代码后单 advice 模式下四条断言全变 500）；
+ * 而反序注册仍绿则同时证明决胜来自 {@code @Order} 而非注册序（advice 链的真实行为已被固定）。
  *
  * <p>本测试以真实 {@link AuditLogController}（非白名单）为受试者、注入真实生产 advice，断言客户端
  * 真正收到的状态码与业务码，堵住「handler 就位即认为关卡通过」的假绿：
@@ -52,9 +61,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </ul>
  *
  * <p>沿用 {@code Api03AcceptanceTest} 约定：plain {@code mock()} 无 MockitoExtension，故 setup 内
- * 共享桩在个别用例未触达时不会报 UnnecessaryStubbing。仅注册 {@link IpdServiceExceptionAdvice}
- * 一个 advice（不含 IpdPermissionExceptionHandler），隔离验证本次新增全局 handler 自身的映射契约；
- * 生产链中 IpdPermissionExceptionHandler(HIGHEST) 对这些异常无 handler，同样落到本 advice，结果一致。
+ * 共享桩在个别用例未触达时不会报 UnnecessaryStubbing。<b>同时注册</b> {@link IpdPermissionExceptionHandler}
+ * 与 {@link IpdServiceExceptionAdvice}，以复刻生产 advice 链（两者按 {@code @Order} 排序，
+ * 权限三型必走前者）；若只注册后者，测的是生产不可达的孤立方法，绿色不代表链路跑过。
  */
 @Tag("dev")
 class DefectBAdviceAcceptanceTest {
@@ -77,11 +86,14 @@ class DefectBAdviceAcceptanceTest {
         AuditLogService auditLogService = mock(AuditLogService.class);
         ipdPermission = mock(IpdPermission.class);
         PersonMapper personMapper = mock(PersonMapper.class);
-        // 受试者 = 真实 AuditLogController（不在 IpdPermissionExceptionHandler.assignableTypes 白名单）
-        // + 真实生产 advice；证明缺陷B 全局 handler 对非白名单控制器真的生效（非空洞 mock）。
+        // 受试者 = 真实 AuditLogController + 生产 advice 链：证明权限三型在生产链上确实返回 4xx，非孤立 mock。
+        // 注册顺序是故意反的（先把 HIGHEST+1 的 IpdServiceExceptionAdvice 放前，再把 HIGHEST 的
+        // IpdPermissionExceptionHandler 放后）：2026-09-05 实测反序注册仍 5/5 全绿，说明 ExceptionHandlerExceptionResolver
+        // 按 @Order 而非注册序决胜，因此本用例同时锁定「权限三型必须归 HIGHEST handler」这一约束；
+        // 不要“顺手”把顺序改回自然序，那会失去这层保护。
         mvc = MockMvcBuilders
             .standaloneSetup(new AuditLogController(auditLogMapper, auditLogService, ipdPermission, personMapper))
-            .setControllerAdvice(new IpdServiceExceptionAdvice())
+            .setControllerAdvice(new IpdServiceExceptionAdvice(), new IpdPermissionExceptionHandler())
             .build();
     }
 
@@ -140,7 +152,7 @@ class DefectBAdviceAcceptanceTest {
         MockMvc authMvc = MockMvcBuilders
             .standaloneSetup(new IpdAuthController(
                 mock(IpdAuthService.class), mock(IpdAuthSession.class), mock(AuditAttemptService.class)))
-            .setControllerAdvice(new IpdServiceExceptionAdvice())
+            .setControllerAdvice(new IpdPermissionExceptionHandler(), new IpdServiceExceptionAdvice())
             .build();
 
         authMvc.perform(post(CHANGE_PWD)
