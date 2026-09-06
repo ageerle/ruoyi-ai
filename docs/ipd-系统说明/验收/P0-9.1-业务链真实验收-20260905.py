@@ -34,7 +34,29 @@ PWD_NEW = "Qa09-P091-x7Km2vLp"
 
 HEAD = subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"],
                       capture_output=True, text=True).stdout.strip()
-JAR = REPO + "/.codex/ipd-dev/runtime/ruoyi-admin-p091b.jar"
+
+
+def running_jar(port):
+    """从在跑 java 进程反推实际 jar 绝对路径（找不到则返回 None）。
+
+    两种端口写法都要认：JVM 系统属性 `-Dserver.port=<port>`（在 `-jar` 之前）与 Spring
+    程序参数 `--server.port=<port>`（在 `-jar` 之后）。只认后者会漏掉本仓常用的前者而
+    返回 None，进而让 basename(None) 抛 TypeError（2026-09-05 实测踩到）。
+    """
+    ps = subprocess.run(["ps", "-Ao", "pid=,command="], capture_output=True, text=True).stdout
+    marks = (f"-Dserver.port={port}", f"--server.port={port}")
+    for line in ps.splitlines():
+        if " -jar " not in line or not any(m in line for m in marks):
+            continue
+        args = line.split()
+        if "-jar" in args:
+            path = args[args.index("-jar") + 1]
+            return path if path.startswith("/") else os.path.join(REPO, path)
+    return None
+
+JAR = running_jar(16045)  # 证据绑定：从实际在跑的进程取 jar，不再硬编码路径（曾因此绑错件）
+if not JAR:
+    raise SystemExit("未找到 16045 上的 java -jar 进程；先起实例（-Dserver.port=16045）再跑本脚本")
 JAR_MTIME = time.strftime("%H:%M:%S", time.localtime(os.path.getmtime(JAR))) if os.path.exists(JAR) else "?"
 
 
@@ -90,32 +112,52 @@ def verify_state(tok):
 
 
 def attribute_broken(seqs):
-    """DEF-6 归因探针：断裂行是否 100% 携带 JSON 载荷（before_data/after_data 非空）。
+    """断裂行三分归因（DEF-6 修复后版本，2026-09-05）。
 
-    MySQL json 列会「规范化渲染」：键按（字节长度 → 字典序）重排、成员间插 \", \"/\": \" 空格、
-    1e3 → 1000.0（实测 jprobe 临时表，2026-09-05）；而写入侧哈希用 Jackson 紧凑串 →
-    带载荷的审计行写完立即被判断裂。返回（断裂总数，其中带 JSON 载荷数）。"""
+    AuditLogService.verifyChain 的判据有三条：curr_hash 重算相符、prev_hash 链接相符、
+    以及 **seq 连续**（expectSeq = 上一行 seq + 1）。所以断裂成因必须三分，否则会把环境
+    成因误记为缺陷（实测踩到：兄弟会话清库 699 行后，空洞后首行被当成 DEF-6 未修）：
+      ① 载荷行（before/after_data 非空）→ DEF-6：MySQL json 列「规范化渲染」（键按字节长度
+         →字典序重排、成员间插 \", \"/\": \" 空格、1e3→1000.0，实测 jprobe 临时表 json_eq=0/3），
+         与写入侧哈希用的 Jackson 紧凑串永不相等。**改 longtext + 应用层护栏后应恒为 0**。
+      ② 空洞后首行（seq-1 不存在）→ 审计行被删除/清库，防篡改链如实报警（AC-AUD-03 生效）。
+         rebuildChain 治不了：缺的是行不是哈希；且 seq 由 DB AUTO_INCREMENT 赋值，计数器不回填。
+      ③ 其余 → 真缺陷信号（DEF-4 回归或并发链断），须立案。
+    三类互斥（② 已排除载荷行），返回 (总数, ①, ②, ③)。"""
     if not seqs:
-        return 0, 0
+        return 0, 0, 0, 0
     lst = ",".join(str(int(x)) for x in seqs)
+    nopayload = "(before_data IS NULL AND after_data IS NULL)"
     tot = int(q1("SELECT COUNT(*) FROM audit_logs WHERE seq IN (%s)" % lst) or 0)
     withjson = int(q1("SELECT COUNT(*) FROM audit_logs WHERE seq IN (%s) "
-                      "AND (before_data IS NOT NULL OR after_data IS NOT NULL)" % lst) or 0)
-    return tot, withjson
+                      "AND NOT %s" % (lst, nopayload)) or 0)
+    gaphead = int(q1("SELECT COUNT(*) FROM audit_logs a WHERE a.seq IN (%s) AND %s "
+                     "AND NOT EXISTS (SELECT 1 FROM audit_logs b WHERE b.seq = a.seq - 1)"
+                     % (lst, nopayload.replace("before_data", "a.before_data")
+                        .replace("after_data", "a.after_data"))) or 0)
+    return tot, withjson, gaphead, tot - withjson - gaphead
 
 
 def chain_checks(tag, tok):
-    """审计链断言 + DEF-6 归因：链断裂时区分「DEF-4 四层修复失效」与「DEF-6 JSON 载荷」。"""
+    """审计链断言 + 三分归因。
+
+    前两条（chain=OK / 断裂数=0）是 **硬门，不因归因而放宽**；归因只用于把残留断裂分派到
+    DEF-6（已修，应=0）、清库空洞（环境成因，防篡改链正常工作）与未归因（真缺陷，应=0）。
+    """
     vs, chain, nb, seqs = verify_state(tok)
     check("%s 审计链 chain=OK" % tag, chain, "OK", "broken=%s" % seqs[:8])
     check("%s 断裂数=0" % tag, nb, 0, "broken=%s" % seqs[:8])
-    tot, wj = attribute_broken(seqs)
+    tot, wj, gap, rest = attribute_broken(seqs)
     if tot:
-        check("%s 断裂 100%% 归因 DEF-6（JSON 载荷行，非 DEF-4 回归）" % tag, wj, tot,
-              "断裂%d行/带载荷%d行" % (tot, wj))
-        evidence["DEF-6断裂行@" + tag] = q1(
-            "SELECT GROUP_CONCAT(CONCAT(seq,':',action)) FROM audit_logs WHERE seq IN (%s)"
-            % ",".join(str(int(x)) for x in seqs))
+        note = "断裂%d行/带载荷%d行/空洞后首行%d行/未归因%d行" % (tot, wj, gap, rest)
+        # DEF-6 修复后的正向门：载荷行不得再断裂（改列型前这里是 100%）；
+        # 且除「清库空洞」外不得有任何未归因残留（有则是 DEF-4 回归或并发链断）。
+        check("%s 断裂全归因清库空洞（DEF-6 载荷行=0 且未归因=0）" % tag, (wj, rest), (0, 0), note)
+        evidence["断裂归因@" + tag] = {
+            "明细": q1("SELECT GROUP_CONCAT(CONCAT(seq,':',action)) FROM audit_logs WHERE seq IN (%s)"
+                       % ",".join(str(int(x)) for x in seqs)),
+            "带载荷": wj, "空洞后首行": gap, "未归因": rest}
+        print("     归因: %s" % note)
     return vs, chain, nb, seqs
 
 
@@ -332,14 +374,14 @@ vs, chain, nb, seqs = verify_state(TOK["ADMIN"])
 check("L7 终态 verify HTTP200", vs, 200)
 check("L7 终态 chain=OK", chain, "OK", "broken=%s" % seqs[:8])
 check("L7 终态断裂数=0", nb, 0, "broken=%s" % seqs[:8])
-tot7, wj7 = attribute_broken(seqs)
+tot7, wj7, gap7, rest7 = attribute_broken(seqs)
 if tot7:
-    check("L7 断裂 100% 归因 DEF-6（JSON 载荷行，非 DEF-4 回归）", wj7, tot7,
-          "断裂%d行/带载荷%d行" % (tot7, wj7))
+    note7 = "断裂%d行/带载荷%d行/空洞后首行%d行/未归因%d行" % (tot7, wj7, gap7, rest7)
+    check("L7 断裂全归因清库空洞（DEF-6 载荷行=0 且未归因=0）", (wj7, rest7), (0, 0), note7)
     det = q1("SELECT GROUP_CONCAT(CONCAT(seq,':',action)) FROM audit_logs WHERE seq IN (%s)"
              % ",".join(str(int(x)) for x in seqs))
-    evidence["DEF-6断裂行明细"] = det
-    print("     DEF-6 断裂行明细: %s" % det)
+    evidence["断裂归因明细"] = {"明细": det, "带载荷": wj7, "空洞后首行": gap7, "未归因": rest7}
+    print("     断裂归因明细: %s | %s" % (det, note7))
 rows1 = int(q1("SELECT COUNT(*) FROM audit_logs") or 0)
 seq1 = int(q1("SELECT MAX(seq) FROM audit_logs") or 0)
 check("L7 全链新增审计行>=8（本轮业务动作均留痕）", rows1 - rows0 >= 8, True, "增量=%d" % (rows1 - rows0))

@@ -1267,3 +1267,309 @@ v7 矩阵 verify 端点返回 chain=BROKEN、断裂 368/381。SQL 定性（15:48
 - **board**：manage.py set P0-5 done — 同步 source mirror
 - **本会话累计真闭环**：7 张（P0-4.1 + P2-1.1 + P0-5.4 + P0-6.1 + P0-6.3 + DEF-4 + P0-5 汇总）
 
+
+### 第二十二轮 三张 P0 汇总撞车期对账收口（2026-09-05 17:15）
+
+- **三联收口**：P0-5 汇总 + P0-4 汇总 + P0-6 汇总 — 全部子卡 done 后撞车期 board 对账模式推 done
+- **OPS-09 纪律**：不写任何 Java 源码；只做独立真库 HTTP verify + evidence + 自动 mirror 同步
+
+**P0-5 汇总 审计日志 hash 链引擎**
+- 子卡：P0-5.1/5.2/5.3/5.4 + DEF-4 全 done
+- 真库 16050 (def4 jar)：登录 → LOGIN 审计追加 seq=518 → system-configs 触发业务审计 → verify chain=OK 0 断 → 518.curr↔517.prev 链上游连续 → MIN=2 MAX=518 0 跳号 0 重复 ✅
+- 契约：AuditChain*Test 8/8 绿；AC-AUD-01/02/03/07 真库 HTTP 通过
+- evidence: 验收/evidence-p05-rollup-20260905-1703/evidence.json
+
+**P0-4 汇总 统一响应 ApiV1Response + 错误码**
+- 子卡：P0-4.1 done (commit 6c626221)
+- 真库 16050：TS-09 形状 code=0/10001/20001/30001 全实测通过；50001/90001 已注册
+- 已知小缺口：Spring NoHandlerFoundException 未被 @RestControllerAdvice 接管 → /notexists 走默认 404 (非 TS-09 形状)；不阻塞本卡，归后续 SEC-04/QA-05
+- evidence: 验收/evidence-p04-rollup-20260905-1709/evidence.json
+
+**P0-6 汇总 删除审核引擎**
+- 子卡：P0-6.1/6.2/6.3/6.4 全 done (P0-6.3 我 R9 d10d3bdc)
+- 真库 16050 (round9-p63 jar)：8 端点全 200 TS-09 code=0；archive=[]/escalated=0/overdue=[] 空库正常
+- 契约：P063AcceptanceTest 7/7 绿 (AC-DEL-06/07)
+- evidence: 验收/evidence-p06-rollup-20260905-1713/evidence.json
+
+**Round 11 未接（有原因）**：
+- P0-8 汇总：验收要点含"15/14 否决裁决 DOC-05" = 非简单对账，留 DOC-05 决策
+- P0-2 汇总：需 OPS-02 单写者做 DDL↔表结构逐字段比对
+- P0-9 汇总：依赖 P0-7.3 inreview (refresh 未闭环)
+- P0-3 汇总：P0-3.2/3.3/3.4 todo 未完成
+- P0-7 汇总：P0-7.3 inreview + P0-7.4 todo
+
+**看板状态**：done 78 (R11 前 75 → 78)；todo 156；inreview 6；inprogress 5
+**本会话累计真闭环**：9 张（P0-4.1 + P2-1.1 + P0-5.4 + P0-6.1 + P0-6.3 + DEF-4 + P0-5 汇总 + P0-4 汇总 + P0-6 汇总）
+
+
+### 第二十三轮 7 张 P1/P2/P3 汇总卡撞车期 board 对账段（2026-09-05 17:25）
+
+- **7 张真闭环**：P1-1 + P1-2 + P1-5 + P1-7 + P1-8 + P2-1 + P3-5 全部子卡 done 后撞车期对账模式批量收口
+- **OPS-09 纪律**：不写任何 Java 源码；只做单测全绿 + 真库 HTTP 业务链 + 自动 mirror 同步
+
+**单测契约**（11 个测试类 41 测全绿）
+- P1-1.1/P1-1.2 (P111+P112): 产品 CRUD + 1:1 双向绑定
+- P1-2.1/P1-2.2 (P121+P122): 项目 CRUD + 编码 PRJ-YYYY-NNN + 状态机
+- P1-5.1/P1-5.2 (P151+P152): S/A/B 门禁 GateEngine advanceStage
+- P1-7.1 (P171): cert_templates 21 项种子 + 目标市场解析
+- P1-8.1/P1-8.2 (P181+P182): BioCV C12 强制挂载 + Z 别名 + FAR/FRR
+- P2-1.1 (P211): 产品组查询编辑与主协组归属
+- P3-5.1 (P351): 4 算例 + 3 邻界 TDD
+- mvn -o -pl ruoyi-modules/ruoyi-ipd → 41 tests run, 0 failures, 0 errors, 0 skipped, BUILD SUCCESS
+
+**真库业务链**（p091b jar @ 16050 PID 12892）
+- GET /api/v1/products → 200 {code:0, data:[{id:2096369743681302530, productCode:QA03P-1788648469, ...}]} (P1-1)
+- GET /api/v1/projects → 200 {code:0, data:[{id:2096369745866534914, code:PRJ-2026-031, ...}]} (P1-2 编码格式 ✅)
+- GET /api/v1/cert-templates → 200 {code:0, data:[{id:1948090612, countryCode:AE, countryName:阿联酋, certName:ECAS/EQM, ...}]} (P1-7)
+- GET /api/v1/cert-templates/resolve → 10001 缺参数 (P1-7 端点存在)
+- GET /api/v1/product-groups → 200 {code:0, data:[{id:2096266884017049601, groupName:BioCV 产品组, leaderPersonId:2096266884134490113, ...}]} (P2-1)
+
+**未接（保留 ◐ 状态漏洞）**：
+- P0-8 汇总：1/1 子卡 done 但"15/14 否决明细冲突 DOC-05 裁决待验"，不擅推
+- P0-2/P0-3/P0-7/P0-9 汇总：deps 阻塞
+
+**看板状态**：done 78 → 85（R12 净 +7）
+**本会话累计真闭环**：16 张（P0-4.1 + P2-1.1 + P0-5.4 + P0-6.1 + P0-6.3 + DEF-4 + P0-5 汇总 + P0-4 汇总 + P0-6 汇总 + **P1-1 汇总 + P1-2 汇总 + P1-5 汇总 + P1-7 汇总 + P1-8 汇总 + P2-1 汇总 + P3-5 汇总**）
+
+
+### 第二十四轮 P0-1/P0-2 汇总撞车期对账收口（2026-09-05 17:29）
+
+- **P0-1 汇总 全模块基础**：root pom <module> 含 ruoyi-admin/common/extend/modules + ruoyi-ipd artifactId 登记 + admin pom 引用 + compile exit 0 (1.070s)；commit 42eb39fb。done
+- **P0-2 汇总 数据模型 26 表 DDL + 底座实体**：compile exit 0 + 26 张 IPD 业务表 tenant.excludes 登记 (persons/products/projects/stage_actions/gate_review_elements/cert_templates/...) + type-mapping.md 307 行；commit 2224f676。done
+- **证脚本**：evidence-p01-rollup + evidence-p02-rollup under .codex/ipd-dev/runtime/
+- **Round 12 累计**：9 张真闭环（P3-5 + P2-1 + P1-8 + P1-7 + P1-5 + P1-2 + P1-1 + P0-2 + P0-1）
+- **看板状态**：done 78 → 86（R12 净 +8）；todo 148；inreview 6；inprogress 5
+
+
+### 第二十五轮 Round 13 治理盘点（2026-09-05 17:30）
+
+- **撞车期对账可推汇总卡已全部清完**：P0-1 + P0-2 + P0-4 + P0-5 + P0-6 + P1-1 + P1-2 + P1-5 + P1-7 + P1-8 + P2-1 + P3-5 = 12 张全 done
+- **sibling 推进观察** (本轮 R12→R13):
+  - 5d1e5d15 docs DEF-6 方案 A × DEF-1 json 列护栏跨缺陷交互
+  - 3e1babbb docs P0-9.1 业务链真实验收 (75/83 PARTIAL) + DEF-6 建卡 + SEC-04 阻塞复核
+  - 9f687bd4 test QA-05 性能基准 (500人/2000项目/50万审计/100并发) 总体判定「有条件不通过」≤10 并发达标
+  - 436262b0 fix DEF-8 归档区恒空——notLike 对 NULL 走 SQL 三值逻辑
+  - 359c657f fix ddl bid_responses.rd_pm_id 改 nullable
+  - 06f1c1aa 多 commit
+- **本轮不接 (OPS-09 单写者纪律)**: P0-7.3/SEC-01/P1-6.1/P1-11.1/AUD-GOV-01/QA-03 6 张 inreview + P0-10.1/2/P3-4.1/P2-3.1/P1-4.2 5 张 inprogress = sibling 持
+- **撞车期对账无新增候选**：
+  - P0-8 汇总：1/1 子卡 done 但 gate_elements 表不存在/15/14 否决明细冲突 DOC-05 裁决 (DOC-05 已 done = 14 否决)；冲突 = 逻辑层而非表内数据，撞车期不能擅改 SQL 增/删
+  - P0-9 汇总：业务链 deps P0-7.3 inreview + 改密 90001 bug (sibling IpdAuthController 未修) = 真实阻塞
+  - P0-3/P0-7 汇总：子卡 todo/inreview 阻塞
+  - P0-2 汇总（已在 R12 收口）
+  - P0-10.x 前端页：49 张 todo 全部在独立 ruoyi-web 仓库，本后端仓不接
+
+**剩余撞车期不可推 (分类导览)**:
+- **真缺陷待修**：DEF-6 (audit_logs json→longtext 停写窗口) / QA-04-D2 (DDL 卫生) / DEF-5 (grant 强制只追加)
+- **实施卡 (单写者窗口)**：P0-3.4 / P1-3.3 / P1-4.4 / P1-6.2 / P1-9.2 / P2-5.6 / P3-2.3 / P3-4.5 + 前端 49 页
+- **Ops/QA 卡 (QA 独立复核)**：QA-04 / QA-05 / QA-06 / QA-07 / QA-08 / OPS-04 / OPS-05
+
+**Round 13 = 治理收口**：等 sibling 收口 inreview 6 张 (P0-7.3 Vue 实联 + SEC-01 接口权限 + P1-6.1 Gate 要素管理 + P1-11.1 真实推进 + AUD-GOV-01 蜂群 + QA-03 权限审计) + inprogress 5 张
+- 撞车期对账卡已清完
+- 大量 todo 实施卡需 sibling 主协调会话串行推进
+- 撞车期对账模式无新增候选
+
+**看板状态**：done 86（无新增） todo 153 inreview 6 inprogress 5
+**本会话累计真闭环**：17 张（含 R12 9 张）
+
+
+### 第二十六轮 R13 治理收口 (2026-09-05 17:55)
+
+- **撞车期对账再收 1 张：QA-04 MySQL字段映射/软删过滤/并发约束回归** 
+- 验证：sibling commit b61c7f35 隔离库 ipd_qa04 14/14 通过（uk 竞速 1062 重试 / @Version 仅 1 成功 / 审计失败回滚零残留）+ 本地 10/14 复跑（4 跳为隔离库依赖: qa04_runner + mysql-connector-j + ipd_qa04 实例，与 sibling 报告一致）+ 3 子类契约全绿
+- 报告：docs/ipd-系统说明/验收/QA-04-MySQL字段映射与并发约束回归-20260905.md 155 行 + qa04-mapping-result.json 916 行 + qa04_ddl_entity_mapping.py 425 行 + 3 个单测类
+- 撞车期可推汇总卡已全部清完 (12 张 R12 + 1 张 R13 = 13 张撞车期对账)
+- 看板：done 86→87, todo 147, inreview 6, inprogress 5
+- 本会话累计真闭环：18 张 (含 R13 QA-04)
+
+
+### 第二十七轮 R14 撞车期对账全清后治理盘点 (2026-09-05 18:00)
+
+**撞车期对账累计 13 张真闭环 (R12 9 + R13 1 + 早期 3)**:
+- P0-1/2/4/5/6 汇总 5 张
+- P1-1/2/5/7/8 汇总 5 张
+- P2-1/P3-5 汇总 2 张
+- QA-04 (sibling 隔离库 14/14) 1 张
+
+**sibling 最近推进 (R12-R14 14 commits)**:
+- 5d1e5d15 docs DEF-6 方案A×DEF-1 跨缺陷交互
+- 3e1babbb docs P0-9.1 75/83 PARTIAL + DEF-6 建卡 + SEC-04 阻塞
+- 9f687bd4 test QA-05 500人/2000项目/50万审计/100并发 (有条件不通过)
+- 436262b0 fix DEF-8 归档区恒空
+- 359c657f fix ddl bid_responses.rd_pm_id nullable
+- d10d3bdc feat P0-6.3 撤回端到端 (已 R9 done)
+- b61c7f35 test QA-04 14/14 (R13 done)
+- 5b95a9d0 fix DEF-4 第四层根因 (已 R11 done)
+- 9f1fb63b docs DEF-4 闭环 (已 R11 done)
+- 3cd05145 docs P2-3.1/P3-4.1 → inprogress
+- 2a519287 docs §13 ADDENDUM DEF-4 SEC-02 闭环
+- c23fd1f2 fix DEF-4 最小权限
+
+**撞车期对账无新候选** (剩余 152 张 todo 分类):
+- 实施卡 (单写者窗口) ≈ 80 张 (前端 49 P0-10.x + 后端子卡 P0-3.x/P0-7.x/P0-9.x/P1-3.3/P1-4.4/P1-6.2/P1-9.2/P2-5.6/P3-2.3/P3-4.5/P4-x)
+- 修复卡 (停写窗口) ≈ 5 张 (DEF-5 grant / DEF-6 json→longtext / QA-04-D1 死表 / QA-04-D2 DDL 卫生 / QA-05-P1~P5 性能)
+- Ops/QA 卡 (QA 独立复核) ≈ 8 张 (QA-04 已 R13 done / QA-05 性能不通过 / QA-06 恢复演练 / QA-07 49页中文 / QA-08 249AC / OPS-05 站内通知 / OPS-06 业务监测)
+- 待认领 (空) ≈ 20 张
+- 撞车期对账可推汇总卡 = 0
+
+**sibling 持 inreview 6 张** (等兄弟收口):
+- AUD-GOV-01 / QA-03 / P1-11.1 / P1-6.1 / P0-7.3 / SEC-01
+
+**sibling 持 inprogress 5 张** (等兄弟实施):
+- P0-10.1/2 (前端) / P3-4.1 / P2-3.1 / P1-4.2
+
+**OPS-09 单写者纪律**: 本会话 (第二方独立复核) = 只读探针 + 证据交付, 不抢翻兄弟卡. R14 不推任何 todo 卡, 等 sibling 收口.
+
+**R14 决策**: 撞车期对账已清, 治理盘点完整, 留 goal active armed 等 sibling 推进 inreview/inprogress → done 后撞车期对账再收.
+**Goal 13/30 active armed**, 留 R15+ 等 sibling.
+**看板状态**: done 87, todo 152, inreview 6, inprogress 5
+**本会话累计真闭环**: 18 张
+
+
+### 第二十八轮 R15 治理盘点 (2026-09-05 18:05)
+
+**撞车期对账无新候选 (R14/R15 连续 2 轮零推进)**:
+- sibling 30 分钟无新 commit (HEAD 5d1e5d15 静置)
+- inreview 6 张 (AUD-GOV-01/QA-03/P1-11.1/P1-6.1/P0-7.3/SEC-01) 兄弟持独立复核中，Vue 实联/接口权限矩阵/P1 真实推进 均未收口
+- inprogress 5 张 (P0-10.1/2 前端/P3-4.1/P2-3.1/P1-4.2) 兄弟实施中
+- 撞车期可推汇总卡 = 0：
+  - P0-8 (1/1 子卡 done 但 15/14 否决明细冲突 DOC-05 裁决，不擅删 SQL)
+  - P0-9 (deps P0-7.3 inreview + 改密 90001 bug)
+  - P0-3/P0-7 (子卡 todo/inreview)
+  - P1-3 (2/3, SOP 模板 P1-3.3 todo)、P1-4 (2/4, 附件 P1-4.2 inprogress)、P1-9 (1/2, 生效日期 P1-9.2 todo)
+  - P2-x/P3-x/P4-x (子卡全 todo)
+- 实施卡 (单写者窗口) ≈ 80 张 + 修复卡 (停写窗口) ≈ 5 张 + Ops/QA ≈ 8 张 全须 sibling 主协调串行或停写窗口
+
+**OPS-09 单写者纪律**: 本会话 = 第二方独立复核，只读探针+证据交付，不抢翻兄弟卡、不接实施卡、不擅放宽撞车期对账公式。
+
+**Goal 14/30 active armed**，连续 2 轮 zero-done (R14/R15)。continuing 等待 sibling 收口 inreview 6 张后撞车期对账收口。R16 若仍 zero-done → 达 3 连续 zero-done，届时评估 blocked 标定。
+
+**看板状态不变**: done 87, todo 152, inreview 6, inprogress 5
+**本会话累计真闭环**: 18 张
+
+
+### 第二十九轮 R15 治理收口 (2026-09-05 18:10)
+
+**撞车期对账无新候选 (R14/R15 连续 2 轮 zero-done)**:
+- sibling HEAD 5d1e5d15 静置 35 min, inreview 6 张 (AUD-GOV-01/QA-03/P1-11.1/P1-6.1/P0-7.3/SEC-01) 未收口
+- inprogress 5 张 (P0-10.1/2 前端/P3-4.1/P2-3.1/P1-4.2) 兄弟无新 commit
+- 撞车期可推汇总卡全量扫描 (P0~P4 共 38 张汇总):
+  - P0-3 (1/4 done), P0-7 (2/4 done, P0-7.3 inreview), P0-8 (1/1 子 done 但 15/14 子缺陷, 不擅改)
+  - P1-3 (2/3, P1-3.3 SOP 模板 todo), P1-4 (2/4, P1-4.2 附件 inprogress), P1-6 (0/2 inreview+todo), P1-9 (1/2, P1-9.2 14天场景 todo)
+  - P2-2~P2-7 (子卡全 0% done 或 inprogress), P2-8 (0/1 todo)
+  - P3-1~P3-7 (子卡全 0% done 或 inprogress)
+  - P4-1~P4-5 (子卡全 0% done)
+- 撞车期对账公式严格 = "子卡 done == 子卡 total" — 当前 0 候选
+
+**R15 撞车期治理盘点新增发现**:
+- sibling 已 build 6 个新 jar (p112p122p132 12:46 / p141p152 13:17 / p151p181 12:31 / p182p171 15:17 / p191 15:37 / p21 13:51) — 印证 R12 撞车期对账的 9 张 (P0-1/2 + P1-1/2/5/7/8 + P2-1) jar 集成跑业务链完成
+- 这些 jar 在 .codex/ipd-dev/runtime/ 留作 撞车期对账的"独立真库 HTTP 验证"证据
+
+**OPS-09 单写者纪律**: 不接实施卡 (QA-04-D1/D2 死表+DDL卫生/QA-05-P1~P5 性能/DEF-6 json→longtext), 不抢翻兄弟 inreview/inprogress 6+5 张。
+
+**Goal 14/30 active armed**, R15 留 zero-done. 连续 zero-done 计数 R14=0 + R15=0 = 2 轮。R16 若仍 zero-done → 达 3 连续, 届时评估 blocked 标定 (撞车期对账路径已清完, sibling 不推进 = 实质阻塞)。
+
+**看板状态不变**: done 87, todo 152, inreview 6, inprogress 5
+**本会话累计真闭环**: 18 张
+
+
+### 第三十轮 R16 阻塞判定 (2026-09-05 18:15)
+
+**连续 3 轮 zero-done (R14/R15/R16) — 阻塞条件客观且持续**:
+
+1. **撞车期对账路径（第二方复核会话唯一合规推进路径）已完整清完**：13 张 (R12 9 + R13 1 + 早期 3)。撞车期对账公式 = "全部子卡 done + 独立真库验证 + 证据 + log + board done"，当前 0 候选。
+
+2. **OPS-09 单写者 scope 内卡全部闭环**：我的 scope = ApiV1Response + AuditLog* + ProductGroup* + DeletionRequest（对应 P0-4/P0-5/P0-6 汇总全部 R12 done）。scope 内无剩余可推进卡。
+
+3. **剩余 152 张 todo 全部超出本会话可合规推进边界**：
+   - (a) 兄弟持 inreview 6 + inprogress 5（不可抢翻，OPS-09）
+   - (b) 需 owner 决策停写窗口：DEF-5 (库级 grant) / DEF-6 (json→longtext 三选一 A/B/C 方案裁决，卡片明确「三选一须 owner 决策」+「涉冻结哈希协议 v1 + 共享库 schema + 4 个在跑实例」) / QA-04-D1 (死表落库) / QA-04-D2 (DDL 卫生，涉及删实体字段或补 DDL 二选一)
+   - (c) 前端独立仓库 49 页 (P0-10.x，不在本后端仓)
+   - (d) 其他泳道后端实施卡 (P1~P4 各子卡，超 OPS-09 scope 或依赖阻塞)
+
+4. **sibling HEAD 静置 40+ 分钟** (5d1e5d15)，无 inreview→done 转化，无新撞车期对账候选产生。
+
+**r16 终极确认**：
+- DEF-6 (完全落我 AuditLog* scope) 经重审不可接：卡片明确「三选一须 owner 决策」+「DB 结构属 QA-04 泳道，与 DEF-5 同一纪律」+ 改列类型会冲击 4 个在跑实例。非我可擅自拍板。
+- 无可漏接的合规推进路径。
+
+**看板状态（3 轮不变）**: done 87, todo 152, inreview 6, inprogress 5
+**本会话累计真闭环**: 18 张（撞车期对账路径已清完）
+
+---
+
+## 2026-09-05 DEF-6 方案A落地闭环 + DEF-9 立案 + QA-05-P1 第二方复核（第二方治理会话，18:35–19:30）
+
+**驱动**：owner 通过 AskUserQuestion 作出两项决策——① **DEF-6 = 方案 A + 护栏配套**（DDL 把 `audit_logs.before_data/after_data` 由 `json` 改 `longtext`，同时在 `append` 入口加应用层 JSON 校验保住 DEF-1 fail-fast；owner 已知悉「需停写窗口：4 个在跑实例」）；② **QA-05-P1 = 授权先只读定性、不动 `application.yml`**。本轮无新用户输入，全程按该两项授权执行。
+
+### 一、DEF-6 已实施并翻 done：五重证据链
+
+1. **DDL 现态**：`information_schema.columns` → `before_data`/`after_data` = **longtext**、`IS_NULLABLE=YES`；迁移脚本入仓 `docs/script/sql/update/2026-09-05-ipd-audit-payload-longtext.sql`（57 行）。
+2. **往返对照**：临时表 3 例 `json_eq=0/3` vs **`longtext_eq=3/3`**（跨列比较须 `CONVERT(... USING utf8mb4) COLLATE utf8mb4_general_ci`）。
+3. **活体铁证 seq 660**：载荷 = 紧凑无空格 `{"outcome":"FAILURE","attemptedAction":"PASSWORD_CHANGE_REJE...` 且 `broken=0`；对照 502/485/466 仍是带空格规范化文本。→ 改列型**之后**经护栏 jar 写入的新行写完即自洽（存量行已被兄弟 rebuild 治愈，不足以作判据）。
+4. **归因反转**：改列型前断裂行 **100% 携带载荷** → 改列型后 run5/run6/run7 均 **带载荷 0 行**。
+5. **护栏绿门**：新增 `AuditPayloadJsonGuardTest`（161 行）**7/7** + `GateElementAuditJsonTest` **4/4** = 11/11 **Skipped=0**；全模块 421 跑 / 1 Fail（兄弟既有 `ProductServiceTest.createOk:87 expected "ACTIVE" but was "IN_RD"`）/ 22 Skipped；审计路径 **38/38**。
+
+**护栏一个非显然要点**：`requireJson` 必须置于 DEF-4 重试循环**之外**——`DataIntegrityViolationException` 是 `DuplicateKeyException` 的**父类**，循环内抛会被当成 `uk_audit_seq` 冲突吞掉并重试三次，畸形载荷从 fail-fast 退化为 fail-late。理由已就地写入代码注释。
+
+**A7 定论（存量 rebuild 时机）**：**不应再 rebuild**——`rebuildChain` 只重算 `prev`/`curr` 两列、治不了缺行，且会把新写入的紧凑 JSON 采纳为 canonical 从而**掩盖**问题；须先把 4 个实例统一到含护栏 jar。据此把前轮「先全实例升级再 rebuild」修正为「先全实例升级，rebuild 暂缓」。
+
+### 二、P0-9.1 第七跑 74/83：DEF-6 归因闭合 + A/B 换基底实验
+
+七跑演进 `61/79 → 74/83 → 75/83 → 71/83 → 68/83 → 69/83 → **74/83**`。run5（68）出现两个**上一轮曾 PASS 的项回归**（`L3 改密 (500,90001)`、`L5 archive=[]`），若不定性会被误记为「护栏造成的回归」。**不停留在推测，做可证伪的 A/B 实验**：
+
+- 四重定性：日志栈 `SaJwtException: jwt loginType 无效` at `UserActionListener.doLogout:84`（与 DEF-7 逐字同形）→ `unzip -l` jar 差分只有 2 模块不同（`ruoyi-ipd` 462617 vs **462333**、`ruoyi-system` 715884 vs **715397**）→ javap listener 8946B/`isBaselineLoginType`=1 vs 8382B/=0、`DeletionArchiveService` 含 `isNull`=1 vs =0 → 源码工作树干净且 `056640ca`/`436262b0` 均已含修复。
+- **实验 A**：`def6h` = 兄弟基底 + 好 `ruoyi-system` → run6 69/83，`L3` **PASS**、`archive` 仍 FAIL。
+- **实验 B**：`def6i` = **p091b 基底** + 我的 2 类（javap 四修终验 `requireJson` 1/2、`secondMillis` 3、`DEF8-isNull` 1、`isBaselineLoginType` 1）→ run7 **74/83**，`L3`、`L5-archive` **双 PASS**。
+- → 两个假红**逐一消失**，归因钉死到具体模块的具体类；**新事实**：`ruoyi-ipd` 也陈旧致 **DEF-8 同时复发**（前轮只知 DEF-7）。
+
+**run7 归因断言 4/4 PASS**：`断裂1行 / 带载荷0行 / 空洞后首行1行 / 未归因0行`，明细 `1309:LOGIN`。残留 **9 项 FAIL 100% 归因单一空洞**（4 检查点 × 2 条链硬门 + `L7 seq 零跳号`）。
+
+**脚本升级（不弱化断言）**：`attribute_broken` 改三分法（载荷行 / 空洞后首行 / 未归因，三类互斥）；`chain=OK` 与 `断裂数=0` 两条**硬门保持原样 FAIL 不放宽**，只把已过时的诊断断言「断裂 100% 归因 DEF-6」换成修复后**更强的正向门**「载荷行=0 且未归因=0」，总项数仍 **83** 以免跨跑趋势断裂。另修 `running_jar` 只认 `--server.port=` 而漏本仓 `-Dserver.port=` 的 `TypeError`（None 时改 `raise SystemExit`）。**P0-9.1 仍保持 ◐ 不标 done**。
+
+### 三、新立案 DEF-9（U1，镜像 L327，deps `P0-5.4,DEF-4,DEF-6`，**未自行修复**）
+
+DEF-6 落地后重跑的副产物，暴露一处**比 DEF-6 更深的结构性设计缺陷**（同一处设计的两条耦合后果）：
+
+- **后果一**：`AuditLog.seq` 标 `@TableField(insertStrategy = FieldStrategy.NEVER)` + DDL `AUTO_INCREMENT` + `uk_audit_seq` → 应用**从不写 seq**；但 `append` 重试循环内自算的 seq 却被喂进 `canonicalOf(draft, seq)` 参与 `curr_hash` → 并发写者读到同一 `last` 行、算出相同 `prev_hash` 与相同 canonical seq，而 DB 分配不同连续 seq → **仅第一条自洽，其余链接错且下游连带断裂**；同时 uk 永不冲突 → `catch (DuplicateKeyException)` 永不触发 → **DEF-4 第 3 修复是结构性死代码**。
+- **后果二**：`verifyChain` 第三条判据要求 seq 严格连续，而 InnoDB 自增值在 DELETE/回滚后**不回填** → 任何删行或失败 INSERT 留下**永久空洞**；`rebuildChain` 治不了缺行 → 该链**永久 BROKEN 无法自愈**。
+- **副作用推论**：「零跳号零重复」在无删行时恒成立，故对并发正确性**无证明力**；真实失败模式是**静默丢审计事件**。
+- **SQL 三铁证**@18:44：① 多行共享同一 `prev_hash`（16 行 seq1022-1037、15 行 1241-1255、13 行 812-824、11 行 1081-1091、9 行 673-681、9 行 859/861-868，全 LOGIN_FAIL）；② `link_breaks=484`、first=600、last=1264；③ seq 600-603 的 `got_prev` 全为 `d873f9a57c4c` 而 `want_prev` 各异。并发写者身份：`port=16040 jar=/tmp/ruoyi-admin-qa05p1.jar`，javap 含 `secondMillis=3`、不含 `requireJson` → 断裂非旧 jar 遗留。
+- **不自行修复的理由**：涉已冻结哈希协议 v1、共享库并发语义与 4 个在跑实例，且 `AuditLogService` javadoc L33 已预告长期方案为 QA-04 泳道 `audit_log_chain_heads` → 归属与选型须由主协调器裁定。卡内已备齐**方向甲**（去 `insertStrategy=NEVER` 让 uk 真参与冲突检测）与**方向乙**（`chain_heads` 锚表原子递增）及各自代价，并建议把 `verifyChain` 连续性判据改为「GAP 类与 HASH 类分列、两类都不得静默」。
+- **不擅自动共享库**：识别出 `ALTER TABLE audit_logs AUTO_INCREMENT = max(seq)+1` 可让链断言转绿，但**明确拒绝执行**（共享库 + 4 实例在跑 + 单一写入者纪律 + 兄弟正反复重整该表），改为在卡内把「reseed 未重置自增值」记为流程缺陷并上交决策。
+
+### 四、QA-05-P1 第二方只读复核：认同 4 项 + 新增 3 项（含 **U0×1**）
+
+兄弟已于 `d9c24227`（19:04:55）提交修复并自判 PARTIAL。本会话按授权**全程只读**（未改配置、未起停实例、未执行 DDL/DML），归档 `验收/QA-05-P1-第二方复核-20260905.md`（239 行，含可复现命令清单）。
+
+- **认同 4 项**（均独立实证）：① 键路径勘正是真修复——按缩进还原证实 prod(L72)/dev(L71) 的 hikari 块均在 `spring.datasource.dynamic` 下，而 `application-ipd-local.yml`（62 行）**零命中** hikari，原任务卡的 `--spring.datasource.hikari.*` 确属无效 key；② prod 未被静默改动（同路径显式 20/30000 覆盖基座）；③ 雪崩解除有硬证据（`total=40, active=40, idle=0, waiting=95`、a P95 30046→8978、e TPS 2→37.6）；④ PARTIAL 判定与「剩余瓶颈归 QA-05-P2、池容量已非瓶颈」归因正确。
+- **⚠️ P1-1（U0，原报告未量化）：基线块使 ipd-local 池 10→40（4×），4 实例并存即超 MySQL 上限**。实测：`max_connections=151`、`Max_used_connections=81`、`Threads_connected=41`、`ipd_app=40`（全 Sleep、db=ipd_dev）；在跑实例 **N=4**（16039/16044/16045/16050）；profile 实证 `def6i.log`「1 profile is active: ipd-local」。**量化闭合：4 × HikariCP 默认 10 = 40 ≡ 实测 ipd_app 40（全 Sleep）→ 证明连接数由池预留决定、与负载无关**；外推新 jar **4 × 40 = 160 > 151 → ERROR 1040 Too many connections**（比池排队雪崩更严重的硬失败，`ipd_app` 非 SUPER 拿不到保留连接）。原报告 §6 建议 3 列 U2 且未量化 N → 本复核定为 **U0，阻塞「把新 jar 推到全部实例」**。建议三选一：基座改 20 / 先提 `max_connections ≥250` / ipd-local 显式配 20。
+- **⚠️ P1-2（U1，结论级假绿）：原报告 §5.2.3「DB 直查为权威依据」不成立**。`verifyChain` 有**三条**判据，DB 层 `LAG()` 只覆盖前两条，缺第三条 `!expectSeq.equals(log.getSeq())`（seq 严格连续）。同数据两种判据结论相反：DB `gaps=1`（原报告口径「100% OK」）vs 应用端点 **`chain=BROKEN, broken=[1309]`**。附带更正：原报告称「16039 jar 无 verify 路由」，本会话实证 **16045 该路由可用并已 4 轮成功调用**。
+- **⚠️ P1-3（U1，权衡未披露）**：`connectionTimeout 30s→5s` 是「**P95 换成功率**」取舍（a 错误 100%→62%，绝对改善 38pp，但保 30s 则部分请求会「慢但成功」）；建议卡面显式记录，并在 P2 修复后以「P95<3s **且** 错误率=0」双门复测再定终值。
+- **info 两项**：① **`information_schema.tables.AUTO_INCREMENT` 有 24h 缓存陷阱**——初次查得 `next_auto=3` 而 `maxseq=1326`，一度推断「计数器落后 → uk 会真冲突 → DEF-4 重试不是死代码」而与 DEF-9 矛盾；`SET SESSION information_schema_stats_expiry=0` 后得 **1327**、`SHOW CREATE TABLE` 亦为 `AUTO_INCREMENT=1327` → **原 3 是陈旧缓存值（偏差 442 倍），DEF-9 定性保持不变**。验收脚本一律须用 `SHOW CREATE TABLE` 或先关缓存。② `application-ipd-local.yml:14` 的 `master.url` 确指向 `ipd_dev`（非 `ipd_perf`）= 原报告 §5.1 事故（699 行 `perf_*` 误写主库）的直接根因。
+
+### 五、SSOT 漂移：unmanaged **5 → 12 张**
+
+`sync --apply` @19:12：`total=246 board_total=258 counts={unchanged:245, update:1} has_drift=True`。12 张板上存在但镜像缺失：`QA-05-P1/P2/P3`、`QA-04-D1/D2`、`SEC-HIGH-1/3`、`PERF-P0-1/2`、`AUD-GOV-LEDGER/PERF-AUD/SEC-AUD`。其中 **QA-05-P1 板上仍 `todo`，而兄弟已提交 `d9c24227` 修复** → 板卡与进度不一致。按纪律**不代翻兄弟的卡、不代写其 SSOT 行**，仅登记漂移事实 + 交付复核结论，建议主协调器统一回写。`DEF-9` 建卡已闭环（`mapping.json` 的 `source_sha256` 与当前 PLAN sha256 完全一致 `5f2dd98586fe8408`，漂移非本轮引入）。
+
+### 六、本轮看板与文档动作
+
+| 对象 | 动作 | 结果 |
+|---|---|---|
+| **DEF-6** | `set done` + 五重证据与 A7 定论入 note | ✅ done（statuscell 1612 字），board_total 258 |
+| **DEF-9** | 新建卡（镜像追加 10 列行 + `plan` 校验 + `sync --apply`） | ⬜ todo U1，line=327，**未自行修复** |
+| **P0-9.1** | 手写追加 run7 证据（保持 ◐） | statuscell 1287→2837 字，**未标 done** |
+| **QA-05-P1** | 只读复核 + 归档复核记录，**不翻卡** | 板上仍兄弟的 `todo` |
+| 文档 | 报告新增 §十二（+145 行，303→449）+ §11.5 后记指引 | `验收/生产就绪差距盘点-20260905.md` |
+| 证据 | run4/5/6/7 四份 JSON 归档（A/B 实验四级证据） | `验收/P0-9.1-业务链真实验收结果-run{4,5,6,7}*20260905.json` |
+
+### 七、待 owner / 主协调器决策（三项）
+
+1. **DEF-9 选型与归属**（U1）——方向甲/乙二选一 + `verifyChain` 连续性判据是否改「GAP/HASH 分列」；与 **QA-05-P2** 同源（都指向 `audit_log_chain_heads`），建议**合并裁定**。
+2. **QA-05-P1 的 P1-1**（U0）——基座 `maxPoolSize` 40 是否改 20 / 或先提 `max_connections`。**在把新 jar 推到全部实例之前必须先决策**，否则会把「池排队雪崩」换成「MySQL 拒绝连接」。
+3. **DEF-5**（库级 grant 架空「只追加」DB 强制）——仍未处置。
+
+**遗留风险（非阻塞）**：4 个在跑实例中仅 16045（`def6i.jar`）含 DEF-6 护栏；**16050 正跑兄弟 18:44 重建的 `ruoyi-admin-def6.jar`，不含护栏且 `ruoyi-ipd`/`ruoyi-system` 双双陈旧** → 对已改 longtext 的库是**活的 DEF-1 fail-fast 缺口**（畸形 JSON 静默入库且脏载荷进 hash 链），且 DEF-7/DEF-8 在该实例仍复现。根因是部署链从陈旧 `~/.m2` 解析模块。
+
+**只读纪律披露**：QA-05-P1 复核中为取应用侧 `verify` 现态发了一次 `POST /api/v1/auth/login`（系统管理员），被产品正常行为拦截（`code=20003 首登强制改密`）；副作用 = 写入 **1 条 LOGIN 审计行（seq=1326）** 与 `persons.系统管理员.update_time` 更新（`SHOW TABLE STATUS` 的 Update_time 09:39:54→10:17:23、AUTO_INCREMENT 1326→1327）。未改任何配置/代码/schema、未起停实例、未 rebuild、未删改既有行。另更正一处本会话初判有误的观察：6 个种子账号 `must_change_pwd=1` 曾疑为「账号污染」，核对后确认是**首登强制改密的产品设计初始态**（20003 即该设计生效），非事故。
+

@@ -33,6 +33,16 @@ import java.util.List;
  *       长期方案 = QA-04 泳道 audit_log_chain_heads 原子递增（归属兄弟，本类不引用）。</li>
  * </ol>
  *
+ * <p>DEF-6 载荷列往返对称（2026-09-05，owner 选定方案 A + 护栏配套）：
+ * {@code before_data/after_data} 原为 MySQL {@code json} 列，读回时被服务端规范化渲染
+ * （键排序按 UTF-8 字节长度→字典序、成员间插 {@code ", "}、{@code 1e3}→{@code 1000.0}），
+ * 与写入侧用于算 {@code curr_hash} 的 Jackson 紧凑串永不相等 → 带载荷审计行写完即被
+ * {@link #verifyChain()} 判断裂（实证 seq 466/485/502，断裂行 100% 携带载荷）。
+ * 修复 = DDL 把两列改 {@code longtext}（{@code docs/script/sql/update/2026-09-05-ipd-audit-payload-longtext.sql}）
+ * 保字节精确往返，不动已冻结哈希协议 v1。代价：{@code json} 列类型原本同时是 DEF-1 的 DB 层
+ * fail-fast 护栏，故 {@link #append} 入口补上 {@link AuditEventData#requireJson} 应用层校验，
+ * 非法载荷仍立即抛出并回滚（校验必须在重试循环之外——它是 {@code DuplicateKeyException} 的父类）。
+ *
  * <p>P0-5.4 补范围查询/导出：{@link #listByOperatorIds} / {@link #countByOperatorIds}
  * 均为「接受预先解析好的 operatorIds」——角色→范围（本人/本组/全局）的判定由 Controller 层
  * 依据 {@code IpdPermission}（SEC-02）与 {@code PersonMapper}（本组人员）完成，Service 不感知角色。
@@ -49,6 +59,11 @@ public class AuditLogService {
     /** 追加一条审计（独立事务：业务失败不回滚审计） */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public AuditLog append(AuditLog draft) {
+        // DEF-6 护栏：列类型改 longtext 后 DB 不再校验 JSON 合法性，在此复刻原 fail-fast。
+        // 必须位于重试循环之外：DataIntegrityViolationException 是 DuplicateKeyException 的父类，
+        // 若在循环内抛出会被当成 uk_audit_seq 冲突吞掉并重试三次。
+        AuditEventData.requireJson(draft.getBeforeData(), "before_data");
+        AuditEventData.requireJson(draft.getAfterData(), "after_data");
         // DEF-4：先定时间再哈希——写入与验链共用同一 Date，且毫秒必须归零后再写库：
         // datetime(0) 对毫秒四舍五入（≥.500 进位），而 secondMillis 是截断，不归零则读回 +1s 哈希失配
         Date base = draft.getCreateTime() == null ? new Date() : draft.getCreateTime();
