@@ -74,9 +74,12 @@ public class ProjectBootstrapService {
             requireInsert(projectStageMapper.insert(stage));
             requireGeneratedId(stage.getId(), stageIds);
             for (ActionDef def : ActionCatalog.byStage(stageDef[0])) {
+                boolean applicable = ActionCatalog.applicableTo(
+                    def, project.getTemplateType(), project.getTargetMarkets());
                 StageAction action = StageAction.builder().projectId(projectId).stageId(stage.getId())
                     .actionCode(def.code()).actionName(def.name()).ownerRole(def.ownerRole())
-                    .depth(expectedDepth(def, project.getTemplateType())).status("NOT_STARTED")
+                    .depth(ActionCatalog.expectedDepth(def, project.getTemplateType()))
+                    .status(applicable ? "NOT_STARTED" : "NA")
                     .isBlocking(def.blocking() ? "1" : "0").isBioFeature(def.bioFeature() ? "1" : "0").build();
                 action.setCreateTime(new Date());
                 action.setCreateBy(operatorId);
@@ -114,15 +117,16 @@ public class ProjectBootstrapService {
                 || !Objects.equals(project.getId(), action.getProjectId())
                 || !Objects.equals(byCode.get(def.stage()).getId(), action.getStageId())
                 || !def.ownerRole().equals(action.getOwnerRole())
-                || !expectedDepth(def, project.getTemplateType()).equals(action.getDepth())
+                || !ActionCatalog.expectedDepth(def, project.getTemplateType()).equals(action.getDepth())
                 || !Objects.equals(def.blocking() ? "1" : "0", action.getIsBlocking())
                 || !Objects.equals(def.bioFeature() ? "1" : "0", action.getIsBioFeature())) throw corruptGraph();
+            // P1-3.2：模板不适用动作必须为 NA（适用动作允许后续人工流转，不在此强制 NOT_STARTED）
+            boolean applicable = ActionCatalog.applicableTo(
+                def, project.getTemplateType(), project.getTargetMarkets());
+            if (!applicable && !"NA".equals(action.getStatus())) {
+                throw corruptGraph();
+            }
         }
-    }
-
-    private static String expectedDepth(ActionDef def, String templateType) {
-        // BR-IPD-05：普通轻管不增加强制附件，仅SOLUTION的V11/Z04按模板转深管。
-        return "V11".equals(def.code()) && "SOLUTION".equals(templateType) ? "DEEP" : def.depth();
     }
 
     private static boolean positive(Long id) { return id != null && id > 0; }

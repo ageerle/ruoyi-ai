@@ -29,6 +29,18 @@ public class Product extends BaseEntity implements SoftDeletable {
     public static final String SRC_PM_NEW = "PM_NEW";
     public static final String SRC_GUEST_OTHER = "GUEST_OTHER";
 
+    /** 在售（超管导入） */
+    public static final String ST_ON_SALE = "ON_SALE";
+    /** 在研（PM 新增） */
+    public static final String ST_IN_RD = "IN_RD";
+    /** 停用 */
+    public static final String ST_INACTIVE = "INACTIVE";
+    /** 兼容旧数据 ACTIVE */
+    public static final String ST_ACTIVE = "ACTIVE";
+
+    public static final java.util.Set<String> STATUSES =
+        java.util.Set.of(ST_ON_SALE, ST_IN_RD, ST_INACTIVE, ST_ACTIVE);
+
     @TableId
     private Long id;
 

@@ -48,6 +48,7 @@ public class ProjectService {
     private final AuditLogService auditLogService;
     private final GateEngine gateEngine;
     private final ProjectBootstrapService projectBootstrapService;
+    private final ProjectCertService projectCertService;
     private final PlatformTransactionManager transactionManager;
 
     /** 奖金池比例（BR-INC-04）：目标销售额 × 5% × 差异化系数 */
@@ -125,6 +126,8 @@ public class ProjectService {
         productMapper.updateById(product);
         // P1-3.1：bootstrap 六阶段 + 69 动作实例；同事务内执行（PERF-01 取号已 synchronized 保护）
         projectBootstrapService.bootstrap(project.getId(), operatorId);
+        // P1-7.1：目标市场认证清单落项目（模板变更 re-sync 只增不重置 DONE）
+        projectCertService.syncFromProject(project, operatorId);
         audit(project.getId(), project.getName(), operatorId, "PROJECT_CREATE");
         return project;
     }
@@ -143,7 +146,7 @@ public class ProjectService {
         return targetSales.multiply(BONUS_POOL_RATE).multiply(coefficient);
     }
 
-    /** 状态机迁移（非法迁移拒绝） */
+    /** 状态机迁移（非法迁移拒绝）；归档不可再迁出 */
     @Transactional(rollbackFor = Exception.class)
     public Project changeStatus(Long projectId, String target, Long operatorId) {
         Project project = require(projectId);
@@ -157,10 +160,45 @@ public class ProjectService {
         return project;
     }
 
+    /**
+     * P1-2.2：DRAFT 期内可改四基准；立项后锁定。
+     *
+     * @param projectId  项目
+     * @param patch      含四基准字段的补丁
+     * @param operatorId 操作人
+     * @return 更新后项目
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Project updateBaselines(Long projectId, Project patch, Long operatorId) {
+        Project project = require(projectId);
+        if (!"DRAFT".equals(project.getStatus())) {
+            throw new ServiceException("四基准在立项后锁定，不可直接修改（P1-2.2）");
+        }
+        if (patch.getTargetSalesAmount() != null) {
+            project.setTargetSalesAmount(patch.getTargetSalesAmount());
+        }
+        if (patch.getTargetChannelCount() != null) {
+            project.setTargetChannelCount(patch.getTargetChannelCount());
+        }
+        if (patch.getTargetNps() != null) {
+            project.setTargetNps(patch.getTargetNps());
+        }
+        if (patch.getTargetSceneCount() != null) {
+            project.setTargetSceneCount(patch.getTargetSceneCount());
+        }
+        validateBaselinesAndTemplate(project);
+        projectMapper.updateById(project);
+        audit(projectId, project.getName(), operatorId, "PROJECT_BASELINE_UPDATE");
+        return project;
+    }
+
     /** 阶段推进：门禁校验（BR-IPD-06，P1-5 GateEngine 接管）+ LAUNCH 前置上市日期（BR-IPD-08） */
     @Transactional(rollbackFor = Exception.class)
     public Project advanceStage(Long projectId, Long operatorId) {
         Project project = require(projectId);
+        if ("SUSPENDED".equals(project.getStatus()) || "ARCHIVED".equals(project.getStatus())) {
+            throw new ServiceException("暂停/归档项目禁止推进阶段");
+        }
         String next = NEXT_STAGE.get(project.getCurrentStage());
         if (next == null) {
             throw new ServiceException("已处于最终阶段 LIFECYCLE");

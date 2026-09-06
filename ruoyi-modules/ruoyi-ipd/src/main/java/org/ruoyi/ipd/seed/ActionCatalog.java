@@ -119,8 +119,120 @@ public final class ActionCatalog {
         return ALL.stream().filter(a -> a.stage().equals(stage)).toList();
     }
 
+    /**
+     * 按编码取目录定义；Z 系别名先归一再查（P1-8.2 / AC-IPD-17）。
+     *
+     * @param code 权威码或 Z01–Z05 别名
+     * @return 目录定义
+     */
     public static ActionDef byCode(String code) {
-        return ALL.stream().filter(a -> a.code().equals(code)).findFirst()
+        String resolved = resolveCode(code);
+        return ALL.stream().filter(a -> a.code().equals(resolved)).findFirst()
             .orElseThrow(() -> new IllegalArgumentException("动作编码不存在: " + code));
+    }
+
+    /** BioCV 算法分类白名单（stage_actions.algo_type） */
+    public static final java.util.Set<String> ALGO_TYPES = java.util.Set.of(
+        "FINGERPRINT", "FACE", "PALM", "VEIN", "MULTI");
+
+    /**
+     * 校验算法分类；空串视为未填（由调用方决定是否必填）。
+     *
+     * @param algoType 分类码
+     * @return 归一后的大写分类；null/blank → null
+     */
+    public static String normalizeAlgoType(String algoType) {
+        if (algoType == null || algoType.isBlank()) {
+            return null;
+        }
+        String t = algoType.trim().toUpperCase();
+        if (!ALGO_TYPES.contains(t)) {
+            throw new IllegalArgumentException(
+                "算法分类非法，允许: " + String.join("|", ALGO_TYPES));
+        }
+        return t;
+    }
+
+    /**
+     * P1-3.2 / AC-PROD-02/03：动作是否适用于给定模板与目标市场。
+     * <p>V11 全模板挂载（硬件轻管 / 方案深管由 {@link #expectedDepth} 决定）；
+     * OVERSEAS 仅当目标市场含海外码；BIOCV 保持挂载（涉生物由 C12 补挂门控）。
+     *
+     * @param def               目录定义
+     * @param templateType      HARDWARE|SOFTWARE|SOLUTION
+     * @param targetMarketsJson 目标市场 JSON 数组字符串，可为 null
+     * @return true=适用（初始 NOT_STARTED）；false=模板裁剪为 NA
+     */
+    public static boolean applicableTo(ActionDef def, String templateType, String targetMarketsJson) {
+        if (def == null) {
+            return false;
+        }
+        String code = resolveCode(def.code());
+        // AC-IPD-21/22：V11 在硬件/软件/方案均挂载，深度另算
+        if ("V11".equals(code)) {
+            return true;
+        }
+        String applicable = def.applicable();
+        if (applicable == null || applicable.isBlank() || "ALL".equals(applicable)) {
+            return true;
+        }
+        return switch (applicable) {
+            case "HW" -> "HARDWARE".equals(templateType);
+            case "SW" -> "SOFTWARE".equals(templateType);
+            case "SOL" -> "SOLUTION".equals(templateType);
+            case "BIOCV" -> true;
+            case "OVERSEAS" -> hasOverseasMarket(targetMarketsJson);
+            default -> true;
+        };
+    }
+
+    /**
+     * 判断目标市场 JSON 是否包含海外市场（非 CN/国内）。
+     *
+     * @param targetMarketsJson 如 {@code ["SA","国内"]}
+     * @return 含任一海外码则为 true
+     */
+    public static boolean hasOverseasMarket(String targetMarketsJson) {
+        if (targetMarketsJson == null || targetMarketsJson.isBlank()) {
+            return false;
+        }
+        String raw = targetMarketsJson.trim();
+        String lower = raw.toLowerCase();
+        if (lower.contains("海外") || lower.contains("overseas") || lower.contains("mea")) {
+            return true;
+        }
+        String compact = raw.replaceAll("[\\[\\]\\s\"]", "");
+        if (compact.isEmpty()) {
+            return false;
+        }
+        for (String part : compact.split(",")) {
+            String p = part.trim();
+            if (p.isEmpty()) {
+                continue;
+            }
+            if ("CN".equalsIgnoreCase(p) || "国内".equals(p) || "CHINA".equalsIgnoreCase(p)) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * P1-3.2：模板深度——SOLUTION 下 V11 升深管，其余沿用目录；C05 保持轻管。
+     *
+     * @param def          动作定义
+     * @param templateType 模板
+     * @return DEEP|LIGHT
+     */
+    public static String expectedDepth(ActionDef def, String templateType) {
+        if (def == null) {
+            return "LIGHT";
+        }
+        String code = resolveCode(def.code());
+        if ("V11".equals(code) && "SOLUTION".equals(templateType)) {
+            return "DEEP";
+        }
+        return def.depth();
     }
 }

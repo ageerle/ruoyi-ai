@@ -31,6 +31,10 @@ public class StageAction extends BaseEntity {
     private String ownerRole;
     private String depth;
     private String status;
+    /**
+     * P1-9.1 / BR-PROD-03：HISTORICAL_MISSING=历史缺失（不伪造 DONE，门禁视为已满足）。
+     */
+    private String historyMark;
     private String isBlocking;
     private Date actualDoneAt;
     private BigDecimal farValue;
@@ -41,6 +45,8 @@ public class StageAction extends BaseEntity {
     private String isBioFeature;
     private Date dueDate;
     private Long sopId;
+    /** 备注（存量替代佐证等） */
+    private String remark;
 
     /** MyBatis-Plus 乐观锁：transit() 并发由 OptimisticLockerInnerInterceptor 拦截；DDL 见 2026-09-05-ipd-p143-optimistic-lock.sql。 */
     @Version

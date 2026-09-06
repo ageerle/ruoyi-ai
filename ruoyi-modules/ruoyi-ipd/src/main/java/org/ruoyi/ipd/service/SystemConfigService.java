@@ -94,13 +94,18 @@ public class SystemConfigService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void update(String key, String value) {
+        String normalized = value;
+        if (GateEngine.A_LEVEL_CONFIG_KEY.equals(key)) {
+            // P1-5.2：A 级必做集 trim/去重/未知码拒绝后再落库
+            normalized = GateEngine.validateAndNormalizeALevelConfigValue(value);
+        }
         SystemConfig existing = systemConfigMapper.selectOne(
             new LambdaQueryWrapper<SystemConfig>().eq(SystemConfig::getConfigKey, key).last("limit 1"));
         if (existing == null) {
             invalidate(key);
             return;
         }
-        existing.setConfigValue(value);
+        existing.setConfigValue(normalized);
         systemConfigMapper.updateById(existing);
         invalidate(key);
     }

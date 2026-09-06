@@ -75,11 +75,23 @@ public class Project extends BaseEntity implements SoftDeletable {
     /** 当前阶段 CONCEPT|PLAN|DEV|VALID|LAUNCH|LIFECYCLE */
     private String currentStage;
 
+    /** P1-9.1：存量申报阶段（补齐目标展示）；NEW 项目为空 */
+    private String declaredStage;
+
     /** 生命周期 ON_SALE|LIMITED|EOL|ARCHIVED */
     private String lifecycleStatus;
 
     /** 来源 NEW|LEGACY（存量导入） */
     private String source;
+
+    /** P1-9.1：存量导入生效日 */
+    private Date legacyEffectiveAt;
+
+    /** P1-9.1：历史缺失声明 1=已确认（BR-PROD-03） */
+    private String missingHistoryAck;
+
+    /** P1-9.1：补齐状态 IN_PROGRESS|COMPLETE */
+    private String catchupStatus;
 
     /** 状态 DRAFT|TEAMING|ACTIVE|SUSPENDED|ARCHIVED */
     private String status;
