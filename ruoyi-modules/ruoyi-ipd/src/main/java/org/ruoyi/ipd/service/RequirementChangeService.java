@@ -55,6 +55,9 @@ public class RequirementChangeService {
     /** 决策集合 */
     private static final Set<String> DECISIONS = Set.of("APPROVE", "REJECT");
 
+    /** 系统执行人（无登录态时审计落名） */
+    private static final IpdActor SYSTEM_ACTOR = new IpdActor(0L, "system", "SYSTEM", null);
+
     private final RequirementChangeMapper requirementChangeMapper;
     private final RequirementMapper requirementMapper;
     private final AuditLogService auditLogService;
@@ -117,8 +120,8 @@ public class RequirementChangeService {
      * 双签：市场PM + 研发PM 双方均 APPROVE ⇒ APPROVED；
      * 任一 REJECT ⇒ REJECTED。签名记录聚合在 signatures 字段（MARKET_PM=APPROVE;RD_PM=APPROVE）。
      *
-     * <p>BR-GATE-07 关联：PENDING_SIGN 阶段冻结后，原 requirements 行不得再被直接编辑；
-     * 状态联动由 P2-6.2 的 RequirementChangeStateWriter 在 APPROVED 时回写。
+     * <p>BR-GATE-07 关联：APPROVED 时回写需求池状态为"已采纳"（AC-GATE-12），
+     * 显式 REJECT 不得超时绕过（AC-GATE-11：未闭环拒绝跳阶由 GateEngine 通过 hasOpenChange 拦截）。
      */
     @Transactional(rollbackFor = Exception.class)
     public RequirementChange sign(Long id, String decision, String opinion, IpdActor actor) {
@@ -152,14 +155,16 @@ public class RequirementChangeService {
             return change;
         }
 
-        // APPROVE：累计双方签名，齐签 ⇒ APPROVED
+        // APPROVE：累计双方签名，齐签 ⇒ APPROVED 并回写需求池
         boolean hasMarket = joined.contains("MARKET_PM=APPROVE");
         boolean hasRd = joined.contains("RD_PM=APPROVE");
         if (hasMarket && hasRd) {
             change.setStatus(STATUS_APPROVED);
             requirementChangeMapper.updateById(change);
             audit(actor, change, "REQ_CHANGE_APPROVE",
-                "双签 APPROVE，变更单生效；待 P2-6.2 回写需求池");
+                "双签 APPROVE，变更单生效");
+            // AC-GATE-12：通过后回写需求池状态为"已采纳"
+            applyApprovedToRequirement(change);
             return change;
         }
         // 单方 APPROVE：保持 PENDING_SIGN，等待另一方
@@ -167,6 +172,57 @@ public class RequirementChangeService {
         audit(actor, change, "REQ_CHANGE_PARTIAL_SIGN",
             actor.role() + " 已 APPROVE，等待另一方");
         return change;
+    }
+
+    /**
+     * AC-GATE-12：通过后回写需求池（status="ADOPTED"）。
+     * 若 afterSnapshot 含 status 字段，以快照内为准；否则写"ADOPTED"。
+     * 回写失败不抛出（KISS 兜底，审计已落）—— 调用方按需求决定是否重试。
+     */
+    private void applyApprovedToRequirement(RequirementChange change) {
+        try {
+            Requirement requirement = requirementMapper.selectById(change.getRequirementId());
+            if (requirement == null) {
+                return;
+            }
+            requirement.setStatus("ADOPTED");
+            requirement.setUpdateTime(new Date());
+            requirementMapper.updateById(requirement);
+            audit(SYSTEM_ACTOR, change, "REQ_CHANGE_WRITE_BACK",
+                "需求池 " + change.getRequirementId() + " 状态回写为 ADOPTED");
+        } catch (RuntimeException ex) {
+            audit(SYSTEM_ACTOR, change, "REQ_CHANGE_WRITE_BACK_FAIL",
+                "回写失败：" + ex.getMessage());
+        }
+    }
+
+    /**
+     * KPI：需求变更率 = 变更单数 ÷ 总需求数（AC-KPI-14，无需手工填）。
+     * 全局统计（不按项目过滤——KPI 维度）。
+     */
+    public double kpiChangeRate() {
+        Long totalChanges = requirementChangeMapper.selectCount(null);
+        Long totalRequirements = requirementMapper.selectCount(null);
+        if (totalRequirements == null || totalRequirements == 0) {
+            return 0.0;
+        }
+        long changeCount = totalChanges == null ? 0L : totalChanges;
+        return Math.round((double) changeCount * 10000.0 / totalRequirements) / 10000.0;
+    }
+
+    /**
+     * 阶段门禁集成（AC-GATE-11 跳阶拒绝）：GateEngine 跳阶前调本方法，
+     * 存在未闭环变更单 ⇒ 抛 GATE_NOT_PASSED，提示"存在未完成变更单"。
+     * 返回当前未闭环变更单数量（>=1 时阻断）。
+     */
+    public int countOpenByProject(Long projectId) {
+        if (projectId == null) {
+            return 0;
+        }
+        Long count = requirementChangeMapper.selectCount(new LambdaQueryWrapper<RequirementChange>()
+            .eq(RequirementChange::getProjectId, projectId)
+            .in(RequirementChange::getStatus, List.of(STATUS_DRAFT, STATUS_PENDING_SIGN)));
+        return count == null ? 0 : count.intValue();
     }
 
     /** 详情：返回含影响快照的双签进度视图。 */
