@@ -86,14 +86,15 @@ public class BidInvitationService {
         BidInvitation inv = requireOpen(invitationId);
         BidResponse resp = bidResponseMapper.selectById(responseId);
         if (resp == null || !resp.getInvitationId().equals(invitationId)) {
-            throw new IllegalArgumentException("应标记录不存在或不属于该招标单");
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "应标记录不存在或不属于该招标单");
         }
         if (!"PENDING".equals(resp.getStatus())) {
-            throw new IllegalStateException("应标记录状态不允许遴选: " + resp.getStatus());
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "应标记录状态不允许遴选: " + resp.getStatus());
         }
         // AC-TEAM-05：中标行回填 rd_pm_id（列语义：应标时可为空，遴选后回填）
         if (resp.getRdPmId() == null) {
-            throw new IllegalStateException("中标应标行缺少研发PM身份，无法绑定");
+            // STATE_CONFLICT 而非 ROLE_LOCKED：缺 rd_pm_id 是业务数据不完整（非角色被锁定）；ROLE_LOCKED 专属"市场PM 不可跨研发PM 动作"语义
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "中标应标行缺少研发PM身份，无法绑定");
         }
         resp.setStatus("ACCEPTED");
         bidResponseMapper.updateById(resp);
@@ -163,7 +164,7 @@ public class BidInvitationService {
         BidInvitation inv = requireOpen(id);
         long millisSinceCreate = System.currentTimeMillis() - inv.getCreateTime().getTime();
         if (millisSinceCreate > 24 * 60 * 60 * 1000L) {
-            throw new IllegalStateException("超过24小时不可撤回");
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "超过24小时不可撤回");
         }
         inv.setStatus("CLOSED");
         bidInvitationMapper.updateById(inv);
@@ -177,7 +178,7 @@ public class BidInvitationService {
     public BidInvitation close(Long id) {
         BidInvitation inv = bidInvitationMapper.selectById(id);
         if (inv == null) {
-            throw new IllegalArgumentException("招标单不存在: " + id);
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + id);
         }
         inv.setStatus("CLOSED");
         bidInvitationMapper.updateById(inv);
@@ -202,7 +203,7 @@ public class BidInvitationService {
     public BidInvitation getById(Long id) {
         BidInvitation inv = bidInvitationMapper.selectById(id);
         if (inv == null) {
-            throw new IllegalArgumentException("招标单不存在: " + id);
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + id);
         }
         return inv;
     }
@@ -216,7 +217,7 @@ public class BidInvitationService {
     public List<BidResponse> listResponses(Long invitationId, Long currentPersonId) {
         BidInvitation inv = bidInvitationMapper.selectById(invitationId);
         if (inv == null) {
-            throw new IllegalArgumentException("招标单不存在: " + invitationId);
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + invitationId);
         }
         LambdaQueryWrapper<BidResponse> qw = new LambdaQueryWrapper<BidResponse>()
             .eq(BidResponse::getInvitationId, invitationId)
@@ -287,10 +288,16 @@ public class BidInvitationService {
 
     /**
      * AC-TEAM-09：超管对挂起超 30 日的招标单直接指派（无需应标行）
-     * - 锁读招标单行（与 selectResponse/withdraw 互斥）
-     * - 状态置 SELECTED，selected_response_id=null（超管指派无具体应标行）
-     * - 写审计 action=admin_assign，operator=adminId
-     * 调用方需校验调用人为超管（controller 守卫 ipd:admin 全局权限）
+     * SEC-REV-BID-01：状态门禁 + 年龄判定 + targetPersonId 必填 + 通知对等。
+     *
+     * <ul>
+     *   <li>仅 EXPIRED 状态可被强制指派（避免在 OPEN/SELECTED 上覆盖正常流程）</li>
+     *   <li>挂起需 ≥ 30 日（expireAt 锚点；expireAt 缺失回退到 updateTime）</li>
+     *   <li>targetPersonId 必填（中标者）</li>
+     *   <li>通知对等：targetPersonId ⇒ BID_WON；其他 PENDING 应标者（若有）⇒ BID_LOST</li>
+     * </ul>
+     *
+     * 调用方需校验调用人为超管（controller 守卫 ipd:bid-invitation:admin-assign 注解 + IpdPermission.requireAdmin() 兜底）
      */
     @Transactional(rollbackFor = Exception.class)
     public BidInvitation adminAssign(Long id, Long targetPersonId, Long adminId) {
@@ -298,8 +305,21 @@ public class BidInvitationService {
         if (inv == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
-        // 不强制 status=EXPIRED：超管亦可在 OPEN 或 SELECTED 异常的极端场景下指派
-        // 实际"挂起超 30 日"判定在 controller 层做，service 仅执行指派动作
+        // Bug#4 高危：状态门禁 —— 防止 admin 在 OPEN/SELECTED 任意时刻强制指派覆盖正常流程
+        if (!"EXPIRED".equals(inv.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "admin-assign 仅适用于 EXPIRED 挂起超 30 日的招标单，当前状态: " + inv.getStatus());
+        }
+        // Bug#4 高危：年龄判定 —— 挂起 ≥ 30 日才有强制指派的业务理由
+        long ageMillis = ageOfInvitationMillis(inv);
+        if (ageMillis < ADMIN_ASSIGN_MIN_AGE_MILLIS) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "招标单挂起不足 30 日，禁止 admin-assign");
+        }
+        // Bug#4 高危：targetPersonId 必填 —— 服务端权威，避免 admin 把空指针写成中标人
+        if (targetPersonId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "targetPersonId 必填");
+        }
         Date now = new Date();
         inv.setStatus("SELECTED");
         inv.setUpdateTime(now);
@@ -309,22 +329,84 @@ public class BidInvitationService {
             .afterData("{\"targetPersonId\":" + targetPersonId + "}")
             .reason(inv.getTitle())
             .createTime(now).build());
+        // Bug#6 中危：兄弟路径门禁对等 —— 中标者 BID_WON；其他 PENDING 应标者 BID_LOST（保持与 selectResponse 一致语义）
+        if (notificationService != null) {
+            notificationService.publish(targetPersonId,
+                NotificationService.Types.BID_WON,
+                NotificationService.KIND_ACTION,
+                "bid_invitation", id,
+                "招标已指派给您",
+                "招标单「" + inv.getTitle() + "」已被管理员指派给您，请尽快承接。",
+                "/bid-invitations/" + id);
+            List<BidResponse> losers = bidResponseMapper.selectList(new LambdaQueryWrapper<BidResponse>()
+                .eq(BidResponse::getInvitationId, id)
+                .eq(BidResponse::getStatus, "PENDING")
+                .ne(BidResponse::getRdPmId, targetPersonId));
+            for (BidResponse loser : losers) {
+                if (loser.getRdPmId() == null) continue;
+                notificationService.publish(loser.getRdPmId(),
+                    NotificationService.Types.BID_LOST,
+                    NotificationService.KIND_ACTION,
+                    "bid_invitation", id,
+                    "招标已由管理员指派他人",
+                    "招标单「" + inv.getTitle() + "」已由管理员强制指派给其他人，本次落选。",
+                    "/bid-invitations/" + id);
+            }
+        }
         return inv;
     }
 
-    private static String escape(String s) {
+    /** Bug#4：admin-assign 最小挂起时长（30 天）。 */
+    static final long ADMIN_ASSIGN_MIN_AGE_MILLIS = 30L * 24 * 60 * 60 * 1000L;
+
+    /** Bug#4：挂起时长锚点 —— 优先 expireAt，缺失则回退到 updateTime。 */
+    private static long ageOfInvitationMillis(BidInvitation inv) {
+        if (inv.getExpireAt() != null) {
+            return System.currentTimeMillis() - inv.getExpireAt().getTime();
+        }
+        if (inv.getUpdateTime() != null) {
+            return System.currentTimeMillis() - inv.getUpdateTime().getTime();
+        }
+        return 0L;
+    }
+
+    /**
+     * Bug#5 中危：JSON 字符串转义 —— 控制字符全集（\n \r \t \b \f + U+0000..U+001F）。
+     * 旧实现仅处理 \\ 与 "，会把换行/制表等字符原样写入审计 afterData，导致 JSON 解析失败。
+     */
+    static String escape(String s) {
         if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        StringBuilder sb = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\' -> sb.append("\\\\");
+                case '"' -> sb.append("\\\"");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                case '\b' -> sb.append("\\b");
+                case '\f' -> sb.append("\\f");
+                default -> {
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+        return sb.toString();
     }
 
     private BidInvitation requireOpen(Long id) {
         // 锁定读（H-1）：遴选/发布/撤回在招标单行上串行化，防止并发 selectResponse 双中标
         BidInvitation inv = bidInvitationMapper.selectByIdForUpdate(id);
         if (inv == null) {
-            throw new IllegalArgumentException("招标单不存在: " + id);
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + id);
         }
         if (!"OPEN".equals(inv.getStatus())) {
-            throw new IllegalStateException("招标单状态非 OPEN，当前: " + inv.getStatus());
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "招标单状态非 OPEN，当前: " + inv.getStatus());
         }
         return inv;
     }
