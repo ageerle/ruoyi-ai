@@ -48,12 +48,17 @@ class StageActionServiceInstantiateBatchTest {
     private DeliverableMapper deliverableMapper;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private org.ruoyi.ipd.mapper.ProjectStageMapper projectStageMapper;
+    @Mock
+    private org.ruoyi.ipd.mapper.ProjectMapper projectMapper;
 
     private StageActionService service;
 
     @BeforeEach
     void setUp() {
-        service = new StageActionService(stageActionMapper, deliverableMapper, auditLogService);
+        service = new StageActionService(stageActionMapper, deliverableMapper, auditLogService,
+            projectStageMapper, projectMapper);
     }
 
     @Test

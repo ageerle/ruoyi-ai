@@ -84,10 +84,17 @@ class P131AcceptanceTest {
         assertThat(f.actions).allSatisfy(action -> {
             assertThat(action.getId()).isPositive();
             assertThat(action.getProjectId()).isEqualTo(13L);
-            assertThat(action.getStatus()).isEqualTo("NOT_STARTED");
+            ActionDef def = ActionCatalog.byCode(action.getActionCode());
+            boolean applicable = ActionCatalog.applicableTo(def, "HARDWARE", null);
+            assertThat(action.getStatus()).isEqualTo(applicable ? "NOT_STARTED" : "NA");
             assertThat(action.getCreateBy()).isEqualTo(7L);
             assertThat(action.getUpdateBy()).isEqualTo(7L);
         });
+        // HARDWARE + 无海外市场：SW / SOL(除V11) / OVERSEAS → NA；硬件专属仍 NOT_STARTED
+        assertThat(f.actions).filteredOn(a -> "NA".equals(a.getStatus()))
+            .extracting(StageAction::getActionCode)
+            .contains("P05", "D04", "V04", "P06", "D10", "V09", "C04", "V12")
+            .doesNotContain("D03", "D07", "V05", "V11");
         verify(f.actionMapper, times(69)).insert(any(StageAction.class));
     }
 
@@ -386,11 +393,13 @@ class P131AcceptanceTest {
                 stageIds.put(codes[i], stage.getId());
             }
             for (ActionDef def : ActionCatalog.ALL) {
-                String depth = "V11".equals(def.code()) && "SOLUTION".equals(projects.get(projectId).getTemplateType())
-                    ? "DEEP" : def.depth();
+                Project project = projects.get(projectId);
+                String depth = ActionCatalog.expectedDepth(def, project.getTemplateType());
+                boolean applicable = ActionCatalog.applicableTo(
+                    def, project.getTemplateType(), project.getTargetMarkets());
                 StageAction action = StageAction.builder().id(++nextActionId).projectId(projectId)
                     .stageId(stageIds.get(def.stage())).actionCode(def.code()).actionName(def.name())
-                    .ownerRole(def.ownerRole()).depth(depth).status("NOT_STARTED")
+                    .ownerRole(def.ownerRole()).depth(depth).status(applicable ? "NOT_STARTED" : "NA")
                     .isBlocking(def.blocking() ? "1" : "0").isBioFeature(def.bioFeature() ? "1" : "0").build();
                 action.setCreateBy(7L);
                 action.setUpdateBy(7L);

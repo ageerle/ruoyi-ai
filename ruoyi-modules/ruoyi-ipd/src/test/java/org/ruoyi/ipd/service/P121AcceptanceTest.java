@@ -36,13 +36,14 @@ class P121AcceptanceTest {
     @Mock private AuditLogService auditLogService;
     @Mock private GateEngine gateEngine;
     @Mock private ProjectBootstrapService projectBootstrapService;
+    @Mock private ProjectCertService projectCertService;
 
     private ProjectService service;
 
     @BeforeEach
     void setUp() {
         service = new ProjectService(projectMapper, productMapper, auditLogService,
-            gateEngine, projectBootstrapService, NoopTransactionManager.INSTANCE);
+            gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE);
     }
 
     private Product productOk() {

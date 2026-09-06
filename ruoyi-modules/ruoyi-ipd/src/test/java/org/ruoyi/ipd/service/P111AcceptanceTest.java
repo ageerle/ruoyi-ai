@@ -44,6 +44,8 @@ class P111AcceptanceTest {
     private GateEngine gateEngine;
     @Mock
     private ProjectBootstrapService projectBootstrapService;
+    @Mock
+    private ProjectCertService projectCertService;
 
     private ProductService productService;
     private ProjectService projectService;
@@ -53,7 +55,7 @@ class P111AcceptanceTest {
         productService = new ProductService(productMapper, projectMapper, auditLogService);
         projectService = new ProjectService(
             projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService,
-            NoopTransactionManager.INSTANCE);
+            projectCertService, NoopTransactionManager.INSTANCE);
     }
 
     private Product aliveProduct(Long id, String source, Long projectId) {

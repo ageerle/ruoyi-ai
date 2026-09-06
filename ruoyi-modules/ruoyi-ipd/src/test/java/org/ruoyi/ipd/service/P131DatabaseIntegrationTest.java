@@ -69,6 +69,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * P1-3.1：真实 MyBatis-Spring Mapper、MySQL 与业务服务的 Spring 事务代理集成。
@@ -433,7 +434,9 @@ class P131DatabaseIntegrationTest {
                 observed.set(true);
                 return null;
             }).when(audit).append(any(AuditLog.class));
-            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, NoopTransactionManager.INSTANCE));
+            ProjectCertService certs = mock(ProjectCertService.class);
+            when(certs.syncFromProject(any(), any())).thenReturn(0);
+            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
             Project result = service.create(request, OPERATOR);
             assertThat(result.getId()).isPositive();
             assertThat(observed.get()).isTrue();
@@ -461,7 +464,9 @@ class P131DatabaseIntegrationTest {
                 observed.set(true);
                 throw original;
             }).when(audit).append(any(AuditLog.class));
-            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, NoopTransactionManager.INSTANCE));
+            ProjectCertService certs = mock(ProjectCertService.class);
+            when(certs.syncFromProject(any(), any())).thenReturn(0);
+            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
             assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR)))).isSameAs(original);
             assertThat(observed.get()).isTrue();
             assertThat(request.getId()).isPositive();
@@ -476,6 +481,7 @@ class P131DatabaseIntegrationTest {
     }
 
     private void assertCompleteGraph(long project, String template) throws Exception {
+        String markets = (String) scalar("SELECT target_markets FROM projects WHERE id=?", project);
         List<Map<String, Object>> stageRows = rows("SELECT * FROM project_stages WHERE project_id=? ORDER BY sort_order,id", project);
         List<Map<String, Object>> actionRows = rows("SELECT * FROM stage_actions WHERE project_id=? ORDER BY action_code,id", project);
         assertThat(stageRows).hasSize(6);
@@ -509,11 +515,18 @@ class P131DatabaseIntegrationTest {
             assertThat(((Number) row.get("stage_id")).longValue()).isEqualTo(stageByCode.get(expected.stage()));
             assertThat(row.get("action_name")).isEqualTo(expected.name());
             assertThat(row.get("owner_role")).isEqualTo(expected.ownerRole());
-            String expectedDepth = "SOLUTION".equals(template) && "V11".equals(code) ? "DEEP" : expected.depth();
+            String expectedDepth = ActionCatalog.expectedDepth(expected, template);
             assertThat(row.get("depth")).as(code + " 模板深度").isEqualTo(expectedDepth);
             assertThat(row.get("is_blocking")).isEqualTo(expected.blocking() ? "1" : "0");
             assertThat(row.get("is_bio_feature")).isEqualTo(expected.bioFeature() ? "1" : "0");
-            assertInitialMetadata(row, project);
+            boolean applicable = ActionCatalog.applicableTo(expected, template, markets);
+            assertThat(row.get("status")).as(code + " 模板适用性").isEqualTo(applicable ? "NOT_STARTED" : "NA");
+            assertThat(((Number) row.get("project_id")).longValue()).isEqualTo(project);
+            assertThat(row.get("tenant_id")).isEqualTo("000000");
+            assertThat(row.get("del_flag")).isEqualTo("0");
+            assertThat(((Number) row.get("create_by")).longValue()).isEqualTo(OPERATOR);
+            assertThat(((Number) row.get("update_by")).longValue()).isEqualTo(OPERATOR);
+            assertThat(row.get("create_time")).isNotNull();
             if ("DEEP".equals(row.get("depth"))) deep++;
         }
         assertThat(found).containsExactlyInAnyOrderElementsOf(definitions.keySet());

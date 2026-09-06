@@ -47,13 +47,15 @@ class ProjectServiceConcurrencyTest {
     private GateEngine gateEngine;
     @Mock
     private ProjectBootstrapService projectBootstrapService;
+    @Mock
+    private ProjectCertService projectCertService;
 
     private ProjectService service;
 
     @BeforeEach
     void setUp() {
         service = new ProjectService(projectMapper, productMapper, auditLogService, gateEngine,
-            projectBootstrapService, NoopTransactionManager.INSTANCE);
+            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE);
     }
 
     @Test

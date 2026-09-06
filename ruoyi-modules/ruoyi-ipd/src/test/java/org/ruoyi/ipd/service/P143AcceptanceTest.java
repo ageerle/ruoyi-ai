@@ -8,8 +8,10 @@ import org.mockito.ArgumentCaptor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Deliverable;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 
 import java.util.Date;
@@ -46,7 +48,11 @@ class P143AcceptanceTest {
         deliverableMapper = mock(DeliverableMapper.class);
         auditLogService = mock(AuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
-        service = new StageActionService(actionMapper, deliverableMapper, auditLogService);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        when(projectMapper.selectById(any())).thenReturn(
+            Project.builder().id(100L).status("ACTIVE").delFlag("0").build());
+        service = new StageActionService(actionMapper, deliverableMapper, auditLogService,
+            mock(org.ruoyi.ipd.mapper.ProjectStageMapper.class), projectMapper);
     }
 
     private StageAction seedDeep(String code, String status) {

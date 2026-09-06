@@ -26,7 +26,10 @@ import org.ruoyi.ipd.dto.GateElementCreateReq;
 import org.ruoyi.ipd.dto.ProjectCreateReq;
 import org.ruoyi.ipd.service.CertTemplateService;
 import org.ruoyi.ipd.service.GateElementService;
+import org.ruoyi.ipd.service.GateEngine;
 import org.ruoyi.ipd.service.IpdAuthService;
+import org.ruoyi.ipd.service.LegacyImportService;
+import org.ruoyi.ipd.service.ProjectCertService;
 import org.ruoyi.ipd.service.ProjectService;
 import org.ruoyi.ipd.service.StageActionService;
 import org.springframework.core.annotation.AnnotatedElementUtils;
@@ -78,6 +81,12 @@ class Sec01AcceptanceTest {
     @Mock
     private StageActionService stageActionService;
     @Mock
+    private GateEngine gateEngine;
+    @Mock
+    private ProjectCertService projectCertService;
+    @Mock
+    private LegacyImportService legacyImportService;
+    @Mock
     private CertTemplateService certTemplateService;
     @Mock
     private GateElementService gateElementService;
@@ -91,7 +100,7 @@ class Sec01AcceptanceTest {
     @BeforeEach
     void setUp() {
         ipdPermission = new IpdPermission(session, authService);
-        projectController = new ProjectController(projectService, ipdPermission);
+        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, ipdPermission);
         stageActionController = new StageActionController(stageActionService, ipdPermission);
         certTemplateController = new CertTemplateController(certTemplateService, ipdPermission);
         gateElementController = new GateElementController(gateElementService, ipdPermission);

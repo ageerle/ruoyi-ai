@@ -8,8 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.Deliverable;
+import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.domain.ProjectStage;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
 import org.ruoyi.ipd.service.AuditLogService;
@@ -34,6 +38,7 @@ class StageActionServiceTest {
     private StageActionMapper actionMapper;
     private DeliverableMapper deliverableMapper;
     private AuditLogService auditLogService;
+    private ProjectStageMapper projectStageMapper;
     private StageActionService service;
 
     @BeforeEach
@@ -41,8 +46,13 @@ class StageActionServiceTest {
         actionMapper = mock(StageActionMapper.class);
         deliverableMapper = mock(DeliverableMapper.class);
         auditLogService = mock(AuditLogService.class);
+        projectStageMapper = mock(ProjectStageMapper.class);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        when(projectMapper.selectById(any())).thenReturn(
+            Project.builder().id(100L).status("ACTIVE").delFlag("0").build());
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
-        service = new StageActionService(actionMapper, deliverableMapper, auditLogService);
+        service = new StageActionService(actionMapper, deliverableMapper, auditLogService,
+            projectStageMapper, projectMapper);
     }
 
     private StageAction seed(String code, String depth) {
@@ -173,9 +183,11 @@ class StageActionServiceTest {
     }
 
     @Test
-    @DisplayName("C12 强制挂载联动：涉生物项目且 C12 缺失 → 自动补挂（阻断深管）")
+    @DisplayName("C12 强制挂载联动：涉生物项目且 C12 缺失 → 自动补挂 CONCEPT stageId")
     void c12MountWhenBio() {
         when(actionMapper.selectCount(any())).thenReturn(1L, 0L);
+        when(projectStageMapper.selectList(any())).thenReturn(List.of(
+            ProjectStage.builder().id(9001L).projectId(100L).stageCode("CONCEPT").build()));
         when(actionMapper.insert(any(StageAction.class))).thenAnswer(inv -> {
             StageAction a = inv.getArgument(0);
             a.setId(55L);
@@ -183,7 +195,9 @@ class StageActionServiceTest {
         });
         assertThat(service.ensureBioComplianceMount(100L)).isEqualTo(1);
         Mockito.verify(actionMapper).insert(Mockito.argThat((StageAction a) ->
-            "C12".equals(a.getActionCode()) && "1".equals(a.getIsBlocking())));
+            "C12".equals(a.getActionCode())
+                && "1".equals(a.getIsBlocking())
+                && Long.valueOf(9001L).equals(a.getStageId())));
     }
 
     @Test
@@ -194,5 +208,19 @@ class StageActionServiceTest {
         Mockito.verify(actionMapper, Mockito.never()).insert(org.mockito.ArgumentMatchers.<StageAction>any());
         when(actionMapper.selectCount(any())).thenReturn(1L, 1L);
         assertThat(service.ensureBioComplianceMount(100L)).isZero();
+    }
+
+    @Test
+    @DisplayName("AC-PROD-13：涉生物下 C12 不可标记 NA")
+    void c12CannotNaWhenBio() {
+        StageAction c12 = StageAction.builder()
+            .id(1L).projectId(100L).stageId(10L).actionCode("C12").actionName("生物特征数据合规审查")
+            .ownerRole("MARKET_PM").depth("DEEP").status("NOT_STARTED")
+            .isBlocking("1").isBioFeature("1").build();
+        when(actionMapper.selectById(1L)).thenReturn(c12);
+        when(actionMapper.selectCount(any())).thenReturn(1L);
+        assertThatThrownBy(() -> service.transit(1L, "NA", "跳过", "op"))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("不可取消");
     }
 }
