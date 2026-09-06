@@ -21,6 +21,7 @@ import org.ruoyi.ipd.domain.GateElementResult;
 import org.ruoyi.ipd.mapper.GateElementMapper;
 import org.ruoyi.ipd.mapper.GateElementResultMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.mapper.OssFileMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
 import java.util.Date;
@@ -64,6 +65,8 @@ class P253AcceptanceTest {
     private AuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private OssFileMapper ossFileMapper;
 
     private GateElementResultService service;
 
@@ -89,7 +92,7 @@ class P253AcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new GateElementResultService(gateMapper, elementMapper, resultMapper,
-            systemConfigService, auditLogService, notificationService);
+            systemConfigService, auditLogService, notificationService, ossFileMapper);
         yesterday = new Date(System.currentTimeMillis() - 24L * 3600 * 1000);
         tomorrow = new Date(System.currentTimeMillis() + 24L * 3600 * 1000);
         g1 = gate(501L, "G1");
@@ -103,6 +106,13 @@ class P253AcceptanceTest {
         lenient().when(elementMapper.selectList(any())).thenReturn(List.of(g2e1, g2e2));
         lenient().when(gateMapper.selectList(any())).thenReturn(List.of(g1));
         lenient().when(resultMapper.selectList(any())).thenReturn(List.of());
+        // [SEC-FIX-HIGH-1.1-FOLLOWUP] oss mocks
+        org.ruoyi.ipd.domain.OssFileEntity matOss = new org.ruoyi.ipd.domain.OssFileEntity();
+        matOss.setOssId(9001L); matOss.setUrl("https://oss.local/materials/g2.pdf");
+        org.ruoyi.ipd.domain.OssFileEntity minOss = new org.ruoyi.ipd.domain.OssFileEntity();
+        minOss.setOssId(9002L); minOss.setUrl("https://oss.local/minutes/g2.pdf");
+        lenient().when(ossFileMapper.selectById(9001L)).thenReturn(matOss);
+        lenient().when(ossFileMapper.selectById(9002L)).thenReturn(minOss);
     }
 
     private Gate gate(Long id, String code) {
@@ -267,7 +277,7 @@ class P253AcceptanceTest {
             .thenReturn(List.of(judgedRow(502L, 701L, "PASS"), judgedRow(502L, 702L, "PASS")))
             .thenReturn(List.of(overdue));
 
-        assertThatThrownBy(() -> service.submit(502L, "https://oss.local/materials/g2.pdf", "https://oss.local/minutes/g2.pdf", PM))
+        assertThatThrownBy(() -> service.submit(502L, 9001L, 9002L, PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("逾期未关闭的条件遗留");
         assertThat(g2.getStartedAt()).as("被阻断的 Gate 不应置 startedAt").isNull();
@@ -285,7 +295,7 @@ class P253AcceptanceTest {
             .thenReturn(List.of(judgedRow(502L, 701L, "PASS"), judgedRow(502L, 702L, "PASS")))
             .thenReturn(List.of());
 
-        Gate submitted = service.submit(502L, "https://oss.local/materials/g2.pdf", "https://oss.local/minutes/g2.pdf", PM);
+        Gate submitted = service.submit(502L, 9001L, 9002L, PM);
 
         assertThat(submitted.getStartedAt()).isNotNull();
     }
@@ -312,7 +322,7 @@ class P253AcceptanceTest {
         assertThat((Boolean) legacy.get(0).get("overdue")).isTrue();
 
         // 阻断同样不依赖要素存在（requireNoOverdueLegacy 不查要素表）
-        assertThatThrownBy(() -> service.submit(502L, "https://oss.local/materials/g2.pdf", "https://oss.local/minutes/g2.pdf", PM))
+        assertThatThrownBy(() -> service.submit(502L, 9001L, 9002L, PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("逾期未关闭的条件遗留");
     }

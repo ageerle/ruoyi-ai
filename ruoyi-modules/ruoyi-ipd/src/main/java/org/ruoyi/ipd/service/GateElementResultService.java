@@ -53,6 +53,8 @@ public class GateElementResultService {
     private final SystemConfigService systemConfigService;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    /** [SEC-FIX-HIGH-1.1-FOLLOWUP] 注入本地 OssFileMapper 解析 ossId → URL（IPD 模块不依赖 system 模块）。 */
+    private final org.ruoyi.ipd.mapper.OssFileMapper ossFileMapper;
 
     /** 要素清单（含当前判定）：33 要素按 Gate 展示，未判定项 result=null 供前端高亮缺失。 */
     public List<Map<String, Object>> checklist(Long gateId) {
@@ -197,20 +199,16 @@ public class GateElementResultService {
      * 强制输出物（评审材料 + 会议纪要）+ 冻结要素定义快照。
      */
     @Transactional(rollbackFor = Exception.class)
-    public Gate submit(Long gateId, String materialsUrl, String meetingMinutesUrl, IpdActor operator) {
+    public Gate submit(Long gateId, Long materialsOssId, Long meetingMinutesOssId, IpdActor operator) {
         Gate gate = requireGate(gateId);
         if (!"PENDING".equals(gate.getStatus())) {
             throw new ServiceException("Gate 已终态，不可重复提交: " + gate.getStatus());
         }
-        // [SEC-FIX-HIGH-1.1] 强制输出物守卫——评审材料 + 会议纪要 URL 必填
-        if (materialsUrl == null || materialsUrl.isBlank()) {
-            throw new ServiceException("评审材料 URL 必填（[SEC-FIX-HIGH-1.1] Gate 强制输出物）");
-        }
-        if (meetingMinutesUrl == null || meetingMinutesUrl.isBlank()) {
-            throw new ServiceException("会议纪要 URL 必填（[SEC-FIX-HIGH-1.1] Gate 强制输出物）");
-        }
-        if (materialsUrl.length() > 500 || meetingMinutesUrl.length() > 500) {
-            throw new ServiceException("评审材料/会议纪要 URL 长度超 500（[SEC-FIX-HIGH-1.1]）");
+        // [SEC-FIX-HIGH-1.1-FOLLOWUP] ossId 守卫 + 解析为 URL（防 open-redirect/SSRF）
+        String materialsUrl = resolveOssUrl(materialsOssId, "评审材料");
+        String meetingMinutesUrl = resolveOssUrl(meetingMinutesOssId, "会议纪要");
+        if (materialsUrl == null || meetingMinutesUrl == null) {
+            throw new ServiceException("OSS 文件不存在或无权访问（[SEC-FIX-HIGH-1.1-FOLLOWUP]）");
         }
         if (gate.getStartedAt() != null) {
             throw new ServiceException("已提交，等待签署（双签流转归 P2-5.2）");
@@ -268,10 +266,38 @@ public class GateElementResultService {
             .action("GATE_SUBMIT")
             .entityType("gates")
             .entityId(gate.getId())
-            .reason("gateCode=" + gate.getGateCode() + " elements=" + snapshot.size())
+            .reason("gateCode=" + gate.getGateCode() + " elements=" + snapshot.size()
+                + " materialsOssId=" + materialsOssId + " meetingMinutesOssId=" + meetingMinutesOssId
+                + " materialsUrlLen=" + materialsUrl.length() + " meetingMinutesUrlLen=" + meetingMinutesUrl.length())
+            .afterData(AuditEventData.json(
+                "gateCode", gate.getGateCode(),
+                "elements", snapshot.size(),
+                "materialsUrl", materialsUrl,
+                "meetingMinutesUrl", meetingMinutesUrl,
+                "materialsUrlLen", materialsUrl.length(),
+                "meetingMinutesUrlLen", meetingMinutesUrl.length()))
             .createTime(new Date())
             .build());
         return gate;
+    }
+
+    /**
+     * [SEC-FIX-HIGH-1.1-FOLLOWUP] 解析 ossId 为 URL——杜绝任意外部 URL（防 open-redirect/SSRF）。
+     * 入参校验：ossId > 0；OSS 文件不存在/无权访问返回 null 让上层抛错。
+     */
+    private String resolveOssUrl(Long ossId, String label) {
+        if (ossId == null || ossId <= 0) {
+            throw new ServiceException(label + " ossId 非法（[SEC-FIX-HIGH-1.1-FOLLOWUP]）：" + ossId);
+        }
+        org.ruoyi.ipd.domain.OssFileEntity oss = ossFileMapper.selectById(ossId);
+        if (oss == null || oss.getUrl() == null || oss.getUrl().isBlank()) {
+            return null;
+        }
+        String url = oss.getUrl();
+        if (url.length() > 500) {
+            throw new ServiceException(label + " URL 长度超 500（[SEC-FIX-HIGH-1.1-FOLLOWUP]）");
+        }
+        return url;
     }
 
     /** 遗留清单（含已关与未关）：遗留查询仅依赖本表，要素停用/删除不消除遗留（AC-GATE-17 防线）。 */

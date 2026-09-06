@@ -121,23 +121,22 @@ public class GateElementResultController {
     /**
      * 提交评审：[SEC-FIX-HIGH-1.1] 强制输出物守卫——
      * 全要素已判 + 否决项阻断（AC-GATE-15/19/20）+ 要素定义快照冻结 + 评审材料 + 会议纪要。
-     * body 必填 materialsUrl + meetingMinutesUrl（否则 40001 PARAM_INVALID）。
+     * <p>[SEC-FIX-HIGH-1.1-FOLLOWUP] body 必填 materialsOssId + meetingMinutesOssId（Long）——
+     * 由 ISysOssService.getById 解析 URL，**禁止任意外部 URL**（防 open-redirect/SSRF）。
      */
     @PostMapping("/submit")
     public ApiV1Response<GateView> submit(@PathVariable Long gateId,
                                           @Valid @RequestBody MandatoryOutputsReq req) {
         IpdActor actor = permission.requireInternal();
         return ApiV1Response.ok(GateView.from(
-            service.submit(gateId, req.materialsUrl(), req.meetingMinutesUrl(), actor)));
+            service.submit(gateId, req.materialsOssId(), req.meetingMinutesOssId(), actor)));
     }
 
-    /** 强制输出物请求体（[SEC-FIX-HIGH-1.1]）。 */
+    /** 强制输出物请求体（[SEC-FIX-HIGH-1.1-FOLLOWUP]：使用 ossId 而非 URL 防 open-redirect）。 */
     public record MandatoryOutputsReq(
-        @jakarta.validation.constraints.NotBlank(message = "materialsUrl 不能为空")
-        @jakarta.validation.constraints.Size(max = 500)
-        String materialsUrl,
-        @jakarta.validation.constraints.NotBlank(message = "meetingMinutesUrl 不能为空")
-        @jakarta.validation.constraints.Size(max = 500)
-        String meetingMinutesUrl
+        @jakarta.validation.constraints.NotNull(message = "materialsOssId 不能为空")
+        Long materialsOssId,
+        @jakarta.validation.constraints.NotNull(message = "meetingMinutesOssId 不能为空")
+        Long meetingMinutesOssId
     ) {}
 }

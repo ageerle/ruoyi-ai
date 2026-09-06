@@ -19,6 +19,7 @@ import org.ruoyi.ipd.domain.GateElementResult;
 import org.ruoyi.ipd.mapper.GateElementMapper;
 import org.ruoyi.ipd.mapper.GateElementResultMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.mapper.OssFileMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
 import java.util.Date;
@@ -64,6 +65,8 @@ class P251AcceptanceTest {
     private AuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private OssFileMapper ossFileMapper;
 
     private GateElementResultService service;
 
@@ -83,7 +86,7 @@ class P251AcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new GateElementResultService(gateMapper, elementMapper, resultMapper,
-            systemConfigService, auditLogService, notificationService);
+            systemConfigService, auditLogService, notificationService, ossFileMapper);
         gate = new Gate();
         gate.setId(501L);
         gate.setProjectId(11L);
@@ -98,6 +101,12 @@ class P251AcceptanceTest {
         lenient().when(gateMapper.selectList(any())).thenReturn(List.of());
         lenient().when(resultMapper.selectList(any())).thenReturn(List.of());
         lenient().when(systemConfigService.getIntValue("gate.g1.minCustomerVerifications", 5)).thenReturn(5);
+        org.ruoyi.ipd.domain.OssFileEntity matOss = new org.ruoyi.ipd.domain.OssFileEntity();
+        matOss.setOssId(9001L); matOss.setUrl("https://oss.local/materials/test.pdf");
+        org.ruoyi.ipd.domain.OssFileEntity minOss = new org.ruoyi.ipd.domain.OssFileEntity();
+        minOss.setOssId(9002L); minOss.setUrl("https://oss.local/minutes/test.pdf");
+        lenient().when(ossFileMapper.selectById(9001L)).thenReturn(matOss);
+        lenient().when(ossFileMapper.selectById(9002L)).thenReturn(minOss);
     }
 
     private GateElement element(Long id, String gateCode, String code, String isVeto) {
@@ -203,7 +212,7 @@ class P251AcceptanceTest {
     @Test
     @DisplayName("提交阻断：适用要素未全判 ⇒ 拒绝并列缺失项")
     void submit_missingJudgements_rejected() {
-        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
+        assertThatThrownBy(() -> service.submit(501L, 9001L, 9002L, PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("尚未判定")
             .hasMessageContaining("G1-1");
@@ -217,7 +226,7 @@ class P251AcceptanceTest {
                    judged(602L, "PASS", null),
                    judged(603L, "PASS", null));
 
-        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
+        assertThatThrownBy(() -> service.submit(501L, 9001L, 9002L, PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("命中否决项")
             .hasMessageContaining("G1-2");
@@ -230,7 +239,7 @@ class P251AcceptanceTest {
                    judged(602L, "PASS", null),
                    judged(603L, "FAIL", null));  // 普通要素 FAIL 无证据
 
-        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
+        assertThatThrownBy(() -> service.submit(501L, 9001L, 9002L, PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("缺证据");
     }
@@ -242,7 +251,7 @@ class P251AcceptanceTest {
                    judged(602L, "PASS", null),
                    judged(603L, "CONDITIONAL", null));
 
-        Gate submitted = service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM);
+        Gate submitted = service.submit(501L, 9001L, 9002L, PM);
 
         assertThat(submitted.getStartedAt()).isNotNull();
         assertThat(submitted.getElementSnapshot()).contains("G1-1").contains("G1-3").contains("CONDITIONAL");
@@ -255,7 +264,7 @@ class P251AcceptanceTest {
     void submit_twice_rejected() {
         gate.setStartedAt(new java.util.Date());
 
-        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
+        assertThatThrownBy(() -> service.submit(501L, 9001L, 9002L, PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("等待签署");
     }
