@@ -8,6 +8,7 @@ import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,12 @@ public class LaunchDateChangeService {
     public static final String ACTION_REJECT = "LAUNCH_DATE_REJECT";
 
     private static final Set<String> PROPOSER_ROLES = Set.of("MARKET_PM", "RD_PM", "SUPER_ADMIN");
+    /**
+     * 第二签角色白名单。不等于 {@link #PROPOSER_ROLES} 的隐含前提：
+     * {@code IpdPermission.INTERNAL_ROLES} 还含 GROUP_LEADER（IpdPermission:75），
+     * 不加白名单则组长可在同组内替他方补第二签。
+     */
+    private static final Set<String> CONFIRMER_ROLES = Set.of("MARKET_PM", "RD_PM", "SUPER_ADMIN");
     private static final String SUPER_ADMIN = "SUPER_ADMIN";
 
     private final LaunchDateChangeRequestMapper requestMapper;
@@ -78,7 +85,16 @@ public class LaunchDateChangeService {
             .delFlag("0")
             .build();
         req.setCreateTime(new Date());
-        requestMapper.insert(req);
+        try {
+            requestMapper.insert(req);
+        } catch (DuplicateKeyException ex) {
+            // P1（owner 2026-09-05 项1a）：上面的 selectCount 预检与 insert 不在同一原子临界区，
+            // 并发提议会双双通过预检 → 同一项目出现两条 PENDING_SECOND。
+            // DB 侧兜底：uk_ldcr_pending_project（“部分唯一索引”的 MySQL 生成列等价实现，见
+            // docs/script/sql/update/2026-09-05-ipd-launch-date-pending-unique.sql）。
+            // 预检保留：为了让正常串行路径仍返回可读的业务错而非依赖异常；两者必须同文案。
+            throw new ServiceException("该项目已有待第二签确认的上市日期变更申请");
+        }
         audit(proposerId, ACTION_PROPOSE, req.getId(),
             "project:" + projectId + " date:" + proposedDate + " " + reason.trim());
         return req;
@@ -111,28 +127,41 @@ public class LaunchDateChangeService {
         if (confirmerId.equals(req.getProposerId())) {
             throw new ServiceException("双签须由不同人员完成（AC-INC-33）");
         }
+        // P1（owner 2026-09-05 项1b）：第二签角色白名单，fail-closed。
+        // 旧实现只在「两侧都非超管且角色相同」时拒绝，且因 `confirmerRole != null &&` 短路，
+        // confirmerRole==null 时整条判定不成立而直接放行；GROUP_LEADER 这类不在声明集内的
+        // 内部角色也能补签——抛错文案写的「市场PM↔研发PM 或超管」与实际执法不一致。
+        if (confirmerRole == null || !CONFIRMER_ROLES.contains(confirmerRole)) {
+            throw new ServiceException("仅市场PM/研发PM/超管可完成上市日期变更第二签");
+        }
         // R8X-2 P0-1：横向越权防护——确认人必须归属同一项目主组（SUPER_ADMIN 豁免）
         Project project = requireWritableProject(req.getProjectId());
         assertSameGroup(confirmerRole, confirmerGroupId, project.getMainGroupId(), "确认人");
         if (!SUPER_ADMIN.equals(confirmerRole) && !SUPER_ADMIN.equals(req.getProposerRole())
-            && confirmerRole != null && confirmerRole.equals(req.getProposerRole())) {
+            && confirmerRole.equals(req.getProposerRole())) {
             throw new ServiceException("第二签须为互补角色（市场PM↔研发PM）或超管");
         }
+        String finalStatus = approve ? LaunchDateChangeRequest.ST_CONFIRMED : LaunchDateChangeRequest.ST_REJECTED;
+        req.setStatus(finalStatus);
         req.setConfirmerId(confirmerId);
         req.setConfirmerRole(confirmerRole);
         req.setConfirmedAt(new Date());
         req.setDecision(approve ? "APPROVE" : "REJECT");
         req.setOpinion(opinion);
+        // P1（owner 2026-09-05 项1b）：状态迁移的归属权由 @Version 乐观锁担保（同 P1-4.3 / R8-P0-9 惯例）。
+        // 旧实现丢弃 updateById 返回值：两个确认人并发时都读到 PENDING_SECOND，双方都写成功
+        // → 同一申请留下两条 ACTION_CONFIRM 审计且 confirmer 字段被后写者覆盖，第二签到底是谁做的已不可追溯。
+        // 硬前置：未 apply docs/script/sql/update/2026-09-05-ipd-launch-date-pending-unique.sql 的 version 列前，
+        // selectById 读不到 version → 拦截器跳过版本号条件，本判定退化为恒不命中（仅保留旧行为，不会误拒）。
+        if (requestMapper.updateById(req) == 0) {
+            throw new ServiceException("该上市日期变更申请已被并发处理，本次第二签未生效");
+        }
         if (!approve) {
-            req.setStatus(LaunchDateChangeRequest.ST_REJECTED);
-            requestMapper.updateById(req);
             audit(confirmerId, ACTION_REJECT, req.getId(), opinion);
             return req;
         }
         project.setLaunchDate(req.getProposedLaunchDate());
         projectMapper.updateById(project);
-        req.setStatus(LaunchDateChangeRequest.ST_CONFIRMED);
-        requestMapper.updateById(req);
         audit(confirmerId, ACTION_CONFIRM, req.getId(),
             "project:" + project.getId() + " launchDate:" + req.getProposedLaunchDate());
         return req;
@@ -152,8 +181,11 @@ public class LaunchDateChangeService {
 
     /**
      * R8-AUTO-5:删除 dead code `assertNoDirectLaunchDateMutation`（永远抛异常无 caller）。
-     * 后台安全审查 fail-open / control-regression 建议：要么删除（避免误用），要么改成真正守卫。
-     * 本 commit 删除——项目创建 launchDate 写入由后续 P0-2 (ProjectService groupId 校验) 兜底。
+     * 注意：当时注释声称「项目创建 launchDate 写入由后续 P0-2 (ProjectService groupId 校验) 兜底」
+     * ——该声明不成立：groupId 校验只管横向越权，不覆盖 launch_date 写入语义。真实守住此不变量的
+     * 只有两处：①本类 secondDecision（双签后写回）；②ProjectCreateReq.toEntity → ProjectService.create
+     * （仅 INSERT，属 BR-IPD-08「L08 录入」路径，不算修改）。已改由 LaunchDateDualSignGuardAcceptanceTest
+     * 的静态守卫用例钉住，不得再靠注释口头兜底（owner 2026-09-05 项1c）。
      */
 
     private Project requireWritableProject(Long projectId) {

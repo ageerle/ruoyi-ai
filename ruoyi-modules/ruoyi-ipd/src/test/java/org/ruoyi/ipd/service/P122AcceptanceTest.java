@@ -49,9 +49,15 @@ class P122AcceptanceTest {
             launchDateChangeRequestMapper, projectMapper, auditLogService);
     }
 
+    /**
+     * 主组必须与下文传入的 actorGroupId(=70L) 一致：a87293f6（R8X-CONT-1 P0-1）把
+     * assertSameGroup 提到了 DRAFT/状态等既有校验之前，fixture 不设 mainGroupId 会先撞
+     * 「提议人必须归属项目主组」而永远到不了本卡要验的断言（2026-09-05 实测 3/3 红）。
+     * 只补 fixture，不动任何断言。
+     */
     private Project activeProject() {
         return Project.builder().id(70L).name("P122").status("ACTIVE").delFlag("0")
-            .currentStage("VALID").launchDate(null).build();
+            .currentStage("VALID").mainGroupId(70L).launchDate(null).build();
     }
 
     @Test
@@ -99,7 +105,8 @@ class P122AcceptanceTest {
             .targetChannelCount(2).targetNps(60).targetSceneCount(2).build(), 70L, 1L, "MARKET_PM");
         assertThat(draft.getTargetSalesAmount()).isEqualByComparingTo("200");
 
-        Project active = Project.builder().id(72L).status("ACTIVE").delFlag("0").name("a").build();
+        Project active = Project.builder().id(72L).status("ACTIVE").delFlag("0").name("a")
+            .mainGroupId(1L).build();
         when(projectMapper.selectById(72L)).thenReturn(active);
         assertThatThrownBy(() -> projectService.updateBaselines(72L, Project.builder()
             .targetSalesAmount(new BigDecimal("9")).build(), 1L, 1L, "MARKET_PM"))
@@ -111,7 +118,7 @@ class P122AcceptanceTest {
     @DisplayName("暂停/归档禁止推进阶段")
     void suspendedBlocksAdvance() {
         Project suspended = Project.builder().id(73L).status("SUSPENDED").delFlag("0")
-            .currentStage("CONCEPT").name("s").build();
+            .currentStage("CONCEPT").name("s").mainGroupId(1L).build();
         when(projectMapper.selectById(73L)).thenReturn(suspended);
         assertThatThrownBy(() -> projectService.advanceStage(73L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)

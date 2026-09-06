@@ -68,7 +68,7 @@ public class GateEngine {
                 continue;
             }
             if (!"DONE".equals(action.getStatus()) && !"NA".equals(action.getStatus())
-                && !LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark())) {
+                && !historyExempt(project, action)) {
                 unfinished.add(code + " " + action.getActionName());
             }
         }
@@ -106,11 +106,14 @@ public class GateEngine {
                     "必做未实例化；来源=" + sourceLabel(level, code)));
                 continue;
             }
-            boolean ok = "DONE".equals(action.getStatus()) || "NA".equals(action.getStatus())
-                || LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark());
+            boolean exempt = historyExempt(project, action);
+            boolean ok = "DONE".equals(action.getStatus()) || "NA".equals(action.getStatus()) || exempt;
             String reason;
-            if (LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark())) {
+            if (LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark()) && exempt) {
                 reason = "历史缺失（BR-PROD-03）；来源=" + sourceLabel(level, code);
+            } else if (LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark())) {
+                reason = "历史缺失标记不在豁免范围（动作阶段不早于申报阶段 "
+                    + project.getDeclaredStage() + "），按未完成处理；来源=" + sourceLabel(level, code);
             } else if (ok) {
                 reason = "已满足（" + action.getStatus() + "）；来源=" + sourceLabel(level, code);
             } else {
@@ -119,6 +122,57 @@ public class GateEngine {
             items.add(new GateChecklistItem(code, def.name(), st, action.getStatus(), ok, reason));
         }
         return new GateChecklistView(project.getId(), level, st, configVersion, items);
+    }
+
+    /**
+     * P1（owner 2026-09-05 指令项1d）：HISTORICAL_MISSING 的豁免范围收窄。
+     *
+     * <p>BR-PROD-03 的原始语义是「legacy 导入时，<b>申报阶段之前</b>的动作确实没在本系统做过，
+     * 允许以历史缺失标记替代 DONE」。而 {@code LegacyImportService.markPastStages} 也只对
+     * {@code isStageBefore(def.stage(), declared)} 成立的动作打这个标记。
+     *
+     * <p>但门禁侧此前<b>只认标志位、不认它是否还在申报范围内</b>：一旦有行被（误）打上
+     * HISTORICAL_MISSING——包括申报阶段之后才该做的动作、以及非 legacy 项目（declaredStage 为空）
+     * 的行——阻断就永久失效，等于给一个字符串开了免检通道。
+     *
+     * <p>现改为由权威事实（项目申报阶段 + 目录中动作所属阶段）反推证明，与打标记侧同一判据：
+     * <ul>
+     *   <li>标志位不是 HISTORICAL_MISSING → 不豁免（不变）</li>
+     *   <li>declaredStage 为空/空白（非 legacy 项目）→ 不豁免，fail-closed</li>
+     *   <li>动作阶段不早于申报阶段 → 不豁免（本卡新增的可拦截面）</li>
+     * </ul>
+     *
+     * <p>诚实边界：本改动是<b>纵深防御收窄</b>而非已复现的线上缺陷——走正常 legacy 导入链路时
+     * 打标记的范围与豁免范围当前一致，因此 {@link #check} 的 MISSING 分支在生产不可达（与 O1 同族）。
+     * 真正的差别在直接写库 / 数据修复 / 未来新增打标记入口时才会暴露。
+     *
+     * @param project 项目（取 declaredStage）
+     * @param action  阶段动作行
+     * @return true 仅当该行的历史缺失标记落在申报范围内
+     */
+    private boolean historyExempt(Project project, StageAction action) {
+        if (!LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark())) {
+            return false;
+        }
+        String declared = project == null ? null : project.getDeclaredStage();
+        if (declared == null || declared.isBlank()) {
+            return false;
+        }
+        ActionDef def = findDefOrNull(action.getActionCode());
+        return def != null && LegacyImportService.isStageBefore(def.stage(), declared);
+    }
+
+    /**
+     * 目录定义的宽容查找：未知编码返回 null 而非抛 {@link ActionCatalog#byCode} 的
+     * IllegalArgumentException。这里必须宽容——未知码本就该走「未完成」分支被阻断，
+     * 不该在豁免判定阶段把整个门禁调用炸掉。
+     */
+    private static ActionDef findDefOrNull(String code) {
+        String resolved = ActionCatalog.resolveCode(code);
+        return ActionCatalog.ALL.stream()
+            .filter(a -> a.code().equals(resolved))
+            .findFirst()
+            .orElse(null);
     }
 
     /**

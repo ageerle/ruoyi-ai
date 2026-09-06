@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -78,4 +79,13 @@ public class LaunchDateChangeRequest extends BaseEntity {
 
     @TableField("remark")
     private String remark;
+
+    /**
+     * MyBatis-Plus 乐观锁：secondDecision 并发由 OptimisticLockerInnerInterceptor 仅放行 1 次；
+     * DDL 见 docs/script/sql/update/2026-09-05-ipd-launch-date-pending-unique.sql（P1，owner 2026-09-05 项1b）。
+     * 与 {@code StageAction#version}（P1-4.3）、{@code ProjectCertItem#version}（R8-P0-9）同一机制。
+     */
+    @Version
+    @TableField("version")
+    private Integer version;
 }

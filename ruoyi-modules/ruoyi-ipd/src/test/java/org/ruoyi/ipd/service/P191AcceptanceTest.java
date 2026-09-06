@@ -143,7 +143,12 @@ class P191AcceptanceTest {
     @Test
     @DisplayName("历史缺失视同门禁满足，不阻断推进校验")
     void historicalMissingDoesNotBlockGate() {
-        Project p = Project.builder().id(50L).level("B").currentStage("CONCEPT").build();
+        // fixture 补 declaredStage：P1（owner 2026-09-05 项1d）把 GateEngine 的 HISTORICAL_MISSING
+        // 豁免从「只认标志位」收窄为「须落在申报范围内」（BR-PROD-03 原文的「已过节点」语义）。
+        // 本用例打的 MISSING 是 CONCEPT 动作，因此项目必须是申报 DEV 的存量项目才在范围内；
+        // 与本文件 :121 的 getById fixture 保持同一申报阶段。断言未做任何改动。
+        Project p = Project.builder().id(50L).level("B").currentStage("CONCEPT")
+            .source("LEGACY").declaredStage("DEV").build();
         when(stageActionMapper.selectList(any())).thenReturn(List.of(
             StageAction.builder().actionCode("C11").actionName("Charter").status("NOT_STARTED")
                 .historyMark(LegacyImportService.HISTORY_MISSING).build(),
