@@ -22,30 +22,30 @@ class P342AcceptanceTest {
         return new BigDecimal(s);
     }
 
-    // ==================== AC-INC-16: 奖金池基数（目标销售额 × 5%）====================
+    // ==================== AC-INC-16: 奖金池基数（实际回款 × 5%，2026-09-06 owner 裁决 [CONSISTENCY-1]）====================
 
     @Test
-    @DisplayName("AC-INC-16: 目标销售额 1000000 × 5% = 50000 基础奖金池")
-    void targetSales1Million() {
+    @DisplayName("AC-INC-16: 实际回款 1000000 × 5% = 50000 基础奖金池（ZK 实际回款口径）")
+    void actualReceipts1Million() {
         BigDecimal base = service.calculateBasePoolConfigurable(amt("1000000"));
         assertThat(base).isEqualByComparingTo("50000.00");
     }
 
     @Test
-    @DisplayName("AC-INC-16: 目标销售额 0 ⇒ basePool = 0")
-    void targetSalesZero() {
+    @DisplayName("AC-INC-16: 实际回款 0 ⇒ basePool = 0")
+    void actualReceiptsZero() {
         assertThat(service.calculateBasePoolConfigurable(BigDecimal.ZERO)).isEqualByComparingTo("0.00");
     }
 
     @Test
-    @DisplayName("AC-INC-16: 目标销售额 null ⇒ basePool = 0")
-    void targetSalesNull() {
+    @DisplayName("AC-INC-16: 实际回款 null ⇒ basePool = 0")
+    void actualReceiptsNull() {
         assertThat(service.calculateBasePoolConfigurable(null)).isEqualByComparingTo("0.00");
     }
 
     @Test
-    @DisplayName("AC-INC-16: 目标销售额 12345.67 × 5% = 617.28（保留 2 位小数）")
-    void targetSalesDecimal() {
+    @DisplayName("AC-INC-16: 实际回款 12345.67 × 5% = 617.28（保留 2 位小数）")
+    void actualReceiptsDecimal() {
         BigDecimal base = service.calculateBasePoolConfigurable(amt("12345.67"));
         assertThat(base).isEqualByComparingTo("617.28");
     }

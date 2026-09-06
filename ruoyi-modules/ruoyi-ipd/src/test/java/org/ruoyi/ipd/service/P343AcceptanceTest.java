@@ -165,7 +165,7 @@ class P343AcceptanceTest {
     }
 
     @Test
-    @DisplayName("fillDerivedFields: 100% 达成率时 basePool=5%x target, finalPool=base x 1.0")
+    @DisplayName("fillDerivedFields: 100% 达成率时 basePool=实际回款×5%, finalPool=base×1.0（ZK 实际回款口径，[CONSISTENCY-1]）")
     void fillDerivedFieldsFor100Pct() {
         BonusPool pool = BonusPool.builder()
             .projectId(PROJECT_ID)

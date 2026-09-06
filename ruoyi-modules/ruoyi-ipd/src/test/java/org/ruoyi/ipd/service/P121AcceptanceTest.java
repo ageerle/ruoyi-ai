@@ -87,7 +87,7 @@ class P121AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-INC-12 S 级默认 1.5；奖金池 500万×5%×1.5=37.5万；状态强制 DRAFT")
+    @DisplayName("AC-INC-12 S 级默认 1.5；奖金池 = 实际回款 500万×5%×1.5 = 37.5万；状态强制 DRAFT（ZK 实际回款口径）")
     void acInc12SDefaultAndBonusPool() {
         stubCreateHappyPath();
         Project created = service.create(draft("S", null, "5000000"), 1L);
@@ -98,7 +98,7 @@ class P121AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-INC-13 A 级默认 1.0；奖金池 500万×5%×1.0=25万")
+    @DisplayName("AC-INC-13 A 级默认 1.0；奖金池 = 实际回款 500万×5%×1.0 = 25万（ZK 实际回款口径）")
     void acInc13ADefault() {
         stubCreateHappyPath();
         Project created = service.create(draft("A", null, "5000000"), 1L);
@@ -108,7 +108,7 @@ class P121AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-INC-14 B 级默认 0.8；奖金池 200万×5%×0.8=8万")
+    @DisplayName("AC-INC-14 B 级默认 0.8；奖金池 = 实际回款 200万×5%×0.8 = 8万（ZK 实际回款口径）")
     void acInc14BDefault() {
         stubCreateHappyPath();
         Project created = service.create(draft("B", null, "2000000"), 1L);
