@@ -23,6 +23,11 @@
             "type": "command",
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/sensitive-field-guard.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/sensitive-field-guard.cjs\" < /dev/stdin'",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/ipd-frontend-drift-guard.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/ipd-frontend-drift-guard.cjs\" < /dev/stdin'",
+            "timeout": 5000
           }
         ]
       },

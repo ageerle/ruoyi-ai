@@ -32,6 +32,8 @@
 
 - `.claude/hooks/block-dangerous-git.sh` 阻断 `git push` / `git reset --hard` / `git clean -f` / `git branch -D` / `git checkout .` / `git restore .`——push 被拦是预期行为，需要用户明确授权，不要绕过。
 - `.claude/helpers/sensitive-field-guard.cjs` 阻断写 `.env*` / `application-prod.yml` / PEM 私钥内容；警告 JWT secret、明文 password 字面量。
+- `.claude/helpers/ipd-frontend-drift-guard.cjs` 阻断 IPD 前端工程（`/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/`）写入"漂移产物"——创建 `views/ipd/<domain>/<domain>-error.ts`、重写 `api/ipd/product-group.ts`、在 `api/ipd/*.ts` 新增与既有文件冲突的 export 都会 exit 2。完整规约见 `docs/ipd-系统说明/前端架构规约-20260906.md`。
+- `scripts/check-ipd-frontend-drift.sh` 是上述 hook 的 CI/手动版：4 项检查（同名导出 / 错误码文件 / product-group 兼容层 / 手写 BackendPending）。CI 接入位置 `.github/workflows/ipd-frontend-drift.yml`（待补）。
 - 改 `pom.xml` 会触发 `pom-edit-hint.cjs` 的非阻断同步提醒（BOM 对齐 / 注解处理器 / gRPC 版本等 5 类）。
 - 4 个项目 skill（ai-module-add / gen-test / api-contract / db-migration）与 4 个审查 subagent（code-reviewer / security-reviewer / langchain4j-agent-reviewer / performance-analyzer）在 `.claude/` 下，分工见 `CLAUDE.md` §自动化栈。
 - 修改 `docs/wiki/**` 后必须跑 `node docs/wiki/wiki-lint.cjs`（无 CI 门禁，靠自觉）。
