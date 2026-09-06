@@ -56,6 +56,12 @@ public class RequirementChange extends BaseEntity implements SoftDeletable {
     private String reason;
 
     /**
+     * 双签签名聚合（P2-6.1；MARKET_PM=APPROVE;RD_PM=APPROVE 形式）
+     * 历史版本冻结：提交 PENDING_SIGN 时即不可变（业务层守卫）
+     */
+    private String signatures;
+
+    /**
      * 状态 DRAFT|PENDING_SIGN|APPROVED|REJECTED
      */
     private String status;
