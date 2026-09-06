@@ -43,6 +43,12 @@ public class BidResponse extends BaseEntity implements SoftDeletable {
     private String responseNote;
 
     /**
+     * 应标决定（accept|reject）；仅请求携带不入库：BR-TEAM-03 拒绝不留痕，accept 落库 PENDING
+     */
+    @TableField(exist = false)
+    private String decision;
+
+    /**
      * 状态 PENDING|ACCEPTED|REJECTED|WITHDRAWN
      */
     private String status;

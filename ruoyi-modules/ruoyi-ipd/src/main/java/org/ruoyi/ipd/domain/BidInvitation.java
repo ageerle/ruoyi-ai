@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -53,8 +54,10 @@ public class BidInvitation extends BaseEntity implements SoftDeletable {
     private String content;
 
     /**
-     * 有效期截止时间
+     * 有效期截止时间（入参/出参格式 yyyy-MM-dd HH:mm:ss，与前端页21一致；
+     * R8-P0-11 先例：/api/v1 链路全局 date-format 未生效，Date 字段就地标注）
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date expireAt;
 
     /**

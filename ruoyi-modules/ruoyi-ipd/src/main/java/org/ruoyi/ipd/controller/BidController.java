@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.BidInvitationService;
@@ -39,6 +40,7 @@ public class BidController {
     private final BidInvitationService bidInvitationService;
     private final BidResponseService bidResponseService;
     private final IpdPermission ipdPermission;
+    private final IpdAuthSession session;
 
     // ==================== 招标单 ====================
 
@@ -46,6 +48,9 @@ public class BidController {
     @PostMapping("/bid-invitations")
     public ApiV1Response<BidInvitation> createInvitation(@RequestBody BidInvitation invitation) {
         ipdPermission.requireInternal();
+        Person person = session.currentPerson();
+        // 发起人身份服务端权威：供 listResponses 隐私过滤与审计使用（通用填充器取不到 IPD 独立会话）
+        invitation.setCreateBy(person.getId());
         return ApiV1Response.ok(bidInvitationService.create(invitation));
     }
 
@@ -80,7 +85,8 @@ public class BidController {
             @PathVariable Long id,
             @RequestParam Long responseId) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(bidInvitationService.selectResponse(id, responseId));
+        Person person = session.currentPerson();
+        return ApiV1Response.ok(bidInvitationService.selectResponse(id, responseId, person.getId()));
     }
 
     @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
@@ -101,7 +107,8 @@ public class BidController {
     @GetMapping("/bid-invitations/{id}/responses")
     public ApiV1Response<List<BidResponse>> listResponses(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(bidInvitationService.listResponses(id));
+        Person person = session.currentPerson();
+        return ApiV1Response.ok(bidInvitationService.listResponses(id, person.getId()));
     }
 
     // ==================== 应标 ====================
@@ -110,13 +117,16 @@ public class BidController {
     @PostMapping("/bid-responses")
     public ApiV1Response<BidResponse> submitResponse(@RequestBody BidResponse response) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(bidResponseService.submit(response));
+        Person person = session.currentPerson();
+        // decision=reject 不留痕：BR-TEAM-03 以 code=0 + data=null 表达 204 语义
+        return ApiV1Response.ok(bidResponseService.submit(response, person.getId()));
     }
 
     @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/bid-responses/{id}/withdraw")
     public ApiV1Response<BidResponse> withdrawResponse(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(bidResponseService.withdraw(id));
+        Person person = session.currentPerson();
+        return ApiV1Response.ok(bidResponseService.withdraw(id, person.getId()));
     }
 }

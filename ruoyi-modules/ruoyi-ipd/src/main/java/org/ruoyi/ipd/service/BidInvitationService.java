@@ -1,9 +1,11 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 招标单服务（P2-3.1 BR-TEAM-03/05）
@@ -25,6 +28,7 @@ public class BidInvitationService {
 
     private final BidInvitationMapper bidInvitationMapper;
     private final BidResponseMapper bidResponseMapper;
+    private final AuditLogService auditLogService;
 
     /**
      * 创建招标单（市场PM）
@@ -49,49 +53,63 @@ public class BidInvitationService {
     }
 
     /**
-     * 遴选应标（AC-TEAM-05）
-     * 市场PM 从应标列表中选定一个研发PM
+     * 遴选应标（AC-TEAM-05，P2-3.2 原子提交）：
+     * 单事务内选定中标行（回填 rd_pm_id 并置 ACCEPTED）、其余 PENDING 行批量置 REJECTED（落选）、招标单置 SELECTED；
+     * 遴选结果写审计（entityType=bid_invitation，action=select，afterData 含中标者与落选者清单——
+     * OPS-05 通知系统就绪前由审计行承载“落选通知可查”留痕）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public BidInvitation selectResponse(Long invitationId, Long responseId) {
+    public BidInvitation selectResponse(Long invitationId, Long responseId, Long operatorId) {
         BidInvitation inv = requireOpen(invitationId);
         BidResponse resp = bidResponseMapper.selectById(responseId);
         if (resp == null || !resp.getInvitationId().equals(invitationId)) {
             throw new IllegalArgumentException("应标记录不存在或不属于该招标单");
         }
-        if (!"PENDING".equals(resp.getStatus()) && !"ACCEPTED".equals(resp.getStatus())) {
+        if (!"PENDING".equals(resp.getStatus())) {
             throw new IllegalStateException("应标记录状态不允许遴选: " + resp.getStatus());
         }
+        // AC-TEAM-05：中标行回填 rd_pm_id（列语义：应标时可为空，遴选后回填）
+        if (resp.getRdPmId() == null) {
+            throw new IllegalStateException("中标应标行缺少研发PM身份，无法绑定");
+        }
+        resp.setStatus("ACCEPTED");
+        bidResponseMapper.updateById(resp);
+        // 落选：同单其余 PENDING 行单 SQL 批量置 REJECTED（避免逐行写放大）
+        List<BidResponse> losers = bidResponseMapper.selectList(new LambdaQueryWrapper<BidResponse>()
+            .eq(BidResponse::getInvitationId, invitationId)
+            .eq(BidResponse::getStatus, "PENDING")
+            .ne(BidResponse::getId, responseId));
+        String rejectedRdPmIds = losers.stream()
+            .map(r -> String.valueOf(r.getRdPmId() == null ? r.getId() : r.getRdPmId()))
+            .collect(Collectors.joining(","));
+        bidResponseMapper.update(null, new LambdaUpdateWrapper<BidResponse>()
+            .set(BidResponse::getStatus, "REJECTED")
+            .eq(BidResponse::getInvitationId, invitationId)
+            .eq(BidResponse::getStatus, "PENDING")
+            .ne(BidResponse::getId, responseId));
         inv.setStatus("SELECTED");
         inv.setSelectedResponseId(responseId);
         bidInvitationMapper.updateById(inv);
-        resp.setStatus("ACCEPTED");
-        resp.setRespondedAt(new Date());
-        bidResponseMapper.updateById(resp);
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId).action("select").entityType("bid_invitation").entityId(invitationId)
+            .afterData("{\"selectedResponseId\":" + responseId
+                + ",\"selectedRdPmId\":" + resp.getRdPmId()
+                + ",\"rejectedRdPmIds\":[" + rejectedRdPmIds + "]}")
+            .reason(inv.getTitle())
+            .createTime(new Date()).build());
         return inv;
     }
 
     /**
-     * 过期扫描（定时任务）
-     * AC-TEAM-08：招标到期无人应标 ⇒ 自动关闭
+     * 过期扫描（定时任务，PERF-P0-2：单 SQL 条件 UPDATE，消除 N+1 selectCount 与恒等三元冗余）
+     * AC-TEAM-08：招标到期无人应标 ⇒ 自动过期
      */
     @Transactional(rollbackFor = Exception.class)
     public int expireOverdue() {
-        Date now = new Date();
-        List<BidInvitation> overdue = bidInvitationMapper.selectList(
-            new LambdaQueryWrapper<BidInvitation>()
-                .eq(BidInvitation::getStatus, "OPEN")
-                .lt(BidInvitation::getExpireAt, now)
-        );
-        for (BidInvitation inv : overdue) {
-            long responseCount = bidResponseMapper.selectCount(
-                new LambdaQueryWrapper<BidResponse>()
-                    .eq(BidResponse::getInvitationId, inv.getId())
-            );
-            inv.setStatus(responseCount == 0 ? "EXPIRED" : "EXPIRED");
-            bidInvitationMapper.updateById(inv);
-        }
-        return overdue.size();
+        return bidInvitationMapper.update(null, new LambdaUpdateWrapper<BidInvitation>()
+            .set(BidInvitation::getStatus, "EXPIRED")
+            .eq(BidInvitation::getStatus, "OPEN")
+            .lt(BidInvitation::getExpireAt, new Date()));
     }
 
     /**
@@ -147,18 +165,28 @@ public class BidInvitationService {
     }
 
     /**
-     * 查询招标单下的应标列表
+     * 查询招标单下的应标列表（P2-3.2 隐私：非发起人仅可见本人应标，不得暴露其他应标）
+     *
+     * @param invitationId    招标单 ID
+     * @param currentPersonId 会话用户 ID；等于发起人（createBy）时返回全量
      */
-    public List<BidResponse> listResponses(Long invitationId) {
-        return bidResponseMapper.selectList(
-            new LambdaQueryWrapper<BidResponse>()
-                .eq(BidResponse::getInvitationId, invitationId)
-                .orderByDesc(BidResponse::getCreateTime)
-        );
+    public List<BidResponse> listResponses(Long invitationId, Long currentPersonId) {
+        BidInvitation inv = bidInvitationMapper.selectById(invitationId);
+        if (inv == null) {
+            throw new IllegalArgumentException("招标单不存在: " + invitationId);
+        }
+        LambdaQueryWrapper<BidResponse> qw = new LambdaQueryWrapper<BidResponse>()
+            .eq(BidResponse::getInvitationId, invitationId)
+            .orderByDesc(BidResponse::getCreateTime);
+        if (!currentPersonId.equals(inv.getCreateBy())) {
+            qw.eq(BidResponse::getRdPmId, currentPersonId);
+        }
+        return bidResponseMapper.selectList(qw);
     }
 
     private BidInvitation requireOpen(Long id) {
-        BidInvitation inv = bidInvitationMapper.selectById(id);
+        // 锁定读（H-1）：遴选/发布/撤回在招标单行上串行化，防止并发 selectResponse 双中标
+        BidInvitation inv = bidInvitationMapper.selectByIdForUpdate(id);
         if (inv == null) {
             throw new IllegalArgumentException("招标单不存在: " + id);
         }
