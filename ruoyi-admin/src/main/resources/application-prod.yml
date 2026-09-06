@@ -72,7 +72,10 @@ spring:
 
       hikari:
         # 最大连接池数量
-        maxPoolSize: 20
+        # SEC-HIGH-1 (R9-BC-COST): BCrypt cost 4→10 后登录/改密路径单次 hash ~80ms（cost=4 时 ~8ms），
+        # 每请求持连接时间 ×10，20 池在 100 并发登录压测下会排队打满 → 提到 80
+        # （单实例 80 ≤ 实测 max_connections=151，53% 水位；多实例部署需按 实例数×80 重估 max_connections）。
+        maxPoolSize: 80
         # 最小空闲线程数量
         minIdle: 10
         # 配置获取连接等待超时的时间

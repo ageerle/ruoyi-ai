@@ -1,3 +1,33 @@
+
+## 2026-09-05 21:30 PDT Qoder 接续会话：R8-P0-5~9 对账收口 + 全量绿 ✅
+
+承接 DSH 会话（轨迹 20:42/21:17 两段）收尾——该会话末尾正要 `git show 108be858` 查 R8-P0-5~9 时被压缩截断，本会话完成该对账：
+
+- **R8-P0-5~9（及 11~13）主代码早已由 commit `108be858`（fix(ipd,R8-P0-5~13): 代码层 9 项治理——批量化/软删/乐观锁/Date 反序列化）覆盖**，配套 DDL `2266fd09`（project_cert_items 加 version 列 + orderBy 覆盖索引）。逐项代码锚点：P0-5 markPastStages 批量化（LegacyImportService Javadoc）、P0-6 syncFromProject 批量化（ProjectCertService:32）、P0-7 batchImportOnSale 预取 + importBatch 异常收窄（ProductService:30 / LegacyImportService:37）、P0-8 ProjectCertItem @TableLogic 软删（:50）、P0-9 changeStatus @Version 乐观锁（ProjectCertService:235-238，冲突即抛"认证状态变更被并发覆盖"）。
+- **贴文轨迹所称"预存失败 P191.markHistoricalMissingWithoutForgingDone"已消**：测试已对齐 `updateBatchById(batch, 200)` 新契约（P191AcceptanceTest:122-138），本类 6/6 GREEN。
+- **R9a 未修清单（P131/P171/P1111/P132/P112/ProductServiceTest.createOk/InstantiateBatch）已由 FAIL-CLASS-A/B/C/D 四 commit 清零**：`c0bc8934` / `3a161918` / `4e6c9dc4` / `e5cb1a44`。
+- **全量权威复测（错峰、单模块、不带 -am/clean）**：`mvn -o -pl ruoyi-modules/ruoyi-ipd test` → **Tests run: 476, Failures: 0, Errors: 0, Skipped: 22, BUILD SUCCESS**（2026-09-05T21:28:25-07:00）。较 R9a 基线 19F/13E 全清。
+- **R8-P0 系列至此 1~10 代码层全部收口**：P0-1 `2481a92a`、P0-2 前会话、P0-3 `a8a70ad9`、P0-4 `92dddb11`+`cd0a1151`（RSA 2048 轮换）、P0-5~9(13) `108be858`+`2266fd09`、P0-10 `a4023c54`。看板 32 卡仍标"待补 ⬜"，翻卡留主协调器。
+- ⚠️ **工作树在途风险提示（兄弟泳道，本会话未动）**：① `RedisConfig.java` 硬编码 `.setAddress("redis://127.0.0.1:16379")` + `.setPassword("")`——本地调试 hack，**严禁提交**，否则钉死所有环境 Redis 地址并清空密码；② `application.yml` 排除 Redis/Redisson 自动配置 4 行同理；③ `IpdAuthSession.revokeAll` 加 NotLoginException 容错（合理修复，待归属会话收口）。
+- **〔21:35 复核更新〕**上述①②已由归属会话自行还原（21:33 `git status` 复核：RedisConfig.java / application.yml 均已与 HEAD 一致，风险解除）；③ IpdAuthSession 容错仍在途。P191 契约对齐已由 `04813c54`（FAIL-CLASS-B2）落库，取代上文工作树态依据。主协调器 `3eea34d9` 已闭治理卡 000802d9（4 类并行修复实录）并登记全量 476 跑 0F 0E——与本段 21:28 复测互相印证。看板镜像仍未纳 R8-P0 卡（21:33 grep 零命中），翻卡仍留主协调器。
+
+---
+
+## 2026-09-05 R8-P0-4 + R8-P0-10 配置层治理 ✅
+
+- **R8-P0-4**（api-decrypt 密钥 env 注入）：commit `92dddb11`，`application.yml` 中 `publicKey` 改为 `${API_DECRYPT_PUBLIC_KEY:}`；`privateKey` 此前已是 `${API_DECRYPT_PRIVATE_KEY:}`（SEC-NEW-MED-4 R9 已移除字面量）。
+- **R8-P0-10**（importBatch 串行→并行）：commit `a4023c54`，`LegacyImportService.importBatch` 由 for 循环串行改 `CompletableFuture.supplyAsync`，按 `IMPORT_BATCH_PARALLELISM=8` 限流；构造注入 `Executor`。P191 importBatch 相关测试 3/3 GREEN；已知预存失败 `markHistoricalMissingWithoutForgingDone`（R8-P0-5 batch update，与本次无关）。
+- P0进度：R8-P0-1✅ R8-P0-2✅ R8-P0-3✅ R8-P0-4✅ R8-P0-10✅
+
+---
+
+## 2026-09-05 20:32 PDT R8-P0-1 tenant.excludes 补漏收口 ✅
+
+- application.yml tenant.excludes 追加 3 张漏登表：person_roles / coefficient_change_requests / cms_content
+- 注释更新：26基线+Round8/9新增业务表
+- TenantExcludesConsistencyTest：2 tests, 0 failures, BUILD SUCCESS
+- 全量 test-compile：BUILD SUCCESS
+- P0进度：R8-P0-1✅ R8-P0-2✅ R8-P0-3✅ R8-P0-4⏸ R8-P0-10⏸
 # IPD 改造工作日志（docs/ipd-系统说明/）
 
 > 本目录是 IPD 二开工作手册（drift audit + 改造指南 + 类型映射 + 命名约定 + 外部资源骨架）。
@@ -1747,6 +1777,33 @@ R8 clean compile 暴露兄弟重构链式断层。
 ### 不能由本会话归零（已出到行补丁）
 - **Δ9 看板仍 `has_drift: True`**：镜像 246 卡全 `unchanged`（已纳管部分零漂移），但在线 `board_total: 278` → **32 张卡未回写镜像**（R8-P0-1…10 / AUD-GOV-* / SEC-NEW-MED-1…4 / SEC-HIGH-1、3 / QA-05-P1…P3 / PERF-P0-1、2 / AUDIT-CHAIN-IMPL-C / QA-04-D1、D2）。镜像是 SSOT 且此刻 ` M` 脏（兄弟 11 行在途），按单一写入者纪律不代写；纳管材料已**机器生成**（标题逐字取自看板快照）：`治理轮/零漂移-看板纳管材料-32卡-2026-09-05.md`。另 `manage.py` 源码 `:175` 本身写明 “Do not delete or adopt them implicitly”，工具设计与纪律一致。
 - Δ10 本地 ahead **135** / behind 0：push 需 owner 明确授权（hook 拦），选里程碑净窗口执行。
+
+## 2026-09-06 04:00 PDT — R9 治理轮启动：系统性根因分析
+
+### 触发
+owner 指令「深度思考系统性梳理全局代码深度思考反思根源性原因是什么」。
+
+### 全量回归基线（463 tests）
+- Passed: 424 / Failures: 19 / Errors: 18 / Skipped: 22
+- 不合格率: 8.0%（37/463），全集中于 ruoyi-ipd 模块 8 个测试类
+
+### 六大根源性根因（R9-ROOT-CAUSE）
+1. OPS-09 失守：兄弟会话并行写 Java/yml，覆盖本会话 fix（ActuatorNarrowTest 修复 commit 67b18014 被 b25930e6 覆盖）
+2. 配置守卫测试脆弱：全文 grep doesNotContain 命中注释字面量，非结构化校验
+3. API 契约漂移：ProjectBootstrapService insert()->insertBatch() 重构后 P131 测试耦合旧实现路径（25项）
+4. Lambda Cache 失效：ProjectCertItem 新增 @TableLogic/@Version 后 MyBatis-Plus 元数据未重建（P171x3 + P1111x1）
+5. tenant.excludes 不同步：3 张新 DDL 表（person_roles/coefficient_change_requests/cms_content）未登记
+6. 测试自引用陷阱：P063 mockKeyNamesMatchProductionSource 读自身源码，Javadoc 历史键名被误判
+
+### 根因分析文档
+- 完整报告：docs/ipd-系统说明/治理轮/R9-root-cause-analysis.md
+
+### 下一步
+- R9a：重做 ActuatorNarrowTest 修复 + P063 自引用修复 + tenant.excludes 补表（4行改动）
+- R9b：P131 测试契约化重构（15项，最耗时）
+- R9c：ProjectCertItem lambda cache 修复
+- 向 owner 提交 OPS-09 mutex hook 提案
+
 - Δ12 对象库：`.git` 624M 但 pack 仅 69M，loose 540M；8 个 ≥30MB 大对象经 `--find-object` 逐个验证**均无 ref 引用**，`fsck --unreachable` = 1371 blob + 215 commit。原 O4 定案：**不做 `filter-repo`**（活跃 pack 才 69M 收益小；更要害的是本仓以 commit SHA 作审计证据，重写历史会废掉 log/镜像/台账里以百计引用；6+ 会话 + P131 链接工作树 + 双 remote 成本远超 600M），改推 L1 `git gc`（安全）/ L2 `prune --expire=now`（永久失去 215 个不可达提交的恢复路径，需 owner 拍板）。
 - 原 O3 定案：分支与 stash **均保留**——`feat/perf-01-nextcode-unique` 未并入（ ahead 2 commit，11 files +1422/−40，含 673 行 P131 集成测试）；两条 stash 逐 blob 比对 HEAD 全部不同且兄弟自述收口后 pop。**新发现交互风险：这两条 stash 的索引态含 `ruvector.db`/`.swarm/memory.db`/`daemon-state.json`/`policy/state.json`，一旦 pop 会把上轮脱库路径重新带回索引并被 `git add -A` 固化（ignore 不作用于已入索引文件）→ pop 后须立即重跑摘除+同秒提交。**
 - Δ11 工作树脏 14 项属兄弟泳道；其中未跟踪的 `P032HttpAcceptanceTest.java` 语法断裂（`:105/:123/:132 需要';'`）致 `ruoyi-ipd` 整体 test-compile 不可用（HEAD 不含该文件，HEAD 层面无漂移）→ 本会话因此无法跑 O1 所需的红/绿验证，已写明前置条件，不宣称 Java 变更完成。
@@ -1778,3 +1835,210 @@ R8 clean compile 暴露兄弟重构链式断层。
 
 ### 边界
 本段全部为文档登记（工作树代码已被兄弟提交，无重复提交）；Controller 透传映射的真 HTTP 契约留待部署后 P0-9.1 重跑，**单测绿≠HTTP 闭环**，未伪称 A′ 完整验收。看板 DEF-9 卡按单一写入者纪律不代翻，证据交主协调器消化。
+
+## 2026-09-05 20:15 PDT — P0-3.2 HTTP验收+DEF-6排期+DOC-09确认
+
+### P0-3.2 后端参数管理API HTTP层验收 ✅
+- 新增 `P032HttpAcceptanceTest.java`（6项MockMvc HTTP端点验收）
+- 与既有 `P032AcceptanceTest.java`（3项unit）合计 **9/9全绿**
+- 覆盖：GET list/read、PUT update、403鉴权、400空body拒绝
+- Commit: `c317629b`（mirror更新）
+
+### DEF-6 修复排期 ✅ 已收口
+- 根因：audit_logs before_data/after_data MySQL json列规范化导致哈希断裂
+- 方案A落地：DDL改longtext + AuditPayloadJsonGuardTest护栏
+- 11/11护栏测绿；P0-9.1七跑74/83，DEF-6归因闭合
+- 残留9项FAIL全部归因DEF-9（兄弟清库致seq空洞1309），非产品缺陷
+
+### DOC-09 前端仓确认 ✅ 已闭环
+- 正式Vue工程：`/Users/mac/Documents/ruoyi-ipd-web`（vben-admin-monorepo 5.5.9，官方tag 04bb27d）
+- 11/11无缓存构建无TS诊断、3组件测试通过、本机15666浏览器可见
+- P0-10.3~49阻塞解除，可交接前端会话
+
+### 三卡镜像更新
+- P0-3.2：⬜待认领 → ✅完成
+- P0-9.1：◐PARTIAL → ✅业务腿全绿
+- DOC-09：◐BLOCKED_DEPENDENCY → ✅已闭环
+- Commit: `f9442b62`
+
+## 2026-09-05 20:28 PDT Qoder 治理会话（第二方）：owner Q5 落地——P0-9.1 断言语义改（GAP 降级告警）
+
+承接 owner Q5「改断言语义、GAP 降级为已知历史空洞告警、不伪造补行」。上一段（兄弟 20:15）已在镜像把 P0-9.1 标「业务腿全绿」并判「残留 9 FAIL 归因 DEF-9 非产品缺陷」——本段把该判断落到**脚本断言层**，使 re-run 真能产出该绿。
+
+### 改点（`验收/P0-9.1-业务链真实验收-20260905.py`，3 处 GAP 硬门降级）
+- `verify_state` 增读四态 `hashBroken`/`gaps`；新增 `chain_gate` 判据助手：四态 Controller 权威（`chain∈{OK,GAP}`→PASS），旧二态 jar（run7 的 `def6i.jar`，`chain="BROKEN"` 无分列键）回退 DB 归因（`wj+rest`=真哈希断裂、`gaphead`=历史空洞）。
+- `chain_checks`/L7 的 `chain=OK`+`断裂数=0` → 「无哈希断裂」+「哈希断裂数=0」，GAP 降级 `WARN` 不计 FAIL。
+- L7 `seq 零跳号` 按**前驱是否越基线**切分：前驱 `p<=seq0`=历史空洞（清库致计数器跳变 609→1309）降级告警，前驱 `p>seq0`=本轮新漏行仍 FAIL。
+
+### 防假绿（回应 AGENTS.md「绿的是契约不是既有实现」）
+真哈希断裂（DEF-6 载荷/未归因/四态 HASH_BROKEN/BROKEN）与**本轮新增漏行**（`gap_new`）仍 FAIL；仅**已知历史空洞**降级。不补行=尊重 AC-AUD-01 只追加语义。
+
+### 静态验证 ALL PASS（`data/coding-harness/artifacts/q5_static_verify.py`，gitignore 本地件，不触库/不跑 HTTP）
+① `py_compile` 语法门 PASS；② `ast` 抽真 `chain_gate` 跑 7 例判据矩阵全 PASS；③ sqlite 仿真跳号切分：run7 形态 `gap_hist=1 gap_new=0`、注入删 1315 后 `gap_hist=1 gap_new=1`（真漏行仍被捕获）。对 run7 证据推演：9 FAIL 全为单一 seq 1309 空洞驱动 → 同库态 re-run 应得 **83/83**（check 条目守恒）。
+
+### 边界（不伪称完成）
+脚本改断言=代码层；真 HTTP re-run 需 live 实例 + mutate 共享库（改密/删除请求），按单写者+热窗纪律**留待主协调器协调窗执行**，本会话不擅自跑、不翻 P0-9.1 板卡（镜像已兄弟标绿，本改使其获断言层支撑）。**静态绿≠HTTP 闭环**。详见复核文档 §7「Q5 落地追记」。
+
+---
+
+## 2026-09-05 20:45 PDT Qoder 治理会话（第二方）：owner「①②③ = 备 PR 不执行、交主协调器」落地——chain_heads 激活 PR 就绪包交付
+
+承接 owner 决策「①②③ = 备 PR 不执行、交主协调器在约定停写窗口统一上线」。本会话按**单一写入者 + OPS-09** 只做**只读探针 + 证据交付**：不落 live Java、不执行任何 DDL/DML、不停实例、不部署。
+
+### recon 材料性发现（改变 ①②③ 性质，非净新工作）
+- **② `audit_log_chain_heads` 已由指派兄弟建成**（活库 `ipd_dev` 存在，refined schema：`chain_key` PK + `last_seq`/`last_hash`/`next_seq` + CHECK 不变式，比设计稿方案 A 草图更精细），但**完全未接线**：无任何 Java 引用、seed 陈旧（`last_seq=67` vs `audit_logs max_seq=1554`，154 行）、`audit_logs.seq` 仍 `auto_increment`。
+- **①（去 AUTO_INCREMENT）③（append CAS + 去 `insertStrategy=NEVER` + 删死代码 `catch(DuplicateKeyException)`）仍 pending。**
+- 该工作在 **Wave3 实施规格包已指派「AuditLogService 作者」Batch-2 / QA-05-P2（提级）slot**，标「与 DEF-9 互锁」。
+- **活库是移动靶**：run7（19:04）`maxSeq=1324` → 现（20:45）`audit_logs` 154 行、`max_seq=1554`、`min_seq=1401`（兄弟又清库）。
+
+### 未决设计张力（CAS 协议，交指派 owner + 主协调器）
+chain_heads 表注释「transaction-locked allocator」暗示**悲观 `SELECT ... FOR UPDATE`**，但 DEF-4 记「无 FOR UPDATE（DB 最小权限禁锁定读）」→ **P（悲观，须先确认/授予 app 用户锁定读权限）vs O（乐观 CAS + 重试，规避权限约束）未决**。本包列双选项 + 骨架，**不臆测、不落 live Java**。
+
+### 交付物
+`验收/AUDIT-CHAIN-heads激活-PR就绪包-20260905.md`（10 节）：§1 归属登记（OPS-09）/ §2 活库 recon 真相（实建 schema + seed 陈旧铁证 + 现态 append NEVER 悖论）/ §3 未决 CAS 协议 P vs O / §4 迁移 SQL（**内嵌文档、禁 auto-apply**，非 `docs/script/sql/update/` 独立件——防「① 去 AUTO_INCREMENT 先上 / ③ Java 后上」时 NEVER 仍丢弃 seq 而列无默认 → INSERT `Field 'seq' doesn't have a default value` → 写审计路径全 500 且连带业务事务失败；含 §4.3 陈旧 seed sync-seed）/ §5 tenant.excludes（对齐兄弟 `2481a92a` 后块尾 L257，chain_heads 仍未登记）/ §6 Java CAS 需求规格 + 双选项骨架（DRAFT）/ §7 契约测需求（并发无冲突 + CAS 不变式 + 陈旧 seed 防护 + hash 链自洽 + 只追加守恒）/ §8 原子上线序列（停写窗口）/ §9 与 Q5 衔接（①②③ 治未来空洞、Q5 承载历史空洞，互补）/ §10 交 owner 三确认项。
+
+### 纪律与边界
+- **单一写入者 + OPS-09**：本会话非主协调器，不写与兄弟 in-flight 设计可能冲突的臆测性 Java CAS；仅交付非臆测的具体件喂给 Batch-2 slot，由主协调器停写窗口原子集成。
+- **不执行 DDL / 不停实例 / 不部署 / 不动共享库**（只读 SHOW/SELECT 探针）。
+- 复核文档 §7 A′ 表 ①②③ 行已更新为「PR 就绪包已交付 + 现态」+ 新增「①②③ PR 就绪包交付追记」。
+- **本 log 段留工作树**（与兄弟 20:15 P0-3.2 段 + R9 04:00 段同处未提交态），交主协调器统一收口，避免裹挟。
+- **R9a**：tenant.excludes补3张新DDL表(person_roles/coefficient_change_requests/cms_content) + P063AcceptanceTest.self-reference断言拆除。验证: 476t, 19F/13E/22S (基线463→19F/18E, 净减5项)。未修: P131(15F+7E)/P171(2F+1E)/P1111(1E)/P191(1F)/P132(3E)/P112(1E)/ProductServiceTest.createOk(gap)。Commit: 05fd3f65
+
+### 主协调轮（2026-09-05 20:30–21:19）：owner 5 项指令中的 1a–1d/2/3/5 代码侧闭环
+
+- **项1（P1 backlog 四条）**：`83559abd`（20:37:40）——1a 双签并发防护（生成列+部分唯一索引等价 DDL 已交付）、1b secondDecision ownership、1c launchDate 写入面双签、1d GateEngine.HISTORY_MISSING 豁免收窄（非 legacy / 无申报阶段 / 动作阶段不早于申报阶段 → fail-closed，BR-PROD-03 语义不变；P191 fixture 补 source=LEGACY+declaredStage=DEV 属契约变更已披露）。红绿：绿 20:33:21–22 31/31；红 20:33:46–54 4/5；全模块对照带改 468/18F/18E vs 纯 HEAD 452/20F/19E → 零新增红。
+- **项2（凭证轮换，代码侧）**：删 `IpdMockDataInitializer.INITIAL_PWD` 常量（SEC-AUD HIGH-2 收口）+ `CredentialLiteralGuardTest` 4 例静态守卫 + SEC-02-QA04 文档 9 处脱敏。**实测新增事实**：离线 BCrypt 证实 11/11 活账号仍共用同一枚种子口令且 6 个 cost=4（21:06:40）；`a8a70ad9` 旧 JWT 密钥未被任何远端分支包含（21:08:38）→ 任何 push 前必须完成 R3。**真轮换（R1–R3）属用户动作，本项标 PARTIAL**。
+- **项3（prod 四项覆盖）**：实测仅 springdoc 是真缺项（demo/sa-token/actuator 已靠父基线成立）；交付 `application-prod-owner-item3-delta.patch`（apply --check rc=0）+ `ProdConfigDeltaGuardTest` 4 例（含纯 Java 复算 apply 判据，三发破坏注入必红 20:59:24/37/39）。兄弟 `application-prod-batch3.patch` 已被 `76888bbf` 消费（现 rc=1），勿重复执行。
+- **项5（DDL apply 核验，只读）**：`idx_sa_project_code` 17 库全 MISSING；`uk_ldcr_pending_project`/`version` NOT_APPLIED；`duplicate_pending_rows` 全空可安全 ADD；顺带核出 `person_roles` 全库不存在（R9a 的 excludes 属超前登记）+ 36 个孤儿 schema 待裁决。证据件两份 JSON（20:47:11 / 21:07:34）。
+- **同批回写**：AGENTS.md/CLAUDE.md 三处过期事实（demo.enabled=true、tenant.excludes:148、jwt 默认 abcdef…）改键名锚定 + 13306/ipd_dev 真实拓扑 + 「SQL 已 commit ≠ 约束已生效」；`零漂移对账` 追加 §九（R1–R8 逐条修正四处被超越陈述）。
+- **提交**：`55597b03`（21:18:10，`--only` 显式 15 路径 1298+/35−，不含兄弟在途件）。**本 log 段留工作树**，与既有惯例一致交主协调器统一收口；看板镜像本轮未写（兄弟在兄弟 burst 中，避免 OPS-09 写撞），卡状态由主线程统一翻。
+- **仍待 owner**：凭证 R1–R3、DDL D1–D5、push 授权（ahead 169）、36 孤儿库与 36 红测试归属、prod patch 的用户一条命令执行。
+
+- **R9b**：P191AcceptanceTest.markHistoricalMissing 契约对齐——R8-P0-5 批量化(updateById→updateBatchById(200))测试侧收尾，三契约断言保留(HISTORY_MISSING+非DONE+ 佐证remark)。验证：定向11类95t 21:24 仅剩P191红→修复后P191 6/6绿。R9诊断清单全部清零（P063/tenant.excludes=05fd3f65，A/B/C/D=兄弟4commit，P191=本条）。三份R9报 告入库 d4abbd45。⚠️ 兄弟在途WIP：RedisConfig 硬编码 setPassword 明文字面量，入库 前须移除（sensitive-field-guard 会拦）。
+
+---
+
+## 2026-09-05 21:09–21:22 PDT Qoder 治理会话（第二方）：蜂群并行执行 A′ 剩余项——turnkey 交付包 + CodeReview 复核闭环
+
+owner 指令「基于以上利用多个专业智能体并行执行」。编队四段：只读探针（本会话，全 SELECT/SHOW/grep）→ turnkey 起草（本会话）→ **CodeReview 专业智能体交叉复核**（对照 live 源码）→ 文档同步 + path-lock 提交。**零写库（无 DDL/DML/GRANT/REVOKE）、零实例操作、零 live 源码**（单一写入者 + owner「备 PR 不执行」框架内作业；看板镜像不写，卡状态由主线程统一翻）。
+
+### 材料性事实（F1–F4，全只读铁证，21:09–21:18 PDT）
+- **F1 DEF-5 坐实**：`audit_logs` 表级 S,I（只追加意图已设）+ `audit_log_chain_heads` 表级 S,UPDATE（分配器模型已被协调器铺好），但库级 `GRANT S,I,U,D ON ipd_dev.*` 并集架空表级（mysql.db Update=Y/Delete=Y）。
+- **F2 CAS 张力消解**：chain_heads 表级 SELECT 即覆盖 `FOR UPDATE` 锁定读 → **P 无需授权变更即可行**（DEF-4「禁锁定读」指旧 audit_logs 路径）。
+- **F3 ⑦ 重定性**：hash_version 列 207/207 全 NULL（兄弟又清库，旧「62 行标 v2」急性问题随库消失）；`AuditHashChain` 已内置 canonicalV1/V2/byVersion + ACTIVE_CANONICAL_VERSION=1 → 残留=休眠列（无人写无人读，与现行 v1 算法天然一致）。
+- **F4 窗口事实开着**：0 实例/0 监听/0 ipd_app 连接（Q7 陈旧 jar 缺口 moot）；seed 冻结 GLOBAL last_seq=67 vs audit_logs max_seq=1607（**gap=1540**）。
+
+### 交付
+- 新增 `验收/AUDIT-CHAIN-剩余项蜂群turnkey交付包-20260905.md`：Q6 最小 REVOKE runbook（只收库级 UPDATE,DELETE；安全边界全闭合——125 表/124 表级覆盖、0 view/routine/trigger/event、单 host 变体、0 列级权限、三步验证+回滚）+ ⑦ 三选项处置包（建议 a 维持休眠）+ ①②③ CAS P/O 完整双变体 DRAFT（AuditChainHead 实体/Mapper + append 重写 + 删除清单含 orderBySeq + 6 条契约测 + 启动自检）+ seed/窗口刷新 + Q7 重定性 + owner 确认项更新版。
+- **CodeReview 智能体结论**：可作 Batch-2 输入附 3 前置；**MAJOR-1**（O 变体 MySQL 默认 RR 下 selectById 快照固定 → CAS 重试永久失明，100 并发契约测必失败）已修（READ_COMMITTED）并**反向强化拍 P**；MINOR-1~5（REVOKE 三探针/advance 断言/orderBySeq 补删/GENESIS 兕底/生效时机措辞）全部修订入正文，探针本会话亲跑全清。正面确认：注解 SQL+FOR UPDATE 有 ProjectStageMapper 先例、audit_logs 写入口唯一性（全仓仅 append L85 一处 insert）、REVOKE 并集推演无误。
+- 复核文档 §7 ③⑦ 行重定性 + §8 Q6/Q7 行更新 + 蜂群追记同步。
+
+### 仍待 owner（turnkey 包 §8）
+① CAS 拍板（建议 **P**）② Q6 REVOKE 授权（当前 0 连接=理想窗口，独立可先行）③ ⑦ 选项 a/b；live 落地（DDL/REVOKE/Java/部署）仍 gate 主协调器停写窗口。
+- **R9b-追记（RedisConfig 口令溯源）**：WIP 字面量源头=`.codex/ipd-dev/config/credentials.json`（gitignored 本地 secret 库；本机 16379 Redis 5.0.14 dev 凭据，实例在监听）；`git log -S --all` 为空=**从未入过任何历史**；同字面量亦在 application-ipd-local.yml（gitignored，设计内）。定性：本地 dev 凭据误入 tracked Java 源——非生产密钥泄露（repo ahead 未 push），但一次 `git add -A` 裹挟即入历史（本仓有前科），属流程红线。处置建议：回退 RedisConfig hunk 与 application.yml 的 Redis autoconfig 排除 hunk（连接参数本应由 gitignored 本地 yml 承载，两处均与本地 yml 重复）。
+
+---
+
+## 2026-09-05 22:05 PDT Qoder 接续会话（owner「立即执行」）：看板 9 卡翻 done + batch4 patch 落地 + 全量 479/0F 0E
+
+### 看板状态对齐（R8-P0 卡）
+经 vibe-kanban API（62250）逐卡 PUT + 回读验证：**R8-P0-2..10 九张 todo→done**（每卡附 commit 锚点 + 479/0F 证据行；R8-P0-1 板上原已 done）。操作仅对齐 status+追加证据，不改标题/不碰身份；**纳管（托管块+镜像行+KEY 正则扩展 R8-P0 前缀）仍留主协调器**按 32 卡材料执行——manage.py:17 KEY 正则现不含 R8-P0，镜像加行前须扩展（AUD-GOV 先例）。纳管前 check 的 unmanaged 清单里这 10 卡状态已与现实一致。
+
+### batch4 patch（owner 授权，batch3 先例）
+`application-prod-batch4-bcrypt-hikari.patch`：apply --check PASS → **APPLIED**，`application-prod.yml` hikari maxPoolSize 20→80（:78，SEC-HIGH-1 R9-BC-COST 配套）。压测验证仍待（多实例部署需按实例数×80 重估 max_connections）。
+
+### 验证态
+- SEC-HIGH-3 守卫 2F：**归属会话已自行修复**（stripComments 去注释后断言，与 21:50 建议同向），PermissionAdviceCoverageTest 3/3 GREEN。
+- 全量（含审计链①②③在途实施）：`mvn -o -pl ruoyi-modules/ruoyi-ipd test` → **BUILD SUCCESS（0F 0E）**——审计链 P 变体代码腿（AuditChainHead/Mapper/Service/契约测）编译测试全绿，只待停写窗口 live 落地。
+
+### 边界
+未动 DB（D1-D5 待 owner）、未 push（R3 前置）、未碰停写窗口部署（审计链既有库 ALTER+sync-seed）。
+
+---
+
+## 2026-09-05 21:58 PDT Qoder 接续会话（第二方复核）：审计链①②③ P 变体在途实施规格符合性核对——全部吻合，不阻施工
+
+实施 lane（兄弟会话）在途件：`AuditChainHead.java`/`AuditChainHeadMapper.java` 新增、`AuditLogService.append` 重写、`AuditLog.seq` 去 NEVER、基线 SQL 回写、`AuditChainSymmetryTest` 升级。逐点核对 turnkey §6/§7 + owner 拍板 P 变体：
+
+- **SQL 合规**：改的是空库基线脚本（audit_logs 去 auto_increment + chain_heads 建表 + GENESIS 种子，注释自证"既有库修复走停写窗口 sync-seed"），非 update/ 新增迁移件，未违反"禁 auto-apply"决策。
+- **服务层逐点吻合**：selectForUpdate 单行锚 / head==null fail-fast 禁自举 / advance≠1 防御断言 / GENESIS 兕底 / 旧重试+catch(DuplicateKeyException)+selectList 已删。
+- **事务原子性 ✅**：append 挂 `@Transactional(REQUIRES_NEW)`，锁→advance→insert 同事务，提交才放锁，崩溃整体回滚无跳号窗口；REQUIRES_NEW 同时保住"业务失败不回滚审计"原语义。
+- **锁定读权限自洽**：chain_heads 表级 S,I,UPDATE 已授（Q6 REVOKE 收库级 U,D 不及表级），FOR UPDATE 合法。
+- **契约测同步 ✅**：Symmetry 测已换锚行 stub（含 last_hash=NULL 病态 GENESIS 兜底用例）。
+- **镜像 1 行 = P0-9.1 执行者自翻 run8 ALL PASS**，合规。
+
+结论：在途实施可直接推进，无需返工。本会话不代写、不抢 lane。遗留提醒：① chain_heads 建表后须登记 tenant.excludes（SQL 注释已自警）；② 既有库 ALTER + sync-seed 仍须停写窗口；③ SEC-HIGH-3 守卫 2F（见 21:50 段）待归属会话按修复建议收口。
+
+---
+
+## 2026-09-05 21:50 PDT Qoder 接续会话（第二方复核）：run8 ALLPASS 证据核验 + 当前态全量 479/2F 定性——在途守卫测试自冲突，非产品缺陷
+
+### run8 证据件第三方复核 ✅
+`验收/P0-9.1-业务链真实验收结果-run8-ALLPASS-20260906.json`（21:44, 15KB）自洽：79/79 ALL PASS；TS 21:42:14、HEAD `e9e6631d`、jar def6i@19:04:28、实例 16045；基线 chain OK/broken 0（208行/seq1608）→终态 chain OK/broken 0（224行/seq1624），rows增量16=seq增量16（只追加守恒）；改密 hash 前后均 `$2a$10$`（cost=10 强化态）。
+
+### 当前态全量（21:50 实测，含兄弟在途件）
+`mvn -o -pl ruoyi-modules/ruoyi-ipd test` → **Tests run: 479, Failures: 2, Errors: 0, Skipped: 22**。2F 全部来自 untracked 在途 `PermissionAdviceCoverageTest`（SEC-HIGH-3 防漂移守卫，归属兄弟 SEC-HIGH 线）。其余 477 全绿（含 IpdAuthSession 放宽 SaTokenException 后 IpdAuthServiceTest 10/10，无回归）。
+
+### 2F 定性（探针实证，非推测）
+产品侧无缺陷：13/13 业务 Controller 均在 `org.ruoyi.ipd.controller` 包，basePackages 修复本身有效。两红均为**守卫测试自身字面量陷阱**（R9 根因 #2+#6 双坑复发）：
+1. `adviceAnnotationScopedByBasePackages:93`：`doesNotContain("assignableTypes")` 命中 handler Javadoc 里 HEAD 既有的历史叙述（“Round 8 / R8-P1-B：assignableTypes 改为 basePackages 全局覆盖”）。
+2. `everyRestControllerCoveredByAdviceBasePackage:131`：handler 在途 Javadoc 新增行“……所有 @RestController 均落在……”中的注解名被自身正则 `@RestController\b` 扫中 → handler（包 org.ruoyi.ipd.security）被误判为包外 Controller——自指陷阱。
+
+### 修复建议（交归属会话，本会话不代修）
+① doesNotContain 收窄为注解形态（如 `"@RestControllerAdvice(assignableTypes"`），Javadoc 历史叙述自然豁免；② 扫描前剥离注释行（strip 后以 `*` 或 `//` 开头的行跳过——实测 13 个真 Controller 命中行均为纯注解行 `@RestController`）。
+
+---
+
+## 2026-09-05 21:30–21:37 PDT Qoder 治理会话（第二方）：owner 三裁决落地——Q6 REVOKE 已执行（DEF-5 收口）+ CAS 拍 P + ⑦ 拍 a
+
+owner 指令「1\按照建议执行 2、Q6 REVOKE 授权：一条命令收库级 UPDATE,DELETE（当前 0 连接=理想窗口，独立可先行）」。
+
+### 执行实录（21:33–21:35 PDT）
+- **前置五探针复验**（21:33:14，移动靶复验全清）：mysql.db 库级仍 Y/Y/Y/Y；活跃 ipd_app 连接 **0**；host 变体仍仅 @'127.0.0.1'；表级未覆盖表仍仅 `_ipd_schema_history`；audit_logs/chain_heads 表级 S,I / S,UPDATE 未变 → runbook 前置全部成立。
+- **执行**（root socket）：`REVOKE UPDATE, DELETE ON ipd_dev.* FROM 'ipd_app'@'127.0.0.1';` → rc=0。字典双验：SHOW GRANTS 库级行=`GRANT SELECT, INSERT ON ipd_dev.*`；mysql.db=Y/Y/N/N。
+- **app 凭据四向探针**：负向 `UPDATE audit_logs WHERE seq=-1` → **ERROR 1142 UPDATE command denied**（exit=1；报错 host 显示 localhost=MySQL 对 127.0.0.1 的反解显示，按本账户 S,I 态拒绝）✅；正向 chain_heads UPDATE 0 行 rc=0（CAS advance 可用）✅；`SELECT…FOR UPDATE` GLOBAL rc=0（P 锁定读可用，锚行现读 67/68，seed 仍冻结）✅；业务表 products UPDATE 0 行 rc=0（121 业务表 CRUD 不受累及）✅；探测零污染 ✅。
+- **生效态（db 级 S,I ∪ 表级）**：audit_logs=S,I（**只追加已在 DB 层强制，DEF-5 收口**）；chain_heads=S,I,UPDATE（库级 INSERT 漏入=低危残留，§2.3 二步收紧未授权维持现状）；业务表不变；`_ipd_schema_history` 保留库级 S,I 安全网。回滚命令备置未用（turnkey 包 §10）。
+- **下游影响判定**：兄弟 21:28 全量绿 476/0/0/22 不受影响——业务表全数保有表级 U,D；失 U,D 的仅 audit_logs（单测零更新路径）与 `_ipd_schema_history`（schema 工具表）。
+
+### 决策登记（owner「按照建议执行」）
+- **CAS 拍 P**（悲观锁单行锚）：①②③ 由 Batch-2 按变体 P 实施（O 降备选，READ_COMMITTED 防 RR 快照失明备注保留）；复核文档 §7 ③ 行 + turnkey §8 已回填。
+- **⑦ 拍 a 维持休眠**：⑦ 关卡收口（休眠列零改动；日后接线 hash_version 须再立 owner 决策）。
+- live 落地（①②③ DDL/Java/部署、seed sync）仍 gate 主协调器停写窗口；本会话除本次授权 REVOKE 外零 DB 变更、零实例操作、零 live 源码。owner 21:30 R8-P0-5~9 对账收口段完整保留于本文件头部。
+
+### 提交
+- path-lock：复核文档（③⑦/Q6 行 + 蜂群追记）+ turnkey 包（§8 决策回填 + §10 执行实录）→ commit 见下。log.md 本段留工作树交主协调器。
+
+---
+
+## 2026-09-05 21:39–21:45 PDT Qoder 会话（P0-9.1 收口）：def6 启动死循环根因三层修复 → 79/79 ALL PASS
+
+接续 dsh 会话交接（def6@16050 rebuild 后反复启动失败于 Redis 6379/16379）。R9b 处置建议（回退 RedisConfig hunk + application.yml autoconfig 排除 hunk）**本会话已执行**。
+
+### 根因三层（逐层实证，非推测）
+1. **local yml 文档2 双顶层 `spring:` key**（`# BEGIN BACKEND RUNTIME` 段内 `spring.boot.admin` 与后追加的 `spring.data.redis` 并列）→ snakeyaml `DuplicateKeyException` 直接拒载（dsh 21:24 改密码时破坏结构）。已合并为单 spring 块。
+2. **`password: ""` 空串**：Redisson 对空串仍发 AUTH → Redis 5.0.14 无密码回 `ERR Client sent AUTH, but no password is set` → 包装成 "Unable to connect"（dsh 21:03 后 def6 反复挂的另一半）。已改不设 password（null 不发 AUTH），Redis 维持无密码 dev 态。同因清理无效键 `redisson.singleServerConfig.address/password`（RedissonProperties 无此字段，仅误导）。
+3. **整仓 rebuild 混入兄弟在途代码**：21:31 构建 fat jar 含 `codingHarness*` 等 11 个 Executor bean（多个 primary）→ `legacyImportService` 注入炸。即 P0-9.1 脚本头部 DEF-7 教训的再现（"整模块打包会把未发布代码混进验证 jar"）。改用 **def6i.jar@19:04（已验干净：无 exclude hack、无硬编码 16379、无 codingHarness）** 起 16045。
+
+### 工作树变更（本会话）
+- `RedisConfig.java`、`ruoyi-admin application.yml`：回退至 HEAD（=R9b 处置建议）。
+- `IpdAuthSession.revokeAll`：catch 放宽 `SaTokenException`（原 NotLoginException 接不住 SaJwtException；def6i 实证守卫生效后 logout 正常、L3 改密 200，此为防御层，留待下轮正常构建发布，未混入本轮验证 jar）。
+- local yml（gitignored）：如上三层结构修复。
+
+### 验收（run8）
+- def6i.jar @16045（PID 68065，ipd-local + additional-location，无密码 Redis 16379 + MySQL 13306）。
+- **P0-9.1 业务链真实验收 79/79 ALL PASS**（此前最好 78/83）。证据：`docs/ipd-系统说明/验收/P0-9.1-业务链真实验收结果-run8-ALLPASS-20260906.json`。
+- 终态审计链 225 行至 seq 1625，verify `chain=OK broken=[]`；无痕还原生效（孙研发 hash+must_change_pwd ✓；残留：last_login_at 被本轮置位 12:42:14，脚本 finally 未还原此项，无断言依赖，记录在案）。
+
+### 看板同步（21:47 PDT）
+- P0-9.1 状态列更新为 run8 ALL PASS 79/79 终态（旧 75/83 转前态记录），`manage.py set P0-9.1 done --note` + `sync --apply` 推送；连带兄弟会话已完成的 P0-3.2 done 一并上线；终态 check `unchanged: 246` 漂移归零。
+- P0-9 汇总卡维持汇总态未动（P0-7.4 等关联细卡未全验收，按规则不得凭单卡翻汇总）。
+
+### R9c 执行轮（2026-09-05 21:30–22:0x）：owner「立即执行剩余待办」+「该清理的要清理掉」授权全落地
+
+- **凭证 R1–R3（真轮换，闭环）**：R1 四 QA 账号互异强口令 + R2 七种子账号新种子 cost4→10（单事务 11/11 UPDATE，离线 BCrypt 复核 11/11 OK、去重 5/11 符合契约）+ R3 新种子/4 QA 口令/64 位 JWT 密钥入 credentials.json（gitignored），application-ipd-local.yml jwt-secret-key 同步换新；P0-9.1 py 种子字面量切 env `IPD_SEED_PWD`。a8a70ad9 旧 JWT 密钥随之**实质作废**（push 前置条件解除）。
+- **DDL D1–D3（落地）**：idx_sa_project_code + uk_ldcr_pending_project/生成列/version 在 4 在用库（ipd_dev/restore/perf/qa04）全 APPLIED（幂等 SQL + 事后 check 脚本核验 12/12）。
+- **D4（已执行）**：32 孤儿库 DROP 32/32，终态恰 8 库断言通过；执行前 processlist 零连接复核；drop 脚本首跑反引号被 shell 吃掉属安全失败（零误删），改 pymysql 断言化直执。
+- **prod patch（已消费）**：application-prod.yml +18 行 apply，按守卫 case3 生命周期契约改名 *.applied-20260905；ProdConfigDeltaGuardTest 4/4 绿。
+- **OPS-09 mutex hook（上线）**：pre/post-java-yml-write.sh 写入 .claude/hooks/ 并注册 settings.json（SKIP_CONCURRENT_WRITE=1 紧急通道）。
+- **D5（留 owner）**：person_roles 建表与否绑定 RBAC 多角色设计，未动；excludes 登记保持无害 no-op。
+- 凭证纪律：全程文件传递、输出零明文；rotate 工作目录 .codex/ipd-dev/run/rotate-r1r3/（600）。
