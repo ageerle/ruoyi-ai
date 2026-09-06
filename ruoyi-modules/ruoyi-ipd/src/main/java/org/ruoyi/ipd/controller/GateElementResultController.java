@@ -118,10 +118,26 @@ public class GateElementResultController {
         }
     }
 
-    /** 提交评审：全要素已判 + 否决项阻断（AC-GATE-15/19/20）+ 要素定义快照冻结。 */
+    /**
+     * 提交评审：[SEC-FIX-HIGH-1.1] 强制输出物守卫——
+     * 全要素已判 + 否决项阻断（AC-GATE-15/19/20）+ 要素定义快照冻结 + 评审材料 + 会议纪要。
+     * body 必填 materialsUrl + meetingMinutesUrl（否则 40001 PARAM_INVALID）。
+     */
     @PostMapping("/submit")
-    public ApiV1Response<GateView> submit(@PathVariable Long gateId) {
+    public ApiV1Response<GateView> submit(@PathVariable Long gateId,
+                                          @Valid @RequestBody MandatoryOutputsReq req) {
         IpdActor actor = permission.requireInternal();
-        return ApiV1Response.ok(GateView.from(service.submit(gateId, actor)));
+        return ApiV1Response.ok(GateView.from(
+            service.submit(gateId, req.materialsUrl(), req.meetingMinutesUrl(), actor)));
     }
+
+    /** 强制输出物请求体（[SEC-FIX-HIGH-1.1]）。 */
+    public record MandatoryOutputsReq(
+        @jakarta.validation.constraints.NotBlank(message = "materialsUrl 不能为空")
+        @jakarta.validation.constraints.Size(max = 500)
+        String materialsUrl,
+        @jakarta.validation.constraints.NotBlank(message = "meetingMinutesUrl 不能为空")
+        @jakarta.validation.constraints.Size(max = 500)
+        String meetingMinutesUrl
+    ) {}
 }

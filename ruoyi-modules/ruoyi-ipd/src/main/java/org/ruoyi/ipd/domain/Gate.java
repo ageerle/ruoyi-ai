@@ -75,6 +75,12 @@ public class Gate extends BaseEntity implements SoftDeletable {
     @TableField("del_flag")
     private String delFlag;
 
+    /** [SEC-FIX-HIGH-1.1] 评审材料 URL（会前 2 工作日发出；提交 Gate 时必填）。 */
+    private String materialsUrl;
+
+    /** [SEC-FIX-HIGH-1.1] 会议纪要 URL（含遗留项清单；提交 Gate 时必填）。 */
+    private String meetingMinutesUrl;
+
     /** 签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21） */
     private Date signDueAt;
 

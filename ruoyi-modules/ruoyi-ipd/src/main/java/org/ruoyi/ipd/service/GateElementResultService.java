@@ -192,12 +192,25 @@ public class GateElementResultService {
         }
     }
 
-    /** 提交 Gate 评审：全要素已判 + 否决项未 FAIL + 冻结要素定义快照。 */
+    /**
+     * 提交 Gate 评审：[SEC-FIX-HIGH-1.1] 全要素已判 + 否决项未 FAIL +
+     * 强制输出物（评审材料 + 会议纪要）+ 冻结要素定义快照。
+     */
     @Transactional(rollbackFor = Exception.class)
-    public Gate submit(Long gateId, IpdActor operator) {
+    public Gate submit(Long gateId, String materialsUrl, String meetingMinutesUrl, IpdActor operator) {
         Gate gate = requireGate(gateId);
         if (!"PENDING".equals(gate.getStatus())) {
             throw new ServiceException("Gate 已终态，不可重复提交: " + gate.getStatus());
+        }
+        // [SEC-FIX-HIGH-1.1] 强制输出物守卫——评审材料 + 会议纪要 URL 必填
+        if (materialsUrl == null || materialsUrl.isBlank()) {
+            throw new ServiceException("评审材料 URL 必填（[SEC-FIX-HIGH-1.1] Gate 强制输出物）");
+        }
+        if (meetingMinutesUrl == null || meetingMinutesUrl.isBlank()) {
+            throw new ServiceException("会议纪要 URL 必填（[SEC-FIX-HIGH-1.1] Gate 强制输出物）");
+        }
+        if (materialsUrl.length() > 500 || meetingMinutesUrl.length() > 500) {
+            throw new ServiceException("评审材料/会议纪要 URL 长度超 500（[SEC-FIX-HIGH-1.1]）");
         }
         if (gate.getStartedAt() != null) {
             throw new ServiceException("已提交，等待签署（双签流转归 P2-5.2）");
@@ -240,6 +253,8 @@ public class GateElementResultService {
         }
         // AC-GATE-17：前序 Gate 逾期未关闭遗留 → 阻断进入下一个 Gate
         requireNoOverdueLegacy(gate);
+        gate.setMaterialsUrl(materialsUrl);
+        gate.setMeetingMinutesUrl(meetingMinutesUrl);
         gate.setStartedAt(new Date());
         // P2-5.4：签署期限与 startedAt 同步起算（BR-GATE-04；延期/弃权扫描的锚点）
         int signDays = systemConfigService.getIntValue(

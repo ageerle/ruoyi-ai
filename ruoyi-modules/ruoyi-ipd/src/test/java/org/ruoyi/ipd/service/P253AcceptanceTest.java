@@ -267,7 +267,7 @@ class P253AcceptanceTest {
             .thenReturn(List.of(judgedRow(502L, 701L, "PASS"), judgedRow(502L, 702L, "PASS")))
             .thenReturn(List.of(overdue));
 
-        assertThatThrownBy(() -> service.submit(502L, PM))
+        assertThatThrownBy(() -> service.submit(502L, "https://oss.local/materials/g2.pdf", "https://oss.local/minutes/g2.pdf", PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("逾期未关闭的条件遗留");
         assertThat(g2.getStartedAt()).as("被阻断的 Gate 不应置 startedAt").isNull();
@@ -285,7 +285,7 @@ class P253AcceptanceTest {
             .thenReturn(List.of(judgedRow(502L, 701L, "PASS"), judgedRow(502L, 702L, "PASS")))
             .thenReturn(List.of());
 
-        Gate submitted = service.submit(502L, PM);
+        Gate submitted = service.submit(502L, "https://oss.local/materials/g2.pdf", "https://oss.local/minutes/g2.pdf", PM);
 
         assertThat(submitted.getStartedAt()).isNotNull();
     }
@@ -312,7 +312,7 @@ class P253AcceptanceTest {
         assertThat((Boolean) legacy.get(0).get("overdue")).isTrue();
 
         // 阻断同样不依赖要素存在（requireNoOverdueLegacy 不查要素表）
-        assertThatThrownBy(() -> service.submit(502L, PM))
+        assertThatThrownBy(() -> service.submit(502L, "https://oss.local/materials/g2.pdf", "https://oss.local/minutes/g2.pdf", PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("逾期未关闭的条件遗留");
     }

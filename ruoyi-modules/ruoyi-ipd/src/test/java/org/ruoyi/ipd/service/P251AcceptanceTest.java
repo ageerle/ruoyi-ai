@@ -203,7 +203,7 @@ class P251AcceptanceTest {
     @Test
     @DisplayName("提交阻断：适用要素未全判 ⇒ 拒绝并列缺失项")
     void submit_missingJudgements_rejected() {
-        assertThatThrownBy(() -> service.submit(501L, PM))
+        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("尚未判定")
             .hasMessageContaining("G1-1");
@@ -217,7 +217,7 @@ class P251AcceptanceTest {
                    judged(602L, "PASS", null),
                    judged(603L, "PASS", null));
 
-        assertThatThrownBy(() -> service.submit(501L, PM))
+        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("命中否决项")
             .hasMessageContaining("G1-2");
@@ -230,7 +230,7 @@ class P251AcceptanceTest {
                    judged(602L, "PASS", null),
                    judged(603L, "FAIL", null));  // 普通要素 FAIL 无证据
 
-        assertThatThrownBy(() -> service.submit(501L, PM))
+        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("缺证据");
     }
@@ -242,7 +242,7 @@ class P251AcceptanceTest {
                    judged(602L, "PASS", null),
                    judged(603L, "CONDITIONAL", null));
 
-        Gate submitted = service.submit(501L, PM);
+        Gate submitted = service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM);
 
         assertThat(submitted.getStartedAt()).isNotNull();
         assertThat(submitted.getElementSnapshot()).contains("G1-1").contains("G1-3").contains("CONDITIONAL");
@@ -255,7 +255,7 @@ class P251AcceptanceTest {
     void submit_twice_rejected() {
         gate.setStartedAt(new java.util.Date());
 
-        assertThatThrownBy(() -> service.submit(501L, PM))
+        assertThatThrownBy(() -> service.submit(501L, "https://oss.local/materials/test.pdf", "https://oss.local/minutes/test.pdf", PM))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("等待签署");
     }
