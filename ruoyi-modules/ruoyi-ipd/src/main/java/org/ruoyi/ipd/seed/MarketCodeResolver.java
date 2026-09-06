@@ -96,28 +96,18 @@ public final class MarketCodeResolver {
     }
 
     /**
-     * R8-AUTO-7：白名单判断——只接受 ISO 3166 alpha-2/alpha-3 + 项目自定义 (CB/IEC)。
-     * 拒绝任意 "as long as ASCII letters ≤8" 的攻击者输入。
+     * R8-AUTO-11 / 后台审查 fail-open / allowlist semantic escape：
+     * 白名单为 authoritative——只有 ISO_CODES ∪ CUSTOM_CODES 命中才算合法国别码。
+     * 移除原 shape fallback（2-3 字符 ASCII 字母兜底），避免攻击者输入 "CA" / "DE" / "FR"
+     * 等非白名单 ISO 码绕过白名单进入 SQL IN (...) 查询。
+     * 后续扩展白名单（增加 CA/DE/FR/RU/VN 等）：同步修改 ISO_CODES + cert_templates 模板数据。
      */
     private static boolean isValidCountryCode(String token) {
         if (token == null || token.isEmpty()) {
             return false;
         }
         String upper = token.toUpperCase(Locale.ROOT);
-        if (ISO_CODES.contains(upper) || CUSTOM_CODES.contains(upper)) {
-            return true;
-        }
-        // 仅允许 2-3 字符纯 ASCII 字母作为 ISO alpha-2/alpha-3 兜底
-        if (upper.length() < 2 || upper.length() > 3) {
-            return false;
-        }
-        for (int i = 0; i < upper.length(); i++) {
-            char c = upper.charAt(i);
-            if (!((c >= 'A' && c <= 'Z'))) {
-                return false;
-            }
-        }
-        return true;
+        return ISO_CODES.contains(upper) || CUSTOM_CODES.contains(upper);
     }
 
     /**
