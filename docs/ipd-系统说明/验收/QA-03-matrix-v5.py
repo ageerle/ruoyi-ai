@@ -2,7 +2,14 @@
 # QA-03 权限与审计矩阵实测 v5（真库 16039；基准=初始化真实数据）
 # v5 修正：POST /projects 拆两格——缺字段格证明 ADMIN/LEADER 放行(400=过鉴权进业务校验)；
 # 合法格仅 MARKET 独占成功案例（v4 教训：ADMIN not403 先建成功绑走产品→MARKET 必 400）
-import json, subprocess, time, urllib.request, urllib.error
+import json, os, subprocess, sys, time, urllib.request, urllib.error
+
+# R8-AUTO-10 / 后台审查 P0-4：测试账号密码改 env var 注入
+def _require_env(name):
+    val = os.environ.get(name)
+    if not val:
+        sys.exit(f"FAIL-FAST: 环境变量 {name} 未设置")
+    return val
 
 BASE = "http://localhost:16039"
 MYSQL = "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/software/mysql-8.0.46-macos15-arm64/bin/mysql"
@@ -33,10 +40,10 @@ def login(u,p):
     return b["data"]["token"] if s==200 and b.get("code")==0 else None
 
 ROLES = {
-    "ADMIN":  login("ipd-admin","SZviX9kmMo7Tg92kjBax6i9MVsfBV-eh"),
-    "LEADER": login("ipd-leader","i7fVdG7aIgwG8l37-4f7tqNVEQygfWHJ"),
-    "MARKET": login("陈市场","Qa03-Mkt-7pLx9wVz"),
-    "RD":     login("ipd-rd","iQc9xozo-KelvRPdIQvknkxMZIiij39F"),
+    "ADMIN":  login("ipd-admin",_require_env("IPD_TEST_ADMIN_PWD")),
+    "LEADER": login("ipd-leader",_require_env("IPD_TEST_LEADER_PWD")),
+    "MARKET": login("陈市场",_require_env("IPD_TEST_MARKET_PWD")),
+    "RD":     login("ipd-rd",_require_env("IPD_TEST_RD_PWD")),
     "NOAUTH": None,
 }
 assert all(ROLES[r] for r in ("ADMIN","LEADER","MARKET","RD")), "登录失败"

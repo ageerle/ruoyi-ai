@@ -180,10 +180,10 @@ ct0 = int(q1("SELECT COUNT(*) FROM cert_templates") or 0)
 # ---------------- L1 登录腿 ----------------
 print("\n=== L1 真实登录（4 主账号 + 首登强制改密门 + 未登录拒绝）===")
 TOK = {}
-for role, u, p in (("ADMIN", "ipd-admin", "SZviX9kmMo7Tg92kjBax6i9MVsfBV-eh"),
-                   ("LEADER", "ipd-leader", "i7fVdG7aIgwG8l37-4f7tqNVEQygfWHJ"),
-                   ("MARKET", "陈市场", "Qa03-Mkt-7pLx9wVz"),
-                   ("RD", "ipd-rd", "iQc9xozo-KelvRPdIQvknkxMZIiij39F")):
+for role, u, p in (("ADMIN", "ipd-admin", _require_env("IPD_TEST_ADMIN_PWD")),
+                   ("LEADER", "ipd-leader", _require_env("IPD_TEST_LEADER_PWD")),
+                   ("MARKET", "陈市场", _require_env("IPD_TEST_MARKET_PWD")),
+                   ("RD", "ipd-rd", _require_env("IPD_TEST_RD_PWD"))):
     s, c, t, mcp, scope = login(u, p)
     TOK[role] = t
     check("L1 %s 登录 HTTP200/code0" % role, (s, c), (200, 0), "scope=%s" % scope)
