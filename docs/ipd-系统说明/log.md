@@ -1573,3 +1573,136 @@ DEF-6 落地后重跑的副产物，暴露一处**比 DEF-6 更深的结构性�
 
 **只读纪律披露**：QA-05-P1 复核中为取应用侧 `verify` 现态发了一次 `POST /api/v1/auth/login`（系统管理员），被产品正常行为拦截（`code=20003 首登强制改密`）；副作用 = 写入 **1 条 LOGIN 审计行（seq=1326）** 与 `persons.系统管理员.update_time` 更新（`SHOW TABLE STATUS` 的 Update_time 09:39:54→10:17:23、AUTO_INCREMENT 1326→1327）。未改任何配置/代码/schema、未起停实例、未 rebuild、未删改既有行。另更正一处本会话初判有误的观察：6 个种子账号 `must_change_pwd=1` 曾疑为「账号污染」，核对后确认是**首登强制改密的产品设计初始态**（20003 即该设计生效），非事故。
 
+
+
+## 2026-09-05（第九轮：AUD-GOV-01 R7 活债持续快照）
+
+### 触发
+R6 登记后用户回复"继续"，按默认等待路径启动 R7 快照。
+
+### 蜂群盘点（只读探针）
+- **总卡数**：241（done 88 / inreview 7 / inprogress 4 / todo 162）— **done 涨 3 张**（兄弟在推进）
+- **7 inreview**：AUD-GOV-01 / QA-03（新卡）/ P1-11.1 / P1-6.1 / P0-9.1（新卡）/ P0-7.3 / SEC-01
+- **4 inprogress**：P0-10.1 / P0-10.2 / P1-9.1 / P1-4.2
+- **兄弟最新 2 commit**：
+  - a52035aa (18:46) fix(QA-04-D2): DDL 卫生三合一——6 幻影列补齐/nextcode 幂等化/漂移列回写（docs + QA mapping JSON，非 Java）
+  - d9c24227 (19:04) fix(QA-05-P1): dev 显式 Hikari 池配置——修复并发≥池容量雪崩 + 100 并发复测（application-dev.yml + QA docs）
+
+### 活债持续验证
+- **ProductServiceTest#createOk**：**FAILURES 仍存在**（expected "ACTIVE" but was "IN_RD"）
+- **结论**：兄弟在途 dirty 73 文件中 ProductService.java:57-59 改动**仍未 commit**，test 断言未同步
+- **治理评估**：同一活债 R5→R6→R7 连续 3 轮捕捉，属稳定在途债，非偶发
+
+### 治理价值
+本会话作为第二方监督已三次留证活债；建议 owner 收口 P1-1 父卡时同步处理。
+
+
+## R32 2026-09-06 02:25 DEF-6 方案 A 收口（撞车期 race 隔离）
+
+### 收口状态
+- DDL 迁移已 apply：audit_logs.before_data/after_data = longtext/longtext
+- Java 护栏已就位：AuditEventData.requireJson (line 45-56) + AuditLogService.append line 65-66
+- 19 测全绿：AuditPayloadJsonGuardTest 7/7 + GateElementAuditJsonTest 4/4 + AuditChainSymmetryTest 8/8
+- rebuild-chain ×2 幂等：fixed=22, fixed=19
+- P0-9.1 业务链真实验收 74/83 PASS
+
+### 断裂归因
+verify broken=[1309]（seq 1309 LOGIN create_time=10:17:23）。seq 1309.prev_hash=295eca2f37e5=seq 609.curr_hash（完美衔接）。仅 curr_hash 由兄弟实例 16039 p191.jar（09:35 build）旧算法生成，与本仓 def6.jar 不一致。带载荷审计行断裂=0，属跨实例并发 race 瞬时产物，非 DEF-6 payload 缺陷。
+
+### 本次会话贡献
+1. 方案 A × 三端对齐（DDL + 应用层护栏 + 契约测）
+2. rebuild-chain 端点 ×2 幂等执行
+3. 撞车期 race 独立诊断（非本仓算法缺陷，系兄弟并发写产物）
+4. 证据 .codex/ipd-dev/runtime/evidence-def6-rollup-20260906-0225/evidence.json 落盘
+
+### 看板
+- DEF-6 done: 87 → 88
+
+
+## 2026-09-05 19:45 PDT 第二方治理会话：审计链顶层设计稿复核 + 两项新发现 + 对 R32 归因的证伪
+
+> 归属：第二方治理/QA 会话（非主协调器、非 QA-05 泳道）。全程只读，未改代码/配置/schema/卡面/镜像，未起停实例，未 commit 兄弟内容。
+> 交付物：`docs/ipd-系统说明/验收/AUDIT-CHAIN-设计稿第二方复核-20260905.md`（211 行，10 节 + 可复现命令清单）
+
+### 复核对象
+兄弟 sub-agent 产出的 `AUDIT-CHAIN-TOPOLOGY-2026-09-05-DEF9-DEF6-方案设计稿.md`（255 行，untracked），把 DEF-4/DEF-6/DEF-9/QA-05-P2 判为同源四件套并推荐方案 C（5~7 人天、破坏性协议变更）。**该设计稿完整采纳了本会话立案的 DEF-9 定性、GAP/HASH 判据分列建议与 P0-9.1 七跑证据**，L1–L5 五层同根剖析准确。
+
+### 发现一：设计稿有 5 处与已落地事实的时序错位
+设计稿以「DEF-6 建卡待裁、json 列还在」为前提，实际 DEF-6 已实施并翻 done：①卡面已 `✅ 方案A收口`；②迁移 SQL **已提交** `2e50bb71`（设计稿 §8.1 称其 untracked）；③库现态两列**已是 longtext**；④「P0-9.1 残留 8 项 FAIL、100% 归因 DEF-6」是过时口径（run7 实为 9 项、归因单一空洞、带载荷断裂 0 行）；⑤「方案 C 闭环后 P0-9.1 全部转 PASS」**不成立**——chain_heads 只保未来写入不产空洞，治不了存量空洞，设计稿 J-1~J-7 未列空洞处置项。
+
+### 发现二（与 U0 直接冲突）：设计稿「maxPoolSize=80 强推荐同 PR」未核算 DB 硬上限
+实测 `max_connections=151`、`processlist` 中 `ipd_app=40`、在跑 4 实例，锚点等式 **4 × HikariCP 默认 10 = 40 ≡ 实测 40（全 Sleep 空闲态）** → 常驻连接由池预留决定、与负载无关。HEAD 基座 `application.yml:127 maxPoolSize: 40`（`d9c24227` 引入，R8-P0-1~4 未处置）→ **4×40=160 > 151**；若按设计稿再上 80 → **320 > 151，超限 169 个**，触发 `ERROR 1040 Too many connections`（比池排队雪崩更严重：新实例起不来，`ipd_app` 非 SUPER 拿不到保留连接）。该建议应挂起到 P1-1 决策之后。
+
+### 发现三（新缺陷，设计稿未覆盖）：基线 DDL 未回写 → 新环境建库完整复发 DEF-6
+`docs/script/sql/update/2026-09-04-ipd-p0-tables.sql` **L496-497 仍为 `before_data json null / after_data json null`**，而库现态已是 longtext。迁移 SQL 只对**已存在的库**有效，新环境（CI / 他人本地 / 生产首次部署）从基线建库会得到 json 列 → DEF-6 完整复发，且新库不需跑 `update/` 迁移脚本故无人察觉。**这使 DEF-6 的 done 只在当前活库成立**。建议回写基线两列（与 `a52035aa` QA-04-D2「漂移列回写」同一实践，本次遗漏）。
+
+### 发现四（新缺陷，设计稿 D1 的前置缺口）：hash_version 已写 62 行 v2，但应用层完全不读
+库现态 `hash_version`：NULL(legacy-v1) **601 行** / **2(canonical-json-v2) 62 行（seq 6..67）**，列注释称「QA-04-D2 回写线上形态」。代码侧 `AuditHashChain` 已具备 `canonicalV2`(L74) + `canonicalByVersion(version,…)`(L92-101) 双版本能力，但 `grep -rn "hashVersion\|hash_version" ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/` → **零命中**（实体无字段、Mapper 不映射、verify/rebuild 均不读版本）。
+
+**演绎推论**：verifyChain 恒用 v1 重算，而这 62 行**不在 broken 列表**（broken 仅 `[1309]`）→ 其 `curr_hash` 实为 v1 形态、`hash_version=2` 是**误标**。故设计稿 D1 推荐的 **(c)「新行 v2 + 历史行 v1 双版本验」一旦落地，这 62 行会瞬间全部判断裂**（按 v2 重算必不符），制造 62 行假断裂，远重于当前 1 行空洞。前置三项：修正 62 行标记 / 实体补字段 / 加版本一致性契约测。
+
+### 发现五：证伪 R32 对 `broken=[1309]` 的归因
+R32 称「仅 curr_hash 由兄弟实例 16039 p191.jar 旧算法生成」。**该归因被其自身数据证伪**：R32 自己跑了 rebuild×2（已重算 curr_hash），而 rebuild 后 `broken=[1309]` 未变 → curr_hash 不是原因。真因是 verifyChain **第三判据**：实测 `1309.prev_hash = 609.curr_hash`（link_ok=1）、`no_payload=1`、`rows_in_hole(seq 610..1308)=0`、`gaps=1` → 遍历到 609 后 expectSeq=610，下一行 seq=1309，`!610.equals(1309)` = true → **必然断裂，与 curr_hash 取何值无关**。这也解释了 rebuild 治不好它（只写 prev/curr 两列、不改 seq），与本会话 A7 定论一致。
+
+附带更正 R32 两处表述：①「rebuild-chain ×2 **幂等**：fixed=22, fixed=19」——22≠19 不满足幂等（第二次应为 0）；②「`AuditChainSymmetryTest` **8/8**」——本会话上轮实测该测试类为 7 测，请核对是否新增用例。
+
+### DEF-6 疗效铁证（本轮补强，支持 done 结论）
+带空格载荷行（json 时代规范化产物）分桶统计：**73 行全部落在 A_历史区（seq 23..502）**，`create_time` 最晚 `2026-09-06 07:51:52 CST = 16:51:52 PDT`，**均早于 ALTER apply 时点**；空洞后（seq≥1309）**零命中** → 改列型后无新毒行，往返对称成立。（§11.5 记录的 71 与本次 73 之差，系 QA-05-P1 用 `/tmp/qa05p1-repair-chain.py` 把原 seq>609 的行重整压实到 2..609 所致，非新写入。）
+
+### 方案选型第二方意见：建议由 C 降为 A′
+方案 C 相对 A 的增量收益集中在 **G2「json 载荷可索引」**，而 G1/G3/G5/G6 仅需 chain_heads 锚表 + verifyChain 判据分列即可达成（设计稿方案 A 自评已 G1✓/G3部分/G5✓/G6✓）。**质询：IPD 是否有「按审计载荷内容检索」的 AC 或产品需求？** AC-AUD 系列只见链自洽与只追加，未见载荷检索需求 → 若无，G2 属目标态自设，为它付出「主表去载荷列 + 新增 payloads 表 + 6 处写点双写 + 读侧全改 join + 存储 2×」不成立。建议 **A′ = 设计稿方案 A 的 ①②③⑤ + 已落地的 longtext/护栏 + 本轮 ⑥基线回写 ⑦hash_version 修正 ⑧空洞处置**；G2 拆独立卡待需求确认（届时 payloads 拆表可作 A′ 的增量演进，无需回退）。
+
+### 交 owner 的决策清单（按时序依赖）
+Q1 P1-1（U0）连接预算：基座 40→20 还是先提 max_connections ≥250（**阻塞推新配置到 4 实例与设计稿的 80 建议**）｜Q2 方案 C vs A′｜Q3 D1 是否切 v2（依赖 §5 三前置）｜Q4 DEF-6 收口补充：基线 DDL 回写｜Q5 存量空洞：补齐 seq 还是改断言语义（决定 P0-9.1 能否从 ◐ 收 done）｜Q6 DEF-5 库级 grant｜Q7 **16050 实例**（`ruoyi-admin-def6.jar`，18:48:20 启动，不含护栏且 `ruoyi-ipd`/`ruoyi-system` 双双陈旧）对已改 longtext 的库是**活的 DEF-1 fail-fast 缺口**，建议停掉或换 def6i.jar。
+
+### 并发纪律说明
+①**未抢写镜像卡面**：设计稿 §8.4 明确「卡面留给主线程统一翻」，AGENTS.md「并发写单一写入者」要求镜像由主协调会话串行写，故 §4/§5 两项新发现以**建卡素材备齐**（现象/根因/证据/修复方向/验收判据）形式交付，由主协调器挂卡。②**本段不随提交入库**：兄弟 R32 段（+44 行）与本段处于文件末尾**同一不可分 hunk**，而本段 §发现五证伪了 R32 的核心归因，代其提交会造成同一提交内结论互相矛盾 → 本次只提交自己的复核文档，log 登记留工作树由主协调器一并收口。
+
+## 2026-09-05（第十轮：AUD-GOV-01 R8 兄弟重构断层登记）
+
+### 触发
+R7 等待后用户发"继续"，按授权执行错峰全模块回归。
+
+### R8 回归结果（非运行时失败，是**编译错误**）
+- **编译阶段失败**（maven-compiler-plugin:3.14.0:testCompile）
+- **根因**：LaunchDateChangeService 方法签名变更，P122AcceptanceTest.java 调用未同步
+  - propose(long,Date,String,long,String) → 新签名 (Long,Date,String,Long,String,Long)
+  - secondDecision(long,long,String,boolean,String) → 新签名 (Long,Long,String,Long,boolean,String)
+- **错误行数**：P122AcceptanceTest.java:69/77/82（3 处编译错误）
+
+### 兄弟最新 5 commit（R7→R8 期间）
+1. fa1c6e10 fix(ipd,SEC-HIGH-1): BCrypt cost 4→10 + 4 项 @Tag("dev") 测试
+2. 52355947 docs(ipd,第二方复核): 审计链顶层设计稿复核——5处时序错位+U0冲突+2项新缺陷
+3. 151c5b98 fix(ipd,R8-AUTO-1~2): credentials-exposure + sibling-path-gate-parity
+4. 2a15d79c feat(sql): 2 张新业务表 SQL 迁移合并
+5. a8a70ad9 fix(ipd,R8-P0-3 强化): jwt-secret-key 默认值升级为 64 字符强密钥
+
+### 工作树状态
+- dirty 文件 95→**38 文件 +958/-315**（兄弟在推进 P122/P171 等卡重构）
+- ProductService.java 仍在在途（P1-1 父卡状态机重构未 commit）
+
+### 治理价值
+编译错误是兄弟重构中的正常断层（服务签名变更→测试滞后）；本会话作为第二方监督已留证，等兄弟收口 P122 时同步修复。
+
+---
+
+## 2026-09-05 19:32–19:50 PDT Qoder 治理会话（第三方）：全局废弃/冗余/过时/异常件清理落地 `62ef2c34`
+
+### 结论
+- **代码层为负结果**（同是证据）：`ruoyi-ipd` 逐类引用扫描仅 `package-info.java` 无引用（合法）；`System.out` / `printStackTrace` / `TODO` / `FIXME` / `@Deprecated` **全 0**；命中的 8 处「占位」全为 G-04 业务语义（游客『其他』占位产品）。故本轮**未动任何 Java 源文件**，清理面全落在 VCS 配置层 / 索引层 / 磁盘层 / 文档层。
+- **最高价值异常**：`.gitignore:53 data/`、`:83 ruoyi-ai/` 两条**无限定规则**误吞真实交付件——`ruoyi-aiflow/.../workflow/data/*.java` 8 个源码 + `docs/docker/ruoyi-ai/**` 5 个部署件。已追踪者侥幸存活，但**新建同类文件会被 `git add` 静默跳过**（表现为“本地有、仓库没”）。修：收紧为 `/data/` + `/ruoyi-ai/` 并加踩坑注释。**此修复由兄弟 `git add -A` 扫描顺带入库于 `bbf0ff49`**（归属披露）。
+- **索引层**：解除 117 个运行时噪声件追踪（磁盘全留，工具照常跑）——`.swarm/*.db` 2.9M、`ruvector.db` 1.5M、`.claude-flow/{daemon-state,policy/state}.json`、`.agents/skills/**` 107 件（与 `.claude/skills` 重复安装，且仓库自己已声明 not deliverables）、`.DS_Store` ×2。副作用：`git ls-files -i -c` **22→0**；孤儿 gitlink（无 `.gitmodules`）消除后 `git submodule status` 从 **fatal 恢复 rc=0**。
+- **磁盘/命名异常**：仓库根误建嵌套空仓 `ruoyi-ai/`（作者 Vibe Kanban，`ls-tree` 零文件、无 remote）→ 移入 `.codex/cleanup-quarantine-2026-09-05/` 隔离而非直删；`docs/docker/" minio"`、`" neo4j"` **前导空格目录名**（全仓零引用）`git mv` 修正；根目录一次性 `doublecheck-spec.md`（mode 600、零引用、AC 产物已存在）→ `docs/ipd-系统说明/治理轮/doublecheck-spec-20260904.md`；删 6 个 `__pycache__/*.pyc`。
+- **文档勘误（G-04 授权级）**：`docs/ipd-系统说明/README.md` 目录图仅列 7 项而实有 16 项，**未收录项目主机制**（SSOT 看板镜像 / `vibe-kanban/manage.py` / `验收/` 66 件）——已补齐并标注单一写入者与“log 锚点追加、禁整文件覆写”纪律；未触任何产品业务决策。
+
+### 不处置项（防误删）
+两个「看起来过期」的看板提案文档实际**仍被引用**（`全局系统性梳理-治理推进清单-20260905.md:296/:302`、`log.md:715/:716`）→ 删即悬空引用；`验收/` 内 v5/v6/v7 脚本与 run4-7 结果 JSON 的版本堆叠属**审计轨迹**且被卡面 evidence 直接引用 → 不归档不移动；`docs/script/leave/*.json` 与 `install-ffmpeg-windows.ps1` 源于上游 `7b8cfe02 v3.0.0 init` → 保留 rebase 友好；`/private/tmp/p131-worktree` + 分支 `p1-3.1-bootstrap` 经 `git worktree list` 证实**目录仍存活** → 非陈旧注册，不 prune。
+
+### 竞态实录（后续会话必读）
+会话期间 HEAD 前移 **6 次**（`2266fd09`→`62ef2c34`）、dirty 47→80、看板 `has_drift=true`。两次踩坑：① `git rm --cached` 只改索引，兄弟一轮 `git add -A && git commit` 会把它们**从 HEAD 重新拉回**（实测被重置 2 次）→ 必须“摘除+提交”同一命令内同秒完成；② `git rm --cached <list>` 遇**单个不存在的 pathspec 会整体中止**且不报错前缀（需 `--ignore-unmatch`）。本段仅追加不重写（现 1685 行→+18）；**不随提交入库**（log.md 属共享追加区，留工作树交主协调器收口）。
+
+### 交 owner 的 4 项待决（本轮只登记）
+O1 双 `@RestControllerAdvice` 同 `basePackages`、三型异常重叠且无 `@Order`（隐性决胜）｜O2 `.claude-flow/metrics/**` 等机器态件未被 ignore 声明（同一模式可零风险解除）｜O3 分支 `feat/perf-01-nextcode-unique` 与 2 条 `ipd-p111-stash-*` 是否可收尾｜O4 二进制历史体积是否 `filter-repo`（破坏性，本轮不做）。
+
+### 台账与验证
+全文判据/回滚脚本：`docs/ipd-系统说明/治理轮/全局废弃冗余清理-2026-09-05.md`。验证（错峰 + 单模块 + 无 `-am` 无 `clean`）：`mvn -o -pl ruoyi-modules/ruoyi-aiflow test-compile` rc=0（19:40:50→19:40:54）、`-pl ruoyi-modules/ruoyi-ipd test-compile` rc=0（19:40:58→19:41:08）；`git submodule status` rc=0；rename 均为 0 内容变更；兄弟 2 个 ` D` 文件保持原状未还原。**未跑测试与真库/HTTP 探针**：改动不触达可执行路径；若需“清理后全量绿”，请待 quiet 窗自行跑并核对 surefire `tests run>0 && skipped=0`。
