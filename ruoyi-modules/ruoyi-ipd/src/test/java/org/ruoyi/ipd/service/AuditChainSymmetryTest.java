@@ -8,7 +8,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.domain.AuditChainHead;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.dao.DuplicateKeyException;
@@ -23,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,19 +36,33 @@ import static org.mockito.Mockito.when;
  * 缺陷史（2026-09-05，v7 矩阵实测 verify chain=BROKEN 断裂 368/368）：
  * ① create_time=datetime(0) 截毫秒 vs append 用 currentTimeMillis 哈希 → 全行重算失配；
  * ② verifyChain 误用降序 wrapper 且硬编码 GENESIS/seq=1 → 结构性全断；
- * ③ selectLast→insert 无锁，多实例共库竞态断链（实证 seq=150）。
+ * ③ selectLast→insert 无锁，多实例共库竞态断链（实证 seq=150）→ 2026-09-05 晚升级为
+ *    ①②③ P 变体（owner 拍板）：audit_log_chain_heads 单行锚悲观锁原子分配，旧重试路径已删。
  * 本测试锁修复后的写读对称语义：模拟「写入 → 库截毫秒 → 读回 → 验链」完整闭环。
  */
 @Tag("dev")
-@DisplayName("DEF-4 审计哈希链自洽契约")
+@DisplayName("DEF-4 审计哈希链自洽契约（含 ①②③ 锚行原子分配）")
 @ExtendWith(MockitoExtension.class)
 class AuditChainSymmetryTest {
 
     @Mock
     private AuditLogMapper auditLogMapper;
 
+    @Mock
+    private AuditChainHeadMapper chainHeadMapper;
+
     @InjectMocks
     private AuditLogService service;
+
+    /** ①②③ P 变体锚行（append 从 chain_heads 原子分配 seq/prevHash）。 */
+    private static AuditChainHead anchor(Long lastSeq, String lastHash, long nextSeq) {
+        AuditChainHead head = new AuditChainHead();
+        head.setChainKey("GLOBAL");
+        head.setLastSeq(lastSeq);
+        head.setLastHash(lastHash);
+        head.setNextSeq(nextSeq);
+        return head;
+    }
 
     /**
      * 库侧真实语义：MySQL datetime(0) 对毫秒「四舍五入」（≥.500 进位到下一秒），**非截断**。
@@ -87,9 +104,9 @@ class AuditChainSymmetryTest {
     @DisplayName("append→库四舍五入毫秒→verify 闭环：链自洽零断裂（毫秒不对称已修）")
     void appendThenVerifyAfterDbRounding() {
         Date nowWithMillis = new Date(1788700000123L);
-        when(auditLogMapper.selectList(any()))
-            .thenReturn(List.of())                                   // append: 空库（GENESIS 首行）
-            .thenReturn(List.of());                                  // 占位（第二轮 stub 由下方重设）
+        // ①②③ P 变体：空库 = 锚行 last_hash=NULL（未 sync-seed 病态）→ GENESIS 兕底，seq=next_seq=1
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor(0L, null, 1L));
+        when(chainHeadMapper.advance(eq("GLOBAL"), eq(1L), anyString(), eq(2L))).thenReturn(1);
         when(auditLogMapper.insert(any(AuditLog.class))).thenReturn(1);
 
         AuditLog draft = AuditLog.builder()
@@ -121,7 +138,8 @@ class AuditChainSymmetryTest {
     void appendNormalizesMillisToAvoidDbRounding() {
         // .700 毫秒：datetime(0) 四舍五入会进位到下一秒；若写库前不归零，读回 +1s → 重算哈希失配
         Date highMillis = new Date(1788700000700L);
-        when(auditLogMapper.selectList(any())).thenReturn(List.of());
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor(9L, "f".repeat(64), 10L));
+        when(chainHeadMapper.advance(anyString(), anyLong(), anyString(), anyLong())).thenReturn(1);
         when(auditLogMapper.insert(any(AuditLog.class))).thenReturn(1);
 
         AuditLog saved = service.append(AuditLog.builder()
@@ -173,35 +191,32 @@ class AuditChainSymmetryTest {
     }
 
     @Test
-    @DisplayName("append 竞态自愈：uk_audit_seq 冲突 → 重读尾行重试成功（多实例共库）")
-    void appendRetriesOnDuplicateSeq() {
+    @DisplayName("①②③ 陈旧 seed 防护：锚行落后致撞 uk → 响亮失败不重试不自愈（零静默错链）")
+    void appendFailsLoudlyOnStaleSeedSeqCollision() {
         Date t0 = new Date(1788700003000L);
-        AuditLog oldLast = consistentRow(30L, 9L, AuditHashChain.GENESIS, "LOGIN", t0);
-        AuditLog rivalLast = consistentRow(31L, 10L, oldLast.getCurrHash(), "EXPORT", t0); // 他实例抢先
-        when(auditLogMapper.selectList(any()))
-            .thenReturn(List.of(oldLast))                            // 第一次读到旧尾
-            .thenReturn(List.of(rivalLast));                         // 冲突重试后当前读见新尾
-        when(auditLogMapper.insert(any(AuditLog.class)))
-            .thenThrow(new DuplicateKeyException("uk_audit_seq"))
-            .thenReturn(1);
-
-        AuditLog saved = service.append(AuditLog.builder().action("LOGIN").createTime(t0).build());
-
-        assertThat(saved.getSeq()).isEqualTo(11L);
-        assertThat(saved.getPrevHash()).isEqualTo(rivalLast.getCurrHash());
-        verify(auditLogMapper, times(2)).insert(any(AuditLog.class));
-    }
-
-    @Test
-    @DisplayName("append 重试超限：连续冲突 3 次 → 抛出（不静默丢审计）")
-    void appendGivesUpAfterMaxAttempts() {
-        when(auditLogMapper.selectList(any())).thenReturn(List.of());
+        // 病态：锚行 next_seq=10，但库内已存在 seq=10 的行（sync-seed 未跑/被回拨）→ insert 撞 uk
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor(9L, "a".repeat(64), 10L));
+        when(chainHeadMapper.advance(anyString(), anyLong(), anyString(), anyLong())).thenReturn(1);
         when(auditLogMapper.insert(any(AuditLog.class)))
             .thenThrow(new DuplicateKeyException("uk_audit_seq"));
 
-        assertThatThrownBy(() -> service.append(AuditLog.builder().action("LOGIN").build()))
+        // P 变体无重试：异常直接传播（REQUIRES_NEW 整事务回滚，advance 一并回滚）——
+        // 故障恒定、响亮，不会自愈为静默错链；修复走停写窗口 sync-seed runbook
+        assertThatThrownBy(() -> service.append(AuditLog.builder().action("LOGIN").createTime(t0).build()))
             .isInstanceOf(DuplicateKeyException.class);
-        verify(auditLogMapper, times(3)).insert(any(AuditLog.class));
+        verify(auditLogMapper, times(1)).insert(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("①②③ 锚行缺失 fail-fast：seed 未初始化/被清 → ISE 且零 insert 零 advance（禁止自举）")
+    void appendFailsFastWhenAnchorMissing() {
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(null);
+
+        assertThatThrownBy(() -> service.append(AuditLog.builder().action("LOGIN").build()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("missing GLOBAL anchor");
+        verify(auditLogMapper, never()).insert(any(AuditLog.class));
+        verify(chainHeadMapper, never()).advance(anyString(), anyLong(), anyString(), anyLong());
     }
 
     @Test

@@ -4,11 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.domain.AuditChainHead;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AuditChainVerifyResult;
+import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.ruoyi.ipd.util.AuditHashChain;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,9 +30,13 @@ import java.util.List;
  *       否则约半数新行读回时间 +1s → 重算哈希失配（实测 seq=406/407 断裂）；</li>
  *   <li>verifyChain 升序遍历＋锚定库内首行（原实现误用降序 wrapper 且硬编码 GENESIS/seq=1，
  *       结构性全行断判）；</li>
- *   <li>append 唯一键冲突重试：DB 层最小权限（ipd_app 对 audit_logs 仅 SELECT,INSERT，
- *       G-02 只追加的强制）禁 FOR UPDATE 当前读，竞态防护 = uk_audit_seq 冲突自愈重试；
- *       长期方案 = QA-04 泳道 audit_log_chain_heads 原子递增（归属兄弟，本类不引用）。</li>
+ *   <li>append 竞态防护（2026-09-05 晚升级为 ①②③ P 变体，owner 拍板）：由 uk_audit_seq
+ *       冲突自愈重试改为 audit_log_chain_heads 单行锚悲观锁原子分配——SELECT ... FOR UPDATE
+ *       锁 GLOBAL 锚行 → seq=next_seq、prevHash=last_hash → advance 前移锚行 → insert
+ *      （NEVER 已去，seq 显式入 INSERT）。全局串行、零重试零 CAS 竞态；DEF-4「禁锁定读」指
+ *       旧 audit_logs 路径，chain_heads 表级 SELECT,UPDATE 已授、锁定读合法（Q6 REVOKE 后亦然）。
+ *       旧重试循环/catch(DuplicateKeyException)/selectLast()/orderBySeq() 已删；陈旧 seed 撞
+ *       uk 时响亮失败不自愈（防线 = 停写窗口 sync-seed + 部署后 verifyChain 冒烟）。</li>
  * </ol>
  *
  * <p>DEF-6 载荷列往返对称（2026-09-05，owner 选定方案 A + 护栏配套）：
@@ -52,17 +57,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuditLogService {
 
-    /** DEF-4：append 唯一键冲突重试上限（多实例共库竞态自愈）。 */
-    private static final int APPEND_MAX_ATTEMPTS = 3;
+    /** ①②③：审计链分配器锚行键（audit_log_chain_heads 单行 GLOBAL）。 */
+    private static final String CHAIN_KEY_GLOBAL = "GLOBAL";
 
     private final AuditLogMapper auditLogMapper;
+    private final AuditChainHeadMapper chainHeadMapper;
 
-    /** 追加一条审计（独立事务：业务失败不回滚审计） */
+    /** 追加一条审计（独立事务：业务失败不回滚审计；①②③ P 变体：锚行悲观锁原子分配 seq/prevHash） */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public AuditLog append(AuditLog draft) {
         // DEF-6 护栏：列类型改 longtext 后 DB 不再校验 JSON 合法性，在此复刻原 fail-fast。
-        // 必须位于重试循环之外：DataIntegrityViolationException 是 DuplicateKeyException 的父类，
-        // 若在循环内抛出会被当成 uk_audit_seq 冲突吞掉并重试三次。
+        // 必须位于锚行锁之前：畸形载荷须立即抛出回滚，不得进入任何锁/推进路径。
         AuditEventData.requireJson(draft.getBeforeData(), "before_data");
         AuditEventData.requireJson(draft.getAfterData(), "after_data");
         // DEF-4：先定时间再哈希——写入与验链共用同一 Date，且毫秒必须归零后再写库：
@@ -72,24 +77,27 @@ public class AuditLogService {
         if (draft.getTenantId() == null) {
             draft.setTenantId("000000");
         }
-        DuplicateKeyException conflict = null;
-        for (int attempt = 0; attempt < APPEND_MAX_ATTEMPTS; attempt++) {
-            // DEF-4：无 FOR UPDATE（DB 最小权限禁锁定读），靠 uk_audit_seq 冲突重试自愈
-            AuditLog last = selectLast();
-            String prevHash = last != null ? nvl(last.getCurrHash()) : AuditHashChain.GENESIS;
-            long seq = (last != null && last.getSeq() != null ? last.getSeq() : 0L) + 1;
-            draft.setSeq(seq);
-            draft.setPrevHash(prevHash);
-            draft.setCurrHash(AuditHashChain.computeCurrHash(prevHash, canonicalOf(draft, seq)));
-            try {
-                auditLogMapper.insert(draft);
-                return draft;
-            } catch (DuplicateKeyException e) {
-                // 多实例共库：uk_audit_seq 冲突说明他实例已抢先尾行，重读重试
-                conflict = e;
-            }
+        // ①②③ P 变体：锚行悲观锁 → 原子分配 seq/prevHash（全局串行，零重试零 CAS 竞态；锁序单一无死锁环）
+        AuditChainHead head = chainHeadMapper.selectForUpdate(CHAIN_KEY_GLOBAL);
+        if (head == null) {
+            // 锚行缺失 = seed 未初始化/被清：fail-fast，禁止代码自举（自举会与并发方竞态；修复走停写窗口 sync-seed runbook）
+            throw new IllegalStateException(
+                "audit_log_chain_heads missing GLOBAL anchor — run seed-sync (PR就绪包 §4.3) before appending");
         }
-        throw conflict;
+        long seq = head.getNextSeq();
+        // GENESIS 兕底而非 nvl 空串：锚行 last_hash=NULL（清库后未 sync-seed 的病态）时，
+        // 链首 prevHash 必须是 64×'0'（外部验链工具硬编码 GENESIS 起验）
+        String prevHash = head.getLastHash() == null ? AuditHashChain.GENESIS : head.getLastHash();
+        draft.setSeq(seq);                                   // NEVER 已去：显式值真正进入 INSERT
+        draft.setPrevHash(prevHash);
+        draft.setCurrHash(AuditHashChain.computeCurrHash(prevHash, canonicalOf(draft, seq)));
+        // advance=1 防御断言（锁保护下正常必 1；0 = schema/chain_key 漂移，静默继续会劣化为
+        // 撞 uk 或错链——与 head==null fail-fast 对称）
+        if (chainHeadMapper.advance(CHAIN_KEY_GLOBAL, seq, draft.getCurrHash(), seq + 1) != 1) {
+            throw new IllegalStateException("audit chain anchor advance missed — schema/config drift suspected");
+        }
+        auditLogMapper.insert(draft);
+        return draft;
     }
 
     /**
@@ -195,11 +203,6 @@ public class AuditLogService {
         return auditLogMapper.selectCount(w);
     }
 
-    private AuditLog selectLast() {
-        List<AuditLog> list = auditLogMapper.selectList(orderBySeq().last("limit 1"));
-        return list.isEmpty() ? null : list.get(0);
-    }
-
     /** DEF-4：写读两侧共用的 canonical 构造（时间戳一律截秒，与 datetime(0) 列精度对称）。 */
     private static String canonicalOf(AuditLog log, long seq) {
         return AuditHashChain.canonical(seq, log.getOperatorId(), log.getOperatorName(),
@@ -210,10 +213,6 @@ public class AuditLogService {
     /** DEF-4：毫秒→整秒截断（写库前归零用，避开 MySQL datetime(0) 的四舍五入进位）。 */
     private static long secondMillis(Date d) {
         return d == null ? 0L : d.getTime() / 1000L * 1000L;
-    }
-
-    private LambdaQueryWrapper<AuditLog> orderBySeq() {
-        return new LambdaQueryWrapper<AuditLog>().orderByDesc(AuditLog::getSeq);
     }
 
     /** DEF-4：验链/重建必须升序遍历（原 verifyChain 误用降序 wrapper 致结构性全断）。 */

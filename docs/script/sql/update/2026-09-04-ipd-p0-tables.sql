@@ -487,7 +487,7 @@ create table handover_records
 create table audit_logs
 (
     id            bigint      not null comment '主键（雪花）',
-    seq           bigint      not null auto_increment comment '全局递增序号（hash 链顺序锚）',
+    seq           bigint      not null comment '全局递增序号（hash 链顺序锚；①②③ 由 audit_log_chain_heads 原子分配，非 DB 自增）',
     operator_id   bigint      null,
     operator_name varchar(64) null,
     operator_role varchar(32) null,
@@ -514,6 +514,26 @@ create table audit_logs
     primary key (id),
     unique key uk_audit_seq (seq)
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 审计日志（只追加+SHA256 hash 链，AC-AUD-01）';
+
+-- 21b. audit_log_chain_heads 审计链分配器锚表（①②③ P 变体，2026-09-05 回写基线）
+-- 单行 GLOBAL 锚：append 事务内 SELECT ... FOR UPDATE 锁锚行 → 原子分配 seq/prevHash → advance 前移。
+-- 表本身可变（transaction-locked allocator），audit_logs 仍只追加（G-02 不变）；无 tenant_id 列，
+-- 须登记 tenant.excludes（未登记则多租户插件追加 tenant_id 过滤 → 锚行读不到，append 全断）。
+create table audit_log_chain_heads
+(
+    chain_key      varchar(32) collate utf8mb4_bin not null,
+    last_seq       bigint      not null,
+    last_hash      char(64)    collate utf8mb4_bin not null,
+    next_seq       bigint      not null,
+    initialized_at datetime    not null default CURRENT_TIMESTAMP,
+    primary key (chain_key),
+    constraint chk_audit_chain_sequence check ((last_seq >= 0) and (next_seq > last_seq))
+) engine=innodb default charset=utf8mb4 collate=utf8mb4_bin
+  comment='Mutable transaction-locked allocator; audit_logs itself remains append-only';
+
+-- 空库种子：链首 prev=GENESIS（64 个 0）、下一序号 1；既有库的陈旧 seed 修复走停写窗口 sync-seed（PR就绪包 §4.3）
+insert into audit_log_chain_heads (chain_key, last_seq, last_hash, next_seq)
+values ('GLOBAL', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1);
 
 -- 22. kpi_records KPI 记录
 create table kpi_records

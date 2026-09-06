@@ -17,8 +17,8 @@ public class AuditLog implements Serializable {
     private static final long serialVersionUID = 1L;
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
-    /** 全局递增序号（hash 链顺序锚，DB 自增） */
-    @TableField(value = "seq", insertStrategy = FieldStrategy.NEVER)
+    /** 全局递增序号（hash 链顺序锚，由 audit_log_chain_heads 原子分配，非 DB 自增） */
+    @TableField("seq")
     private Long seq;
     @TableField("operator_id")
     private Long operatorId;

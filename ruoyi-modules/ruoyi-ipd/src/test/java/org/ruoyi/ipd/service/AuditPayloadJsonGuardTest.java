@@ -8,16 +8,18 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.domain.AuditChainHead;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,8 +39,9 @@ import static org.mockito.Mockito.when;
  * （静默入库、读取/导出/前端解析时才炸，且脏载荷进入 hash 链）。本类锁死补回的应用层护栏：
  * <ol>
  *   <li>畸形 before/afterData 立即被拒，且<b>零 DB 写入</b>（不 insert、不 selectLast）；</li>
- *   <li>护栏位于 uk_audit_seq 重试循环<b>之外</b>——不会被当成唯一键冲突吞掉并重试三次
- *       （{@code DataIntegrityViolationException} 是 {@code DuplicateKeyException} 的父类）；</li>
+ *   <li>护栏位于锚行锁<b>之前</b>（旧 uk_audit_seq 重试循环已随 ①②③ P 变体删除）——
+ *       畸形载荷立即抛出，不进入任何锁/推进路径
+ *       （{@code DataIntegrityViolationException} 是 {@code DuplicateKeyException}  的父类）；</li>
  *   <li>合法载荷与空载荷照常放行，且护栏<b>不改写</b>载荷字节（护栏 ≠ 规范化器，
  *       否则又制造写读不对称）。</li>
  * </ol>
@@ -55,8 +58,21 @@ class AuditPayloadJsonGuardTest {
     @Mock
     private AuditLogMapper auditLogMapper;
 
+    @Mock
+    private AuditChainHeadMapper chainHeadMapper;
+
     @InjectMocks
     private AuditLogService service;
+
+    /** ①②③ P 变体锚行（append 从 chain_heads 原子分配；旧 selectLast 路径已删）。 */
+    private static AuditChainHead anchor() {
+        AuditChainHead head = new AuditChainHead();
+        head.setChainKey("GLOBAL");
+        head.setLastSeq(0L);
+        head.setLastHash(null);
+        head.setNextSeq(1L);
+        return head;
+    }
 
     private static AuditLog draft(String beforeData, String afterData) {
         return AuditLog.builder()
@@ -102,23 +118,24 @@ class AuditPayloadJsonGuardTest {
     }
 
     @Test
-    @DisplayName("护栏在重试循环之外：不被当成 uk_audit_seq 冲突吞掉并重试三次")
+    @DisplayName("护栏在任何锁/推进路径之前：不会被当成链分配冲突吞掉（父子类型双锁）")
     void guardIsNotSwallowedByDuplicateKeyRetry() {
         assertThatThrownBy(() -> service.append(draft(null, "oops")))
-            // 若护栏误置于循环内，append 会 catch 掉并重试 APPEND_MAX_ATTEMPTS 次后抛冲突；
+            // 若护栏误置于锁/推进之后，畸形载荷可能被链路径的异常类型掩盖；
             // 二者是父子关系，故必须显式锁「不是子类」+「insert 零次」两条。
             .isInstanceOf(DataIntegrityViolationException.class)
             .isNotInstanceOf(DuplicateKeyException.class);
 
         verify(auditLogMapper, never()).insert(any(AuditLog.class));
-        // 循环内每次重试都会先 selectLast()；零次 selectList 即证明护栏在循环之前生效
+        // 零次 selectList 即证明护栏在最前生效（旧 selectLast 路径已删，verify 链不在此测）
         verify(auditLogMapper, never()).selectList(any());
     }
 
     @Test
     @DisplayName("合法 JSON 载荷放行，且护栏不改写载荷字节（护栏 ≠ 规范化器）")
     void validJsonPayloadPassesAndIsNotRewritten() {
-        when(auditLogMapper.selectList(any())).thenReturn(List.of());
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor());
+        when(chainHeadMapper.advance(anyString(), anyLong(), anyString(), anyLong())).thenReturn(1);
         when(auditLogMapper.insert(any(AuditLog.class))).thenReturn(1);
         // 故意用「MySQL json 列会重排」的键序与字节长度组合：zz(2)/a(1)/mm(2)
         String payload = "{\"zz\":1,\"a\":2,\"mm\":3}";
@@ -135,7 +152,8 @@ class AuditPayloadJsonGuardTest {
     @Test
     @DisplayName("AuditEventData.json 产出的紧凑串放行（6 个业务写入点的实际形状）")
     void compactPayloadFromAuditEventDataPasses() {
-        when(auditLogMapper.selectList(any())).thenReturn(List.of());
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor());
+        when(chainHeadMapper.advance(anyString(), anyLong(), anyString(), anyLong())).thenReturn(1);
         when(auditLogMapper.insert(any(AuditLog.class))).thenReturn(1);
 
         service.append(draft(null, AuditEventData.json("detail", "G1/QA03-JSON", "outcome", "PASS")));
@@ -149,7 +167,8 @@ class AuditPayloadJsonGuardTest {
     @Test
     @DisplayName("null 与空串载荷放行（两列可空，多数审计行无载荷，护栏不得误伤）")
     void nullAndEmptyPayloadsStayLegal() {
-        when(auditLogMapper.selectList(any())).thenReturn(List.of());
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor());
+        when(chainHeadMapper.advance(anyString(), anyLong(), anyString(), anyLong())).thenReturn(1);
         when(auditLogMapper.insert(any(AuditLog.class))).thenReturn(1);
 
         service.append(draft(null, null));
