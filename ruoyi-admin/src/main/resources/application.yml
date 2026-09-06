@@ -264,6 +264,8 @@ tenant:
     # ①②③（2026-09-05 晚）：审计链分配器锚表——单行 GLOBAL、无 tenant_id 列、无多租户语义；
     # 不登记则多租户插件对其追加 tenant_id 过滤 → append 锁读不到锚行全断（与 chain_heads Java 同批上线）
     - audit_log_chain_heads
+    # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
+    - notification_events
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

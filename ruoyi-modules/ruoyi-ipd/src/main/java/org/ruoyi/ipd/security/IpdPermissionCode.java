@@ -46,4 +46,9 @@ public interface IpdPermissionCode {
     String OPERATION_COEFFICIENT_PROPOSE = "ipd:coefficient:propose";
     /** AC-INC-15c：产品组长确认系数 */
     String OPERATION_COEFFICIENT_CONFIRM = "ipd:coefficient:confirm";
+
+    /** OPS-05：站内通知收件箱（本人） */
+    String OPERATION_NOTIFICATION_READ = "ipd:notification:read";
+    /** OPS-05：outbox 消费端手动触发（仅超管） */
+    String OPERATION_NOTIFICATION_DISPATCH = "ipd:notification:dispatch";
 }

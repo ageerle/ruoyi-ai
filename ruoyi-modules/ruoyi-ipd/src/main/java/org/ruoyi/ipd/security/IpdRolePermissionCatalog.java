@@ -24,7 +24,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_CERT_TEMPLATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT,
         IpdPermissionCode.OPERATION_GATE_REVIEW,
-        "ipd:system-config:read"
+        "ipd:system-config:read",
+        // OPS-05：站内通知收件箱（本人；receiver 从会话推导，读写同人）
+        IpdPermissionCode.OPERATION_NOTIFICATION_READ
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -69,7 +71,9 @@ public final class IpdRolePermissionCatalog {
         // /scope、/export/scope（requireInternal + service 层角色范围过滤，P0-5.4）。
         "ipd:audit-log:list",
         "ipd:audit-log:verify",
-        "ipd:audit-log:export"
+        "ipd:audit-log:export",
+        // OPS-05：outbox 消费端手动触发（运维观察；正常轮询待 OPS-04 scheduler 合入）
+        IpdPermissionCode.OPERATION_NOTIFICATION_DISPATCH
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
