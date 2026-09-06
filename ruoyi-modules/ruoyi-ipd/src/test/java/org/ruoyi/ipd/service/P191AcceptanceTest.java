@@ -30,6 +30,8 @@ import java.util.concurrent.ForkJoinPool;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -117,7 +119,8 @@ class P191AcceptanceTest {
                 .status("NOT_STARTED").build(),
             StageAction.builder().id(3L).projectId(50L).actionCode("D05").actionName("开发Gate")
                 .status("NOT_STARTED").build()));
-        when(stageActionMapper.updateById(any(StageAction.class))).thenReturn(1);
+        // R8-P0-5 后契约：markPastStages 单条 updateById 循环 → 一次性 updateBatchById(200)
+        when(stageActionMapper.updateBatchById(anyList(), anyInt())).thenReturn(true);
         when(projectMapper.updateById(any(Project.class))).thenReturn(1);
         when(projectService.getById(50L)).thenAnswer(inv -> {
             Project p = Project.builder().id(50L).name("存量导入项目甲").source("LEGACY")
@@ -128,12 +131,18 @@ class P191AcceptanceTest {
 
         LegacyImportResult result = legacyImportService.importOne(baseReq("develop"), 9L);
         assertThat(result.markedCodes()).contains("C11", "P12").doesNotContain("D05");
-        ArgumentCaptor<StageAction> cap = ArgumentCaptor.forClass(StageAction.class);
-        verify(stageActionMapper, org.mockito.Mockito.atLeastOnce()).updateById(cap.capture());
-        assertThat(cap.getAllValues()).allMatch(a ->
+        // R8-P0-5 后契约：捕获整批实体，三契约断言不变（HISTORY_MISSING + 不伪造 DONE + 替代佐证 remark）
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<StageAction>> batchCap =
+            ArgumentCaptor.forClass((Class<List<StageAction>>) (Class<?>) List.class);
+        verify(stageActionMapper).updateBatchById(batchCap.capture(), org.mockito.Mockito.eq(200));
+        List<StageAction> markedActions = batchCap.getValue();
+        assertThat(markedActions).extracting(StageAction::getActionCode)
+            .containsExactlyInAnyOrder("C11", "P12");
+        assertThat(markedActions).allMatch(a ->
             LegacyImportService.HISTORY_MISSING.equals(a.getHistoryMark())
                 && !"DONE".equals(a.getStatus()));
-        assertThat(cap.getAllValues().stream().anyMatch(a ->
+        assertThat(markedActions.stream().anyMatch(a ->
             a.getRemark() != null && a.getRemark().contains("会议纪要"))).isTrue();
 
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
