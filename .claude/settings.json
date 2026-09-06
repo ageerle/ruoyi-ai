@@ -35,6 +35,16 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/hooks/pre-java-yml-write.sh\" ] || D=\"${HOME}\"; exec \"$D/.claude/hooks/pre-java-yml-write.sh\"'",
+            "timeout": 5000
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -59,6 +69,16 @@
           {
             "type": "command",
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/hook-handler.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/hook-handler.cjs\" post-bash'",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/hooks/post-java-yml-write.sh\" ] || D=\"${HOME}\"; exec \"$D/.claude/hooks/post-java-yml-write.sh\"'",
             "timeout": 5000
           }
         ]

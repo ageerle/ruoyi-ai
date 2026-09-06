@@ -36,7 +36,10 @@ REPO = "/Users/mac/Documents/ruoyi-ai"
 TS = time.strftime("%Y%m%d-%H%M%S")
 
 # 改密靶子（从未登录的种子账号）
-PWD_USER, PWD_OLD = "孙研发", "Ipd@123456"
+# R1–R3 轮换（2026-09-05）后种子口令不再内嵌；env IPD_SEED_PWD 取值见
+# .codex/ipd-dev/config/credentials.json 的 ipd_seed_pwd 键（与 L215 起 QA 角色口令同源同纪律）
+PWD_USER = "孙研发"
+PWD_OLD = _require_env("IPD_SEED_PWD")
 PWD_NEW = "Qa09-P091-x7Km2vLp"
 
 HEAD = subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"],

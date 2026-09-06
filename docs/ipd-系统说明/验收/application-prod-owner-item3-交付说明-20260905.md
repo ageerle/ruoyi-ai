@@ -61,3 +61,8 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='ProdConfigDeltaGuardTest,CredentialLi
 - **不泛化「僵尸 patch」规则**：守卫只约束自己的 delta patch。若把规则推广到扫描全部 `application-prod-*.patch`，今天就会因兄弟的 batch3.patch 已消费而红——那属兄弟/owner 的资产处置，不在此越权。
 - **prod `spring.boot.admin.client.password` 仍有内联默认值**（`application-prod.yml:13`，弱默认）。因该段 `enabled: false`（L5）故当前不可达；owner 项3 未列它，本批**未改**，登记备查。
 - prod 的 websocket 具体 origin（独立部署场景）由兄弟收口文档 L116 挂账，本批不重复。
+
+## 6. 消费登记（R9c，2026-09-05 21:5x）
+
+- owner 授权「立即执行剩余待办」后，本 patch 已由 R9c 会话 `git apply` 落地（application-prod.yml +18 行），并按 `ProdConfigDeltaGuardTest` case 3 的生命周期契约**改名归档**为 `*.applied-20260905`。
+- 后续执行方请勿重复 apply（对齐 batch3 前车之鉴）。
