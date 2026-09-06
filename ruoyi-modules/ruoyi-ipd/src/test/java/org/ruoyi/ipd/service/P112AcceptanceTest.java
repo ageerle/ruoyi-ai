@@ -1,6 +1,5 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -72,7 +71,8 @@ class P112AcceptanceTest {
     @Test
     @DisplayName("批量导入：按 modelCode 幂等 UPSERT；坏行进报告不中断")
     void batchImportReport() {
-        when(productMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        // R8-P0-7（108be858）起 batchImportOnSale 改为一次性 selectList 预取，不再调 selectOne，
+        // 该 stub 已失效——Mockito strict 下报 UnnecessaryStubbingException，删除而非 lenient()。
         when(productMapper.insert(any(Product.class))).thenAnswer(inv -> {
             Product p = inv.getArgument(0);
             p.setId(100L + (p.getModelCode() == null ? 0 : p.getModelCode().hashCode() % 50));
