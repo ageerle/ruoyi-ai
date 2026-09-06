@@ -37,6 +37,11 @@ import static org.mockito.Mockito.when;
 /**
  * P1-11.1：新硬件项目到阶段推进契约锁——门禁拒/过、SA 认证、BioCV 数值、失败后恢复。
  * 真库 HTTP 闭环见 docs/ipd-系统说明/验收/P1-11.1-* 与 .codex/ipd-dev/runtime/evidence-p1111.json。
+ *
+ * <p>命名辨析（防误判重复）：P1111 = P1-11.1 三段编号，主题是 GateEngine B 级 CONCEPT 门禁
+ * 与 MarketCodeResolver 在「新硬件项目→阶段推进」链路中的<b>整合契约</b>；
+ * 同包的 {@link P171AcceptanceTest} 才是 P1-7.1 国别认证模板的纯 resolver 单元测试。
+ * 二者测试目标、断言维度、被测服务均不同，非重复用例。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
