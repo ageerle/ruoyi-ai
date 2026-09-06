@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
@@ -59,6 +60,11 @@ class StageActionServiceInstantiateBatchTest {
     void setUp() {
         service = new StageActionService(stageActionMapper, deliverableMapper, auditLogService,
             projectStageMapper, projectMapper);
+        // Round 8 sibling-path-gate-parity：instantiate 入口新增 assertProjectWritable 门禁，
+        // 必须让 projectMapper.selectById(1L) 返回可写项目（未删 + 非 SUSPENDED/ARCHIVED），
+        // 否则 mock 默认返回 null → ServiceException("项目不存在: 1")
+        lenient().when(projectMapper.selectById(any())).thenReturn(
+            Project.builder().id(1L).status("ACTIVE").delFlag("0").build());
     }
 
     @Test
