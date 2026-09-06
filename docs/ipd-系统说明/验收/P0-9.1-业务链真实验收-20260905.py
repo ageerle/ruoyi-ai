@@ -19,7 +19,14 @@
 #   并复登验证还原生效 → 环境无痕。
 #   删除靶子 = 本脚本自建的 throwaway cert_template（不触碰任何真实业务行）。
 #   登录限流：同 IP 同账号 60s 最多 5 次（IpdAuthController @RateLimiter）→ 每账号 ≤4 次并加 sleep。
-import json, os, subprocess, time, urllib.parse, urllib.request, urllib.error
+import json, os, subprocess, sys, time, urllib.parse, urllib.request, urllib.error
+
+# R8-AUTO-10 / 后台审查 P0-4：测试账号密码改 env var 注入
+def _require_env(name):
+    val = os.environ.get(name)
+    if not val:
+        sys.exit(f"FAIL-FAST: 环境变量 {name} 未设置")
+    return val
 
 BASE = "http://localhost:16045"
 MYSQL = "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/software/mysql-8.0.46-macos15-arm64/bin/mysql"
