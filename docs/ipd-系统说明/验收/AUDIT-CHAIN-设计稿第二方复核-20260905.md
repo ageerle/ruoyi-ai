@@ -134,11 +134,11 @@ ipd_dev 库现态：before_data / after_data = longtext（2e50bb71 的迁移 SQL
 |---|---|---|
 | ① | `audit_logs.seq` 去 `AUTO_INCREMENT` | **PR 就绪包已交付**（§4.1 迁移 SQL，内嵌禁 auto-apply）；pending 停写窗口执行。现态 seq 仍 `bigint NO UNI auto_increment` |
 | ② | 新增 `audit_log_chain_heads` 单行锚表 + 登记 `tenant.excludes` | **表已由指派兄弟建成**（活库 `ipd_dev` 存在，refined schema：chain_key PK + last_seq/last_hash/next_seq + CHECK），但**完全未接线**（无 Java 引用、seed 陈旧 last_seq=67 vs audit_logs max_seq=1554）；`tenant.excludes` 仍**未登记** chain_heads。PR 就绪包 §4.2 幂等建表 + §4.3 sync-seed + §5 excludes |
-| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | **已升级为完整双变体 turnkey DRAFT**（蜂群 turnkey 包 §4：ChainHead 实体/Mapper + append 重写 P/O 双变体 + 删除清单补 `orderBySeq()` + 6 条契约测 + 启动自检，CodeReview 1 MAJOR/5 MINOR 全修订）；**CAS 张力已被证据消解**：chain_heads 表级 SELECT 即覆盖锁定读 → **P 无需授权变更即可行**（建议拍 P；O 须 READ_COMMITTED 防 RR 快照失明）。归属不变（Wave3 Batch-2 QA-05-P2）。现态 NEVER 仍在、append 旧重试路径仍在 |
+| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | **已升级为完整双变体 turnkey DRAFT**（蜂群 turnkey 包 §4：ChainHead 实体/Mapper + append 重写 P/O 双变体 + 删除清单补 `orderBySeq()` + 6 条契约测 + 启动自检，CodeReview 1 MAJOR/5 MINOR 全修订）；**CAS 张力已被证据消解**：chain_heads 表级 SELECT 即覆盖锁定读 → **P 无需授权变更即可行**（**owner 已拍 P** 21:30；O 降备选，READ_COMMITTED 防 RR 快照失明备注保留）。归属不变（Wave3 Batch-2 QA-05-P2）。现态 NEVER 仍在、append 旧重试路径仍在 |
 | ④′ | 载荷列 **保持 longtext**（已 apply）+ `AuditEventData.requireJson` 护栏（已提交） | **已完成** |
 | ⑤ | `verifyChain` 拆 HASH_BROKEN / GAP 两类返回 | **已完成**（owner Q2 采纳 A′ 后落地：Service+record `0596c957`/`75fa56fb`、Controller 四态 `ba5c329d`、契约测 `AuditChainGapHashSplitTest` 5 例 `6d3eccf9`；绿门 24/24 Skipped=0，详见下方落地追记） |
 | ⑥ | **基线 DDL 回写 longtext**（§4） | **已完成**（`dd361ef3`，基线两列 json→longtext + 8 行规范化注释） |
-| ⑦ | **`hash_version` 处置**（原定性：62 行误标 v2 + 实体缺字段 + 一致性测） | **重定性：急性问题已随清库消失**（21:10 现态 207/207 行全 NULL、非 NULL 残留 0；列语义 NULL=legacy-v1 与现行 v1 算法天然一致；`AuditHashChain` 已内置 canonicalV1/V2/byVersion 双版本机制）。残留=休眠列，处置包见蜂群 turnkey 包 §3（三选项，建议 a 维持休眠；若拍 b 随 Batch-2 同批接线） |
+| ⑦ | **`hash_version` 处置**（原定性：62 行误标 v2 + 实体缺字段 + 一致性测） | **重定性：急性问题已随清库消失**（21:10 现态 207/207 行全 NULL、非 NULL 残留 0；列语义 NULL=legacy-v1 与现行 v1 算法天然一致；`AuditHashChain` 已内置 canonicalV1/V2/byVersion 双版本机制）。残留=休眠列，处置包见蜂群 turnkey 包 §3（**owner 已拍选项 a 维持休眠** 21:30——⑦ 关卡收口，休眠列零改动；日后接线须再立 owner 决策） |
 | ⑧ | **存量空洞 seq 610..1308 处置**（补齐或改断言语义），否则 P0-9.1 仍 9 项 FAIL | **已实现「改断言语义」**（owner Q5 采纳「改断言不补行」：P0-9.1 脚本 3 处 GAP 硬门降级为告警——chain 门 / 断裂数门 / seq 零跳号门；静态验证 ALL PASS，详见下方 Q5 落地追记。**live re-run 待协调窗**，未伪称收 done） |
 
 A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确认有载荷检索需求后再排期（届时 payloads 拆表可作为 A′ 的增量演进，不需回退 A′）。
@@ -175,6 +175,7 @@ A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确
 - **交付物**：`验收/AUDIT-CHAIN-剩余项蜂群turnkey交付包-20260905.md`（Q6 REVOKE runbook + ⑦ 处置包 + ①②③ CAS P/O 完整 DRAFT + seed/窗口刷新 + Q7 重定性 + owner 确认项更新版）。
 - **CodeReview 智能体结论**：可作 Batch-2 输入附 3 前置；**MAJOR-1**（O 变体 RR 快照致 CAS 重试永久失明，100 并发契约测必失败）已修（READ_COMMITTED）并反向强化「拍 P」；5 MINOR（REVOKE 三探针/advance 断言/orderBySeq 补删/GENESIS 兕底/措辞）全部修订入正文；探针亲跑全清。
 - **纪律**：零写库（无 DDL/DML/GRANT/REVOKE）、零实例操作、零 live 源码；log.md 本段留工作树交主协调器。
+- **Q6 执行追记（21:30–21:35，owner 授权后）**：owner 裁决「按照建议执行」（CAS 拍 P + ⑦ 拍 a）+「Q6 REVOKE 授权」→ 本会话按 turnkey §2.2 执行 REVOKE（前置五探针复验全清，0 活跃连接窗口仍开）→ 四向探针全过（负向 1142 拒绝 / chain_heads UPDATE rc=0 / FOR UPDATE rc=0 / 业务表 rc=0）→ **DEF-5 收口**：audit_logs 只追加已在 DB 层强制。上文「零写库」纪律指本会话蜂群起草轮；本次 REVOKE 为 owner 明示授权的唯一 DB 级变更，实录见 turnkey 包 §10。
 
 ---
 
@@ -187,7 +188,7 @@ A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确
 | **Q3** | **D1 hash 协议**：若选 A′，是否仍切 v2？ | 依赖 §5 三项前置 | 先修 62 行误标 + 补实体字段，**再**谈双版本验；否则 (c) 落地即制造 62 行假断裂 |
 | **Q4** | **DEF-6 收口补充**：基线 DDL 回写（§4） | 决定 DEF-6 能否视为完全闭环 | 回写基线两列为 longtext，与 QA-04-D2「漂移列回写」同实践 |
 | **Q5** | **存量空洞处置**：补齐 seq 610..1308 还是改 P0-9.1 断言语义？ | 决定 P0-9.1 能否从 ◐ 收 done | **owner 已采纳「改断言语义」且已落地**（GAP 降级告警、不补行；脚本改 + 静态验证 ALL PASS，live re-run 待协调窗，详见 §7 Q5 落地追记） |
-| **Q6** | **DEF-5**（库级 grant 架空表级只追加） | 独立，可先行 | **已交付 REVOKE runbook**（蜂群 turnkey 包 §2）：铁证（库级 S,I,U,D vs audit_logs 表级 S,I）+ 最小 REVOKE（只收库级 UPDATE,DELETE）+ 安全边界全闭合（125 表/124 表级覆盖、0 view/routine/trigger/event、单 host 变体、0 列级权限）+ 三步验证/回滚。待 owner 授权执行（21:11 探针：0 活跃 ipd_app 连接=理想窗口） |
+| **Q6** | **DEF-5**（库级 grant 架空表级只追加） | 独立，可先行 | **已交付 REVOKE runbook**（蜂群 turnkey 包 §2）：铁证（库级 S,I,U,D vs audit_logs 表级 S,I）+ 最小 REVOKE（只收库级 UPDATE,DELETE）+ 安全边界全闭合（125 表/124 表级覆盖、0 view/routine/trigger/event、单 host 变体、0 列级权限）+ 三步验证/回滚。**已执行**（21:30 owner 授权 → 21:33 前置五探针复验全清 → 21:34 执行 → 字典双验 + 负向 1142 + 三正向对照全过，**DEF-5 收口**；实录 turnkey 包 §10） |
 | **Q7** | **16050 实例**：`ruoyi-admin-def6.jar`（18:48:20 启动，不含护栏且 `ruoyi-ipd`/`ruoyi-system` 双双陈旧） | 对已改 longtext 的库是**活的 DEF-1 fail-fast 缺口** | 停掉或换含护栏的 def6i.jar；根因是部署链从陈旧 ~/.m2 解析模块。**已重定性 moot**（21:11 全实例停：0 进程/0 监听/0 ipd_app 连接，缺口无载体）→ 转部署纪律（turnkey 包 §6）：下次起实例统一含护栏 jar + 起后冒烟（requireJson 在位 + verify 四态字段在位） |
 
 ---

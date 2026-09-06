@@ -356,9 +356,11 @@ throw new IllegalStateException("audit chain CAS contention exhausted after " + 
 
 ## 8. 交 owner 确认项（更新版，取代 PR就绪包 §10 的 1/2 两问）
 
-1. ~~CAS 协议 P 是否需授权变更~~ → **已由 F2 证据消解：P 无需授权变更**。请 owner 在 P（推荐：零重试、契合实建表注释意图）/ O（备选：无锁偏好）间**拍板**。
-2. **Q6 REVOKE**：是否授权主协调器按 §2.2 最小 REVOKE 执行（当前 0 连接是理想窗口；是否连带 §2.3 二步收紧）。
-3. **⑦ 选项**：3.2-a 维持休眠（建议，⑦ 可关卡）/ 3.2-b 随 Batch-2 接线（若拍 b，请在 Batch-2 PR 规格加「hash_version 接线」一行）。
+> **owner 已全部裁决（2026-09-05 21:30 PDT）**：「按照建议执行」+「Q6 REVOKE 授权执行」。执行实录见 §10。
+
+1. ~~CAS 协议~~ → **已拍板 P**（按建议执行；O 降为备选，其 READ_COMMITTED 备注保留以防回选）。
+2. ~~Q6 REVOKE~~ → **已授权并执行**（21:33 前置五探针复验全清 → 21:34 执行 §2.2 → 字典双验 + 负向 1142 + 三正向对照全过，**DEF-5 收口**；§2.3 二步收紧未授权，维持现状）。实录见 §10。
+3. ~~⑦ 选项~~ → **已拍板 3.2-a 维持休眠**（⑦ 关卡收口，休眠列零改动；日后要接线 hash_version 须再立 owner 决策）。
 4. （承前）陈旧 seed sync 纳入停写窗口清单 — 已获 owner 认可（本轮 chat 选定），执行时机随主协调器。
 
 ---
@@ -377,3 +379,32 @@ throw new IllegalStateException("audit chain CAS contention exhausted after " + 
 | MINOR-5 | `nvl(lastHash)` 在 NULL 时产生空串链首，偏离 GENESIS 协议（外部验链工具如 qa06_restore_check.py 硬编码 GENESIS 起验会判首行 broken） | ✅ P/O 两变体均改 GENESIS 兜底 |
 
 **核对通过项（智能体正面确认）**：实体/Mapper 风格与本仓先例同构（注解 SQL + FOR UPDATE 在 ProjectStageMapper 有 5 处先例；mapperPackage 通配覆盖新 mapper）；P 协议顺序/原子性/响亮失败/三护栏逐行等价；**audit_logs 写入口唯一性已 grep 验证（全仓仅 append L85 一处 insert，20+ 审计调用点全走 append）**；REVOKE 并集推演与 SQL 无错误；tenant.excludes 失败模式与部署顺序判断准确；§3 hash_version 事实与源码一致。
+
+---
+
+## 10. 执行实录：Q6 REVOKE 已执行（2026-09-05 21:33–21:35 PDT；owner 授权后本会话执行）
+
+**执行**（root socket）：`REVOKE UPDATE, DELETE ON ipd_dev.* FROM 'ipd_app'@'127.0.0.1';` → rc=0。
+
+**前置五探针复验**（21:33:14，移动靶复验全清）与**执行后验证**（全过）：
+
+| 项 | 期望 | 实际 |
+|---|---|---|
+| 前置① mysql.db 库级 | 仍 Y/Y/Y/Y | ✓ |
+| 前置② 活跃 ipd_app 连接 | 0 | 0 ✓ |
+| 前置③ host 变体 | 仅 @'127.0.0.1' | ✓ |
+| 前置④ 表级未覆盖表 | 仅 `_ipd_schema_history` | ✓ |
+| 前置⑤ audit_logs / chain_heads 表级 | S,I / S,UPDATE | ✓ |
+| 验证① SHOW GRANTS 库级行 | `SELECT, INSERT` | ✓ |
+| 验证② mysql.db | Y/Y/N/N | ✓ |
+| 负向（app 凭据）UPDATE audit_logs 0 行 | ERROR 1142、exit≠0 | ✓（报错 host 显示 localhost=MySQL 对 127.0.0.1 的反解显示，权限按本账户 S,I 态拒绝） |
+| 正向①（app）UPDATE chain_heads 0 行 | rc=0，CAS advance 可用 | ✓ |
+| 正向②（app）`SELECT…FOR UPDATE` GLOBAL | rc=0，P 锁定读可用 | ✓（锚行现读 67/68，seed 仍冻结） |
+| 正向③（app）UPDATE 业务表 0 行 | rc=0，业务 CRUD 不受累及 | ✓ |
+| 附录 探测污染 | 0 行 | 0 ✓ |
+
+**生效态（db 级 SELECT,INSERT ∪ 表级）**：audit_logs=S,I（**只追加已在 DB 层强制，DEF-5 收口**）；chain_heads=S,I,UPDATE（库级 INSERT 漏入=低危残留，§2.3 未授权维持现状）；121 业务表不变；`_ipd_schema_history` 保留库级 S,I 安全网。回滚（备置未用）：`GRANT UPDATE, DELETE ON ipd_dev.* TO 'ipd_app'@'127.0.0.1';`
+
+**对下游的影响判定**：单测全量（兄弟 21:28 全量绿 476/0/0/22）不受影响——业务表全数保有表级 U,D；失 UPDATE/DELETE 的仅 audit_logs（单测零更新路径）与 `_ipd_schema_history`（schema 工具表）。后续 live 全量回归照常由主协调器在停写窗口执行。
+
+**Batch-2 集成态**：①②③ 按变体 **P** 实施（owner 已拍 P；§4.3 O 变体降备选、READ_COMMITTED 备注保留）；⑦ 按选项 **a** 关卡收口（休眠列零改动）。归属仍为 Wave3 Batch-2 QA-05-P2，live 落地 gate 主协调器停写窗口。
