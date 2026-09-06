@@ -182,12 +182,24 @@ public class AiModelConfigService {
      */
     public AiModelView testConnect(Long id, String operator) {
         AiModelConfig config = requireEntity(id);
-        String message = probe(config.getEndpointUrl());
+        // SEC-REV-round3 Bug#3（中危 authorization-bypass）：走 ProviderRegistry 而非裸 URL 探测
+        // 旧实现用 probe() 通用 GET，被 controller 调起时跳过协议派发——拿到的"ok"只是 TCP 通，
+        // 不验证 provider 协议兼容（智谱/百度/OpenAI兼容）。现统一走 testConnectWithProvider。
+        AiTestResult result = testConnectWithProvider(id);
         audit(operator, "TEST_CONNECT", config, null);
         AiModelView base = toView(config);
+        String message = result.success()
+            ? "connect: ok(" + (result.latencyMs() > 0 ? result.latencyMs() + "ms" : "200") + ")"
+            : "connect: fail(" + safeErrCode(result.errorCode()) + ")";
         return new AiModelView(base.id(), base.provider(), base.endpoint(), base.model(),
             base.temperature(), base.maxTokens(), base.enabled(),
             base.maskedKey() + " | " + message);
+    }
+
+    /** errorCode 白名单输出，避免任意 tester 返回泄露 apiKey/请求头；errorMessage 不进 maskedKey。 */
+    private static String safeErrCode(String errorCode) {
+        if (errorCode == null || errorCode.isBlank()) return "未知错误";
+        return errorCode;
     }
 
     /**
@@ -252,11 +264,30 @@ public class AiModelConfigService {
             if (blocked != null) {
                 return "connect: fail(SSRF拦截:" + blocked + ")";
             }
+            // SEC-REV-round3 Bug#1（高危 ssrf-redirect-bypass）：HttpURLConnection 默认跟随 3xx redirect，
+            // 跳到内网绕开 ssrfBlockReason 前置检查。强制关闭自动跟随，手动解析 Location 再校验。
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(5_000);
             conn.setReadTimeout(5_000);
             conn.setRequestMethod("GET");
+            // Bug#1：禁止自动跟随 3xx
+            conn.setInstanceFollowRedirects(false);
             int code = conn.getResponseCode();
+            // Bug#1：若响应是 3xx，手动解析 Location 并对重定向目标再次 SSRF 校验
+            if (code >= 300 && code < 400) {
+                String location = conn.getHeaderField("Location");
+                conn.disconnect();
+                if (location == null || location.isBlank()) {
+                    return "connect: fail(SSRF拦截:重定向目标缺失)";
+                }
+                // Location 可能是相对路径或绝对 URL
+                URL nextUrl = new URL(url, location);
+                String nextBlocked = ssrfBlockReason(nextUrl.getHost());
+                if (nextBlocked != null) {
+                    return "connect: fail(SSRF拦截:重定向至" + nextBlocked + ")";
+                }
+                return "connect: fail(SSRF拦截:3xx重定向已禁用)";
+            }
             conn.disconnect();
             return "connect: ok(" + code + ")";
         } catch (java.net.UnknownHostException e) {
