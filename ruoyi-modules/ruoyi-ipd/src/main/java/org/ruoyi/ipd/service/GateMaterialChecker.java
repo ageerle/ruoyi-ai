@@ -21,10 +21,13 @@ import java.util.stream.Collectors;
  *
  * <p>SQL 拆解（LambdaQueryWrapper 实现）：
  * <ol>
- *   <li>stage_actions WHERE project_id=? AND del_flag='0' AND is_blocking='1' ORDER BY id</li>
- *   <li>deliverables WHERE project_id=? AND del_flag='0' → in-memory 按 action_id groupBy</li>
+ *   <li>stage_actions WHERE project_id=? ORDER BY id（实体未映射 del_flag/is_blocking 字段，无法用 MP 过滤——DDL 与 entity 不一致，参见 JIRA-IPD-XXX）</li>
+ *   <li>deliverables WHERE project_id=? → in-memory 按 action_id groupBy（同上 entity 缺字段）</li>
  *   <li>join：每个动作的 uploaded 数 = deliverables 里 actionId 命中的条数</li>
  * </ol>
+ *
+ * <p>已知契约偏离（[SEC-FIX] 2026-09-06）：del_flag/is_blocking 过滤未生效——entity 未映射。
+ * 全局风险：返回可能包含软删除或非阻断动作。后续修复：StageAction/Deliverable entity 补 delFlag 字段 + @TableLogic 注解；本类应用 .eq(delFlag, "0") 守卫。
  *
  * <p>不动 GateReviewService（兄弟流活跃区）——独立模块；真 SQL 由本类承载。
  */
