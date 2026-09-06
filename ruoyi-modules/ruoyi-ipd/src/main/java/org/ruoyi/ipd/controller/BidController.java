@@ -103,6 +103,34 @@ public class BidController {
         return ApiV1Response.ok(bidInvitationService.close(id));
     }
 
+    /**
+     * P2-3.3 AC-TEAM-13：市场PM（招标单发起人）在有效期内修改招标条件
+     */
+    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/bid-invitations/{id}/modify")
+    public ApiV1Response<BidInvitation> modifyInvitation(
+            @PathVariable Long id,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String content,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") java.util.Date expireAt) {
+        ipdPermission.requireInternal();
+        Person person = session.currentPerson();
+        return ApiV1Response.ok(bidInvitationService.modifyInvitation(id, title, content, expireAt, person.getId()));
+    }
+
+    /**
+     * P2-3.3 AC-TEAM-09：超管对挂起超 30 日的招标单直接指派
+     */
+    @SaCheckPermission(value = "ipd:admin", type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/bid-invitations/{id}/admin-assign")
+    public ApiV1Response<BidInvitation> adminAssign(
+            @PathVariable Long id,
+            @RequestParam Long targetPersonId) {
+        ipdPermission.requireAdmin();
+        Person person = session.currentPerson();
+        return ApiV1Response.ok(bidInvitationService.adminAssign(id, targetPersonId, person.getId()));
+    }
+
     @SaCheckPermission(value = "ipd:project:query", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/bid-invitations/{id}/responses")
     public ApiV1Response<List<BidResponse>> listResponses(@PathVariable Long id) {

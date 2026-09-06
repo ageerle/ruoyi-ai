@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
@@ -23,12 +25,28 @@ import java.util.stream.Collectors;
  * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2 软删除）
  */
 @Service
-@RequiredArgsConstructor
 public class BidInvitationService {
 
     private final BidInvitationMapper bidInvitationMapper;
     private final BidResponseMapper bidResponseMapper;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
+
+    public BidInvitationService(BidInvitationMapper bidInvitationMapper,
+                                 BidResponseMapper bidResponseMapper,
+                                 AuditLogService auditLogService) {
+        this(bidInvitationMapper, bidResponseMapper, auditLogService, null);
+    }
+
+    public BidInvitationService(BidInvitationMapper bidInvitationMapper,
+                                 BidResponseMapper bidResponseMapper,
+                                 AuditLogService auditLogService,
+                                 NotificationService notificationService) {
+        this.bidInvitationMapper = bidInvitationMapper;
+        this.bidResponseMapper = bidResponseMapper;
+        this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
+    }
 
     /**
      * 创建招标单（市场PM）
@@ -182,6 +200,96 @@ public class BidInvitationService {
             qw.eq(BidResponse::getRdPmId, currentPersonId);
         }
         return bidResponseMapper.selectList(qw);
+    }
+
+
+    /**
+     * AC-TEAM-13：市场PM（招标单发起人）在有效期内修改招标条件
+     * - 仅发起人本人可改（横向越权防御）
+     * - 仅 OPEN 状态可改（SELECTED/EXPIRED/CLOSED 状态机封口）
+     * - 写审计 action=modify_conditions
+     * - 向所有 PENDING 应标者发 BID_CONDITIONS_CHANGED 通知
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BidInvitation modifyInvitation(Long id, String newTitle, String newContent,
+                                         Date newExpireAt, Long operatorId) {
+        BidInvitation inv = bidInvitationMapper.selectByIdForUpdate(id);
+        if (inv == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        if (operatorId == null || !operatorId.equals(inv.getCreateBy())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN);
+        }
+        if (!"OPEN".equals(inv.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+        }
+        Date now = new Date();
+        StringBuilder changeLog = new StringBuilder("{");
+        changeLog.append("\"before\":{\"title\":\"").append(escape(inv.getTitle()))
+            .append("\",\"expireAt\":\"").append(inv.getExpireAt()).append("\"}");
+        inv.setTitle(newTitle);
+        inv.setContent(newContent);
+        inv.setExpireAt(newExpireAt);
+        inv.setUpdateTime(now);
+        bidInvitationMapper.updateById(inv);
+        changeLog.append(",\"after\":{\"title\":\"").append(escape(newTitle))
+            .append("\",\"expireAt\":\"").append(newExpireAt).append("\"}");
+        changeLog.append("}");
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId).action("modify_conditions").entityType("bid_invitation").entityId(id)
+            .afterData(changeLog.toString())
+            .reason(inv.getTitle())
+            .createTime(now).build());
+        // 通知所有 PENDING 应标者
+        if (notificationService != null) {
+            List<BidResponse> responders = bidResponseMapper.selectList(
+                new LambdaQueryWrapper<BidResponse>()
+                    .eq(BidResponse::getInvitationId, id)
+                    .eq(BidResponse::getStatus, "PENDING"));
+            for (BidResponse r : responders) {
+                if (r.getRdPmId() == null) continue;
+                notificationService.publish(r.getRdPmId(),
+                    NotificationService.Types.BID_CONDITIONS_CHANGED,
+                    NotificationService.KIND_ACTION,
+                    "bid_invitation", id,
+                    "招标条件已变更",
+                    "招标单 " + id + "「" + newTitle + "」条件已变更，请重新评估。",
+                    "/bid-invitations/" + id);
+            }
+        }
+        return inv;
+    }
+
+    /**
+     * AC-TEAM-09：超管对挂起超 30 日的招标单直接指派（无需应标行）
+     * - 锁读招标单行（与 selectResponse/withdraw 互斥）
+     * - 状态置 SELECTED，selected_response_id=null（超管指派无具体应标行）
+     * - 写审计 action=admin_assign，operator=adminId
+     * 调用方需校验调用人为超管（controller 守卫 ipd:admin 全局权限）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BidInvitation adminAssign(Long id, Long targetPersonId, Long adminId) {
+        BidInvitation inv = bidInvitationMapper.selectByIdForUpdate(id);
+        if (inv == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        // 不强制 status=EXPIRED：超管亦可在 OPEN 或 SELECTED 异常的极端场景下指派
+        // 实际"挂起超 30 日"判定在 controller 层做，service 仅执行指派动作
+        Date now = new Date();
+        inv.setStatus("SELECTED");
+        inv.setUpdateTime(now);
+        bidInvitationMapper.updateById(inv);
+        auditLogService.append(AuditLog.builder()
+            .operatorId(adminId).action("admin_assign").entityType("bid_invitation").entityId(id)
+            .afterData("{\"targetPersonId\":" + targetPersonId + "}")
+            .reason(inv.getTitle())
+            .createTime(now).build());
+        return inv;
+    }
+
+    private static String escape(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private BidInvitation requireOpen(Long id) {

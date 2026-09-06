@@ -68,6 +68,9 @@ public class NotificationService {
         public static final String DEL_CROSS_GROUP_CC = "DEL_CROSS_GROUP_CC";
         public static final String DEL_REJECTED = "DEL_REJECTED";
         public static final String DEL_REVIEW_OVERDUE = "DEL_REVIEW_OVERDUE";
+        public static final String ACTION_OVERDUE = "ACTION_OVERDUE";
+        /** P2-3.3 AC-TEAM-08 招标到期无人应标提示给市场 PM */
+        public static final String BID_EXPIRED_NO_RESPONSE = "BID_EXPIRED_NO_RESPONSE";
 
         private Types() {
         }
@@ -99,6 +102,26 @@ public class NotificationService {
     public NotificationEvent publish(Long receiverId, String eventType, String kind,
                                      String sourceType, Long sourceId, String title,
                                      String content, String actionUrl) {
+        return doPublish(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl,
+            sourceType + ":" + eventType + ":" + sourceId + ":" + receiverId);
+    }
+
+    /**
+     * P1-4.4 每日提醒专用：dedupKey 追加自然日（yyyyMMdd）。
+     * 同日重扫不重发（重复扫描不多通知）；次日可再提醒（AC-IPD-12 每日提醒）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public NotificationEvent publishDaily(Long receiverId, String eventType, String kind,
+                                          String sourceType, Long sourceId, String title,
+                                          String content, String actionUrl, java.util.Date day) {
+        String dayStamp = new java.text.SimpleDateFormat("yyyyMMdd").format(day);
+        return doPublish(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl,
+            sourceType + ":" + eventType + ":" + sourceId + ":" + receiverId + ":" + dayStamp);
+    }
+
+    private NotificationEvent doPublish(Long receiverId, String eventType, String kind,
+                                         String sourceType, Long sourceId, String title,
+                                         String content, String actionUrl, String dedupKey) {
         requireArg(receiverId != null, "receiverId 必填");
         requireArg(eventType != null && !eventType.isBlank(), "eventType 必填");
         requireArg(kind != null && KINDS.contains(kind), "kind 仅允许 FYI|ACTION");
@@ -107,7 +130,6 @@ public class NotificationService {
         requireArg(title != null && !title.isBlank(), "title 必填");
         requireArg(title.length() <= 200, "title 超长（≤200）");
 
-        String dedupKey = sourceType + ":" + eventType + ":" + sourceId + ":" + receiverId;
         NotificationEvent row = NotificationEvent.builder()
             .receiverId(receiverId).eventType(eventType).kind(kind)
             .sourceType(sourceType).sourceId(sourceId).dedupKey(dedupKey)
