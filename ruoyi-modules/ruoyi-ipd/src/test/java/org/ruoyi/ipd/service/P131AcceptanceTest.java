@@ -31,7 +31,8 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -69,7 +70,7 @@ class P131AcceptanceTest {
             assertThat(stage.getCreateBy()).isEqualTo(7L);
             assertThat(stage.getUpdateBy()).isEqualTo(7L);
         });
-        verify(f.stageMapper, times(6)).insert(any(ProjectStage.class));
+        verify(f.stageMapper).insertBatch(anyList(), anyInt());
     }
 
     @Test
@@ -95,7 +96,7 @@ class P131AcceptanceTest {
             .extracting(StageAction::getActionCode)
             .contains("P05", "D04", "V04", "P06", "D10", "V09", "C04", "V12")
             .doesNotContain("D03", "D07", "V05", "V11");
-        verify(f.actionMapper, times(69)).insert(any(StageAction.class));
+        verify(f.actionMapper).insertBatch(anyList(), anyInt());
     }
 
     @Test
@@ -136,7 +137,7 @@ class P131AcceptanceTest {
         f.stageThrowAt = 1;
         assertThatThrownBy(() -> f.bootstrap.bootstrap(13L, 7L)).isSameAs(failure);
         assertThat(f.stageAttempts).isEqualTo(1);
-        verify(f.actionMapper, never()).insert(any(StageAction.class));
+        verify(f.actionMapper, never()).insertBatch(anyList(), anyInt());
     }
 
     @Test
@@ -147,8 +148,8 @@ class P131AcceptanceTest {
         assertThat(f.stages).filteredOn(s -> s.getProjectId().equals(99L)).hasSize(6);
         assertThat(f.actions).filteredOn(a -> a.getProjectId().equals(13L)).hasSize(69);
         assertThat(f.actions).filteredOn(a -> a.getProjectId().equals(99L)).hasSize(69);
-        verify(f.stageMapper, times(12)).insert(any(ProjectStage.class));
-        verify(f.actionMapper, times(138)).insert(any(StageAction.class));
+        verify(f.stageMapper, times(2)).insertBatch(anyList(), anyInt());
+        verify(f.actionMapper, times(2)).insertBatch(anyList(), anyInt());
     }
 
     @Test
@@ -164,8 +165,8 @@ class P131AcceptanceTest {
         verify(f.stageMapper, times(2)).selectActionsForBootstrap(13L);
         verify(f.stageMapper, times(2)).selectAllStageIdsForBootstrap(13L);
         verify(f.stageMapper, times(2)).selectAllActionIdsForBootstrap(13L);
-        verify(f.stageMapper, times(6)).insert(any(ProjectStage.class));
-        verify(f.actionMapper, times(69)).insert(any(StageAction.class));
+        verify(f.stageMapper).insertBatch(anyList(), anyInt());
+        verify(f.actionMapper).insertBatch(anyList(), anyInt());
     }
 
     @Test
@@ -188,7 +189,7 @@ class P131AcceptanceTest {
                 .isEqualTo("V11".equals(def.code()) ? "DEEP" : def.depth());
         }
         assertThat(f.bootstrap.bootstrap(13L, 7L)).isZero();
-        verify(f.actionMapper, times(69)).insert(any(StageAction.class));
+        verify(f.actionMapper).insertBatch(anyList(), anyInt());
     }
 
     @ParameterizedTest
@@ -196,8 +197,9 @@ class P131AcceptanceTest {
     void invalidStageInsertResultOrGeneratedIdIsAPersistenceFailure(String fault) {
         f.stageFault = fault;
         failureCode(() -> f.bootstrap.bootstrap(13L, 7L), ApiV1ErrorCode.INTERNAL_ERROR);
-        assertThat(f.stageAttempts).isEqualTo("DUPLICATE_ID".equals(fault) ? 2 : 1);
-        if (!"DUPLICATE_ID".equals(fault)) verify(f.actionMapper, never()).insert(any(StageAction.class));
+        // 批量契约下，批量返回值与坏主键回填都在同一次（且仅一次）阶段批量写入中暴露；动作批量不应被触达
+        verify(f.stageMapper, times(1)).insertBatch(anyList(), anyInt());
+        verify(f.actionMapper, never()).insertBatch(anyList(), anyInt());
     }
 
     @ParameterizedTest
@@ -205,7 +207,9 @@ class P131AcceptanceTest {
     void invalidActionInsertResultOrGeneratedIdIsAPersistenceFailure(String fault) {
         f.actionFault = fault;
         failureCode(() -> f.bootstrap.bootstrap(13L, 7L), ApiV1ErrorCode.INTERNAL_ERROR);
-        assertThat(f.actionAttempts).isEqualTo("DUPLICATE_ID".equals(fault) ? 2 : 1);
+        // 阶段批量已成功一次；动作批量同样只发生一次，返回值伪回执/坏回填即整体失败
+        verify(f.stageMapper, times(1)).insertBatch(anyList(), anyInt());
+        verify(f.actionMapper, times(1)).insertBatch(anyList(), anyInt());
     }
 
     @Test
@@ -343,25 +347,33 @@ class P131AcceptanceTest {
                 Long projectId = inv.getArgument(0);
                 return actions.stream().filter(a -> projectId.equals(a.getProjectId())).map(StageAction::getId).toList();
             });
-            when(stageMapper.insert(any(ProjectStage.class))).thenAnswer(inv -> {
-                ProjectStage stage = inv.getArgument(0);
-                if (++stageAttempts == stageThrowAt) throw failure;
-                if ("ZERO_ROWS".equals(stageFault)) return 0;
-                if ("MULTIPLE_ROWS".equals(stageFault)) return 2;
-                Long firstId = stages.isEmpty() ? nextStageId + 1 : stages.get(0).getId();
-                stage.setId(generatedId(stageFault, ++nextStageId, firstId));
-                stages.add(stage);
-                return 1;
+            // R8X-CONT-1 P0-3 后契约：insertBatch(List, batchSize) 单次批量写入 + ASSIGN_ID 主键回填。
+            // 行级 throwAt 模拟批量写中途失败（前 N-1 行已落内存，真实回滚由真库验收证明）。
+            when(stageMapper.insertBatch(anyList(), anyInt())).thenAnswer(inv -> {
+                List<ProjectStage> batch = inv.getArgument(0);
+                for (ProjectStage stage : batch) {
+                    if (++stageAttempts == stageThrowAt) throw failure;
+                    stages.add(stage);
+                }
+                if ("ZERO_ROWS".equals(stageFault) || "MULTIPLE_ROWS".equals(stageFault)) return false;
+                Long firstId = nextStageId + 1;
+                for (ProjectStage stage : batch) {
+                    stage.setId(generatedId(stageFault, ++nextStageId, firstId));
+                }
+                return true;
             });
-            when(actionMapper.insert(any(StageAction.class))).thenAnswer(inv -> {
-                StageAction action = inv.getArgument(0);
-                if (++actionAttempts == actionThrowAt) throw failure;
-                if ("ZERO_ROWS".equals(actionFault)) return 0;
-                if ("MULTIPLE_ROWS".equals(actionFault)) return 2;
-                Long firstId = actions.isEmpty() ? nextActionId + 1 : actions.get(0).getId();
-                action.setId(generatedId(actionFault, ++nextActionId, firstId));
-                actions.add(action);
-                return 1;
+            when(actionMapper.insertBatch(anyList(), anyInt())).thenAnswer(inv -> {
+                List<StageAction> batch = inv.getArgument(0);
+                for (StageAction action : batch) {
+                    if (++actionAttempts == actionThrowAt) throw failure;
+                    actions.add(action);
+                }
+                if ("ZERO_ROWS".equals(actionFault) || "MULTIPLE_ROWS".equals(actionFault)) return false;
+                Long firstId = nextActionId + 1;
+                for (StageAction action : batch) {
+                    action.setId(generatedId(actionFault, ++nextActionId, firstId));
+                }
+                return true;
             });
             clearInvocations(stageMapper, actionMapper);
         }

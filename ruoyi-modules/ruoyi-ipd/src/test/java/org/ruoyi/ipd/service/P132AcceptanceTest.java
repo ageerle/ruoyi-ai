@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -119,17 +120,22 @@ class P132AcceptanceTest {
                 stages.stream().filter(s -> s.getProjectId().equals(inv.getArgument(0))).toList());
             when(stageMapper.selectActionsForBootstrap(anyLong())).thenAnswer(inv ->
                 actions.stream().filter(a -> a.getProjectId().equals(inv.getArgument(0))).toList());
-            when(stageMapper.insert(any(ProjectStage.class))).thenAnswer(inv -> {
-                ProjectStage stage = inv.getArgument(0);
-                stage.setId(++nextStageId);
-                stages.add(stage);
-                return 1;
+            // R8X-CONT-1 P0-3 后契约：insertBatch(List, batchSize) 单次批量写入 + ASSIGN_ID 主键回填
+            when(stageMapper.insertBatch(anyList(), anyInt())).thenAnswer(inv -> {
+                List<ProjectStage> batch = inv.getArgument(0);
+                for (ProjectStage stage : batch) {
+                    stage.setId(++nextStageId);
+                    stages.add(stage);
+                }
+                return true;
             });
-            when(actionMapper.insert(any(StageAction.class))).thenAnswer(inv -> {
-                StageAction action = inv.getArgument(0);
-                action.setId(++nextActionId);
-                actions.add(action);
-                return 1;
+            when(actionMapper.insertBatch(anyList(), anyInt())).thenAnswer(inv -> {
+                List<StageAction> batch = inv.getArgument(0);
+                for (StageAction action : batch) {
+                    action.setId(++nextActionId);
+                    actions.add(action);
+                }
+                return true;
             });
             bootstrap = new ProjectBootstrapService(stageMapper, actionMapper);
         }
