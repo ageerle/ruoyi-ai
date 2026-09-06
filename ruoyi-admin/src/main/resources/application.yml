@@ -122,6 +122,11 @@ spring:
   # application-dev.yml / application-prod.yml 以同名键覆盖（prod 维持 maxPoolSize=20 现值）。
   datasource:
     dynamic:
+      # 性能分析插件（有性能损耗 不建议生产环境使用）
+      # PERF-P1-3 + SEC-NEW-MED-2: 父基线显式 false，所有 profile 默认走安全基线
+      # dev profile 需在 application-dev.yml 显式覆盖为 true（本地 SQL 调试用）
+      # prod profile 必须在 application-prod.yml 显式保持 false 或留空走本基线（hook 阻断由用户手动合并）
+      p6spy: false
       hikari:
         # 最大连接池数量
         maxPoolSize: 40

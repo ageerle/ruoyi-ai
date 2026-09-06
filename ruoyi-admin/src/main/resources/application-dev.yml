@@ -53,6 +53,8 @@ spring:
     # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
     dynamic:
       # 性能分析插件(有性能损耗 不建议生产环境使用)
+      # PERF-P1-3 + SEC-NEW-MED-2: dev profile 显式覆盖父基线 p6spy: false → true
+      # 父基线（application.yml）默认 false 保护 prod 安全基线，dev SQL 调试需要 SQL 日志
       p6spy: true
       # 设置默认的数据源或者数据源组,默认值即为 master
       primary: master
