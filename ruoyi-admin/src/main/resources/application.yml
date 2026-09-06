@@ -149,7 +149,8 @@ sa-token:
   # jwt秘钥
   # 注意：dev profile 使用 26 字母占位符仅供本地启动；所有非 local 环境必须通过 SA_TOKEN_JWT_SECRET_KEY 环境变量注入
   # application-prod.yml 已强制占位符 ${SA_TOKEN_JWT_SECRET_KEY:}（无默认值），启动时未注入即失败
-  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:abcdefghijklmnopqrstuvwxyz}
+  # R8-P0-3：默认值从 26 字母弱密钥升级为 64 字符强密钥；非 local 环境仍需 SA_TOKEN_JWT_SECRET_KEY 环境变量覆盖
+  jwt-secret-key: BifYw6f5ExTLFxc9htaGehP6iqWEpEqQc1W6KCYzihLYMpIXOL-EKME0mtnRIMUg
 
 # security配置
 security:
@@ -348,7 +349,8 @@ websocket:
 --- # 演示模式配置
 demo:
   # 是否开启演示模式（开启后所有写操作将被拦截）
-  enabled: true
+  # R8-P0-2：默认关闭，避免误开启阻断全部 IPD 写操作；dev profile 如需演示模式请在 application-dev.yml 显式覆盖
+  enabled: false
   # 提示消息
   message: "演示模式，不允许操作"
   # 排除的路径（这些路径不受演示模式限制）
