@@ -60,4 +60,67 @@ public interface IpdPermissionCode {
     String OPERATION_AI_DOCUMENT_REVISE = "ipd:ai-document:edit";
     /** P1-10.1：人工审核通过（BR-AI-03） */
     String OPERATION_AI_DOCUMENT_REVIEW = "ipd:ai-document:review";
+
+    /** P4-2.1：AI 模型配置读（内部全员；密钥永不回显） */
+    String OPERATION_AI_MODEL = "ipd:ai-model:list";
+    /** P4-2.1：AI 模型配置写（仅超管） */
+    String OPERATION_AI_MODEL_EDIT = "ipd:ai-model:edit";
+
+    /** SOP 模板写（仅超管） */
+    String OPERATION_SOP_TEMPLATE_EDIT = "ipd:sop-template:edit";
+    /** SOP 模板读（内部全员） */
+    String OPERATION_SOP_TEMPLATE = "ipd:sop-template:list";
+
+    /** P3-1.x：KPI 考核查询（内部四角色） */
+    String OPERATION_KPI_QUERY = "ipd:kpi:query";
+
+    /** P3-4.4：奖金池查询 */
+    String OPERATION_BONUS_POOL_QUERY = "ipd:bonus-pool:query";
+    /** P3-4.4：奖金池计算 */
+    String OPERATION_BONUS_POOL_COMPUTE = "ipd:bonus-pool:compute";
+    /** P3-4.4：奖金池冻结 */
+    String OPERATION_BONUS_POOL_FREEZE = "ipd:bonus-pool:freeze";
+    /** P3-4.4：奖金池分配 */
+    String OPERATION_BONUS_POOL_DISTRIBUTE = "ipd:bonus-pool:distribute";
+
+    /** P3-6.2：贡献度查询 */
+    String OPERATION_CONTRIBUTION_QUERY = "ipd:contribution:query";
+    /** P3-6.2：贡献度保存 */
+    String OPERATION_CONTRIBUTION_SAVE = "ipd:contribution:save";
+    /** P3-6.2：贡献度确认 */
+    String OPERATION_CONTRIBUTION_CONFIRM = "ipd:contribution:confirm";
+
+    /** P3-8.2：负反馈查询 */
+    String OPERATION_NEGATIVE_FEEDBACK_QUERY = "ipd:negative-feedback:query";
+    /** P3-8.2：负反馈录入 */
+    String OPERATION_NEGATIVE_FEEDBACK_CREATE = "ipd:negative-feedback:create";
+    /** P3-8.2：负反馈认定/解除 */
+    String OPERATION_NEGATIVE_FEEDBACK_DECIDE = "ipd:negative-feedback:decide";
+
+    /** P3-7.1：切换验收 run / get / list（内部全员可读；写操作 service 二次校验） */
+    String OPERATION_SWITCHING_ACCEPTANCE_QUERY = "ipd:switching-acceptance:query";
+    /** P3-7.1：切换验收 lock / unlock（仅 SUPER_ADMIN，走 requireAdmin） */
+    String OPERATION_SWITCHING_ACCEPTANCE_ADMIN = "ipd:switching-acceptance:admin";
+
+    /** SEC-02：审计日志 */
+    String OPERATION_AUDIT_LOG_LIST = "ipd:audit-log:list";
+    String OPERATION_AUDIT_LOG_VERIFY = "ipd:audit-log:verify";
+    String OPERATION_AUDIT_LOG_EXPORT = "ipd:audit-log:export";
+
+    /** AC-COMP-01/04/05：合规读 */
+    String OPERATION_COMPLIANCE_READ = "ipd:compliance:read";
+    /** AC-COMP-02/03：合规写 */
+    String OPERATION_COMPLIANCE_WRITE = "ipd:compliance:write";
+
+    /** 系统参数 */
+    String OPERATION_SYSTEM_CONFIG_LIST = "ipd:system-config:list";
+    String OPERATION_SYSTEM_CONFIG_READ = "ipd:system-config:read";
+    String OPERATION_SYSTEM_CONFIG_UPDATE = "ipd:system-config:update";
+
+    /** 产品查询 */
+    String OPERATION_PRODUCT_QUERY = "ipd:product:query";
+
+
+    /** P2-3.3：超管指派 */
+    String OPERATION_BID_INVITATION_ADMIN_ASSIGN = "ipd:bid-invitation:admin-assign";
 }

@@ -49,6 +49,13 @@ public enum ApiV1ErrorCode {
     /** P3-8.2：状态机不允许此操作（仅 DRAFT 可 submit；仅 PENDING_DECISION 可 decide；仅 EXECUTED 可 lift） */
     NF_STATE_INVALID(50013, "负反馈状态机不允许此操作"),
 
+    /** P3-7.1：已锁定的月份上写入账务记录 */
+    SWITCHING_LOCKED(50014, "该月份已锁定，不允许写入账务记录（SWITCHING_LOCKED）"),
+    /** P3-7.1：对账差异率 ≥ 1% 时尝试 lock */
+    SWITCHING_DIFF_TOO_LARGE(50015, "对账差异率 ≥ 1%，不允许锁定（SWITCHING_DIFF_TOO_LARGE）"),
+    /** P3-7.1：lock 调用时未先 run */
+    SWITCHING_NOT_RUN(50016, "该月份尚未运行对账（SWITCHING_NOT_RUN）"),
+
     INTERNAL_ERROR(90001, "系统内部错误");
 
     private final int code;
@@ -82,7 +89,8 @@ public enum ApiV1ErrorCode {
                 CONTRIB_NOT_AUTHORIZED, NF_NOT_PM -> 403;
             case GATE_NOT_PASSED, DUAL_SIGN_INCOMPLETE, OVER_QUOTA_NOT_REGISTERED, ROLE_LOCKED,
                 DELETE_NOT_ALLOWED_DIRECT, HANDOVER_REQUIRED_BEFORE_DISABLE, STATE_CONFLICT,
-                AI_BUDGET_EXCEEDED, CONTRIB_NOT_G5_STAGE, NF_REENTRY_NOT_ALLOWED, NF_STATE_INVALID -> 409;
+                AI_BUDGET_EXCEEDED, CONTRIB_NOT_G5_STAGE, NF_REENTRY_NOT_ALLOWED, NF_STATE_INVALID,
+                SWITCHING_LOCKED, SWITCHING_DIFF_TOO_LARGE, SWITCHING_NOT_RUN -> 409;
             case RATE_LIMITED -> 429;
             case ATTACHMENT_TOO_LARGE -> 413;
             case PRODUCT_INACTIVE, NOT_FOUND -> 404;
