@@ -219,6 +219,109 @@ public class BonusPoolService {
             .build();
     }
 
+    /* ----------------- ZK-IPD §三.2.5 修正因子叠加 ----------------- */
+    /* 差异矩阵 2026-09-06 P0 项（反向验证）：
+       Track 14 fb4a86d3 改对了 §三.2.1 主公式（实际回款×5%×S/A/B 系数），
+       但漏叠加 §三.2.5 "可叠加 销售达成率阶梯系数 + 个人绩效系数"。
+       §三.2.5 修正因子完整公式：
+         finalPool = actualReceipts × 5% × levelCoefficient × tierCoefficient × personalCoefficient
+       tierCoefficient 缺省 = 1.0（中性），personalCoefficient 缺省 = 1.0（中性） */
+
+    /** ZK-IPD §三.2.5：修正因子缺省值 = 1.0（中性，不放大不缩小） */
+    public static final BigDecimal NEUTRAL_MODIFIER = BigDecimal.ONE;
+
+    /**
+     * ZK-IPD §三.2.1 + §三.2.5 完整公式：奖金池 = 实际回款 × 5% × S/A/B 系数 × 销售达成率阶梯 × 个人绩效。
+     *
+     * <p>与 {@link #calculateBonusPoolByZkFormula} 的关系：本方法是"完整公式" 入口，
+     * 原方法是 §三.2.1 主公式（不带修正因子）的便捷重载；二者均属 ZK-IPD 合法路径。
+     *
+     * <ul>
+     *   <li>tierCoefficient：销售达成率阶梯系数（0~1.2），由 {@link #tierCoefficientOf} 推出；缺省 = 1.0</li>
+     *   <li>personalCoefficient：个人绩效系数，缺省 = 1.0（中性）</li>
+     * </ul>
+     *
+     * @param actualReceipts     上市后连续 6 个月实际回款净额
+     * @param levelCoefficient   项目 S/A/B 差异化系数
+     * @param tierCoefficient    销售达成率阶梯系数（AC-INC-17h，0~1.2；null = 1.0）
+     * @param personalCoefficient 个人绩效系数（null = 1.0）
+     * @return 奖金池金额；回款 ≤ 0 返回 ZERO；任一非缺省入参空抛 ServiceException
+     */
+    public BigDecimal calculateBonusPoolByZkFormulaWithModifiers(BigDecimal actualReceipts,
+                                                                  BigDecimal levelCoefficient,
+                                                                  BigDecimal tierCoefficient,
+                                                                  BigDecimal personalCoefficient) {
+        if (actualReceipts == null) {
+            throw new ServiceException("ZK-IPD §三.2.5：实际回款金额不能为空");
+        }
+        if (levelCoefficient == null) {
+            throw new ServiceException("ZK-IPD §三.2.5：项目 S/A/B 差异化系数不能为空");
+        }
+        if (actualReceipts.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ServiceException("ZK-IPD §三.2.5：实际回款金额不能为负");
+        }
+        if (actualReceipts.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal tier = (tierCoefficient != null) ? tierCoefficient : NEUTRAL_MODIFIER;
+        BigDecimal personal = (personalCoefficient != null) ? personalCoefficient : NEUTRAL_MODIFIER;
+        return actualReceipts.multiply(DEFAULT_POOL_RATE)
+            .multiply(levelCoefficient)
+            .multiply(tier)
+            .multiply(personal);
+    }
+
+    /**
+     * ZK-IPD §三.2.1 + §三.2.5 + §三.2.3 联动：构造 BonusPool，自动从 achievementRate 推 tierCoefficient。
+     *
+     * <p>与 {@link #buildPoolFromProject} 的区别：本方法额外接收 achievementRate 与 personalCoefficient，
+     * 按 §三.2.5 修正因子叠加规则计算 finalPool，并写入 tierCoefficient 字段（消除"绿但对应错误实现"）。
+     *
+     * @param projectId           项目 ID
+     * @param actualReceipts      实际回款金额
+     * @param achievementRate     销售达成率（%），由 {@link #tierCoefficientOf} 推 tierCoefficient；null = 1.0
+     * @param personalCoefficient 个人绩效系数；null = 1.0
+     * @param calculatedAt        计算时间
+     * @param poolRate            奖金池比例（默认 5%）
+     * @return 新建 BonusPool（未持久化），finalPool 已按 §三.2.5 完整公式计算
+     */
+    public BonusPool buildPoolFromProjectWithAchievement(Long projectId,
+                                                          BigDecimal actualReceipts,
+                                                          BigDecimal achievementRate,
+                                                          BigDecimal personalCoefficient,
+                                                          Date calculatedAt,
+                                                          BigDecimal poolRate) {
+        if (projectMapper == null) {
+            throw new ServiceException("ProjectMapper 未注入，无法读取项目 S/A/B 差异化系数（ZK-IPD §三.2.1）");
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            throw new ServiceException("项目不存在: " + projectId);
+        }
+        BigDecimal levelCoefficient = project.getLevelCoefficient();
+        if (levelCoefficient == null) {
+            throw new ServiceException("项目 S/A/B 差异化系数未配置（level=" + project.getLevel() + "），无法按 ZK-IPD §三.2.1 计算奖金池");
+        }
+        BigDecimal tierCoefficient = (achievementRate != null)
+            ? tierCoefficientOf(achievementRate)
+            : NEUTRAL_MODIFIER;
+        BigDecimal rate = (poolRate != null) ? poolRate : DEFAULT_POOL_RATE;
+        BigDecimal pool = calculateBonusPoolByZkFormulaWithModifiers(
+            actualReceipts, levelCoefficient, tierCoefficient, personalCoefficient);
+        return BonusPool.builder()
+            .projectId(projectId)
+            .targetSales(actualReceipts)
+            .poolRate(rate)
+            .basePool(actualReceipts.multiply(rate))
+            .coefficient(levelCoefficient)
+            .achievementRate(achievementRate)
+            .tierCoefficient(tierCoefficient)
+            .finalPool(pool)
+            .calculatedAt(calculatedAt)
+            .status("DRAFT")
+            .build();
+    }
+
     /* ----------------- ZK-IPD §三.2.4 奖金分配比例算法 ----------------- */
 
     /** ZK-IPD §三.2.4：市场 PM 分配比例区间 [40%, 65%] */
