@@ -58,7 +58,7 @@ public class GateEngine {
         if (requiredHere.isEmpty()) {
             return;
         }
-        Map<String, StageAction> byCode = loadByCode(project.getId());
+        Map<String, StageAction> byCode = loadByCode(project.getId(), requiredHere);
         List<String> unfinished = new ArrayList<>();
         for (String code : requiredHere) {
             StageAction action = byCode.get(code);
@@ -96,7 +96,7 @@ public class GateEngine {
         String level = project.getLevel() == null ? "S" : project.getLevel();
         String configVersion = configVersionOf(level);
         Set<String> required = requiredCodesForStage(level, st);
-        Map<String, StageAction> byCode = loadByCode(project.getId());
+        Map<String, StageAction> byCode = loadByCode(project.getId(), required);
         List<GateChecklistItem> items = new ArrayList<>();
         for (String code : required) {
             ActionDef def = ActionCatalog.byCode(code);
@@ -192,9 +192,23 @@ public class GateEngine {
         return String.join(",", codes);
     }
 
-    private Map<String, StageAction> loadByCode(Long projectId) {
+    /**
+     * R8-AUTO-8 [PERF-01]：loadByCode 加 .in(actionCode, requiredCodes) 过滤。
+     * 100 并发下 S 级项目 69 行全表拉取降到 ≤38 行必做集，配合 idx_sa_project_code 索引
+     * （参考 Round 8 R8-PERF-08 SQL）消除 filesort 与 100×6ms 阻塞池。
+     *
+     * @param projectId     项目 ID
+     * @param requiredCodes 本阶段必做集（resolveCode 后）；空集合返回空 Map
+     * @return code → action 映射
+     */
+    private Map<String, StageAction> loadByCode(Long projectId, Set<String> requiredCodes) {
+        if (requiredCodes == null || requiredCodes.isEmpty()) {
+            return Map.of();
+        }
         List<StageAction> actions = stageActionMapper.selectList(
-            new LambdaQueryWrapper<StageAction>().eq(StageAction::getProjectId, projectId));
+            new LambdaQueryWrapper<StageAction>()
+                .eq(StageAction::getProjectId, projectId)
+                .in(StageAction::getActionCode, requiredCodes));
         Map<String, StageAction> byCode = new LinkedHashMap<>();
         for (StageAction action : actions) {
             if (action.getActionCode() != null) {
