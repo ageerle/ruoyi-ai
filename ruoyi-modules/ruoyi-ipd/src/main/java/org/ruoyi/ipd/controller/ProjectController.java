@@ -12,6 +12,7 @@ import org.ruoyi.ipd.dto.LegacyImportRowResult;
 import org.ruoyi.ipd.dto.ProjectCertListView;
 import org.ruoyi.ipd.dto.ProjectCertManualReq;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.GateEngine;
@@ -44,7 +45,7 @@ public class ProjectController {
 
     /** 查询项目列表，需 ipd:project:list 权限 */
     @GetMapping
-    @SaCheckPermission(value = "ipd:project:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<Project>> list(@RequestParam(required = false) String keyword) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(projectService.list(keyword));
@@ -52,7 +53,7 @@ public class ProjectController {
 
     /** 查询项目详情，需 ipd:project:query 权限 */
     @GetMapping("/{id}")
-    @SaCheckPermission(value = "ipd:project:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> get(@PathVariable Long id) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(projectService.getById(id));
@@ -66,7 +67,7 @@ public class ProjectController {
      * @return 清单视图
      */
     @GetMapping("/{id}/gate-checklist")
-    @SaCheckPermission(value = "ipd:project:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<GateChecklistView> gateChecklist(@PathVariable Long id,
                                                           @RequestParam(required = false) String stage) {
         ipdPermission.requireInternal();
@@ -76,7 +77,7 @@ public class ProjectController {
 
     /** 创建项目，需 ipd:project:add 权限 */
     @PostMapping
-    @SaCheckPermission(value = "ipd:project:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> create(@RequestBody org.ruoyi.ipd.dto.ProjectCreateReq req) {
         // CODE-01：白名单 DTO，code/currentStage/status/source 由服务端定，客户端不可注入
         IpdActor actor = ipdPermission.requireProjectCreator();
@@ -85,7 +86,7 @@ public class ProjectController {
 
     /** 变更项目状态，需 ipd:project:edit 权限 */
     @PostMapping("/{id}/status")
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> changeStatus(@PathVariable Long id, @RequestParam String target) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(projectService.changeStatus(id, target, actor.id(), actor.groupId(), actor.role()));
@@ -93,7 +94,7 @@ public class ProjectController {
 
     /** 推进项目阶段，需 ipd:project:edit 权限 */
     @PostMapping("/{id}/advance-stage")
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> advanceStage(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(projectService.advanceStage(id, actor.id(), actor.groupId(), actor.role()));
@@ -107,7 +108,7 @@ public class ProjectController {
      * @return 更新后项目
      */
     @PostMapping("/{id}/baselines")
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> updateBaselines(@PathVariable Long id,
                                                   @RequestBody BaselinePatchReq req) {
         IpdActor actor = ipdPermission.requireInternal();
@@ -135,7 +136,7 @@ public class ProjectController {
      * @return 导入结果
      */
     @PostMapping("/legacy-import")
-    @SaCheckPermission(value = "ipd:project:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<LegacyImportResult> legacyImport(@RequestBody LegacyImportReq req) {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(legacyImportService.importOne(req, actor.id()));
@@ -148,7 +149,7 @@ public class ProjectController {
      * @return 逐行结果
      */
     @PostMapping("/legacy-import/batch")
-    @SaCheckPermission(value = "ipd:project:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<LegacyImportRowResult>> legacyImportBatch(@RequestBody List<LegacyImportReq> rows) {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(legacyImportService.importBatch(rows, actor.id()));
@@ -161,7 +162,7 @@ public class ProjectController {
      * @return 清单视图
      */
     @GetMapping("/{id}/cert-items")
-    @SaCheckPermission(value = "ipd:project:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProjectCertListView> listCertItems(@PathVariable Long id) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(projectCertService.listView(id));
@@ -174,7 +175,7 @@ public class ProjectController {
      * @return 新增条数
      */
     @PostMapping("/{id}/cert-items/sync")
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Integer> syncCertItems(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         Project project = projectService.getById(id);
@@ -189,7 +190,7 @@ public class ProjectController {
      * @return 新建项
      */
     @PostMapping("/{id}/cert-items")
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProjectCertItem> addCertItem(@PathVariable Long id,
                                                       @RequestBody ProjectCertManualReq req) {
         IpdActor actor = ipdPermission.requireInternal();
@@ -205,7 +206,7 @@ public class ProjectController {
      * @return 更新后项
      */
     @PostMapping("/{id}/cert-items/{itemId}/status")
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProjectCertItem> changeCertStatus(@PathVariable Long id,
                                                            @PathVariable Long itemId,
                                                            @RequestParam String target) {

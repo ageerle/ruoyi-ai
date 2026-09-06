@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.RequirementChange;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.RequirementChangeService;
@@ -37,21 +38,21 @@ public class RequirementChangeController {
     private final RequirementChangeService requirementChangeService;
     private final IpdPermission ipdPermission;
 
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/requirement-changes")
     public ApiV1Response<RequirementChange> create(@RequestBody RequirementChange change) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(requirementChangeService.create(change, actor));
     }
 
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/requirement-changes/{id}/submit")
     public ApiV1Response<RequirementChange> submit(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(requirementChangeService.submit(id, actor));
     }
 
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/requirement-changes/{id}/sign")
     public ApiV1Response<RequirementChange> sign(@PathVariable Long id,
                                                   @RequestParam String decision,
@@ -60,14 +61,14 @@ public class RequirementChangeController {
         return ApiV1Response.ok(requirementChangeService.sign(id, decision, opinion, actor));
     }
 
-    @SaCheckPermission(value = "ipd:project:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/requirement-changes/{id}")
     public ApiV1Response<Map<String, Object>> detail(@PathVariable Long id) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(requirementChangeService.detail(id));
     }
 
-    @SaCheckPermission(value = "ipd:project:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/requirement-changes")
     public ApiV1Response<IPage<RequirementChange>> list(@RequestParam(defaultValue = "1") int pageNo,
                                                        @RequestParam(defaultValue = "20") int pageSize,
@@ -77,7 +78,7 @@ public class RequirementChangeController {
         return ApiV1Response.ok(requirementChangeService.listByProject(pageNo, pageSize, projectId, status));
     }
 
-    @SaCheckPermission(value = "ipd:project:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/requirement-changes/open")
     public ApiV1Response<List<RequirementChange>> listOpen(@RequestParam Long projectId) {
         ipdPermission.requireInternal();

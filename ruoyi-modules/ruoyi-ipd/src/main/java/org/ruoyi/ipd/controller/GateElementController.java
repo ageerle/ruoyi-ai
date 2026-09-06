@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.GateElement;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.GateElementService;
@@ -31,7 +32,7 @@ public class GateElementController {
 
     /** 查询Gate评审要素列表（?gate=G1可选过滤），需 ipd:gate-element:list 权限 */
     @GetMapping
-    @SaCheckPermission(value = "ipd:gate-element:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<GateElement>> list(@RequestParam(required = false) String gate) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(gateElementService.listByGate(gate));
@@ -39,7 +40,7 @@ public class GateElementController {
 
     /** 创建Gate评审要素，需 ipd:gate-element:add 权限 */
     @PostMapping
-    @SaCheckPermission(value = "ipd:gate-element:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<GateElement> create(@RequestBody org.ruoyi.ipd.dto.GateElementCreateReq req) {
         // CODE-01：白名单 DTO，id/tenantId/delFlag 不可注入
         IpdActor actor = ipdPermission.requireAdmin();
@@ -48,7 +49,7 @@ public class GateElementController {
 
     /** 更新Gate评审要素，需 ipd:gate-element:edit 权限 */
     @PostMapping("/{id}/update")
-    @SaCheckPermission(value = "ipd:gate-element:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_UPDATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<GateElement> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.GateElementUpdateReq req) {
         // CODE-01：白名单 DTO，gateCode/elementCode 编码不可改
         IpdActor actor = ipdPermission.requireAdmin();
@@ -57,7 +58,7 @@ public class GateElementController {
 
     /** 停用Gate评审要素（禁删：在途判定引用证据链），需 ipd:gate-element:remove 权限 */
     @PostMapping("/{id}/disable")
-    @SaCheckPermission(value = "ipd:gate-element:remove", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_DISABLE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<GateElement> disable(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(gateElementService.disable(id, String.valueOf(actor.id())));

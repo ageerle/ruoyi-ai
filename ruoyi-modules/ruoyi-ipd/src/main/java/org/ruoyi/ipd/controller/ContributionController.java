@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.dto.ContributionSaveReq;
 import org.ruoyi.ipd.dto.ContributionView;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.service.ContributionService;
 import org.springframework.validation.annotation.Validated;
@@ -51,7 +52,7 @@ public class ContributionController {
     /**
      * 查询项目最新贡献度评定。
      */
-    @SaCheckPermission(value = "ipd:contribution:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CONTRIBUTION_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{projectId}")
     public ApiV1Response<ContributionView> get(@PathVariable Long projectId) {
         return ApiV1Response.ok(contributionService.getByProject(projectId));
@@ -60,7 +61,7 @@ public class ContributionController {
     /**
      * 公式预览（不改库；返回 tierCoefficient 与联动比例）。
      */
-    @SaCheckPermission(value = "ipd:contribution:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CONTRIBUTION_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{projectId}/preview")
     public ApiV1Response<ContributionView> preview(@PathVariable Long projectId,
                                                     @RequestBody @Valid ContributionSaveReq req) {
@@ -70,7 +71,7 @@ public class ContributionController {
     /**
      * 双 PM 自评保存（五维度原始分数）。
      */
-    @SaCheckPermission(value = "ipd:contribution:save", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CONTRIBUTION_SAVE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{projectId}/save")
     public ApiV1Response<ContributionView> saveSelf(@PathVariable Long projectId,
                                                     @RequestBody @Valid ContributionSaveReq req) {
@@ -80,7 +81,7 @@ public class ContributionController {
     /**
      * 调整市场 PM 比例（区间 [0.40, 0.65]，研发联动）。
      */
-    @SaCheckPermission(value = "ipd:contribution:save", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CONTRIBUTION_SAVE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{projectId}/market-share")
     public ApiV1Response<ContributionView> adjustMarketShare(
         @PathVariable Long projectId,
@@ -93,7 +94,7 @@ public class ContributionController {
     /**
      * 产品组长确认（APPROVE → CONFIRMED；REJECT → 退回 DRAFT）。
      */
-    @SaCheckPermission(value = "ipd:contribution:confirm", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CONTRIBUTION_CONFIRM, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{projectId}/confirm")
     public ApiV1Response<ContributionView> confirm(@PathVariable Long projectId,
                                                    @RequestParam @NotNull String decision,

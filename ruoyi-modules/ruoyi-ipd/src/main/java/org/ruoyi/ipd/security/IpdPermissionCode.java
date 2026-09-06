@@ -2,7 +2,8 @@ package org.ruoyi.ipd.security;
 
 /**
  * IPD 模块权限标识（SEC-01）。
- * 命名对齐 RuoYi：{@code ipd:资源:动作}。Controller 优先使用字符串字面量。
+ * 命名对齐 RuoYi：{@code ipd:资源:动作}。Controller 必须引用本接口常量——
+ * 裸字面量散落在改名时会漏改（2026-09-06 第五批治理决议，常量化收口）。
  */
 public interface IpdPermissionCode {
 
@@ -10,13 +11,10 @@ public interface IpdPermissionCode {
     String OPERATION_MODULE_PROJECT_QUERY = "ipd:project:query";
     String OPERATION_MODULE_PROJECT_CREATE = "ipd:project:add";
     String OPERATION_MODULE_PROJECT_STATUS_CHANGE = "ipd:project:edit";
-    String OPERATION_MODULE_PROJECT_ADVANCE_STAGE = "ipd:project:edit";
 
     String OPERATION_PRODUCT_GROUP = "ipd:product:list";
     String OPERATION_PRODUCT_GROUP_CREATE = "ipd:product:add";
     String OPERATION_PRODUCT_GROUP_BIND_PROJECT = "ipd:product:edit";
-    String OPERATION_PRODUCT_GROUP_STATUS_CHANGE = "ipd:product:edit";
-    String OPERATION_PRODUCT_GROUP_TERMINATE = "ipd:product:edit";
 
     String OPERATION_STAGE_ACTION = "ipd:stage-action:list";
     String OPERATION_STAGE_ACTION_EXECUTE = "ipd:stage-action:edit";

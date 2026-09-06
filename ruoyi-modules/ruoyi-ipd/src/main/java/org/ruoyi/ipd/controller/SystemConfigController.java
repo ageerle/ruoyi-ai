@@ -11,6 +11,7 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.SystemConfig;
 import org.ruoyi.ipd.domain.SystemConfigVersion;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.SystemConfigService;
@@ -44,7 +45,7 @@ public class SystemConfigController {
     private final IpdPermission ipdPermission;
 
     /** 查询所有参数（鉴权：超管） */
-    @SaCheckPermission(value = "ipd:system-config:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SYSTEM_CONFIG_LIST, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<SystemConfig>> list() {
         ipdPermission.requireAdmin();
@@ -52,7 +53,7 @@ public class SystemConfigController {
     }
 
     /** 单点读取某参数（任何已登录会话可读，业务方依赖的热路径） */
-    @SaCheckPermission(value = "ipd:system-config:read", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SYSTEM_CONFIG_READ, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{key:.+}")
     public ApiV1Response<Map<String, String>> get(@PathVariable @NotBlank String key) {
         return ApiV1Response.ok(Map.of(
@@ -61,7 +62,7 @@ public class SystemConfigController {
     }
 
     /** 更新某参数值（仅超管；写后立即失效缓存，PERF-02 强约束；P0-3.3 同事务写版本链，changed_by 绑会话） */
-    @SaCheckPermission(value = "ipd:system-config:update", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SYSTEM_CONFIG_UPDATE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/{key:.+}")
     public ApiV1Response<Map<String, String>> update(@PathVariable @NotBlank String key,
                                                      @RequestBody @Valid UpdateReq req) {
@@ -72,7 +73,7 @@ public class SystemConfigController {
     }
 
     /** P0-3.3 版本链查询（仅超管）：某 key 的不可变版本历史，最新在前 */
-    @SaCheckPermission(value = "ipd:system-config:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SYSTEM_CONFIG_LIST, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{key:.+}/versions")
     public ApiV1Response<List<SystemConfigVersion>> versions(@PathVariable @NotBlank String key,
             @RequestParam(defaultValue = "20") int limit) {
@@ -84,7 +85,7 @@ public class SystemConfigController {
      * P0-3.3 时点解析（仅超管）：time=ISO-8601（UTC 如 2026-09-05T12:00:00Z 或带偏移）。
      * 返回命中版本或回退源（VERSION|FACTORY_DEFAULT|NONE），供审计/重算对账。
      */
-    @SaCheckPermission(value = "ipd:system-config:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SYSTEM_CONFIG_LIST, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{key:.+}/as-of")
     public ApiV1Response<Map<String, Object>> asOf(@PathVariable @NotBlank String key,
             @RequestParam @NotBlank String time) {

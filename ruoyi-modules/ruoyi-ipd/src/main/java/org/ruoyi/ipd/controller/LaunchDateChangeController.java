@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.LaunchDateChangeService;
@@ -43,7 +44,7 @@ public class LaunchDateChangeController {
      * @param body 项目/日期/理由
      * @return 待第二签申请
      */
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
     public ApiV1Response<LaunchDateChangeRequest> propose(@Valid @RequestBody ProposeReq body) {
         IpdActor actor = ipdPermission.requireInternal();
@@ -63,7 +64,7 @@ public class LaunchDateChangeController {
      * @param opinion 意见
      * @return 终态
      */
-    @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/second-decision")
     public ApiV1Response<LaunchDateChangeRequest> secondDecision(@PathVariable Long id,
                                                                  @RequestParam boolean approve,

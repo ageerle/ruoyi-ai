@@ -7,6 +7,7 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.dto.ProductGroupLeaderReq;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.ProductGroupService;
@@ -36,7 +37,7 @@ public class ProductGroupController {
 
     /** 查询产品组列表，需 ipd:product:list 权限（内部角色均可读） */
     @GetMapping
-    @SaCheckPermission(value = "ipd:product:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<ProductGroup>> list() {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(productGroupService.listAll());
@@ -44,7 +45,7 @@ public class ProductGroupController {
 
     /** 查询单个产品组，需 ipd:product:list 权限 */
     @GetMapping("/{id}")
-    @SaCheckPermission(value = "ipd:product:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProductGroup> get(@PathVariable Long id) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(productGroupService.getById(id));
@@ -52,7 +53,7 @@ public class ProductGroupController {
 
     /** 新建产品组，需 ipd:product:add 权限 */
     @PostMapping
-    @SaCheckPermission(value = "ipd:product:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProductGroup> create(@Valid @RequestBody ProductGroup group) {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(productGroupService.create(group, actor.id()));
@@ -60,7 +61,7 @@ public class ProductGroupController {
 
     /** 替换组长（HR 同步场景），需 ipd:product:edit 权限 */
     @PostMapping("/{id}/leader")
-    @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProductGroup> updateLeader(@PathVariable("id") Long id, @Valid @RequestBody ProductGroupLeaderReq req) {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(productGroupService.updateLeader(id, req.getNewLeaderPersonId(), actor.id()));
@@ -70,7 +71,7 @@ public class ProductGroupController {
      * 删除入口已关闭：须走删除审核（P0-6.2）。
      */
     @PostMapping("/{id}/remove")
-    @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> remove(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireAdmin();
         productGroupService.remove(id, actor.id());

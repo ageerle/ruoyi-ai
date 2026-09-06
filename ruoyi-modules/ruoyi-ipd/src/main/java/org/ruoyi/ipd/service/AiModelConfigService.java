@@ -10,6 +10,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AiModelSaveReq;
 import org.ruoyi.ipd.dto.AiModelView;
 import org.ruoyi.ipd.mapper.AiModelConfigMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +60,8 @@ public class AiModelConfigService {
     private final ProviderRegistry providerRegistry;
 
     /** 3 参构造（保留向后兼容：现有单测与生产 wiring 沿用） */
+    // 2026-09-06 第六批：双构造器需显式指定 Spring 注入入口（多构造器无 @Autowired 启动失败，踩过两次）
+    @Autowired
     public AiModelConfigService(AiModelConfigMapper mapper, AuditLogService auditLogService,
                                 @Value("${IPD_AIMODEL_ENCRYPT_KEY:}") String encryptKey) {
         this(mapper, auditLogService, encryptKey, defaultRegistry());

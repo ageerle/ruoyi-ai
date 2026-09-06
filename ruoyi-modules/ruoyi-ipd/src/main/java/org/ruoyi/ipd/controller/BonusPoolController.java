@@ -9,6 +9,7 @@ import org.ruoyi.ipd.dto.ComputeBonusPoolReq;
 import org.ruoyi.ipd.dto.DistributeBonusPoolReq;
 import org.ruoyi.ipd.dto.FreezeBonusPoolReq;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.BonusPoolService;
@@ -56,10 +57,11 @@ public class BonusPoolController {
      * <p>公式：{@code finalPool = actualReceipts × 5% × levelCoefficient × tierCoefficient × personalCoefficient}
      * （ZK-IPD §三.2.1 + §三.2.5 完整公式）。
      */
-    @SaCheckPermission(value = "ipd:bonus-pool:compute", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/compute")
     public ApiV1Response<BonusPool> compute(@Valid @RequestBody ComputeBonusPoolReq req) {
-        IpdActor actor = ipdPermission.requireInternal();
+        // 兕底与注解同严：注解限超管，方法内不再放宽（第六批判例，防 Catalog 漂移时资金操作失防）
+        IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(bonusPoolService.compute(
             req.projectId(),
             req.actualReceipts(),
@@ -73,11 +75,12 @@ public class BonusPoolController {
      * P3-4.4 §2.2：冻结/确认奖金池（DRAFT → CONFIRMED）。
      * 幂等：同状态再调不写第二条审计。
      */
-    @SaCheckPermission(value = "ipd:bonus-pool:freeze", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/freeze")
     public ApiV1Response<BonusPool> freeze(@PathVariable Long id,
                                            @RequestBody(required = false) FreezeBonusPoolReq req) {
-        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
+        // 兕底与注解同严（第六批判例）
+        IpdActor actor = ipdPermission.requireAdmin();
         String reason = (req == null) ? null : req.reason();
         return ApiV1Response.ok(bonusPoolService.freeze(id, reason, actor));
     }
@@ -86,11 +89,12 @@ public class BonusPoolController {
      * P3-4.4 §2.3：分配奖金池（DRAFT/CONFIRMED → DISTRIBUTED）。
      * 比例校验走 §三.2.4 calculateDistribution（区段 + 总和双重护栏）。
      */
-    @SaCheckPermission(value = "ipd:bonus-pool:distribute", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/distribute")
     public ApiV1Response<BonusPool> distribute(@PathVariable Long id,
                                                @Valid @RequestBody DistributeBonusPoolReq req) {
-        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
+        // 兕底与注解同严（第六批判例）
+        IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(bonusPoolService.distribute(
             id, req.marketShare(), req.rdShare(), actor));
     }
@@ -98,7 +102,7 @@ public class BonusPoolController {
     /**
      * P3-4.4 §2.4：奖金池详情。
      */
-    @SaCheckPermission(value = "ipd:bonus-pool:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{id}")
     public ApiV1Response<BonusPool> getById(@PathVariable Long id) {
         ipdPermission.requireInternal();
@@ -108,7 +112,7 @@ public class BonusPoolController {
     /**
      * P3-4.4 §2.5：按项目查询奖金池列表（按 calculatedAt 倒序）。
      */
-    @SaCheckPermission(value = "ipd:bonus-pool:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/list")
     public ApiV1Response<List<BonusPool>> list(@RequestParam Long projectId) {
         ipdPermission.requireInternal();

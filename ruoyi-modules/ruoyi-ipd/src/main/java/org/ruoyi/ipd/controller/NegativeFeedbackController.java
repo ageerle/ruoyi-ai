@@ -7,6 +7,7 @@ import org.ruoyi.ipd.dto.NegativeFeedbackCreateReq;
 import org.ruoyi.ipd.dto.NegativeFeedbackDecisionReq;
 import org.ruoyi.ipd.dto.NegativeFeedbackView;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.NegativeFeedbackService;
@@ -36,21 +37,21 @@ public class NegativeFeedbackController {
     private final NegativeFeedbackService negativeFeedbackService;
     private final IpdPermission ipdPermission;
 
-    @SaCheckPermission(value = "ipd:negative-feedback:create", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
     public ApiV1Response<NegativeFeedbackView> create(@RequestBody @jakarta.validation.Valid NegativeFeedbackCreateReq req) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.create(req, actor)));
     }
 
-    @SaCheckPermission(value = "ipd:negative-feedback:create", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/{id}/submit")
     public ApiV1Response<NegativeFeedbackView> submit(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.submit(id, actor)));
     }
 
-    @SaCheckPermission(value = "ipd:negative-feedback:decide", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/{id}/decide")
     public ApiV1Response<NegativeFeedbackView> decide(@PathVariable Long id,
                                                      @RequestBody NegativeFeedbackDecisionReq req) {
@@ -59,7 +60,7 @@ public class NegativeFeedbackController {
         return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.decide(id, req, actor)));
     }
 
-    @SaCheckPermission(value = "ipd:negative-feedback:decide", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/{id}/lift")
     public ApiV1Response<NegativeFeedbackView> lift(@PathVariable Long id,
                                                     @RequestBody(required = false) NegativeFeedbackDecisionReq req) {
@@ -68,14 +69,14 @@ public class NegativeFeedbackController {
         return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.lift(id, body, actor)));
     }
 
-    @SaCheckPermission(value = "ipd:negative-feedback:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{id}")
     public ApiV1Response<NegativeFeedbackView> detail(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.getById(id, actor)));
     }
 
-    @SaCheckPermission(value = "ipd:negative-feedback:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<NegativeFeedbackView>> list(@RequestParam Long projectId,
                                                           @RequestParam(required = false) String status) {
@@ -84,7 +85,7 @@ public class NegativeFeedbackController {
             .map(NegativeFeedbackService::toView).toList());
     }
 
-    @SaCheckPermission(value = "ipd:negative-feedback:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/by-project/{projectId}/effective")
     public ApiV1Response<List<NegativeFeedbackView>> effectiveByProject(@PathVariable Long projectId) {
         IpdActor actor = ipdPermission.requireInternal();

@@ -12,6 +12,7 @@ import org.ruoyi.ipd.dto.AuditChainVerifyResult;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AuditLogService;
@@ -57,7 +58,7 @@ public class AuditLogController {
     private final PersonMapper personMapper;
 
     /** 分页查询审计：写操作仅超管触发，列表读取按角色范围限定（保留原接口） */
-    @SaCheckPermission(value = "ipd:audit-log:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AUDIT_LOG_LIST, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<IPage<AuditLog>> list(
             @RequestParam(defaultValue = "1") int pageNo,
@@ -77,7 +78,7 @@ public class AuditLogController {
      * <p>硬门不放宽：只要存在 GAP 或哈希断裂，{@code chain} 即非 {@code OK}，
      * 断言 {@code chain==OK} 的验收脚本仍会 FAIL——分列只是让 FAIL 可归因。
      */
-    @SaCheckPermission(value = "ipd:audit-log:verify", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AUDIT_LOG_VERIFY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/verify")
     public ApiV1Response<Map<String, Object>> verify() {
         ipdPermission.requireAdmin();
@@ -92,7 +93,7 @@ public class AuditLogController {
     }
 
     /** 导出受范围限定的审计：写审计-导出事件（仅超管） */
-    @SaCheckPermission(value = "ipd:audit-log:export", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AUDIT_LOG_EXPORT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/export")
     public ApiV1Response<Map<String, String>> export() {
         ipdPermission.requireAdmin();
@@ -149,7 +150,7 @@ public class AuditLogController {
      * <p>幂等可重复执行；重建动作本身落一条 REBUILD_CHAIN 审计（独立事务，链尾自洽）。
      * <p>多实例共库运维顺序：全部实例切含修复 jar 后再执行终验重建，否则旧 jar 毫秒行会再污染。
      */
-    @SaCheckPermission(value = "ipd:audit-log:verify", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AUDIT_LOG_VERIFY, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/rebuild-chain")
     public ApiV1Response<Map<String, Object>> rebuildChain() {
         IpdActor actor = ipdPermission.requireAdmin();

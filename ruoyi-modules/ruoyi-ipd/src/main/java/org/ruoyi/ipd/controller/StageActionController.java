@@ -7,6 +7,7 @@ import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.dto.StageActionFieldsReq;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.StageActionService;
@@ -34,7 +35,7 @@ public class StageActionController {
 
     /** 查询项目阶段动作列表，需 ipd:stage-action:list 权限 */
     @GetMapping
-    @SaCheckPermission(value = "ipd:stage-action:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<StageAction>> list(@RequestParam Long projectId) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(stageActionService.listByProject(projectId));
@@ -48,7 +49,7 @@ public class StageActionController {
      * - 乐观锁：并发同 id 重复 /transit 由 MP 仅 1 成功
      */
     @PostMapping("/{id}/transit")
-    @SaCheckPermission(value = "ipd:stage-action:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<StageAction> transit(@PathVariable Long id,
                                               @RequestParam String target,
                                               @RequestParam(required = false) String reason) {
@@ -61,7 +62,7 @@ public class StageActionController {
      * 轻管完成路径：先本接口写 actualDoneAt，再 /transit?target=DONE。
      */
     @PostMapping("/{id}/fields")
-    @SaCheckPermission(value = "ipd:stage-action:edit", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<StageAction> recordFields(@PathVariable Long id,
                                                    @RequestBody StageActionFieldsReq req) {
         IpdActor actor = ipdPermission.requireActionWriter(() -> stageActionService.getById(id));
@@ -74,7 +75,7 @@ public class StageActionController {
 
     /** 深管交付物登记（BR-IPD-03 完成前置），需 ipd:stage-action:add 权限 */
     @PostMapping("/{id}/deliverables")
-    @SaCheckPermission(value = "ipd:stage-action:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Deliverable> addDeliverable(@PathVariable Long id,
                                                      @RequestParam String fileName,
                                                      @RequestParam(required = false) Long ossId) {
@@ -84,7 +85,7 @@ public class StageActionController {
 
     /** 从目录实例化某阶段动作（幂等），返回新建数量，需 ipd:stage-action:add 权限 */
     @PostMapping("/instantiate")
-    @SaCheckPermission(value = "ipd:stage-action:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Integer> instantiate(@RequestParam Long projectId,
                                               @RequestParam Long stageId,
                                               @RequestParam String stage) {
@@ -97,7 +98,7 @@ public class StageActionController {
      * 已有 is_bio_feature=1 且缺 C12 → 挂到 CONCEPT；已有/无涉生物 → 0。
      */
     @PostMapping("/ensure-bio-compliance")
-    @SaCheckPermission(value = "ipd:stage-action:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Integer> ensureBioCompliance(@RequestParam Long projectId) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(stageActionService.ensureBioComplianceMount(projectId));

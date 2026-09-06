@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.CertTemplate;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.CertTemplateService;
@@ -32,7 +33,7 @@ public class CertTemplateController {
 
     /** 项目选定目标市场后自动带出认证清单，需 ipd:cert-template:list 权限 */
     @GetMapping("/resolve")
-    @SaCheckPermission(value = "ipd:cert-template:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<CertTemplate>> resolve(@RequestParam String markets) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(certTemplateService.resolve(markets.split(",")));
@@ -40,7 +41,7 @@ public class CertTemplateController {
 
     /** 查询认证模板列表，需 ipd:cert-template:list 权限 */
     @GetMapping
-    @SaCheckPermission(value = "ipd:cert-template:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<CertTemplate>> list() {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(certTemplateService.listAll());
@@ -48,7 +49,7 @@ public class CertTemplateController {
 
     /** 查询各国认证模板数量，需 ipd:cert-template:list 权限 */
     @GetMapping("/country-counts")
-    @SaCheckPermission(value = "ipd:cert-template:list", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Map<String, Long>> countryCounts() {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(certTemplateService.countByCountry());
@@ -56,7 +57,7 @@ public class CertTemplateController {
 
     /** 创建认证模板，需 ipd:cert-template:add 权限 */
     @PostMapping
-    @SaCheckPermission(value = "ipd:cert-template:add", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<CertTemplate> create(@RequestBody CertTemplate template) {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(certTemplateService.create(template, actor.id()));
@@ -70,7 +71,7 @@ public class CertTemplateController {
      * @return 业务失败包装（ServiceException → 全局处理器）
      */
     @PostMapping("/{id}/remove")
-    @SaCheckPermission(value = "ipd:cert-template:remove", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE_DELETE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> remove(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireAdmin();
         certTemplateService.remove(id, actor.id());

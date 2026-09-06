@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.KpiRecordService;
@@ -46,7 +47,7 @@ public class KpiRecordController {
      *
      * @param period YYYY-MM
      */
-    @SaCheckPermission(value = "ipd:kpi:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/functional")
     public ApiV1Response<List<KpiSourceItem>> functional(
         @RequestParam @NotBlank @Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])$",
@@ -61,7 +62,7 @@ public class KpiRecordController {
      *
      * @param period YYYY-MM
      */
-    @SaCheckPermission(value = "ipd:kpi:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/performance")
     public ApiV1Response<Map<String, Object>> performance(
         @RequestParam @NotBlank @Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])$",
@@ -80,7 +81,7 @@ public class KpiRecordController {
      *
      * @param periods 回看月数（1~36，缺省 12）
      */
-    @SaCheckPermission(value = "ipd:kpi:query", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/trend")
     public ApiV1Response<List<TrendPoint>> trend(
         @RequestParam(required = false, defaultValue = "12") int periods

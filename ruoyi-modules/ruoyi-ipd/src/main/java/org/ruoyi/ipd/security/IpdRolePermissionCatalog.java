@@ -19,12 +19,12 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_MODULE_PROJECT,
         IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY,
         IpdPermissionCode.OPERATION_PRODUCT_GROUP,
-        "ipd:product:query",
+        IpdPermissionCode.OPERATION_PRODUCT_QUERY,
         IpdPermissionCode.OPERATION_STAGE_ACTION,
         IpdPermissionCode.OPERATION_CERT_TEMPLATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT,
         IpdPermissionCode.OPERATION_GATE_REVIEW,
-        "ipd:system-config:read",
+        IpdPermissionCode.OPERATION_SYSTEM_CONFIG_READ,
         // OPS-05：站内通知收件箱（本人；receiver 从会话推导，读写同人）
         IpdPermissionCode.OPERATION_NOTIFICATION_READ,
         // P1-10.1：AI 文档版本链读取
@@ -34,11 +34,15 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_SOP_TEMPLATE,
         IpdPermissionCode.OPERATION_AI_MODEL,
         // P3-1.1/1.2/1.3：KPI 考核（内部全员可见；对象级 actor 身份在 service 二次校验）
-        "ipd:kpi:query",
+        IpdPermissionCode.OPERATION_KPI_QUERY,
         // P3-6.2：贡献度评定（双 PM 自评 + 各自产品组长可读；细粒度权限在 service 二次校验）
-        "ipd:contribution:query",
+        IpdPermissionCode.OPERATION_CONTRIBUTION_QUERY,
         // P3-8.2：负反馈查询（全员可读）
-        "ipd:negative-feedback:query"
+        IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_QUERY,
+        // P3-4.4：奖金池详情/列表（内部全员可读；写操作仅超管）
+        IpdPermissionCode.OPERATION_BONUS_POOL_QUERY,
+        // AC-COMP-01/04/05：合规读（内部全员，角色范围 service 二次校验）
+        IpdPermissionCode.OPERATION_COMPLIANCE_READ
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -58,9 +62,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_AI_DOCUMENT_REVISE,
         IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW,
         // P3-6.2：贡献度评定保存（双 PM 自评）
-        "ipd:contribution:save",
+        IpdPermissionCode.OPERATION_CONTRIBUTION_SAVE,
         // P3-8.2：负反馈录入（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN 均可）
-        "ipd:negative-feedback:create"
+        IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_CREATE
     );
 
     /** 组长初审删除申请 + 系数定值确认。 */
@@ -68,9 +72,11 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER,
         IpdPermissionCode.OPERATION_COEFFICIENT_CONFIRM,
         // P3-6.2：产品组长确认贡献度（仅 GROUP_LEADER）
-        "ipd:contribution:confirm",
+        IpdPermissionCode.OPERATION_CONTRIBUTION_CONFIRM,
         // P3-8.2：负反馈认定/解除（仅 GROUP_LEADER / SUPER_ADMIN）
-        "ipd:negative-feedback:decide"
+        IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE,
+        // AC-COMP-02/03：创建数据删除请求（GROUP_LEADER + SUPER_ADMIN，对齐 service ROLES_WITH_WRITE）
+        IpdPermissionCode.OPERATION_COMPLIANCE_WRITE
     );
 
     /** 仅市场侧可建项（对齐 requireProjectCreator）。 */
@@ -88,20 +94,24 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_DELETION_REQUEST_ARCHIVE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_PURGE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_ADMIN,
-        "ipd:system-config:list",
-        "ipd:system-config:update",
+        IpdPermissionCode.OPERATION_SYSTEM_CONFIG_LIST,
+        IpdPermissionCode.OPERATION_SYSTEM_CONFIG_UPDATE,
         // SEC-02 缺陷 A-audit：AuditLogController 旧三端点 @SaCheckPermission 要求下列码；
         // 未登记时全员（含超管）NotPermission→AC-AUD-02 不可能过。组长/成员走无注解的
         // /scope、/export/scope（requireInternal + service 层角色范围过滤，P0-5.4）。
-        "ipd:audit-log:list",
-        "ipd:audit-log:verify",
-        "ipd:audit-log:export",
+        IpdPermissionCode.OPERATION_AUDIT_LOG_LIST,
+        IpdPermissionCode.OPERATION_AUDIT_LOG_VERIFY,
+        IpdPermissionCode.OPERATION_AUDIT_LOG_EXPORT,
         // OPS-05：outbox 消费端手动触发（运维观察；正常轮询待 OPS-04 scheduler 合入）
         IpdPermissionCode.OPERATION_NOTIFICATION_DISPATCH,
         // 2026-09-06 补齐注解用码：SOP/AI 模型写与招募超管指派（方法内 requireAdmin 已兜）
         IpdPermissionCode.OPERATION_SOP_TEMPLATE_EDIT,
         IpdPermissionCode.OPERATION_AI_MODEL_EDIT,
-        IpdPermissionCode.OPERATION_BID_INVITATION_ADMIN_ASSIGN
+        IpdPermissionCode.OPERATION_BID_INVITATION_ADMIN_ASSIGN,
+        // P3-4.4：奖金池计算/冻结/分配（资金敏感操作仅超管；service 无二次校验，注解即终审）
+        IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE,
+        IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
+        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(

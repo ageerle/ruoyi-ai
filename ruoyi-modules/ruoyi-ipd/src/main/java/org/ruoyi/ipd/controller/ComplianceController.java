@@ -10,6 +10,7 @@ import org.ruoyi.ipd.dto.DataDeletionRequestDTO;
 import org.ruoyi.ipd.dto.DataDeletionRequestVO;
 import org.ruoyi.ipd.dto.DataRetentionRuleVO;
 import org.ruoyi.ipd.dto.PermissionSeparationVO;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.ComplianceService;
@@ -46,7 +47,7 @@ public class ComplianceController {
     private final IpdPermission ipdPermission;
 
     /** AC-COMP-01：数据保留规则。内部全员可查。 */
-    @SaCheckPermission(value = "ipd:compliance:read", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_COMPLIANCE_READ, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/data-retention-rules")
     public ApiV1Response<List<DataRetentionRuleVO>> retentionRules() {
         ipdPermission.requireInternal();
@@ -54,7 +55,7 @@ public class ComplianceController {
     }
 
     /** AC-COMP-02/03：创建数据删除请求（30 天 deadline + 强制审计）。 */
-    @SaCheckPermission(value = "ipd:compliance:write", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_COMPLIANCE_WRITE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/data-deletion-request")
     @Transactional(rollbackFor = Exception.class)
     public ApiV1Response<DataDeletionRequestVO> requestDeletion(@Valid @RequestBody DataDeletionRequestDTO dto) {
@@ -62,7 +63,7 @@ public class ComplianceController {
     }
 
     /** AC-COMP-04：按资源类型+ID 查询审计链（角色范围由 service 透明按 actor 解析）。 */
-    @SaCheckPermission(value = "ipd:compliance:read", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_COMPLIANCE_READ, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/audit-trail/{resourceType}/{resourceId}")
     public ApiV1Response<IPage<AuditEntryVO>> auditTrail(
             @PathVariable String resourceType,
@@ -74,7 +75,7 @@ public class ComplianceController {
     }
 
     /** AC-COMP-05：用户 R/W 权限分离判定。 */
-    @SaCheckPermission(value = "ipd:compliance:read", type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_COMPLIANCE_READ, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/permission-separation/{userId}")
     public ApiV1Response<PermissionSeparationVO> permissionSeparation(@PathVariable Long userId) {
         ipdPermission.requireInternal();
