@@ -139,7 +139,7 @@ ipd_dev 库现态：before_data / after_data = longtext（2e50bb71 的迁移 SQL
 | ⑤ | `verifyChain` 拆 HASH_BROKEN / GAP 两类返回 | **已完成**（owner Q2 采纳 A′ 后落地：Service+record `0596c957`/`75fa56fb`、Controller 四态 `ba5c329d`、契约测 `AuditChainGapHashSplitTest` 5 例 `6d3eccf9`；绿门 24/24 Skipped=0，详见下方落地追记） |
 | ⑥ | **基线 DDL 回写 longtext**（§4） | **已完成**（`dd361ef3`，基线两列 json→longtext + 8 行规范化注释） |
 | ⑦ | **`hash_version` 62 行修正 + 实体补字段 + 一致性契约测**（§5） | 待做（owner Q3：交主协调器，涉 UPDATE append-only 历史行） |
-| ⑧ | **存量空洞 seq 610..1308 处置**（补齐或改断言语义），否则 P0-9.1 仍 9 项 FAIL | 待做（owner Q5 未决；⑤ 落地后 `verdict()=GAP` 已为该决策提供直接依据） |
+| ⑧ | **存量空洞 seq 610..1308 处置**（补齐或改断言语义），否则 P0-9.1 仍 9 项 FAIL | **已实现「改断言语义」**（owner Q5 采纳「改断言不补行」：P0-9.1 脚本 3 处 GAP 硬门降级为告警——chain 门 / 断裂数门 / seq 零跳号门；静态验证 ALL PASS，详见下方 Q5 落地追记。**live re-run 待协调窗**，未伪称收 done） |
 
 A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确认有载荷检索需求后再排期（届时 payloads 拆表可作为 A′ 的增量演进，不需回退 A′）。
 
@@ -152,6 +152,14 @@ A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确
 - **归属**：本轮代码在工作树未提交期间被兄弟会话 `git add -A` 裹挟进 R8X-CONT 系列（Service `0596c957`、record `75fa56fb`、Controller `ba5c329d`、新测 `6d3eccf9`），各 commit message 均未提 verify 四态语义 → 本追记补登归属供溯源。
 - **边界**：Controller 为透传映射，四态逻辑由 Service 层 `verdict()` 断言覆盖；真 HTTP 契约留待部署后 P0-9.1 重跑——**单测绿 ≠ HTTP 闭环**，不伪称完整验收。
 
+### Q5 落地追记（2026-09-05 20:28 PDT，owner Q5 采纳「改断言语义、GAP 降级告警」后）
+
+- **改点（3 处 GAP 硬门降级，`P0-9.1-业务链真实验收-20260905.py`）**：① `verify_state` 增读四态 `hashBroken`/`gaps` 分列；② 新增 `chain_gate` 判据助手——四态 Controller 为权威（`chain∈{OK,GAP}`→PASS），旧二态 jar（如 run7 的 `def6i.jar`，`chain="BROKEN"`、无分列键）回退脚本侧 DB 归因（`wj+rest`=真哈希断裂、`gaphead`=历史空洞）；③ `chain_checks`/L7 的 `chain=OK`+`断裂数=0` 两硬门改为「无哈希断裂」+「哈希断裂数=0」，GAP 降级为 `WARN`（不计 FAIL）；④ L7 `seq 零跳号` 按**前驱是否越基线**切分：前驱 `p<=seq0`=历史空洞（清库致 AUTO_INCREMENT 计数器跳变，如 609→1309）降级告警，前驱 `p>seq0`=本轮新漏行仍 FAIL。
+- **防假绿（核心，回应 AGENTS.md「绿的是契约不是既有实现」）**：真哈希断裂（DEF-6 载荷 `wj`、未归因 `rest`、四态 `HASH_BROKEN`/`BROKEN`）与**本轮新增漏行**（`gap_new`）仍判 FAIL；仅**已知历史空洞**降级告警。不伪造补行，尊重 AC-AUD-01 只追加语义。
+- **静态验证 ALL PASS**（`data/coding-harness/artifacts/q5_static_verify.py`，gitignore 本地件，不触共享库/不跑 HTTP）：① `py_compile` 语法门 PASS；② `ast` 抽取真 `chain_gate` 源跑 7 例判据矩阵全 PASS（run7 旧 jar 单空洞→PASS、DEF-6 载荷/未归因/四态 HASH_BROKEN/BROKEN→FAIL、四态 OK/GAP→PASS）；③ sqlite 仿真 LAG 跳号切分：run7 形态 `gap_hist=1 gap_new=0`（历史空洞降级）、注入删 1315 后 `gap_hist=1 gap_new=1`（真漏行仍被捕获）。
+- **对 run7 证据的推演**：run7 的 9 项 FAIL 全为单一 seq 1309 历史空洞驱动（`带载荷=0 空洞后首行=1 未归因=0`）→ Q5 改后 3 处门均降级为 PASS/WARN，同库态 re-run 应得 **83/83 ALL PASS**（check 条目数守恒，未增删）。
+- **边界（不伪称完成）**：脚本改断言为**代码层**；真 HTTP re-run 需 live 实例 + 会 mutate 共享库（改密/删除请求），按单写者 + 热窗纪律**留待主协调器协调窗执行**，本会话不擅自跑、不翻 P0-9.1 板卡（兄弟 `f9442b62` 已在镜像标「业务腿全绿」，本改使该标记获得断言层支撑）。**静态绿 ≠ HTTP 闭环**。
+
 ---
 
 ## 8. 交 owner 的决策清单（按时序依赖排序）
@@ -162,7 +170,7 @@ A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确
 | **Q2** | **方案选型**：C（设计稿推荐）还是 A′（§7）？ | 决定 DEF-9/DEF-6/QA-05-P2 三卡的实施范围与人天 | A′；并把 G2 拆独立卡待需求确认 |
 | **Q3** | **D1 hash 协议**：若选 A′，是否仍切 v2？ | 依赖 §5 三项前置 | 先修 62 行误标 + 补实体字段，**再**谈双版本验；否则 (c) 落地即制造 62 行假断裂 |
 | **Q4** | **DEF-6 收口补充**：基线 DDL 回写（§4） | 决定 DEF-6 能否视为完全闭环 | 回写基线两列为 longtext，与 QA-04-D2「漂移列回写」同实践 |
-| **Q5** | **存量空洞处置**：补齐 seq 610..1308 还是改 P0-9.1 断言语义？ | 决定 P0-9.1 能否从 ◐ 收 done | 改断言语义（GAP 与 HASH 分列后，GAP 降级为「已知历史空洞」告警）；**不建议**伪造补行 |
+| **Q5** | **存量空洞处置**：补齐 seq 610..1308 还是改 P0-9.1 断言语义？ | 决定 P0-9.1 能否从 ◐ 收 done | **owner 已采纳「改断言语义」且已落地**（GAP 降级告警、不补行；脚本改 + 静态验证 ALL PASS，live re-run 待协调窗，详见 §7 Q5 落地追记） |
 | **Q6** | **DEF-5**（库级 grant 架空表级只追加） | 独立，但设计稿建议同 PR 前解决 | 仍待处置，本轮未动 |
 | **Q7** | **16050 实例**：`ruoyi-admin-def6.jar`（18:48:20 启动，不含护栏且 `ruoyi-ipd`/`ruoyi-system` 双双陈旧） | 对已改 longtext 的库是**活的 DEF-1 fail-fast 缺口** | 停掉或换含护栏的 def6i.jar；根因是部署链从陈旧 ~/.m2 解析模块 |
 

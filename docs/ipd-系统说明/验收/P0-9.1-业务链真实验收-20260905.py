@@ -115,7 +115,9 @@ def check(name, actual, expect, note=""):
 def verify_state(tok):
     s, b = req("GET", "/api/v1/audit-logs/verify", token=tok)
     d = b.get("data") or {}
-    return s, d.get("chain"), len(d.get("broken") or []), [int(x) for x in (d.get("broken") or [])]
+    # DEF-9 ⑤ 四态化后 Controller 新增 hashBroken/gaps 分列；旧二态 jar 无此二键 → None（触发 DB 归因回退）
+    return (s, d.get("chain"), len(d.get("broken") or []), [int(x) for x in (d.get("broken") or [])],
+            d.get("hashBroken"), d.get("gaps"))
 
 
 def attribute_broken(seqs):
@@ -145,20 +147,43 @@ def attribute_broken(seqs):
     return tot, withjson, gaphead, tot - withjson - gaphead
 
 
-def chain_checks(tag, tok):
-    """审计链断言 + 三分归因。
+def chain_gate(chain, hash_broken, gaps, wj, rest, gaphead):
+    """owner Q5 判据：GAP（已知历史空洞）降级告警不算 FAIL，**只有真哈希断裂才 FAIL**。
 
-    前两条（chain=OK / 断裂数=0）是 **硬门，不因归因而放宽**；归因只用于把残留断裂分派到
-    DEF-6（已修，应=0）、清库空洞（环境成因，防篡改链正常工作）与未归因（真缺陷，应=0）。
+    四态 Controller（DEF-9 ⑤：chain∈{OK,GAP,HASH_BROKEN,BROKEN} + hashBroken/gaps 分列）为权威判据；
+    旧二态 jar（chain∈{OK,BROKEN}、无 hashBroken/gaps 键，如 run7 的 def6i.jar）回退脚本侧 DB 归因：
+    载荷行(wj,DEF-6)+未归因(rest)=真哈希断裂，空洞后首行(gaphead)=已知历史空洞。
+    返回 (verdict_pass, n_hash_break, n_gap, 判据来源)。"""
+    if hash_broken is not None:                       # 四态 Controller
+        n_hash_break = len(hash_broken)
+        n_gap = len(gaps or [])
+        return chain in ("OK", "GAP") and n_hash_break == 0, n_hash_break, n_gap, "四态Controller"
+    n_hash_break = wj + rest                          # 旧二态 jar：DB 归因回退
+    return n_hash_break == 0, n_hash_break, gaphead, "DB归因回退"
+
+
+def chain_checks(tag, tok):
+    """审计链断言 + 三分归因（owner Q5：GAP 降级为「已知历史空洞」告警，不算 FAIL）。
+
+    Q5 决策（2026-09-05）：seq 空洞由清库/删行造成，rebuildChain 治不了（缺的是行不是哈希），
+    且不得伪造补行（尊重 AC-AUD-01 只追加语义）→ 降级告警；**只有哈希断裂（篡改 / DEF-4 回归 /
+    并发链断 / DEF-6 载荷规范化）才判 FAIL**。归因门 (wj,rest)==(0,0) 仍保留为 DEF-6 回归 + DB 交叉校验。
     """
-    vs, chain, nb, seqs = verify_state(tok)
-    check("%s 审计链 chain=OK" % tag, chain, "OK", "broken=%s" % seqs[:8])
-    check("%s 断裂数=0" % tag, nb, 0, "broken=%s" % seqs[:8])
+    vs, chain, nb, seqs, hash_broken, gaps = verify_state(tok)
     tot, wj, gap, rest = attribute_broken(seqs)
+    verdict_pass, n_hash_break, n_gap, src = chain_gate(chain, hash_broken, gaps, wj, rest, gap)
+    check("%s 审计链无哈希断裂（chain∈{OK,GAP}）" % tag, verdict_pass, True,
+          "chain=%s 判据=%s broken=%s" % (chain, src, seqs[:8]))
+    check("%s 哈希断裂数=0（GAP 不计入断裂）" % tag, n_hash_break, 0,
+          "chain=%s hashBroken=%s" % (chain, (hash_broken if hash_broken is not None else seqs)[:8]))
+    if n_gap:
+        print("  WARN  %s 已知历史空洞 %d 处 seq=%s（GAP 降级告警非 FAIL；不补行=尊重 AC-AUD-01 只追加，owner Q5）"
+              % (tag, n_gap, (gaps if gaps is not None else seqs)[:8]))
+        evidence["空洞告警@" + tag] = {"count": n_gap, "seqs": (gaps if gaps is not None else seqs)[:20],
+                                        "chain": chain, "判据来源": src}
     if tot:
         note = "断裂%d行/带载荷%d行/空洞后首行%d行/未归因%d行" % (tot, wj, gap, rest)
-        # DEF-6 修复后的正向门：载荷行不得再断裂（改列型前这里是 100%）；
-        # 且除「清库空洞」外不得有任何未归因残留（有则是 DEF-4 回归或并发链断）。
+        # DEF-6 载荷回归门 + 未归因真缺陷门（这两类=真哈希断裂，Q5 下仍须=0；空洞②不计入）
         check("%s 断裂全归因清库空洞（DEF-6 载荷行=0 且未归因=0）" % tag, (wj, rest), (0, 0), note)
         evidence["断裂归因@" + tag] = {
             "明细": q1("SELECT GROUP_CONCAT(CONCAT(seq,':',action)) FROM audit_logs WHERE seq IN (%s)"
@@ -377,11 +402,16 @@ if bad_id:
 
 # ---------------- L7 审计验链终态 ----------------
 print("\n=== L7 审计验链终态（AC-AUD-03 防篡改 + DEF-4 修复在全业务链下存续）===")
-vs, chain, nb, seqs = verify_state(TOK["ADMIN"])
+vs, chain, nb, seqs, hash_broken, gaps = verify_state(TOK["ADMIN"])
 check("L7 终态 verify HTTP200", vs, 200)
-check("L7 终态 chain=OK", chain, "OK", "broken=%s" % seqs[:8])
-check("L7 终态断裂数=0", nb, 0, "broken=%s" % seqs[:8])
 tot7, wj7, gap7, rest7 = attribute_broken(seqs)
+verdict7, nhb7, ngap7, src7 = chain_gate(chain, hash_broken, gaps, wj7, rest7, gap7)
+check("L7 终态审计链无哈希断裂（chain∈{OK,GAP}）", verdict7, True, "chain=%s 判据=%s" % (chain, src7))
+check("L7 终态哈希断裂数=0（GAP 不计入断裂）", nhb7, 0,
+      "chain=%s hashBroken=%s" % (chain, (hash_broken if hash_broken is not None else seqs)[:8]))
+if ngap7:
+    print("  WARN  L7 终态已知历史空洞 %d 处（GAP 降级告警非 FAIL；不补行=尊重 AC-AUD-01，owner Q5）" % ngap7)
+    evidence["终态空洞告警"] = {"count": ngap7, "chain": chain, "判据来源": src7}
 if tot7:
     note7 = "断裂%d行/带载荷%d行/空洞后首行%d行/未归因%d行" % (tot7, wj7, gap7, rest7)
     check("L7 断裂全归因清库空洞（DEF-6 载荷行=0 且未归因=0）", (wj7, rest7), (0, 0), note7)
@@ -392,9 +422,19 @@ if tot7:
 rows1 = int(q1("SELECT COUNT(*) FROM audit_logs") or 0)
 seq1 = int(q1("SELECT MAX(seq) FROM audit_logs") or 0)
 check("L7 全链新增审计行>=8（本轮业务动作均留痕）", rows1 - rows0 >= 8, True, "增量=%d" % (rows1 - rows0))
-gap = q1("SELECT COUNT(*) FROM (SELECT seq, LAG(seq) OVER (ORDER BY seq) p FROM audit_logs) t WHERE p IS NOT NULL AND seq<>p+1")
+# owner Q5：seq 跳号按「前驱是否越过基线」切分——前驱 p<=seq0 = 历史空洞（清库致 AUTO_INCREMENT
+# 计数器跳变，本轮首行落在计数器现值，如 run7 的 609→1309），降级告警；前驱 p>seq0 = 本轮新增跳号
+# （业务动作审计行漏写），仍 FAIL。防假绿：真漏行不被历史空洞掩盖；重复 seq（并发/CAS 缺陷）仍 FAIL。
+gap_hist = q1("SELECT COUNT(*) FROM (SELECT seq, LAG(seq) OVER (ORDER BY seq) p FROM audit_logs) t "
+              "WHERE p IS NOT NULL AND seq<>p+1 AND p<=%d" % seq0)
+gap_new = q1("SELECT COUNT(*) FROM (SELECT seq, LAG(seq) OVER (ORDER BY seq) p FROM audit_logs) t "
+             "WHERE p IS NOT NULL AND seq<>p+1 AND p>%d" % seq0)
+if int(gap_hist or 0):
+    print("  WARN  L7 已知历史空洞 %s 处（前驱 seq<=%d 越基线，清库遗留计数器跳变；降级告警非 FAIL，不补行=尊重 AC-AUD-01，owner Q5）"
+          % (gap_hist, seq0))
+    evidence["seq历史空洞告警"] = {"count": int(gap_hist or 0), "baseline_maxSeq": seq0}
+check("L7 seq 无新增跳号（本轮审计行无漏写；历史空洞已降级告警）", gap_new, "0")
 dup = q1("SELECT COUNT(*) FROM (SELECT seq FROM audit_logs GROUP BY seq HAVING COUNT(*)>1) t")
-check("L7 seq 零跳号", gap, "0")
 check("L7 seq 零重复", dup, "0")
 s, b = req("GET", "/api/v1/audit-logs/export/scope", token=TOK["RD"])
 check("L7 RD 受限导出可用（P0-5.4 scoped）", s, 200)
@@ -403,6 +443,8 @@ check("L7 RD 受限导出可用（P0-5.4 scoped）", s, 200)
 p = sum(1 for r in results if r["结论"] == "PASS")
 f = len(results) - p
 evidence["终态"] = {"rows": rows1, "maxSeq": seq1, "chain": chain, "broken": nb,
+                    "hashBroken": (hash_broken if hash_broken is not None else "旧jar无分列"),
+                    "gaps": (gaps if gaps is not None else ngap7), "判据来源": src7,
                     "rows增量": rows1 - rows0, "seq增量": seq1 - seq0}
 summary = {"卡": "P0-9.1", "HEAD": HEAD, "jar": os.path.basename(JAR) + "@" + JAR_MTIME,
            "实例": BASE, "TS": time.strftime("%F %T"),
