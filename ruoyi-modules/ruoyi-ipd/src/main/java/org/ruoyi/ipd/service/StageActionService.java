@@ -346,6 +346,9 @@ public class StageActionService {
     @Transactional(rollbackFor = Exception.class)
     public Deliverable addDeliverable(Long actionId, String fileName, Long ossId, String operator) {
         StageAction a = getById(actionId);
+        // Round 8 / 后台安全审查 sibling-path-gate-parity：加项目状态门禁
+        // 防止在已冻结 / 已删除 / DRAFT 之前的项目上挂载交付物（横向越权防护）
+        assertProjectWritable(a.getProjectId());
         Deliverable d = Deliverable.builder()
             .actionId(actionId)
             .projectId(a.getProjectId())
@@ -370,6 +373,8 @@ public class StageActionService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int instantiate(Long projectId, Long stageId, String stage) {
+        // Round 8 / 后台安全审查 sibling-path-gate-parity：加项目状态门禁
+        assertProjectWritable(projectId);
         Set<String> existingCodes = stageActionMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
                 .eq(StageAction::getProjectId, projectId))

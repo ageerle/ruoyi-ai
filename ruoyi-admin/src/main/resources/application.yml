@@ -147,10 +147,11 @@ sa-token:
   # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
   is-share: false
   # jwt秘钥
-  # 注意：dev profile 使用 26 字母占位符仅供本地启动；所有非 local 环境必须通过 SA_TOKEN_JWT_SECRET_KEY 环境变量注入
-  # application-prod.yml 已强制占位符 ${SA_TOKEN_JWT_SECRET_KEY:}（无默认值），启动时未注入即失败
-  # R8-P0-3：默认值从 26 字母弱密钥升级为 64 字符强密钥；非 local 环境仍需 SA_TOKEN_JWT_SECRET_KEY 环境变量覆盖
-  jwt-secret-key: BifYw6f5ExTLFxc9htaGehP6iqWEpEqQc1W6KCYzihLYMpIXOL-EKME0mtnRIMUg
+  # 注意：application.yml 不再含任何默认密钥；所有 profile 必须通过 SA_TOKEN_JWT_SECRET_KEY 环境变量注入
+  # application-dev.yml 提供 dev profile 默认值（仅供本地启动）
+  # application-prod.yml 加 jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:}（无默认）覆盖（待 sensitive-field-guard hook 解除后由用户/CI 手动合并）
+  # R8 后台安全审查 credentials-exposure：原 commit a8a70ad9 把密钥明文写入 application.yml 历史已可见，需视为泄露并轮换
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:}
 
 # security配置
 security:
