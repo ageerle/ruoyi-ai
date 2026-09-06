@@ -1,0 +1,14 @@
+报告已落盘 `docs/ipd-系统说明/梳理-20260906/Agent-A-契约对账-20260906.md`。
+
+**Agent-A 契约对账摘要**
+
+- **口径修正**：后端实为 **41 Controller / 183 端点**（第 41 个在 ruoyi-admin：IpdPlatformAuthController `/auth/platform-token`）；前端实为 **27 ts**（21 api + 5 test + http.ts，另 store/ipd-auth.ts 承载 3 个 auth 调用点）
+- **配对**：前端 106 调用点，105 成功配对（接线率 57.4%），配对端点 HTTP 方法/请求体字段/查询参数 **零硬错位**
+- **P0 = 1**：`GET /public/demands/{code}` 门户进度查询后端未交付，必 404（前端自知已占位兜底）｜portal.ts:216 vs PublicPortalController.java:25-48
+- **P1 = 2 类**：
+  - ① `POST /products/{id}/bind-project`、`/{id}/status` 后端返 `Void`，前端按 Product 解析 → 全空对象静默错乱｜ProductController.java:88-105 vs product.ts:122/139
+  - ② **55 个 P1 级未接线端点**（移交 5/KPI 3/奖金池 5/贡献度 5/负反馈 7/绩效 3/切换验收 5/Gate 打分 5/组队 2/认证清单+基线 6/建组撤组 2/通知 5/改标+超管指派 2）——对应 12+ 张挂 pending 的业务页
+- **P2 = 5 项**：audit `beforeSeq` 死参数；前端错误码表缺 50003~50016 共 12 码 + 多 40010 死码；cert-template 注释引用不存在的 CreateReq DTO（后端实体绑定）；雪花 ID→字符串隐式链架构风险；前端零权限码引用（personType 门控，错位风险后移后端 Catalog）
+- **未接线合计 78**（P1 55 / P2 23，后者含 scan 调度类 3+合规 4+项目圈 6 等），全部按 49 页业务归属标注并交叉路由 pending 证据
+- **正向确认**：ApiV1Response↔requestIpd 解包、BigDecimal/Date 双侧序列化、错误文案链（e1512a5/e2a48cb 收口）全部对齐
+- **置信度**：P0/P1 字段判定 高（纯静态可完备）；未接线业务影响判定 中高（个别端点有 advance-stage 等替代路径已核对）
