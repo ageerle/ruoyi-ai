@@ -47,7 +47,8 @@ spring:
     # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
     dynamic:
       # 性能分析插件(有性能损耗 不建议生产环境使用)
-      p6spy: true
+      # Batch-3（用户授权手动合并）：prod 显式 false，对齐父基线安全默认（SQL 日志不再落盘，减少性能损耗与敏感 SQL 暴露）
+      p6spy: false
       # 设置默认的数据源或者数据源组,默认值即为 master
       primary: master
       # 严格模式 匹配不到数据源则报错
@@ -75,7 +76,8 @@ spring:
         # 最小空闲线程数量
         minIdle: 10
         # 配置获取连接等待超时的时间
-        connectionTimeout: 30000
+        # Batch-3（用户授权手动合并）：30s → 5s 快速失败，防高并发排队雪崩（与父基线/dev 对齐）
+        connectionTimeout: 5000
         # 校验超时时间
         validationTimeout: 5000
         # 空闲连接存活最大时间，默认10分钟
@@ -270,3 +272,15 @@ justauth:
       redirect-uri: ${justauth.address}/social-callback?source=gitea
 
 AGENT_ALLOWED_TABLES: "abtest_rule,abtest_project,agent_ban_log,agent_ban_logs,agent_install_sub_task,agent_install_sum_task,agent_install_task"
+
+--- # IPD 模块配置（Batch-3 手动合并：SEC-HIGH-2 跟进，显式无默认 fail-fast）
+ipd:
+  security:
+    # prod 必须通过环境变量 IPD_INITIAL_PWD 注入初始密码，缺失则启动 fail-fast（父基线同款语义显式化）
+    initial-password: ${IPD_INITIAL_PWD:}
+
+--- # API 接口解密私钥（Batch-3 手动合并：SEC-NEW-MED-4 跟进，env 注入）
+api-decrypt:
+  # prod 必须通过环境变量 API_DECRYPT_PRIVATE_KEY 注入 RSA 私钥（原 yml 字面量已从 git 历史清除，视为泄露需轮换）
+  # 留空时即便 enabled=true 也会因空私钥启动失败（fail-fast 语义）
+  privateKey: ${API_DECRYPT_PRIVATE_KEY:}
