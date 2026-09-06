@@ -63,6 +63,11 @@ public class AiDocument extends BaseEntity implements SoftDeletable {
     private Integer tokenCompletion;
 
     /**
+     * 内容摘要 sha256 hex（P1-10.1：版本不可变锚点，写入时计算，历史行永不更新）
+     */
+    private String contentSha256;
+
+    /**
      * 状态 GENERATED|REVIEWED|ARCHIVED（未审核不可归档）
      */
     private String status;

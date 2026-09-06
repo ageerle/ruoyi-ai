@@ -51,4 +51,13 @@ public interface IpdPermissionCode {
     String OPERATION_NOTIFICATION_READ = "ipd:notification:read";
     /** OPS-05：outbox 消费端手动触发（仅超管） */
     String OPERATION_NOTIFICATION_DISPATCH = "ipd:notification:dispatch";
+
+    /** P1-10.1：AI 文档版本链读取 */
+    String OPERATION_AI_DOCUMENT = "ipd:ai-document:list";
+    /** P1-10.1：登记 AI 原始输出 v1（生成入口 P4-2 接管） */
+    String OPERATION_AI_DOCUMENT_CREATE = "ipd:ai-document:add";
+    /** P1-10.1：人工改版（基准非最新版 409） */
+    String OPERATION_AI_DOCUMENT_REVISE = "ipd:ai-document:edit";
+    /** P1-10.1：人工审核通过（BR-AI-03） */
+    String OPERATION_AI_DOCUMENT_REVIEW = "ipd:ai-document:review";
 }

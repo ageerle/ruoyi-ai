@@ -1,0 +1,97 @@
+package org.ruoyi.ipd.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.domain.AiDocument;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.security.IpdPermissionCode;
+import org.ruoyi.ipd.service.AiDocumentService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * AI 文档版本链 API /api/v1/ai-documents（P1-10.1；页33 AI 文档）。
+ * 只做版本链存储（版本号+人工审核+sha256 摘要）；AI 生成/模型配置/预算属 P4-2，
+ * 届时由生成侧调用 {@link AiDocumentService#createGenerated} 登记首环。
+ * 历史版本只读：内容与摘要无任何 HTTP 更新通道，修正=产生新版本。
+ */
+@RestController
+@RequestMapping("/api/v1/ai-documents")
+@RequiredArgsConstructor
+public class AiDocumentController {
+
+    private final AiDocumentService aiDocumentService;
+    private final IpdPermission ipdPermission;
+
+    /**
+     * 登记 AI 原始输出 v1（版本链首环；生成入口 P4-2 接管）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping
+    public ApiV1Response<AiDocument> create(@RequestBody CreateReq body) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.createGenerated(
+            body.projectId(), body.docType(), body.title(), body.content(),
+            body.model(), body.tokenPrompt(), body.tokenCompletion(), actor.id()));
+    }
+
+    /**
+     * 人工改版：基于 baseVersionId 追加 v(n+1)；基准非当前最新版 → 409 明确冲突
+     * （AC-AI-04：审核通过后修改 ⇒ 生成 v2，v1 保留）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_REVISE, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/{id}/revise")
+    public ApiV1Response<AiDocument> revise(@PathVariable Long id, @RequestBody ReviseReq body) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.revise(
+            id, body.baseVersionId(), body.content(), body.title(), actor.id()));
+    }
+
+    /**
+     * 人工审核通过（BR-AI-03：AI 输出未经审核不生效）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/{id}/versions/{versionId}/review")
+    public ApiV1Response<AiDocument> review(@PathVariable Long id, @PathVariable Long versionId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.review(versionId, actor.id()));
+    }
+
+    /**
+     * 完整版本链 v1..vN（AC-AI-06：无一缺失；链断裂按 409 报出）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/{id}/versions")
+    public ApiV1Response<List<AiDocument>> versions(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.history(id));
+    }
+
+    /** 登记 AI 原始输出请求体 */
+    public record CreateReq(@NotNull Long projectId,
+                            @Size(max = 32) String docType,
+                            @NotBlank @Size(max = 200) String title,
+                            @NotBlank String content,
+                            @Size(max = 64) String model,
+                            Integer tokenPrompt,
+                            Integer tokenCompletion) {
+    }
+
+    /** 人工改版请求体（baseVersionId=乐观锁基准，非最新版即 409） */
+    public record ReviseReq(@NotNull Long baseVersionId,
+                            @NotBlank String content,
+                            @Size(max = 200) String title) {
+    }
+}

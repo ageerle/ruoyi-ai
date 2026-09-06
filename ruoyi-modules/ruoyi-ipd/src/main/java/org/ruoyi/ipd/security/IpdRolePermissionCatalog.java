@@ -26,7 +26,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_GATE_REVIEW,
         "ipd:system-config:read",
         // OPS-05：站内通知收件箱（本人；receiver 从会话推导，读写同人）
-        IpdPermissionCode.OPERATION_NOTIFICATION_READ
+        IpdPermissionCode.OPERATION_NOTIFICATION_READ,
+        // P1-10.1：AI 文档版本链读取
+        IpdPermissionCode.OPERATION_AI_DOCUMENT
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -40,7 +42,11 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_GATE_REVIEW_INITIATE,
         IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT,
-        IpdPermissionCode.OPERATION_COEFFICIENT_PROPOSE
+        IpdPermissionCode.OPERATION_COEFFICIENT_PROPOSE,
+        // P1-10.1：AI 文档登记原始输出 / 人工改版 / 人工审核（BR-AI-03）
+        IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE,
+        IpdPermissionCode.OPERATION_AI_DOCUMENT_REVISE,
+        IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW
     );
 
     /** 组长初审删除申请 + 系数定值确认。 */
