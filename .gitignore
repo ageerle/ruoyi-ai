@@ -50,8 +50,15 @@ nbdist/
 *.log.gz
 *.xml.versionsBackup
 *.swp
-data/
+# 只忽略仓库根本地的 agent 数据目录；勿用无限定的 data/ —— 曾误吞
+# ruoyi-modules/ruoyi-aiflow/.../workflow/data/*.java 等真实源码（新增文件会静默不入版本库）
+/data/
 logs/
+
+# OS / Python 缓存垃圾
+.DS_Store
+__pycache__/
+*.pyc
 
 !*/build/*.java
 !*/build/*.html
@@ -80,5 +87,8 @@ logs/
 ruvector.db
 .claude-flow/daemon-state.json
 .claude-flow/policy/state.json
-ruoyi-ai/
+# 只指仓库根那个误建的嵌套空仓库；勿用无限定 ruoyi-ai/ —— 曾误吞 docs/docker/ruoyi-ai/** 交付件
+/ruoyi-ai/
 .agents/skills/
+.repowise/
+.repowise-workspace.yaml

@@ -49,9 +49,10 @@ public class LaunchDateChangeController {
         IpdActor actor = ipdPermission.requireInternal();
         // R8-P0-11：LocalDate 转 Date（系统时区零时），避免时区漂移
         Date date = Date.from(body.proposedLaunchDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
+        // R8X-2 P0-1：传 actor.groupId 给 Service 做横向越权防护
         return ApiV1Response.ok(launchDateChangeService.propose(
             body.projectId(), date, body.reason(),
-            actor.id(), actor.role()));
+            actor.id(), actor.role(), actor.groupId()));
     }
 
     /**
@@ -68,8 +69,9 @@ public class LaunchDateChangeController {
                                                                  @RequestParam boolean approve,
                                                                  @RequestParam(required = false) String opinion) {
         IpdActor actor = ipdPermission.requireInternal();
+        // R8X-2 P0-1：传 actor.groupId 给 Service 做横向越权防护
         return ApiV1Response.ok(launchDateChangeService.secondDecision(
-            id, actor.id(), actor.role(), approve, opinion));
+            id, actor.id(), actor.role(), actor.groupId(), approve, opinion));
     }
 
     /** 提议入参。Round 8：proposedLaunchDate 改 LocalDate + @JsonFormat("yyyy-MM-dd") 解决 Date 反序列化不一致。 */
