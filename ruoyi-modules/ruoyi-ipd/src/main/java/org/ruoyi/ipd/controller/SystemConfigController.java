@@ -43,7 +43,7 @@ public class SystemConfigController {
 
     /** 单点读取某参数（任何已登录会话可读，业务方依赖的热路径） */
     @SaCheckPermission(value = "ipd:system-config:read", type = IpdAuthSession.LOGIN_TYPE)
-    @GetMapping("/{key}")
+    @GetMapping("/{key:.+}")
     public ApiV1Response<Map<String, String>> get(@PathVariable @NotBlank String key) {
         return ApiV1Response.ok(Map.of(
             "key", key,
@@ -52,12 +52,13 @@ public class SystemConfigController {
 
     /** 更新某参数值（仅超管；写后立即失效缓存，PERF-02 强约束） */
     @SaCheckPermission(value = "ipd:system-config:update", type = IpdAuthSession.LOGIN_TYPE)
-    @PutMapping("/{key}")
+    @PutMapping("/{key:.+}")
     public ApiV1Response<Map<String, String>> update(@PathVariable @NotBlank String key,
                                                      @RequestBody @Valid UpdateReq req) {
         ipdPermission.requireAdmin();
         systemConfigService.update(key, req.value());
-        return ApiV1Response.ok(Map.of("key", key, "value", req.value(), "invalidated", "true"));
+        return ApiV1Response.ok(Map.of("key", key, "value",
+            systemConfigService.getValue(key, req.value()), "invalidated", "true"));
     }
 
     public record UpdateReq(@NotBlank @Size(max = 2000) String value) {}

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.dto.AuditChainVerifyResult;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.dao.DuplicateKeyException;
@@ -91,27 +92,53 @@ public class AuditLogService {
         throw conflict;
     }
 
-    /** 全链校验：返回断裂/篡改的 seq 列表（空 = 链完整） */
+    /**
+     * 全链校验（兼容出口）：返回断裂/缺行的 seq 合并列表（空 = 链完整）。
+     *
+     * <p>语义与分列改造前完全一致，供既有消费者与契约测继续使用；
+     * 需区分「哈希不符」与「seq 缺行」时请用 {@link #verifyChainDetailed()}。
+     */
     public List<Long> verifyChain() {
+        return verifyChainDetailed().mergedBroken();
+    }
+
+    /**
+     * 全链校验（分列出口，DEF-9 / 设计稿 G5）：把三条判据按**成因**拆为 HASH 与 GAP 两类。
+     *
+     * <p>判据③（seq 严格连续）单独归 {@code gaps}：它由缺行触发（删行 / 事务回滚 /
+     * InnoDB 自增值不回填），{@link #rebuildChain()} 治不了；而判据①②归 {@code hashBroken}，
+     * 可由 rebuild 重算修复。三类判据混在一个 {@code broken} 里时，「篡改」与「缺行」无法区分：
+     * 实测 seq 1309（{@code prev_hash} 与 seq 609 的 {@code curr_hash} 相符、无载荷，纯因
+     * 609→1309 空洞触发③）曾被归因为「{@code curr_hash} 由旧算法 jar 生成」，
+     * 导致连跑两次 rebuild 仍无法消除。分列后该场景直报 {@code verdict()=GAP}。
+     *
+     * <p>注：同一行可同时入两类（例如缺行且哈希也不符），故 {@code mergedBroken()}
+     * 需去重才能等价于原 {@code broken}。
+     */
+    public AuditChainVerifyResult verifyChainDetailed() {
         List<AuditLog> all = auditLogMapper.selectList(orderBySeqAsc());
         if (all.isEmpty()) {
-            return List.of();
+            return new AuditChainVerifyResult(List.of(), List.of(), 0);
         }
-        List<Long> broken = new ArrayList<>();
+        List<Long> hashBroken = new ArrayList<>();
+        List<Long> gaps = new ArrayList<>();
         // DEF-4：锚点=库内实际首行（原实现硬编码 GENESIS/seq=1，历史首行缺失即误判；且误用降序遍历致结构性全断）
         String expectPrev = nvl(all.get(0).getPrevHash());
         Long expectSeq = all.get(0).getSeq();
         for (AuditLog log : all) {
             String expectHash = AuditHashChain.computeCurrHash(expectPrev, canonicalOf(log, log.getSeq()));
+            // DEF-9：连续性判据先单独归档，再判哈希——两个 if 不互斥，不可合并回单个或分支
+            if (!expectSeq.equals(log.getSeq())) {
+                gaps.add(log.getSeq());
+            }
             if (!expectHash.equals(log.getCurrHash())
-                || !expectPrev.equals(nvl(log.getPrevHash()))
-                || !expectSeq.equals(log.getSeq())) {
-                broken.add(log.getSeq());
+                || !expectPrev.equals(nvl(log.getPrevHash()))) {
+                hashBroken.add(log.getSeq());
             }
             expectPrev = log.getCurrHash();
             expectSeq = log.getSeq() + 1;
         }
-        return broken;
+        return new AuditChainVerifyResult(hashBroken, gaps, all.size());
     }
 
     /**

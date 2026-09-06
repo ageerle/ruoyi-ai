@@ -67,7 +67,7 @@ class P122AcceptanceTest {
         });
         Date day = new Date(1_700_000_000_000L);
         LaunchDateChangeRequest pending = launchDateChangeService.propose(
-            70L, day, "GTM 定档", 11L, "MARKET_PM");
+            70L, day, "GTM 定档", 11L, "MARKET_PM", 70L);
         assertThat(pending.getStatus()).isEqualTo(LaunchDateChangeRequest.ST_PENDING_SECOND);
 
         when(launchDateChangeRequestMapper.selectById(501L)).thenReturn(pending);
@@ -75,12 +75,12 @@ class P122AcceptanceTest {
         when(projectMapper.updateById(any(Project.class))).thenReturn(1);
 
         assertThatThrownBy(() -> launchDateChangeService.secondDecision(
-            501L, 11L, "RD_PM", true, "ok"))
+            501L, 11L, "RD_PM", 70L, true, "ok"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("不同人员");
 
         LaunchDateChangeRequest confirmed = launchDateChangeService.secondDecision(
-            501L, 22L, "RD_PM", true, "同意");
+            501L, 22L, "RD_PM", 70L, true, "同意");
         assertThat(confirmed.getStatus()).isEqualTo(LaunchDateChangeRequest.ST_CONFIRMED);
         assertThat(project.getLaunchDate()).isEqualTo(day);
     }
@@ -96,7 +96,7 @@ class P122AcceptanceTest {
         when(projectMapper.updateById(any(Project.class))).thenReturn(1);
         projectService.updateBaselines(71L, Project.builder()
             .targetSalesAmount(new BigDecimal("200"))
-            .targetChannelCount(2).targetNps(60).targetSceneCount(2).build(), 1L);
+            .targetChannelCount(2).targetNps(60).targetSceneCount(2).build(), 70L);
         assertThat(draft.getTargetSalesAmount()).isEqualByComparingTo("200");
 
         Project active = Project.builder().id(72L).status("ACTIVE").delFlag("0").name("a").build();

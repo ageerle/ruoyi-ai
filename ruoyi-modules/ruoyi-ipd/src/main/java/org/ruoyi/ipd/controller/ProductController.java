@@ -11,12 +11,14 @@ import org.ruoyi.ipd.service.ProductService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 产品接口 /api/v1/products（TS-09 统一响应 code=0）
@@ -58,6 +60,28 @@ public class ProductController {
         }
         IpdActor actor = ipdPermission.requireProductCreator(src);
         return ApiV1Response.ok(productService.create(req.toEntity(), actor.id()));
+    }
+
+    /** P1-1.2：编辑产品，需 ipd:product:edit */
+    @PutMapping("/{id}")
+    @SaCheckPermission(value = "ipd:product:edit", type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<Product> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.ProductUpdateReq req) {
+        IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
+        return ApiV1Response.ok(productService.update(id, req.toPatch(), actor.id()));
+    }
+
+    /**
+     * P1-1.2 / AC-PROD-06：超管批量导入在售型号。
+     * 普通 PM 无 SUPER_ADMIN 角色将被拒绝。
+     */
+    @PostMapping("/batch-import")
+    @SaCheckPermission(value = "ipd:product:add", type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<List<Map<String, Object>>> batchImport(
+        @RequestBody List<org.ruoyi.ipd.dto.ProductImportItem> items) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        List<Product> rows = items == null ? List.of()
+            : items.stream().map(org.ruoyi.ipd.dto.ProductImportItem::toEntity).toList();
+        return ApiV1Response.ok(productService.batchImportOnSale(rows, actor.id()));
     }
 
     /** 绑定项目，需 ipd:product:edit 权限 */
