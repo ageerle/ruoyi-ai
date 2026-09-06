@@ -356,7 +356,7 @@ lock4j:
 
 --- # Actuator 监控端点的配置项
 # SEC-NEW-MED-1: 父基线显式收窄到 health,info,metrics（避免暴露 env/heapdump/shutdown/threaddump 等敏感端点）
-# dev profile 在 application-dev.yml 显式覆盖 include: '*'（本地调试便利）
+# dev profile 在 application-dev.yml 显式覆盖为通配全部端点（本地调试便利）
 # prod profile 必须保持父基线或显式收窄（hook 阻断由用户手动合并）
 management:
   endpoints:

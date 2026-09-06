@@ -43,16 +43,23 @@ class WebSocketOriginGuardTest {
         return start.toAbsolutePath().normalize();
     }
 
+    /** 提取 yml 中指定顶层段（从段头到下一个 "--- #" 文档分隔符） */
+    private static String extractSection(String content, String sectionKey) {
+        int start = content.indexOf(sectionKey);
+        if (start < 0) return "";
+        int end = content.indexOf("\n--- #", start);
+        if (end < 0) end = content.length();
+        return content.substring(start, end);
+    }
+
     @Test
     @DisplayName("1) 父 application.yml allowedOrigins 不为 '*'（应为 ''）")
     void parentAllowedOriginsNotWildcard() throws IOException {
         String content = Files.readString(APP_YML);
         // 父基线 websocket.allowedOrigins 不能是 '*'（防未来启用后任意源跨域）
-        // 提取 websocket 段校验
-        int wsIdx = content.indexOf("websocket:");
-        assertThat(wsIdx).as("父 yml 含 websocket 段").isPositive();
-        // 取 websocket 段后 200 字符窗口
-        String wsBlock = content.substring(wsIdx, Math.min(wsIdx + 300, content.length()));
+        // 按文档分隔符提取完整 websocket 段（避免固定窗口截断）
+        String wsBlock = extractSection(content, "websocket:");
+        assertThat(wsBlock).as("父 yml 含 websocket 段").isNotEmpty();
         // 父段必须显式含 allowedOrigins: ''（不能是 '*'）
         assertThat(wsBlock).contains("allowedOrigins: ''");
         // 父段不能含 allowedOrigins: '*'（即便在注释中也不行——防漂移）
