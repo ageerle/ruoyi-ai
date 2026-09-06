@@ -70,11 +70,13 @@ spring:
 
       hikari:
         # 最大连接池数量
-        maxPoolSize: 20
+        # QA-05-P1: 100 并发容量目标下 dev 基线池容量（默认 10/20 会因连接池排队雪崩）
+        maxPoolSize: 40
         # 最小空闲线程数量
         minIdle: 10
         # 配置获取连接等待超时的时间
-        connectionTimeout: 30000
+        # QA-05-P1: 5s 快速失败（原 30s 排队超时是高并发雪崩放大器）
+        connectionTimeout: 5000
         # 校验超时时间
         validationTimeout: 5000
         # 空闲连接存活最大时间，默认10分钟
