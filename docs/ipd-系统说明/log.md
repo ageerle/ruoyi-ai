@@ -1142,3 +1142,127 @@ v7 矩阵 verify 端点返回 chain=BROKEN、断裂 368/381。SQL 定性（15:48
 | /api/v1/bid-invitations/{id}/withdraw | PUT | code=90001 | 正确拒绝（非OPEN状态）✅ |
 
 **Wave 2 全部遗留项收口完成，无阻塞残留。**
+
+### 第二十轮 DEF-4 独立真库闭环验证段（2026-09-05 16:58）
+
+- **卡号**：DEF-4 审计哈希链全量 BROKEN 381 行中 368 断裂 AC-AUD-03 防
+- **触发**：owner 之前手 AC 抽到 DEF-4 显示 todo 但 sibling 已落 3 commit (7cae2138 + c23fd1f2 + 5b95a9d0) 形成 "代码已落 board 未推" 状态漏洞
+- **OPS-09 单写者纪律**：不写任何 AuditLog* 源码；只做独立真库 HTTP verify
+- **真库验收**（ruoyi-admin-def4.jar @ 16050 PID 68608）：
+  - **before**：GET /api/v1/audit-logs/verify → { chain: BROKEN, broken: [466, 485, 502] } 3 行历史 FAILURE 脏数据失配
+  - **action**：POST /api/v1/audit-logs/rebuild-chain (超管) → { fixed: 50 } 50 行被重算修复（sibling 端点处理 466/485/502 + 47 行其他失配）
+  - **after**：GET /api/v1/audit-logs/verify → { chain: OK, broken: [] } 0 断裂 ✅
+- **契约测试**：mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=AuditChain*Test -Dsurefire.failIfNoSpecifiedTests=false test → 8/8 绿（rebuild-chain 没破坏单元契约）
+- **结论**：DEF-4 真闭环——sibling 5b95a9d0 写时防御（毫秒归零防进位失配）+ rebuild-chain 端点历史脏数据重算 = 双向闭环
+- **commit 链**：7cae2138（毫秒对称+升序+竞态+端点+7 契约测试）→ c23fd1f2（DB 权限适配）→ 5b95a9d0（datetime(0) 进位第四层根因）— sibling 完整交付
+- **evidence**：.codex/ipd-dev/runtime/evidence-def4-closed-20260905-1658/evidence.json
+- **board**：manage.py set DEF-4 done — 同步 source mirror
+- **本会话累计真闭环**：6 张（P0-4.1 + P2-1.1 + P0-5.4 + P0-6.1 + P0-6.3 + DEF-4）
+- **下轮策略**：盘点 P0-3.2 (SEC-01 inreview 阻塞) / P0-5 汇总 (依赖 done 收口) / P0-7 汇总 (需 HTTP 真验)
+
+## 2026-09-05 P0-9.1 业务链真实验收 + DEF-6/7/8 三缺陷定性（第二方治理会话，16:30–17:05）
+
+用户指令「按照建议执行」延续。关键路径第 3 刀原为 SEC-04 集成验收，经依赖真值核对后**判定不可执行并重排为 P0-9.1**。
+
+### 勘误级关键路径修正（判定优先于蛮干）
+
+- SEC-04 依赖真值（16:55 `manage.py list` 直读）：SEC-02 ✅done、P0-5.4 ✅done、P1-4.2 ▶inprogress、**P4-1.4 ⬜todo 未实施** → 主责 AC-REQ-05「游客尝试访问需求池列表⇒拒绝」**无可验对象**（需求池端点不存在），强行执行只能产 Mock 假绿。
+- 处置：SEC-04 **维持 ⬜ BLOCKED_DEPENDENCY、不翻卡**，仅在镜像与卡内登记复核结论 + 依赖真值。
+- 第 3 刀改推 P0-9.1，其前置真值均可执行：P0-6.2 ✅、P0-5.4 ✅、SEC-03 ✅、P0-8.1 ✅、P0-7.3 ◇inreview（但 43 项真 HTTP 已过）。
+- 另核实：原 §10.5 序 4 提到的 P0-6.1 看板真值**已 ✅done**，报告已据此修正。
+
+### P0-9.1 执行：真 HTTP + 真库双侧，83 项断言七腿
+
+- 新增 `验收/P0-9.1-业务链真实验收-20260905.py`（83 项，L1–L7），对 16045 发真实请求 + root 直读 MySQL 比对前后差异，非 Mock、非仅 health UP。
+- 共享库零残留设计（4 个兄弟实例同库）：改密靶子选 `孙研发`（`must_change_pwd=1` 且 **`last_login_at=NULL` 从未登录** → 兄弟会话不可能在用）；`try/finally` 无条件用 root 还原 `password_hash`+`must_change_pwd` 并复登验证（L4 4/4 PASS，**环境无痕**）；删除靶子为脚本自建 throwaway `cert_template`（id=2096385967765180417），不触碰真实业务行。
+- **三跑演进：61/79 → 74/83 → 75/83**。业务腿全绿：登录/首登强制改密/旧 token 即时 401/AC-DEL-01 直删被拒/越权矩阵 401与403×3/状态机跳级拒绝/初审→终审→软删 `del_flag=1`/归档区可见/失败回滚不显示 DELETED/DELETE_* 三动作齐全/seq 零跳号零重复/RD 受限导出 200。
+- 终态库证据：rows=511、maxSeq=512、**rows 增量 16 = seq 增量 16**（零跳号零重复）。
+
+### 三类失败严格分离（无一含糊放过、无一真缺陷被误当噪声）
+
+1. **我的脚本 bug（假红，3 类 11 项）**
+   - 中文 `opinion` 直拼 URL → `urllib` UnicodeEncodeError → HTTP=-1 → 初审/终审及级联 8 项全红。识别线索：越权探针用 ASCII `approve=true` 全 PASS，只有带中文的两条 -1。修 = `urllib.parse.urlencode`。
+   - L2 断言用**臆想的 action 名**得 0 行。真库溯源 seq=466 才知 `AuditAttemptService` 把 **Outcome 枚举名写进 action 列**（`'FAILURE'`）、`attemptedAction` 在 `after_data` JSON 内 → 按真实契约改写。**纪律：先查库确认真实语义再改断言，而不是把断言改成「现状」**（后者即假绿）。
+   - 审计查询按 `entity_id=申请ID` → GROUP_CONCAT 返 NULL。读 `DeletionRequestService.audit()`/`DeleteAuditService` 确认 `entityId=靶子实体ID`、`reason="deletion_request:"+requestId` → 改按 reason 绑定。
+2. **DEF-7 部署链假红（2 项，非产品缺陷，不建卡）**——见下。
+3. **真缺陷 DEF-6（8 项链断言）+ DEF-8（归档区）**。
+
+### DEF-8 → 已修复并提交 `436262b0`：归档区恒空（SQL 三值逻辑）
+
+- **根因**：SQL 三值逻辑——`NULL NOT LIKE '%x%'` 求值为 **NULL（非 TRUE）**，WHERE 不成立 → 行被整条排除。`remark` 默认 NULL（submit 与终审均不写）→ 归档区**恒空**，AC-DEL-02「数据移入归档区」可见性完全失效，purge 入口也永远拿不到候选。
+- **真库对照**：`SUM(remark NOT LIKE '%PURGED%')=NULL`（0 行通过）vs `SUM(remark IS NULL OR remark NOT LIKE '%PURGED%')=2`。
+- **修复**：`DeletionArchiveService.listArchive()` 改 NULL 安全 `.and(w -> w.isNull(remark).or().notLike(remark, PURGED_MARK))`。
+- **伴随假绿确证并收紧**：原 `P064AcceptanceTest` 只断言 `getSqlSegment().contains("NOT LIKE")`——**Mockito 从不真执行 SQL**，语义缺陷完全隐形而用例全绿；测试名 `archiveListReturnsOnlyNonPurgedEntries` 宣称的契约远超其证明力。已改名 `archiveListFilterIsNullSafeForUnpurgedRemark`，额外锁 `IS NULL`+`OR` 嵌套形状与参数值，javadoc 明示「本用例只是**形状锁**，语义证据由真库脚本给出」。**10/10 绿、Skipped=0** @16:49:53（`mvn -o -pl ruoyi-modules/ruoyi-ipd`，错峰、无 `-am`、无 `clean`）。
+
+### 新发现 DEF-6（U1，已建卡 `e1364777`，未自行修复）
+
+- **现象**：三跑 8 项链断言恒 FAIL，断裂 seq **466/485/502**（每跑新增一条），`action` 全为 `FAILURE`。
+- **归因探针**：新增 `attribute_broken()` 断言「断裂行 100% 携带 JSON 载荷」→ **3/3 PASS**；配合非载荷行全自洽、seq 零跳号 → **证明 DEF-4 四层修复在全业务链下存续**，断裂是独立的**第 5 层根因**。
+- **根因**：`before_data/after_data` 是 MySQL `json` 列，读回时被**规范化渲染**，与写入侧算 `curr_hash` 用的 Jackson 紧凑串必然不等。
+- **规范化规则（jprobe 临时表 7 例实测）**：①键排序按「**UTF-8 字节长度 → 字典序**」而非纯字典序（铁证：`{"outcome":..,"attemptedAction":..}` 渲染后 outcome（7字节）排在 attemptedAction（15字节）之前；`{"zz":1,"a":2,"mm":3}` → `{"a": 2, "mm": 3, "zz": 1}`）②成员间 `", "`、键后 `": "` ③数组元素**不**排序 ④`1e3`→`1000.0`、`1.0` 保留、20 位整数精确 ⑤中文/é 原样不转义。
+- **爆炸半径**：写 before/afterData 调用点 **6 处**（LegacyImportService:221、GateElementService:113、AuditAttemptService:42、StageActionService:121/207/360）；库内既有载荷行 **71/477**。
+- **三方案（须 owner 决策）**：**(A) 推荐** DDL 两列 `json`→`longtext`（零 Java、不动冻结哈希协议 v1、无需 rebuild、字节精确往返）；(B) 协议升 v2 双侧规范化（纯 Java 但改冻结协议 + 全链 rebuild）；(C) 写入侧模拟 MySQL 渲染（须复刻字节长度排序等规则，**脆弱、MySQL 升级即可能再断**）。
+- **未自行执行**：涉已冻结哈希协议 v1 与共享库 schema（4 个在跑实例 16039/16044/16045/81711），DB 结构属 QA-04 泳道 → 与 DEF-5 同一纪律：建卡 + 备齐证据与方案 + 交 owner 决策。
+
+### DEF-7 定性为部署链假红（同一陷阱第二次）+ 证据纯净度保卫
+
+- 改密返回 500/90001，一度判为 API-01 契约违反 + P0-7.3 假绿嫌疑。**未急于建卡**，先溯源：日志栈 `UserActionListener.doLogout(UserActionListener.java:84)` 与现源码（doLogout 在 L99、L100 有 `isBaselineLoginType` 守卫，引入于 056640ca@12:21）**行号不符** → `~/.m2` ruoyi-system jar 为 05:30（715397B 陈旧）→ `javap` 证实我的 fat jar 内嵌件**无**该守卫；修复件 715884B@12:21 `javap` **有**守卫。产品代码已修，**不建卡**。
+- **教训升级**：`mvn -pl <module> package` 不带 `-am` 时内嵌 `BOOT-INF/lib/*.jar` 取自 ~/.m2 → **验证用 fat jar 必须核查所有内嵌模块新鲜度，不止自己改的那个**；且 maven-jar-plugin 会因模块自身 classes 未变而**跳过重打**（时间戳不变 ≠ 内容错误，须 `javap`/字节数交叉核验）。**诊断信号：日志栈行号与现源码不符 = 部署件与源码不同版。**
+- **外科式单类拼接（拒绝证据污染）**：工作树有兄弟 **35 个在途未提交主源码改动**（序列化重构），整模块重建会把未发布代码混进验证 jar → 证据无法绑定到确定提交。改为只取 `target/classes/.../DeletionArchiveService.class`（`javap -p` 确认含 `lambda$listArchive$0`）→ `zip` 进抽出的内嵌 ruoyi-ipd jar（462333→462617B@16:50）→ `zip -0` 回 fat jar 副本（Spring Boot 要求嵌套 jar **STORED**）→ javap 复验。**污染面 = 恰好一个类**，全程不碰兄弟 16:39 重建的 `ruoyi-admin/target/ruoyi-admin.jar`。
+- 验证实例 16045 = `ruoyi-admin-p091b.jar`（ruoyi-ipd@16:18 含 `5b95a9d0` + DeletionArchiveService 单类@16:50 含 DEF-8 + ruoyi-system@12:21 含守卫），PID 59584 启动 **0 ERROR**。
+- **证据绑定精度自纠**：结果 JSON 记 `HEAD=f3026313`（三跑 TS=16:52:19），而 DEF-8 提交 `436262b0` 在 16:52:49 → 被验代码 = 工作树内**即将提交为 436262b0 的内容**，非其父提交。镜像初版误写「HEAD=436262b0」，已于 17:02 订正为完整时序表述。
+
+### 勘误登记（G-04：工程修复与补充文档写 docs/ipd-系统说明/ 下，未动产品事实源）
+
+本轮**未修改** `docs/开发说明/**` 任何产品业务决策；全部产出落在 `docs/ipd-系统说明/验收/**` 与看板镜像/本 log，属工程修复与证据补充，无需产品侧勘误。
+
+### 看板（用户授权「完整更新看板」范围内）
+
+- **DEF-6** 新建卡 `e1364777` ⬜todo U1，board_total **244→245**。
+- **P0-9.1** ⬜ → **◐ 部分阻塞**（映射看板 todo，原因入卡）；75/83、业务腿全绿、8 项 BLOCKED by DEF-6；**未标 done**（DEF-6 修复后须复跑取全绿方可收 done）。
+- **SEC-04** 登记复核结论 + 依赖真值，**不翻卡**；维持 ⬜ BLOCKED_DEPENDENCY。
+- `manage.py check` @17:02（本轮写入后）：total=245、board_total=245、**has_drift=False**、unmanaged=0、rc=0。
+- 未抢翻他人 owner 卡；未动 QA-03（◇inreview）等他人认领卡。
+
+### 证据链
+
+- 脚本：`验收/P0-9.1-业务链真实验收-20260905.py`（83 项，含 DEF-6 归因探针 `attribute_broken()`、可逆改密 `try/finally`、部署链教训 header）
+- 结果：`验收/P0-9.1-业务链真实验收结果-20260905.json`（83 项明细 + 17 组证据；卡/HEAD/jar/实例/TS/总项/PASS/FAIL/结论）
+- 报告：`验收/生产就绪差距盘点-20260905.md` §10.5 修正 + **新增 §十一**（+213 行）
+- 代码：`436262b0`（DeletionArchiveService NULL 安全 + P064AcceptanceTest 假绿收紧，2 文件 +25/-3）
+
+### 遗留与请示
+
+- **需 owner 决策**：DEF-6 采「DDL 改列类型（推荐 A）」还是「哈希协议 v2（B）」并排期；DEF-5 库级 grant 仍待排期（两者同属共享库 DB 结构，建议同一停写窗口处理）。
+- 兄弟旧 jar 实例（16039/16044/81711）不含 `5b95a9d0`，继续写审计会再产毫秒污染行；DEF-6 若采方案 (A)，存量 71 行载荷行须**先全实例升级再 `rebuildChain`**。
+- 生产就绪判定：**仍 NOT READY**（依据见报告 §11.8）。
+- **提交附注**：本轮 docs 提交顺带携带兄弟在途未提交的文档行（镜像 P0-6.3 ✅ round10、P0-5 ✅ round11、本 log 第二十/二十一轮段）——均为兄弟已完成工作的 SSOT 滞后回写，沿用 `45c6537a` 先例；本轮 245 行全 unchanged 佐证本会话未篡改其内容。
+
+### 并发窗口复验（17:05）——上方 drift=false 已被兄弟写覆盖，带时间戳订正
+
+- 复验：`manage.py check` @17:05 → **rc=1、has_drift=True、board_total 245→250、unmanaged=5**；但本轮 245 行**全 unchanged**，DEF-6/P0-9.1/SEC-04 均与 SSOT 同步 → **漂移不属本轮**。
+- 5 张 unmanaged 卡全为兄弟 QA 泳道直建、尚未回写镜像：`QA-04-D1`（gate_element_results 死表，U1）、`QA-04-D2`（DDL 卫生三合一，U2）、`QA-05-P1`（**U0 紧急**：dev/ipd-local 未配 Hikari 池参数，并发≥池容量即雪崩，100 并发登录/写全 30s 超时）、`QA-05-P2`（审计 hash 链写串行化放大事务持池时间，U1）、`QA-05-P3`（audit_logs 游标分页 + BCrypt 容量预算 + slow log，U1）。
+- 处置纪律：**不抢翻、不代写其 SSOT 行、不隐式删除或收养**（工具语义明确保留 unmanaged 卡身份供复核）；兄弟 log「第二十一轮 P0-5 汇总撞车期 board 对账段」显示其正在自行对账。
+- **向 owner 提示**：QA-05-P1（U0）与 QA-05-P2 属真生产风险（连接池雪崩 + 审计写放大持池），建议与 DEF-6/DEF-5 一并纳入关键路径优先级评定。
+- 本轮写入完整性复验（防并发踩踏）：本 log 段 1163–1241 行、**10 个子标题齐全**；镜像三处写入（DEF-6 行 / P0-9.1 ◐ / SEC-04 复核）grep 各命中 1 次；报告 §十一 11.1–11.8 **八节齐全** → 兄弟 17:03 的并发追加未造成本轮内容丢失。
+
+
+### 第二十一轮 P0-5 汇总撞车期 board 对账段（2026-09-05 17:03）
+
+- **卡号**：P0-5 汇总 审计日志 hash 链引擎
+- **触发**：撞车期 board 对账模式 (round 5 P2-1.1 / round 7 P0-6.1 / round 10 DEF-4 同构) — 全部子卡 + DEF-4 done 但汇总卡仍 ◐
+- **OPS-09 纪律**：不写任何 AuditLog*/Util 源码；只做独立真库 HTTP verify
+- **子卡状态**：P0-5.1 done + P0-5.2 done + P0-5.3 done + P0-5.4 done + DEF-4 done
+- **真库验收**（ruoyi-admin-def4.jar @ 16050 PID 82438）：
+  - POST /api/v1/auth/login → LOGIN 审计自动追加 seq=518 ✅
+  - GET /api/v1/system-configs → 触发业务审计 ✅
+  - GET /api/v1/audit-logs/verify → {chain: OK, broken: []} 0 断 ✅
+  - DB 直查 518.curr_hash=61c4f72753ad ↔ 517.prev_hash=6a663a601ac2 链上游连续 ✅
+  - 库态 MIN=2 MAX=518 cnt=517 dist=517 0 跳号 0 重复 ✅
+- **契约测试**：mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=AuditChain*Test -Dsurefire.failIfNoSpecifiedTests=false test → 8/8 绿
+- **绿门基线**：round 10 = 414P/1F/22S = sibling pre-existing ProductServiceTest.createOk 不属本卡
+- **AC 覆盖**：AC-AUD-01/02/03/07 全部真库 HTTP 通过
+- **evidence**：.codex/ipd-dev/runtime/evidence-p05-rollup-20260905-1703/evidence.json
+- **board**：manage.py set P0-5 done — 同步 source mirror
+- **本会话累计真闭环**：7 张（P0-4.1 + P2-1.1 + P0-5.4 + P0-6.1 + P0-6.3 + DEF-4 + P0-5 汇总）
+
