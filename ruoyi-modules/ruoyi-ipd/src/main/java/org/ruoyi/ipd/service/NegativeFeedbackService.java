@@ -8,13 +8,16 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.NegativeFeedback;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.dto.NegativeFeedbackCreateReq;
 import org.ruoyi.ipd.dto.NegativeFeedbackDecisionReq;
 import org.ruoyi.ipd.dto.NegativeFeedbackView;
 import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermission;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,22 +72,37 @@ public class NegativeFeedbackService {
     private final ProjectMemberMapper memberMapper;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    /** SEC-REV-round3 Bug#4：项目归属校验——非超管仅可访问本人所在 group 的项目 */
+    private final ProjectMapper projectMapper;
+    private final IpdPermission ipdPermission;
 
     /** 测试口：仅 mapper 单注入（其它 mapper mock 时） */
     public NegativeFeedbackService(NegativeFeedbackMapper mapper) {
-        this(mapper, null, null, null);
+        this(mapper, null, null, null, null, null);
     }
 
-    /** Spring 装配入口 */
-    @Autowired
+    /** 兼容测试口：mapper + memberMapper */
     public NegativeFeedbackService(NegativeFeedbackMapper mapper,
                                    ProjectMemberMapper memberMapper,
                                    AuditLogService auditLogService,
                                    NotificationService notificationService) {
+        this(mapper, memberMapper, auditLogService, notificationService, null, null);
+    }
+
+    /** Spring 装配入口（新增 ProjectMapper + IpdPermission 注入；Bug#4 修复） */
+    @Autowired
+    public NegativeFeedbackService(NegativeFeedbackMapper mapper,
+                                   ProjectMemberMapper memberMapper,
+                                   AuditLogService auditLogService,
+                                   NotificationService notificationService,
+                                   ProjectMapper projectMapper,
+                                   IpdPermission ipdPermission) {
         this.mapper = mapper;
         this.memberMapper = memberMapper;
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;
+        this.projectMapper = projectMapper;
+        this.ipdPermission = ipdPermission;
     }
 
     /* ========================================================================
@@ -143,25 +161,31 @@ public class NegativeFeedbackService {
      * 录入负反馈（DRAFT 创建）。
      *
      * <p>AC-INC-40 重复检查：同项目同 triggerType 已 EXECUTED → NF_REENTRY_NOT_ALLOWED。
+     * <p>SEC-REV-round3 Bug#6（中危 TOCTOU-dedup-bypass）：service selectCount 与 DB 唯一索引
+     * 维度不同会导致并发插入绕过 service 检查但被 DB 拒抛 raw DuplicateKeyException；
+     * 修复：service 镜像索引维度（count 任意 del_flag=0）+ catch DuplicateKeyException 翻 NF_REENTRY_NOT_ALLOWED。
+     * <p>SEC-REV-round3 Bug#4（高危 horizontal-privilege）：录入前按项目 group 校验 actor 归属。
      */
     @Transactional(rollbackFor = Exception.class)
     public NegativeFeedback create(NegativeFeedbackCreateReq req, IpdActor actor) {
         if (req == null || req.projectId() == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         }
-        if (!TRIGGER_TYPES.contains(req.triggerType())) {
+        if (req.triggerType() == null || !TRIGGER_TYPES.contains(req.triggerType())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_TRIGGER_TYPE_INVALID);
         }
         validateMonth(req.triggerMonth(), "triggerMonth");
         if (req.recoveryMonth() != null && !req.recoveryMonth().isBlank()) {
             validateMonth(req.recoveryMonth(), "recoveryMonth");
         }
+        // Bug#4：项目归属校验
+        assertProjectReadableById(req.projectId(), actor);
 
-        // AC-INC-40：同项目同 triggerType 已 EXECUTED → 拒
+        // Bug#6：service 镜像索引维度（任意 del_flag=0 而非仅 EXECUTED）+ 兜底 catch DuplicateKeyException
         Long activeCount = mapper.selectCount(Wrappers.<NegativeFeedback>lambdaQuery()
             .eq(NegativeFeedback::getProjectId, req.projectId())
             .eq(NegativeFeedback::getTriggerType, req.triggerType())
-            .eq(NegativeFeedback::getStatus, STATUS_EXECUTED));
+            .eq(NegativeFeedback::getDelFlag, "0"));
         if (activeCount != null && activeCount > 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_REENTRY_NOT_ALLOWED);
         }
@@ -190,8 +214,14 @@ public class NegativeFeedbackService {
             .status(STATUS_DRAFT)
             .triggeredBy(actor.id())
             .build();
-        mapper.insert(row);
-        appendAudit("CREATE", row, null, "P3-8.2 录入");
+        try {
+            // Bug#6：捕获 DB 唯一索引违例——并发残余插入翻成 NF_REENTRY_NOT_ALLOWED
+            mapper.insert(row);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NF_REENTRY_NOT_ALLOWED,
+                "同项目同触发情形的负反馈记录已存在（DB 唯一索引兜底）");
+        }
+        appendAudit("CREATE", row, actor, null, "P3-8.2 录入");
         return row;
     }
 
@@ -201,12 +231,13 @@ public class NegativeFeedbackService {
     @Transactional(rollbackFor = Exception.class)
     public NegativeFeedback submit(Long id, IpdActor actor) {
         NegativeFeedback row = requireRow(id);
+        assertProjectReadable(row, actor);  // SEC-REV-round3 Bug#4
         if (!STATUS_DRAFT.equals(row.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID);
         }
         row.setStatus(STATUS_PENDING_DECISION);
         mapper.updateById(row);
-        appendAudit("SUBMIT", row, STATUS_DRAFT, "P3-8.2 提交认定");
+        appendAudit("SUBMIT", row, actor, STATUS_DRAFT, "P3-8.2 提交认定");
         return row;
     }
 
@@ -221,6 +252,7 @@ public class NegativeFeedbackService {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         }
         NegativeFeedback row = requireRow(id);
+        assertProjectReadable(row, actor);  // SEC-REV-round3 Bug#4
         if (!STATUS_PENDING_DECISION.equals(row.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID);
         }
@@ -232,7 +264,7 @@ public class NegativeFeedbackService {
             row.setDecidedAt(new Date());
             row.setDecisionComment(req.comment());
             mapper.updateById(row);
-            appendAudit("DECIDE_EXECUTE", row, before, "P3-8.2 认定执行（AC-INC-36b/37/38/39）");
+            appendAudit("DECIDE_EXECUTE", row, actor, before, "P3-8.2 认定执行（AC-INC-36b/37/38/39）");
             notifyExecuted(row);
         } else if ("REJECT".equalsIgnoreCase(req.decision())) {
             row.setStatus(STATUS_REJECTED);
@@ -240,7 +272,7 @@ public class NegativeFeedbackService {
             row.setDecidedAt(new Date());
             row.setDecisionComment(req.comment());
             mapper.updateById(row);
-            appendAudit("DECIDE_REJECT", row, before, "P3-8.2 驳回");
+            appendAudit("DECIDE_REJECT", row, actor, before, "P3-8.2 驳回");
         } else {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         }
@@ -258,6 +290,7 @@ public class NegativeFeedbackService {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         }
         NegativeFeedback row = requireRow(id);
+        assertProjectReadable(row, actor);  // SEC-REV-round3 Bug#4
         if (!STATUS_EXECUTED.equals(row.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID);
         }
@@ -269,7 +302,7 @@ public class NegativeFeedbackService {
             row.setDecisionComment(req.comment());
         }
         mapper.updateById(row);
-        appendAudit("LIFT", row, before, "P3-8.2 解除（恢复津贴+bonusEligible）");
+        appendAudit("LIFT", row, actor, before, "P3-8.2 解除（恢复津贴+bonusEligible）");
         notifyLifted(row);
         return row;
     }
@@ -278,21 +311,37 @@ public class NegativeFeedbackService {
      *  查询
      * ======================================================================== */
 
+    public NegativeFeedback getById(Long id, IpdActor actor) {
+        NegativeFeedback row = requireRow(id);
+        // SEC-REV-round3 Bug#4：详情查询也走归属校验（cross-group 拒绝）
+        assertProjectReadable(row, actor);
+        return row;
+    }
+
+    /** 兼容旧测试口（无 actor）；详情默认放行——controller 路径已走 requireInternal。 */
     public NegativeFeedback getById(Long id) {
         return requireRow(id);
     }
 
     /**
      * 项目下当前生效中的负反馈记录（EXECUTED 且未解除）。
+     * <p>SEC-REV-round3 Bug#4：actor 必传，非超管需校验项目归属。
      */
-    public List<NegativeFeedback> effectiveByProject(Long projectId) {
+    public List<NegativeFeedback> effectiveByProject(Long projectId, IpdActor actor) {
+        assertProjectReadableById(projectId, actor);  // Bug#4
         return mapper.selectList(Wrappers.<NegativeFeedback>lambdaQuery()
             .eq(NegativeFeedback::getProjectId, projectId)
             .eq(NegativeFeedback::getStatus, STATUS_EXECUTED)
             .orderByDesc(NegativeFeedback::getDecidedAt));
     }
 
-    public List<NegativeFeedback> listByProject(Long projectId, String status) {
+    /** 兼容旧测试口 */
+    public List<NegativeFeedback> effectiveByProject(Long projectId) {
+        return effectiveByProject(projectId, null);
+    }
+
+    public List<NegativeFeedback> listByProject(Long projectId, IpdActor actor, String status) {
+        assertProjectReadableById(projectId, actor);  // Bug#4
         LambdaQueryWrapper<NegativeFeedback> q = Wrappers.<NegativeFeedback>lambdaQuery()
             .eq(NegativeFeedback::getProjectId, projectId)
             .orderByDesc(NegativeFeedback::getCreateTime);
@@ -300,6 +349,24 @@ public class NegativeFeedbackService {
             q.eq(NegativeFeedback::getStatus, status);
         }
         return mapper.selectList(q);
+    }
+
+    /** 兼容旧测试口 */
+    public List<NegativeFeedback> listByProject(Long projectId, String status) {
+        return listByProject(projectId, null, status);
+    }
+
+    /** Bug#4：根据 projectId 校验 actor 是否有权访问该项目。 */
+    private void assertProjectReadableById(Long projectId, IpdActor actor) {
+        if (projectId == null) return;
+        if (projectMapper == null || ipdPermission == null || actor == null) return;
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        if (!ipdPermission.canReadProject(actor.role(), actor.groupId(), project.getMainGroupId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目的负反馈记录（跨 group 拒绝）");
+        }
     }
 
     /* ========================================================================
@@ -342,6 +409,25 @@ public class NegativeFeedbackService {
         NegativeFeedback row = mapper.selectById(id);
         if (row == null) throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         return row;
+    }
+
+    /**
+     * SEC-REV-round3 Bug#4（高危 horizontal-privilege-escalation）：
+     * 校验 actor 对项目归属——非超管仅可访问本人所在 group 的项目。
+     * <p>SUPER_ADMIN 例外放行；其他内部角色按 actor.groupId() == project.mainGroupId() 判定。
+     * 缺 mapper（测试口）时降级为放行——避免破坏既有 mock 单元测试。
+     */
+    private void assertProjectReadable(NegativeFeedback row, IpdActor actor) {
+        if (row == null || row.getProjectId() == null || actor == null) return;
+        if (projectMapper == null || ipdPermission == null) return;
+        Project project = projectMapper.selectById(row.getProjectId());
+        if (project == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        boolean canRead = ipdPermission.canReadProject(actor.role(), actor.groupId(), project.getMainGroupId());
+        if (!canRead) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目的负反馈记录（跨 group 拒绝）");
+        }
     }
 
     /**
@@ -436,12 +522,16 @@ public class NegativeFeedbackService {
     }
 
     /** 审计日志：append P3-8.2 写动作（create/submit/decide/lift） */
-    private void appendAudit(String action, NegativeFeedback row, String before, String reason) {
+    private void appendAudit(String action, NegativeFeedback row, IpdActor actor, String before, String reason) {
         if (auditLogService == null) return;
         try {
+            // SEC-REV-round3 Bug#5（中危 audit-integrity）：原实现把 row.getTriggeredBy() 当操作人——
+            // 这是 creator（创建人），而非 operator（操作人）。submit/decide/lift 的真实操作人是 actor，
+            // 二者可能完全不同（例如组长跨人代签）。修复：用 actor.id() 作为 operatorName。
+            String operatorName = actor != null && actor.id() != null ? String.valueOf(actor.id()) : "system";
             auditLogService.append(AuditLog.builder()
-                .operatorName(row.getTriggeredBy() != null ? String.valueOf(row.getTriggeredBy()) : "system")
-                .operatorRole("PM")
+                .operatorName(operatorName)
+                .operatorRole(actor != null ? actor.role() : "PM")
                 .action(action)
                 .entityType("NEGATIVE_FEEDBACK")
                 .entityId(row.getId())
@@ -453,5 +543,11 @@ public class NegativeFeedbackService {
             // 审计失败不阻断主流程（与既有 StageActionService / GateReviewService 一致策略）
             log.warn("P3-8.2 audit append failed (action={}, id={}): {}", action, row.getId(), e.getMessage());
         }
+    }
+
+    /** 旧签名兼容：保留 appendAudit(action, row, before, reason) 用于未传 actor 的调用点（已无调用方，本方法 deprecated）。 */
+    @Deprecated
+    private void appendAudit(String action, NegativeFeedback row, String before, String reason) {
+        appendAudit(action, row, null, before, reason);
     }
 }

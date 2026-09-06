@@ -38,7 +38,7 @@ public class NegativeFeedbackController {
 
     @SaCheckPermission(value = "ipd:negative-feedback:create", type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
-    public ApiV1Response<NegativeFeedbackView> create(@RequestBody NegativeFeedbackCreateReq req) {
+    public ApiV1Response<NegativeFeedbackView> create(@RequestBody @jakarta.validation.Valid NegativeFeedbackCreateReq req) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.create(req, actor)));
     }
@@ -71,24 +71,24 @@ public class NegativeFeedbackController {
     @SaCheckPermission(value = "ipd:negative-feedback:query", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{id}")
     public ApiV1Response<NegativeFeedbackView> detail(@PathVariable Long id) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.getById(id)));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(NegativeFeedbackService.toView(negativeFeedbackService.getById(id, actor)));
     }
 
     @SaCheckPermission(value = "ipd:negative-feedback:query", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<NegativeFeedbackView>> list(@RequestParam Long projectId,
                                                           @RequestParam(required = false) String status) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(negativeFeedbackService.listByProject(projectId, status).stream()
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(negativeFeedbackService.listByProject(projectId, actor, status).stream()
             .map(NegativeFeedbackService::toView).toList());
     }
 
     @SaCheckPermission(value = "ipd:negative-feedback:query", type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/by-project/{projectId}/effective")
     public ApiV1Response<List<NegativeFeedbackView>> effectiveByProject(@PathVariable Long projectId) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(negativeFeedbackService.effectiveByProject(projectId).stream()
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(negativeFeedbackService.effectiveByProject(projectId, actor).stream()
             .map(NegativeFeedbackService::toView).toList());
     }
 }
