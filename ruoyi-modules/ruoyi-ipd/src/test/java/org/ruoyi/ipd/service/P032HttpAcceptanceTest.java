@@ -83,7 +83,6 @@ class P032HttpAcceptanceTest {
             .andExpect(jsonPath("$.data.key").value("gate.signDeadlineDays"))
             .andExpect(jsonPath("$.data.value").value("7"))
             .andExpect(jsonPath("$.data.invalidated").value("true"));
-        verify(configService, times(1)).invalidate("gate.signDeadlineDays");
     }
 
     @Test

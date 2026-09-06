@@ -290,4 +290,19 @@ justauth:
       client-secret: 1f7d08**********5b7**********29e
       redirect-uri: ${justauth.address}/social-callback?source=gitea
 
+--- # Actuator 监控端点
+# SEC-NEW-MED-1: dev profile 显式覆盖父基线 management.endpoints.web.exposure.include='*'（本地调试便利）
+# 父基线默认 health,info,metrics（保护 prod 安全基线）
+# dev 暴露所有端点（含 env/heapdump/shutdown/threaddump 等）便于本地排查
+# prod 走父基线或显式收窄（hook 阻断由用户手动合并）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      # SEC-NEW-MED-1: dev 调试看完整详情（DB/磁盘等），prod 走父基线 WHEN_AUTHORIZED
+      show-details: ALWAYS
+
 AGENT_ALLOWED_TABLES: ""

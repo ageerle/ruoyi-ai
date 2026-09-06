@@ -146,10 +146,21 @@ public class ProjectService {
         return targetSales.multiply(BONUS_POOL_RATE).multiply(coefficient);
     }
 
-    /** 状态机迁移（非法迁移拒绝）；归档不可再迁出 */
+    /**
+     * 状态机迁移（非法迁移拒绝）；归档不可再迁出。
+     * R8X-CONT-1 P0-1：加 actor.groupId == project.mainGroupId 横向越权防护（SUPER_ADMIN 豁免）。
+     *
+     * @param projectId    项目 ID
+     * @param target       目标状态
+     * @param operatorId   操作人 ID（来自会话）
+     * @param actorGroupId 操作人所属产品组（横向越权防护用）
+     * @param actorRole    操作人角色（SUPER_ADMIN 豁免判断）
+     */
     @Transactional(rollbackFor = Exception.class)
-    public Project changeStatus(Long projectId, String target, Long operatorId) {
+    public Project changeStatus(Long projectId, String target, Long operatorId,
+                                Long actorGroupId, String actorRole) {
         Project project = require(projectId);
+        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
         Set<String> allowed = STATUS_TRANSITIONS.getOrDefault(project.getStatus(), Set.of());
         if (!allowed.contains(target)) {
             throw new ServiceException("状态机非法迁移: " + project.getStatus() + " → " + target);
@@ -162,18 +173,30 @@ public class ProjectService {
 
     /**
      * P1-2.2：DRAFT 期内可改四基准；立项后锁定。
+     * R8X-CONT-1 P0-1：加 actor.groupId == project.mainGroupId 横向越权防护（SUPER_ADMIN 豁免）
+     *                  + before/after 审计（4 个基准字段值变化可追溯）。
      *
-     * @param projectId  项目
-     * @param patch      含四基准字段的补丁
-     * @param operatorId 操作人
+     * @param projectId    项目 ID
+     * @param patch        含四基准字段的补丁
+     * @param operatorId   操作人 ID（来自会话）
+     * @param actorGroupId 操作人所属产品组
+     * @param actorRole    操作人角色
      * @return 更新后项目
      */
     @Transactional(rollbackFor = Exception.class)
-    public Project updateBaselines(Long projectId, Project patch, Long operatorId) {
+    public Project updateBaselines(Long projectId, Project patch, Long operatorId,
+                                   Long actorGroupId, String actorRole) {
         Project project = require(projectId);
+        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
         if (!"DRAFT".equals(project.getStatus())) {
             throw new ServiceException("四基准在立项后锁定，不可直接修改（P1-2.2）");
         }
+        // R8X-CONT-1 P0-1：审计 before/after 镜像（4 个基准字段）
+        String before = AuditEventData.json(
+            "targetSalesAmount", project.getTargetSalesAmount(),
+            "targetChannelCount", project.getTargetChannelCount(),
+            "targetNps", project.getTargetNps(),
+            "targetSceneCount", project.getTargetSceneCount());
         if (patch.getTargetSalesAmount() != null) {
             project.setTargetSalesAmount(patch.getTargetSalesAmount());
         }
@@ -187,29 +210,40 @@ public class ProjectService {
             project.setTargetSceneCount(patch.getTargetSceneCount());
         }
         validateBaselinesAndTemplate(project);
+        String after = AuditEventData.json(
+            "targetSalesAmount", project.getTargetSalesAmount(),
+            "targetChannelCount", project.getTargetChannelCount(),
+            "targetNps", project.getTargetNps(),
+            "targetSceneCount", project.getTargetSceneCount());
         projectMapper.updateById(project);
-        audit(projectId, project.getName(), operatorId, "PROJECT_BASELINE_UPDATE");
+        auditBaselines(projectId, project.getName(), operatorId, before, after);
         return project;
     }
 
-    /** 阶段推进：门禁校验（BR-IPD-06，P1-5 GateEngine 接管）+ LAUNCH 前置上市日期（BR-IPD-08） */
+    /**
+     * 阶段推进：门禁校验（BR-IPD-06，P1-5 GateEngine 接管）+ LAUNCH 前置上市日期（BR-IPD-08）。
+     * R8X-CONT-1 P0-1：加 actor.groupId == project.mainGroupId 横向越权防护（SUPER_ADMIN 豁免）
+     *                  + 审计含 prior + new currentStage。
+     */
     @Transactional(rollbackFor = Exception.class)
-    public Project advanceStage(Long projectId, Long operatorId) {
+    public Project advanceStage(Long projectId, Long operatorId, Long actorGroupId, String actorRole) {
         Project project = require(projectId);
+        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
         if ("SUSPENDED".equals(project.getStatus()) || "ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("暂停/归档项目禁止推进阶段");
         }
-        String next = NEXT_STAGE.get(project.getCurrentStage());
+        String prior = project.getCurrentStage();
+        String next = NEXT_STAGE.get(prior);
         if (next == null) {
             throw new ServiceException("已处于最终阶段 LIFECYCLE");
         }
-        gateEngine.check(project, project.getCurrentStage());
+        gateEngine.check(project, prior);
         if ("LAUNCH".equals(next) && project.getLaunchDate() == null) {
             throw new ServiceException("进入 LAUNCH 前必须录入上市日期（后置指标起算原点）");
         }
         project.setCurrentStage(next);
         projectMapper.updateById(project);
-        audit(projectId, project.getName(), operatorId, "PROJECT_STAGE_" + next);
+        auditStage(projectId, project.getName(), operatorId, prior, next);
         return project;
     }
 
@@ -364,6 +398,38 @@ public class ProjectService {
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action(action).entityType("projects").entityId(id).reason(name)
             .createTime(new Date()).build());
+    }
+
+    /** R8X-CONT-1 P0-1：四基准 before/after 审计（PATCH 触发变更时镜像新旧值） */
+    private void auditBaselines(Long id, String name, Long operatorId, String before, String after) {
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId).action("PROJECT_BASELINE_UPDATE")
+            .entityType("projects").entityId(id).reason(name)
+            .beforeData(before).afterData(after)
+            .createTime(new Date()).build());
+    }
+
+    /** R8X-CONT-1 P0-1：阶段推进审计（含 prior + new currentStage） */
+    private void auditStage(Long id, String name, Long operatorId, String prior, String next) {
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId).action("PROJECT_STAGE_" + next)
+            .entityType("projects").entityId(id).reason(name)
+            .beforeData(AuditEventData.json("currentStage", prior))
+            .afterData(AuditEventData.json("currentStage", next))
+            .createTime(new Date()).build());
+    }
+
+    /**
+     * R8X-CONT-1 P0-1：横向越权防护——SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == project.mainGroupId。
+     * 复用 {@link LaunchDateChangeService#assertSameGroup} 语义，本类独享以避免 service 间循环依赖。
+     */
+    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
+        if ("SUPER_ADMIN".equals(actorRole)) {
+            return;
+        }
+        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
+            throw new ServiceException(roleLabel + "必须归属项目主组（横向越权防护）");
+        }
     }
 
     private static boolean isBlank(String v) {

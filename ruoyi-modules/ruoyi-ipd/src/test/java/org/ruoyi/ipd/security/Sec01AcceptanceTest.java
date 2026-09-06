@@ -177,12 +177,12 @@ class Sec01AcceptanceTest {
     @DisplayName("项目状态变更审计 operator 取会话身份（客户端无 operatorId 入口）")
     void projectChangeStatusAuditIdComesFromSession() {
         loginAs(MARKET_PM_ID, "MARKET_PM");
-        when(projectService.changeStatus(anyLong(), anyString(), any())).thenReturn(new Project());
+        when(projectService.changeStatus(anyLong(), anyString(), any(), any(), any())).thenReturn(new Project());
 
         projectController.changeStatus(11L, "TEAMING");
 
         ArgumentCaptor<Long> operator = ArgumentCaptor.forClass(Long.class);
-        verify(projectService).changeStatus(eq(11L), eq("TEAMING"), operator.capture());
+        verify(projectService).changeStatus(eq(11L), eq("TEAMING"), operator.capture(), any(), any());
         assertThat(operator.getValue()).isEqualTo(MARKET_PM_ID);
     }
 

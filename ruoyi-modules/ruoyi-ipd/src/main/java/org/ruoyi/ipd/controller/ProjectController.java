@@ -88,7 +88,7 @@ public class ProjectController {
     @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> changeStatus(@PathVariable Long id, @RequestParam String target) {
         IpdActor actor = ipdPermission.requireInternal();
-        return ApiV1Response.ok(projectService.changeStatus(id, target, actor.id()));
+        return ApiV1Response.ok(projectService.changeStatus(id, target, actor.id(), actor.groupId(), actor.role()));
     }
 
     /** 推进项目阶段，需 ipd:project:edit 权限 */
@@ -96,7 +96,7 @@ public class ProjectController {
     @SaCheckPermission(value = "ipd:project:edit", type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> advanceStage(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
-        return ApiV1Response.ok(projectService.advanceStage(id, actor.id()));
+        return ApiV1Response.ok(projectService.advanceStage(id, actor.id(), actor.groupId(), actor.role()));
     }
 
     /**
@@ -117,7 +117,7 @@ public class ProjectController {
             .targetNps(req.targetNps())
             .targetSceneCount(req.targetSceneCount())
             .build();
-        return ApiV1Response.ok(projectService.updateBaselines(id, patch, actor.id()));
+        return ApiV1Response.ok(projectService.updateBaselines(id, patch, actor.id(), actor.groupId(), actor.role()));
     }
 
     /** 四基准补丁。 */

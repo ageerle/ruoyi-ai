@@ -96,13 +96,13 @@ class P122AcceptanceTest {
         when(projectMapper.updateById(any(Project.class))).thenReturn(1);
         projectService.updateBaselines(71L, Project.builder()
             .targetSalesAmount(new BigDecimal("200"))
-            .targetChannelCount(2).targetNps(60).targetSceneCount(2).build(), 70L);
+            .targetChannelCount(2).targetNps(60).targetSceneCount(2).build(), 70L, 1L, "MARKET_PM");
         assertThat(draft.getTargetSalesAmount()).isEqualByComparingTo("200");
 
         Project active = Project.builder().id(72L).status("ACTIVE").delFlag("0").name("a").build();
         when(projectMapper.selectById(72L)).thenReturn(active);
         assertThatThrownBy(() -> projectService.updateBaselines(72L, Project.builder()
-            .targetSalesAmount(new BigDecimal("9")).build(), 1L))
+            .targetSalesAmount(new BigDecimal("9")).build(), 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("锁定");
     }
@@ -113,7 +113,7 @@ class P122AcceptanceTest {
         Project suspended = Project.builder().id(73L).status("SUSPENDED").delFlag("0")
             .currentStage("CONCEPT").name("s").build();
         when(projectMapper.selectById(73L)).thenReturn(suspended);
-        assertThatThrownBy(() -> projectService.advanceStage(73L, 1L))
+        assertThatThrownBy(() -> projectService.advanceStage(73L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("暂停/归档");
     }
