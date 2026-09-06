@@ -132,16 +132,25 @@ ipd_dev 库现态：before_data / after_data = longtext（2e50bb71 的迁移 SQL
 
 | 项 | 内容 | 状态 |
 |---|---|---|
-| ① | `audit_logs.seq` 去 `AUTO_INCREMENT` | 待做 |
-| ② | 新增 `audit_log_chain_heads` 单行锚表 + 登记 `tenant.excludes` | 待做 |
-| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | 待做 |
+| ① | `audit_logs.seq` 去 `AUTO_INCREMENT` | 待做（需停写窗口，与 ②③ 同 PR） |
+| ② | 新增 `audit_log_chain_heads` 单行锚表 + 登记 `tenant.excludes` | 待做（需停写窗口，与 ①③ 同 PR） |
+| ③ | `append` 改为 chain_heads 原子递增（CAS）→ 去 `insertStrategy=NEVER` → 删除死代码 `catch (DuplicateKeyException)` 整段 | 待做（需停写窗口，与 ①② 同 PR） |
 | ④′ | 载荷列 **保持 longtext**（已 apply）+ `AuditEventData.requireJson` 护栏（已提交） | **已完成** |
-| ⑤ | `verifyChain` 拆 HASH_BROKEN / GAP 两类返回 | 待做 |
-| ⑥ | **基线 DDL 回写 longtext**（§4） | 待做（设计稿未列） |
-| ⑦ | **`hash_version` 62 行修正 + 实体补字段 + 一致性契约测**（§5） | 待做（设计稿未列） |
-| ⑧ | **存量空洞 seq 610..1308 处置**（补齐或改断言语义），否则 P0-9.1 仍 9 项 FAIL | 待做（设计稿未列） |
+| ⑤ | `verifyChain` 拆 HASH_BROKEN / GAP 两类返回 | **已完成**（owner Q2 采纳 A′ 后落地：Service+record `0596c957`/`75fa56fb`、Controller 四态 `ba5c329d`、契约测 `AuditChainGapHashSplitTest` 5 例 `6d3eccf9`；绿门 24/24 Skipped=0，详见下方落地追记） |
+| ⑥ | **基线 DDL 回写 longtext**（§4） | **已完成**（`dd361ef3`，基线两列 json→longtext + 8 行规范化注释） |
+| ⑦ | **`hash_version` 62 行修正 + 实体补字段 + 一致性契约测**（§5） | 待做（owner Q3：交主协调器，涉 UPDATE append-only 历史行） |
+| ⑧ | **存量空洞 seq 610..1308 处置**（补齐或改断言语义），否则 P0-9.1 仍 9 项 FAIL | 待做（owner Q5 未决；⑤ 落地后 `verdict()=GAP` 已为该决策提供直接依据） |
 
 A′ 覆盖 G1/G3/G5/G6 + G4，**不含 G2**；G2 建议拆为独立卡，待确认有载荷检索需求后再排期（届时 payloads 拆表可作为 A′ 的增量演进，不需回退 A′）。
+
+### ⑤ 落地追记（2026-09-05 20:00–20:05 PDT，owner Q2 采纳 A′ 后）
+
+- **零破坏双出口**：`verifyChain()` 语义完全不变（返回合并去重升序 `List<Long>`），新增 `verifyChainDetailed()` 返回 `AuditChainVerifyResult(hashBroken, gaps, total)` record，`verdict()` 四态 `OK`/`HASH_BROKEN`/`GAP`/`BROKEN`。`AuditChainSymmetryTest` 6 处 `verifyChain()` 断言**一行未改仍全绿**（8/8）= 双出口零破坏验证点。
+- **Controller 四态化**：`GET /api/v1/audit-logs/verify` 保留 `broken`（=mergedBroken，兼容 P0-9.1）+ 新增 `hashBroken`/`gaps`/`total`，`chain` 由二值升四态。**硬门不放宽**：有 GAP 时 `chain` 仍非 `OK`，断言 `chain==OK` 的脚本仍 FAIL，分列只让 FAIL 可归因。
+- **契约测 `AuditChainGapHashSplitTest`（5 例，@Tag("dev")）**：核心场景②精确复刻 seq 1309 形态（链接自洽 `prev`=前一实际行 `curr`、但 seq 跳跃）→ `verdict()=GAP`、`hashBroken` 空，锁死「rebuild 治不了的 GAP 不再被误归因为哈希问题」；场景⑤同一 seq 落两桶验证 `mergedBroken` 的 `distinct()` 不可省。
+- **绿门**：`mvn -o -pl ruoyi-modules/ruoyi-ipd`（错峰+单模块+无 `-am` 无 `clean`）两轮 24/24 Skipped=0（GapHashSplit 5 + Symmetry 8 + AuditPayloadJsonGuard 7 + GateElementAuditJson 4）；`javap` 字节码确认 `AuditLogController.class` 含四态字段（消除首轮 `Nothing to compile` 盲点）。
+- **归属**：本轮代码在工作树未提交期间被兄弟会话 `git add -A` 裹挟进 R8X-CONT 系列（Service `0596c957`、record `75fa56fb`、Controller `ba5c329d`、新测 `6d3eccf9`），各 commit message 均未提 verify 四态语义 → 本追记补登归属供溯源。
+- **边界**：Controller 为透传映射，四态逻辑由 Service 层 `verdict()` 断言覆盖；真 HTTP 契约留待部署后 P0-9.1 重跑——**单测绿 ≠ HTTP 闭环**，不伪称完整验收。
 
 ---
 

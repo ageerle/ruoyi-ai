@@ -1758,3 +1758,23 @@ R8 clean compile 暴露兄弟重构链式断层。
 - 镜像 `:9`/`:307` 声明的 5 个配套文档全库无近名文件（非改名而是从未落盘），属兄弟/主协调器写权，只出补丁不代写：`全局实现审计-20260905.md`、`全局需求完整性审计-文档分册-20260905.md`、`验收追溯矩阵-20260905.md`、`vibe-kanban/接入说明.md`、`验收/蜂群并发覆盖原文-20260905.md`（最后一个是“已[全文另存]”却无产物，涉 41 行旧摘要可恢复性，需 owner 定性）。
 
 台账：`治理轮/零漂移对账-2026-09-05.md`（12 维真值表 + 8 维归零 + Z1–Z12 复验 + 回滚）。本轮全部改动为索引/文档层，无磁盘删除、无历史重写、无分支与 stash 变更。
+
+## 2026-09-05 20:00–20:05 PDT owner Q2=A′ 第⑤刀落地（第二方治理会话，续 L1501/L1625）
+
+承接本会话上段（DEF-6 方案A闭环 + DEF-9 立案 + 设计稿第二方复核），owner 通过 AskUserQuestion 给出三项决策：**Q1 U0 连接预算=基座降 20｜Q2 审计链方案=A′（否决设计稿的方案 C）｜Q3 两项新缺陷=只授权修基线 DDL（hash_version 62 行交主协调器）**。
+
+### 已落地（3 项，全部带证据）
+- **Q1**：`application.yml` 基座 `spring.datasource.dynamic.hikari.maxPoolSize` 40→20 + 8 行连接预算理由注释（`dd361ef3`）。锚点等式 4 实例×默认10=40 ≡ processlist 中 ipd_app 的 40 连接（全 Sleep 空闲态）→ 常驻连接由池预留决定、与负载无关；外推 4×40=160 > max_connections=151 必 ERROR 1040，取 20 则 4×20=80（53% 水位）。dev 若需 40 保留 dev 独有覆盖。
+- **Q3**：基线 DDL `2026-09-04-ipd-p0-tables.sql` 两列 `json`→`longtext` + 8 行规范化注释（`dd361ef3`）。使 DEF-6 对新环境成立——迁移脚本只对已存在库有效，新库从基线建库不跑 update/，不回写则缺陷完整复发（「活库已修」≠「缺陷闭环」）。
+- **Q2 A′ 第⑤刀**（verifyChain 拆 HASH/GAP）：Service+record+Controller 四态+契约测 5 例，绿门两轮 24/24 Skipped=0 + javap 字节码确认。**完整落地追记见复核文档 §7**（`验收/AUDIT-CHAIN-设计稿第二方复核-20260905.md`）。
+
+### 并发裹挟提交（归属补登）
+⑤ 代码在工作树未提交期间被兄弟会话 `git add -A` 裹挟进 R8X-CONT 系列：Service `0596c957`、record `75fa56fb`、Controller `ba5c329d`、新测 `6d3eccf9`。各 commit message 均未提 verify 四态语义（讲 ProductService 越权/bootstrap 批量化）→ 本段补登归属供溯源。上段“故意不提交”的设计稿复核 log 段落已被兄弟 `75fa56fb` 连同证伪 R32 结论一起提交入库（顾虑化解）。工作树现干净，无重复提交。
+
+### A′ 剩余（按 owner 决策与时序约束）
+- **①②③**（去 AUTO_INCREMENT + chain_heads 锚表 + append CAS）：**必须同 PR 且需停写窗口 + 4 实例统一升级**——去 AUTO_INCREMENT 后仍在跑的旧 jar（`insertStrategy=NEVER` 注解不带 seq）写审计会立刻失败并连带业务事务回滚（审计与业务同 `@Transactional`）。**待请示 owner 定时机**（当前 4 实例中 16050 `def6.jar` 不含护栏且 ruoyi-ipd/system 双双陈旧，是活的 DEF-1 缺口，见复核文档 Q7）。
+- **⑦** hash_version 62 行修正：owner Q3 交主协调器（涉 UPDATE append-only 历史行，可能违反 AC-AUD-01 只追加语义 + DEF-5 库级 grant 未处置），素材备齐于复核文档 §5（含 D1 落地前三前置）。
+- **⑧** 存量空洞 seq 610..1308：owner Q5 未决；⑤ 落地后 `verdict()=GAP` 为该决策提供直接依据（建议改 P0-9.1 断言语义，GAP 降级为「已知历史空洞」告警，不伪造补行）。
+
+### 边界
+本段全部为文档登记（工作树代码已被兄弟提交，无重复提交）；Controller 透传映射的真 HTTP 契约留待部署后 P0-9.1 重跑，**单测绿≠HTTP 闭环**，未伪称 A′ 完整验收。看板 DEF-9 卡按单一写入者纪律不代翻，证据交主协调器消化。
