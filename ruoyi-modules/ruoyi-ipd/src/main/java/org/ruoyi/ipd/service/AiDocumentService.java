@@ -112,7 +112,7 @@ public class AiDocumentService {
      * @param title         新标题（空则沿用 HEAD）
      * @return 新版本行 v(n+1)（status=GENERATED，需重新人工审核）
      */
-    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#documentId")
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public AiDocument revise(Long documentId, Long baseVersionId, String newContent,
                              String title, Long operatorId) {
@@ -151,7 +151,7 @@ public class AiDocumentService {
      *
      * @return 审核后（或幂等时既有）行
      */
-    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#versionId")
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public AiDocument review(Long versionId, Long operatorId) {
         AiDocument row = mapper.selectById(versionId);
@@ -191,7 +191,7 @@ public class AiDocumentService {
      * @return 归档后行
      * @throws IpdBusinessException STATE_CONFLICT 未审核 / 已归档 / 已拒绝
      */
-    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#versionId")
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public AiDocument archive(Long versionId, Long operatorId) {
         AiDocument row = mapper.selectById(versionId);
@@ -235,7 +235,7 @@ public class AiDocumentService {
      * @param operatorId 操作者（写入 reviewed_by 兜底；幂等拒绝时不覆盖）
      * @param comment    拒绝原因（必填；落 review_comment 审计完整性）
      */
-    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#versionId")
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public AiDocument reject(Long versionId, Long operatorId, String comment) {
         requireArg(comment != null && !comment.isBlank(), "拒绝原因必填");
