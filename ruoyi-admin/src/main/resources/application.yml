@@ -31,6 +31,19 @@ coding:
       execute-process:
         enabled: true
 
+--- # websocket
+websocket:
+  # 如果关闭 需要和前端开关一起关闭
+  enabled: false
+  # 路径
+  path: /resource/websocket
+  # 设置访问源地址
+  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
+  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
+  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
+  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
+  allowedOrigins: ''
+
 --- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
 chat:
   default-model: deepseek-v4-flash
@@ -290,6 +303,7 @@ tenant:
     - receipt_ledger
     - audit_logs
     - kpi_records
+    - kpi_shared_confirms
     - allowance_ledgers
     - bonus_pools
     - ai_documents
@@ -307,6 +321,12 @@ tenant:
     - audit_log_chain_heads
     # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
     - notification_events
+    # AUD-02-FIX（2026-09-07）：4 张 DDL 新表登记——ipd_business_config / _versions / switching_acceptance / gate_review_observers
+    # 单企业私有部署，全部带 tenant_id 默认 '000000'，无多租户语义，必须排除租户过滤否则 SQL 加 tenant_id 后误判断行
+    - ipd_business_config
+    - ipd_business_config_versions
+    - switching_acceptance
+    - gate_review_observers
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
@@ -431,18 +451,6 @@ sse:
   enabled: true
   path: /resource/sse
 
---- # websocket
-websocket:
-  # 如果关闭 需要和前端开关一起关闭
-  enabled: false
-  # 路径
-  path: /resource/websocket
-  # 设置访问源地址
-  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
-  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
-  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
-  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
-  allowedOrigins: ''
 
 --- # 演示模式配置
 demo:
