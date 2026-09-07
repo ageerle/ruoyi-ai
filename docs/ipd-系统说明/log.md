@@ -2661,3 +2661,42 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - V10/V11/V12 移动端/暗色 token/A11y
 - update_task 流程系统化（PostToolUse hook）
 - qa04 真实问题清单（22 DDL 漏列 + 12 Entity 漏映射 + 1 缺 @TableLogic + 1 缺 del_flag）
+
+## 2026-09-06（晚·五）7 agent 并发 + 4 道安全审查闭环
+
+用户原话「R6 + P1 剩余 + P2 + 49 页 + 18 ZK 矛盾 + 235 AC 真验证」→ 派 7 agent 并发。
+
+| agent | commit | 项 | 测数 |
+|---|---|---|---|
+| A1c2e501 | `b377ffc8`+`17fbcbb4` | R6 update_task 自动同步 PostToolUse hook | 28/100 命中 plan |
+| A0a97fda | `8075e11a`+`f2683ca` | P1 剩余 6 项（P1-5.2/P1-9.2/L08/G3/V1/V10/V11） | 24+12 新测 |
+| A4c3f5fd | `772b0f1a`+`8ca2da9a`+`ef431c90` | P2 4 卡（P2-1.3/2.3/2.1/3.1） | 33 新测 |
+| A66205aa | 10 commit `0282342`~`670c906` | 前端 49 页 7 ❌ 真实现 | 426/1/0 零回归 |
+| A17a0ba5 | 18 commit `c796c8ed`~`c87bcb82` | 18 项 ZK 矛盾真修订 | — |
+| Abb4c710 | qa08 脚本+3 JSON | 235 AC 真验证 | 17.3%→20.9% |
+| A1a6e022 | `8501cf76`+`9c6a2fe3`+`403b6ec6` | qa04 真实问题 41 → 0 | errors 41→0 |
+
+**累计本会话 ~55 commit**（主 50 + 兄弟流 5）：
+- 6 张 P0 路线图 100% 闭环
+- 5 张 P1 本批闭环（HIGH-1.2/3.2 + MEDIUM-1.3/2.2/2.3 + P1-5.2/P1-9.2/L08/G3/V1/V10/V11）
+- 5 张 P2 闭环（P2-1.3/2.1/2.3/3.1/4.1 兄弟流部分）
+- 14 张 P3 兄弟流 ROOT-R1~R5 同步实装
+- 18 项 ZK 矛盾勘误+登记
+- qa04 errors 41→0 + qa08 PASS 17.3%→20.9%
+- 49 页 7 ❌ 占位→0
+- V1/V4/V6/V7/V8/V9 前端 5 子项全闭环
+- R6 update_task 自动同步
+
+**4 道安全审查发现**（本批 commit 安全副作用）：
+1. PersonService 同组校验+资源限制 — 等兄弟流 A4c3f5fd 收尾
+2. PersonSyncService audit JSON 化+active 守卫+幂等复合键+并发+注入防护 — 同上
+3. BidP231Controller 注解层角色+project 可见性 — 同上
+4. (1) 高优，3 中优 — 兄弟流 A4c3f5fd 后续 commit 修
+
+**未闭环**（仍为兄弟流后续）：
+- A1a6e022 中 4 道安全审查收尾（Person/BidP231 注解层守卫与守卫链完整化）
+
+**R6 update_task 真实根治**：
+- post-commit-update-kanban.cjs 解析 commit subject 卡号 + status 关键字
+- batch-sync-commits.py 100 commit 扫描 28 命中
+- 73 张不在 plan 跳过（命名体系不匹配：HIGH-*/ROOT-R*/GOVERNANCE-*）
