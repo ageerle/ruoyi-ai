@@ -44,6 +44,54 @@ DDL_FILES_INC = [
 ]
 # legacy-import 只取其 ADD COLUMN（含数据导入语句，整文件不可重放）
 DDL_FILES_ALTER_ONLY = ["2026-09-05-ipd-legacy-import.sql"]
+# batch_missing_tables 是 ipd 12 张缺表的批量补缺（文件名不含 ipd 但内容是 ipd 表）
+DDL_FILES_BATCH_HIDDEN = ["batch_missing_tables.sql"]
+
+# 自动扫描根目录（保留白名单作为 priority override，避免误吞）
+SQL_SCAN_DIRS = [
+    os.path.join(REPO, "docs", "script", "sql", "update"),
+    os.path.join(REPO, "docs", "script", "sql"),
+]
+SQL_SCAN_KEYWORDS = re.compile(r"create\s+table\b|alter\s+table\b|insert\s+into\b", re.I)
+
+
+def auto_discover_ddl_files():
+    """自动扫描 sql 目录中含 CREATE/ALTER/INSERT 关键字、且属于 ipd 模块的文件。
+
+    过滤规则：
+      1. 文件名以 'ipd-' 开头 OR 文件名匹配白名单常量（DDL_FILES_BATCH_HIDDEN）
+         —— 防止跨模块污染：cms-menu / knowledge / receipt_ledger 等非 ipd 文件不进
+      2. 文件内容至少含 CREATE TABLE / ALTER TABLE / INSERT INTO 任一关键字
+      3. 排除顶层白名单（DDL_FILES_MAIN/INC/ALTER_ONLY）—— 它们由 priority override 独立加载
+
+    返回：相对于 DDL_DIR 的文件名列表（已排序去重）。
+    """
+    whitelist_known = set(DDL_FILES_MAIN + DDL_FILES_INC + DDL_FILES_ALTER_ONLY)
+    seen, out = set(), []
+    for sql_dir in SQL_SCAN_DIRS:
+        if not os.path.isdir(sql_dir):
+            continue
+        for f in sorted(os.listdir(sql_dir)):
+            if not f.endswith(".sql"):
+                continue
+            # ipd 模块归属：文件名含 'ipd-' 子串（实际以日期前缀开头，如 2026-09-06-ipd-...）
+            # 或在隐性白名单（如 batch_missing_tables.sql 补 ipd 缺表但无 ipd 前缀）
+            if not ("ipd-" in f.lower() or f in DDL_FILES_BATCH_HIDDEN):
+                continue
+            if f in whitelist_known:
+                continue
+            rel = os.path.relpath(os.path.join(sql_dir, f), DDL_DIR)
+            if rel in seen:
+                continue
+            try:
+                text = open(os.path.join(sql_dir, f), encoding="utf-8", errors="ignore").read()
+            except Exception:
+                continue
+            if not SQL_SCAN_KEYWORDS.search(text):
+                continue
+            seen.add(rel)
+            out.append(rel)
+    return out
 
 JAVA_TYPE_OK = {
     "bigint": {"Long", "long"},
@@ -129,6 +177,9 @@ def parse_create_tables(sql, tables):
 
 def parse_alters(sql, tables, fname):
     """解析 ADD COLUMN 列清单与 ADD UNIQUE KEY。"""
+    # 预处理：抽出动态 SQL `SET @sql := '...'` 字符串中的 ALTER/CREATE 语句，
+    # 拼接成可被正则匹配的形式（动态 ALTER 是 W4-Defence-G1 卡引入的幂等包装）
+    sql = _unwrap_dynamic_sql(sql)
     for tname, body in re.findall(r"alter\s+table\s+`?(\w+)`?\s+(.*?);", sql, re.S | re.I):
         t = tables.setdefault(tname, {"columns": OrderedDict(), "unique_keys": {}, "source": []})
         body_nc = strip_comments(body)
@@ -156,14 +207,46 @@ def parse_alters(sql, tables, fname):
                 t["unique_keys"][m.group(1)] = cols
 
 
+def _unwrap_dynamic_sql(sql):
+    """解开 SET @sql := '<ALTER/CREATE 文本>' 形式的动态 SQL 包装。
+
+    幂等 ALTER/CREATE 常用 '...ALTER TABLE x ADD COLUMN y...' 字符串嵌入，
+    把所有动态字符串中的 SQL 提取出来直接拼接到顶层，便于正则匹配。
+    """
+    out = sql
+    # 匹配 SET @var := '...'; 形式（MySQL 5.7+ 字符串内 '' 转义为单引号）
+    for m in re.finditer(r"SET\s+@\w+\s*:=\s*'((?:[^']|'')*)'\s*;", out, re.I):
+        inner = m.group(1).replace("''", "'").strip()
+        if re.search(r"^\s*(alter|create)\s+(table|database)\b", inner, re.I):
+            out = out.replace(m.group(0), inner + ";")
+    return out
+
+
 def load_ddl():
     tables = OrderedDict()
-    # 先解析全部 CREATE TABLE（主文件 26 张 + 增量文件 3 张 IF NOT EXISTS）
-    for f in DDL_FILES_MAIN + DDL_FILES_INC:
-        parse_create_tables(open(os.path.join(DDL_DIR, f), encoding="utf-8").read(), tables)
+    # 1) 自动扫描（glob 全量 + 关键字过滤）
+    auto_files = auto_discover_ddl_files()
+    # 2) 合并白名单 override + 自动扫描（去重保序：白名单在前保证 CREATE 优先）
+    create_files = list(OrderedDict.fromkeys(
+        list(DDL_FILES_MAIN) + list(DDL_FILES_INC) + list(DDL_FILES_ALTER_ONLY)
+        + list(DDL_FILES_BATCH_HIDDEN) + auto_files
+    ))
+    alter_files = list(OrderedDict.fromkeys(
+        list(DDL_FILES_INC) + list(DDL_FILES_ALTER_ONLY)
+        + list(DDL_FILES_BATCH_HIDDEN) + auto_files
+    ))
+    # 先解析全部 CREATE TABLE（主文件 26 张 + 增量文件 IF NOT EXISTS）
+    for f in create_files:
+        path = os.path.join(DDL_DIR, f)
+        if not os.path.exists(path):
+            continue
+        parse_create_tables(open(path, encoding="utf-8").read(), tables)
     # 再解析增量 ALTER（legacy-import 只取 ADD COLUMN / ADD UNIQUE KEY）
-    for f in DDL_FILES_INC + DDL_FILES_ALTER_ONLY:
-        parse_alters(open(os.path.join(DDL_DIR, f), encoding="utf-8").read(), tables, f)
+    for f in alter_files:
+        path = os.path.join(DDL_DIR, f)
+        if not os.path.exists(path):
+            continue
+        parse_alters(open(path, encoding="utf-8").read(), tables, f)
     return tables
 
 
@@ -399,10 +482,22 @@ def main():
     live_idx = load_live_indexes(args.live_indexes)
     drift = crosscheck(tables, live_cols, live_idx, warns)
 
+    # 自动扫描统计（用于可观测 + 防白名单漏扫的早期发现）
+    auto_files = auto_discover_ddl_files()
+    n_create = sum(1 for t in tables.values() if "create" in t["source"])
+    n_alter = sum(1 for t in tables.values() if "added_by" in {c.get("added_by") for c in t["columns"].values()})
+
     result = {
         "generated_by": "qa04_ddl_entity_mapping.py",
-        "scope": {"ddl_main": DDL_FILES_MAIN, "ddl_incremental": DDL_FILES_INC + DDL_FILES_ALTER_ONLY,
+        "scope": {"ddl_main": DDL_FILES_MAIN,
+                  "ddl_inc_whitelist": DDL_FILES_INC + DDL_FILES_ALTER_ONLY,
+                  "ddl_auto_discovered": auto_files,
                   "domain_dir": os.path.relpath(DOMAIN_DIR, REPO)},
+        "discovery": {
+            "auto_files_count": len(auto_files),
+            "create_table_count": n_create,
+            "alter_column_count": n_alter,
+        },
         "summary": {
             "tables_in_ddl": len(tables), "entities": len(ents),
             "matched": len(rows), "errors": len(errors), "warns": len(warns),
@@ -414,8 +509,8 @@ def main():
     }
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(result, fh, ensure_ascii=False, indent=2)
-    print("tables=%d entities=%d matched=%d errors=%d warns=%d" % (
-        len(tables), len(ents), len(rows), len(errors), len(warns)))
+    print("auto_discovered_ddl=%d tables=%d entities=%d matched=%d errors=%d warns=%d" % (
+        len(auto_files), len(tables), len(ents), len(rows), len(errors), len(warns)))
     for e in errors:
         print("ERROR %s %s: %s" % (e["code"], e.get("table", ""), e["detail"]))
     sys.exit(1 if errors else 0)
