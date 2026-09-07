@@ -16,6 +16,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * P4-2.2 生成调用器：OpenAI 兼容 chat/completions 非流式单轮。
@@ -89,19 +92,21 @@ public class AiChatClient {
     public AiChatResult chat(AiTestConfig cfg, String prompt, Integer maxTokens, BigDecimal temperature) {
         long start = System.currentTimeMillis();
         try {
-            StringBuilder body = new StringBuilder("{\"model\":\"").append(jsonEscape(cfg.modelName()))
-                .append("\",\"messages\":[{\"role\":\"user\",\"content\":\"").append(jsonEscape(prompt))
-                // P4-2.2 真机验收修复：此处必须闭 messages 数组——缺 "]" 产生非法 JSON，
-                // MiniMax 返回 400 Syntax error（单测 Mock 了 chatClient，无法暴露拼串缺陷）
-                .append("\"}]");
+            // P4-2.2 收口：改用 Jackson Map→JSON 序列化，消除手工拼串 + 自写 jsonEscape 带来的
+            // 转义不全 / 结构漂移 / messages 数组闭合遗漏 等历史缺陷（dea95fc0 / baf90683）。
+            // LinkedHashMap 保 key 顺序，便于日志 reqHash 稳定可对账。
+            Map<String, Object> bodyMap = new LinkedHashMap<>();
+            bodyMap.put("model", cfg.modelName());
+            bodyMap.put("messages", List.of(Map.of("role", "user", "content", prompt)));
             if (maxTokens != null && maxTokens > 0) {
-                body.append(",\"max_tokens\":").append(maxTokens);
+                bodyMap.put("max_tokens", maxTokens);
             }
             if (temperature != null) {
-                body.append(",\"temperature\":").append(temperature.toPlainString());
+                bodyMap.put("temperature", temperature);
             }
-            body.append('}');
-            String reqBody = body.toString();
+            // writeValueAsString 失败属于协议层异常（无法构造请求体），由下方 catch (Exception e)
+            // 统一归类为 UNSUPPORTED_PROTOCOL（与 Jackson 解析响应错同源处理）。
+            String reqBody = JSON.writeValueAsString(bodyMap);
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(stripTrailingSlash(cfg.baseUrl()) + "/chat/completions"))
                 .timeout(Duration.ofMillis(cfg.timeoutMs()))
@@ -161,26 +166,6 @@ public class AiChatClient {
     private static String stripTrailingSlash(String s) {
         if (s == null) return "";
         return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
-    }
-
-    private static String jsonEscape(String s) {
-        if (s == null) return "";
-        StringBuilder sb = new StringBuilder(s.length() + 8);
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            switch (c) {
-                case '"' -> sb.append("\\\"");
-                case '\\' -> sb.append("\\\\");
-                case '\n' -> sb.append("\\n");
-                case '\r' -> sb.append("\\r");
-                case '\t' -> sb.append("\\t");
-                default -> {
-                    if (c < 0x20) sb.append(String.format("\\u%04x", (int) c));
-                    else sb.append(c);
-                }
-            }
-        }
-        return sb.toString();
     }
 
     /** SHA-256 短指纹（16 hex chars ≈ 64 bit），用于日志中请求/响应配对，不暴露原文。 */
