@@ -123,6 +123,8 @@ public interface IpdPermissionCode {
     String OPERATION_PRODUCT_QUERY = "ipd:product:query";
 
 
+    /** P2-3.1：校验型创建招标单（MARKET_PM/GROUP_LEADER/SUPER_ADMIN） */
+    String OPERATION_BID_INVITATION_CREATE = "ipd:bid-invitation:create";
     /** P2-3.3：超管指派 */
     String OPERATION_BID_INVITATION_ADMIN_ASSIGN = "ipd:bid-invitation:admin-assign";
 

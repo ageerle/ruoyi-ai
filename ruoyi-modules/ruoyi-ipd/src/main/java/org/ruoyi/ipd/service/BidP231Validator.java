@@ -1,18 +1,22 @@
 package org.ruoyi.ipd.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BidInvitation;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.dto.CreateBidInvitationRequest;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdPermission;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * P2-3.1 招标单校验型创建（P2-3.1；AC-TEAM-01/02；BR-TEAM-03）。
@@ -23,6 +27,7 @@ import java.util.Date;
  *
  * <p>校验规则（与 CreateBidInvitationRequest 注解对称，服务端再保一次防绕过）：
  * <ul>
+ *   <li>projectId 存在 + 归属校验：非 GROUP_LEADER 角色时 actor.groupId() == project.mainGroupId()（超管跳过）</li>
  *   <li>mode ∈ {ONE_TO_ONE, PUBLIC}；否则 PARAM_INVALID</li>
  *   <li>ONE_TO_ONE：targetPersonId 必填</li>
  *   <li>PUBLIC：targetPersonId 必须 null；requiredLevel/slaDays 可选且写扩展字段</li>
@@ -31,12 +36,31 @@ import java.util.Date;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(rollbackFor = Exception.class)
 public class BidP231Validator {
 
     private final BidInvitationMapper bidInvitationMapper;
     private final AuditLogService auditLogService;
+    /** P2-3.1 SECURITY-FIX：project 可见性校验（high authorization） */
+    private final ProjectMapper projectMapper;
+    private final IpdPermission ipdPermission;
+
+    /** 测试口：仅 mapper 单注入（保持既有 P231 单测可运行） */
+    public BidP231Validator(BidInvitationMapper bidInvitationMapper, AuditLogService auditLogService) {
+        this(bidInvitationMapper, auditLogService, null, null);
+    }
+
+    /** Spring 装配入口（新增 ProjectMapper + IpdPermission 注入；HIGH 授权修复） */
+    @Autowired
+    public BidP231Validator(BidInvitationMapper bidInvitationMapper,
+                            AuditLogService auditLogService,
+                            ProjectMapper projectMapper,
+                            IpdPermission ipdPermission) {
+        this.bidInvitationMapper = bidInvitationMapper;
+        this.auditLogService = auditLogService;
+        this.projectMapper = projectMapper;
+        this.ipdPermission = ipdPermission;
+    }
 
     /** mode 枚举常量。 */
     public static final String MODE_ONE_TO_ONE = "ONE_TO_ONE";
@@ -46,6 +70,8 @@ public class BidP231Validator {
         if (req == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "请求体不能为空");
         }
+        assertProjectVisible(req.getProjectId(), operator);
+
         String mode = req.getMode();
         if (!MODE_ONE_TO_ONE.equals(mode) && !MODE_PUBLIC.equals(mode)) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
@@ -99,6 +125,29 @@ public class BidP231Validator {
         log.info("P2-3.1 createValidated: invitationId={} mode={} operator={}",
             inv.getId(), mode, operator.id());
         return inv;
+    }
+
+    /**
+     * HIGH authorization：operator 对 req.projectId 可见性校验。
+     * <p>规则：project 不存在 → NOT_FOUND；非 GROUP_LEADER 角色（SUPPER_ADMIN 例外放行），
+     * 须 actor.groupId() == project.mainGroupId()，否则 FORBIDDEN（跨组拒绝）。
+     * <p>测试口（projectMapper null）降级为放行，避免破坏既有 mock 单测。
+     */
+    private void assertProjectVisible(Long projectId, IpdActor operator) {
+        if (projectId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 必填");
+        }
+        if (projectMapper == null || ipdPermission == null || operator == null) return;
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        if ("GROUP_LEADER".equals(operator.role())) return;
+        if ("SUPER_ADMIN".equals(operator.role())) return;
+        if (!Objects.equals(project.getMainGroupId(), operator.groupId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN,
+                "无权在该项目下创建招标单（跨 group 拒绝）");
+        }
     }
 
     /** 扩展字段追加到 content 末尾（隐藏 JSON 片段，前端透明）。 */

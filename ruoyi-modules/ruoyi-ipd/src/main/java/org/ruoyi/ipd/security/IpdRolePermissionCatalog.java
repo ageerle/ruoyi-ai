@@ -81,7 +81,9 @@ public final class IpdRolePermissionCatalog {
 
     /** 仅市场侧可建项（对齐 requireProjectCreator）。 */
     private static final Set<String> PROJECT_CREATE = unique(
-        IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE
+        IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE,
+        // P2-3.1：校验型创建招标单（market PM 招标组队；与 requireProjectCreator 对齐）
+        IpdPermissionCode.OPERATION_BID_INVITATION_CREATE
     );
 
     /** 仅 SUPER_ADMIN：Gate/证书模板写 + 系统参数 + 全量审计 + 归档 purge + 删除终审。 */

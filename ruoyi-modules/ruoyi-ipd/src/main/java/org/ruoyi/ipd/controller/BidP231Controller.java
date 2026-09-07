@@ -1,12 +1,15 @@
 package org.ruoyi.ipd.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.dto.CreateBidInvitationRequest;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.BidP231Validator;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +30,8 @@ public class BidP231Controller {
 
     /**
      * P2-3.1 校验型创建招标单。
-     * <p>权限：内部用户（requireInternal）。
+     * <p>权限：注解层 {@code ipd:bid-invitation:create}（MARKET_PM/GROUP_LEADER/SUPER_ADMIN）
+     * + service 层 {@code requireProjectCreator()} + project 归属校验（项目 mainGroupId 与 actor.groupId 同组；超管/组长跳过）。
      * <p>字段校验：
      * <ul>
      *   <li>projectId/mode/title/expireAt 必填（mode ∈ ONE_TO_ONE/PUBLIC）</li>
@@ -36,8 +40,9 @@ public class BidP231Controller {
      * </ul>
      */
     @PostMapping("/p231-create")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BID_INVITATION_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<BidInvitation> createValidated(@Valid @RequestBody CreateBidInvitationRequest req) {
-        IpdActor operator = permission.requireInternal();
+        IpdActor operator = permission.requireProjectCreator();
         return ApiV1Response.ok(bidP231Validator.createValidated(req, operator));
     }
 }
