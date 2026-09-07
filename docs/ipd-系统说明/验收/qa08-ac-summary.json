@@ -1,24 +1,24 @@
 {
   "card": "QA-08",
-  "generated_at": "2026-09-07T13:04:28+08:00",
+  "generated_at": "2026-09-07T16:31:37+08:00",
   "total_acs": 249,
-  "pass": 52,
+  "pass": 55,
   "partial": 149,
-  "fail": 0,
-  "blocked": 48,
-  "pass_rate": 20.9,
+  "fail": 1,
+  "blocked": 44,
+  "pass_rate": 22.1,
   "env": {
     "backend": "http://localhost:16039",
     "mysql": "127.0.0.1:13306/ipd_dev",
-    "auth_chain_broken": "audit_log_chain_heads 缺表（影响 16039 登录）"
+    "auth_chain": "audit_log_chain_heads 已落库；HTTP 探针走 bootstrap 真登录（只读）；ipd-admin must_change_pwd 已置 0 作超管正对照夹具，其余 demo 保持首登态作 20003 探针"
   },
   "by_section": {
     "P0": {
       "total": 27,
-      "pass": 9,
+      "pass": 13,
       "partial": 10,
       "fail": 0,
-      "blocked": 8
+      "blocked": 4
     },
     "P1": {
       "total": 42,
@@ -43,21 +43,22 @@
     },
     "P4": {
       "total": 40,
-      "pass": 9,
+      "pass": 8,
       "partial": 30,
-      "fail": 0,
+      "fail": 1,
       "blocked": 1
     }
   },
   "by_probe_type": {
-    "SQL+HTTP": 1,
-    "SQL": 73,
+    "SQL+HTTP": 2,
+    "SQL": 72,
     "REPORT_REF": 8,
-    "DEPENDENCY": 143,
+    "DEPENDENCY": 137,
     "CODE_GREP": 9,
-    "HTTP": 3,
-    "OPENAPI": 5,
+    "HTTP": 9,
+    "HTTP+OPENAPI": 1,
     "SQL+DEPENDENCY": 1,
-    "SQL+CODE_GREP": 6
+    "SQL+CODE_GREP": 6,
+    "OPENAPI": 4
   }
 }

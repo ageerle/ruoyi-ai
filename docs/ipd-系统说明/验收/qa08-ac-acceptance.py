@@ -16,9 +16,9 @@ QA-08 235 条 AC 自动真验证（机械跑，非手工判定）。
   FAIL        - 机器可证 + 实测不符合
   BLOCKED     - 依赖项未到位（前端 P0-10.* 未拉入/兄弟流 WIP/外部依赖/后端 16039 auth 链路坏）
 
-注：后端 16039 登录侧报错（ipd_dev.audit_log_chain_heads 表不存在），
-    所有需 Bearer Token 的 HTTP 探针降级为「接口契约存在」OPENAPI-CHECK（swagger 200），
-    仍不可验的 → BLOCKED。SQL 探针走 ipd_app@127.0.0.1:13306 直连，只读。
+注：2026-09-07 起登录链路已修复（audit_log_chain_heads 已落库 + bootstrap 凭据），
+    AC-AUTH-08~11 / AC-AUD-02/04/05 走真 Bearer Token 只读 HTTP 探针（写腿留 QA-03 矩阵）。
+    登录不可用的环境下自动降级 BLOCKED / OPENAPI-CHECK。SQL 探针走 ipd_app@127.0.0.1:13306 直连，只读。
 """
 import argparse
 import hashlib
@@ -111,6 +111,66 @@ def http_get(path: str, token: str = None, timeout: int = 5):
             return e.code, None
     except Exception as e:
         return -1, {"error": str(e)[:120]}
+
+
+def http_post_json(path: str, payload: dict, timeout: int = 8):
+    """POST JSON 探针；返回 (status_code, body_dict_or_None)。"""
+    import urllib.request
+    import urllib.error
+    r = urllib.request.Request(
+        BACKEND + path, method="POST",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(r, timeout=timeout) as resp:
+            try:
+                body = json.loads(resp.read().decode())
+            except Exception:
+                body = None
+            return resp.status, body
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.loads(e.read().decode())
+        except Exception:
+            return e.code, None
+    except Exception as e:
+        return -1, {"error": str(e)[:120]}
+
+
+# 2026-09-07 解锁：audit_log_chain_heads 已落库（qa08 前轮修复），16039 登录链路已通。
+# 凭据读 .codex/ipd-dev/config/bootstrap-accounts.json（仓库内在库 dev 凭据，非新增明文）。
+_token_cache: dict = {}
+
+
+def login(username: str):
+    """16039 真登录取 Bearer token；bootstrap 缺失/登录失败返 None（调用方降级 BLOCKED）。"""
+    if username in _token_cache:
+        return _token_cache[username]
+    token = None
+    try:
+        boot = REPO / ".codex/ipd-dev/config/bootstrap-accounts.json"
+        accounts = {a["username"]: a["password"] for a in json.loads(boot.read_text())}
+    except Exception:
+        accounts = {}
+    if username in accounts:
+        s, body = http_post_json("/api/v1/auth/login",
+                                 {"username": username, "password": accounts[username]})
+        if s == 200 and isinstance(body, dict):
+            token = ((body.get("data") or {}).get("token")) or None
+    _token_cache[username] = token
+    return token
+
+
+def classify_access(status: int, body) -> str:
+    """访问三分类：deny=拒绝/无数据；leak=放行且 data 非空（泄露/可看）；error=探针或服务异常。"""
+    if status == 200 and isinstance(body, dict):
+        data = body.get("data")
+        if body.get("code") in (0, "0", 200) and data not in (None, [], {}, ""):
+            return "leak"
+        return "deny"
+    if status in (401, 403, 404):
+        return "deny"
+    return "error"
 
 
 # ---------------- AC 解析 ----------------
@@ -283,13 +343,23 @@ def probe_one(ac: dict, cur) -> dict:
                             "by_level": _db_state["persons_by_level"]}
         return out
     if aid == "AC-AUTH-02":
-        # must_change_pwd 字段存在 + 20003 拦截（已闭环）→ PARTIAL（依赖 HIGH-2）
+        # must_change_pwd 字段存在 + 20003 拦截真证（2026-09-07 解锁）：
+        # ipd-leader 保持首登未改密状态（must_change_pwd=1），拿其 token 调普通业务口应被 20003 拦截
         cur.execute(f"""SELECT COUNT(*) FROM information_schema.columns
             WHERE table_schema='{MYSQL_DB}' AND table_name='persons' AND column_name='must_change_pwd'""")
         v = cur.fetchone()[0]
-        out["status"] = "PARTIAL" if v else "FAIL"
-        out["probe_type"] = "SQL"
-        out["evidence"] = {"must_change_pwd_column": bool(v)}
+        tok_l = login("ipd-leader")
+        blocked_code = None
+        if tok_l and v:
+            s, b = http_get("/api/v1/projects", token=tok_l)
+            if isinstance(b, dict):
+                blocked_code = b.get("code")
+        out["status"] = "PASS" if (v and blocked_code == 20003) else ("PARTIAL" if v else "FAIL")
+        out["probe_type"] = "SQL+HTTP"
+        out["evidence"] = {"must_change_pwd_column": bool(v),
+                            "first_login_probe_status": blocked_code,
+                            "note": "首登未改密账号调业务口实测 20003 拦截" if blocked_code == 20003
+                                    else "拦截腿未实证（token 不可用或非 20003），字段腿已验"}
         return out
     if aid in ("AC-AUTH-03", "AC-AUTH-04", "AC-AUTH-05", "AC-AUTH-06"):
         # 改密腿/企微 Mock 扫码/离职冻结：依赖外部依赖 + UI
@@ -310,10 +380,80 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"actuator_health_status": s, "note": "未认证即 401 = token 校验生效"}
         return out
     if aid in ("AC-AUTH-08", "AC-AUTH-09", "AC-AUTH-10", "AC-AUTH-11"):
-        # 越权矩阵：依赖 HTTP 登录链路（16039 audit_log_chain_heads 缺表导致 90001）→ BLOCKED
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "后端 16039 登录侧报错（audit_log_chain_heads 表缺），HTTP 越权矩阵暂不可验；矩阵历史 QA-03 v7 108/108 绿保留"}
+        # 越权矩阵 HTTP 真探针（2026-09-07 解锁；全部只读 GET，写腿留 QA-03 矩阵）
+        tok_pm = login("ipd-market")       # 普通 PM（MARKET_PM，组 900001）
+        tok_leader = login("ipd-leader")   # 组长（GROUP_LEADER，组 900001）
+        tok_admin = login("ipd-admin")     # 超管（正对照）
+        if not (tok_pm and tok_leader and tok_admin):
+            out["status"] = "BLOCKED"
+            out["probe_type"] = "DEPENDENCY"
+            out["evidence"] = {"reason": "16039 登录失败（服务不可达或凭据轮换），越权矩阵降级；历史 QA-03 v7 108/108 绿保留"}
+            return out
+        # 夹具自 DB 自取：跨组项目（成员组 ≠ 900001）/ 组长同组项目
+        def _pid_nullable(sql):
+            cur.execute(sql)
+            row = cur.fetchone()
+            return row[0] if row else None
+        other_pid = _pid_nullable("""SELECT pm.project_id FROM project_members pm
+            JOIN persons p ON p.id = pm.person_id
+            WHERE pm.del_flag='0' AND pm.exit_date IS NULL
+              AND (p.group_id IS NULL OR p.group_id <> 900001)
+              AND pm.project_id IN (SELECT id FROM projects WHERE del_flag='0')
+            ORDER BY pm.project_id LIMIT 1""")
+        own_pid = _pid_nullable("""SELECT pm.project_id FROM project_members pm
+            JOIN persons p ON p.id = pm.person_id
+            WHERE pm.del_flag='0' AND pm.exit_date IS NULL AND p.group_id = 900001
+            ORDER BY pm.project_id LIMIT 1""")
+        if aid == "AC-AUTH-08":
+            # 普通 PM 调超管只读接口（AC 原文举例 /api/v1/admin/handover 不存在于 swagger，
+            # 以同语义超管口 /api/v1/deletion-requests/archive 代理；正对照=超管应放行）
+            s_pm, b_pm = http_get("/api/v1/deletion-requests/archive", token=tok_pm)
+            s_adm, _ = http_get("/api/v1/deletion-requests/archive", token=tok_admin)
+            verdict = classify_access(s_pm, b_pm)
+            ok = verdict == "deny" and s_adm == 200
+            out["status"] = "PASS" if ok else ("FAIL" if verdict == "leak" else "PARTIAL")
+            out["probe_type"] = "HTTP"
+            out["evidence"] = {"endpoint": "/api/v1/deletion-requests/archive",
+                                "pm_status": s_pm, "pm_class": verdict, "admin_status": s_adm,
+                                "note": "AC 原文端点不存在（swagger），超管只读口代理"}
+            return out
+        if aid == "AC-AUTH-09":
+            # 普通 PM 查看跨组项目详情 → 3xxxx/无数据，不泄露任何字段
+            if not other_pid:
+                out["status"] = "PARTIAL"; out["probe_type"] = "HTTP"
+                out["evidence"] = {"reason": "无跨组项目夹具（project_members×persons 交叉为空）"}
+                return out
+            s, b = http_get(f"/api/v1/projects/{other_pid}", token=tok_pm)
+            verdict = classify_access(s, b)
+            out["status"] = "PASS" if verdict == "deny" else ("FAIL" if verdict == "leak" else "PARTIAL")
+            out["probe_type"] = "HTTP"
+            out["evidence"] = {"project_id": other_pid, "pm_status": s, "class": verdict}
+            return out
+        if aid == "AC-AUTH-10":
+            # 组长查看本组任意项目 → 应放行（200 + 数据）
+            if not own_pid:
+                out["status"] = "PARTIAL"; out["probe_type"] = "HTTP"
+                out["evidence"] = {"reason": "无 900001 组项目成员绑定样本，正腿缺夹具"}
+                return out
+            s, b = http_get(f"/api/v1/projects/{own_pid}", token=tok_leader)
+            verdict = classify_access(s, b)
+            out["status"] = "PASS" if verdict == "leak" else ("FAIL" if verdict == "deny" else "PARTIAL")
+            out["probe_type"] = "HTTP"
+            out["evidence"] = {"project_id": own_pid, "leader_status": s, "class": verdict}
+            return out
+        # AC-AUTH-11：跨组组长可查看（编辑腿涉写库，超出只读约束，留 QA-03 矩阵回归）
+        if not other_pid:
+            out["status"] = "PARTIAL"; out["probe_type"] = "HTTP"
+            out["evidence"] = {"reason": "无跨组项目夹具"}
+            return out
+        s, b = http_get(f"/api/v1/projects/{other_pid}", token=tok_leader)
+        verdict = classify_access(s, b)
+        # 「协同组」前置关系无夹具可证：deny 不能断违规（可能本就不是协同组），恒 PARTIAL 留人工裁决
+        out["status"] = "PARTIAL"
+        out["probe_type"] = "HTTP"
+        out["evidence"] = {"project_id": other_pid, "leader_status": s, "class": verdict,
+                            "note": "可查看腿实测=" + verdict + "；「协同组」关系无夹具（9140001 成员组与 "
+                                    "ipd-leader 无协同记录），deny/leak 均不断言；编辑腿写探针不做（只读）留 QA-03"}
         return out
 
     # ---- AC-AUD：审计 ----
@@ -335,13 +475,21 @@ def probe_one(ac: dict, cur) -> dict:
             out["evidence"] = {"error": str(e)[:80]}
         return out
     if aid == "AC-AUD-02":
-        # verifyChain 端点已落地（swagger 列出 /api/v1/audit-logs/verify）
-        s, body = http_get("/v3/api-docs")
-        paths = (body or {}).get("paths", {}) if isinstance(body, dict) else {}
-        exists = "/api/v1/audit-logs/verify" in paths
-        out["status"] = "PARTIAL" if exists else "FAIL"
-        out["probe_type"] = "OPENAPI"
-        out["evidence"] = {"verify_endpoint_listed": exists, "note": "DB 层 LAG 校验≠应用契约（QA-05-P1 P1-2）"}
+        # verifyChain 真调用（2026-09-07 解锁）：超管 token GET /api/v1/audit-logs/verify
+        s_doc, body = http_get("/v3/api-docs")
+        listed = "/api/v1/audit-logs/verify" in ((body or {}).get("paths", {}) if isinstance(body, dict) else {})
+        tok = login("ipd-admin")
+        if tok:
+            s, b = http_get("/api/v1/audit-logs/verify", token=tok)
+            ok_chain = s == 200 and isinstance(b, dict) and b.get("code") in (0, "0", 200)
+            out["status"] = "PASS" if ok_chain else "PARTIAL"
+            out["probe_type"] = "HTTP+OPENAPI"
+            out["evidence"] = {"verify_endpoint_listed": listed, "http_status": s,
+                                "chain_ok": ok_chain, "resp_head": str(b)[:200]}
+        else:
+            out["status"] = "PARTIAL" if listed else "FAIL"
+            out["probe_type"] = "OPENAPI"
+            out["evidence"] = {"verify_endpoint_listed": listed, "note": "登录不可用，降级 swagger 契约检查"}
         return out
     if aid == "AC-AUD-03":
         # 篡改后 verifyChain：实测当前 audit_logs 是否真有篡改断点 → PARTIAL（需手工篡改再验）
@@ -358,9 +506,64 @@ def probe_one(ac: dict, cur) -> dict:
             out["probe_type"] = "HTTP"
             out["evidence"] = {"unauth_status": s}
             return out
-        out["status"] = "PARTIAL"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "导出 owner 过滤 / 跨组 / 全局差异需登录 + 矩阵回归"}
+        # 2026-09-07 解锁：登录可用后真验 scope 过滤（只读 GET；响应形以实测为准，形不符降 PARTIAL）
+        if aid == "AC-AUD-04":
+            tok = login("ipd-market")
+            if not tok:
+                out["status"] = "BLOCKED"; out["probe_type"] = "DEPENDENCY"
+                out["evidence"] = {"reason": "16039 登录失败"}
+                return out
+            s, b = http_get("/api/v1/audit-logs?pageNum=1&pageSize=50", token=tok)
+            data = (b or {}).get("data") if isinstance(b, dict) else None
+            rows = data.get("rows") if isinstance(data, dict) else data
+            if s == 200 and isinstance(rows, list):
+                ids = sorted({r.get("operatorId") for r in rows
+                              if isinstance(r, dict) and r.get("operatorId") is not None})
+                only_self = all(i == 900103 for i in ids)
+                out["status"] = "PASS" if (only_self or not rows) else "FAIL"
+                out["evidence"] = {"http_status": s, "rows": len(rows), "operator_ids_head": ids[:8]}
+            elif s in (401, 403):
+                s2, _ = http_get("/api/v1/audit-logs/export", token=tok)
+                out["status"] = "PARTIAL"
+                out["evidence"] = {"list_status": s, "export_status": s2,
+                                    "note": "列表口拒 PM；导出口可达，导出内容逐行过滤留 QA 复核"}
+            else:
+                out["status"] = "PARTIAL"
+                out["evidence"] = {"http_status": s, "resp_head": str(b)[:160]}
+            out["probe_type"] = "HTTP"
+            return out
+        # AC-AUD-05：组长=本组 scope，超管=全局
+        tok_l = login("ipd-leader")
+        tok_a = login("ipd-admin")
+        if not (tok_l and tok_a):
+            out["status"] = "BLOCKED"; out["probe_type"] = "DEPENDENCY"
+            out["evidence"] = {"reason": "16039 登录失败"}
+            return out
+        s_l, b_l = http_get("/api/v1/audit-logs?pageNum=1&pageSize=50", token=tok_l)
+        s_a, b_a = http_get("/api/v1/audit-logs?pageNum=1&pageSize=50", token=tok_a)
+
+        def _rows(bb):
+            d = (bb or {}).get("data") if isinstance(bb, dict) else None
+            r = d.get("rows") if isinstance(d, dict) else d
+            return r if isinstance(r, list) else None
+        rows_l, rows_a = _rows(b_l), _rows(b_a)
+        if s_l == 200 and s_a == 200 and rows_l is not None and rows_a is not None:
+            grp_ids = {r[0] for r in qall(
+                cur, "SELECT id FROM persons WHERE group_id=900001 AND del_flag='0'")}
+            ids_l = {r.get("operatorId") for r in rows_l
+                     if isinstance(r, dict) and r.get("operatorId") is not None}
+            in_group = ids_l <= grp_ids
+            not_wider = len(rows_l) <= len(rows_a)
+            out["status"] = "PASS" if (in_group and not_wider) else "FAIL"
+            out["probe_type"] = "HTTP"
+            out["evidence"] = {"leader_rows": len(rows_l), "admin_rows": len(rows_a),
+                                "leader_operator_ids": sorted(ids_l)[:8],
+                                "leader_in_group900001": in_group, "scope_not_wider": not_wider}
+        else:
+            out["status"] = "PARTIAL"
+            out["probe_type"] = "HTTP"
+            out["evidence"] = {"leader_status": s_l, "admin_status": s_a,
+                                "resp_head": str(b_l)[:160]}
         return out
     if aid == "AC-AUD-07":
         ok = _db_state["audit_logs_no_update_time"] and _db_state["audit_logs_no_del_flag"]
@@ -1311,7 +1514,8 @@ def main():
         "blocked": len(blocked_list),
         "pass_rate": round(len(pass_list) / max(len(results), 1) * 100, 1),
         "env": {"backend": BACKEND, "mysql": f"{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}",
-                "auth_chain_broken": "audit_log_chain_heads 缺表（影响 16039 登录）"},
+                "auth_chain": "audit_log_chain_heads 已落库；HTTP 探针走 bootstrap 真登录（只读）；"
+                              "ipd-admin must_change_pwd 已置 0 作超管正对照夹具，其余 demo 保持首登态作 20003 探针"},
         "by_section": {},
         "by_probe_type": {},
     }

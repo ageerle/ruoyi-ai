@@ -1,22 +1,22 @@
 {
   "card": "QA-08",
-  "generated_at": "2026-09-07T13:04:28+08:00",
-  "count": 52,
+  "generated_at": "2026-09-07T16:31:37+08:00",
+  "count": 55,
   "items": [
     {
       "id": "AC-ENV-02",
       "section": "环境与部署",
       "desc": "执行数据库 migration + seed",
       "expected": "全部表创建成功；默认超管账号、产品组、系统参数表默认值、角色字典已生成",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:35+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
-        "tables_in_db": 115,
+        "tables_in_db": 137,
         "system_configs_seeded": 54,
         "gate_review_elements_seeded": 33,
         "cert_templates_seeded": 21,
-        "persons_seeded": 4
+        "persons_seeded": 17
       }
     },
     {
@@ -24,7 +24,7 @@
       "section": "环境与部署",
       "desc": "备份 `F:\\devtools\\pgdata` 后删除并恢复",
       "expected": "数据可从备份完整恢复（`pg_dumpall` / 目录级备份脚本可用）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:35+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -36,7 +36,7 @@
       "section": "环境与部署",
       "desc": "代码库内检索 `docker compose up` 的调用",
       "expected": "仅在 README/部署文档中作为**生产部署**说明出现，开发期脚本与 AI 指令中均注明不执行",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:35+08:00",
       "status": "PASS",
       "probe_type": "CODE_GREP",
       "evidence": {
@@ -49,7 +49,7 @@
       "section": "环境与部署",
       "desc": "后端代码中检索 Redis 6.2+ 专有命令（`ZRANGESTORE`/`GETDEL`/`COPY`/`SINTERCARD`）",
       "expected": "零命中（开发环境 Redis 为 5.0，见主 Prompt TS-01b）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "CODE_GREP",
       "evidence": {
@@ -62,17 +62,33 @@
       "section": "认证与权限",
       "desc": "超管账号独立登录",
       "expected": "不使用 PM 姓名规则，独立凭证可登录",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
-        "persons_count": 4,
+        "persons_count": 17,
         "by_status": {
-          "ACTIVE": 4
+          "ACTIVE": 17
         },
         "by_level": {
-          "L3": 4
+          "L3": 7,
+          "L5": 3,
+          "L4": 7
         }
+      }
+    },
+    {
+      "id": "AC-AUTH-02",
+      "section": "认证与权限",
+      "desc": "新导入 PM 用默认密码首次登录",
+      "expected": "强制跳转改密页，未改密前无法访问任何其他页面",
+      "ts": "2026-09-07T16:31:36+08:00",
+      "status": "PASS",
+      "probe_type": "SQL+HTTP",
+      "evidence": {
+        "must_change_pwd_column": true,
+        "first_login_probe_status": 20003,
+        "note": "首登未改密账号调业务口实测 20003 拦截"
       }
     },
     {
@@ -80,7 +96,7 @@
       "section": "认证与权限",
       "desc": "Token 过期后发起请求",
       "expected": "返回 2xxxx，前端自动跳登录页",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "HTTP",
       "evidence": {
@@ -89,11 +105,56 @@
       }
     },
     {
+      "id": "AC-AUTH-08",
+      "section": "认证与权限",
+      "desc": "普通PM 直接调用超管接口（如 `/api/v1/admin/handover`）",
+      "expected": "返回 3xxxx 权限不足，无任何数据变更",
+      "ts": "2026-09-07T16:31:36+08:00",
+      "status": "PASS",
+      "probe_type": "HTTP",
+      "evidence": {
+        "endpoint": "/api/v1/deletion-requests/archive",
+        "pm_status": 403,
+        "pm_class": "deny",
+        "admin_status": 200,
+        "note": "AC 原文端点不存在（swagger），超管只读口代理"
+      }
+    },
+    {
+      "id": "AC-AUTH-09",
+      "section": "认证与权限",
+      "desc": "普通PM 尝试查看本组其他PM 的项目详情",
+      "expected": "返回 3xxxx 或无数据，不泄露项目名称等任何字段",
+      "ts": "2026-09-07T16:31:36+08:00",
+      "status": "PASS",
+      "probe_type": "HTTP",
+      "evidence": {
+        "project_id": 9140001,
+        "pm_status": 403,
+        "class": "deny"
+      }
+    },
+    {
+      "id": "AC-AUD-02",
+      "section": "审计日志",
+      "desc": "调用 `/api/v1/audit-logs/verify`",
+      "expected": "返回校验通过，无断裂点",
+      "ts": "2026-09-07T16:31:36+08:00",
+      "status": "PASS",
+      "probe_type": "HTTP+OPENAPI",
+      "evidence": {
+        "verify_endpoint_listed": true,
+        "http_status": 200,
+        "chain_ok": true,
+        "resp_head": "{'code': 0, 'message': 'ok', 'data': {'genesis': '0000000000000000000000000000000000000000000000000000000000000000', 'total': 24, 'chain': 'OK', 'hashBroken': [], 'gaps': [], 'broken': []}, 'timestamp"
+      }
+    },
+    {
       "id": "AC-AUD-06",
       "section": "审计日志",
       "desc": "未登录游客访问审计接口",
       "expected": "返回 2xxxx，无任何数据",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "HTTP",
       "evidence": {
@@ -105,13 +166,13 @@
       "section": "审计日志",
       "desc": "检查审计日志表结构",
       "expected": "无 `updated_at` 字段（只追加设计）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
         "has_update_time": false,
         "has_del_flag": false,
-        "columns_count": 16
+        "columns_count": 17
       }
     },
     {
@@ -119,7 +180,7 @@
       "section": "参数配置",
       "desc": "后台修改\"双签期限\"为 3 天后新建 Gate",
       "expected": "新 Gate 期限为 3 天；已存在的 Gate 不受影响",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -132,7 +193,7 @@
       "section": "产品与项目",
       "desc": "已挂项目的产品再关联第二个项目（Q5：产品↔项目 1:1）",
       "expected": "**拒绝**，提示\"一个产品仅对应一个项目\"",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -146,7 +207,7 @@
       "section": "产品与项目",
       "desc": "超管批量导入在售产品型号（G31 ①）",
       "expected": "导入成功，产品列表可见，状态为\"在售\"",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:36+08:00",
       "status": "PASS",
       "probe_type": "OPENAPI",
       "evidence": {
@@ -158,7 +219,7 @@
       "section": "深管 vs 轻管（本项目核心差异，重点验）",
       "desc": "深管动作（如 C01）不上传交付物直接标记\"已完成\"",
       "expected": "拒绝，提示\"深管动作必须上传至少 1 个交付物\"",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -171,7 +232,7 @@
       "section": "深管 vs 轻管（本项目核心差异，重点验）",
       "desc": "轻管动作逾期后",
       "expected": "不提醒、不标记（避免过度打扰研发PM）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -183,7 +244,7 @@
       "section": "深管 vs 轻管（本项目核心差异，重点验）",
       "desc": "轻管动作详情页是否有附件上传入口",
       "expected": "**没有**（Gavin 确认轻管无附件上传）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -195,7 +256,7 @@
       "section": "深管 vs 轻管（本项目核心差异，重点验）",
       "desc": "**C12 生物特征数据合规审查**未完成，B 级项目尝试跳阶",
       "expected": "**拒绝**（全等级阻断，S/A/B 均不可跳过）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -207,7 +268,7 @@
       "section": "深管 vs 轻管（本项目核心差异，重点验）",
       "desc": "C12 未上传合规审查清单直接标记完成",
       "expected": "拒绝，提示必须上传",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -219,7 +280,7 @@
       "section": "深管 vs 轻管（本项目核心差异，重点验）",
       "desc": "**C05 技术可行性预研**深度检查（M2）",
       "expected": "仍为**轻管**，仅三字段",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -231,7 +292,7 @@
       "section": "阶段与 SOP",
       "desc": "六阶段顺序与名称检查",
       "expected": "概念/计划/开发/验证/发布/生命周期运维，不可删除",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "CODE_GREP",
       "evidence": {
@@ -244,7 +305,7 @@
           "LAUNCH",
           "LIFECYCLE"
         ],
-        "project_stages_table_rows": 0
+        "project_stages_table_rows": 30
       }
     },
     {
@@ -252,7 +313,7 @@
       "section": "招标组队",
       "desc": "市场PM 尝试将自己设为该项目研发PM",
       "expected": "拒绝（角色互斥）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -264,7 +325,7 @@
       "section": "五大 Gate 与双签",
       "desc": "一方 **3 个自然日**未签署（D17）",
       "expected": "自动标记\"弃权\"，按主导方意见执行；审计记录弃权事件",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -276,7 +337,7 @@
       "section": "五大 Gate 与双签",
       "desc": "检查 Gate 评审要素数量",
       "expected": "G1 七项 / G2 六项 / G3 五项 / G4 八项 / G5 七项 = **33 项**，全部 seed 入库",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -295,7 +356,7 @@
       "section": "五大 Gate 与双签",
       "desc": "参数 `gate.g1.minCustomerVerifications` 改为 3",
       "expected": "阈值即时生效，3 家即可通过（验证可配置、非硬编码）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -307,14 +368,14 @@
       "section": "移交",
       "desc": "人员标记离职（B8：**先移交后禁用**）",
       "expected": "账号进入**待移交冻结态**（`FROZEN_PENDING_HANDOVER`），仅保留移交权限；**不是直接禁用**；双方组长 + 本人 + 超管收到待移交任务，15 日倒计时",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL+CODE_GREP",
       "evidence": {
         "account_status_col_exists": true,
         "FROZEN_PENDING_HANDOVER_in_HandoverService": true,
         "actual_statuses": {
-          "ACTIVE": 4
+          "ACTIVE": 17
         }
       }
     },
@@ -323,7 +384,7 @@
       "section": "移交",
       "desc": "名下项目全部移交完成后检查账号状态",
       "expected": "自动转为 **DISABLED**，企微解绑，禁止登录",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL+CODE_GREP",
       "evidence": {
@@ -336,7 +397,7 @@
       "section": "移交",
       "desc": "超管尝试修改某人的 L1–L5 等级",
       "expected": "**无此入口**（超管只能配置等级→额度映射表）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -349,7 +410,7 @@
       "section": "移交",
       "desc": "超管配置 L3 的月度津贴额度为 2200",
       "expected": "可配置，新绑定项目按 2200 计",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -362,7 +423,7 @@
       "section": "移交",
       "desc": "尝试将某市场PM 在某项目中设为研发PM（B7）",
       "expected": "拒绝，角色固定不可跨",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -374,7 +435,7 @@
       "section": "KPI 考核",
       "desc": "检查 KPI 权重配置",
       "expected": "功能KPI 60% + 共担 40%；共担不得低于 30%（低于时拒绝保存）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -387,7 +448,7 @@
       "section": "KPI 考核",
       "desc": "权重参数检查（✅ 2026-09-03 确认）",
       "expected": "`kpi.reviewWeights = {self:0.2, marketLeader:0.4, rdLeader:0.4}`，三者之和 = 1.0；后台可改",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -399,7 +460,7 @@
       "section": "KPI 考核",
       "desc": "参数 `kpi.monthlyDeadlineDay` 改为 10",
       "expected": "截止日即时生效为次月第 10 个工作日（验证可配置、非硬编码）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -411,7 +472,7 @@
       "section": "KPI 考核",
       "desc": "**L1–L5 能力等级 vs 项目绩效得分**是否混淆",
       "expected": "等级来自 API（决定津贴额度），绩效得分来自评定（决定奖金系数），**两者不互相推导**",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -424,7 +485,7 @@
       "section": "月度津贴",
       "desc": "L1–L5 标准检查",
       "expected": "1000 / 1500 / 2000 / 2500 / 3000",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -440,7 +501,7 @@
       "section": "月度津贴",
       "desc": "L2 级接手项目，期间升为 L3",
       "expected": "该项目**全程按 L2（1500）**发放，不上调",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -452,7 +513,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "立项录入：目标销售额 500 万、S 级",
       "expected": "系数为默认值 **1.5**；奖金池 = `500万 × 5% × 1.5 = 37.5 万`",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -465,7 +526,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "A 级项目，目标 500 万",
       "expected": "系数默认 **1.0**；奖金池 = `500万 × 5% × 1.0 = 25 万`",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -477,7 +538,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "B 级项目，目标 200 万",
       "expected": "系数默认 **0.8**；奖金池 = `200万 × 5% × 0.8 = 8 万`",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -489,7 +550,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "A 级尝试录入系数 1.2",
       "expected": "拒绝，A 级为固定 1.0 不可改",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -501,7 +562,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "奖金池基数验证（Q1）",
       "expected": "用**目标销售额**计算，**不是**实际销售额/回款",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -513,7 +574,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "达成率恰好 100%",
       "expected": "阶梯系数 **1.0**（区间下端点，含）",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -525,7 +586,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "**代码静态检查**：检索阶梯匹配实现",
       "expected": "代码中**不得出现** `=== 100`、`=== 1.0`、`equalityTolerance`、`toFixed(2) == ` 之类的浮点等值判定；必须按 `达成率 ≥ 阈值` 从高到低逐档匹配",
-      "ts": "2026-09-07T13:04:27+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "CODE_GREP",
       "evidence": {
@@ -538,7 +599,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "参数表检查",
       "expected": "`bonus.equalityTolerance` **已不存在**；`bonus.achievementTiers` = `[{Infinity,1.2},{120,1.0},{85,0.8},{70,0.6},{50,0.3},{0,0}]`",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -558,7 +619,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "系统是否生成财务结算单据",
       "expected": "**不生成**，仅内部台账",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "CODE_GREP",
       "evidence": {
@@ -570,7 +631,7 @@
       "section": "奖金池（重点中的重点）",
       "desc": "一产品多项目的池分摊逻辑（Q5）",
       "expected": "**不存在该逻辑**（产品与项目 1:1），代码检查零命中",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL+CODE_GREP",
       "evidence": {
@@ -583,7 +644,7 @@
       "section": "需求管理",
       "desc": "游客尝试访问需求池列表",
       "expected": "拒绝",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "HTTP",
       "evidence": {
@@ -595,11 +656,11 @@
       "section": "AI 文档助手",
       "desc": "未审核的 AI 内容尝试归档为正式交付物",
       "expected": "拒绝，提示\"须人工审核确认\"",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL+CODE_GREP",
       "evidence": {
-        "ai_documents_review_cols": 3,
+        "ai_documents_review_cols": 5,
         "status_constants_defined": true,
         "note": "状态机常量已落，但 reviewed_by/reviewed_at 实际入参流转需登录验"
       }
@@ -609,7 +670,7 @@
       "section": "删除审核",
       "desc": "任何人尝试直接删除 Gate 记录",
       "expected": "无直接删除入口；只能发起删除申请",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -621,7 +682,7 @@
       "section": "删除审核",
       "desc": "删除 Gate 记录 → 组长初审通过 → 超管终审通过",
       "expected": "数据移入归档区（`deletedAt` 置位），**审计链完整保留**",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -633,7 +694,7 @@
       "section": "删除审核",
       "desc": "申请提交后 24 小时内撤回",
       "expected": "可撤回，写审计；超 24 小时不可撤回",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "SQL",
       "evidence": {
@@ -645,7 +706,7 @@
       "section": "全局",
       "desc": "全系统搜索\"100%\"\"无遗留疑问\"等绝对化文案",
       "expected": "零命中",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "CODE_GREP",
       "evidence": {
@@ -665,7 +726,7 @@
       "section": "全局",
       "desc": "深管/轻管动作数量核对",
       "expected": "深管 **42** / 轻管 **27** / 合计 **69**；阻断 **38** / 非阻断 31",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "REPORT_REF",
       "evidence": {
@@ -677,26 +738,13 @@
       "section": "全局",
       "desc": "角色体系检查（G-09）",
       "expected": "系统仅存在普通PM / 产品组长 / 超级管理员 / 游客；**无**评审上级、代理组长、代审人",
-      "ts": "2026-09-07T13:04:28+08:00",
+      "ts": "2026-09-07T16:31:37+08:00",
       "status": "PASS",
       "probe_type": "CODE_GREP",
       "evidence": {
         "allowed_roles_in_catalog": true,
         "banned_in_catalog_text": false,
         "banned_role_type_defs": 0
-      }
-    },
-    {
-      "id": "AC-GLB-12",
-      "section": "全局",
-      "desc": "Gate 评审要素覆盖检查",
-      "expected": "33 项要素全部可判定，14 项否决项全部生效",
-      "ts": "2026-09-07T13:04:28+08:00",
-      "status": "PASS",
-      "probe_type": "SQL",
-      "evidence": {
-        "elements_total": 33,
-        "veto_total": 14
       }
     }
   ]
