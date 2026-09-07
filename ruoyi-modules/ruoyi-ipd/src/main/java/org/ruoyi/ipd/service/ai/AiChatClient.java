@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -57,6 +58,13 @@ public class AiChatClient {
      */
     private final String allowedHosts;
 
+    /**
+     * P2-7.4 HTTP 重启附加：显式 @Autowired 标记主 ctor。
+     * 历史：eae78d71 (P4-2.2-D-4) 把 no-args ctor 删了；eae78d71 之后版本是 3 个 ctor (boolean,String) / (HttpClient) / (HttpClient,boolean)，
+     * Spring 多 ctor 无 @Autowired 会抛 "No default constructor found"（实测 2026-09-07 07:32 启动失败）。
+     * 测试桩 (HttpClient) / (HttpClient,boolean) 不动（单测拦截仍走它们 new 直接调用，不走 Spring）。
+     */
+    @Autowired
     public AiChatClient(@Value("${ai.debug.enabled:false}") boolean debugEnabled,
                         @Value("${ai.allowed-hosts:}") String allowedHosts) {
         this.debugEnabled = debugEnabled;
