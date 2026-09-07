@@ -53,6 +53,63 @@ public class IpdAuthService {
         }
     }
 
+    /**
+     * P0-7.4 企微 Mock 扫码登录（明确 Mock 不冒充真实企微接入；AC-AUTH-04 / AC-AUTH-05）。
+     *
+     * <p>口径：接受企微 userId（Mock 入参），查 {@code persons.wecom_user_id} 绑定关系：
+     * <ul>
+     *   <li>已绑定（ACTIVE / FROZEN_PENDING_HANDOVER）→ 复用 {@link #login} 的状态机/审计，
+     *       返回 {@link LoginResult}；Controller 走 {@code session.login(person)} 签发 JWT</li>
+     *   <li>未绑定（person 为空）→ NOT_FOUND + "账号未绑定，请联系管理员"</li>
+     *   <li>绑定但 RESIGNED / DISABLED → NOT_FOUND（同错误信息，避免泄露在职状态与越权尝试）</li>
+     *   <li>{@code wecomUserId} 为空 → PARAM_INVALID</li>
+     * </ul>
+     *
+     * <p>审计：成功/失败均落审计（{@code action=WECOM_MOCK_LOGIN[_FAIL]}），{@code reason} 字段带
+     * {@code mock=true} 标记，便于运营/法务事后甄别 Mock 阶段记录；{@code entityType=persons}，
+     * 失败分支无可靠身份时 {@code operatorId=null}（与 {@link #auditFail} 同口径）。
+     *
+     * <p>⚠ Mock 实现：未来真实企微接入应替换此端点为 OAuth2 code → userInfo 换取流程，本方法移除。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public LoginResult wecomMockLogin(String wecomUserId) {
+        if (wecomUserId == null || wecomUserId.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "企微 userId 不能为空");
+        }
+        Person person = personMapper.selectOne(new LambdaQueryWrapper<Person>()
+            .eq(Person::getWecomUserId, wecomUserId).last("limit 1"));
+        if (person == null) {
+            auditWecomMockFail(null, wecomUserId, "NOT_BOUND");
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "账号未绑定，请联系管理员");
+        }
+        // 安全口径：RESIGNED / DISABLED 视为"未绑定"，避免泄露在职状态与越权尝试
+        if ("RESIGNED".equals(person.getEmploymentStatus())
+            || "DISABLED".equals(person.getAccountStatus())) {
+            auditWecomMockFail(person.getId(), wecomUserId,
+                "RESIGNED".equals(person.getEmploymentStatus()) ? "RESIGNED" : "DISABLED");
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "账号未绑定，请联系管理员");
+        }
+        // 状态机映射授权范围（与 login() 同源；FROZEN_PENDING_HANDOVER → HANDOVER_ONLY）
+        Scope scope;
+        if ("FROZEN_PENDING_HANDOVER".equals(person.getAccountStatus())) {
+            scope = Scope.HANDOVER_ONLY;
+        } else {
+            scope = Scope.FULL;
+        }
+        person.setLastLoginAt(new Date());
+        personMapper.updateById(person);
+        auditLogService.append(AuditLog.builder()
+            .operatorId(person.getId())
+            .operatorName(person.getName())
+            .action("WECOM_MOCK_LOGIN")
+            .entityType("persons")
+            .entityId(person.getId())
+            .reason("mock=true")
+            .createTime(new Date())
+            .build());
+        return new LoginResult(person, scope, "1".equals(nvl(person.getMustChangePwd())));
+    }
+
     /** 登录：合并用户名/密码错误信息防枚举；状态机映射授权范围。
      * <p>SEC-AUD-01：失败分支也写审计 (action=LOGIN_FAIL)，auditLogService.append 走 REQUIRES_NEW
      * 不受本事务回滚影响，爆破/撞库/离职尝试均有运营/法务可见证据。
@@ -214,6 +271,22 @@ public class IpdAuthService {
             .entityId(personId)
             .operatorName(username)
             .reason(reason)
+            .createTime(new Date())
+            .build());
+    }
+
+    /**
+     * P0-7.4：企微 Mock 扫码失败审计（action=WECOM_MOCK_LOGIN_FAIL）。
+     * <p>与 auditFail 同口径：失败分支无可靠身份时 {@code operatorId=null}，reason 拼装 mock=true
+     * 便于事后甄别 Mock 阶段记录。
+     */
+    private void auditWecomMockFail(Long personId, String wecomUserId, String reason) {
+        auditLogService.append(AuditLog.builder()
+            .action("WECOM_MOCK_LOGIN_FAIL")
+            .entityType("persons")
+            .entityId(personId)
+            .operatorName(wecomUserId)
+            .reason("mock=true | " + reason)
             .createTime(new Date())
             .build());
     }
