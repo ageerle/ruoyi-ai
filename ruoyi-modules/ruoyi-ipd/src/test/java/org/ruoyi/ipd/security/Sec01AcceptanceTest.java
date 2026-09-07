@@ -86,6 +86,8 @@ class Sec01AcceptanceTest {
     private ProjectCertService projectCertService;
     @Mock
     private LegacyImportService legacyImportService;
+    @Mock private org.ruoyi.ipd.service.LaunchDateChangeService launchDateChangeService;
+    @Mock private org.ruoyi.ipd.service.GateCreationService gateCreationService;
     @Mock
     private CertTemplateService certTemplateService;
     @Mock
@@ -100,7 +102,7 @@ class Sec01AcceptanceTest {
     @BeforeEach
     void setUp() {
         ipdPermission = new IpdPermission(session, authService);
-        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, ipdPermission);
+        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, launchDateChangeService, gateCreationService, ipdPermission);
         stageActionController = new StageActionController(stageActionService, ipdPermission);
         certTemplateController = new CertTemplateController(certTemplateService, ipdPermission);
         gateElementController = new GateElementController(gateElementService, ipdPermission);

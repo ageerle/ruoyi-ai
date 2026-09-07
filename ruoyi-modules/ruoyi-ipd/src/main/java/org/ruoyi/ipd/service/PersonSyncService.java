@@ -245,18 +245,18 @@ public class PersonSyncService {
     }
 
     /** 任务内部结构（线程安全字段均为 final/Atomic）。 */
-    static final class SyncJob {
-        final String jobId;
-        final String employeeNo;
-        final String idempotencyKey;
-        volatile JobStatus status;
-        volatile int attempts;
-        final int maxAttempts;
-        volatile FailureKind failureKind;
-        volatile String failureReason;
-        volatile Instant nextRetryAt;
-        final Instant createdAt;
-        volatile Instant updatedAt;
+    public static final class SyncJob {
+        public final String jobId;
+        public final String employeeNo;
+        public final String idempotencyKey;
+        public volatile JobStatus status;
+        public volatile int attempts;
+        public final int maxAttempts;
+        public volatile FailureKind failureKind;
+        public volatile String failureReason;
+        public volatile Instant nextRetryAt;
+        public final Instant createdAt;
+        public volatile Instant updatedAt;
 
         SyncJob(String jobId, String employeeNo, String idempotencyKey,
                 JobStatus status, int attempts, int maxAttempts,

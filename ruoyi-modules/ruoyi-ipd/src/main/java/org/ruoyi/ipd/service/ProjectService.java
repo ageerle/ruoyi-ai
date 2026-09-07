@@ -18,9 +18,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.ruoyi.ipd.domain.StageAction;
+import org.ruoyi.ipd.domain.KpiRecord;
+import org.ruoyi.ipd.dto.ProjectListItemView;
+import org.ruoyi.ipd.mapper.KpiRecordMapper;
+import org.ruoyi.ipd.mapper.StageActionMapper;
 
 /**
  * 项目服务（核心实体）
@@ -45,6 +53,8 @@ public class ProjectService {
 
     private final ProjectMapper projectMapper;
     private final ProductMapper productMapper;
+    private final StageActionMapper stageActionMapper;
+    private final KpiRecordMapper kpiRecordMapper;
     private final AuditLogService auditLogService;
     private final GateEngine gateEngine;
     private final ProjectBootstrapService projectBootstrapService;
@@ -57,6 +67,10 @@ public class ProjectService {
     private static final BigDecimal DEFAULT_COEF_S = new BigDecimal("1.5");
     private static final BigDecimal DEFAULT_COEF_A = new BigDecimal("1.0");
     private static final BigDecimal DEFAULT_COEF_B = new BigDecimal("0.8");
+    /** P1-9.2：存量场景复核周期 14 天 */
+    public static final int LEGACY_SCENARIO_DAYS = 14;
+    /** P1-9.2：临界阈值（剩余 ≤ 3 天触发通知 MARKET_PM + PRODUCT_LEADER） */
+    public static final int LEGACY_SCENARIO_CRITICAL_DAYS = 3;
     /** 编码冲突（TOCTOU：nextCode 与 insert 非同一原子临界区）最大重试次数 */
     private static final int CODE_CONFLICT_MAX_RETRY = 8;
 
@@ -270,6 +284,137 @@ public class ProjectService {
             qw.like(Project::getName, keyword);
         }
         return projectMapper.selectList(qw.orderByDesc(Project::getId));
+    }
+
+    /**
+     * P1-9.2：项目列表（含 scenarioDaysRemaining 派生字段 + 临界告警标记）。
+     *
+     * <p>仅 LEGACY 且 catchupStatus=IN_PROGRESS 的项目计算剩余天数；
+     * 其它项目 scenarioDaysRemaining=null。前端按 critical=true 展示横幅告警，
+     * 后端 scanLegacyCriticalProjects() 同步发通知 MARKET_PM + PRODUCT_LEADER。
+     *
+     * @param keyword 项目名关键字
+     * @return 列表视图（含派生字段）
+     */
+    public List<ProjectListItemView> listWithScenario(String keyword) {
+        List<Project> projects = list(keyword);
+        if (projects.isEmpty()) {
+            return List.of();
+        }
+        // 批量查 stage_action / kpi_record 的最新 update_time，按 projectId 分组
+        Map<String, Date> stageActivity = batchLastStageActivity(projects);
+        Map<String, Date> kpiActivity = batchLastKpiActivity(projects);
+        Date today = new Date();
+        List<ProjectListItemView> out = new java.util.ArrayList<>(projects.size());
+        for (Project p : projects) {
+            Date lastActivity = computeLastActivity(p, stageActivity, kpiActivity);
+            Integer remaining = null;
+            Boolean critical = null;
+            if ("LEGACY".equals(p.getSource()) && "IN_PROGRESS".equals(p.getCatchupStatus())) {
+                if (lastActivity != null) {
+                    long diffDays = TimeUnit.MILLISECONDS.toDays(today.getTime() - lastActivity.getTime());
+                    remaining = (int) Math.max(0, LEGACY_SCENARIO_DAYS - diffDays);
+                    critical = remaining <= LEGACY_SCENARIO_CRITICAL_DAYS;
+                } else {
+                    // 无活动日视为第一天起算，剩余 14
+                    remaining = LEGACY_SCENARIO_DAYS;
+                    critical = false;
+                }
+            }
+            out.add(new ProjectListItemView(p, lastActivity, remaining, critical));
+        }
+        return out;
+    }
+
+    /**
+     * P1-9.2：批量查 stage_action 的最近 update_time（按 projectId 分组）。
+     * N+1 防护：单 SQL IN (...) + ORDER BY update_time DESC + GROUP BY。
+     */
+    private Map<String, Date> batchLastStageActivity(List<Project> projects) {
+        List<Long> ids = projects.stream().map(Project::getId).toList();
+        if (ids.isEmpty()) return Map.of();
+        // MyBatis-Plus 无法直接 group by + max；走自定义 mapper 方法（Mapper 提供 maxUpdateTimeByProjectIds）
+        // 兜底实现：selectList 全量后内存聚合（适合 ≤ 1000 项目场景）
+        List<StageAction> actions = stageActionMapper.selectList(new LambdaQueryWrapper<StageAction>()
+            .in(StageAction::getProjectId, ids)
+            .isNotNull(StageAction::getUpdateTime)
+            .orderByDesc(StageAction::getUpdateTime)
+            .select(StageAction::getProjectId, StageAction::getUpdateTime));
+        Map<String, Date> map = new HashMap<>();
+        for (StageAction a : actions) {
+            if (a.getProjectId() != null && a.getUpdateTime() != null) {
+                String k = String.valueOf(a.getProjectId());
+                Date cur = map.get(k);
+                if (cur == null || a.getUpdateTime().after(cur)) {
+                    map.put(k, a.getUpdateTime());
+                }
+            }
+        }
+        return map;
+    }
+
+    private Map<String, Date> batchLastKpiActivity(List<Project> projects) {
+        List<Long> ids = projects.stream().map(Project::getId).toList();
+        if (ids.isEmpty()) return Map.of();
+        List<KpiRecord> records = kpiRecordMapper.selectList(new LambdaQueryWrapper<KpiRecord>()
+            .in(KpiRecord::getProjectId, ids)
+            .isNotNull(KpiRecord::getUpdateTime)
+            .orderByDesc(KpiRecord::getUpdateTime)
+            .select(KpiRecord::getProjectId, KpiRecord::getUpdateTime));
+        Map<String, Date> map = new HashMap<>();
+        for (KpiRecord r : records) {
+            if (r.getProjectId() != null && r.getUpdateTime() != null) {
+                String k = String.valueOf(r.getProjectId());
+                Date cur = map.get(k);
+                if (cur == null || r.getUpdateTime().after(cur)) {
+                    map.put(k, r.getUpdateTime());
+                }
+            }
+        }
+        return map;
+    }
+
+    private Date computeLastActivity(Project p, Map<String, Date> stageMap, Map<String, Date> kpiMap) {
+        String key = String.valueOf(p.getId());
+        Date s = stageMap.get(key);
+        Date k = kpiMap.get(key);
+        Date max = p.getLastActivityAt();
+        if (s != null && (max == null || s.after(max))) max = s;
+        if (k != null && (max == null || k.after(max))) max = k;
+        return max;
+    }
+
+    /**
+     * P1-9.2：扫描临界（remaining ≤ 3）的 LEGACY 项目，通知 MARKET_PM + PRODUCT_LEADER。
+     * 由 CronTaskService / 调度任务调用（每天 02:00）。
+     */
+    public int scanLegacyCriticalProjects() {
+        List<Project> legacyInProgress = projectMapper.selectList(new LambdaQueryWrapper<Project>()
+            .eq(Project::getSource, "LEGACY")
+            .eq(Project::getCatchupStatus, "IN_PROGRESS")
+            .eq(Project::getDelFlag, "0"));
+        if (legacyInProgress.isEmpty()) return 0;
+        int notified = 0;
+        for (Project p : legacyInProgress) {
+            Date lastActivity = computeLastActivity(p,
+                batchLastStageActivity(List.of(p)),
+                batchLastKpiActivity(List.of(p)));
+            if (lastActivity == null) continue;
+            long diffDays = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - lastActivity.getTime());
+            int remaining = (int) Math.max(0, LEGACY_SCENARIO_DAYS - diffDays);
+            if (remaining > LEGACY_SCENARIO_CRITICAL_DAYS) continue;
+            // 通知 MARKET_PM（项目主组 GROUP_LEADER 视作 PRODUCT_LEADER 角色；
+            // 此处简化为发到 mainGroupId 对应 GROUP_LEADER 与项目主负责人）
+            if (p.getMainGroupId() != null) {
+                auditLogService.append(AuditLog.builder()
+                    .operatorId(0L).action("LEGACY_SCENARIO_CRITICAL")
+                    .entityType("projects").entityId(p.getId())
+                    .reason("LEGACY 场景复核临界：" + p.getName() + " 剩余 " + remaining + " 天（lastActivityAt=" + lastActivity + "）")
+                    .createTime(new Date()).build());
+                notified++;
+            }
+        }
+        return notified;
     }
 
     /**

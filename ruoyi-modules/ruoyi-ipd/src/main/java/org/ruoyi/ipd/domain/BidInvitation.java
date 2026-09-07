@@ -71,6 +71,18 @@ public class BidInvitation extends BaseEntity implements SoftDeletable {
     private Long selectedResponseId;
 
     /**
+     * P1-5.2：遴选二次确认 token（6 字符随机）——调 /select 时须带此 token 校验。
+     * 由 /pre-select-token 端点生成，24h 后失效。SELECTED 后清空。
+     */
+    private String confirmToken;
+
+    /**
+     * P1-5.2：confirm_token 过期时间（24h）。
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date confirmTokenExpires;
+
+    /**
      * 软删除标志（0正常 1已删）
      */
     @TableLogic

@@ -37,13 +37,14 @@ class P121AcceptanceTest {
     @Mock private GateEngine gateEngine;
     @Mock private ProjectBootstrapService projectBootstrapService;
     @Mock private ProjectCertService projectCertService;
+    @Mock private org.ruoyi.ipd.mapper.StageActionMapper stageActionMapper;
+    @Mock private org.ruoyi.ipd.mapper.KpiRecordMapper kpiRecordMapper;
 
     private ProjectService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projectMapper, productMapper, auditLogService,
-            gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE);
+        service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE);
     }
 
     private Product productOk() {

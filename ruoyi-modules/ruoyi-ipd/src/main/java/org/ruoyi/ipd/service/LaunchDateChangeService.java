@@ -188,6 +188,48 @@ public class LaunchDateChangeService {
      * 的静态守卫用例钉住，不得再靠注释口头兜底（owner 2026-09-05 项1c）。
      */
 
+    /**
+     * P1 / §5.1：L08 上市日期初次录入（独立端点）—— 状态仅 DRAFT|CONFIRMED 可调；
+     * 写 INITIAL_LAUNCH_DATE 审计。launch_date 已有值（曾录入过）则拒绝（走双签修改流程）。
+     *
+     * @param projectId 项目
+     * @param date      录入的上市日期
+     * @param reason    理由
+     * @param operatorId 操作人
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Project initialRecord(Long projectId, Date date, String reason, Long operatorId) {
+        if (projectId == null || date == null) {
+            throw new ServiceException("项目与上市日期不能为空");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new ServiceException("初次录入上市日期必须填写理由");
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project == null || "1".equals(project.getDelFlag())) {
+            throw new ServiceException("项目不存在: " + projectId);
+        }
+        if (!"DRAFT".equals(project.getStatus()) && !"CONFIRMED".equals(project.getStatus())
+            && !"TEAMING".equals(project.getStatus()) && !"ACTIVE".equals(project.getStatus())) {
+            throw new ServiceException("DRAFT/CONFIRMED/TEAMING/ACTIVE 状态可初次录入上市日期");
+        }
+        if (project.getLaunchDate() != null) {
+            throw new ServiceException("上市日期已存在；修改请走双签流程（POST /launch-date-change-requests）");
+        }
+        project.setLaunchDate(date);
+        projectMapper.updateById(project);
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId)
+            .action("INITIAL_LAUNCH_DATE")
+            .entityType("projects")
+            .entityId(projectId)
+            .reason(reason.trim())
+            .afterData("{\"launchDate\":\"" + date + "\"}")
+            .createTime(new Date())
+            .build());
+        return project;
+    }
+
     private Project requireWritableProject(Long projectId) {
         Project project = projectMapper.selectById(projectId);
         if (project == null || "1".equals(project.getDelFlag())) {

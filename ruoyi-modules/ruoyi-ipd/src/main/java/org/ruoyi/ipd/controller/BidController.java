@@ -84,10 +84,23 @@ public class BidController {
     @PutMapping("/bid-invitations/{id}/select")
     public ApiV1Response<BidInvitation> selectResponse(
             @PathVariable Long id,
-            @RequestParam Long responseId) {
+            @RequestParam Long responseId,
+            @RequestParam String confirmToken) {
         ipdPermission.requireInternal();
         Person person = session.currentPerson();
-        return ApiV1Response.ok(bidInvitationService.selectResponse(id, responseId, person.getId()));
+        return ApiV1Response.ok(bidInvitationService.selectResponse(id, responseId, confirmToken, person.getId()));
+    }
+
+    /**
+     * P1-5.2：预演生成 confirmToken（6 字符随机 + 24h 过期）。
+     * 前端先调此端点拿 token 与预演信息，再展示「将向 N 名应标者发送落选通知」，
+     * 用户在 UI 勾选「已确认」后，把 token 提交到 /select。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/bid-invitations/{id}/pre-select-token")
+    public ApiV1Response<BidInvitationService.ConfirmTokenView> preSelectToken(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidInvitationService.issueConfirmToken(id));
     }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)

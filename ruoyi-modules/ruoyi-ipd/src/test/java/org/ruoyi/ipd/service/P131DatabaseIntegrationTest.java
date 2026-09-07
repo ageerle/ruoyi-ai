@@ -27,6 +27,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.support.NoopTransactionManager;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
+import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.AopUtils;
@@ -91,6 +92,7 @@ class P131DatabaseIntegrationTest {
     private DataSourceTransactionManager transactions;
     private ProjectMapper projects;
     private ProductMapper products;
+    private KpiRecordMapper kpis;
     private ProjectStageMapper stages;
     private StageActionMapper actions;
     private ProjectBootstrapService bootstrap;
@@ -133,9 +135,11 @@ class P131DatabaseIntegrationTest {
         configuration.addMapper(ProductMapper.class);
         configuration.addMapper(ProjectStageMapper.class);
         configuration.addMapper(StageActionMapper.class);
+        configuration.addMapper(KpiRecordMapper.class);
         SqlSessionTemplate sql = new SqlSessionTemplate(new MybatisSqlSessionFactoryBuilder().build(configuration));
         projects = sql.getMapper(ProjectMapper.class);
         products = sql.getMapper(ProductMapper.class);
+        kpis = sql.getMapper(KpiRecordMapper.class);
         stages = sql.getMapper(ProjectStageMapper.class);
         actions = sql.getMapper(StageActionMapper.class);
         bootstrap = proxy(new ProjectBootstrapService(stages, actions));
@@ -436,7 +440,7 @@ class P131DatabaseIntegrationTest {
             }).when(audit).append(any(AuditLog.class));
             ProjectCertService certs = mock(ProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
-            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
+            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
             Project result = service.create(request, OPERATOR);
             assertThat(result.getId()).isPositive();
             assertThat(observed.get()).isTrue();
@@ -466,7 +470,7 @@ class P131DatabaseIntegrationTest {
             }).when(audit).append(any(AuditLog.class));
             ProjectCertService certs = mock(ProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
-            ProjectService service = proxy(new ProjectService(projects, products, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
+            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
             assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR)))).isSameAs(original);
             assertThat(observed.get()).isTrue();
             assertThat(request.getId()).isPositive();

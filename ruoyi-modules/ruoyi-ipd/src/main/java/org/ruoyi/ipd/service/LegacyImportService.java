@@ -112,6 +112,9 @@ public class LegacyImportService {
         List<String> marked = markPastStages(created.getId(), declared, req.alternativeEvidence());
         created.setDeclaredStage(declared);
         created.setLegacyEffectiveAt(truncateSeconds(req.legacyEffectiveAt()));
+        // P1-9.2：lastActivityAt = legacyEffectiveAt（导入即起算 14 天复核窗口）
+        // 后续 scanLegacyCriticalProjects 按 (today - lastActivityAt) 计算 remaining
+        created.setLastActivityAt(truncateSeconds(req.legacyEffectiveAt()));
         created.setMissingHistoryAck("1");
         created.setCatchupStatus(CATCHUP_IN_PROGRESS);
         created.setCurrentStage(declared);

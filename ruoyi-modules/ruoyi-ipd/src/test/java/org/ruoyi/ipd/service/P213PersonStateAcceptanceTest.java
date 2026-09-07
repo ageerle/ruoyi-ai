@@ -104,7 +104,7 @@ class P213PersonStateAcceptanceTest {
         var result = personService.resign(2L, "再次调用", hrActor);
 
         assertThat(result.idempotent()).isTrue();
-        verify(personMapper, never()).updateById(any());
+        verify(personMapper, never()).updateById(any(org.ruoyi.ipd.domain.Person.class));
         verify(auditLogService, never()).append(any());
     }
 
@@ -191,7 +191,7 @@ class P213PersonStateAcceptanceTest {
         Person result = personService.unbindWecom(9L, "再解绑一次", hrActor);
 
         assertThat(result).isSameAs(p);
-        verify(personMapper, never()).updateById(any());
+        verify(personMapper, never()).updateById(any(org.ruoyi.ipd.domain.Person.class));
         verify(auditLogService, never()).append(any());
     }
 
@@ -231,7 +231,7 @@ class P213PersonStateAcceptanceTest {
     void resign_updateAffectsNonOneRow_throwsServiceException() {
         Person p = person(12L, "ACTIVE", "ACTIVE", "wc_y");
         when(personMapper.selectById(12L)).thenReturn(p);
-        when(personMapper.updateById(any())).thenReturn(0);
+        when(personMapper.updateById(any(org.ruoyi.ipd.domain.Person.class))).thenReturn(0);
 
         assertThatThrownBy(() -> personService.resign(12L, "x", hrActor))
             .isInstanceOf(ServiceException.class)

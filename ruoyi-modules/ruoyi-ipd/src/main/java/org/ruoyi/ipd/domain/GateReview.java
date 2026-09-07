@@ -28,6 +28,16 @@ public class GateReview extends BaseEntity implements SoftDeletable {
     private Long id;
 
     /**
+     * 项目ID（§5.3 / P1：G3 评审自动创建入口 /api/v1/projects/{id}/gates?gateCode= 用）
+     */
+    private Long projectId;
+
+    /**
+     * Gate 编码 G1|G2|G3|G4|G5（§5.3 / P1：?gateCode= 入口入参列；与 GateDefinition.gateCode 等价定位）
+     */
+    private String gateCode;
+
+    /**
      * Gate 实例ID
      */
     private Long gateId;

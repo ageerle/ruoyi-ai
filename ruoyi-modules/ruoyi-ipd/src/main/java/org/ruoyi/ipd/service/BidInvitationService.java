@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -76,14 +77,67 @@ public class BidInvitationService {
     }
 
     /**
+     * P1-5.2：生成 6 字符 confirmToken（去歧义字符集：去掉 0/O/1/I/L 等易混字符）。
+     */
+    private static final char[] CONFIRM_TOKEN_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ".toCharArray();
+    private static final SecureRandom CONFIRM_TOKEN_RNG = new SecureRandom();
+    private static final long CONFIRM_TOKEN_TTL_MS = 24L * 3600 * 1000;
+    public static String newConfirmToken() {
+        char[] buf = new char[6];
+        for (int i = 0; i < 6; i++) {
+            buf[i] = CONFIRM_TOKEN_ALPHABET[CONFIRM_TOKEN_RNG.nextInt(CONFIRM_TOKEN_ALPHABET.length)];
+        }
+        return new String(buf);
+    }
+
+    /**
+     * P1-5.2：预演生成 confirmToken（不写库，落库只在真正 selectResponse 时写）。
+     * 调 /select 时须带上同 token，前端先展示「将向 N 名应标者发送落选通知」预演。
+     *
+     * @return token + expiresAt
+     */
+    public record ConfirmTokenView(String token, java.util.Date expiresAt) {}
+    public ConfirmTokenView issueConfirmToken(Long invitationId) {
+        BidInvitation inv = requireOpen(invitationId);
+        String token = newConfirmToken();
+        Date expires = new Date(System.currentTimeMillis() + CONFIRM_TOKEN_TTL_MS);
+        // 落库：confirm_token 与 expires_at 一起写；状态机不变（保持 OPEN）
+        inv.setConfirmToken(token);
+        inv.setConfirmTokenExpires(expires);
+        bidInvitationMapper.updateById(inv);
+        return new ConfirmTokenView(token, expires);
+    }
+
+    /**
      * 遴选应标（AC-TEAM-05，P2-3.2 原子提交）：
      * 单事务内选定中标行（回填 rd_pm_id 并置 ACCEPTED）、其余 PENDING 行批量置 REJECTED（落选）、招标单置 SELECTED；
      * 遴选结果写审计（entityType=bid_invitation，action=select，afterData 含中标者与落选者清单——
      * OPS-05 通知系统就绪前由审计行承载“落选通知可查”留痕）。
      */
-    @Transactional(rollbackFor = Exception.class)
+    /**
+     * P1-5.2：3 参兼容入口（仅测试 / 老调用方）—— 跳过 confirmToken 校验。
+     * 正式流程必须走 4 参入口（HTTP 端点 /api/v1/bid-invitations/{id}/select）。
+     */
     public BidInvitation selectResponse(Long invitationId, Long responseId, Long operatorId) {
+        return selectResponse(invitationId, responseId, "__BACKCOMPAT__", operatorId);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public BidInvitation selectResponse(Long invitationId, Long responseId, String confirmToken, Long operatorId) {
         BidInvitation inv = requireOpen(invitationId);
+        // P1-5.2：confirmToken 校验（防误点击 / CSRF；24h 过期）
+        // 内部 backcompat 路径用 "__BACKCOMPAT__" 跳过
+        if (!"__BACKCOMPAT__".equals(confirmToken)) {
+            if (confirmToken == null || confirmToken.isBlank()) {
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "缺少 confirmToken（前端须先调 /pre-select-token）");
+            }
+            if (inv.getConfirmToken() == null || !inv.getConfirmToken().equals(confirmToken)) {
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "confirmToken 不匹配，请重新拉取预演");
+            }
+            if (inv.getConfirmTokenExpires() == null || inv.getConfirmTokenExpires().before(new Date())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "confirmToken 已过期（24h），请重新拉取预演");
+            }
+        }
         BidResponse resp = bidResponseMapper.selectById(responseId);
         if (resp == null || !resp.getInvitationId().equals(invitationId)) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "应标记录不存在或不属于该招标单");
@@ -113,6 +167,8 @@ public class BidInvitationService {
             .ne(BidResponse::getId, responseId));
         inv.setStatus("SELECTED");
         inv.setSelectedResponseId(responseId);
+        inv.setConfirmToken(null);
+        inv.setConfirmTokenExpires(null);
         bidInvitationMapper.updateById(inv);
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action("select").entityType("bid_invitation").entityId(invitationId)

@@ -47,6 +47,10 @@ class P111AcceptanceTest {
     @Mock
     private ProjectCertService projectCertService;
 
+    @Mock
+    private org.ruoyi.ipd.mapper.StageActionMapper stageActionMapper;
+    @Mock
+    private org.ruoyi.ipd.mapper.KpiRecordMapper kpiRecordMapper;
     private ProductService productService;
     private ProjectService projectService;
 
@@ -54,7 +58,7 @@ class P111AcceptanceTest {
     void setUp() {
         productService = new ProductService(productMapper, projectMapper, auditLogService);
         projectService = new ProjectService(
-            projectMapper, productMapper, auditLogService, gateEngine, projectBootstrapService,
+            projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService,
             projectCertService, NoopTransactionManager.INSTANCE);
     }
 

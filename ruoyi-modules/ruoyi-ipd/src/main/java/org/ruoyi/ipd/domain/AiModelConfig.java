@@ -39,4 +39,12 @@ public class AiModelConfig extends BaseEntity {
 
     /** 激活标志（全局至多一条 true；enable 端点互斥切换） */
     private Boolean isActive;
+
+    /**
+     * 软删除标志（0正常 1已删；DDL 已有 del_flag 列 + uk_model_name 唯一键含 del_flag）
+     * [SEC-FIX-LINT-UNBLOCK] 2026-09-06：补 @TableLogic 守卫，让 PreToolUse hook 不再阻塞兄弟流 / domain 编辑。
+     */
+    @TableLogic
+    @TableField("del_flag")
+    private String delFlag;
 }

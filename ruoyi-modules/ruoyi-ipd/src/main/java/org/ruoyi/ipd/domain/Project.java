@@ -89,6 +89,12 @@ public class Project extends BaseEntity implements SoftDeletable {
     /** P1-9.1：存量导入生效日 */
     private Date legacyEffectiveAt;
 
+    /**
+     * P1-9.2：最近活动日（max of stage_action.update_time / kpi/gate update_time）——
+     * 存量 14 天场景复核与分段起算的「分段」基准点。
+     */
+    private Date lastActivityAt;
+
     /** P1-9.1：历史缺失声明 1=已确认（BR-PROD-03） */
     private String missingHistoryAck;
 

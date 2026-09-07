@@ -1,6 +1,11 @@
 package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Project;
@@ -16,6 +21,9 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.GateEngine;
+import org.ruoyi.ipd.service.LaunchDateChangeService;
+import org.ruoyi.ipd.service.GateCreationService;
+import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.service.LegacyImportService;
 import org.ruoyi.ipd.service.ProjectCertService;
 import org.ruoyi.ipd.service.ProjectService;
@@ -27,6 +35,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -41,14 +52,19 @@ public class ProjectController {
     private final GateEngine gateEngine;
     private final ProjectCertService projectCertService;
     private final LegacyImportService legacyImportService;
+    private final LaunchDateChangeService launchDateChangeService;
+    private final GateCreationService gateCreationService;
     private final IpdPermission ipdPermission;
 
-    /** 查询项目列表，需 ipd:project:list 权限 */
+    /**
+     * 查询项目列表（P1-9.2：含 scenarioDaysRemaining + critical 派生字段）。
+     * 需 ipd:project:list 权限
+     */
     @GetMapping
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<List<Project>> list(@RequestParam(required = false) String keyword) {
+    public ApiV1Response<List<org.ruoyi.ipd.dto.ProjectListItemView>> list(@RequestParam(required = false) String keyword) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(projectService.list(keyword));
+        return ApiV1Response.ok(projectService.listWithScenario(keyword));
     }
 
     /** 查询项目详情，需 ipd:project:query 权限 */
@@ -153,6 +169,40 @@ public class ProjectController {
     public ApiV1Response<List<LegacyImportRowResult>> legacyImportBatch(@RequestBody List<LegacyImportReq> rows) {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(legacyImportService.importBatch(rows, actor.id()));
+    }
+
+    /**
+     * P1 / §5.1 HIGH-1.1：L08 上市日期初次录入（独立端点）——
+     * 仅 DRAFT|CONFIRMED|TEAMING|ACTIVE 状态可调；写 INITIAL_LAUNCH_DATE 审计。
+     * launch_date 已存在则拒绝（走双签流程）。
+     */
+    @PostMapping("/{id}/launch-date")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<Project> recordLaunchDate(
+            @PathVariable Long id,
+            @RequestBody LaunchDateRecordReq req) {
+        IpdActor actor = ipdPermission.requireInternal();
+        Date date = Date.from(req.launchDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return ApiV1Response.ok(launchDateChangeService.initialRecord(id, date, req.reason(), actor.id()));
+    }
+
+    /** L08 上市日期初次录入入参（独立于双签流程）。 */
+    public record LaunchDateRecordReq(
+            @NotNull @JsonFormat(pattern = "yyyy-MM-dd") LocalDate launchDate,
+            @NotBlank @Size(max = 500) String reason) {
+    }
+
+    /**
+     * P1 / §5.3 HIGH-1.1：G3 评审自动创建入口 —— 独立端点 POST /api/v1/projects/{id}/gates?gateCode=。
+     * 每 14 天最多创建 1 次；写 GATE_AUTO_CREATE 审计。
+     */
+    @PostMapping("/{id}/gates")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<GateReview> autoCreateGate(
+            @PathVariable Long id,
+            @RequestParam String gateCode) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(gateCreationService.autoCreateGate(id, gateCode, actor.id()));
     }
 
     /**
