@@ -2815,3 +2815,14 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
   - 教训：前端仓测试入口是 test:unit（带 --dom），不是裸 vitest
 
 - **工具链沉淀**：axe-scan 双目标模式验证（A11Y_TARGET_BASE_URL 指真仓 dev / 参考仓 dev / fixture-server 三态）
+
+## 2026-09-06（夜·八）Wave22 补遗：前端 30 测失败终局定论——双命令姿势根因 + 全绿实证
+
+- **终局实证**：`cd apps/web-antd && npx vitest run --dom src/api/ipd` → **16 文件全过 / 71 测全绿**
+- **双根因修正**（比夜·七的单根因更完整）：
+  1. 缺 `--dom` flag → 纯 node 环境 → `window is not defined`（StorageManager localStorage）
+  2. 在**仓库根目录**跑 → vitest 未拾取 apps/web-antd 的 vite.config.mts（plugin-vue）→ `.vue 文件 invalid JS syntax`
+- **正确姿势（三要素全）**：app 子目录 + `--dom` + 显式测试路径
+- **兄弟流代码 0 bug 定论**——57 M + 21 untracked 的 api/ipd 新模块（deletion/notification/project-circle/change 等）测试本身健康
+- 全量终验：根目录 `pnpm test:unit`（= vitest run --dom）后台跑中，作最终口径
+- **教训沉淀**：monorepo 前端测试「跑不动」先查三要素（cwd/flag/路径），勿直接改代码
