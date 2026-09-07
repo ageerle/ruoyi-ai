@@ -69,6 +69,11 @@ public class PersonService {
      */
     public ResignResult resign(Long personId, String reason, IpdActor operator) {
         Person person = requirePerson(personId);
+        // SEC-RESIGN-GROUP: 与 rehire/unbindWecom 同款跨组守卫；controller 语义为"HR 或本人"，
+        // 本人操作先放行（对齐 PersonController 的 isHr-or-self 判定），其余走同组/超管校验。
+        if (!operator.id().equals(personId)) {
+            assertSameGroupOrAdmin(person, operator, "离职冻结");
+        }
         if (EM_RESIGNED.equals(person.getEmploymentStatus())) {
             // 幂等 NOOP：返回当前快照，不抛错
             long pending = countActiveMemberships(personId);
