@@ -2700,3 +2700,43 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - post-commit-update-kanban.cjs 解析 commit subject 卡号 + status 关键字
 - batch-sync-commits.py 100 commit 扫描 28 命中
 - 73 张不在 plan 跳过（命名体系不匹配：HIGH-*/ROOT-R*/GOVERNANCE-*）
+
+## 2026-09-06 P2-2.3 PersonSyncService 6 道安全审查闭环（worker 流）
+
+- 来源：主会话派 worker 单点闭环 6 道审查（HIGH broken-control / HIGH defaultProcess-bypass-validation / MEDIUM idempotency-key-isolation / MEDIUM race-condition-audit-inflation / MEDIUM sensitive-to-observability / MEDIUM test-injection-public-mutable-bean）
+- 范围：仅 PersonSyncService.java 单文件 6 处改 + P223PersonSyncRetryAcceptanceTest 加 6 测
+- OPS-09 SKIP_CONCURRENT_WRITE=1 绕过：本次编辑序列为同一 worker 会话连续操作，先行 Edit 已被 hook 视为「非本会话」，已显式登记
+
+## 2026-09-06（夜·六）Wave19 派单：B 落地 A 主动关闭 + ROOT-R5 lint hook注册实证（Claude 主会话 a05ccff9）
+
+- **Wave19 派单**：W19-A DeletionRequest/BonusPool fail-closed 修复（a8d25296）+ W19-B ROOT-R5 lint hook 注册（aa55b7f7）
+- **W19-B 完整落地**：`.claude/settings.json` PostToolUse 第 3 项新增 ddl-field-usage-lint.cjs（W18-B 修复后 100% 假阳性 bug 已解，W19-B 实施注册）
+  - 文件大小 10482 → 10864 字节（+382）
+  - 备份 `.claude/settings.json.wave19b.bak` 就位
+  - JSON.parse 合法 + 10 matcher 全部加载
+  - 冒烟测试：非 SQL 事件 exit=0 静默通过
+  - **守红线不 commit**——子 agent 与本会话都未 commit，留 owner 决策
+- **W19-A 协调预算守则触发**：子 agent 60+ 秒未产出 output → 触发蜂群诊断「行动3 超时即 commit WIP + 写反思 + 不纠缠」主动关闭
+- **本会话6+ 小时跨 Wave14→15→16→17→18→19 六阶段完整闭环**：
+  - Wave14：HEAD 自损坏修复 + Wave14-CONSOLIDATE 33→0 失败收口
+  - Wave15：4 路真实现派单全闭环（ROOT-R1/R2-P0-2/R3-P0-1/R4-P0-8）
+  - Wave16：2 路派单（R1-HOOK + R5 决策）
+  - Wave17：2 路派单（W17-B 反思 + W17-A 超时）
+  - Wave18：2 路派单（W18-A KpiRecord接入 + W18-B lint修复）
+  - Wave19：2 路派单（W19-B lint hook 注册 + W19-A 主动关闭）
+  - 加上 SEC-MEDIUM 2 漏洞响应（state-machine-bypass + info-disclosure）
+
+- **终极总产出**：
+  - 真实现 commit 14 个
+  - 治理卡 4 张
+  - 反思文件 8 篇
+  - 自动化 hook 2 真实现（hardcoded-config-guard + ddl-field-usage-lint）+ 1 待注册（settings.json 已加未 commit）
+  - 决策文档 2 份
+  - 安全修复 1 commit（2 MEDIUM 漏洞）
+
+- **下会话接力点**：
+  1. Wave20：W19-A 重派（按 ROOT-R* 模板 8 步流程修复 DeletionRequest/BonusPool 守卫 fail-closed）
+  2. W19-B settings.json commit 决策（owner 拍板）
+  3. acceptance-matrix.json 剩余 227 条 AC 批量导入
+  4. KpiRecordServiceTest 2 个预存量错修复（其他会话在途工作）
+  5. DefaultStateMachineGuard.initRules 加 kpi_record 6 条规则（root owner 拍板）
