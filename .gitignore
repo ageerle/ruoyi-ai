@@ -104,3 +104,5 @@ ruvector.db
 /.mcp.json
 /.claude/CLAUDE.md
 /.vscode/
+tests/a11y/node_modules/
+tests/a11y/reports/a11y-report-2*
