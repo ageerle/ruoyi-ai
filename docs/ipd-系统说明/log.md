@@ -2740,3 +2740,27 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
   3. acceptance-matrix.json 剩余 227 条 AC 批量导入
   4. KpiRecordServiceTest 2 个预存量错修复（其他会话在途工作）
   5. DefaultStateMachineGuard.initRules 加 kpi_record 6 条规则（root owner 拍板）
+
+## 2026-09-06（晚·六）3 道安全审查 + V12 走查闭环
+
+| agent | commit | 项 | 测数 |
+|---|---|---|---|
+| a9b98e88 | `bd3f3b0c` | PersonService rehire/unbindWecom 同组+在职守卫+资源限制 | 18/18 |
+| a7eedcdc | `d3deb74a` | PersonSyncService 6 道安全审查（audit JSON+active 守卫+复合键+并发+脱敏+setProcessor） | 12→18 |
+| a51cd1c2 | `e1d6f90f` | BidP231Controller 注解层角色+project 可见性 | 9→12 |
+| a9c8c816 | V12-走查报告 | 移动端+暗色+A11y 5 大真问题 + 5.0 卡日估算 | — |
+
+**累计本会话 ~60+ commit**：
+- P0/P1/P2/P3 全部 100% 闭环
+- 18 项 ZK 矛盾真修订
+- 49 页 7 ❌ 占位→0
+- qa04 41 ERROR→0 / qa08 PASS 17.3%→20.9%
+- 7 道安全审查 100% 闭环
+- R6 update_task 自动同步真实根治
+- V12 走查闭环（5 大真问题记录）
+
+**未闭环项**（下批）：
+- V12 5 大真问题（F1-F6 共 5.0 卡日）
+- 前端 V10/V11 完整版（移动端+暗色增强）
+- A11y 自动化测试接入（axe-core + CI）
+- 49 页前端真实性能/可访问性走查
