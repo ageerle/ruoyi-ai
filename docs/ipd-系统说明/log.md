@@ -2985,3 +2985,26 @@ worktrees 保留为 future reference：
 - **测试**：`P274AcceptanceTest` 5→12 测（追加 5 测覆盖 archive_normal / archive_idempotent / archive_completedOnly / monthlyAttribution_transferInMonth / monthlyAttribution_invalidMonth）
 - **未动**：scanOverdueDrafts + HandoverOverdueScanner + 既有 HANDOVER_* 路径（HIGH-3.x rollback + 批量移交 + 冻结代办）
 - **不在范围**：HandoverOverdueScanner cron 启用（@EnableScheduling 等 OPS-04 合并）、HTTP 层 scan-overdue 端点真库验收（owner 重启后再跑）
+
+
+## 2026-09-07 06:16 PDT 主协调会话（W28-3 收口）：5 张卡验证全绿 + 兄弟会话 commit bug 修复登记
+
+**OPS-09 修复登记**（owner 已授权 commit）：
+- **P412AcceptanceTest.java**：兄弟会话 `7b0ea28e` 重写后用了 `updateById(any(Object.class))` 5 处（L77/L84/L160/L179/L224），与 MyBatis-Plus BaseMapper.updateById 的双签名（Object vs Collection<T>）冲突，类型推断失败导致整个 ruoyi-ipd 模块测试编译阻塞。主协调改回 `any(Requirement.class)`。
+- **Sec03WithdrawSideChannelTest.java**：兄弟会话 commit 用了中文双引号 `\\"非本人\\"` 等转义形式，javac UTF-8 字节序列解析失败导致 3 处错误（@DisplayName 字符串提前关闭）。改用单引号 `'非本人'` 等。
+
+**5 张卡验收测试 51/51 全绿**（错峰单模块、无 `-am` 无 `clean`）：
+- P256AcceptanceTest: 5/5（P2-5.6 G5 90天复盘+日期重排）
+- P274AcceptanceTest: 10/10（P2-7.4 移交超期/历史保全/月度归属）
+- P383AcceptanceTest: 13/13（P3-8.3 退出/升降级/奖金资格）
+- P412AcceptanceTest: 14/14（P4-1.2 查询码唯一+受理前补撤+非法动作）
+- P413AcceptanceTest: 9/9（P4-1.3 双PM路由+5工作日提醒）
+
+**兄弟会话同步翻卡**（manage.py 验证）：
+- P3-8.3 (f06bc1fb): **done**
+- P2-5.6 (fab011b1): inreview
+- P2-7.4 (3b4c82a1): inreview
+- P4-1.2 (9c1dab9c): inreview
+- P4-1.3 (6c19a3f4): inreview
+
+**未 push**：owner 规则；仅本仓本地 commit。
