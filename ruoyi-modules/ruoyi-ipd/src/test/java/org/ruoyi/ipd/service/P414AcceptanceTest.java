@@ -1,5 +1,9 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -13,8 +17,11 @@ import org.mockito.quality.Strictness;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.Requirement;
 import org.ruoyi.ipd.domain.RequirementChange;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.RequirementChangeMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
@@ -37,7 +44,7 @@ import static org.mockito.Mockito.when;
  *   <li>AC-REQ-08 CHANGED → CLOSED：变更单生效后进入终态 CLOSED</li>
  * </ol>
  *
- * <p>实现见 {@link RequirementStateMachine}（P4-1.4）；本卡只验收、不可改业务代码。
+ * <p>实现见 {@link RequirementStateMachine}（P4-1.4）；鉴权链由 IpdIdorGuard 兜底。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -46,26 +53,49 @@ class P414AcceptanceTest {
 
     @Mock private RequirementMapper requirementMapper;
     @Mock private RequirementChangeMapper requirementChangeMapper;
+    @Mock private ProjectMapper projectMapper;
+    @Mock private ProjectMemberMapper projectMemberMapper;
     @Mock private AuditLogService auditLogService;
 
     private RequirementStateMachine service;
 
-    private static final IpdActor MARKET_PM = new IpdActor(101L, "mkt", "MARKET_PM", 11L);
-    private static final IpdActor RD_PM = new IpdActor(202L, "rd", "RD_PM", 11L);
+    private static final Long PROJECT_ID = 99L;
+    private static final Long GROUP_ID = 11L;
+
+    /** GROUP_LEADER：可走全部 7 态（除 ROUTED→ACCEPTED/REJECTED 之外的桥接步骤）。 */
+    private static final IpdActor LEADER = new IpdActor(10L, "王组长", "GROUP_LEADER", GROUP_ID);
+    /** MARKET_PM：仅 ROUTED→ACCEPTED/REJECTED、ACCEPTED→CHANGED/REJECTED 合法。 */
+    private static final IpdActor MARKET_PM = new IpdActor(101L, "mkt", "MARKET_PM", GROUP_ID);
+    /** RD_PM：同上。 */
+    private static final IpdActor RD_PM = new IpdActor(202L, "rd", "RD_PM", GROUP_ID);
+    /** SUPER_ADMIN：兜底绕过鉴权。 */
+    private static final IpdActor ADMIN = new IpdActor(1L, "超管", "SUPER_ADMIN", null);
+
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, Project.class);
+        TableInfoHelper.initTableInfo(assistant, Requirement.class);
+        TableInfoHelper.initTableInfo(assistant, ProjectMemberMapper.class);
+    }
 
     @BeforeEach
     void setUp() {
-        service = new RequirementStateMachine(requirementMapper, requirementChangeMapper, auditLogService);
+        service = new RequirementStateMachine(requirementMapper, requirementChangeMapper,
+            projectMapper, projectMemberMapper, auditLogService);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
+        // 默认：项目存在、mainGroupId 匹配、actor 是项目成员（鉴权链兜底）
+        Project project = Project.builder().id(PROJECT_ID).mainGroupId(GROUP_ID).tenantId("000000").build();
+        when(projectMapper.selectById(PROJECT_ID)).thenReturn(project);
+        when(projectMemberMapper.selectCount(any())).thenReturn(1L);
     }
 
     private Requirement req(Long id, String status) {
         return Requirement.builder()
-            .id(id).status(status).projectId(99L)
+            .id(id).status(status).projectId(PROJECT_ID)
             .queryCode("AB12CD" + (id % 10)).build();
     }
 
-    /** mock selectById 永远返回指定状态的需求。 */
     private void givenReq(Long id, String status) {
         when(requirementMapper.selectById(id)).thenAnswer(inv -> req(id, status));
     }
@@ -78,7 +108,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-05] DRAFT → SUBMITTED（submit）合法")
     void AC_REQ_05_DRAFT_到_SUBMITTED() {
         givenReq(1L, RequirementStateMachine.ST_DRAFT);
-        Requirement after = service.transition(1L, RequirementStateMachine.ST_SUBMITTED, "submit", MARKET_PM);
+        Requirement after = service.transition(1L, RequirementStateMachine.ST_SUBMITTED, "submit", LEADER);
         assertThat(after.getStatus()).isEqualTo(RequirementStateMachine.ST_SUBMITTED);
         verify(requirementMapper).updateById(any(Requirement.class));
         verify(requirementChangeMapper, never()).insert(any(RequirementChange.class));
@@ -88,7 +118,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-05] SUBMITTED → ROUTED（route，按产品路由双 PM）合法")
     void AC_REQ_05_SUBMITTED_到_ROUTED() {
         givenReq(2L, RequirementStateMachine.ST_SUBMITTED);
-        Requirement after = service.transition(2L, RequirementStateMachine.ST_ROUTED, "route to dual PM", MARKET_PM);
+        Requirement after = service.transition(2L, RequirementStateMachine.ST_ROUTED, "route to dual PM", LEADER);
         assertThat(after.getStatus()).isEqualTo(RequirementStateMachine.ST_ROUTED);
     }
 
@@ -96,7 +126,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-05] ROUTED → ACCEPTED（双 PM 受理）合法")
     void AC_REQ_05_ROUTED_到_ACCEPTED() {
         givenReq(3L, RequirementStateMachine.ST_ROUTED);
-        Requirement after = service.transition(3L, RequirementStateMachine.ST_ACCEPTED, "双 PM 受理", RD_PM);
+        Requirement after = service.transition(3L, RequirementStateMachine.ST_ACCEPTED, "双 PM 受理", MARKET_PM);
         assertThat(after.getStatus()).isEqualTo(RequirementStateMachine.ST_ACCEPTED);
     }
 
@@ -112,7 +142,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-05] 越界拒绝：SUBMITTED → ACCEPTED 直接跳状态 ⇒ STATE_CONFLICT")
     void AC_REQ_05_越界拒绝_SUBMITTED_ACCEPTED() {
         givenReq(5L, RequirementStateMachine.ST_SUBMITTED);
-        assertThatThrownBy(() -> service.transition(5L, RequirementStateMachine.ST_ACCEPTED, "skip route", MARKET_PM))
+        assertThatThrownBy(() -> service.transition(5L, RequirementStateMachine.ST_ACCEPTED, "skip route", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
         verify(requirementMapper, never()).updateById(any(Requirement.class));
@@ -122,7 +152,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-05] 越界拒绝：DRAFT → ACCEPTED（一步跳到 ACCEPTED）⇒ STATE_CONFLICT")
     void AC_REQ_05_越界拒绝_DRAFT_ACCEPTED() {
         givenReq(6L, RequirementStateMachine.ST_DRAFT);
-        assertThatThrownBy(() -> service.transition(6L, RequirementStateMachine.ST_ACCEPTED, "jump", MARKET_PM))
+        assertThatThrownBy(() -> service.transition(6L, RequirementStateMachine.ST_ACCEPTED, "jump", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
     }
@@ -131,7 +161,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-05] 越界拒绝：CHANGED → ACCEPTED（已变更不能回到 ACCEPTED）⇒ STATE_CONFLICT")
     void AC_REQ_05_越界拒绝_CHANGED_ACCEPTED() {
         givenReq(7L, RequirementStateMachine.ST_CHANGED);
-        assertThatThrownBy(() -> service.transition(7L, RequirementStateMachine.ST_ACCEPTED, "revert", MARKET_PM))
+        assertThatThrownBy(() -> service.transition(7L, RequirementStateMachine.ST_ACCEPTED, "revert", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
     }
@@ -145,7 +175,7 @@ class P414AcceptanceTest {
             RequirementStateMachine.ST_ROUTED, RequirementStateMachine.ST_ACCEPTED,
             RequirementStateMachine.ST_CHANGED, RequirementStateMachine.ST_CLOSED
         }) {
-            assertThatThrownBy(() -> service.transition(8L, toState, "from terminal", MARKET_PM))
+            assertThatThrownBy(() -> service.transition(8L, toState, "from terminal", ADMIN))
                 .as("REJECTED → %s 应拒绝", toState)
                 .isInstanceOf(IpdBusinessException.class)
                 .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
@@ -161,7 +191,7 @@ class P414AcceptanceTest {
             RequirementStateMachine.ST_ROUTED, RequirementStateMachine.ST_ACCEPTED,
             RequirementStateMachine.ST_CHANGED, RequirementStateMachine.ST_REJECTED
         }) {
-            assertThatThrownBy(() -> service.transition(9L, toState, "from terminal", MARKET_PM))
+            assertThatThrownBy(() -> service.transition(9L, toState, "from terminal", ADMIN))
                 .as("CLOSED → %s 应拒绝", toState)
                 .isInstanceOf(IpdBusinessException.class)
                 .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
@@ -172,7 +202,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-05] 目标状态非法字面量 ⇒ PARAM_INVALID")
     void AC_REQ_05_非法目标状态() {
         givenReq(10L, RequirementStateMachine.ST_DRAFT);
-        assertThatThrownBy(() -> service.transition(10L, "INVALID_STATE", "x", MARKET_PM))
+        assertThatThrownBy(() -> service.transition(10L, "INVALID_STATE", "x", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.PARAM_INVALID);
     }
@@ -194,7 +224,7 @@ class P414AcceptanceTest {
         verify(requirementChangeMapper).insert(cap.capture());
         RequirementChange created = cap.getValue();
         assertThat(created.getRequirementId()).isEqualTo(11L);
-        assertThat(created.getProjectId()).isEqualTo(99L);
+        assertThat(created.getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(created.getChangeType()).isEqualTo("ADOPTION_MODIFIED");
         assertThat(created.getStatus()).isEqualTo(RequirementChangeService.STATUS_DRAFT);
         assertThat(created.getCreateBy()).isEqualTo(MARKET_PM.id());
@@ -208,7 +238,7 @@ class P414AcceptanceTest {
     void AC_REQ_07_越界到CHANGED不创建变更单() {
         givenReq(12L, RequirementStateMachine.ST_ROUTED);
         assertThatThrownBy(() -> service.transition(12L, RequirementStateMachine.ST_CHANGED,
-            "skip accept", MARKET_PM))
+            "skip accept", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
         verify(requirementChangeMapper, never()).insert(any(RequirementChange.class));
@@ -222,7 +252,7 @@ class P414AcceptanceTest {
     @DisplayName("[AC-REQ-08] CHANGED → CLOSED（变更单生效后进入终态）合法")
     void AC_REQ_08_CHANGED_到_CLOSED() {
         givenReq(13L, RequirementStateMachine.ST_CHANGED);
-        Requirement after = service.transition(13L, RequirementStateMachine.ST_CLOSED, "变更完成", RD_PM);
+        Requirement after = service.transition(13L, RequirementStateMachine.ST_CLOSED, "变更完成", LEADER);
         assertThat(after.getStatus()).isEqualTo(RequirementStateMachine.ST_CLOSED);
         verify(requirementMapper).updateById(any(Requirement.class));
         // CHANGED → CLOSED 不再创建新变更单（仅 ACCEPTED → CHANGED 自动创建）
@@ -230,11 +260,17 @@ class P414AcceptanceTest {
     }
 
     @Test
-    @DisplayName("[AC-REQ-08] ACCEPTED → CLOSED（绕过 CHANGED）⇒ STATE_CONFLICT")
+    @DisplayName("[AC-REQ-08] ACCEPTED → CLOSED（绕过 CHANGED）⇒ FORBIDDEN（角色门先于状态机守卫）")
     void AC_REQ_08_越界_ACCEPTED_CLOSED() {
         givenReq(14L, RequirementStateMachine.ST_ACCEPTED);
+        // ACCEPTED → CLOSED 无 TRANSITION_ROLES 映射，角色门先于状态机守卫报 FORBIDDEN
         assertThatThrownBy(() -> service.transition(14L, RequirementStateMachine.ST_CLOSED,
             "skip change", MARKET_PM))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting("errorCode").isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+        // 用 SUPER_ADMIN 绕过角色门后，仍被状态机守卫拒 ⇒ STATE_CONFLICT
+        assertThatThrownBy(() -> service.transition(14L, RequirementStateMachine.ST_CLOSED,
+            "skip change", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
     }
@@ -246,11 +282,9 @@ class P414AcceptanceTest {
     @Test
     @DisplayName("isAllowed 锁定合法迁移表：7 状态全集 + 越界全 false")
     void isAllowed契约锁定() {
-        // 7 状态自环 = false（AC-REQ-05 严禁「原状态不动」语义迁移）
         for (String s : RequirementStateMachine.ALL_STATES) {
             assertThat(service.isAllowed(s, s)).as("self-loop %s→%s 必须 false", s, s).isFalse();
         }
-        // 终态 = 任何出口 false
         for (String from : RequirementStateMachine.TERMINAL_STATES) {
             for (String to : RequirementStateMachine.ALL_STATES) {
                 assertThat(service.isAllowed(from, to))
@@ -258,7 +292,6 @@ class P414AcceptanceTest {
                     .isFalse();
             }
         }
-        // 合法 5 条迁移
         assertThat(service.isAllowed(RequirementStateMachine.ST_DRAFT, RequirementStateMachine.ST_SUBMITTED)).isTrue();
         assertThat(service.isAllowed(RequirementStateMachine.ST_SUBMITTED, RequirementStateMachine.ST_ROUTED)).isTrue();
         assertThat(service.isAllowed(RequirementStateMachine.ST_ROUTED, RequirementStateMachine.ST_ACCEPTED)).isTrue();
@@ -287,7 +320,7 @@ class P414AcceptanceTest {
     @Test
     @DisplayName("需求 ID 为 null ⇒ PARAM_INVALID")
     void 需求ID空() {
-        assertThatThrownBy(() -> service.transition(null, RequirementStateMachine.ST_SUBMITTED, "x", MARKET_PM))
+        assertThatThrownBy(() -> service.transition(null, RequirementStateMachine.ST_SUBMITTED, "x", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.PARAM_INVALID);
     }
@@ -296,7 +329,7 @@ class P414AcceptanceTest {
     @DisplayName("需求不存在 ⇒ NOT_FOUND")
     void 需求不存在() {
         when(requirementMapper.selectById(404L)).thenReturn(null);
-        assertThatThrownBy(() -> service.transition(404L, RequirementStateMachine.ST_SUBMITTED, "x", MARKET_PM))
+        assertThatThrownBy(() -> service.transition(404L, RequirementStateMachine.ST_SUBMITTED, "x", ADMIN))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.NOT_FOUND);
     }
@@ -318,7 +351,7 @@ class P414AcceptanceTest {
     @DisplayName("合法迁移：写 1 条 REQUIREMENT_TRANSITION 审计 + entityType=requirement_v2")
     void 合法迁移审计() {
         givenReq(16L, RequirementStateMachine.ST_SUBMITTED);
-        service.transition(16L, RequirementStateMachine.ST_ROUTED, "audit reason", MARKET_PM);
+        service.transition(16L, RequirementStateMachine.ST_ROUTED, "audit reason", LEADER);
 
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());
@@ -326,8 +359,7 @@ class P414AcceptanceTest {
         assertThat(audit.getAction()).isEqualTo("REQUIREMENT_TRANSITION");
         assertThat(audit.getEntityType()).isEqualTo("requirement_v2");
         assertThat(audit.getEntityId()).isEqualTo(16L);
-        assertThat(audit.getOperatorId()).isEqualTo(MARKET_PM.id());
-        assertThat(audit.getOperatorRole()).isEqualTo("MARKET_PM");
+        assertThat(audit.getOperatorRole()).isEqualTo("GROUP_LEADER");
         assertThat(audit.getReason()).contains("from=SUBMITTED").contains("to=ROUTED");
     }
 }
