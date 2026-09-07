@@ -3153,3 +3153,59 @@ worktrees 保留为 future reference：
 - 不真库 DCL / 不 push / 不 B/C/D 业务代码
 - 不派单任何代码子 agent
 
+
+## 2026-09-07 17:00 | AUD-GOV-01 蜂群主协调会话：全局盘点 + 派单 + 实施闭环
+
+### 会话类型
+基于 Agent 工具原生 sub-agent 并行派单（非 headless claude -p，CLI 2.1.252 已封死）
+
+### 4 路并行盘点结果
+- **A1（前端 + manage.py）**：manage.py check 因镜像 P1-6.2 同名未管卡冲突阻断（382 行 `MED-1.3 / CONSISTENCY-4 | P1-6.2 | ✅ done` 错误归并到 P1-6.2 名下）；前端 P0-10.1/P0-10.2 vue 文件已落地但卡面 PARTIAL 验证未完；MCP zker_vibe_kanban 可用且与 manage.py 数据 100% 一致（397 张）
+- **A2（7 张 inprogress 卡字节证据盘点）**：0 done + 6 partial + 1 not_started。P0-7.4 是唯一 high 风险（IpdAuthController 122 行无 wecom/mock 关键词、无 P074AcceptanceTest）。P1-9.2 / P1-4.2 命名规范违反（实际测试类名非卡面硬要求 P192/P142）。AUD-GOV-01 log.md 提及 30 次最频繁但卡面禁仅凭服务层绿关闭
+- **A3（后端健康扫描）**：编译零错（3.866s 独立验证），44 findings（1 critical/4 high/10 medium），ProductService 1.9/10 最弱（CCN 17 brain method + 3 prior defects），PostLaunchReviewController 未入 repowise 索引（untracked），index_behind=3 commits
+- **A4（P0-7.4 实施 sub-agent）**：✅ **worktree 隔离实施企微 Mock 扫码登录闭环**
+
+### P0-7.4 实施落地（high 风险唯一闭环）
+- **commit**：`223d1d54dde8684435b0ff150c64646d2494962e` 在 `/tmp/p074-worktree` 分支 `feat/p0-7.4-wecom-mock-login`
+- **修改文件**：
+  - `IpdAuthService.java` — 新增 `wecomMockLogin(String)` 方法
+  - `IpdAuthController.java` — 新增 `WecomLoginRequest` + `POST /api/v1/auth/wecom/qr-login` 端点
+- **新增文件**：`P074AcceptanceTest.java`（218 行，7 测试覆盖 AC-AUTH-04/05 + 空入参 + DISABLED + RESIGNED + Controller 200/404）
+- **独立验证 mvn test EXIT=0**：`tests=7 failures=0 errors=0`；回归 IpdAuthServiceTest 15/15 + PersonRehireWecomGroupLimitAcceptanceTest 6/6 + IpdAuthControllerConcurrencyTest 2/2 全绿
+- **审计**：`audit action=WECOM_MOCK_LOGIN[_FAIL]` reason 带 `mock=true` 标记，未绑定/RESIGNED/DISABLED 同错误信息避免越权泄露
+- **状态**：worktree 待 owner 决定是否合并到 main（本会话不 push）
+
+### 治理清单（10 项）
+1. 🔴 U0 - P0-7.4 落地 ✅ **已闭环**（commit 223d1d54 + 独立验证）
+2. 🟡 U1 - P1-9.2 改名 LegacyScenarioDaysRemaining → P192AcceptanceTest
+3. 🟡 U1 - P1-4.2 改名 StageActionDeliverableOssId → P142AcceptanceTest
+4. 🟡 U1 - P0-10.x 前端完整正向浏览器改密+企微+密码策略端到端验证（依赖前端仓会话）
+5. 🟡 U1 - P0-9 阶段汇总待 P0-7.4 合并后 owner 复核
+6. 🟡 U1 - P1-11 阶段汇总待 P1-4.2 / P1-9.2 命名修复后 owner 复核
+7. 🟢 U2 - AUD-GOV-LEDGER 3 缺口补齐（四列索引/DEF 闭环链/QA 假绿 flag）
+8. 🟢 U2 - AUD-GOV-01 补 Api03AcceptanceTest 真实业务验收（如需 API 真实验收）
+9. 🟢 U2 - manage.py check 修复 P1-6.2 同名未管卡冲突（镜像 382 行错误归并）
+10. ⚪ Backlog - AUD-GOV-B-FIX-PACK-3（inreview U2 长期）
+
+### 6 层根因反思
+1. **卡面声明 vs 字节证据冲突**：P0-7.4 卡面 ⬜ vs 代码 0 落地 → 已通过 worktree+独立 mvn 闭环
+2. **命名规范违反硬约束**：测试类按功能命名而非卡号命名
+3. **阶段汇总卡依赖子卡**：P0-9/P1-11 等兄弟流交还才能推进
+4. **后端服务未启动**：治理轮依赖历史证据而非新启动实例
+5. **MCP 静默失败**：必须 get_task 验证（19% 概率）
+6. **镜像文件 vs 看板数据双源**：镜像 markdown 表格无强一致性约束
+
+### 同步与登记
+- ✅ 治理报告落盘：`docs/ipd-系统说明/治理/AUD-GOV-01-全局闭环治理盘点-20260907.md`
+- ✅ 本段 log.md 末段登记
+- 📋 待追加：开发计划-看板镜像.md 末段登记（与本 commit 一并提交）
+- ⏸ 不动 P0-7.4 看板卡面 status（待 owner curl PUT 核销）
+- ⏸ 不 push worktree（待 owner 决定是否合并）
+
+### OPS-09 守则遵守
+- 不动 21:09+ / 21:54+ / 15:25+ / 15:35+ log.md 段（仅末段追加）
+- 不动看板镜像已有行（仅末段追加）
+- 不动兄弟会话在途 12 个 dirty 文件（application.yml / IpdPermissionCode.java / PostLaunchReviewService.java / PostLaunchReviewController.java / HandoverController.java / P256AcceptanceTest.java 等）
+- 不真库 DCL / 不 push / 不 B/C/D 业务代码
+- 不抢认领已 inprogress 卡（依赖兄弟流交还）
+- 不修改 P1-6.2 / P0-9 / P1-11 等汇总卡卡面
