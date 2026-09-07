@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,6 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -128,6 +131,41 @@ public class ProjectScoreArchiveService {
         BigDecimal rd = "RD_LEADER".equals(row.getComponentType()) ? row.getScore() : null;
         return new ProjectScoreView(row.getProjectId(), row.getPersonId(), row.getPmRole(),
             row.getVersionNo(), row.getRuleVersion(), self, market, rd, null, false);
+    }
+
+    /**
+     * P3-2.2 归档区列表查询：仅超管（SEC-API-01 同严，禁止 StpUtil 旁路）。
+     *
+     * <p>只读事务（{@code readOnly=true}）+ MySQL 一致性快照优化；过滤已提交评分
+     * （status SUBMITTED/FINALIZED）+ 时间窗 [fromMonth, toMonth]（闭区间，按 scoredAt 倒序）。
+     *
+     * @param projectId 项目 ID（必填）
+     * @param fromMonth 起始月份（含）
+     * @param toMonth   截止月份（含）
+     * @return 时间窗内已提交的 ProjectScore 列表（按 scoredAt DESC）
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public List<ProjectScore> listArchive(Long projectId, YearMonth fromMonth, YearMonth toMonth) {
+        permission.requireAdmin();
+        if (projectId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 不能为空");
+        }
+        if (fromMonth == null || toMonth == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "时间窗不能为空");
+        }
+        if (fromMonth.isAfter(toMonth)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "起始月份不能晚于截止月份");
+        }
+        ZoneId zone = ZoneId.systemDefault();
+        Date fromDate = Date.from(fromMonth.atDay(1).atStartOfDay(zone).toInstant());
+        Date toExclusive = Date.from(toMonth.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant());
+        return projectScoreMapper.selectList(
+            new LambdaQueryWrapper<ProjectScore>()
+                .eq(ProjectScore::getProjectId, projectId)
+                .in(ProjectScore::getStatus, "SUBMITTED", "FINALIZED")
+                .ge(ProjectScore::getScoredAt, fromDate)
+                .lt(ProjectScore::getScoredAt, toExclusive)
+                .orderByDesc(ProjectScore::getScoredAt));
     }
 
     /** 按最高共同版本重算结算视图；不读取当前规则。 */
