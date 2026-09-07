@@ -135,7 +135,7 @@ class Sec03WithdrawSideChannelTest {
     }
 
     @Test
-    @DisplayName("2) 非本人申请撤返 → 统一 404 NOT_FOUND（防\"非本人\"侧信道）")
+    @DisplayName("2) 非本人申请撤返 → 统一 404 NOT_FOUND（防'非本人'侧信道）")
     void withdrawOtherOwnerReturnsUniformNotFound() {
         DeletionRequest owned = savedRequest(REQUEST_ID, DeletionRequestService.ST_LEADER_REVIEW,
             OTHER_USER_ID, new Date());
@@ -150,7 +150,7 @@ class Sec03WithdrawSideChannelTest {
     }
 
     @Test
-    @DisplayName("3) 已终态申请撤返 → 统一 404 NOT_FOUND（防\"已终态\"侧信道）")
+    @DisplayName("3) 已终态申请撤返 → 统一 404 NOT_FOUND（防'已终态'侧信道）")
     void withdrawTerminalStateReturnsUniformNotFound() {
         DeletionRequest deleted = savedRequest(REQUEST_ID, DeletionRequestService.ST_DELETED,
             REQUESTER_ID, new Date());
@@ -180,7 +180,7 @@ class Sec03WithdrawSideChannelTest {
     }
 
     @Test
-    @DisplayName("4) 超 24h 时限撤返 → 统一 404 NOT_FOUND（防\"超时限\"侧信道）")
+    @DisplayName("4) 超 24h 时限撤返 → 统一 404 NOT_FOUND（防'超时限'侧信道）")
     void withdrawOverDeadlineReturnsUniformNotFound() {
         Date old = new Date(System.currentTimeMillis() - 25 * 3600_000L);
         DeletionRequest oldRequest = savedRequest(REQUEST_ID, DeletionRequestService.ST_LEADER_REVIEW,

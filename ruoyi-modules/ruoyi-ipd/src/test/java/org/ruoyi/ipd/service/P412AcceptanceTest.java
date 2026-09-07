@@ -74,14 +74,14 @@ class P412AcceptanceTest {
     /** 校验 updateById 调用并返回参数中第一项 Requirement（兼容 MyBatis-Plus 双签名）。 */
     private Requirement captureUpdatedRequirement() {
         ArgumentCaptor<Object> cap = ArgumentCaptor.forClass(Object.class);
-        verify(requirementMapper).updateById(any(Object.class));
+        verify(requirementMapper).updateById(any(Requirement.class));
         org.mockito.Mockito.doAnswer(inv -> {
             Object arg0 = inv.getArgument(0);
             if (arg0 instanceof Requirement) {
                 cap.getAllValues().add(arg0);
             }
             return 1;
-        }).when(requirementMapper).updateById(any(Object.class));
+        }).when(requirementMapper).updateById(any(Requirement.class));
         return null;
     }
 
@@ -157,7 +157,7 @@ class P412AcceptanceTest {
 
         assertThat(view.queryCode()).isEqualTo(QUERY_CODE);
         assertThat(view.status()).isEqualTo("SUBMITTED");
-        verify(requirementMapper).updateById(any(Object.class));
+        verify(requirementMapper).updateById(any(Requirement.class));
 
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(auditCap.capture());
@@ -176,7 +176,7 @@ class P412AcceptanceTest {
         assertThatThrownBy(() -> service.supplement(QUERY_CODE, patch, "ip", "ua"))
             .isInstanceOf(IpdBusinessException.class)
             .extracting("errorCode").isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
-        verify(requirementMapper, never()).updateById(any(Object.class));
+        verify(requirementMapper, never()).updateById(any(Requirement.class));
     }
 
     @Test
@@ -221,7 +221,7 @@ class P412AcceptanceTest {
         GuestDemandView view = service.withdraw(QUERY_CODE, patch, "1.2.3.4", "Mozilla/5.0");
 
         assertThat(view.status()).isEqualTo("WITHDRAWN");
-        verify(requirementMapper).updateById(any(Object.class));
+        verify(requirementMapper).updateById(any(Requirement.class));
 
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(auditCap.capture());
