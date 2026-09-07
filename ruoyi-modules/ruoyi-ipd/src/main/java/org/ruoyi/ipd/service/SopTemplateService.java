@@ -12,11 +12,14 @@ import org.ruoyi.ipd.domain.ActionDef;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.SopTemplate;
 import org.ruoyi.ipd.domain.SopTemplateInstance;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.SopTemplateInstanceMapper;
 import org.ruoyi.ipd.mapper.SopTemplateMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.seed.ActionCatalog;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +49,8 @@ public class SopTemplateService {
     private final SopTemplateMapper sopTemplateMapper;
     private final SopTemplateInstanceMapper sopTemplateInstanceMapper;
     private final AuditLogService auditLogService;
+    private final ProjectMemberMapper projectMemberMapper;
+    private final ProjectMapper projectMapper;
 
     /** 私有 Jackson 实例：序列化嵌套 JSON（meta/actionList/responsibilityMatrix/phaseDeadlineMap）。 */
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -117,7 +122,14 @@ public class SopTemplateService {
             .tenantId(template.getTenantId())
             .delFlag("0")
             .build();
-        sopTemplateMapper.insert(fresh);
+        try {
+            sopTemplateMapper.insert(fresh);
+        } catch (DuplicateKeyException dke) {
+            // 并发冲突：同 templateCode 同时两路 PUBLISHED 写入——后续需补 partial unique index
+            // （DDL 范围超出本修复，由 db-migration 派单落地）。当前 throw STATE_CONFLICT 让客户端可重试。
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "同一 templateCode 仅允许一个 PUBLISHED 模板，并发冲突");
+        }
         if (fresh.getId() == null || fresh.getId() <= 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "SOP 模板写入失败：未生成主键");
         }
@@ -212,6 +224,9 @@ public class SopTemplateService {
         if (projectId == null || projectId <= 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 非法");
         }
+        // 项目成员 + 跨租户守卫（SUPER_ADMIN 绕过；非成员/跨租户统一 FORBIDDEN，fail-closed 不泄漏存在性）
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(
+            actor, projectId, projectMemberMapper, projectMapper);
 
         SopTemplate template = getById(templateId);
         if (!SopTemplate.Status.PUBLISHED.equals(template.getStatus())) {
@@ -275,13 +290,16 @@ public class SopTemplateService {
     }
 
     /**
-     * 按项目列出实例（@Transactional readOnly）。
+     * 按项目列出实例（@Transactional readOnly）。项目成员守卫——SUPER_ADMIN 豁免，
+     * 非成员/跨租户统一 FORBIDDEN（fail-closed）。
      */
     @Transactional(readOnly = true)
-    public List<SopTemplateInstance> listInstancesByProject(Long projectId) {
+    public List<SopTemplateInstance> listInstancesByProject(Long projectId, IpdActor actor) {
         if (projectId == null || projectId <= 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 非法");
         }
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(
+            actor, projectId, projectMemberMapper, projectMapper);
         return sopTemplateInstanceMapper.selectList(
             Wrappers.<SopTemplateInstance>lambdaQuery()
                 .eq(SopTemplateInstance::getProjectId, projectId)

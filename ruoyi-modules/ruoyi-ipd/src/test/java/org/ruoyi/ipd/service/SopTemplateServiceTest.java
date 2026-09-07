@@ -8,11 +8,15 @@ import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.SopTemplate;
 import org.ruoyi.ipd.domain.SopTemplateInstance;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.SopTemplateInstanceMapper;
 import org.ruoyi.ipd.mapper.SopTemplateMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,18 +40,23 @@ class SopTemplateServiceTest {
     private SopTemplateMapper templateMapper;
     private SopTemplateInstanceMapper instanceMapper;
     private AuditLogService auditLogService;
+    private ProjectMemberMapper projectMemberMapper;
+    private ProjectMapper projectMapper;
     private SopTemplateService service;
 
     private static final IpdActor ADMIN = new IpdActor(1L, "admin", "SUPER_ADMIN", 100L);
     private static final IpdActor MARKET_PM = new IpdActor(2L, "market", "MARKET_PM", 100L);
     private static final IpdActor RD_PM = new IpdActor(3L, "rd", "RD_PM", 100L);
     private static final IpdActor GUEST = new IpdActor(4L, "guest", "GUEST", 100L);
+    private static final IpdActor OUTSIDER = new IpdActor(99L, "outsider", "MARKET_PM", 200L);
 
     @BeforeEach
     void setUp() {
         templateMapper = mock(SopTemplateMapper.class);
         instanceMapper = mock(SopTemplateInstanceMapper.class);
         auditLogService = mock(AuditLogService.class);
+        projectMemberMapper = mock(ProjectMemberMapper.class);
+        projectMapper = mock(ProjectMapper.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         when(templateMapper.insert(any(SopTemplate.class))).thenAnswer(inv -> {
             SopTemplate t = inv.getArgument(0);
@@ -60,7 +69,19 @@ class SopTemplateServiceTest {
             return 1;
         });
         when(instanceMapper.updateById(any(SopTemplateInstance.class))).thenReturn(1);
-        service = new SopTemplateService(templateMapper, instanceMapper, auditLogService);
+        // 默认：项目存在 + 当前 actor 是项目成员（让现有测试无须额外 stub 即可通过新守卫）
+        when(projectMapper.selectById(anyLong())).thenReturn(stubProject());
+        when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+        service = new SopTemplateService(
+            templateMapper, instanceMapper, auditLogService, projectMemberMapper, projectMapper);
+    }
+
+    /** 项目 stub——tenantId=null 让 IpdIdorGuard.currentTenantId() 容错跳过跨租户校验 */
+    private static Project stubProject() {
+        Project p = new Project();
+        p.setId(100L);
+        p.setTenantId(null);
+        return p;
     }
 
     // ========== 模板版本管理 ==========
@@ -260,5 +281,67 @@ class SopTemplateServiceTest {
             .isInstanceOf(IpdBusinessException.class)
             .extracting(ex -> ((IpdBusinessException) ex).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+    }
+
+    // ========== [P1-3.3-IDOR-FIX] post-commit security review 4 项修复 ==========
+
+    @Test
+    @DisplayName("[P1-3.3-IDOR-FIX-1] instantiate 非项目成员 → FORBIDDEN（项目成员守卫）")
+    void instantiateNonProjectMemberForbidden() {
+        // override 默认 mock：actor 不是项目成员
+        when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        SopTemplate t = SopTemplate.builder()
+            .id(40L).templateCode("SOP-IDOR").version(1L)
+            .status(SopTemplate.Status.PUBLISHED).category(SopTemplate.Category.MIXED).delFlag("0").build();
+        when(templateMapper.selectById(40L)).thenReturn(t);
+        assertThatThrownBy(() -> service.instantiate(40L, 600L, MARKET_PM))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(ex -> ((IpdBusinessException) ex).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("[P1-3.3-IDOR-FIX-2] listInstancesByProject 非项目成员 → FORBIDDEN")
+    void listInstancesByProjectNonProjectMemberForbidden() {
+        when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        assertThatThrownBy(() -> service.listInstancesByProject(700L, MARKET_PM))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(ex -> ((IpdBusinessException) ex).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("[P1-3.3-IDOR-FIX-3] publishTemplate 同 templateCode 并发冲突 → STATE_CONFLICT")
+    void publishTemplateConcurrentDuplicateKey() {
+        when(templateMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(new ArrayList<>());
+        when(templateMapper.insert(any(SopTemplate.class)))
+            .thenThrow(new DuplicateKeyException("uk_sop_template_code_published"));
+        assertThatThrownBy(() -> service.publishTemplate(
+            SopTemplate.builder()
+                .templateCode("SOP-RACE").templateName("race")
+                .category(SopTemplate.Category.DEEP_MGMT).build(),
+            ADMIN))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(ex -> ((IpdBusinessException) ex).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+    }
+
+    @Test
+    @DisplayName("[P1-3.3-IDOR-FIX-4] instantiate MARKET_PM + 在项目成员中 + PUBLISHED 模板 → 完整流程成功")
+    void instantiateFullFlowSuccess() {
+        SopTemplate t = SopTemplate.builder()
+            .id(50L).templateCode("SOP-FULL").templateName("full flow")
+            .version(2L).status(SopTemplate.Status.PUBLISHED)
+            .category(SopTemplate.Category.MIXED).delFlag("0").tenantId(null).build();
+        when(templateMapper.selectById(50L)).thenReturn(t);
+        when(instanceMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(new ArrayList<>());
+        // 默认 mock 已含项目成员关系，直接走完整路径
+        SopTemplateInstance inst = service.instantiate(50L, 800L, MARKET_PM);
+        assertThat(inst.getStatus()).isEqualTo(SopTemplateInstance.Status.ACTIVE);
+        assertThat(inst.getTemplateId()).isEqualTo(50L);
+        assertThat(inst.getProjectId()).isEqualTo(800L);
+        assertThat(inst.getInstanceVersion()).isEqualTo(1L);
+        assertThat(inst.getInstantiatedBy()).isEqualTo("2");
+        assertThat(inst.getSnapshotJson()).contains("\"templateCode\":\"SOP-FULL\"");
     }
 }

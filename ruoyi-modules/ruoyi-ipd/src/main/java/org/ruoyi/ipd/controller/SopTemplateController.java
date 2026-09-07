@@ -82,7 +82,7 @@ public class SopTemplateController {
     @GetMapping("/instances")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_SOP_TEMPLATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<SopTemplateInstance>> listInstances(@RequestParam Long projectId) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(sopTemplateService.listInstancesByProject(projectId));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(sopTemplateService.listInstancesByProject(projectId, actor));
     }
 }
