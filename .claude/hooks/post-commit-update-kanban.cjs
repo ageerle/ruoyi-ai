@@ -58,12 +58,21 @@ function safeExecFile(file, args, opts = {}) {
   }
 }
 
-function detectStatus(message) {
-  const lower = message.toLowerCase();
-  if (/wip\b|in progress\b|inprogress\b|进行中/.test(lower)) return 'inprogress';
-  if (/in review\b|inreview\b|待审\b|review\b|reviewing/.test(lower)) return 'inreview';
-  if (/\bblocked\b|\btodo\b|阻塞|待办/.test(lower)) return 'todo';
-  // 默认 done：闭环 / 落地 / 实装 / fix / feat / refactor / done / merged
+function detectStatus(subject, fullMessage) {
+  // 状态判定优先看 subject（commit 标题），避免 body 描述里的"wip"等字样误判
+  const subj = (subject || '').toLowerCase();
+  const lower = (fullMessage || '').toLowerCase();
+
+  // subject 前缀明确的强信号
+  if (/^\s*(wip|wip:|draft)\b/i.test(subject || '')) return 'inprogress';
+  if (/^\s*(todo|tbd)\b/i.test(subject || '')) return 'todo';
+
+  // subject 含 wip 关键字
+  if (/\bwip\b|\bin progress\b|\binprogress\b|\b进行中\b/.test(subj)) return 'inprogress';
+  if (/\bin review\b|\binreview\b|\b待审\b|\breviewing\b/.test(subj)) return 'inreview';
+  if (/\bblocked\b|\b阻塞\b/.test(subj)) return 'todo';
+
+  // 默认 done（feat/fix/refactor/perf/test/docs 都被 conventional commit 视为落地）
   return 'done';
 }
 
@@ -142,8 +151,8 @@ function main() {
     process.exit(0);
   }
 
-  // 解析 status
-  const status = detectStatus(fullMessage);
+  // 解析 status（优先 subject，避免 body 描述误判）
+  const status = detectStatus(subject, fullMessage);
   const note = buildNote(subject);
 
   let updated = 0;
