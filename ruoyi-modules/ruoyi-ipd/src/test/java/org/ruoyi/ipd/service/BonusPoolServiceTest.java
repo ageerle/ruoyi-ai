@@ -53,6 +53,9 @@ class BonusPoolServiceTest {
     private ProjectMapper projectMapper;
     @Mock
     private AuditLogService auditLogService;
+    /** ROOT-R3-P0-1 修复：跨状态机守卫 mock（fail-closed 改造后必显式注入，否则 preCheckGuard 抛 IpdBusinessException） */
+    @Mock
+    private StateMachineGuard stateMachineGuard;
 
     private BonusPoolService service;
 
@@ -60,6 +63,8 @@ class BonusPoolServiceTest {
     void setUp() {
         service = new BonusPoolService(bonusPoolMapper, projectMapper);
         service.setAuditLogService(auditLogService);
+        // ROOT-R3-P0-1 修复：注入 mock 守卫（fail-closed 改造后，preCheckGuard 必显式 fail-fast）
+        service.setStateMachineGuard(stateMachineGuard);
     }
 
     /** 测试用 actor（SUPER_ADMIN，涉钱审批权） */

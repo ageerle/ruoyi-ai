@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.BusinessConfigKeys;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
@@ -44,6 +46,10 @@ public class DeletionRequestService {
     /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
+    /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（fail-closed 改造后，测试可显式注入 mock） */
+    public void setStateMachineGuard(org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
     /** ROOT-R1 P0-7 字面量迁移：删除申请配置（冷静期/升级超时；B-RULE-05 配套）来源 */
     @Autowired(required = false)
     private BusinessConfigService businessConfigService;
@@ -265,11 +271,16 @@ public class DeletionRequestService {
     }
 
     /**
-     * ROOT-R3-P0-1：守卫 preCheck 包装（无守卫注入时降级 no-op，兼容旧测试）
+     * ROOT-R3-P0-1 修复：守卫 preCheck 包装（fail-closed 模式）。
+     *
+     * <p>守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass，与 KpiRecordService 8bdc7811 同型）。
+     * 测试兼容：DeletionRequestServiceTest 通过 setStateMachineGuard(...) 注入 mock；
+     * MockitoExtension STRICT_STUBS 模式下空 mock 必显式 fail。
      */
     private void preCheckGuard(String entityType, String fromState, String toState, String trigger) {
         if (stateMachineGuard == null) {
-            return; // 未注入守卫 → 降级 no-op
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "状态机守卫未装配 entityType=" + entityType + " from=" + fromState + " to=" + toState);
         }
         stateMachineGuard.preCheck(entityType, fromState, toState, trigger);
     }

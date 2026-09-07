@@ -60,6 +60,10 @@ public class BonusPoolService {
     /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
+    /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（fail-closed 改造后，测试可显式注入 mock） */
+    public void setStateMachineGuard(org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
 
     /**
      * 兼容构造器：仅注入 BonusPoolMapper 的旧测试入口。
@@ -958,14 +962,19 @@ public class BonusPoolService {
         // 占位以维持源码可见；真实 try/catch 见新 appendAudit 实现。
     }
 
-    /* ====================== ROOT-R3-P0-1 跨状态机守卫辅助 ====================== */
+    /* ---------------------- ROOT-R3-P0-1 跨状态机守卫辅助 ---------------------- */
 
     /**
-     * 守卫 preCheck 包装（无守卫注入时降级 no-op，兼容旧测试）
+     * ROOT-R3-P0-1 修复：守卫 preCheck 包装（fail-closed 模式）。
+     *
+     * <p>守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass，与 KpiRecordService 8bdc7811 同型）。
+     * 测试兼容：BonusPoolServiceTest 通过 setStateMachineGuard(...) 注入 mock；
+     * MockitoExtension STRICT_STUBS 模式下空 mock 必显式 fail。
      */
     private void preCheckGuard(String entityType, String fromState, String toState, String trigger) {
         if (stateMachineGuard == null) {
-            return;
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "状态机守卫未装配 entityType=" + entityType + " from=" + fromState + " to=" + toState);
         }
         stateMachineGuard.preCheck(entityType, fromState, toState, trigger);
     }
