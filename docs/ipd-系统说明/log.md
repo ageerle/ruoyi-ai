@@ -2826,3 +2826,15 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - **兄弟流代码 0 bug 定论**——57 M + 21 untracked 的 api/ipd 新模块（deletion/notification/project-circle/change 等）测试本身健康
 - 全量终验：根目录 `pnpm test:unit`（= vitest run --dom）后台跑中，作最终口径
 - **教训沉淀**：monorepo 前端测试「跑不动」先查三要素（cwd/flag/路径），勿直接改代码
+
+## 2026-09-07（凌晨·一）Wave23：a11y 真仓全清 violations=0——V12 a11y 全项闭环（Claude 主会话 a05ccff9）
+
+- **终局战果**：axe-core 真仓（ruoyi-ipd-web dev 4176）复扫 **Total violations: 0，5 页全 clean**
+- **三连修轨迹**：16（首扫）→ 5（contrast×2）→ 0（viewport + loading aria-hidden）
+- **region 根治**（最后一项）：vben vite inject-app-loading 插件的 default-loading.html
+  #__app-loading__ div 加 aria-hidden="true" role="presentation"（纯装饰对读屏隐藏）；
+  重启 dev 生效（transformIndexHtml 启动时注入）；竞态 critical 复扫即消（二度验证）
+- **V12 走查 a11y 全项闭环**：焦点环(V12-F1 token)/对比度/viewport/Skip-link/region 全落地
+- **前端仓 commit 链（本轮 3 个）**：52cdb47(contrast+demo-accounts) → 2f2f789(viewport+muted) → 957b7ae(region)
+- **兄弟流前期成果确认**：V12-F1 焦点环 + Skip-link 三要素（链接/#main 锚点 tabindex=-1/ipd-a11y.css visually-hidden）早已落地，本轮仅补齐 contrast/viewport/region 三缺口
+- **遗留**：移动端断点适配为视觉项（非 axe 可测）；STRICT_A11Y secret 待 owner 30 天观察期后启用
