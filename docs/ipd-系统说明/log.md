@@ -2627,3 +2627,37 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
   4. hardcoded-config-guard.cjs 注册 settings.json PostToolUse
   5. lint hook 正则 bug修复后注册（若 W18-B 已落地则直接合）
 - **终极关闭信号**：本会话 a05ccff9 历史性完成 Wave14→17 四阶段交付 + Wave18 协调预算守则触发实证
+
+## 2026-09-06（晚·四）P1 5 项 6 agent 并发闭环
+
+用户原话「继续」→ 接 P0 路线图 100% 闭环后立即推 P1 应做。
+
+| agent | commit | 项 | 测试 |
+|---|---|---|---|
+| 1 | `8e922c40` | HIGH-1.2 selectResponse 落选通知（BID_LOST 镜像 adminAssign） | 4/4 |
+| 2 | `12e26404` | HIGH-3.2 超管移交后强制下线旧 session（IpdAuthSession.revokeAll） | 5/5 |
+| 3 | `a9077856` | 前端 V1+V6+V7+V8+V9 五子项（66 权限码常量+6 状态机+URL 同步+字典+三态组件） | 46/46 新测 + 0 回归 |
+| 4 | `84189c01` | V4 Gate 评审 33 要素全渲染（fallback 33 项+stale 阻断） | 8/8 |
+| 5 | `31ea3f46` | MEDIUM-2.2+2.3 公开招标应标者互见 + 7 日升级通知组长 | 6/6 + 45/45 全量 |
+| 6 | `5e3723c4` | MEDIUM-1.3 Gate 列席人员（DDL+entity+3 service+4 端点） | 7/7 + 62/62 Gate 系列 |
+
+**兄弟流并行**（同时段）：
+- `febdb37b` ROOT-R3-P0-1-EXT KpiRecordService 接入 StateMachineGuard
+- `3579bf50` ROOT-R5-LINT-BUG ddl-field-usage-lint.cjs 修复
+- `0b2b4899` ROOT-R1-HOOK hardcoded-config-guard.cjs
+
+**累计 33 commit**（本会话全程 + 兄弟流 ROOT-R1~R5 全实装）：
+- 6 张 P0 路线图 100% 闭环（HIGH-1.1/5.1/5.2/4.1/3.1 + DDL-AUTODISC）
+- 5 张 P1 项本批闭环（HIGH-1.2/3.2 + MEDIUM-1.3/2.2/2.3 + V1/V4/V6/V7/V8/V9 5 子项）
+- 5 大根因 + R6「治理≠修复」全部识别 + 反思落地
+
+**R6 根因唯一未闭环**——`update_task` 流程需 PostToolUse hook 自动 reconcile（**下批治理项**）。
+
+**未闭环 P1/P2 路线图**（按依赖序）：
+- V1 按钮级 v-access:code 消费 accessCodes（11 页 → 53 权限码映射）
+- P1-5.2 selectResponse 落选通知二次确认
+- P1-9.2 存量 14 天场景复核与分段起算
+- P2-4.1 成员绑定时评级和津贴基准快照
+- V10/V11/V12 移动端/暗色 token/A11y
+- update_task 流程系统化（PostToolUse hook）
+- qa04 真实问题清单（22 DDL 漏列 + 12 Entity 漏映射 + 1 缺 @TableLogic + 1 缺 del_flag）
