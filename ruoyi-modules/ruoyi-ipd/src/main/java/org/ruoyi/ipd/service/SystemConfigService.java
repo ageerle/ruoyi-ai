@@ -2,6 +2,8 @@ package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
@@ -13,11 +15,11 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 系统参数读取服务（v3 §7 参数表 / 开发说明书 D.0.7；种子见 2026-09-04-ipd-p0-config-seed.sql）
@@ -25,11 +27,18 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>PERF-02（用户裁决：配置变更立即生效，不允许 TTL 窗口）：
  * <ul>
- *   <li>读走 {@link ConcurrentHashMap} 缓存——KPI/奖金/Gate 热路径日均 10 万+ 次读不再打 DB；
- *       {@code computeIfAbsent} per-key 原子装载，天然防击穿。</li>
+ *   <li>读走 Caffeine 缓存——KPI/奖金/Gate 热路径日均 10 万+ 次读不再打 DB；
+ *       {@code get(key, mappingFn)} per-key 原子装载，天然防击穿。</li>
  *   <li>空结果缓存为 {@link Optional#empty()}——防恶意 key 穿透。</li>
  *   <li>写穿透失效：后台参数端在提交事务后调
  *       {@link #invalidate(String)}/{@link #invalidateAll()}，下次读即新值——无生效窗口。</li>
+ * </ul>
+ *
+ * <p>PERF-P2-5（B-FIX-PACK-3 治理）：Caffeine 替换 {@code ConcurrentHashMap}，加内存边界与 TTL 自动清理——
+ * <ul>
+ *   <li>{@code maximumSize(500)}：防 prod 部署后恶意/异常 key 推爆堆；W-TinyLFU 近似 LFU 驱逐。</li>
+ *   <li>{@code expireAfterWrite(5min)}：写入后 5 分钟自动过期；写穿透失效仍走 invalidate（不等 TTL）。</li>
+ *   <li>{@code recordStats()}：开放 Caffeine 统计，便于未来接 Micrometer。</li>
  * </ul>
  * 单 JVM 缓存（单企业私有部署单实例定位）；多实例部署时需升级 Redis 广播失效。
  *
@@ -52,7 +61,12 @@ public class SystemConfigService {
     private final SystemConfigMapper systemConfigMapper;
     private final SystemConfigVersionMapper systemConfigVersionMapper;
 
-    private final ConcurrentHashMap<String, Optional<String>> cache = new ConcurrentHashMap<>();
+    /** PERF-P2-5：Caffeine 缓存——500 上限 + 5 分钟 TTL；详见类 Javadoc。 */
+    private Cache<String, Optional<String>> cache = Caffeine.newBuilder()
+        .maximumSize(500)
+        .expireAfterWrite(Duration.ofMinutes(5))
+        .recordStats()
+        .build();
 
     /**
      * 读取参数值（缓存命中优先）。
@@ -62,7 +76,7 @@ public class SystemConfigService {
      * @return 参数值
      */
     public String getValue(String key, String defaultValue) {
-        return cache.computeIfAbsent(key, k -> {
+        return cache.get(key, k -> {
             SystemConfig config = systemConfigMapper.selectOne(
                 new LambdaQueryWrapper<SystemConfig>().eq(SystemConfig::getConfigKey, k).last("limit 1"));
             return config != null && config.getConfigValue() != null
@@ -288,16 +302,28 @@ public class SystemConfigService {
     }
 
     /**
+     * 测试注入点：替换 Caffeine 缓存规格（如小 TTL/小容量），仅用于单测。
+     *
+     * <p>package-private（无 {@code public}）+ Javadoc {@code @VisibleForTesting} 约定：
+     * 不暴露给 Controller/Service 调用方，避免运行时任意覆盖缓存路径。生产路径必须由
+     * P0-3.3 默认规格（500 上限 + 5 分钟 TTL）驱动。
+     */
+    // VisibleForTesting: 同包单测可见，禁止 Controller/Service 通过反射调用
+    void setCache(Cache<String, Optional<String>> cache) {
+        this.cache = cache;
+    }
+
+    /**
      * 写穿透失效：参数更新事务提交后调用，下次读即新值。
      *
      * @param key 参数键
      */
     public void invalidate(String key) {
-        cache.remove(key);
+        cache.invalidate(key);
     }
 
     /** 写穿透失效：批量/结构化配置变更后调用。 */
     public void invalidateAll() {
-        cache.clear();
+        cache.invalidateAll();
     }
 }
