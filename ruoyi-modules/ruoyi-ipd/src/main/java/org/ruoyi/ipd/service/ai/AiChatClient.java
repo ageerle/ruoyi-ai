@@ -2,6 +2,7 @@ package org.ruoyi.ipd.service.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,6 +21,7 @@ import java.time.Duration;
  * EMPTY_RESPONSE / UNSUPPORTED_PROTOCOL）；apiKey 仅拼入请求头内存消费，
  * 绝不进日志/审计/异常消息。模型输出透传不过滤（BR-AI-04）。
  */
+@Slf4j
 @Component
 public class AiChatClient {
 
@@ -28,7 +30,9 @@ public class AiChatClient {
     private final HttpClient http;
 
     public AiChatClient() {
-        this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
+        // 显式 HTTP/1.1：避免部分模型网关（MiniMax 等）对 h2 协商 POST 的兼容性差异（P4-2.2 真机验收 400 排查）
+        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(10)).build());
     }
 
     /** 测试桩入口：注入自定义 HttpClient（单测拦截）。 */
@@ -66,7 +70,9 @@ public class AiChatClient {
         try {
             StringBuilder body = new StringBuilder("{\"model\":\"").append(jsonEscape(cfg.modelName()))
                 .append("\",\"messages\":[{\"role\":\"user\",\"content\":\"").append(jsonEscape(prompt))
-                .append("\"}");
+                // P4-2.2 真机验收修复：此处必须闭 messages 数组——缺 "]" 产生非法 JSON，
+                // MiniMax 返回 400 Syntax error（单测 Mock 了 chatClient，无法暴露拼串缺陷）
+                .append("\"}]");
             if (maxTokens != null && maxTokens > 0) {
                 body.append(",\"max_tokens\":").append(maxTokens);
             }
@@ -81,10 +87,18 @@ public class AiChatClient {
                 .header("Authorization", "Bearer " + cfg.apiKey())
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
                 .build();
+            // 排障观测：记录请求 body 尾部（供应商报 JSON 语法错时定位非法字节）；不含 apiKey
+            String reqBody = body.toString();
+            log.warn("[AI] chat request: bodyLen={} bodyTail={}",
+                reqBody.length(), reqBody.substring(Math.max(0, reqBody.length() - 80)));
             HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
             long latency = System.currentTimeMillis() - start;
             int code = resp.statusCode();
             if (code < 200 || code >= 300) {
+                // 排障观测：非 2xx 时记录响应体片段（供应商错误码/原因）；不含 apiKey，不进 API 响应/审计
+                String respBody = resp.body() == null ? "" : resp.body();
+                log.warn("[AI] chat non-2xx: code={} latency={}ms body={}", code, latency,
+                    respBody.length() > 300 ? respBody.substring(0, 300) : respBody);
                 if (code == 401 || code == 403) {
                     return AiChatResult.fail("AUTH_FAILED", "HTTP " + code, latency);
                 }
