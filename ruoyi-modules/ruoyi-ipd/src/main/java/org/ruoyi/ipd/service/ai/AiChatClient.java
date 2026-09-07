@@ -3,11 +3,14 @@ package org.ruoyi.ipd.service.ai;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -15,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,8 +50,17 @@ public class AiChatClient {
      */
     private final boolean debugEnabled;
 
-    public AiChatClient(@Value("${ai.debug.enabled:false}") boolean debugEnabled) {
+    /**
+     * host allowlist（可选）。逗号分隔的公网供应商域名；为空则放行所有公网（向后兼容，留警告）。
+     * Why: P1-3/P1-15 安全审查——AiModelConfig.baseUrl 来自运营配置可被注入内网 / loopback /
+     * 169.254.169.254 元数据端点，配合 Bearer 转发可能让 SSRF 命中点伪装为已认证用户。
+     */
+    private final String allowedHosts;
+
+    public AiChatClient(@Value("${ai.debug.enabled:false}") boolean debugEnabled,
+                        @Value("${ai.allowed-hosts:}") String allowedHosts) {
         this.debugEnabled = debugEnabled;
+        this.allowedHosts = allowedHosts == null ? "" : allowedHosts;
         // 显式 HTTP/1.1：避免部分模型网关（MiniMax 等）对 h2 协商 POST 的兼容性差异（P4-2.2 真机验收 400 排查）
         this.http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(10)).build();
@@ -62,6 +75,7 @@ public class AiChatClient {
     public AiChatClient(HttpClient http, boolean debugEnabled) {
         this.http = http;
         this.debugEnabled = debugEnabled;
+        this.allowedHosts = "";
     }
 
     /**
@@ -126,6 +140,8 @@ public class AiChatClient {
             if (debugEnabled) {
                 log.debug("[AI][debug] reqBody={}", reqBody);
             }
+            // SSRF 防御（SEC P1-3/P1-15）：发请求前解析 host + IP，做内网黑名单 + 公网 allowlist 校验。
+            validateEndpoint(cfg.baseUrl());
             HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
             long latency = System.currentTimeMillis() - start;
             int code = resp.statusCode();
@@ -166,6 +182,59 @@ public class AiChatClient {
     private static String stripTrailingSlash(String s) {
         if (s == null) return "";
         return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
+    }
+
+
+    /**
+     * SSRF 防御（SEC P1-3/P1-15）：先解析 baseUrl 的 host，再解析 IP。
+     * 拒绝：RFC1918 10/8、172.16/12、192.168/16、loopback 127/8、link-local 169.254/16（含 AWS 元数据）、
+     * IPv6 ::1、IPv6 fc00::/7。allowlist 留空时仅做内网黑名单（向后兼容）。
+     */
+    private void validateEndpoint(String baseUrl) {
+        URI uri = URI.create(baseUrl);
+        String host = uri.getHost();
+        if (host == null) {
+            throw new IpdBusinessException("endpoint host missing");
+        }
+        InetAddress addr;
+        try {
+            addr = InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            throw new IpdBusinessException("endpoint host unresolvable: " + host);
+        }
+        byte[] ip = addr.getAddress();
+        if (isBlockedIp(ip)) {
+            log.warn("[AI] SSRF blocked endpoint host={} ip={}", host, addr.getHostAddress());
+            throw new IpdBusinessException("SSRF blocked: private/loopback/link-local endpoint " + host);
+        }
+        String allowList = allowedHosts.trim();
+        if (!allowList.isEmpty()) {
+            boolean ok = Arrays.stream(allowList.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty())
+                .anyMatch(h -> host.equalsIgnoreCase(h) || host.endsWith("." + h));
+            if (!ok) {
+                log.warn("[AI] host not in allowlist host={}", host);
+                throw new IpdBusinessException("host not in allowlist: " + host);
+            }
+        }
+    }
+
+    /** 内网 / loopback / link-local IP 黑名单，覆盖 IPv4 + IPv6。 */
+    private static boolean isBlockedIp(byte[] ip) {
+        if (ip.length == 4) {
+            int b0 = ip[0] & 0xFF;
+            if (b0 == 127) return true;
+            if (b0 == 10) return true;
+            if (b0 == 172 && (ip[1] & 0xF0) == 16) return true;
+            if (b0 == 192 && (ip[1] & 0xFF) == 168) return true;
+            if (b0 == 169 && (ip[1] & 0xFF) == 254) return true;
+            return false;
+        }
+        if (ip.length == 16) {
+            if (ip[0] == (byte) 0x7f) return true;
+            if ((ip[0] & (byte) 0xFE) == (byte) 0xFC) return true;
+        }
+        return false;
     }
 
     /** SHA-256 短指纹（16 hex chars ≈ 64 bit），用于日志中请求/响应配对，不暴露原文。 */
