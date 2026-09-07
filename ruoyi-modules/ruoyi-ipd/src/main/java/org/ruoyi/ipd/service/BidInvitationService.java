@@ -288,7 +288,7 @@ public class BidInvitationService {
     }
 
     /**
-     * 查询招标单下的应标列表（P2-3.2 隐私 + MEDIUM-2.2 公开招标应标者互见）
+     * 查询招标单下的应标列表（P2-3.2 隐私 + MEDIUM-2.2 公开招标应标者互见）。
      *
      * <ul>
      *   <li>ONE_TO_ONE 模式：非发起人仅见本人应标（不变）</li>
@@ -298,6 +298,9 @@ public class BidInvitationService {
      *
      * @param invitationId    招标单 ID
      * @param currentPersonId 会话用户 ID；等于发起人（createBy）时返回全量（含 WITHDRAWN/REJECTED）
+     *
+     * <p>PERF-P1-2 兼容保留：不带分页，调用方需注意应标量过大时内存压力。
+     * 新代码请优先用 {@link #listResponsesPaged(Long, Long, Integer, Integer)}。
      */
     public List<BidResponse> listResponses(Long invitationId, Long currentPersonId) {
         BidInvitation inv = bidInvitationMapper.selectById(invitationId);
@@ -334,6 +337,75 @@ public class BidInvitationService {
             }
         }
         return rows;
+    }
+
+    /**
+     * PERF-P1-2：分页查询招标单下的应标列表（隐私过滤不变 + IPage 物理分页）。
+     *
+     * <ul>
+     *   <li>复用既有 {@code idx_br_invitation(invitation_id)} 索引，等值过滤直接走索引</li>
+     *   <li>{@code pageSize} 上限 200 防滥用；null → 默认 20；&lt;1 → 1</li>
+     *   <li>隐私过滤与脱敏口径同 {@link #listResponses(Long, Long)}：ONE_TO_ONE 仅本人 /
+     *       PUBLIC 全员可见 + WITHDRAWN|REJECTED 仅本人 / 发起人全量 / PUBLIC 非发起人脱敏前 80 字符</li>
+     *   <li>隐私过滤在 wrapper 层完成，避免 count 查询泄露「有无应标」oracle</li>
+     * </ul>
+     *
+     * @param invitationId    招标单 ID
+     * @param currentPersonId 会话用户 ID
+     * @param pageNo   页码（从 1 开始；&lt;1 → 1）
+     * @param pageSize 每页条数（&lt;1 → 1；&gt;200 → 200；null → 20）
+     */
+    public IPage<BidResponse> listResponsesPaged(Long invitationId, Long currentPersonId,
+                                                 Integer pageNo, Integer pageSize) {
+        BidInvitation inv = bidInvitationMapper.selectById(invitationId);
+        if (inv == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + invitationId);
+        }
+        // MEDIUM-info-disclosure 修复：强制要求已登录 actor，避免 eq(field, null) IS-NULL 语义泄露遗留数据
+        if (currentPersonId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "未登录或会话失效");
+        }
+        int pNo = (pageNo == null || pageNo < 1) ? 1 : pageNo;
+        int pSize;
+        if (pageSize == null) {
+            pSize = 20;
+        } else if (pageSize < 1) {
+            pSize = 1;
+        } else if (pageSize > BidResponseService.MAX_PAGE_SIZE) {
+            pSize = BidResponseService.MAX_PAGE_SIZE;
+        } else {
+            pSize = pageSize;
+        }
+        LambdaQueryWrapper<BidResponse> qw = new LambdaQueryWrapper<BidResponse>()
+            .eq(BidResponse::getInvitationId, invitationId)
+            .orderByDesc(BidResponse::getCreateTime);
+        boolean isCreator = currentPersonId.equals(inv.getCreateBy());
+        boolean isPublic = "PUBLIC".equals(inv.getMode());
+        if (isCreator) {
+            // 发起人：全量（含 WITHDRAWN/REJECTED），不动 responseNote
+        } else if (isPublic) {
+            // MEDIUM-2.2：PUBLIC 模式下 WITHDRAWN/REJECTED 仅本人可见，其余应标者互见
+            qw.and(w -> w.notIn(BidResponse::getStatus, "WITHDRAWN", "REJECTED")
+                .or().eq(BidResponse::getRdPmId, currentPersonId));
+        } else {
+            // ONE_TO_ONE：仅本人
+            qw.eq(BidResponse::getRdPmId, currentPersonId);
+        }
+        Page<BidResponse> page = new Page<>(pNo, pSize);
+        IPage<BidResponse> result = bidResponseMapper.selectPage(page, qw);
+        // MEDIUM-2.2：PUBLIC 模式下非发起人视角脱敏解决方案摘要为前 80 字符
+        if (isPublic && !isCreator) {
+            List<BidResponse> records = result.getRecords();
+            if (records != null) {
+                for (BidResponse r : records) {
+                    if (r.getRdPmId() != null && !r.getRdPmId().equals(currentPersonId)
+                        && r.getResponseNote() != null) {
+                        r.setResponseNote(maskSummary(r.getResponseNote()));
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /** MEDIUM-2.2：解决方案摘要脱敏（互见场景下避免互抄完整方案）；超长截断并附省略号 */

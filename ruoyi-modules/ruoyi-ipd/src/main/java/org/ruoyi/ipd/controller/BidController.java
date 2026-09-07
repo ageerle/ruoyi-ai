@@ -15,7 +15,6 @@ import org.ruoyi.ipd.service.BidInvitationService;
 import org.ruoyi.ipd.service.BidResponseService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 /**
  * 招标组队 API（P2-3.1 / P2-3.2）
@@ -146,12 +145,35 @@ public class BidController {
         return ApiV1Response.ok(bidInvitationService.adminAssign(id, targetPersonId, person.getId()));
     }
 
+    /**
+     * PERF-P1-2：分页查询招标单下的应标列表（隐私过滤不变 + 物理分页）。
+     * pageSize 上限 200（service 侧硬约束），null → 默认 20。
+     */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/bid-invitations/{id}/responses")
-    public ApiV1Response<List<BidResponse>> listResponses(@PathVariable Long id) {
+    public ApiV1Response<IPage<BidResponse>> listResponses(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Integer pageNo,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
         ipdPermission.requireInternal();
         Person person = session.currentPerson();
-        return ApiV1Response.ok(bidInvitationService.listResponses(id, person.getId()));
+        return ApiV1Response.ok(bidInvitationService.listResponsesPaged(id, person.getId(), pageNo, pageSize));
+    }
+
+    /**
+     * PERF-P0-4：分页查询某研发PM的所有应标（IDOR 三分支放行不变 + 物理分页）。
+     * 三分支放行同 service.listByRdPm：本人 / SUPER_ADMIN / 关联项目在职 ProjectMember；
+     * pageSize 上限 200（service 侧硬约束），null → 默认 20。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/bid-responses/by-rd-pm/{rdPmId}")
+    public ApiV1Response<IPage<BidResponse>> listByRdPm(
+            @PathVariable Long rdPmId,
+            @RequestParam(defaultValue = "1") Integer pageNo,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        // W5-E-2.4：捕获 actor 传入 service，service 层再做 UNAUTHORIZED 入口校验 + IDOR 三分支
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidResponseService.listByRdPmPaged(actor, rdPmId, pageNo, pageSize));
     }
 
     // ==================== 应标 ====================

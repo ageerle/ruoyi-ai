@@ -1,6 +1,8 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -141,6 +143,9 @@ public class BidResponseService {
      * 三分支放行：本人（actor.id == rdPmId）/ SUPER_ADMIN / 关联项目在职 ProjectMember
      * （该研发PM应标所隶属招标单 → 项目 → project_member 在职行，KpiSharedCollectionService 同款 exitDate IS NULL 口径）；
      * 其余一律 FORBIDDEN——目标无应标行时第三方同样拒绝（fail-closed，不泄露「有无应标」布尔 oracle）。
+     *
+     * <p>PERF-P0-4 兼容保留：不带分页，调用方需注意应标量过大时内存压力。
+     * 新代码请优先用 {@link #listByRdPmPaged(IpdActor, Long, Integer, Integer)}。
      */
     public List<BidResponse> listByRdPm(IpdActor actor, Long rdPmId) {
         requireAuthenticated(actor);
@@ -158,6 +163,64 @@ public class BidResponseService {
         }
         throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权查看他人应标");
     }
+
+    /**
+     * PERF-P0-4：分页查询某研发PM的所有应标（IDOR 三分支放行不变 + IPage 物理分页）。
+     *
+     * <ul>
+     *   <li>走 {@code idx_br_rd_pm(rd_pm_id, create_time)} 复合索引，等值 + ORDER BY 一并覆盖</li>
+     *   <li>{@code pageSize} 上限 200 防滥用；null → 默认 20；&lt;1 → 1</li>
+     *   <li>三分支放行同 {@link #listByRdPm(IpdActor, Long)}，复用现有探测逻辑</li>
+     * </ul>
+     *
+     * @param actor    会话用户
+     * @param rdPmId   被查询研发PM ID
+     * @param pageNo   页码（从 1 开始；&lt;1 → 1）
+     * @param pageSize 每页条数（&lt;1 → 1；&gt;200 → 200；null → 20）
+     */
+    public IPage<BidResponse> listByRdPmPaged(IpdActor actor, Long rdPmId, Integer pageNo, Integer pageSize) {
+        requireAuthenticated(actor);
+        if (rdPmId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "rdPmId 不能为空");
+        }
+        int pNo = (pageNo == null || pageNo < 1) ? 1 : pageNo;
+        int pSize;
+        if (pageSize == null) {
+            pSize = 20;
+        } else if (pageSize < 1) {
+            pSize = 1;
+        } else if (pageSize > MAX_PAGE_SIZE) {
+            pSize = MAX_PAGE_SIZE;
+        } else {
+            pSize = pageSize;
+        }
+        // 三分支放行复用 listByRdPm 探测逻辑——IDOR oracle 防御优先于分页
+        List<BidResponse> probeRows = fetchRowsForAuthProbe(rdPmId);
+        if (!actor.id().equals(rdPmId)
+            && !"SUPER_ADMIN".equals(actor.role())
+            && !isRelatedProjectMember(actor, probeRows)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权查看他人应标");
+        }
+        Page<BidResponse> page = new Page<>(pNo, pSize);
+        return bidResponseMapper.selectPage(page, new LambdaQueryWrapper<BidResponse>()
+            .eq(BidResponse::getRdPmId, rdPmId)
+            .orderByDesc(BidResponse::getCreateTime));
+    }
+
+    /**
+     * PERF-P0-4 辅助：探测 IDOR 三分支放行所需关联项目用应标全量（不走物理分页，与
+     * {@link #listByRdPm(IpdActor, Long)} 探测逻辑同口径）。
+     */
+    private List<BidResponse> fetchRowsForAuthProbe(Long rdPmId) {
+        return bidResponseMapper.selectList(
+            new LambdaQueryWrapper<BidResponse>()
+                .eq(BidResponse::getRdPmId, rdPmId)
+                .orderByDesc(BidResponse::getCreateTime)
+        );
+    }
+
+    /** PERF-P0-4 / PERF-P1-2：分页大小硬上限，防 DoS 滥用。 */
+    static final int MAX_PAGE_SIZE = 200;
 
     /**
      * actor 是否为该研发PM应标所涉项目（招标单 → 项目链）的在职 ProjectMember。
