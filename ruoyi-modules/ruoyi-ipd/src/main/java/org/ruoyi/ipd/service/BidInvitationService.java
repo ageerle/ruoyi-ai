@@ -121,6 +121,29 @@ public class BidInvitationService {
                 + ",\"rejectedRdPmIds\":[" + rejectedRdPmIds + "]}")
             .reason(inv.getTitle())
             .createTime(new Date()).build());
+        // HIGH-1.2 落选通知：镜像 adminAssign 行 332-355 模式
+        // 中标者 ⇒ BID_WON；其余落选 PENDING ⇒ BID_LOST（dedupKey 幂等，重复不重发）
+        if (notificationService != null) {
+            if (resp.getRdPmId() != null) {
+                notificationService.publish(resp.getRdPmId(),
+                    NotificationService.Types.BID_WON,
+                    NotificationService.KIND_ACTION,
+                    "bid_invitation", invitationId,
+                    "招标已遴选您",
+                    "招标单「" + inv.getTitle() + "」(项目 " + invitationId + ") 已遴选您为中标研发PM，请尽快承接。",
+                    "/bid-invitations/" + invitationId);
+            }
+            for (BidResponse loser : losers) {
+                if (loser.getRdPmId() == null) continue;
+                notificationService.publish(loser.getRdPmId(),
+                    NotificationService.Types.BID_LOST,
+                    NotificationService.KIND_ACTION,
+                    "bid_invitation", invitationId,
+                    "招标落选通知",
+                    "招标单「" + inv.getTitle() + "」(项目 " + invitationId + ") 已遴选他人，您本次落选。",
+                    "/bid-invitations/" + invitationId);
+            }
+        }
         return inv;
     }
 
