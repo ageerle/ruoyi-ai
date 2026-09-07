@@ -43,3 +43,7 @@ CREATE TABLE IF NOT EXISTS project_cert_items
 -- ALTER TABLE project_cert_items DROP INDEX idx_pci_project_mand;
 
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.project_cert_items TO 'ipd_app'@'127.0.0.1';
+
+-- ROLLBACK（环境异常回滚用；全表回滚如下，version 列单独回滚见上方 ROLLBACK 段）
+-- DROP TABLE IF EXISTS `project_cert_items`;
+

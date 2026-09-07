@@ -32,3 +32,7 @@ CREATE TABLE IF NOT EXISTS launch_date_change_requests
   comment = 'IPD 上市日期变更双签申请（AC-INC-33）';
 
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.launch_date_change_requests TO 'ipd_app'@'127.0.0.1';
+
+-- ROLLBACK（环境异常回滚用；version/pending_project_id 回滚见 2026-09-05-ipd-launch-date-pending-unique.sql）
+-- DROP TABLE IF EXISTS `launch_date_change_requests`;
+

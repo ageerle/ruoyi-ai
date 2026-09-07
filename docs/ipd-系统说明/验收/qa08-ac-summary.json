@@ -1,0 +1,63 @@
+{
+  "card": "QA-08",
+  "generated_at": "2026-09-07T13:04:28+08:00",
+  "total_acs": 249,
+  "pass": 52,
+  "partial": 149,
+  "fail": 0,
+  "blocked": 48,
+  "pass_rate": 20.9,
+  "env": {
+    "backend": "http://localhost:16039",
+    "mysql": "127.0.0.1:13306/ipd_dev",
+    "auth_chain_broken": "audit_log_chain_heads 缺表（影响 16039 登录）"
+  },
+  "by_section": {
+    "P0": {
+      "total": 27,
+      "pass": 9,
+      "partial": 10,
+      "fail": 0,
+      "blocked": 8
+    },
+    "P1": {
+      "total": 42,
+      "pass": 9,
+      "partial": 24,
+      "fail": 0,
+      "blocked": 9
+    },
+    "P2": {
+      "total": 58,
+      "pass": 9,
+      "partial": 40,
+      "fail": 0,
+      "blocked": 9
+    },
+    "P3": {
+      "total": 82,
+      "pass": 16,
+      "partial": 45,
+      "fail": 0,
+      "blocked": 21
+    },
+    "P4": {
+      "total": 40,
+      "pass": 9,
+      "partial": 30,
+      "fail": 0,
+      "blocked": 1
+    }
+  },
+  "by_probe_type": {
+    "SQL+HTTP": 1,
+    "SQL": 73,
+    "REPORT_REF": 8,
+    "DEPENDENCY": 143,
+    "CODE_GREP": 9,
+    "HTTP": 3,
+    "OPENAPI": 5,
+    "SQL+DEPENDENCY": 1,
+    "SQL+CODE_GREP": 6
+  }
+}
