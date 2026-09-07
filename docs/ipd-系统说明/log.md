@@ -2764,3 +2764,33 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - 前端 V10/V11 完整版（移动端+暗色增强）
 - A11y 自动化测试接入（axe-core + CI）
 - 49 页前端真实性能/可访问性走查
+
+## 晚·七（2026-09-06 22:20）MCP 连接失败根源性修复（主会话）
+
+**repowise（-32000 Connection closed）根因+根修**：
+- 根因：`.repowise-workspace.yaml` 幽灵条目 `{path: ruoyi-ai, alias: ruoyi-ai-2}`（9月5 20:04 索引建立时扫入嵌套目录 `<root>/ruoyi-ai`——WAVE21 兄弟会话工作区，无 .git）。其路径身份 `ruoyi-ai` 与主条目别名 `ruoyi-ai` 在 `registry._validate_public_identities`（registry.py:118）撞车 → MCP 进程启动即抛 ValueError 秒退。
+- 根修：①摘除幽灵条目（嵌套目录本身未动=兄弟活跃区）；②`.mcp.json` 裸命令 `repowise` 改绝对路径 `/Users/mac/.repowise-venv/bin/repowise`（非 login shell 下裸命令不可达=第二故障点）。
+- 验证：stdio 探针 initialize+tools/list 全通，stderr 零报错。下会话自动生效。
+- 防复发：幽灵条目若被再次扫入按 yaml 内注释同样摘除；嵌套目录禁删（兄弟会话活跃区 + round5 rm-untracked 教训）。
+
+**zker_vibe_kanban（会话启动期断连）判明**：shim 本体健康（docker exec 探针 initialize/tools/list 全通，容器 healthy/HTTP 200）；两个 `docker exec` 长驻进程是 DeepSeek dsh（PPID 19570）与 ChatGPT codex（PPID 29697）的活跃连接，非僵尸、禁杀。启动期失败为瞬态，下会话生效；兜底 manage.py CLI + curl :62250 恒可用。
+
+**evox-product（-32000 无 grant）根修**：桌面主程序未运行（仅 sidecar）→ `open -a evox` 已拉起（PID 32052 + autostart-guard 32296），grant 恢复发布后下会话自动连接。
+
+**未干预**：plugin:episodic-memory / mempalace 为 15min 缓存自动重试的瞬态失败；zvec_grep（:7999）本就正常。
+
+## 晚·八（2026-09-06 22:30）ipd_dev 全量重建：68423e608051 备份重灌 + 59 迁移回放 + 8 处硬失败修复（主会话）
+
+**事件**（用户裁决：仅用 68423e6 备份、停后端→重灌→重启）：DROP/CREATE ipd_dev → 灌入 `ipd_restore_68423e608051.sql`（09-05 02:55，112 表，SHA256 d49e8095…）→ 全量回放 `docs/script/sql/update/` 59 个迁移 → 重启后端 16039。回滚点保留：`.codex/ipd-dev/backups/before-restore-20260906T220626/`（重灌前 mysqldump，116 表）。临时库 ipd_dev_snap 已清理。
+
+**59 迁移回放暴露 8 处硬失败（已全部闭合，等效 DDL 直接落库，仓库脚本未改）**：
+1. handover-rollback：依赖 p271 的列（字母序 p271 在后）→ 回放完一轮后重跑 PASS。
+2. qa04：依赖 project_scores（batch_missing_tables 建表在其后）→ 建表后重跑 PASS。
+3. sec-rev-round3 / switching-acceptance / p382：**MariaDB 专有语法 `ADD COLUMN IF NOT EXISTS`，MySQL 8 报 1064** → 按 information_schema 现状手工等效落地（contributions.version_no+唯一键、switching_acceptance 建表、negative_feedbacks 11 列）。**仓库脚本待原卡修**。
+4. kpi-deadline-config / p05-business-config：system_configs / ipd_business_config 的 id 无自增（雪花手填），INSERT 不带 id 报 1364 → kpi.monthlyDeadlineDay 行从重灌前快照按显式列拷回（保原 id=1948090431）；业务配置 12 行显式 id 20260906000001~12 INSERT IGNORE。
+5. p1-remaining：非幂等（line 16 裸 ALTER 无守卫 + 2 条 CREATE INDEX 无 IF NOT EXISTS），1060 中断后尾部全部不生效 → 手工补 gate_reviews.gate_code 列 + idx_projects_last_activity_at / idx_gate_reviews_gate_code 两条索引。
+6. **audit_log_chain_heads 漏建（登录 90001 根因）**：该表是 09-05 才回写进 `2026-09-04-ipd-p0-tables.sql` line 522 的「回写基线」，位于脚本中部；旧备份（只有 audit_logs）+ 整脚本重放时，前面已存在的表报 1050 即中止，永远走不到 522 行 → 已单独建表 + GLOBAL 种子（chain_key=GLOBAL, last_seq=0, next_seq=1）。
+
+**验证**：136 表（112 备份 + 24 迁移新增）；schema_history 8 版本全 COMPLETE；种子 system_configs=54 / gate_review_elements=33 / cert_templates=21 / persons=17 / ipd_business_config=12；登录 POST /api/v1/auth/login code=0 发 token；GET /auth/me 回 ipd-admin（SUPER_ADMIN）；GET /projects 返回 20003「首登强制改密」——4 个 bootstrap 账号 must_change_pwd=1 为备份忠实回滚（业务设计冻结，非故障），**用户浏览器内此前改的密码已随回滚失效，需用 bootstrap 初始密码重登并重走改密**。
+
+**环境事实勘误（覆盖 AGENTS.md「socket 与 13306 是同一实例已验」）**：127.0.0.1:13306 现由 socat → Docker 容器 ruoyi-ai-mysql 承接；本机原生 MySQL 已停（socket 陈旧）；`mysql-client.cnf`（root@socket）与 `mysql-migrator.cnf` 已失效，容器内管理用 `docker exec ruoyi-ai-mysql mysql -uroot -p<密码不入版本库>`；`mysql-app.cnf`（ipd_app@13306）仍有效。**教训：备份重放不能整脚本跑——「旧备份 + 增量回写脚本」场景会被脚本中部非幂等语句卡死，迁移脚本须全量幂等或逐段守卫。**
