@@ -14,7 +14,29 @@ STATE = ROOT / '.codex/vibe-kanban'
 BASE = 'http://127.0.0.1:62250'
 PROJECT = 'ruoyi-ai'
 STATES = {'todo': '⬜', 'inprogress': '▶', 'inreview': '◇', 'done': '✅', 'cancelled': '⊘'}
-KEY = re.compile(r'^(?:P[0-4]-\d+(?:\.\d+)?|(?:OPS-VK|AUD(?:-GOV)?|DOC|SEC(?:-API)?|DATA|API|OPS|QA|RISK|DB|DEF)-\d+(?:\.\d+)?)$')
+# R6 reconcile 扩展（2026-09-06）：在原有命名外补齐 commit 命名体系——
+# HIGH/MEDIUM/LOW-n[.n]、SEC-<word>系列、ROOT-Rn、GOVERNANCE-n、CONSISTENCY-n、
+# DDL-*、FE-PARITY、qa0n-X、Rn、REFLECTION-n、GUARD-n、WAVE*、AI-REG-nn。
+# batch-sync-commits.py 的严格提取与本正则保持同一来源（importlib 加载本模块）。
+KEY = re.compile(r'^(?:'
+                 r'P[0-4]-\d+(?:\.\d+)?'
+                 r'|(?:OPS-VK|AUD(?:-GOV)?|DOC|SEC(?:-API)?|DATA|API|OPS|QA|RISK|DB|DEF)-\d+(?:\.\d+)?'
+                 r'|HIGH-\d+(?:\.\d+)?'
+                 r'|MEDIUM-\d+(?:\.\d+)?'
+                 r'|LOW-\d+(?:\.\d+)?'
+                 r'|SEC-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*'
+                 r'|ROOT-R\d+'
+                 r'|GOVERNANCE-\d+'
+                 r'|CONSISTENCY-\d+'
+                 r'|DDL-[A-Z0-9]+(?:-[A-Z0-9]+)*'
+                 r'|FE-PARITY'
+                 r'|qa0\d-[A-Z]'
+                 r'|R\d'
+                 r'|REFLECTION-\d+'
+                 r'|GUARD-\d+'
+                 r'|WAVE\d+(?:-[A-Z0-9]+)*'
+                 r'|AI-REG-\d+'
+                 r')$')
 PRIORITIES = {'U0': '紧急', 'U1': '高', 'U2': '中', 'U3': '后续', 'P1': 'P1', 'P2': 'P2', 'P3': 'P3', '汇总': '汇总'}
 
 
@@ -51,7 +73,8 @@ def plan():
             continue
         if len(parts) == 3:
             # Three historical rows omitted the pipe before the completion cell.
-            match = re.search(r'\s+(✅|▶|⬜|◐|◇|⊘)', parts[2])
+            # R6: 状态符号允许起头（无前置空白），如映射段「| R6 | 治理卡 | ✅ done |」。
+            match = re.search(r'(?:^|\s)(✅|▶|⬜|◐|◇|⊘)', parts[2])
             if not match:
                 raise ValueError(f'Plan row {parts[0]} has no status cell')
             parts = parts[:2] + [parts[2][:match.start()].strip(), parts[2][match.start():].strip()]

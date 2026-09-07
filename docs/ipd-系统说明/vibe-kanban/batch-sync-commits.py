@@ -37,33 +37,60 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 MANAGE = REPO_ROOT / 'docs/ipd-系统说明/vibe-kanban/manage.py'
 
 # 与 post-commit-update-kanban.cjs 同款的卡号正则（宽松版）
-CARD_REGEX = re.compile(
-    r'\b(?:'
-    r'(?:P[0-4]-\d+(?:\.\d+)?|HIGH-\d+(?:\.\d+)?|SEC-FIX-[A-Z0-9-]+|ROOT-R\d+|GOVERNANCE-\d+|CONSISTENCY-\d+|DDL-AUTODISC|FE-PARITY|qa0\d-(?:[a-z]+-)?\d*|R6|QA-0\d)'
-    r'|HIGH-\d+(?:\.\d+)?(?:-\w+)?'
-    r'|MEDIUM-\d+(?:\.\d+)?(?:-\w+)?'
-    r'|LOW-\d+(?:\.\d+)?'
-    r'|SEC-[A-Z]+-[\w.-]+'
-    r'|SEC-[\w-]+'
-    r'|ROOT-R\d+(?:-[\w-]+)?'
-    r'|FIX-[\w-]+'
-    r'|GOVERNANCE-\d+'
-    r'|CONSISTENCY-\d+'
-    r'|DOC-[\w-]+'
-    r'|REFLECTION-\d+'
-    r'|DDL-[\w-]+'
-    r'|GUARD-\d+'
-    r'|WAVE[\w-]+'
-    r'|R\d+'
-    r'|AUD(?:-\w+)?-\d+'
-    r'|API-\d+'
-    r'|OPS(?:-\w+)?-\d+'
-    r'|QA-\d+'
-    r'|RISK-\d+'
-    r'|DB-\d+'
-    r'|DEF-\d+'
-    r')\b'
-)
+# R6 reconcile（2026-09-06）：提取严格化——自由文本先按 key 形状切 token，
+# 再用 manage.py 的 KEY 正则（plan() 的同一道门）fullmatch 归一。
+# 目的：掐掉两类伪卡——①CJK 吞并（DOC-09前端仓确认闭环镜像）②看板注记吞并
+# （SEC-01done，实为「SEC-01 done」注记）；并修复前缀截断（SEC-REV）与
+# 长后缀（ROOT-R2-P0-2-EXT → ROOT-R2）。
+TOKEN_REGEX = re.compile(r'[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*(?:\.\d+)?')
+
+
+def _load_manage_key():
+    """加载 manage.py 的 KEY 正则，保证「可提取 ⇔ plan() 可解析」两处一致。"""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('ipd_manage', MANAGE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.KEY
+
+
+MANAGE_KEY = _load_manage_key()
+
+
+def normalize_key(candidate):
+    """候选 token → plan 可解析的 key；不可归一则返回 None。
+
+    规则（按序，取首个命中）：
+    ① 非 ASCII 直接拒绝（CJK 吞并伪卡：DOC-09前端仓确认闭环镜像）；
+    ② 数字后粘小写注记剥离（SEC-01done→SEC-01；SEC-06b 单字母不受影响）；
+    ③ 原样 fullmatch（WAVE21-A-VERIFY / SEC-FIX-FOLLOWUP / P2-3.2 原样保留）；
+    ④ 尾段含点号先试「段内截到主版本」（SEC-FIX-HIGH-5.2→SEC-FIX-HIGH-5，
+       SEC 分支无小数点），再逐段弹尾 + 段内点号剥离（最长优先）：
+       HIGH-5.2-FOLLOWUP→HIGH-5.2（HIGH 分支保留小数点），ROOT-R2-P0-2-EXT→ROOT-R2。
+    """
+    if not candidate.isascii():
+        return None
+    tail = re.sub(r'(?<=\d)[a-z]{2,}$', '', candidate)
+    if tail != candidate and MANAGE_KEY.fullmatch(tail):
+        return tail
+    if MANAGE_KEY.fullmatch(candidate):
+        return candidate
+    segs = candidate.split('-')
+    while len(segs) > 1:
+        last = segs[-1]
+        dot_pos = last.find('.')
+        if dot_pos > 0:
+            trial = '-'.join(segs[:-1] + [last[:dot_pos]])
+            if MANAGE_KEY.fullmatch(trial):
+                return trial
+        segs.pop()
+        joined = '-'.join(segs)
+        for trial in (joined,
+                      re.sub(r'\.\d+(?=-|$)', '', joined),
+                      re.sub(r'\.\d+', '', joined)):
+            if MANAGE_KEY.fullmatch(trial):
+                return trial
+    return None
 
 # 已知 inreview 卡（兄弟流同步活动卡）—— 跳过避免覆盖
 SKIP_INREVIEW = set()  # 由 --skip-inreview-file 注入
@@ -89,7 +116,12 @@ def git_log(limit):
 
 
 def extract_keys(text):
-    return list(dict.fromkeys(CARD_REGEX.findall(text)))
+    keys = []
+    for token in TOKEN_REGEX.findall(text):
+        key = normalize_key(token)
+        if key and key not in keys:
+            keys.append(key)
+    return keys
 
 
 def build_note(subject):
@@ -248,6 +280,7 @@ def main():
         summary['commits_matched'] = matched
     else:
         # ====== 原始 R6 模式：commit message 正则提取 ======
+        filtered_out = 0
         for c in commits:
             message = c['subject'] + '\n' + c['body']
             keys = extract_keys(message)
@@ -256,6 +289,9 @@ def main():
             note = build_note(c['subject'])
 
             for key in keys:
+                if args.card_filter and not card_filter_re.search(key):
+                    filtered_out += 1
+                    continue
                 if key in seen_keys:
                     continue
                 seen_keys.add(key)
@@ -273,6 +309,8 @@ def main():
                     print(f"  ✗ {key} ← {c['sha'][:7]} ({result.get('reason')})", file=sys.stderr)
 
     summary['unique_keys_seen'] = len(seen_keys)
+    if not mapping and args.card_filter:
+        summary['filtered_out'] = filtered_out
     summary['updated_count'] = len(summary['updated'])
     summary['skipped_count'] = len(summary['skipped'])
     summary['error_count'] = len(summary['errors'])
