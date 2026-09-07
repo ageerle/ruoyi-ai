@@ -177,15 +177,7 @@ CREATE TABLE IF NOT EXISTS `legacy_imports` (
   UNIQUE KEY `uk_batch_no` (`batch_no`, `tenant_id`, `del_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='存量导入批次（P1-9.1）';
 
--- 9. person_roles（待 owner 裁决；若需多角色支持则取消注释）
--- CREATE TABLE IF NOT EXISTS `person_roles` (
---   `id` bigint NOT NULL,
---   `person_id` bigint NOT NULL,
---   `role_code` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
---   `granted_at` datetime NOT NULL,
---   `granted_by` bigint NOT NULL,
---   `revoked_at` datetime DEFAULT NULL,
---   `tenant_id` varchar(20) COLLATE utf8mb4_general_ci DEFAULT '000000',
---   PRIMARY KEY (`id`),
---   UNIQUE KEY `uk_person_role` (`person_id`, `role_code`, `tenant_id`)
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='人员角色（多角色支持）';
+-- 9. person_roles —— 2026-09-06 决议：本表 owner 裁决为「不建」（persons.role 单角色足够），
+--    删除占位注释块（消除 QA-04 幻影 CREATE TABLE 误报）。
+--    若后续需要多角色支持，按 persons.role -> person_roles 拆分迁移，独立 ALTER 单跑。
+-- [owner-decision-not-to-build] 同步删除 application.yml tenant.excludes 中的 person_roles 登记

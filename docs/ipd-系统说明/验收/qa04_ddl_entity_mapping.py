@@ -117,6 +117,11 @@ DATE_TYPES = {"datetime", "date", "timestamp"}
 # audit_logs 为只追加+hash 链表，无 del_flag/update_* 属设计内例外（外部资源 v3 TS-06）
 NO_DEL_FLAG_WHITELIST = {"audit_logs"}
 
+# 跨模块共享表——实体在 ipd 域对象但 DDL 归属 ruoyi-system 模块；
+# ipd 复用 ruoyi-system 的实体/Mapper 避免横向依赖，DDL 由 ruoyi-system 模块维护。
+#   sys_oss -> ruoyi-system 的 OSS 文件表（OssFileEntity 仅做只读镜像，QC-04 借 SEC-FIX-HIGH-1.1-FOLLOWUP）
+CROSS_MODULE_TABLE_WHITELIST = {"sys_oss"}
+
 
 def strip_comments(sql):
     """去掉 -- 行注释与 '...' 字符串字面量（comment 内容含逗号/括号，必须先移除）。"""
@@ -336,6 +341,14 @@ def check_entities(ents, tables):
         errors.append({"level": "ERROR", "code": "TABLE_WITHOUT_ENTITY", "table": t,
                        "detail": "DDL 表无对应 @TableName 实体，26 表映射缺口"})
     for t in sorted(set(ent_tables) - ddl_tables):
+        if t in CROSS_MODULE_TABLE_WHITELIST:
+            # 跨模块共享表：D 归属其他模块，ipd 域对象仅做只读镜像——
+            # 降级为 WARN 不阻断，详见 CROSS_MODULE_TABLE_WHITELIST 注释
+            warns.append({"level": "WARN", "code": "ENTITY_WITHOUT_TABLE_CROSS_MODULE",
+                          "entity": ent_tables[t], "table": t,
+                          "detail": "跨模块共享表：实体在 ipd 域对象，DDL 在 %s 模块（仅只读镜像）"
+                                    % t.split("_")[0]})
+            continue
         errors.append({"level": "ERROR", "code": "ENTITY_WITHOUT_TABLE", "entity": ent_tables[t],
                        "table": t, "detail": "实体声明的表不在仓库 DDL 中"})
     for ename, e in ents.items():
