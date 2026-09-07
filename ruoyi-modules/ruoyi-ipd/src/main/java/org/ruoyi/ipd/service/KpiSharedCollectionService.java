@@ -33,6 +33,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -273,6 +274,170 @@ public class KpiSharedCollectionService {
         return count != null && count > 0;
     }
 
+    /**
+     * HIGH-4.1：使用实时配置（kpi.monthlyDeadlineDay）的截止日前 1 天提醒入口。
+     * 只发 FYI 提醒，不关闭或改写任何 KpiRecord；已有 FINALIZED 归集直接跳过。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DeadlineScanResult scanDueSoon(LocalDate scanDate, YearMonth collectionPeriod) {
+        int configuredDay = systemConfigService == null
+            ? 5 : systemConfigService.getIntValue("kpi.monthlyDeadlineDay", 5);
+        return scanDueSoon(scanDate, collectionPeriod, configuredDay);
+    }
+
+    /**
+     * HIGH-4.1：截止日前 1 天提醒（daysBefore=1 触发；其他天数静默返回）。
+     * 收件人：产品组长（FYI）；同 receiver+dateStamp 维度去重，重复扫描幂等。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DeadlineScanResult scanDueSoon(
+        LocalDate scanDate, YearMonth collectionPeriod, int configuredDay) {
+        if (scanDate == null || collectionPeriod == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "扫描日期/归集周期不能为空");
+        }
+        LocalDate deadlineDate = resolveMonthlyDeadline(collectionPeriod.plusMonths(1), configuredDay,
+            ZoneId.systemDefault()).toLocalDate();
+        long daysBefore = ChronoUnit.DAYS.between(scanDate, deadlineDate);
+        if (daysBefore != 1) {
+            return new DeadlineScanResult(0, 0, 0);
+        }
+
+        List<Project> projects = projectMapper.selectList(
+            Wrappers.<Project>lambdaQuery()
+                .in(Project::getStatus, List.of("ACTIVE", "LIFECYCLE"))
+                .and(w -> w.ne(Project::getDelFlag, "1").or().isNull(Project::getDelFlag)));
+        int reminded = 0;
+        int skipped = 0;
+        for (Project project : projects) {
+            if (hasFinalizedCollection(project.getId(), collectionPeriod)) {
+                skipped++;
+                continue;
+            }
+            reminded += notifyDueSoon(project, collectionPeriod);
+        }
+        return new DeadlineScanResult(reminded, 0, skipped);
+    }
+
+    private int notifyDueSoon(Project project, YearMonth period) {
+        Set<Long> receivers = leadersForProject(project);
+        for (Long receiver : receivers) {
+            publishDueSoon(receiver, project, period);
+        }
+        return receivers.size();
+    }
+
+    private void publishDueSoon(Long receiverId, Project project, YearMonth period) {
+        if (notificationService == null) {
+            return;
+        }
+        notificationService.publishDaily(receiverId, NotificationService.Types.KPI_DUE_SOON,
+            NotificationService.KIND_FYI, "KPI_SHARED_COLLECTION", project.getId(),
+            "共担 KPI 即将截止", "次日 18:00 为 K01-K04 归集截止日，请产品组长尽快归集",
+            "/kpi/shared?period=" + period, java.util.Date.from(java.time.ZonedDateTime.now().toInstant()));
+        auditLogService.append(AuditLog.builder()
+            .operatorId(0L)
+            .operatorName("KPI_DEADLINE_SCANNER")
+            .action("KPI_DUE_SOON_REMIND")
+            .entityType("projects")
+            .entityId(project.getId())
+            .reason("period=" + period)
+            .afterData(AuditEventData.json("receiverId", receiverId, "projectId", project.getId(),
+                "period", period.toString()))
+            .createTime(new Date())
+            .build());
+    }
+
+    /**
+     * HIGH-4.1：当前生效的截止日配置视图（前端可读、运维可观察）。
+     * <p>source 取值：
+     * <ul>
+     *   <li>FACTORY_DEFAULT — DB 无该行（含逻辑删除），使用 Java 默认值 5</li>
+     *   <li>DB_ACTIVE — DB 有该行（未删）且 value 非空</li>
+     *   <li>DB_INACTIVE — DB 有该行但 value 为空，回退 default_value</li>
+     * </ul>
+     */
+    public DeadlineConfigView getDeadlineConfig() {
+        int defaultDay = 5;
+        if (systemConfigService == null) {
+            return new DeadlineConfigView(defaultDay,
+                resolveMonthlyDeadline(YearMonth.now().plusMonths(1), defaultDay,
+                    ZoneId.systemDefault()),
+                0, "FACTORY_DEFAULT", null);
+        }
+        // getValue 默认值=空字符串：空表示 config_value 未配置；非空表示已配置
+        String configuredRaw = systemConfigService.getValue("kpi.monthlyDeadlineDay", "");
+        java.util.LinkedHashMap<String, Object> view = systemConfigService.resolveAsOf(
+            "kpi.monthlyDeadlineDay", new Date());
+        String resolvedFrom = String.valueOf(view.get("resolvedFrom"));
+        Object versionObj = view.get("version");
+        int version = versionObj instanceof Integer ? (Integer) versionObj : 0;
+
+        boolean hasConfig = configuredRaw != null && !configuredRaw.isBlank();
+        boolean hasRow = !"NONE".equals(resolvedFrom);
+        int day;
+        try {
+            day = hasConfig ? Integer.parseInt(configuredRaw.trim()) : defaultDay;
+        } catch (NumberFormatException e) {
+            day = defaultDay;
+        }
+        String source;
+        if (!hasRow) {
+            source = "FACTORY_DEFAULT";
+        } else if (!hasConfig) {
+            source = "DB_INACTIVE";
+        } else {
+            source = "DB_ACTIVE";
+        }
+        if (day < 1 || day > 31) {
+            day = defaultDay;
+        }
+        YearMonth targetMonth = YearMonth.now().plusMonths(1);
+        LocalDateTime cutoff = resolveMonthlyDeadline(targetMonth, day, ZoneId.systemDefault());
+        return new DeadlineConfigView(day, cutoff, version, source,
+            hasConfig ? configuredRaw : null);
+    }
+
+
+    /**
+     * W4-E §1.5：按 projectId + period 列出当期全部 SHARED 归集记录（含所有 revision，按 revision DESC 排序）。
+     *
+     * <p>件 1 Controller {@code GET /api/v1/kpi/shared?projectId&period} 的服务入口；前端页 30 共担 KPI 归集列表读端点。
+     * <p>同一项目双 PM 必产生 2 条同 revision 记录（K01-K04 双 PM 同分归集），新版本归集时 revision + 1 追加。
+     * <p>不写审计、不变更状态，纯查询。
+     *
+     * @param projectId 项目主键（必填）
+     * @param period YYYY-MM（必填）
+     * @return KpiRecord 列表（可能为空但不会为 null）；按 revision DESC, id ASC 排序保证最新版本在前
+     */
+    public List<KpiRecord> listSharedKpis(Long projectId, String period) {
+        if (projectId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 不能为空");
+        }
+        validatePeriodString(period);
+        if (kpiRecordMapper == null) {
+            return Collections.emptyList();
+        }
+        List<KpiRecord> rows = kpiRecordMapper.selectList(
+            Wrappers.<KpiRecord>lambdaQuery()
+                .eq(KpiRecord::getProjectId, projectId)
+                .eq(KpiRecord::getPeriod, period)
+                .eq(KpiRecord::getKpiType, TYPE_SHARED)
+                .orderByDesc(KpiRecord::getRevision)
+                .orderByAsc(KpiRecord::getId));
+        return rows == null ? Collections.emptyList() : rows;
+    }
+
+    private static void validatePeriodString(String period) {
+        if (period == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "period 不能为空");
+        }
+        try {
+            YearMonth.parse(period);
+        } catch (DateTimeParseException e) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "period 必须为 YYYY-MM");
+        }
+    }
+
     private int notifyDay1(Project project, YearMonth period) {
         Set<Long> receivers = leadersForProject(project);
         for (Long receiver : receivers) {
@@ -343,6 +508,29 @@ public class KpiSharedCollectionService {
     }
 
     public record DeadlineScanResult(int day1Reminders, int day3Escalations, int skippedProjects) { }
+
+    /**
+     * HIGH-4.1：当前生效的月度截止日配置视图（{@code GET /api/v1/kpi/shared/deadline-config} 返回契约）。
+     * <p>{@code source} 取值：
+     * <ul>
+     *   <li>{@code FACTORY_DEFAULT} — DB 无该行（含逻辑删除），使用 Java 默认值 5</li>
+     *   <li>{@code DB_ACTIVE} — DB 有该行（未删）且 value 非空</li>
+     *   <li>{@code DB_INACTIVE} — DB 有该行但 value 为空，回退 default_value</li>
+     * </ul>
+     *
+     * @param dayOfMonth   截止日序号（次月第 N 个工作日）
+     * @param cutoffTime   解析后的截止时刻（含工作日跳过）
+     * @param version      当前版本号（无版本链时为 0）
+     * @param source       取值来源
+     * @param configuredValue 库内配置字符串（无则 null）
+     */
+    public record DeadlineConfigView(
+        int dayOfMonth,
+        LocalDateTime cutoffTime,
+        int version,
+        String source,
+        String configuredValue) {
+    }
 
     /** 达成率阶梯：每低 5 个百分点扣 1 分；<50%=0。 */
     public static BigDecimal calculateSharedAchievement(BigDecimal achievementPercent, BigDecimal fullScore) {

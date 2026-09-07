@@ -89,6 +89,8 @@ public class NotificationService {
         public static final String NEGATIVE_FEEDBACK_EXECUTED = "NEGATIVE_FEEDBACK_EXECUTED";
         /** P3-8.2：负反馈解除恢复 bonusEligible 知会主责/连带 PM（FYI） */
         public static final String NEGATIVE_FEEDBACK_LIFTED = "NEGATIVE_FEEDBACK_LIFTED";
+        /** HIGH-4.1：KPI 月度截止日前 1 天提醒产品组长（FYI，不升级） */
+        public static final String KPI_DUE_SOON = "KPI_DUE_SOON";
 
         private Types() {
         }
