@@ -3062,3 +3062,42 @@ worktrees 保留为 future reference：
 - PROPOSAL-01 真库 DCL 执行授权
 - QA-08 卡面 description 翻 14→15 + acceptance-matrix.json GLB-12 v2 = 15
 - R-NEW 5 个新发现风险（PostLaunchReview 缺 Controller / 守卫 / tenant.excludes 漏 post_launch_reviews / coding harness execute-process / AiChatClient IPv6 fe80::/10 等）的代码修复与追踪卡面
+
+---
+
+## 2026-09-07 15:25 | 后续会话（plan-fab94db1-r4）"选项 A" 治理层落盘
+
+### Commit `80f1f28b` on main
+- 4 文件 +239 / -1：A-1 + A-2 + D-1 治理层 + AiChatClient Spring DI 修
+- A-1：`docs/开发说明/zk-ipd-override.md` 89 行（ZK-IPD 59 行 → 本仓映射 + 5 项裁决 + 11 项 GAP）
+- A-2：`docs/ipd-系统说明/zk-ipd-决策-登记-20260907.md` 139 行（5 项裁决 + 2 跨裁决）
+- D-1：看板 `开发计划-看板镜像.md` +4/-1（第 5 行 14:58 header + P0-9.1 行 run8/9/9-chainheads 旁证；不改任何 ✅ 状态）
+- 修复：`ruoyi-modules/.../service/ai/AiChatClient.java` +8（@Autowired 标 (boolean,String) ctor，修 Spring 多 ctor "No default constructor found"；测试桩 (HttpClient)/(HttpClient,boolean) 不动）
+
+### 编译验证
+- `mvn -o -pl ruoyi-modules/ruoyi-ipd -DskipTests compile` → BUILD SUCCESS（6.5s）
+- 11 项 @EqualsHashCode Lombok 警告来自 `domain/` 既有，与本改无关
+
+### 看板状态变化
+- P0-9.1：✅ → ✅（仅追加旁证，不翻状态）
+- P3-5：✅（不动）
+- P2-7：⬜（不动，待 owner 4 Open Questions 拍板）
+
+### 分支现状
+- main 53 commits ahead origin/main（+1）
+- dcb8d60f（SWARM 终极收口）完整保留在历史
+- 18aff85a（DEF-5+QA-08 登记）完整保留在历史
+- 未触碰 21:54+ 段（OPS-09 让路）
+
+### 残留 owner 决策（同 21:54+ 段，本会话不动）
+- 5 项 A-2 裁决（术语 / 治理中心删 / 项目圈删 / SOP 37 vs 69 / 不可豁免三关）
+- SSOT 切换（ZK-IPD AGENTS 60 条 + 182 行 Prompt 替 README-IPD-OVERRIDE）
+- 39 → 53 commits ahead origin push 时机
+- PROPOSAL-01 真库 DCL 执行授权
+- QA-08 卡面 description 翻 14→15 + acceptance-matrix.json GLB-12 v2 = 15
+- R-NEW 5 个新发现风险代码修复与追踪卡面
+
+### OPS-09 守则遵守
+- 不动 21:54+ log.md 段（兄弟在途让路）
+- 不动收口 / 汇总验收 / 治理层 meta（HEAD dcb8d60f 已含）
+- 不真库 DCL / 不 push / 不 B/C/D 业务代码
