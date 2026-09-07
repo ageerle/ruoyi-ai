@@ -253,13 +253,17 @@ public class ProductService {
             }
         }
         if (product.getProjectId() != null) {
+            // 文案脱敏：不暴露当前已绑的 projectId（commit 后台安全审查 medium info-disclosure 闭环）
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
-                "一个产品仅对应一个项目（当前已绑 projectId=" + product.getProjectId() + "）");
+                "绑定冲突（产品:项目 = 1:1，产品已被占用）");
         }
         Project project = requireProject(projectId);
+        // W28-2 commit 后台安全审查 high cross-group-idor 闭环：必须校验 actor 归属 vs. project 主组
+        assertSameGroupIpd(actorRole, actorGroupId, project.getMainGroupId());
         if (project.getProductId() != null && !project.getProductId().equals(productId)) {
+            // 文案脱敏：不暴露 project 当前 productId
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
-                "该项目已关联其他产品（产品:项目 = 1:1，当前 productId=" + project.getProductId() + "）");
+                "绑定冲突（产品:项目 = 1:1，项目已被占用）");
         }
 
         try {
@@ -322,6 +326,8 @@ public class ProductService {
                 "产品未绑定该项目（产品:项目 = 1:1 自洽）");
         }
         Project project = requireProject(projectId);
+        // W28-2 commit 后台安全审查 high cross-group-idor 闭环：必须校验 actor 归属 vs. project 主组
+        assertSameGroupIpd(actorRole, actorGroupId, project.getMainGroupId());
         if (!productId.equals(project.getProductId())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "项目未绑定该产品（产品:项目 = 1:1 自洽）");

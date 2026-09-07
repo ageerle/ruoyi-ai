@@ -91,10 +91,19 @@ class P1_1_1_BidirectionalBindingTest {
     }
 
     private Project project(Long id, Long productId) {
+        // 默认 mainGroupId=7L（与 actor.groupId 同组）——W28-2 闭环：bindProject/unbindProject
+        // 现要求 actor.groupId == project.mainGroupId 才能跨过守卫；测试工厂统一默认同组。
+        // 跨组场景在 W28-2 unbindProject_crossGroupOnProject_reject403 / bindProject_crossGroupOnProject_reject403
+        // 显式 stub 不同 mainGroupId 验证。
+        return project(id, productId, 7L);
+    }
+
+    private Project project(Long id, Long productId, Long mainGroupId) {
         Project pr = new Project();
         pr.setId(id);
         pr.setName("人脸门禁项目");
         pr.setProductId(productId);
+        pr.setMainGroupId(mainGroupId);
         pr.setDelFlag("0");
         return pr;
     }
@@ -166,7 +175,7 @@ class P1_1_1_BidirectionalBindingTest {
         IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
             service.bindProject(3L, 100L, 1L, 7L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("一个产品仅对应一个项目")
+            .hasMessageContaining("产品已被占用")  // W28-2 info-disclosure 闭环：旧文案泄漏 projectId
             .actual();
         assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
 
@@ -189,7 +198,8 @@ class P1_1_1_BidirectionalBindingTest {
 
         assertThatThrownBy(() -> service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("该项目已关联其他产品");
+            // W28-2 info-disclosure 闭环：错文案不泄漏 productId/projectId
+            .hasMessageContaining("项目已被占用");
 
         // project 端条件 UPDATE 不应被触发（前置已拒绝）
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
@@ -319,6 +329,98 @@ class P1_1_1_BidirectionalBindingTest {
         assertThat(log.getAction()).isEqualTo("PRODUCT_UNBIND_PROJECT");
         assertThat(log.getEntityType()).isEqualTo("products");
         assertThat(log.getEntityId()).isEqualTo(3L);
+    }
+
+    // ========== W28-2 commit 后台安全审查闭环：cross-group-idor + info-disclosure ==========
+
+    /**
+     * W28-2 high cross-group-idor 闭环：unbindProject 必须校验 actor 归属 vs. project 主组。
+     * 即使 actor 与 product 同组（通过 product 守卫），如果 project.mainGroupId 跨组，仍应 403。
+     */
+    @Test
+    @DisplayName("W28-2 unbind跨组守卫：actor.groupId == product.groupId 但 != project.mainGroupId → 拒绝 403 FORBIDDEN")
+    void unbindProject_crossGroupOnProject_reject403() {
+        Product p = product(3L, 9L, 7L /* 产品组 7，actor.groupId=7 通过 product 守卫 */);
+        Project pr = project(9L, 3L);
+        pr.setMainGroupId(8L /* 项目主组 8，actor.groupId=7 跨组 */);
+        when(productMapper.selectById(3L)).thenReturn(p);
+        when(projectMapper.selectById(9L)).thenReturn(pr);
+
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            service.unbindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
+            // ProductService 内本地 assertSameGroupIpd 文案：操作人必须归属产品组（SEC-02）
+            .hasMessageContaining("横向越权防护")
+            .actual();
+        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+
+        // project 守卫先于 product/project 端条件 UPDATE 与审计
+        verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    /**
+     * W28-2 high cross-group-idor 闭环：bindProject 必须校验 actor 归属 vs. project 主组。
+     */
+    @Test
+    @DisplayName("W28-2 bind跨组守卫：actor.groupId == product.groupId 但 != project.mainGroupId → 拒绝 403 FORBIDDEN")
+    void bindProject_crossGroupOnProject_reject403() {
+        Product p = product(3L, null, 7L /* 产品组 7 */);
+        Project pr = project(9L, null);
+        pr.setMainGroupId(8L /* 项目主组 8，跨组 */);
+        when(productMapper.selectById(3L)).thenReturn(p);
+        when(projectMapper.selectById(9L)).thenReturn(pr);
+
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("横向越权防护")
+            .actual();
+        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+
+        verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    /**
+     * W28-2 medium info-disclosure 闭环：bindProject 错文案不泄漏当前已绑 projectId。
+     */
+    @Test
+    @DisplayName("W28-2 bind脱敏：产品已被占用文案不泄漏 productId/projectId")
+    void bindProject_infoDisclosure_productOccupied() {
+        Product p = product(3L, 100L /* 已被绑 100 */, 7L);
+        when(productMapper.selectById(3L)).thenReturn(p);
+
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
+            .actual();
+        // 断言不泄漏 100
+        assertThat(ex.getMessage()).doesNotContain("100");
+        assertThat(ex.getMessage()).contains("产品");
+        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+    }
+
+    /**
+     * W28-2 medium info-disclosure 闭环：bindProject 错文案不泄漏 project 当前 productId。
+     */
+    @Test
+    @DisplayName("W28-2 bind脱敏：项目已被占用文案不泄漏 productId/projectId")
+    void bindProject_infoDisclosure_projectOccupied() {
+        Product p = product(3L, null, 7L);
+        Project pr = project(9L, 200L /* 已被绑 200 */);
+        when(productMapper.selectById(3L)).thenReturn(p);
+        when(projectMapper.selectById(9L)).thenReturn(pr);
+
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
+            .actual();
+        assertThat(ex.getMessage()).doesNotContain("200");
+        assertThat(ex.getMessage()).contains("项目");
+        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
     }
 
     // ========== 维度 7：并发守卫（条件 UPDATE 反映语义 + 事务回滚） ==========

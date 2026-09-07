@@ -31,6 +31,8 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
  *       角色门模式（角色校验先于任何 DB 读）</li>
  *   <li>守卫 5 {@link #requireSuperAdmin(IpdActor)}——W5-E-2.2 adminDecision /
  *       W5-E-2.3 autoScan 的 SUPER_ADMIN 方法内硬校验模式（与 Controller requireAdmin 同严）</li>
+ *   <li>守卫 6 {@link #assertSameGroupIpd(IpdActor, Long)}——ProductService.bindProject / unbindProject
+ *       「actor 归属产品组 vs. 项目主组」同款横向越权守卫（commit 后台安全审查 W28-2 cross-group-idor 闭环）</li>
  * </ul>
  *
  * <p>设计约定：
@@ -166,6 +168,20 @@ public final class IpdIdorGuard {
         requireAuthenticated(actor);
         if (!ROLE_SUPER_ADMIN.equals(actor.role())) {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅超管可执行");
+        }
+    }
+
+    /**
+     * 守卫 6：操作人归属组与目标业务对象归属组一致性。
+     * 详见 javadoc 守卫列表。W28-2 commit 后台安全审查 high cross-group-idor 闭环。
+     */
+    public static void assertSameGroupIpd(IpdActor actor, Long objectGroupId) {
+        requireAuthenticated(actor);
+        if (ROLE_SUPER_ADMIN.equals(actor.role())) {
+            return;
+        }
+        if (actor.groupId() == null || !actor.groupId().equals(objectGroupId)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作");
         }
     }
 
