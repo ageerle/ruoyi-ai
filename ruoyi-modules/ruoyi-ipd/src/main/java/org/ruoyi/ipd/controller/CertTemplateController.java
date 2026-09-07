@@ -9,6 +9,7 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.CertTemplateService;
+import org.ruoyi.ipd.vo.CertTemplateVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,17 +35,17 @@ public class CertTemplateController {
     /** 项目选定目标市场后自动带出认证清单，需 ipd:cert-template:list 权限 */
     @GetMapping("/resolve")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<List<CertTemplate>> resolve(@RequestParam String markets) {
+    public ApiV1Response<List<CertTemplateVO>> resolve(@RequestParam String markets) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(certTemplateService.resolve(markets.split(",")));
+        return ApiV1Response.ok(certTemplateService.resolve(markets.split(",")).stream().map(CertTemplateVO::from).toList());
     }
 
     /** 查询认证模板列表，需 ipd:cert-template:list 权限 */
     @GetMapping
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<List<CertTemplate>> list() {
+    public ApiV1Response<List<CertTemplateVO>> list() {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(certTemplateService.listAll());
+        return ApiV1Response.ok(certTemplateService.listAll().stream().map(CertTemplateVO::from).toList());
     }
 
     /** 查询各国认证模板数量，需 ipd:cert-template:list 权限 */
@@ -58,9 +59,9 @@ public class CertTemplateController {
     /** 创建认证模板，需 ipd:cert-template:add 权限 */
     @PostMapping
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_CERT_TEMPLATE_CREATE, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<CertTemplate> create(@RequestBody CertTemplate template) {
+    public ApiV1Response<CertTemplateVO> create(@RequestBody CertTemplate template) {
         IpdActor actor = ipdPermission.requireAdmin();
-        return ApiV1Response.ok(certTemplateService.create(template, actor.id()));
+        return ApiV1Response.ok(CertTemplateVO.from(certTemplateService.create(template, actor.id())));
     }
 
     /**

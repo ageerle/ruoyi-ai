@@ -9,6 +9,7 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.ProductService;
+import org.ruoyi.ipd.vo.ProductVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,23 +37,23 @@ public class ProductController {
     /** 查询产品列表，需 ipd:product:list 权限 */
     @GetMapping
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<List<Product>> list(@RequestParam(required = false) String keyword) {
+    public ApiV1Response<List<ProductVO>> list(@RequestParam(required = false) String keyword) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(productService.list(keyword));
+        return ApiV1Response.ok(productService.list(keyword).stream().map(ProductVO::from).toList());
     }
 
     /** 查询产品详情，需 ipd:product:query 权限 */
     @GetMapping("/{id}")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<Product> get(@PathVariable Long id) {
+    public ApiV1Response<ProductVO> get(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(productService.getById(id));
+        return ApiV1Response.ok(ProductVO.from(productService.getById(id)));
     }
 
     /** 创建产品，需 ipd:product:add 权限 */
     @PostMapping
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_CREATE, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<Product> create(@RequestBody org.ruoyi.ipd.dto.ProductCreateReq req) {
+    public ApiV1Response<ProductVO> create(@RequestBody org.ruoyi.ipd.dto.ProductCreateReq req) {
         // CODE-01：白名单 DTO；source 三路枚举校验（BR-PROD-01），projectId/status 不可注入
         String src = req.source();
         if (src != null && !src.isBlank()
@@ -60,15 +61,15 @@ public class ProductController {
             throw new org.ruoyi.common.core.exception.ServiceException("产品来源非法（允许 ADMIN_IMPORT|PM_NEW）: " + src);
         }
         IpdActor actor = ipdPermission.requireProductCreator(src);
-        return ApiV1Response.ok(productService.create(req.toEntity(), actor.id()));
+        return ApiV1Response.ok(ProductVO.from(productService.create(req.toEntity(), actor.id())));
     }
 
     /** P1-1.2：编辑产品，需 ipd:product:edit */
     @PutMapping("/{id}")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<Product> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.ProductUpdateReq req) {
+    public ApiV1Response<ProductVO> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.ProductUpdateReq req) {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
-        return ApiV1Response.ok(productService.update(id, req.toPatch(), actor.id(), actor.groupId(), actor.role()));
+        return ApiV1Response.ok(ProductVO.from(productService.update(id, req.toPatch(), actor.id(), actor.groupId(), actor.role())));
     }
 
     /**

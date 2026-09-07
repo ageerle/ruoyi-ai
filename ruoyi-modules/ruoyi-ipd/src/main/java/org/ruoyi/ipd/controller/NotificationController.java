@@ -10,6 +10,7 @@ import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.AsyncNotificationDispatcher;
 import org.ruoyi.ipd.service.NotificationService;
+import org.ruoyi.ipd.vo.NotificationEventVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,9 +45,9 @@ public class NotificationController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_NOTIFICATION_READ, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
-    public ApiV1Response<List<NotificationEvent>> inbox(@RequestParam(defaultValue = "false") boolean unreadOnly) {
+    public ApiV1Response<List<NotificationEventVO>> inbox(@RequestParam(defaultValue = "false") boolean unreadOnly) {
         IpdActor actor = ipdPermission.requireInternal();
-        return ApiV1Response.ok(notificationService.inbox(actor.id(), unreadOnly));
+        return ApiV1Response.ok(notificationService.inbox(actor.id(), unreadOnly).stream().map(NotificationEventVO::from).toList());
     }
 
     /** 未读计数（红点）。 */
@@ -65,9 +66,9 @@ public class NotificationController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_NOTIFICATION_READ, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/read")
-    public ApiV1Response<NotificationEvent> markRead(@PathVariable Long id) {
+    public ApiV1Response<NotificationEventVO> markRead(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
-        return ApiV1Response.ok(notificationService.markRead(id, actor.id()));
+        return ApiV1Response.ok(NotificationEventVO.from(notificationService.markRead(id, actor.id())));
     }
 
     /** 全部已读。 */

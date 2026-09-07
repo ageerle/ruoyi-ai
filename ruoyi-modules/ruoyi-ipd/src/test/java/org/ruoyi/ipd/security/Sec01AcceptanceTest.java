@@ -19,6 +19,7 @@ import org.ruoyi.ipd.controller.ProductController;
 import org.ruoyi.ipd.controller.ProjectController;
 import org.ruoyi.ipd.controller.StageActionController;
 import org.ruoyi.ipd.domain.CertTemplate;
+import org.ruoyi.ipd.vo.CertTemplateVO;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.StageAction;
@@ -165,9 +166,10 @@ class Sec01AcceptanceTest {
         CertTemplate template = new CertTemplate();
         when(certTemplateService.create(any(), any())).thenReturn(template);
 
-        ApiV1Response<CertTemplate> response = certTemplateController.create(template);
+        ApiV1Response<CertTemplateVO> response = certTemplateController.create(template);
 
-        assertThat(response.getData()).isSameAs(template);
+        // 控制器返回 VO（CODE-01：不再把内部字段 delFlag/tenantId/createBy 等透出给客户端）
+        assertThat(response.getData()).isEqualTo(CertTemplateVO.from(template));
         ArgumentCaptor<Long> operator = ArgumentCaptor.forClass(Long.class);
         verify(certTemplateService).create(any(), operator.capture());
         assertThat(operator.getValue()).isEqualTo(ADMIN_ID);

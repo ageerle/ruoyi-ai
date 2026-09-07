@@ -14,6 +14,7 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.BonusPoolService;
+import org.ruoyi.ipd.vo.BonusPoolVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,17 +61,17 @@ public class BonusPoolController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/compute")
-    public ApiV1Response<BonusPool> compute(@Valid @RequestBody ComputeBonusPoolReq req) {
+    public ApiV1Response<BonusPoolVO> compute(@Valid @RequestBody ComputeBonusPoolReq req) {
         // 兕底与注解同严：注解限超管，方法内不再放宽（第六批判例，防 Catalog 漂移时资金操作失防）
         IpdActor actor = ipdPermission.requireAdmin();
-        return ApiV1Response.ok(bonusPoolService.compute(
+        return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.compute(
             req.projectId(),
             req.actualReceipts(),
             req.achievementRate(),
             req.personalCoefficient(),
             req.poolRate(),
             actor
-        ));
+        )));
     }
 
     /**
@@ -84,20 +85,20 @@ public class BonusPoolController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/auto-compute")
-    public ApiV1Response<BonusPool> autoCompute(@Valid @RequestBody AutoComputeBonusPoolReq req) {
+    public ApiV1Response<BonusPoolVO> autoCompute(@Valid @RequestBody AutoComputeBonusPoolReq req) {
         IpdActor actor = ipdPermission.requireAdmin();
         // ① 推导 personalCoefficient
         java.math.BigDecimal personal = bonusPoolService.resolvePersonalCoefficient(
             req.projectId(), req.period());
         // ② 走标准 compute 链路（保持审计/状态机一致）
-        return ApiV1Response.ok(bonusPoolService.compute(
+        return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.compute(
             req.projectId(),
             req.actualReceipts(),
             req.achievementRate(),
             personal,
             req.poolRate(),
             actor
-        ));
+        )));
     }
 
     /**
@@ -106,12 +107,12 @@ public class BonusPoolController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/freeze")
-    public ApiV1Response<BonusPool> freeze(@PathVariable Long id,
+    public ApiV1Response<BonusPoolVO> freeze(@PathVariable Long id,
                                            @RequestBody(required = false) FreezeBonusPoolReq req) {
         // 兕底与注解同严（第六批判例）
         IpdActor actor = ipdPermission.requireAdmin();
         String reason = (req == null) ? null : req.reason();
-        return ApiV1Response.ok(bonusPoolService.freeze(id, reason, actor));
+        return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.freeze(id, reason, actor)));
     }
 
     /**
@@ -120,12 +121,12 @@ public class BonusPoolController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/distribute")
-    public ApiV1Response<BonusPool> distribute(@PathVariable Long id,
+    public ApiV1Response<BonusPoolVO> distribute(@PathVariable Long id,
                                                @Valid @RequestBody DistributeBonusPoolReq req) {
         // 兕底与注解同严（第六批判例）
         IpdActor actor = ipdPermission.requireAdmin();
-        return ApiV1Response.ok(bonusPoolService.distribute(
-            id, req.marketShare(), req.rdShare(), actor));
+        return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.distribute(
+            id, req.marketShare(), req.rdShare(), actor)));
     }
 
     /**
@@ -133,9 +134,9 @@ public class BonusPoolController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{id}")
-    public ApiV1Response<BonusPool> getById(@PathVariable Long id) {
+    public ApiV1Response<BonusPoolVO> getById(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(bonusPoolService.getById(id));
+        return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.getById(id)));
     }
 
     /**
@@ -143,8 +144,8 @@ public class BonusPoolController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/list")
-    public ApiV1Response<List<BonusPool>> list(@RequestParam Long projectId) {
+    public ApiV1Response<List<BonusPoolVO>> list(@RequestParam Long projectId) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(bonusPoolService.listByProject(projectId));
+        return ApiV1Response.ok(bonusPoolService.listByProject(projectId).stream().map(BonusPoolVO::from).toList());
     }
 }
