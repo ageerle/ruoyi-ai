@@ -89,8 +89,9 @@ public class SharedKpiController {
         @RequestParam @NotBlank @Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])$",
             message = "period 必须为 YYYY-MM") String period) {
         // 兜底二次校验：注解限四角色，service 兜底与 requireInternal 同严
-        permission.requireInternal();
-        return ApiV1Response.ok(service.listSharedKpis(projectId, period));
+        // W4-Security IDOR 修复：捕获 actor 传给 service 做 project 级鉴权（件 1.6）
+        IpdActor actor = permission.requireInternal();
+        return ApiV1Response.ok(service.listSharedKpis(actor, projectId, period));
     }
 
     /**

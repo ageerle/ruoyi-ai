@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -399,23 +400,61 @@ public class KpiSharedCollectionService {
 
 
     /**
-     * W4-E §1.5：按 projectId + period 列出当期全部 SHARED 归集记录（含所有 revision，按 revision DESC 排序）。
+     * W4-E §1.5 + W4-Security IDOR 修复：按 projectId + period 列出当期全部 SHARED 归集记录。
      *
      * <p>件 1 Controller {@code GET /api/v1/kpi/shared?projectId&period} 的服务入口；前端页 30 共担 KPI 归集列表读端点。
      * <p>同一项目双 PM 必产生 2 条同 revision 记录（K01-K04 双 PM 同分归集），新版本归集时 revision + 1 追加。
      * <p>不写审计、不变更状态，纯查询。
      *
+     * <p><b>权限契约（W4-Security 件 1）：</b>
+     * <ol>
+     *   <li>{@code actor == null || actor.id() == null} → UNAUTHORIZED（防御性兜底，控制器已 {@code requireInternal} 守门）</li>
+     *   <li>{@code projectId == null} → PARAM_INVALID（参数校验）</li>
+     *   <li>项目不存在 → FORBIDDEN（不泄漏存在性，统一为权限不足文案）</li>
+     *   <li>项目存在但当前会话租户与项目租户不一致 → FORBIDDEN（多租户拦截器仅做 {@code tenant_id} 过滤，
+     *       不做 project 维度一致性；此处补 guard）</li>
+     *   <li>非 SUPER_ADMIN 且当前 personId 不是项目在职成员 → FORBIDDEN（MEDIUM IDOR 修复）</li>
+     *   <li>SUPER_ADMIN 一律放行</li>
+     * </ol>
+     *
+     * @param actor 当前会话身份（必填，由 Controller {@code permission.requireInternal()} 传入）
      * @param projectId 项目主键（必填）
      * @param period YYYY-MM（必填）
      * @return KpiRecord 列表（可能为空但不会为 null）；按 revision DESC, id ASC 排序保证最新版本在前
      */
-    public List<KpiRecord> listSharedKpis(Long projectId, String period) {
+    public List<KpiRecord> listSharedKpis(IpdActor actor, Long projectId, String period) {
+        // 件 1.2：actor 缺失 → UNAUTHORIZED（防御性兜底，service 层不信任 controller 必传）
+        if (actor == null || actor.id() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.UNAUTHORIZED, "未认证或凭证失效");
+        }
+        // 件 1.3：projectId 缺失 → PARAM_INVALID
         if (projectId == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 不能为空");
         }
         validatePeriodString(period);
         if (kpiRecordMapper == null) {
             return Collections.emptyList();
+        }
+        // 件 1.4：项目不存在或跨租户 → FORBIDDEN（统一文案，避免泄漏存在性）
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
+        }
+        String currentTenant = TenantHelper.getTenantId();
+        if (currentTenant != null && project.getTenantId() != null
+            && !currentTenant.equals(project.getTenantId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
+        }
+        // 件 1.5：SUPER_ADMIN 例外；其余角色须为项目在职成员（MEDIUM IDOR 核心修复）
+        if (!"SUPER_ADMIN".equals(actor.role())) {
+            boolean isMember = projectMemberMapper.selectCount(
+                Wrappers.<ProjectMember>lambdaQuery()
+                    .eq(ProjectMember::getProjectId, projectId)
+                    .eq(ProjectMember::getPersonId, actor.id())
+                    .isNull(ProjectMember::getExitDate)) > 0;
+            if (!isMember) {
+                throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
+            }
         }
         List<KpiRecord> rows = kpiRecordMapper.selectList(
             Wrappers.<KpiRecord>lambdaQuery()
