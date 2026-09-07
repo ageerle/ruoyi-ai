@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -103,6 +105,12 @@ public class Project extends BaseEntity implements SoftDeletable {
     private String tenantId;
 
     /** 删除标志（删除走两级审核引擎） */
+    /** [SEC-FIX-6ENTITY-LOGIC] 软删除标志（0正常 1已删；@TableLogic 守卫）。 */
+
+    @TableLogic
+
+    @TableField("del_flag")
+
     private String delFlag;
 
     /** 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter，以满足 SoftDeletable.setDelFlag(void) 接口签名。 */

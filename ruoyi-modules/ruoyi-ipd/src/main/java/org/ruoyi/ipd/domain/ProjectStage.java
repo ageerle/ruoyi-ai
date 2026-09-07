@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -38,6 +40,12 @@ public class ProjectStage extends BaseEntity {
     private Date startedAt;
     private Date completedAt;
     private String tenantId;
+    /** [SEC-FIX-6ENTITY-LOGIC] 软删除标志（0正常 1已删；@TableLogic 守卫）。 */
+
+    @TableLogic
+
+    @TableField("del_flag")
+
     private String delFlag;
     private String remark;
 }

@@ -31,6 +31,11 @@ public class GateElement extends BaseEntity {
     private Integer sortOrder;
     private String enabled;
 
+    /** [SEC-FIX-6ENTITY-LOGIC] 软删除标志（0正常 1已删；@TableLogic 守卫；DDL p161 已加 del_flag 列）。 */
+    @TableLogic
+    @TableField("del_flag")
+    private String delFlag;
+
     /** 生命周期：draft/published/archived（页47）；draft 与 archived 对业务不可见 */
     private String status;
 
