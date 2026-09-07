@@ -44,4 +44,7 @@ public final class BusinessConfigKeys {
 
     /** 删除申请组长审核超时自动升级超管的小时数（默认 48；B-RULE-05） */
     public static final String DELETION_ESCALATE_TIMEOUT_HOURS = "deletion.escalateTimeoutHours";
+
+    /** 项目绩效系数取数策略（PROJECT_SCORE / WEIGHTED_AVG / LAST_QUARTER；P3-4.5 BR-INC-07） */
+    public static final String BONUS_PERFORMANCE_STRATEGY = "bonus.performance.strategy";
 }

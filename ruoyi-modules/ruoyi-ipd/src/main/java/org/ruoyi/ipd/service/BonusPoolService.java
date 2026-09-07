@@ -56,7 +56,7 @@ public class BonusPoolService {
     private final ProjectMapper projectMapper;
     /** [SEC-FIX-HIGH-5.2] 自动推导 personalCoefficient 所需依赖。 */
     private final KpiRecordMapper kpiRecordMapper;
-    private final ProjectScoreService projectScoreService;
+    private ProjectScoreService projectScoreService;
     /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
@@ -145,6 +145,77 @@ public class BonusPoolService {
             && achievementRate.compareTo(new BigDecimal("70")) < 0;
     }
 
+    /* ============================ P3-4.5 项目绩效系数分档 + 取数策略路由 ============================ */
+    /* AC-INC-22/23/24；BR-INC-07；分档阈值与系数来源：ProjectScoreService.projectPerformanceCoefficient() */
+
+    /** P3-4.5 BR-INC-07：取数策略常量（直接复用 ProjectScoreService，避免双源定义漂移） */
+    public static final String STRATEGY_PROJECT_SCORE = ProjectScoreService.STRATEGY_PROJECT_SCORE;
+    public static final String STRATEGY_WEIGHTED_AVG = ProjectScoreService.STRATEGY_WEIGHTED_AVG;
+    public static final String STRATEGY_LAST_QUARTER = ProjectScoreService.STRATEGY_LAST_QUARTER;
+
+    /** P3-4.5 BR-INC-07：综合得分合法区间 [0, 100] */
+    public static final BigDecimal PERF_SCORE_MIN = BigDecimal.ZERO;
+    public static final BigDecimal PERF_SCORE_MAX = new BigDecimal("100");
+
+    /**
+     * P3-4.5 AC-INC-22/23/24 + BR-INC-07：按综合得分 + 取数策略查项目绩效系数。
+     *
+     * <p>策略路由（当前 MVP）：调用方传入 score（语义由 strategy 决定）：
+     * <ul>
+     *   <li>PROJECT_SCORE：当期综合得分</li>
+     *   <li>WEIGHTED_AVG：多期加权平均分</li>
+     *   <li>LAST_QUARTER：上季度综合得分</li>
+     * </ul>
+     *
+     * <p>分档映射委托 {@link ProjectScoreService#projectPerformanceCoefficient(BigDecimal)}。
+     * 严禁出现"以能力等级 L1–L5 代替绩效得分"的入参——能力等级与绩效得分独立（AC-INC-22b）。
+     */
+    public BigDecimal calculatePerformanceCoefficient(BigDecimal score, String strategy) {
+        if (score == null) {
+            throw new ServiceException("P3-4.5：综合得分不能为空");
+        }
+        if (score.compareTo(PERF_SCORE_MIN) < 0 || score.compareTo(PERF_SCORE_MAX) > 0) {
+            throw new ServiceException("P3-4.5：综合得分必须在 [0, 100] 区间，当前=" + score.toPlainString());
+        }
+        ProjectScoreService.validateProjectPerfStrategy(strategy);
+        return projectScoreService.projectPerformanceCoefficient(score);
+    }
+
+    /**
+     * P3-4.5 BR-INC-07：从 system_configs 读取当前取数策略。
+     *
+     * <p>策略配置键：{@code bonus.performance.strategy}；缺省 = PROJECT_SCORE。
+     */
+    public BigDecimal resolvePerformanceCoefficient(Long projectId, BigDecimal score) {
+        String strategy = STRATEGY_PROJECT_SCORE;
+        if (businessConfigService != null) {
+            try {
+                String cfg = businessConfigService.getString(BusinessConfigKeys.BONUS_PERFORMANCE_STRATEGY);
+                if (cfg != null && !cfg.isBlank()) {
+                    strategy = cfg;
+                }
+            } catch (Exception ex) {
+                // 配置读取失败静默回退默认策略
+            }
+        }
+        return calculatePerformanceCoefficient(score, strategy);
+    }
+
+    /**
+     * P3-4.5 preview 端点契约：预览系数（仅查表/计算，不写 audit、不落库）。
+     *
+     * @return 预览 BonusPool（tierCode 已设置；finalPool = 0 表示无金额）
+     */
+    public BonusPool previewCoefficient(Long projectId, BigDecimal score, String strategy, IpdActor actor) {
+        BigDecimal coef = calculatePerformanceCoefficient(score, strategy);
+        BonusPool preview = new BonusPool();
+        preview.setProjectId(projectId);
+        preview.setTierCoefficient(coef);
+        preview.setFinalPool(BigDecimal.ZERO);
+        preview.setStatus(STATUS_DRAFT);
+        return preview;
+    }
+
     /**
      * @deprecated 口径废弃（[CONSISTENCY-1] 2026-09-06 owner 裁决）：
      * 原 AC-INC-16「目标销售额 × 5%」被 ZK 完整版 Prompt「实际回款 × 5%」覆盖。
@@ -204,6 +275,15 @@ public class BonusPoolService {
     @Autowired(required = false)
     public void setBusinessConfigService(BusinessConfigService businessConfigService) {
         this.businessConfigService = businessConfigService;
+    }
+
+    /**
+     * P3-4.5：项目绩效系数分档依赖注入（兼容旧测试构造器）。
+     * 4 参构造器未注入时为 null；P345AcceptanceTest 等单测通过 setter 注入 mock。
+     */
+    @Autowired(required = false)
+    public void setProjectScoreService(ProjectScoreService projectScoreService) {
+        this.projectScoreService = projectScoreService;
     }
 
     /**

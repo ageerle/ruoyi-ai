@@ -24,23 +24,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 import java.util.List;
 
 /**
- * 奖金池核算 Controller（P3-4.4，前端 P0-10.34 激励管理-奖金池核算）
+ * 奖金池核算 Controller（P3-4.4 + P3-4.5，前端 P0-10.34 激励管理-奖金池核算）
  *
- * <p>5 端点：
+ * <p>6 端点：
  * <ul>
  *   <li>{@code POST /api/v1/bonus-pool/compute} — 计算并落库（DRAFT），权限 ipd:bonus-pool:compute</li>
  *   <li>{@code POST /api/v1/bonus-pool/{id}/freeze} — 冻结/确认（DRAFT→CONFIRMED），权限 ipd:bonus-pool:freeze</li>
  *   <li>{@code POST /api/v1/bonus-pool/{id}/distribute} — 分配（DRAFT/CONFIRMED→DISTRIBUTED），权限 ipd:bonus-pool:distribute</li>
  *   <li>{@code GET  /api/v1/bonus-pool/{id}} — 详情，权限 ipd:bonus-pool:query</li>
  *   <li>{@code GET  /api/v1/bonus-pool/list} — 项目奖金池列表，权限 ipd:bonus-pool:query</li>
+ *   <li>{@code POST /api/v1/bonus-pool/coefficient/preview} — 项目绩效系数试算（P3-4.5），权限 ipd:bonus-pool:compute</li>
  * </ul>
  *
  * <p>权限梯度：
  * <ul>
- *   <li>compute / query / list → {@code ipd:bonus-pool:compute|query}（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN）</li>
+ *   <li>compute / query / list / preview → {@code ipd:bonus-pool:compute|query}（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN）</li>
  *   <li>freeze / distribute → {@code ipd:bonus-pool:freeze|distribute}（GROUP_LEADER / SUPER_ADMIN 涉钱审批）</li>
  * </ul>
  */
@@ -147,5 +150,28 @@ public class BonusPoolController {
     public ApiV1Response<List<BonusPoolVO>> list(@RequestParam Long projectId) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(bonusPoolService.listByProject(projectId).stream().map(BonusPoolVO::from).toList());
+    }
+
+    /**
+     * P3-4.5：项目绩效系数试算（AC-INC-22/23/24 + BR-INC-07）。
+     *
+     * <p>仅做查表/计算，不写 audit_log、不 insert bonus_pools。
+     * 策略为 null 时走 system_configs（{@code bonus.performance.strategy}），默认 PROJECT_SCORE。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/coefficient/preview")
+    public ApiV1Response<BonusPoolVO> previewCoefficient(@Valid @RequestBody org.ruoyi.ipd.dto.PreviewCoefficientReq req) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        String strategy = (req.strategy() == null || req.strategy().isBlank())
+            ? null
+            : req.strategy();
+        BigDecimal coef;
+        if (strategy == null) {
+            coef = bonusPoolService.resolvePerformanceCoefficient(req.projectId(), req.score());
+        } else {
+            coef = bonusPoolService.calculatePerformanceCoefficient(req.score(), strategy);
+        }
+        BonusPool preview = bonusPoolService.previewCoefficient(req.projectId(), req.score(), strategy, actor);
+        return ApiV1Response.ok(BonusPoolVO.from(preview));
     }
 }
