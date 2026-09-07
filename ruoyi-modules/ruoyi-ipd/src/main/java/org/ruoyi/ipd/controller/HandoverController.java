@@ -4,7 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.HandoverRecord;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
@@ -34,6 +36,9 @@ public class HandoverController {
 
     public record AcceptRequest(String approvalRef) { }
 
+    /** HIGH-3.1：撤销请求—COMPLETED → ROLLED_BACK；reason 必填 + confirmation 二次确认短语。 */
+    public record RollbackRequest(@NotBlank String reason, @NotBlank String confirmation) { }
+
     /** 批量请求：projectIds 为空 ⇒ 原负责人名下该角色全部活跃项目；approvalRef 为本批统一备案号。 */
     public record BatchRequest(@NotNull Long fromPersonId, @NotBlank String role,
                                @NotNull Long toPersonId, String note,
@@ -43,13 +48,16 @@ public class HandoverController {
 
     public record HandoverView(String id, String projectId, String fromPersonId, String toPersonId,
                                String handoverRole, String status, String note,
-                               String confirmedAt, String completedAt) {
+                               String confirmedAt, String completedAt,
+                               String rollbackReason, String rollbackAt) {
         public static HandoverView from(HandoverRecord r) {
             return new HandoverView(String.valueOf(r.getId()), String.valueOf(r.getProjectId()),
                 String.valueOf(r.getFromPersonId()), String.valueOf(r.getToPersonId()),
                 r.getHandoverRole(), r.getStatus(), r.getNote(),
                 r.getConfirmedAt() == null ? null : r.getConfirmedAt().toString(),
-                r.getCompletedAt() == null ? null : r.getCompletedAt().toString());
+                r.getCompletedAt() == null ? null : r.getCompletedAt().toString(),
+                r.getRollbackReason(),
+                r.getRollbackAt() == null ? null : r.getRollbackAt().toString());
         }
     }
 
@@ -82,6 +90,19 @@ public class HandoverController {
         IpdActor actor = permission.requireInternal();
         return ApiV1Response.ok(HandoverView.from(
             handoverService.accept(id, request == null ? null : request.approvalRef(), actor)));
+    }
+
+    /** HIGH-3.1：撤销已接受移交（24h 内）；service 层校验发起人/组长/超管权限 + 副作用反转。 */
+    @PostMapping("/{id}/cancel")
+    public ApiV1Response<HandoverView> cancel(@PathVariable Long id,
+                                              @Valid @RequestBody RollbackRequest request) {
+        if (!"确认撤销该移交".equals(request.confirmation())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "确认短语不匹配，二次确认未通过（须输入：确认撤销该移交）");
+        }
+        IpdActor actor = permission.requireInternal();
+        return ApiV1Response.ok(HandoverView.from(
+            handoverService.rollback(id, request.reason(), actor)));
     }
 
     /** 收件箱：待我接收 + 我发起的（未完结）。 */

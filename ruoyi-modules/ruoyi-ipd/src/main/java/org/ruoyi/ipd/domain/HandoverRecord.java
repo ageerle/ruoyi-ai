@@ -84,4 +84,10 @@ public class HandoverRecord extends BaseEntity implements SoftDeletable {
 
     /** 移交说明（≤1000字符，spec 字段模型） */
     private String note;
+
+    /** HIGH-3.1：撤销原因（≤500字符）—COMPLETED → ROLLED_BACK 终态时的撤销说明 */
+    private String rollbackReason;
+
+    /** HIGH-3.1：撤销时间—COMPLETED → ROLLED_BACK 的时刻，与 rollbackReason 配套落审计 HANDOVER_ROLLBACK */
+    private Date rollbackAt;
 }

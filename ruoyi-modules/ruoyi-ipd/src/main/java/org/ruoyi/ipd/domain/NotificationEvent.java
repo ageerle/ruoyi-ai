@@ -88,6 +88,20 @@ public class NotificationEvent extends BaseEntity {
     @TableField("read_at")
     private Date readAt;
 
+    /**
+     * 路由通道（ROOT-R2-P0-2 新增；nullable 兼容既有行 NULL=INBOX 默认）。
+     * 对应枚举 {@link NotificationChannelType}：INBOX|EMAIL|WEBSOCKET。
+     */
+    @TableField("target_channel")
+    private String targetChannel;
+
+    /**
+     * 国际化区域（ROOT-R2-P0-2 新增；nullable 兼容既有行 NULL=zh-CN 默认）。
+     * 模板渲染与多语言时按此字段路由。
+     */
+    @TableField("locale")
+    private String locale;
+
     /** 软删除（本域无删除通道，仅映射） */
     @TableLogic
     @TableField("del_flag")

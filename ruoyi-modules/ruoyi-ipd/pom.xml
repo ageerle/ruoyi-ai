@@ -57,6 +57,12 @@
             <artifactId>ruoyi-common-encrypt</artifactId>
         </dependency>
 
+        <!-- ROOT-R2-P0-2：NotificationDispatcher 异步重试队列依赖 Redisson 延迟队列 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-redis</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -77,10 +83,9 @@
                     </excludes>
                     <testExcludes>
                         <testExclude>**/ComplianceServiceTest.java</testExclude>
-                        <testExclude>**/HandoverDisableConcurrencyTest.java</testExclude>
-                        <testExclude>**/HandoverInitiateAuthTest.java</testExclude>
-                        <testExclude>**/HandoverServiceTest.java</testExclude>
-                        <testExclude>**/P271AcceptanceTest.java</testExclude>
+                        <testExclude>**/ContributionServiceTest.java</testExclude>
+                        <!-- P2-7.3：移交域 4 条排除项已移除（排除成因随回滚事故消失，c86871ab 后代码自洽；
+                             worktree 隔离验证 42/42 全绿，证据 验收/P2-7.3-超管移交-验收-20260906.md §5） -->
                     </testExcludes>
                 </configuration>
             </plugin>

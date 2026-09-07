@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.HandoverRecord;
 import org.ruoyi.ipd.domain.Person;
@@ -49,9 +51,14 @@ public class HandoverService {
     /** 与 ProjectMemberService.ROLES 同源：移交只在这两个角色维度。 */
     private static final Set<String> HANDOVER_ROLES = Set.of("MARKET_PM", "RD_PM");
 
-    /** 状态机适配既有 DDL 枚举（DRAFT|CONFIRMED|COMPLETED），本卡只用 DRAFT→COMPLETED。 */
+    /** 状态机适配既有 DDL 枚举（DRAFT|CONFIRMED|COMPLETED|ROLLED_BACK），本卡用 DRAFT→COMPLETED→ROLLED_BACK。 */
     private static final String ST_DRAFT = "DRAFT";
     private static final String ST_COMPLETED = "COMPLETED";
+    /** HIGH-3.1：撤销终态—COMPLETED → ROLLED_BACK；显式终态，不再转回。 */
+    private static final String ST_ROLLED_BACK = "ROLLED_BACK";
+
+    /** HIGH-3.1：撤销窗口（COMPLETED 完成后多少小时可被撤销）。 */
+    private static final long ROLLBACK_WINDOW_HOURS = 24L;
 
     /** ZK-IPD 页49 原型：超管移交二次确认短语（原型按钮 disabled 直至输入与该短语一致）。 */
     private static final String CONFIRM_PHRASE = "确认移交管理员";
@@ -303,6 +310,118 @@ public class HandoverService {
             .eq(Person::getId, personId)
             .eq(Person::getAccountStatus, "ACTIVE")
             .set(Person::getAccountStatus, "FROZEN_PENDING_HANDOVER"));
+    }
+
+    /**
+     * HIGH-3.1：撤销已接受移交（COMPLETED → ROLLED_BACK 终态）。
+     *
+     * <p>口径：
+     * <ul>
+     *   <li>状态机：仅 status=COMPLETED 可撤销；撤销后 status=ROLLED_BACK 显式终态，幂等拒重复</li>
+     *   <li>窗口：completedAt 在 ROLLBACK_WINDOW_HOURS（24h）内，超窗抛 HANDOVER_LOCKED</li>
+     *   <li>权限：发起人本人 OR 项目主组组长 OR SUPER_ADMIN（继承 initiateOnBehalf 同款同组校验）</li>
+     *   <li>副作用反转：接手人 exit + 发起人 exit_date/exit_reason 复位；
+     *       不重 bindMember 五参重载（避免再走评级快照/津贴锁定），直接 update 复位</li>
+     *   <li>审计：HANDOVER_ROLLBACK；写 rollbackReason + rollbackAt；同事务强一致</li>
+     * </ul>
+     *
+     * <p>事务：方法级 REQUIRED 加入类级事务；与 disableIfAllCleared 不冲突（撤销不触发禁用检查）。
+     */
+    public HandoverRecord rollback(Long handoverId, String reason, IpdActor actor) {
+        HandoverRecord rec = handoverMapper.selectById(handoverId);
+        if (rec == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "移交记录不存在: " + handoverId);
+        }
+        // 幂等：已撤销直接拒（终态不再接受任何操作）
+        if (ST_ROLLED_BACK.equals(rec.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.HANDOVER_LOCKED,
+                "移交已撤销（状态 ROLLED_BACK），不可重复撤销");
+        }
+        // 状态机：仅 COMPLETED 可撤销
+        if (!ST_COMPLETED.equals(rec.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.HANDOVER_LOCKED,
+                "移交记录状态不允许撤销（当前 " + rec.getStatus() + "，仅 COMPLETED 可撤销）");
+        }
+        // 窗口：completedAt + 24h 仍允许撤销
+        Date completedAt = rec.getCompletedAt();
+        if (completedAt == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.HANDOVER_LOCKED,
+                "移交完成时间缺失，禁止撤销（HANDOVER_LOCKED）");
+        }
+        long hoursSince = (System.currentTimeMillis() - completedAt.getTime()) / 3_600_000L;
+        if (hoursSince > ROLLBACK_WINDOW_HOURS) {
+            throw new IpdBusinessException(ApiV1ErrorCode.HANDOVER_LOCKED,
+                "已完成超过 " + ROLLBACK_WINDOW_HOURS + "h，禁止撤销（HANDOVER_LOCKED）");
+        }
+        // 权限：发起人 OR 项目主组组长 OR SUPER_ADMIN
+        boolean isInitiator = actor.id().equals(rec.getFromPersonId())
+            || actor.id().equals(rec.getToPersonId());
+        boolean isLeaderOrAdmin = "SUPER_ADMIN".equals(actor.role());
+        if (!isLeaderOrAdmin) {
+            Project project = projectMapper.selectById(rec.getProjectId());
+            if (project != null && "GROUP_LEADER".equals(actor.role())
+                && actor.groupId() != null && actor.groupId().equals(project.getMainGroupId())) {
+                isLeaderOrAdmin = true;
+            }
+        }
+        if (!isInitiator && !isLeaderOrAdmin) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN,
+                "仅移交发起人、项目组长或超管可撤销移交");
+        }
+        // 副作用反转：接手人 exit + 发起人 exit_date/exit_reason 复位
+        restoreForRollback(rec);
+        Date now = new Date();
+        rec.setStatus(ST_ROLLED_BACK);
+        rec.setRollbackReason(reason);
+        rec.setRollbackAt(now);
+        handoverMapper.updateById(rec);
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
+            .action("HANDOVER_ROLLBACK").entityType("handover").entityId(rec.getId())
+            .reason("projectId=" + rec.getProjectId() + " role=" + rec.getHandoverRole()
+                + " rollback=" + (reason == null ? "" : reason))
+            .afterData(AuditEventData.json("fromPersonId", rec.getFromPersonId(),
+                "toPersonId", rec.getToPersonId(),
+                "rollbackReason", reason,
+                "rollbackWindowHours", ROLLBACK_WINDOW_HOURS,
+                "hoursSinceCompleted", hoursSince))
+            .createTime(now)
+            .build());
+        return rec;
+    }
+
+    /**
+     * HIGH-3.1：撤销时反转副作用——接手人退出 + 发起人绑定恢复。
+     *
+     * <p>不调用 bindMember 五参重载（避开评级快照 / 津贴锁定 / 项目数上限阈值校验的副作用），
+     * 直接 update 复位原绑定行的 exit_date/exit_reason。
+     */
+    private void restoreForRollback(HandoverRecord rec) {
+        // 1) 接手人退出（accept 时由 bindMember 插入，本次撤销退出）
+        int exited = memberMapper.update(null, new LambdaUpdateWrapper<ProjectMember>()
+            .eq(ProjectMember::getProjectId, rec.getProjectId())
+            .eq(ProjectMember::getPersonId, rec.getToPersonId())
+            .eq(ProjectMember::getRole, rec.getHandoverRole())
+            .isNull(ProjectMember::getExitDate)
+            .set(ProjectMember::getExitDate, new Date())
+            .set(ProjectMember::getExitReason, "HANDOVER_ROLLBACK"));
+        if (exited == 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "接手人在该项目该角色已无在任绑定，撤销失败（副作用不可逆）");
+        }
+        // 2) 发起人绑定恢复：原 exit_date/exit_reason=HANDOVER 的绑定行复位
+        int restored = memberMapper.update(null, new LambdaUpdateWrapper<ProjectMember>()
+            .eq(ProjectMember::getProjectId, rec.getProjectId())
+            .eq(ProjectMember::getPersonId, rec.getFromPersonId())
+            .eq(ProjectMember::getRole, rec.getHandoverRole())
+            .eq(ProjectMember::getExitReason, "HANDOVER")
+            .isNotNull(ProjectMember::getExitDate)
+            .set(ProjectMember::getExitDate, null)
+            .set(ProjectMember::getExitReason, null));
+        if (restored == 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "发起人在该项目该角色无可恢复的 HANDOVER 绑定行，撤销失败");
+        }
     }
 
     /**

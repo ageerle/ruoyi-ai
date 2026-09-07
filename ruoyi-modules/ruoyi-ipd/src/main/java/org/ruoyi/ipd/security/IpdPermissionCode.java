@@ -125,4 +125,7 @@ public interface IpdPermissionCode {
 
     /** P2-3.3：超管指派 */
     String OPERATION_BID_INVITATION_ADMIN_ASSIGN = "ipd:bid-invitation:admin-assign";
+
+    /** HIGH-3.1：撤销已接受移交（24h 内；RLD_BACK 终态 + 副作用回滚） */
+    String OPERATION_HANDOVER_CANCEL = "ipd:handover:cancel";
 }

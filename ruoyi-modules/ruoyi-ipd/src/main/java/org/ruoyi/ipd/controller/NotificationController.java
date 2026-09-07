@@ -8,6 +8,7 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
+import org.ruoyi.ipd.service.AsyncNotificationDispatcher;
 import org.ruoyi.ipd.service.NotificationService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +25,7 @@ import java.util.Map;
  * receiver 恒从会话推导（SEC-API-01：不接受请求体透传接收者）；
  * 发布无 HTTP 入口——事件由各业务服务事务内 publish，防越权伪造通知。
  * dispatch-pending 为消费端运维触发（正常轮询待 OPS-04 scheduler 合入后接线）。
+ * ROOT-R2-P0-2 新增 async-dispatch：异步分发器手动触发（Redisson 延迟队列消费）。
  */
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -31,6 +33,7 @@ import java.util.Map;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final AsyncNotificationDispatcher asyncDispatcher;
     private final IpdPermission ipdPermission;
 
     /**
@@ -86,5 +89,19 @@ public class NotificationController {
     public ApiV1Response<Map<String, Integer>> dispatchPending(@RequestParam(defaultValue = "50") int limit) {
         ipdPermission.requireAdmin();
         return ApiV1Response.ok(notificationService.dispatchPending(limit));
+    }
+
+    /**
+     * ROOT-R2-P0-2：手动触发异步分发器消费（仅超管；正常轮询待 scheduler 合入）。
+     * 消费 Redisson 延迟队列事件，按 targetChannel 路由 handler；失败 3 次转 DEAD。
+     *
+     * @param maxProcess 单轮上限（默认 50，最大 200）
+     * @return sent/failed/dead/skipped/aggregated 计数
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NOTIFICATION_DISPATCH, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/async-dispatch")
+    public ApiV1Response<Map<String, Integer>> asyncDispatch(@RequestParam(defaultValue = "50") int maxProcess) {
+        ipdPermission.requireAdmin();
+        return ApiV1Response.ok(asyncDispatcher.consumeOnce(maxProcess));
     }
 }

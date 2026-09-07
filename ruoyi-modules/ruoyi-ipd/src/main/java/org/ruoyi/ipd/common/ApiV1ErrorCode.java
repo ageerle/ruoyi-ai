@@ -56,6 +56,9 @@ public enum ApiV1ErrorCode {
     /** P3-7.1：lock 调用时未先 run */
     SWITCHING_NOT_RUN(50016, "该月份尚未运行对账（SWITCHING_NOT_RUN）"),
 
+    /** HIGH-3.1：移交记录状态不允许撤销（仅 COMPLETED 且在 24h 窗口内可撤销） */
+    HANDOVER_LOCKED(50017, "移交记录状态不允许撤销（HANDOVER_LOCKED）"),
+
     INTERNAL_ERROR(90001, "系统内部错误");
 
     private final int code;
@@ -90,7 +93,8 @@ public enum ApiV1ErrorCode {
             case GATE_NOT_PASSED, DUAL_SIGN_INCOMPLETE, OVER_QUOTA_NOT_REGISTERED, ROLE_LOCKED,
                 DELETE_NOT_ALLOWED_DIRECT, HANDOVER_REQUIRED_BEFORE_DISABLE, STATE_CONFLICT,
                 AI_BUDGET_EXCEEDED, CONTRIB_NOT_G5_STAGE, NF_REENTRY_NOT_ALLOWED, NF_STATE_INVALID,
-                SWITCHING_LOCKED, SWITCHING_DIFF_TOO_LARGE, SWITCHING_NOT_RUN -> 409;
+                SWITCHING_LOCKED, SWITCHING_DIFF_TOO_LARGE, SWITCHING_NOT_RUN,
+                HANDOVER_LOCKED -> 409;
             case RATE_LIMITED -> 429;
             case ATTACHMENT_TOO_LARGE -> 413;
             case PRODUCT_INACTIVE, NOT_FOUND -> 404;
