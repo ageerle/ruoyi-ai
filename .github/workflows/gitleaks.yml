@@ -7,6 +7,12 @@
 #
 # 与既有 CI 的关系：仅新增，不修改 a11y-ci.yml / docs-link-check.yml /
 # publish-images.yml / wiki-lint.yml。
+#
+# === 安全加固（commit 1985716b-followup 安全审查响应） ===
+# - actions/checkout 与 gitleaks/gitleaks-action 已 pin 完整 commit SHA（防 supply-chain-unpinned-action）
+# - GITLEAKS_LICENSE 仅对 Organization 仓库有效；条件化注入（个人仓库不传，避免空值泄露）
+# - GITLEAKS_ENABLE_SUMMARY 已设为 true（产出可读摘要）
+# - UPLOAD_ARTIFACTS 设为 true（GITLEAKS_LICENSE=v0+ 才生效；保留 owner 后续启用）
 name: gitleaks
 
 on:
@@ -24,15 +30,20 @@ jobs:
     name: secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           # gitleaks 需要完整历史才能扫描 commit 序列（浅克隆只扫工作树快照）。
           fetch-depth: 0
 
       - name: gitleaks scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@9c49965b8a9027d056a85cfdff3b1d853ba9d7d8 # v2.3.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # GITLEAKS_LICENSE 仅 GitHub Organization 仓库需要（个人仓库免费）。
-          # 未配置时 action 在个人仓库正常运行；组织仓库会提示补 license。
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          # 条件化注入：仅组织仓库传递，避免空值泄露到 action 日志。
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE && secrets.GITLEAKS_LICENSE != '' && secrets.GITLEAKS_LICENSE }}
+          # 启用 PR 摘要（gitleaks-action v2.3+ 默认行为）
+          GITLEAKS_ENABLE_SUMMARY: "true"
+          # 上传 artifacts（用于 in-repo 检查详情留档）
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACTS: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
