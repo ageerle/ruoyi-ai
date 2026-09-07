@@ -14,7 +14,6 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.ComplianceService;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,7 +56,6 @@ public class ComplianceController {
     /** AC-COMP-02/03：创建数据删除请求（30 天 deadline + 强制审计）。 */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_COMPLIANCE_WRITE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/data-deletion-request")
-    @Transactional(rollbackFor = Exception.class)
     public ApiV1Response<DataDeletionRequestVO> requestDeletion(@Valid @RequestBody DataDeletionRequestDTO dto) {
         return ApiV1Response.ok(complianceService.createDeletionRequest(dto, ipdPermission.requireInternal()));
     }
