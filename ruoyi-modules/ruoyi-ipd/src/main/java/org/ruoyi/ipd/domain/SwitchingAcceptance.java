@@ -31,6 +31,9 @@ public class SwitchingAcceptance extends BaseEntity implements SoftDeletable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
+    /** 项目 ID（DDL 必填；unique key uk_switching_month 依赖此列）。 */
+    private Long projectId;
+
     /** 月份 YYYY-MM（7 位） */
     private String month;
 

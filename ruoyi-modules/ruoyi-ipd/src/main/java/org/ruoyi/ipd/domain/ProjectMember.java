@@ -91,9 +91,7 @@ public class ProjectMember extends BaseEntity implements SoftDeletable {
     /** 达到项目数阈值时的评级委员会审批备案编号（BR-TEAM-07/TEAM-08） */
     private String approvalRef;
 
-    /** 超管移交专用：移交角色（MARKET_PM / RD_PM） */
-    private String handoverRole;
-
-    /** 移交说明（≤1000字符） */
-    private String note;
+    // ===== [QA-04-A-FIX] 2026-09-06：handoverRole/note 字段语义在 HandoverRecord（handover_records 表），
+    //      project_members 表无对应列。从本 entity 删除（消除 COLUMN_NOT_IN_DDL 误报）。
+    //      如需在项目成员视图带出移交信息，service 层 Join handover_records 即可。
 }

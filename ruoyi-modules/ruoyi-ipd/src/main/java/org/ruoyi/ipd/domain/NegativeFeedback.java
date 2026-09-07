@@ -45,6 +45,24 @@ public class NegativeFeedback extends BaseEntity implements SoftDeletable {
     private Long projectId;
 
     /**
+     * 来源渠道（DDL legacy v1 字段；新版本用 triggerType/触发情形；本字段保留以兼容既有 INSERT/查询）。
+     * [QA-04-B-FIX] 2026-09-06：补齐 DDL NOT NULL 无默认值列映射。
+     */
+    private String source;
+
+    /**
+     * 内容（DDL legacy v1 字段；新版本用 triggerEvidence/触发证据；本字段保留以兼容既有 INSERT/查询）。
+     * [QA-04-B-FIX] 2026-09-06：补齐 DDL NOT NULL 无默认值列映射。
+     */
+    private String content;
+
+    /**
+     * 严重程度 LOW|MEDIUM|HIGH|CRITICAL（DDL legacy v1 字段；新版本用 mainExecution；本字段保留以兼容既有 INSERT/查询）。
+     * [QA-04-B-FIX] 2026-09-06：补齐 DDL NOT NULL 无默认值列映射。
+     */
+    private String severity;
+
+    /**
      * 触发情形（REWORK_EXCEEDED|QUALITY_ACCIDENT|SPEC_PILE_COPY|MISSED_MARKET_WINDOW）
      */
     private String triggerType;

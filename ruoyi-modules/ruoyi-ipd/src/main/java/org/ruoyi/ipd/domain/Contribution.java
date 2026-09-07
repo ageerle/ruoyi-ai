@@ -50,6 +50,20 @@ public class Contribution extends BaseEntity implements SoftDeletable {
     /** 项目 ID */
     private Long projectId;
 
+    /**
+     * 评定人 personId（DDL legacy v1 字段；新版本用 leaderId，本字段保留以兼容既有 INSERT/查询）。
+     * [QA-04-B-FIX] 2026-09-06：补齐 DDL NOT NULL 无默认值列映射（DDL P3-6.x 既有）。
+     */
+    @TableField("person_id")
+    private Long personId;
+
+    /**
+     * 市场贡献度（0.4000-0.6500；DDL legacy v1 字段；新版本用 marketShare）。
+     * [QA-04-B-FIX] 2026-09-06：补齐 DDL NOT NULL 无默认值列映射。
+     */
+    @TableField("market_contribution_rate")
+    private BigDecimal marketContributionRate;
+
     /** 评定状态 DRAFT | SUBMITTED | CONFIRMED */
     private String status;
 

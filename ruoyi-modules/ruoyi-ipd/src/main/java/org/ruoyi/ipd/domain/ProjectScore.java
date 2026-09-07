@@ -31,6 +31,43 @@ public class ProjectScore extends BaseEntity implements SoftDeletable {
     /** 被评 PM（市场 / 研发） */
     private Long personId;
 
+    /**
+     * 五维度·维度1（25%，DDL legacy v1 字段；新版本使用 self_score/market_leader_score/rd_leader_score）。
+     * [QA-04-B-FIX] 2026-09-06：补齐 DDL NOT NULL 无默认值列映射。
+     */
+    @TableField("dimension_1")
+    private BigDecimal dimension1;
+
+    /**
+     * 五维度·维度2（25%）。
+     */
+    @TableField("dimension_2")
+    private BigDecimal dimension2;
+
+    /**
+     * 五维度·维度3（20%）。
+     */
+    @TableField("dimension_3")
+    private BigDecimal dimension3;
+
+    /**
+     * 五维度·维度4（20%）。
+     */
+    @TableField("dimension_4")
+    private BigDecimal dimension4;
+
+    /**
+     * 五维度·维度5（10%）。
+     */
+    @TableField("dimension_5")
+    private BigDecimal dimension5;
+
+    /**
+     * 评定人（组长）DDL legacy v1 字段；新版本使用 author_id（本字段保留以兼容既有 INSERT/查询）。
+     */
+    @TableField("evaluator_id")
+    private Long evaluatorId;
+
     /** PM 角色 MARKET_PM / RD_PM */
     private String pmRole;
 
