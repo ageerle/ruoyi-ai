@@ -15,8 +15,11 @@ import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,6 +28,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,12 +75,40 @@ public class KpiRecordService {
     public static final List<String> KPI_LEVELS = Arrays.asList("L1", "L2", "L3", "L4", "L5");
     public static final String COMPREHENSIVE_LEVEL = "COMPREHENSIVE";
 
+    /* ---------- Wave17 ROOT-R3-P0-2：KPI 状态机（接入 StateMachineGuard） ---------- */
+    /** 状态机实体类型（与 DefaultStateMachineGuard.registerRule 约定一致） */
+    public static final String KPI_RECORD_ENTITY_TYPE = "kpi_record";
+    /** 初始录入（编辑中） */
+    public static final String ST_EDITING = "EDITING";
+    /** 提交待审 */
+    public static final String ST_PENDING_REVIEW = "PENDING_REVIEW";
+    /** 已审通过 */
+    public static final String ST_APPROVED = "APPROVED";
+    /** 已锁定（终态前收敛） */
+    public static final String ST_LOCKED = "LOCKED";
+    /** 已驳回 */
+    public static final String ST_REJECTED = "REJECTED";
+    /** 已归档（终态） */
+    public static final String ST_ARCHIVED = "ARCHIVED";
+
+
     private final KpiRecordMapper kpiRecordMapper;
     private final ProjectScoreMapper projectScoreMapper;
     private final AllowanceLedgerMapper allowanceLedgerMapper;
     private final BonusPoolMapper bonusPoolMapper;
     /** ROOT-R1 P0-7 字面量迁移：KPI 默认值（停发阈值 60；B-RULE-02 配套）来源 */
     private final BusinessConfigService businessConfigService;
+    /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；Wave17 KPI 状态机接入） */
+    private StateMachineGuard stateMachineGuard;
+
+    /**
+     * ROOT-R3-P0-2：Spring 注入 StateMachineGuard（nullable 兼容旧测试）。
+     * 测试场景可通过此 setter 注入 mock；运行时由 Spring 装配。
+     */
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
 
     public KpiRecordService() {
         this(null, null, null, null, null);
@@ -296,6 +328,131 @@ public class KpiRecordService {
         return points;
     }
 
+    /* ---------- Wave17 ROOT-R3-P0-2：KPI 状态机写入方法 ---------- */
+
+    /**
+     * 初始录入 KPI 草稿：null→EDITING 合法迁移，insert 后 postCommit 触发。
+     *
+     * @param draft KPI 草稿（ID 必空，由 insert 自动生成）
+     * @param actor 当前操作人（审计落名；null 时静默跳过）
+     * @return 已落库 KpiRecord（status=EDITING，ID 已生成）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public KpiRecord recordScore(KpiRecord draft, IpdActor actor) {
+        if (draft == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "KPI 草稿不能为空");
+        }
+        String from = draft.getStatus(); // null for new draft
+        preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_EDITING, "record");
+        draft.setStatus(ST_EDITING);
+        if (kpiRecordMapper != null) {
+            kpiRecordMapper.insert(draft);
+        }
+        registerPostCommit(KPI_RECORD_ENTITY_TYPE, from, ST_EDITING, "record",
+            actor != null ? actor.id() : null, draft.getId());
+        return draft;
+    }
+
+    /**
+     * 审批通过 KPI：{EDITING|PENDING_REVIEW}→APPROVED 合法迁移。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public KpiRecord approveKpi(Long recordId, IpdActor actor) {
+        KpiRecord record = requireById(recordId);
+        String from = record.getStatus();
+        preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_APPROVED, "approve");
+        record.setStatus(ST_APPROVED);
+        if (kpiRecordMapper != null) {
+            kpiRecordMapper.updateById(record);
+        }
+        registerPostCommit(KPI_RECORD_ENTITY_TYPE, from, ST_APPROVED, "approve",
+            actor != null ? actor.id() : null, record.getId());
+        return record;
+    }
+
+    /**
+     * 驳回 KPI：{EDITING|PENDING_REVIEW}→REJECTED 合法迁移。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public KpiRecord rejectKpi(Long recordId, IpdActor actor) {
+        KpiRecord record = requireById(recordId);
+        String from = record.getStatus();
+        preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_REJECTED, "reject");
+        record.setStatus(ST_REJECTED);
+        if (kpiRecordMapper != null) {
+            kpiRecordMapper.updateById(record);
+        }
+        registerPostCommit(KPI_RECORD_ENTITY_TYPE, from, ST_REJECTED, "reject",
+            actor != null ? actor.id() : null, record.getId());
+        return record;
+    }
+
+    /**
+     * 归档 KPI：通配 *→ARCHIVED 终态收敛。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public KpiRecord archiveKpi(Long recordId, IpdActor actor) {
+        KpiRecord record = requireById(recordId);
+        String from = record.getStatus();
+        preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_ARCHIVED, "archive");
+        record.setStatus(ST_ARCHIVED);
+        if (kpiRecordMapper != null) {
+            kpiRecordMapper.updateById(record);
+        }
+        registerPostCommit(KPI_RECORD_ENTITY_TYPE, from, ST_ARCHIVED, "archive",
+            actor != null ? actor.id() : null, record.getId());
+        return record;
+    }
+
+    private KpiRecord requireById(Long id) {
+        if (id == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "KPI 记录 ID 不能为空");
+        }
+        if (kpiRecordMapper == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "KpiRecordMapper 未注入");
+        }
+        KpiRecord record = kpiRecordMapper.selectById(id);
+        if (record == null || "1".equals(record.getDelFlag())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "KPI 记录不存在: " + id);
+        }
+        return record;
+    }
+
+    /**
+     * ROOT-R3-P0-2：守卫 preCheck 包装（无守卫注入时降级 no-op，兼容旧测试）
+     */
+    private void preCheckGuard(String entityType, String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        stateMachineGuard.preCheck(entityType, fromState, toState, trigger);
+    }
+
+    /**
+     * ROOT-R3-P0-2：注册 postCommit 副作用（事务提交后触发，避免回滚后污染）。
+     * 无守卫注入时降级 no-op；无事务上下文时直接执行（向后兼容测试场景）。
+     */
+    private void registerPostCommit(String entityType, String fromState, String toState,
+                                    String trigger, Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(entityType, fromState, toState, trigger, operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(entityType, fromState, toState, trigger, operatorId, entityId, occurredAt);
+        }
+    }
+
+    // ============================================================
+    //  私有 helpers
+    // ============================================================
     // ============================================================
     //  私有 helpers
     // ============================================================

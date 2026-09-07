@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.KpiRecord;
@@ -26,12 +27,18 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -61,6 +68,9 @@ class KpiRecordServiceTest {
     private AllowanceLedgerMapper allowanceLedgerMapper;
     @Mock
     private BonusPoolMapper bonusPoolMapper;
+    /** ROOT-R3-P0-2：跨状态机守卫 mock（Wave17 KPI 状态机接入） */
+    @Mock
+    private StateMachineGuard stateMachineGuard;
 
     private KpiRecordService service;
 
@@ -73,6 +83,8 @@ class KpiRecordServiceTest {
     void setUp() {
         service = new KpiRecordService(kpiRecordMapper, projectScoreMapper,
             allowanceLedgerMapper, bonusPoolMapper);
+        // ROOT-R3-P0-2：注入 mock 守卫（Wave17 KPI 状态机测试前置条件）
+        service.setStateMachineGuard(stateMachineGuard);
     }
 
     // ============================================================
@@ -343,5 +355,115 @@ class KpiRecordServiceTest {
             .filter(i -> KpiRecordService.SRC_KPI_CALCULATOR.equals(i.source()))
             .findFirst().orElseThrow();
         assertThat(calcItem.value()).isEqualByComparingTo("60");
+    }
+
+    // ============================================================
+    //  Wave17 ROOT-R3-P0-2：KPI 状态机接入 StateMachineGuard（3 测）
+    // ============================================================
+
+    /**
+     * Wave17-1（合法迁移）：approveKpi EDITING→APPROVED 合法迁移，
+     * 守卫 preCheck 通过 + updateById 触发 + postCommit 注册（非事务上下文直接执行）。
+     */
+    @Test
+    @DisplayName("Wave17: approveKpi 合法迁移 EDITING→APPROVED → guard.preCheck + updateById + postCommit 联动")
+    void approveKpi_legalTransition_callsGuardAndUpdates() {
+        Long recordId = 42L;
+        KpiRecord record = new KpiRecord();
+        record.setId(recordId);
+        record.setStatus(KpiRecordService.ST_EDITING);
+        when(kpiRecordMapper.selectById(recordId)).thenReturn(record);
+
+        KpiRecord result = service.approveKpi(recordId, actor);
+
+        assertThat(result.getStatus()).isEqualTo(KpiRecordService.ST_APPROVED);
+        verify(stateMachineGuard).preCheck(
+            KpiRecordService.KPI_RECORD_ENTITY_TYPE,
+            KpiRecordService.ST_EDITING,
+            KpiRecordService.ST_APPROVED,
+            "approve");
+        verify(kpiRecordMapper).updateById(record);
+        verify(stateMachineGuard).postCommit(
+            eq(KpiRecordService.KPI_RECORD_ENTITY_TYPE),
+            eq(KpiRecordService.ST_EDITING),
+            eq(KpiRecordService.ST_APPROVED),
+            eq("approve"),
+            eq(ACTOR_ID),
+            eq(recordId),
+            any(Date.class));
+    }
+
+    /**
+     * Wave17-2（非法迁移）：guard 抛 IpdBusinessException 时服务透传异常，且 updateById 不触发。
+     */
+    @Test
+    @DisplayName("Wave17: approveKpi 非法迁移 guard 抛 → IpdBusinessException 透传 + updateById 不触发")
+    void approveKpi_illegalTransition_throwsIpdBusinessException() {
+        Long recordId = 43L;
+        KpiRecord record = new KpiRecord();
+        record.setId(recordId);
+        record.setStatus(KpiRecordService.ST_LOCKED); // LOCKED→APPROVED 非法
+        when(kpiRecordMapper.selectById(recordId)).thenReturn(record);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "非法迁移 LOCKED→APPROVED"))
+            .when(stateMachineGuard).preCheck(
+                KpiRecordService.KPI_RECORD_ENTITY_TYPE,
+                KpiRecordService.ST_LOCKED,
+                KpiRecordService.ST_APPROVED,
+                "approve");
+
+        assertThatThrownBy(() -> service.approveKpi(recordId, actor))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("非法迁移");
+
+        verify(stateMachineGuard).preCheck(
+            KpiRecordService.KPI_RECORD_ENTITY_TYPE,
+            KpiRecordService.ST_LOCKED,
+            KpiRecordService.ST_APPROVED,
+            "approve");
+        verify(kpiRecordMapper, never()).updateById(any(KpiRecord.class));
+        // 守卫抛异常时 postCommit 不应触发（事务未提交语义）
+        verify(stateMachineGuard, never()).postCommit(
+            any(), any(), any(), any(), any(), any(), any(Date.class));
+    }
+
+    /**
+     * Wave17-3（postCommit 触发）：recordScore 初始置位 EDITING，null→EDITING 合法迁移；
+     * insert 后 registerPostCommit 调用（无事务上下文 → 直接执行 guard.postCommit）。
+     */
+    @Test
+    @DisplayName("Wave17: recordScore 初始置位 EDITING → guard.preCheck(null, EDITING) + insert + postCommit 触发")
+    void recordScore_initialState_callsPostCommit() {
+        KpiRecord draft = new KpiRecord();
+        draft.setPersonId(ACTOR_ID);
+        draft.setPeriod(PERIOD);
+        draft.setComprehensiveScore(new BigDecimal("75.00"));
+        // 模拟 insert 自动生成主键
+        when(kpiRecordMapper.insert(any(KpiRecord.class))).thenAnswer(inv -> {
+            KpiRecord r = inv.getArgument(0);
+            r.setId(99L);
+            return 1;
+        });
+
+        KpiRecord saved = service.recordScore(draft, actor);
+
+        assertThat(saved.getStatus()).isEqualTo(KpiRecordService.ST_EDITING);
+        assertThat(saved.getId()).isEqualTo(99L);
+        // preCheck：from=null（未持久化草稿）→ to=EDITING
+        verify(stateMachineGuard).preCheck(
+            eq(KpiRecordService.KPI_RECORD_ENTITY_TYPE),
+            isNull(),
+            eq(KpiRecordService.ST_EDITING),
+            eq("record"));
+        // insert 触发
+        verify(kpiRecordMapper).insert(draft);
+        // postCommit：实体 ID 99L（insert 后） + operatorId=ACTOR_ID
+        verify(stateMachineGuard).postCommit(
+            eq(KpiRecordService.KPI_RECORD_ENTITY_TYPE),
+            isNull(),
+            eq(KpiRecordService.ST_EDITING),
+            eq("record"),
+            eq(ACTOR_ID),
+            eq(99L),
+            any(Date.class));
     }
 }
