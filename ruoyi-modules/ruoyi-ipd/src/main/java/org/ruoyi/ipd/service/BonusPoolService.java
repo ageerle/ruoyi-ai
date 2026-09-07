@@ -1,6 +1,9 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.ruoyi.ipd.domain.KpiRecord;
+import org.ruoyi.ipd.mapper.KpiRecordMapper;
+import org.ruoyi.ipd.service.ProjectScoreService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -27,7 +30,7 @@ import java.util.Map;
  *
  * <p><b>口径裁决（2026-09-06 owner 拍板，[CONSISTENCY-1]）</b>：奖金池基数 = <b>上市后连续 6 个月实际回款净额</b> × 5% × S/A/B 系数。
  * ZK-IPD 完整版 Prompt §三.2 vs 主Prompt Q1+AC-INC-16b 文档分裂结论：取 ZK 口径作为权威（与 owner「严格禁止与 ZK-IPD 不一致」红线一致），
- * Controller {@link #compute(Long, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal)}
+ * Controller {@link #compute(Long, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, IpdActor)}
  * 入口即用 {@link #calculateBonusPoolByZkFormulaWithModifiers}。{@code targetSales} 字段在 BonusPool 实体层仅作历史兼容保留，
  * 不再作为权威基数来源——落库时由 compute() 写入实际回款值（语义已在 BonusPoolController javadoc 登记）。AC-INC-16 用例需 owner 复审按新口径重写。
  *
@@ -50,21 +53,44 @@ public class BonusPoolService {
 
     private final BonusPoolMapper bonusPoolMapper;
     private final ProjectMapper projectMapper;
+    /** [SEC-FIX-HIGH-5.2] 自动推导 personalCoefficient 所需依赖。 */
+    private final KpiRecordMapper kpiRecordMapper;
+    private final ProjectScoreService projectScoreService;
 
     /**
      * 兼容构造器：仅注入 BonusPoolMapper 的旧测试入口。
      */
     public BonusPoolService(BonusPoolMapper bonusPoolMapper) {
-        this(bonusPoolMapper, null);
+        this(bonusPoolMapper, null, null, null);
     }
 
     /**
-     * Spring 装配入口（双 Mapper 注入）；多构造器必须显式指定，否则上下文无法实例化。
+     * 兼容构造器：双 Mapper 注入（保持兄弟流测试不破）。
+     */
+    public BonusPoolService(BonusPoolMapper bonusPoolMapper, ProjectMapper projectMapper) {
+        this(bonusPoolMapper, projectMapper, null, null);
+    }
+
+    /**
+     * 兼容构造器：三依赖注入。
+     */
+    public BonusPoolService(BonusPoolMapper bonusPoolMapper, ProjectMapper projectMapper, KpiRecordMapper kpiRecordMapper) {
+        this(bonusPoolMapper, projectMapper, kpiRecordMapper, null);
+    }
+
+    /**
+     * Spring 装配入口（4 依赖注入）；[SEC-FIX-HIGH-5.2] 加 KpiRecordMapper + ProjectScoreService。
+     * 多构造器必须显式 @Autowired 标记，否则上下文无法实例化。
      */
     @Autowired
-    public BonusPoolService(BonusPoolMapper bonusPoolMapper, ProjectMapper projectMapper) {
+    public BonusPoolService(BonusPoolMapper bonusPoolMapper,
+                            ProjectMapper projectMapper,
+                            KpiRecordMapper kpiRecordMapper,
+                            ProjectScoreService projectScoreService) {
         this.bonusPoolMapper = bonusPoolMapper;
         this.projectMapper = projectMapper;
+        this.kpiRecordMapper = kpiRecordMapper;
+        this.projectScoreService = projectScoreService;
     }
 
     /** AC-INC-17h：默认六档阶梯（按阈值降序；第一个达成率 ≥ 阈值命中） */
@@ -562,6 +588,7 @@ public class BonusPoolService {
     public static final String STATUS_DISTRIBUTED = "DISTRIBUTED";
 
     /** 审计事件 action 命名（与 AuditLogService.append 约定） */
+    public static final String ACTION_COMPUTE = "BONUS_POOL_COMPUTE";
     public static final String ACTION_FREEZE = "BONUS_POOL_FREEZE";
     public static final String ACTION_DISTRIBUTE = "BONUS_POOL_DISTRIBUTE";
 
@@ -585,7 +612,8 @@ public class BonusPoolService {
      *   <li>读 Project.levelCoefficient（G1 双签）→ levelCoefficient</li>
      *   <li>tierCoefficient 由 achievementRate 推（null → 中性 1.0）</li>
      *   <li>finalPool = actualReceipts × 5% × levelCoefficient × tierCoefficient × personalCoefficient（§三.2.5 完整公式）</li>
-     *   <li>status = DRAFT；不写审计（compute 是纯计算入口，审计由 freeze/distribute 触发）</li>
+     *   <li>入口先查 existing DRAFT → STATE_CONFLICT（HTTP 409）防 DuplicateKey 兜底 500（W4-B 修复点）</li>
+     *   <li>status = DRAFT；写审计：append {@link #ACTION_COMPUTE}（与 freeze/distribute 同严）</li>
      * </ul>
      *
      * @param projectId           项目 ID
@@ -593,14 +621,43 @@ public class BonusPoolService {
      * @param achievementRate     销售达成率（%，null = 中性）
      * @param personalCoefficient 个人绩效系数（null = 1.0）
      * @param poolRate            奖金池比例（null = 0.05）
+     * @param actor               当前操作人（审计落名；null 时静默跳过 appendAudit）
      * @return 新建 BonusPool（id 已生成，status=DRAFT）
      */
+
+
+    /**
+     * [SEC-FIX-HIGH-5.2] 个人绩效系数自动推导——查最新 kpi_records 综合得分，按 ZK 5 档分档。
+     * @param projectId 项目 ID
+     * @param period YYYY-MM
+     * @return 个人绩效系数（0/0.3/0.6/0.8/1.0）；无记录回退 1.0（中性）
+     */
+    public BigDecimal resolvePersonalCoefficient(Long projectId, String period) {
+        if (projectId == null || period == null || period.isBlank()) {
+            return NEUTRAL_MODIFIER;
+        }
+        // 查该 period 最新 comprehensive_score（多 PM 时取 max——奖金池按项目计，每位 PM 各算各的系数）
+        KpiRecord latest = kpiRecordMapper.selectList(new LambdaQueryWrapper<KpiRecord>()
+            .eq(KpiRecord::getProjectId, projectId)
+            .eq(KpiRecord::getPeriod, period)
+            .eq(KpiRecord::getStatus, "FINAL")
+            .eq(KpiRecord::getDelFlag, "0")
+            .orderByDesc(KpiRecord::getCreateTime)
+            .last("LIMIT 1")
+        ).stream().findFirst().orElse(null);
+        if (latest == null || latest.getComprehensiveScore() == null) {
+            return NEUTRAL_MODIFIER;
+        }
+        return projectScoreService.projectPerformanceCoefficient(latest.getComprehensiveScore());
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public BonusPool compute(Long projectId,
                              BigDecimal actualReceipts,
                              BigDecimal achievementRate,
                              BigDecimal personalCoefficient,
-                             BigDecimal poolRate) {
+                             BigDecimal poolRate,
+                             IpdActor actor) {
         if (projectId == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "项目 ID 不能为空");
         }
@@ -610,11 +667,24 @@ public class BonusPoolService {
         if (actualReceipts.compareTo(BigDecimal.ZERO) < 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "实际回款金额不能为负");
         }
+        // W4-B 件 2：DuplicateKey → 409 业务异常（先查后写，落库兜底前拦截）
+        BonusPool existing = bonusPoolMapper.selectByProjectIdAndStatus(projectId, STATUS_DRAFT);
+        if (existing != null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "项目 " + projectId + " 已存在 DRAFT 奖金池（id=" + existing.getId()
+                    + "），请先 freeze/distribute 后再计算新版本");
+        }
         BonusPool pool = buildPoolFromProjectWithAchievement(
             projectId, actualReceipts, achievementRate, personalCoefficient, new Date(), poolRate);
         // buildPoolFromProjectWithAchievement 已写 status="DRAFT"，此处冗余置位显式契约
         pool.setStatus(STATUS_DRAFT);
         bonusPoolMapper.insert(pool);
+        // W4-B 件 1：compute 与 freeze/distribute 同严落审计（v3 TS-08：审计失败不阻塞业务）
+        appendAudit(actor, ACTION_COMPUTE, pool.getId(),
+            "projectId=" + projectId
+                + " actualReceipts=" + actualReceipts
+                + " poolRate=" + (poolRate == null ? DEFAULT_POOL_RATE : poolRate)
+                + " finalPool=" + pool.getFinalPool());
         return pool;
     }
 

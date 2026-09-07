@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.dto.ComputeBonusPoolReq;
+import org.ruoyi.ipd.dto.AutoComputeBonusPoolReq;
 import org.ruoyi.ipd.dto.DistributeBonusPoolReq;
 import org.ruoyi.ipd.dto.FreezeBonusPoolReq;
 import org.ruoyi.ipd.security.IpdActor;
@@ -67,7 +68,30 @@ public class BonusPoolController {
             req.actualReceipts(),
             req.achievementRate(),
             req.personalCoefficient(),
-            req.poolRate()
+            req.poolRate(),
+            actor
+        ));
+    }
+
+    /**
+     * [SEC-FIX-HIGH-5.2] 自动推导 personalCoefficient 的奖金池计算——
+     * 从 kpi_records.comprehensive_score 推导个人绩效系数（不接 personalCoefficient 入参）。
+     * @param req 含 projectId/actualReceipts/achievementRate/poolRate/period（period 必填 YYYY-MM）
+     */
+    @PostMapping("/auto-compute")
+    public ApiV1Response<BonusPool> autoCompute(@Valid @RequestBody AutoComputeBonusPoolReq req) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        // ① 推导 personalCoefficient
+        java.math.BigDecimal personal = bonusPoolService.resolvePersonalCoefficient(
+            req.projectId(), req.period());
+        // ② 走标准 compute 链路（保持审计/状态机一致）
+        return ApiV1Response.ok(bonusPoolService.compute(
+            req.projectId(),
+            req.actualReceipts(),
+            req.achievementRate(),
+            personal,
+            req.poolRate(),
+            actor
         ));
     }
 
