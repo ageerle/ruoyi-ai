@@ -305,7 +305,8 @@ public class ProjectService {
         if (keyword != null && !keyword.isBlank()) {
             qw.like(Project::getName, keyword);
         }
-        return projectMapper.selectList(qw.orderByDesc(Project::getId));
+        // PERF-P1-1：硬上限 1000 防 ≥10k 项目 OOM（IPD 单企业 ≥10k 项目场景）
+        return projectMapper.selectList(qw.orderByDesc(Project::getId).last("LIMIT 1000"));
     }
 
     /**
