@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.KpiRecord;
@@ -46,7 +47,6 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class KpiRecordService {
 
     /** YYYY-MM 周期格式正则（4 位年 + - + 2 位月） */
@@ -75,9 +75,32 @@ public class KpiRecordService {
     private final ProjectScoreMapper projectScoreMapper;
     private final AllowanceLedgerMapper allowanceLedgerMapper;
     private final BonusPoolMapper bonusPoolMapper;
+    /** ROOT-R1 P0-7 字面量迁移：KPI 默认值（停发阈值 60；B-RULE-02 配套）来源 */
+    private final BusinessConfigService businessConfigService;
 
     public KpiRecordService() {
-        this(null, null, null, null);
+        this(null, null, null, null, null);
+    }
+
+    /** ROOT-R1 P0-7：注入 BusinessConfigService（Spring 装配入口） */
+    public KpiRecordService(KpiRecordMapper kpiRecordMapper,
+                            ProjectScoreMapper projectScoreMapper,
+                            AllowanceLedgerMapper allowanceLedgerMapper,
+                            BonusPoolMapper bonusPoolMapper,
+                            BusinessConfigService businessConfigService) {
+        this.kpiRecordMapper = kpiRecordMapper;
+        this.projectScoreMapper = projectScoreMapper;
+        this.allowanceLedgerMapper = allowanceLedgerMapper;
+        this.bonusPoolMapper = bonusPoolMapper;
+        this.businessConfigService = businessConfigService;
+    }
+
+    /** 旧测试兼容构造器：4 依赖，不带 BusinessConfigService */
+    public KpiRecordService(KpiRecordMapper kpiRecordMapper,
+                            ProjectScoreMapper projectScoreMapper,
+                            AllowanceLedgerMapper allowanceLedgerMapper,
+                            BonusPoolMapper bonusPoolMapper) {
+        this(kpiRecordMapper, projectScoreMapper, allowanceLedgerMapper, bonusPoolMapper, null);
     }
 
     /**
@@ -301,7 +324,14 @@ public class KpiRecordService {
     }
 
     private BigDecimal _queryCalculatorValue(IpdActor actor, String period) {
-        // 纯函数：返回当前周期默认值（功能 0+共担 0 不允许，故给 60 表示中性态）
+        // ROOT-R1 P0-7：纯函数返回值（中性态）从 BusinessConfigService 读（KPI_STOP_THRESHOLD 默认 60；B-RULE-02 配套）
+        if (businessConfigService != null) {
+            try {
+                return businessConfigService.getBigDecimal(BusinessConfigKeys.KPI_STOP_THRESHOLD);
+            } catch (Exception ex) {
+                log.warn("KPI_STOP_THRESHOLD 读取失败，回退硬编码 60: {}", ex.getMessage());
+            }
+        }
         return new BigDecimal("60");
     }
 

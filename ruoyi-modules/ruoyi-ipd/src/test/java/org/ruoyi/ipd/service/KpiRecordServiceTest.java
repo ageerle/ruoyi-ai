@@ -297,4 +297,51 @@ class KpiRecordServiceTest {
             allowanceOf("5000.00", "L5")
         ));
     }
+
+    // ============================================================
+    //  ROOT-R1 P0-7 字面量迁移：BusinessConfigService 验证
+    // ============================================================
+
+    @Test
+    @DisplayName("ROOT-R1 P0-7: 注入 BusinessConfigService → 聚合 KPI 用 config 阈值 75（覆盖硬编码 60）")
+    void businessConfigService_overridesHardcodedKpiDefault() {
+        // 给 5 档津贴补数：避免聚合路径因缺数短路
+        when(allowanceLedgerMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(allowanceListForLevels());
+        when(projectScoreMapper.selectOne(any(LambdaQueryWrapper.class)))
+            .thenReturn(projectScoreOf("85.00"));
+
+        // 注入 BusinessConfigService（mock）返回 75 覆盖硬编码 60
+        org.ruoyi.ipd.service.BusinessConfigService businessConfigService =
+            org.mockito.Mockito.mock(org.ruoyi.ipd.service.BusinessConfigService.class);
+        when(businessConfigService.getBigDecimal(org.ruoyi.ipd.common.BusinessConfigKeys.KPI_STOP_THRESHOLD))
+            .thenReturn(new BigDecimal("75"));
+
+        KpiRecordService serviceWithConfig = new KpiRecordService(
+            kpiRecordMapper, projectScoreMapper, allowanceLedgerMapper, bonusPoolMapper, businessConfigService);
+
+        // 触发 _queryCalculatorValue 的间接路径：calculateFunctionalKpi
+        List<KpiSourceItem> items = serviceWithConfig.calculateFunctionalKpi(actor, PERIOD);
+        // 3 数据源聚合中 SRC_KPI_CALCULATOR 项的 value 应来自 BusinessConfigService (=75)
+        KpiSourceItem calcItem = items.stream()
+            .filter(i -> KpiRecordService.SRC_KPI_CALCULATOR.equals(i.source()))
+            .findFirst().orElseThrow();
+        assertThat(calcItem.value()).isEqualByComparingTo("75");
+    }
+
+    @Test
+    @DisplayName("ROOT-R1 P0-7: BusinessConfigService 未注入 → 回退硬编码 60（兼容旧测试）")
+    void businessConfigService_nullFallsBackToHardcoded() {
+        when(allowanceLedgerMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(allowanceListForLevels());
+        when(projectScoreMapper.selectOne(any(LambdaQueryWrapper.class)))
+            .thenReturn(projectScoreOf("85.00"));
+
+        // service 用 4 依赖构造器（businessConfigService = null）
+        List<KpiSourceItem> items = service.calculateFunctionalKpi(actor, PERIOD);
+        KpiSourceItem calcItem = items.stream()
+            .filter(i -> KpiRecordService.SRC_KPI_CALCULATOR.equals(i.source()))
+            .findFirst().orElseThrow();
+        assertThat(calcItem.value()).isEqualByComparingTo("60");
+    }
 }

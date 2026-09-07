@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateElement;
@@ -43,6 +44,7 @@ public class GateElementResultService {
 
     /** G1-1 客户一手验证要素（量化阈值裁决，I3 衍生参数） */
     static final String G1_CUSTOMER_ELEMENT = "G1-1";
+    /** ROOT-R1 P0-7：G1-1 客户一手验证阈值（兼容旧 SystemConfig 键名） */
     static final String MIN_VERIFICATION_KEY = "gate.g1.minCustomerVerifications";
 
     private static final Set<String> RESULTS = Set.of("PASS", "CONDITIONAL", "FAIL");
@@ -55,6 +57,9 @@ public class GateElementResultService {
     private final NotificationService notificationService;
     /** [SEC-FIX-HIGH-1.1-FOLLOWUP] 注入本地 OssFileMapper 解析 ossId → URL（IPD 模块不依赖 system 模块）。 */
     private final org.ruoyi.ipd.mapper.OssFileMapper ossFileMapper;
+    /** ROOT-R1 P0-7 字面量迁移：Gate 评审配置（G1 客户验证阈值/签署期限；B-RULE-05 配套）来源 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BusinessConfigService businessConfigService;
 
     /** 要素清单（含当前判定）：33 要素按 Gate 展示，未判定项 result=null 供前端高亮缺失。 */
     public List<Map<String, Object>> checklist(Long gateId) {
@@ -185,13 +190,27 @@ public class GateElementResultService {
     /** AC-GATE-1a~1d：G1-1 通过阈值由服务端按可配置参数裁决（≥N 家一手验证 或 ≥1 家书面意向）。
      * <p>1d：参数改为 3 后 3 家即可通过——阈值即时生效，非硬编码。 */
     private void verifyCustomerEvidence(GateElement element, Integer verifications, Integer writtenIntents) {
-        int required = systemConfigService.getIntValue(MIN_VERIFICATION_KEY, 5);
+        int required = resolveMinCustomerVerifications();
         int actual = verifications == null ? 0 : verifications;
         int intents = writtenIntents == null ? 0 : writtenIntents;
         if (actual < required && intents < 1) {
             throw new ServiceException(String.format(
                 "需 ≥%d 家一手验证，或 ≥1 家书面意向（当前 %d 家/%d 份）", required, actual, intents));
         }
+    }
+
+    /**
+     * ROOT-R1 P0-7：读取 G1-1 客户一手验证阈值。优先 BusinessConfigService，回退 SystemConfigService。
+     */
+    private int resolveMinCustomerVerifications() {
+        if (businessConfigService != null) {
+            try {
+                return businessConfigService.getInt(MIN_VERIFICATION_KEY);
+            } catch (Exception ex) {
+                // fall through
+            }
+        }
+        return systemConfigService.getIntValue(MIN_VERIFICATION_KEY, 5);
     }
 
     /**
@@ -255,8 +274,7 @@ public class GateElementResultService {
         gate.setMeetingMinutesUrl(meetingMinutesUrl);
         gate.setStartedAt(new Date());
         // P2-5.4：签署期限与 startedAt 同步起算（BR-GATE-04；延期/弃权扫描的锚点）
-        int signDays = systemConfigService.getIntValue(
-            org.ruoyi.ipd.service.GateReviewService.SIGN_DEADLINE_KEY, 3);
+        int signDays = resolveSignDeadlineDays();
         gate.setSignDueAt(new Date(gate.getStartedAt().getTime() + 24L * 60 * 60 * 1000 * signDays));
         gate.setElementSnapshot(AuditEventData.json("frozenAt", new Date().toString(), "elements", snapshot));
         gateMapper.updateById(gate);
@@ -432,6 +450,21 @@ public class GateElementResultService {
             throw new ServiceException("Gate 不存在: " + gateId);
         }
         return gate;
+    }
+
+    /**
+     * ROOT-R1 P0-7：读取 Gate 签署期限天数。优先 BusinessConfigService.GATE_SIGN_DEADLINE_DAYS，回退 SystemConfig。
+     */
+    private int resolveSignDeadlineDays() {
+        if (businessConfigService != null) {
+            try {
+                return businessConfigService.getInt(BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS);
+            } catch (Exception ex) {
+                // fall through
+            }
+        }
+        return systemConfigService.getIntValue(
+            org.ruoyi.ipd.service.GateReviewService.SIGN_DEADLINE_KEY, 3);
     }
 
     private List<GateElement> enabledElements(String gateCode) {

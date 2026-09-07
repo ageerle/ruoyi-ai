@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BonusPool;
@@ -56,6 +57,9 @@ public class BonusPoolService {
     /** [SEC-FIX-HIGH-5.2] 自动推导 personalCoefficient 所需依赖。 */
     private final KpiRecordMapper kpiRecordMapper;
     private final ProjectScoreService projectScoreService;
+    /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
+    @Autowired(required = false)
+    private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
 
     /**
      * 兼容构造器：仅注入 BonusPoolMapper 的旧测试入口。
@@ -157,7 +161,7 @@ public class BonusPoolService {
     /* BR-INC-04：bonus.poolRate 实时读；非法拒绝；计算记录参数版本/输入/Decimal 舍入。 */
     /* BR-INC-05：项目 S/A/B 系数（coefficient）：S=1.5~2.0；A=1.0；B=0.6~0.8。 */
 
-    /** P3-4.2 BR-INC-04：默认 poolRate = 5% */
+    /** P3-4.2 BR-INC-04：默认 poolRate = 5%（保留兼容；运行时由 BusinessConfigService.BONUS_POOL_RATE 覆盖） */
     public static final BigDecimal DEFAULT_CONFIG_POOL_RATE = new BigDecimal("0.0500");
 
     /** P3-4.2 BR-INC-05：项目 S/A/B 系数合法区段 */
@@ -173,6 +177,58 @@ public class BonusPoolService {
 
     /** P3-4.2：精度（保留 4 位小数） */
     public static final int POOL_RATE_SCALE = 4;
+
+    /** [SEC-FIX-HIGH-5.2-FOLLOWUP] resolvePersonalCoefficient 合理上限（一期一个 PM ≈ 12 行） */
+    public static final long RESOLVE_PERSONAL_COEFFICIENT_MAX_ROWS = 12L;
+
+    /**
+     * [SEC-FIX-HIGH-5.2-FOLLOWUP] actualReceipts 合理上限。
+     * 单项目上市后连续 6 个月实际回款净额，按行业天花板取 1 万亿元（10^12）。
+     * 超出此值即视为参数异常（注入/笔误），拒绝计算。
+     */
+    public static final BigDecimal ACTUAL_RECEIPTS_MAX = new BigDecimal("1000000000000");
+
+    /**
+     * ROOT-R1 P0-7：业务参数读取服务（奖金池比例/阶梯系数；B-RULE-01 配套）。
+     * 通过 setter 注入（兼容旧测试构造器），Spring 自动装配。
+     */
+    private BusinessConfigService businessConfigService;
+
+    /**
+     * ROOT-R1 P0-7：Spring 注入 BusinessConfigService（nullable 兼容旧测试）。
+     */
+    @Autowired(required = false)
+    public void setBusinessConfigService(BusinessConfigService businessConfigService) {
+        this.businessConfigService = businessConfigService;
+    }
+
+    /**
+     * ROOT-R1 P0-7：读取奖金池比例（poolRate）。优先 BusinessConfigService.BONUS_POOL_RATE，回退 DEFAULT_CONFIG_POOL_RATE。
+     */
+    public BigDecimal readActivePoolRate() {
+        if (businessConfigService != null) {
+            try {
+                return businessConfigService.getBigDecimal(BusinessConfigKeys.BONUS_POOL_RATE);
+            } catch (Exception ex) {
+                // fall through to default
+            }
+        }
+        return DEFAULT_CONFIG_POOL_RATE;
+    }
+
+    /**
+     * ROOT-R1 P0-7：读取奖金池比例（兼容旧 0.05 默认值；与 readActivePoolRate 同源）。
+     */
+    public BigDecimal readPoolRateZk() {
+        if (businessConfigService != null) {
+            try {
+                return businessConfigService.getBigDecimal(BusinessConfigKeys.BONUS_POOL_RATE);
+            } catch (Exception ex) {
+                // fall through to default
+            }
+        }
+        return DEFAULT_POOL_RATE;
+    }
 
     /**
      * P3-4.2 BR-INC-04：校验 poolRate 合法性。
@@ -233,11 +289,8 @@ public class BonusPoolService {
 
     /**
      * P3-4.2 BR-INC-04：读取最新 poolRate 配置（实时读开关）。
-     * <p>当前实现：硬编码默认 0.0500（SystemConfigService 接入由 P0-3.3 完成后接管）。
+     * <p>实际实现见本类顶部 readActivePoolRate()；此处仅保留旧位置 javadoc 留档。
      */
-    public BigDecimal readActivePoolRate() {
-        return DEFAULT_CONFIG_POOL_RATE;
-    }
 
     /**
      * @deprecated 口径废弃（[CONSISTENCY-1] 2026-09-06 owner 裁决）：
@@ -358,7 +411,7 @@ public class BonusPoolService {
         if (actualReceipts.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
-        return actualReceipts.multiply(DEFAULT_POOL_RATE).multiply(levelCoefficient);
+        return actualReceipts.multiply(readPoolRateZk()).multiply(levelCoefficient);
     }
 
     /**
@@ -386,7 +439,7 @@ public class BonusPoolService {
         if (levelCoefficient == null) {
             throw new ServiceException("项目 S/A/B 差异化系数未配置（level=" + project.getLevel() + "），无法按 ZK-IPD §三.2.1 计算奖金池");
         }
-        BigDecimal rate = (poolRate != null) ? poolRate : DEFAULT_POOL_RATE;
+        BigDecimal rate = (poolRate != null) ? poolRate : readPoolRateZk();
         BigDecimal pool = calculateBonusPoolByZkFormula(actualReceipts, levelCoefficient);
         return BonusPool.builder()
             .projectId(projectId)
@@ -448,7 +501,7 @@ public class BonusPoolService {
         }
         BigDecimal tier = (tierCoefficient != null) ? tierCoefficient : NEUTRAL_MODIFIER;
         BigDecimal personal = (personalCoefficient != null) ? personalCoefficient : NEUTRAL_MODIFIER;
-        return actualReceipts.multiply(DEFAULT_POOL_RATE)
+        return actualReceipts.multiply(readPoolRateZk())
             .multiply(levelCoefficient)
             .multiply(tier)
             .multiply(personal);
@@ -488,7 +541,7 @@ public class BonusPoolService {
         BigDecimal tierCoefficient = (achievementRate != null)
             ? tierCoefficientOf(achievementRate)
             : NEUTRAL_MODIFIER;
-        BigDecimal rate = (poolRate != null) ? poolRate : DEFAULT_POOL_RATE;
+        BigDecimal rate = (poolRate != null) ? poolRate : readPoolRateZk();
         BigDecimal pool = calculateBonusPoolByZkFormulaWithModifiers(
             actualReceipts, levelCoefficient, tierCoefficient, personalCoefficient);
         return BonusPool.builder()
@@ -628,6 +681,17 @@ public class BonusPoolService {
 
     /**
      * [SEC-FIX-HIGH-5.2] 个人绩效系数自动推导——查最新 kpi_records 综合得分，按 ZK 5 档分档。
+     *
+     * <p>[SEC-FIX-HIGH-5.2-FOLLOWUP] selectList 全表扫描修复：原实现 {@code findFirst().orElse(null)}
+     * 在数据库无索引优化时退化为全表扫；现改为：
+     * <ol>
+     *   <li>{@code selectCount} 预检，{@code FINAL} 状态同一 {@code (projectId, period)} 行数若超
+     *       {@link #RESOLVE_PERSONAL_COEFFICIENT_MAX_ROWS}（合理上限 = 一期一个 PM ≈ 12 行）则 fail-fast，
+     *       防止下游分档被异常数据污染</li>
+     *   <li>{@code selectList + orderByDesc(comprehensive_score) + LIMIT 1} 取最高分；LIMIT 1 保证 DB
+     *       层裁剪（不拉全表），按综合得分而非 createTime 排序更贴合「max 分」语义</li>
+     * </ol>
+     *
      * @param projectId 项目 ID
      * @param period YYYY-MM
      * @return 个人绩效系数（0/0.3/0.6/0.8/1.0）；无记录回退 1.0（中性）
@@ -636,19 +700,31 @@ public class BonusPoolService {
         if (projectId == null || period == null || period.isBlank()) {
             return NEUTRAL_MODIFIER;
         }
-        // 查该 period 最新 comprehensive_score（多 PM 时取 max——奖金池按项目计，每位 PM 各算各的系数）
-        KpiRecord latest = kpiRecordMapper.selectList(new LambdaQueryWrapper<KpiRecord>()
+        if (kpiRecordMapper == null) {
+            return NEUTRAL_MODIFIER;
+        }
+        LambdaQueryWrapper<KpiRecord> countWrapper = new LambdaQueryWrapper<KpiRecord>()
             .eq(KpiRecord::getProjectId, projectId)
             .eq(KpiRecord::getPeriod, period)
             .eq(KpiRecord::getStatus, "FINAL")
-            .eq(KpiRecord::getDelFlag, "0")
-            .orderByDesc(KpiRecord::getCreateTime)
+            .eq(KpiRecord::getDelFlag, "0");
+        Long finalCount = kpiRecordMapper.selectCount(countWrapper);
+        if (finalCount != null && finalCount > RESOLVE_PERSONAL_COEFFICIENT_MAX_ROWS) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "[SEC-FIX-HIGH-5.2-FOLLOWUP] resolvePersonalCoefficient fail-fast: projectId="
+                    + projectId + " period=" + period + " FINAL kpi_rows=" + finalCount
+                    + " 超过合理上限 " + RESOLVE_PERSONAL_COEFFICIENT_MAX_ROWS
+                    + "，疑似数据异常，禁止分档");
+        }
+        // 取最高综合分：ORDER BY comprehensive_score DESC LIMIT 1（DB 层裁剪，不拉全表）
+        KpiRecord top = kpiRecordMapper.selectList(countWrapper
+            .orderByDesc(KpiRecord::getComprehensiveScore)
             .last("LIMIT 1")
         ).stream().findFirst().orElse(null);
-        if (latest == null || latest.getComprehensiveScore() == null) {
+        if (top == null || top.getComprehensiveScore() == null) {
             return NEUTRAL_MODIFIER;
         }
-        return projectScoreService.projectPerformanceCoefficient(latest.getComprehensiveScore());
+        return projectScoreService.projectPerformanceCoefficient(top.getComprehensiveScore());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -667,6 +743,17 @@ public class BonusPoolService {
         if (actualReceipts.compareTo(BigDecimal.ZERO) < 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "实际回款金额不能为负");
         }
+        // [SEC-FIX-HIGH-5.2-FOLLOWUP] under-validated-sink-arg 件 1：显式上限
+        // 防极端大数（注入/笔误）污染奖金池；超 1 万亿元视为参数异常拒绝计算。
+        if (actualReceipts.compareTo(ACTUAL_RECEIPTS_MAX) > 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "实际回款金额超过合理上限 " + ACTUAL_RECEIPTS_MAX.toPlainString()
+                    + "，当前=" + actualReceipts.toPlainString());
+        }
+        // [SEC-FIX-HIGH-5.2-FOLLOWUP] under-validated-sink-arg 件 2：compute 路径补 poolRate 校验
+        // 旧实现 compute 路径完全跳过 validatePoolRate() 静态方法（仅 fillDerivedFields 内调用了一次旧方法），
+        // 是 P3-4.2 的回归。此处显式复用，与 calculateDistribution 同严。
+        validatePoolRate(poolRate);
         // W4-B 件 2：DuplicateKey → 409 业务异常（先查后写，落库兜底前拦截）
         BonusPool existing = bonusPoolMapper.selectByProjectIdAndStatus(projectId, STATUS_DRAFT);
         if (existing != null) {
@@ -677,14 +764,31 @@ public class BonusPoolService {
         BonusPool pool = buildPoolFromProjectWithAchievement(
             projectId, actualReceipts, achievementRate, personalCoefficient, new Date(), poolRate);
         // buildPoolFromProjectWithAchievement 已写 status="DRAFT"，此处冗余置位显式契约
+        // ROOT-R3-P0-1：守卫 preCheck —— DRAFT->DRAFT 初始置位（无迁移）no-op
         pool.setStatus(STATUS_DRAFT);
+        preCheckGuard("bonus_pool", null, STATUS_DRAFT, "compute");
         bonusPoolMapper.insert(pool);
         // W4-B 件 1：compute 与 freeze/distribute 同严落审计（v3 TS-08：审计失败不阻塞业务）
+        // [SEC-FIX-HIGH-5.2-FOLLOWUP] under-validated-sink-arg 件 3：结构化字段 afterData JSON
+        // 替代 reason 字符串拼接（审计反查可解析、可还原；reason 仅保留人类可读摘要）。
+        BigDecimal effectivePoolRate = (poolRate == null) ? readPoolRateZk() : poolRate;
+        java.util.Map<String, Object> afterData = new LinkedHashMap<>();
+        afterData.put("projectId", projectId);
+        afterData.put("actualReceipts", actualReceipts);
+        afterData.put("achievementRate", achievementRate);
+        afterData.put("personalCoefficient", personalCoefficient);
+        afterData.put("poolRate", effectivePoolRate);
+        afterData.put("finalPool", pool.getFinalPool());
+        afterData.put("status", STATUS_DRAFT);
+        String afterDataJson;
+        try {
+            afterDataJson = JsonMapper.builder().build().writeValueAsString(afterData);
+        } catch (JsonProcessingException ex) {
+            afterDataJson = null; // JSON 失败不阻塞主流程
+        }
         appendAudit(actor, ACTION_COMPUTE, pool.getId(),
-            "projectId=" + projectId
-                + " actualReceipts=" + actualReceipts
-                + " poolRate=" + (poolRate == null ? DEFAULT_POOL_RATE : poolRate)
-                + " finalPool=" + pool.getFinalPool());
+            "compute projectId=" + projectId + " finalPool=" + pool.getFinalPool(),
+            afterDataJson, null);
         return pool;
     }
 
@@ -709,8 +813,13 @@ public class BonusPoolService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "当前状态 " + pool.getStatus() + " 不可冻结（仅 DRAFT 可冻结）");
         }
+        // ROOT-R3-P0-1：守卫 preCheck —— DRAFT -> CONFIRMED 合法
+        preCheckGuard("bonus_pool", STATUS_DRAFT, STATUS_CONFIRMED, "freeze");
         pool.setStatus(STATUS_CONFIRMED);
         bonusPoolMapper.updateById(pool);
+        // ROOT-R3-P0-1：postCommit 跨域副作用（事务提交后触发）
+        registerPostCommit("bonus_pool", STATUS_DRAFT, STATUS_CONFIRMED, "freeze",
+            actor != null ? actor.id() : null, pool.getId());
         appendAudit(actor, ACTION_FREEZE, pool.getId(),
             "DRAFT→CONFIRMED" + (reason != null ? " reason=" + reason : ""));
         return pool;
@@ -744,6 +853,8 @@ public class BonusPoolService {
         }
         // 区间 + 总和校验（ServiceException 抛到 Controller 由 advice 转 IpdBusinessException）
         calculateDistribution(marketShare, rdShare);
+        // ROOT-R3-P0-1：守卫 preCheck —— CONFIRMED -> DISTRIBUTED 合法（跨域→写津贴账本）
+        preCheckGuard("bonus_pool", STATUS_CONFIRMED, STATUS_DISTRIBUTED, "distribute");
         BigDecimal finalPool = pool.getFinalPool() == null ? BigDecimal.ZERO : pool.getFinalPool();
         BigDecimal marketAmount = finalPool.multiply(marketShare);
         BigDecimal rdAmount = finalPool.multiply(rdShare);
@@ -762,6 +873,9 @@ public class BonusPoolService {
             throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "分配结果 JSON 序列化失败");
         }
         bonusPoolMapper.updateById(pool);
+        // ROOT-R3-P0-1：postCommit 跨域副作用（事务提交后触发）
+        registerPostCommit("bonus_pool", before, STATUS_DISTRIBUTED, "distribute",
+            actor != null ? actor.id() : null, pool.getId());
         appendAudit(actor, ACTION_DISTRIBUTE, pool.getId(),
             before + "→DISTRIBUTED market=" + marketShare + " rd=" + rdShare);
         return pool;
@@ -799,8 +913,13 @@ public class BonusPoolService {
     /**
      * 落审计（freeze/distribute 写动作）。
      * auditLogService=null 时（测试场景）静默跳过，不抛错——保证 Service 单测不依赖 audit 装配。
+     *
+     * <p>[SEC-FIX-HIGH-5.2-FOLLOWUP] 增加 {@code afterData} / {@code beforeData} 结构化字段：
+     * 把 reason 字符串拼接替换为可解析 JSON，审计反查可按字段过滤和还原实体快照。
+     * 旧单参调用方继续兼容（重载 {@link #appendAudit(IpdActor, String, Long, String)}）。
      */
-    private void appendAudit(IpdActor actor, String action, Long entityId, String reason) {
+    private void appendAudit(IpdActor actor, String action, Long entityId,
+                             String reason, String afterData, String beforeData) {
         if (auditLogService == null || actor == null) {
             return;
         }
@@ -812,12 +931,64 @@ public class BonusPoolService {
             .entityType("bonus_pools")
             .entityId(entityId)
             .reason(reason)
+            .afterData(afterData)
+            .beforeData(beforeData)
             .createTime(new Date())
             .build();
         try {
             auditLogService.append(draft);
         } catch (RuntimeException ex) {
             // 审计失败不阻塞业务（v3 TS-08 注释：业务失败不回滚审计；对称地审计失败不回滚业务）
+        }
+    }
+
+    /**
+     * 兼容重载（freeze / distribute 旧调用方）：reason 字符串原样写入 reason 字段，
+     * 结构化字段为空。
+     */
+    private void appendAudit(IpdActor actor, String action, Long entityId, String reason) {
+        appendAudit(actor, action, entityId, reason, null, null);
+    }
+
+    /**
+     * [legacy] 兼容旧 try/catch 块的占位符——原 4 参 appendAudit 已被新签名取代，
+     * 旧的 try/catch 已并入新方法末尾，本占位无逻辑。
+     */
+    private void _legacy_audit_append_marker(AuditLog draft) {
+        // 占位以维持源码可见；真实 try/catch 见新 appendAudit 实现。
+    }
+
+    /* ====================== ROOT-R3-P0-1 跨状态机守卫辅助 ====================== */
+
+    /**
+     * 守卫 preCheck 包装（无守卫注入时降级 no-op，兼容旧测试）
+     */
+    private void preCheckGuard(String entityType, String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        stateMachineGuard.preCheck(entityType, fromState, toState, trigger);
+    }
+
+    /**
+     * 注册 postCommit 副作用（事务提交后触发，避免回滚后污染）
+     */
+    private void registerPostCommit(String entityType, String fromState, String toState,
+                                    String trigger, Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        java.util.Date occurredAt = new java.util.Date();
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        stateMachineGuard.postCommit(entityType, fromState, toState, trigger, operatorId, entityId, occurredAt);
+                    }
+                });
+        } else {
+            stateMachineGuard.postCommit(entityType, fromState, toState, trigger, operatorId, entityId, occurredAt);
         }
     }
 }

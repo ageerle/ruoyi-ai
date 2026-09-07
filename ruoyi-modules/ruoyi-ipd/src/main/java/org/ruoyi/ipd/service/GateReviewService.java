@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.BusinessConfigKeys;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateArbitration;
@@ -75,13 +77,15 @@ public class GateReviewService {
     static final String STATUS_ABSTAINED_TIMEOUT = "ABSTAINED_TIMEOUT";
     private static final Set<String> DECISIONS = Set.of("APPROVE", "REJECT");
     private static final Set<String> ARBITRATION_DECISIONS = Set.of("APPROVE", "REJECT");
-    /** AC-GATE-21：签署期限最多延长 3 次，第 4 次拒绝 */
-    static final int MAX_SIGN_EXTENSIONS = 3;
+    /** AC-GATE-21：签署期限最多延长 3 次（默认；运行时由 BusinessConfigService.GATE_EXTENSION_MAX_COUNT 覆盖） */
+    static final int DEFAULT_MAX_SIGN_EXTENSIONS = 3;
     private static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
     private static final String ROLE_GROUP_LEADER = "GROUP_LEADER";
 
-    /** 签署期限参数（BR-GATE-04 3 个自然日；ABSTAIN 超时流转归 P2-5.4） */
-    static final String SIGN_DEADLINE_KEY = "gate.signDeadlineDays";
+    /** 签署期限参数（BR-GATE-04 3 个自然日；运行时由 BusinessConfigService.GATE_SIGN_DEADLINE_DAYS 覆盖） */
+    static final String SIGN_DEADLINE_KEY = BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS;
+    /** G1/G5 双签最低人数（运行时由 BusinessConfigService.GATE_DUAL_SIGN_COUNT 覆盖；当前仅 1-2 个角色值，参与兜底） */
+    static final String DUAL_SIGN_COUNT_KEY = BusinessConfigKeys.GATE_DUAL_SIGN_COUNT;
     private static final Set<String> SIGNER_ROLES = Set.of("MARKET_PM", "RD_PM");
 
     private final GateMapper gateMapper;
@@ -92,6 +96,9 @@ public class GateReviewService {
     private final SystemConfigService systemConfigService;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    /** ROOT-R1 P0-7 字面量迁移：Gate 配置（双签人数/签署期限/延期上限；B-RULE-05 配套）来源 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BusinessConfigService businessConfigService;
 
     /** G1/G5 为双签盲签 Gate（BR-GATE-03 双签否决范围：G1/需求变更/G5）。 */
     static boolean isDualSignGate(String gateCode) {
@@ -109,7 +116,7 @@ public class GateReviewService {
         Gate gate = requireGate(gateId);
         requireSubmitted(gate);
         if (decision == null || !DECISIONS.contains(decision)) {
-            throw new ServiceException("decision 仅允许 APPROVE|REJECT");
+            throw new IpdBusinessException("decision 仅允许 APPROVE|REJECT");
         }
         requireAuthorized(gate.getGateCode(), actor);
         requireNotSigned(gate, actor.role());
@@ -247,7 +254,7 @@ public class GateReviewService {
     private Gate requireGate(Long gateId) {
         Gate gate = gateMapper.selectById(gateId);
         if (gate == null) {
-            throw new ServiceException("Gate 不存在");
+            throw new IpdBusinessException("Gate 不存在");
         }
         return gate;
     }
@@ -255,21 +262,21 @@ public class GateReviewService {
     /** 仅接受 P2-5.1 提交后的待签 Gate（startedAt 置位=要素判定已冻结）。 */
     private void requireSubmitted(Gate gate) {
         if (!STATUS_PENDING.equals(gate.getStatus())) {
-            throw new ServiceException("Gate 已终态（" + gate.getStatus() + "），不可签署");
+            throw new IpdBusinessException("Gate 已终态（" + gate.getStatus() + "），不可签署");
         }
         if (gate.getStartedAt() == null) {
-            throw new ServiceException("评审尚未提交，请先完成要素判定并提交（P2-5.1）");
+            throw new IpdBusinessException("评审尚未提交，请先完成要素判定并提交（P2-5.1）");
         }
     }
 
     /** 签署授权：双 PM 才可签；G2/3/4 仅领域主导方（非授权角色拒绝）。 */
     private void requireAuthorized(String gateCode, IpdActor actor) {
         if (!SIGNER_ROLES.contains(actor.role())) {
-            throw new ServiceException("仅市场PM/研发PM可签署（组长列席与仲裁归后续流程）");
+            throw new IpdBusinessException("仅市场PM/研发PM可签署（组长列席与仲裁归后续流程）");
         }
         if (!isDualSignGate(gateCode) && !actor.role().equals(leadSideOf(gateCode))) {
             String lead = leadSideOf(gateCode);
-            throw new ServiceException("Gate " + gateCode + " 由" + sideName(lead) + "主导签署，您无权签署");
+            throw new IpdBusinessException("Gate " + gateCode + " 由" + sideName(lead) + "主导签署，您无权签署");
         }
     }
 
@@ -278,7 +285,7 @@ public class GateReviewService {
         boolean already = roundRows(gate.getId(), gate.getCurrentRound()).stream()
             .anyMatch(r -> reviewerType.equals(r.getReviewerType()));
         if (already) {
-            throw new ServiceException("本轮您已签署，不可重复签署");
+            throw new IpdBusinessException("本轮您已签署，不可重复签署");
         }
     }
 
@@ -288,9 +295,37 @@ public class GateReviewService {
         if (gate.getSignDueAt() != null) {
             return gate.getSignDueAt();
         }
-        int days = systemConfigService.getIntValue(SIGN_DEADLINE_KEY, 3);
+        int days = resolveSignDeadlineDays();
         Date base = gate.getStartedAt() == null ? new Date() : gate.getStartedAt();
         return new Date(base.getTime() + TimeUnit.DAYS.toMillis(days));
+    }
+
+    /**
+     * ROOT-R1 P0-7：读取签署期限天数。先读 BusinessConfigService.GATE_SIGN_DEADLINE_DAYS，回退 SystemConfig。
+     */
+    private int resolveSignDeadlineDays() {
+        if (businessConfigService != null) {
+            try {
+                return businessConfigService.getInt(SIGN_DEADLINE_KEY);
+            } catch (Exception ex) {
+                // fall through
+            }
+        }
+        return systemConfigService.getIntValue(SIGN_DEADLINE_KEY, 3);
+    }
+
+    /**
+     * ROOT-R1 P0-7：读取签署期限最大延期次数（默认 DEFAULT_MAX_SIGN_EXTENSIONS=3）。
+     */
+    private int resolveMaxSignExtensions() {
+        if (businessConfigService != null) {
+            try {
+                return businessConfigService.getInt(BusinessConfigKeys.GATE_EXTENSION_MAX_COUNT);
+            } catch (Exception ex) {
+                // fall through
+            }
+        }
+        return DEFAULT_MAX_SIGN_EXTENSIONS;
     }
 
     private List<GateReview> roundRows(Long gateId, Integer round) {
@@ -312,13 +347,13 @@ public class GateReviewService {
         Gate gate = requireGate(gateId);
         if (!STATUS_REJECTED.equals(gate.getStatus())
             && !STATUS_ABSTAINED_TIMEOUT.equals(gate.getStatus())) {
-            throw new ServiceException("仅被驳回或双弃权超时的 Gate 可重新发起，当前：" + gate.getStatus());
+            throw new IpdBusinessException("仅被驳回或双弃权超时的 Gate 可重新发起，当前：" + gate.getStatus());
         }
         if (!SIGNER_ROLES.contains(actor.role()) && !ROLE_SUPER_ADMIN.equals(actor.role())) {
-            throw new ServiceException("仅签署双方或超管可重新发起评审");
+            throw new IpdBusinessException("仅签署双方或超管可重新发起评审");
         }
         int newRound = gate.getCurrentRound() + 1;
-        int days = systemConfigService.getIntValue(SIGN_DEADLINE_KEY, 3);
+        int days = resolveSignDeadlineDays();
         Date newDue = new Date(new Date().getTime() + TimeUnit.DAYS.toMillis(days));
         // 显式 set 清列：MP updateById 忽略 null 字段，concludedAt 必须置回 null
         gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
@@ -455,15 +490,15 @@ public class GateReviewService {
         Gate gate = requireGate(gateId);
         requireArbitratable(gate, actor, ROLE_GROUP_LEADER, "仅产品组长可提交仲裁意见");
         if (decision == null || !ARBITRATION_DECISIONS.contains(decision)) {
-            throw new ServiceException("仲裁意见仅允许 APPROVE|REJECT");
+            throw new IpdBusinessException("仲裁意见仅允许 APPROVE|REJECT");
         }
         if (collectLeaders(gate).stream().noneMatch(l -> actor.id().equals(l.getId()))) {
-            throw new ServiceException("仅冲突双方所在组的产品组长可提交仲裁意见");
+            throw new IpdBusinessException("仅冲突双方所在组的产品组长可提交仲裁意见");
         }
         boolean already = arbitrationRows(gate, ROLE_GROUP_LEADER).stream()
             .anyMatch(o -> actor.id().equals(o.getArbitratorId()));
         if (already) {
-            throw new ServiceException("您已提交本轮仲裁意见，不可重复提交");
+            throw new IpdBusinessException("您已提交本轮仲裁意见，不可重复提交");
         }
         GateArbitration row = GateArbitration.builder()
             .gateId(gateId)
@@ -487,20 +522,20 @@ public class GateReviewService {
         Gate gate = requireGate(gateId);
         requireArbitratable(gate, actor, ROLE_SUPER_ADMIN, "仅超级管理员可终裁");
         if (decision == null || !ARBITRATION_DECISIONS.contains(decision)) {
-            throw new ServiceException("终裁意见仅允许 APPROVE|REJECT");
+            throw new IpdBusinessException("终裁意见仅允许 APPROVE|REJECT");
         }
         List<GateArbitration> leaderOpinions = arbitrationRows(gate, ROLE_GROUP_LEADER);
         if (leaderOpinions.size() < 2) {
-            throw new ServiceException("组长仲裁尚未形成两组对立意见，暂无需超管终裁");
+            throw new IpdBusinessException("组长仲裁尚未形成两组对立意见，暂无需超管终裁");
         }
         String first = leaderOpinions.get(0).getDecision();
         if (leaderOpinions.stream().allMatch(o -> first.equals(o.getDecision()))) {
-            throw new ServiceException("组长仲裁已一致，无需超管终裁");
+            throw new IpdBusinessException("组长仲裁已一致，无需超管终裁");
         }
         boolean already = arbitrationRows(gate, ROLE_SUPER_ADMIN).stream()
             .anyMatch(o -> actor.id().equals(o.getArbitratorId()));
         if (already) {
-            throw new ServiceException("您已提交本轮终裁意见，不可重复提交");
+            throw new IpdBusinessException("您已提交本轮终裁意见，不可重复提交");
         }
         GateArbitration row = GateArbitration.builder()
             .gateId(gateId)
@@ -525,17 +560,17 @@ public class GateReviewService {
     public Gate extendDeadline(Long gateId, int days, IpdActor actor) {
         Gate gate = requireGate(gateId);
         if (!ROLE_SUPER_ADMIN.equals(actor.role())) {
-            throw new ServiceException("仅超级管理员可延长签署期限（AC-GATE-21）");
+            throw new IpdBusinessException("仅超级管理员可延长签署期限（AC-GATE-21）");
         }
         if (!STATUS_PENDING.equals(gate.getStatus()) || gate.getStartedAt() == null) {
-            throw new ServiceException("仅签署中的 Gate 可延长签署期限");
+            throw new IpdBusinessException("仅签署中的 Gate 可延长签署期限");
         }
         if (days <= 0 || days > 30) {
-            throw new ServiceException("延长天数须为 1-30");
+            throw new IpdBusinessException("延长天数须为 1-30");
         }
         int count = gate.getSignExtensionCount() == null ? 0 : gate.getSignExtensionCount();
-        if (count >= MAX_SIGN_EXTENSIONS) {
-            throw new ServiceException("签署期限最多延长 " + MAX_SIGN_EXTENSIONS + " 次，已达上限（AC-GATE-21）");
+        if (count >= resolveMaxSignExtensions()) {
+            throw new IpdBusinessException("签署期限最多延长 " + resolveMaxSignExtensions() + " 次，已达上限（AC-GATE-21）");
         }
         Date newDue = new Date(dueAtFrom(gate).getTime() + TimeUnit.DAYS.toMillis(days));
         gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
@@ -550,13 +585,13 @@ public class GateReviewService {
     /** 仲裁前置：调用者角色匹配 + Gate 已驳回且当轮双 PM 意见分歧（先 APPROVE 后 REJECT）。 */
     private void requireArbitratable(Gate gate, IpdActor actor, String role, String deniedMessage) {
         if (!role.equals(actor.role())) {
-            throw new ServiceException(deniedMessage);
+            throw new IpdBusinessException(deniedMessage);
         }
         if (!STATUS_REJECTED.equals(gate.getStatus())) {
-            throw new ServiceException("仅被驳回的 Gate 存在仲裁/终裁流程，当前：" + gate.getStatus());
+            throw new IpdBusinessException("仅被驳回的 Gate 存在仲裁/终裁流程，当前：" + gate.getStatus());
         }
         if (!hasPmConflict(roundRows(gate.getId(), gate.getCurrentRound()))) {
-            throw new ServiceException("本轮无双 PM 意见分歧，无需仲裁");
+            throw new IpdBusinessException("本轮无双 PM 意见分歧，无需仲裁");
         }
     }
 
@@ -621,7 +656,7 @@ public class GateReviewService {
     private void insertAbstain(Gate gate, String side, Date due) {
         Long personId = signerPersonId(gate, side);
         if (personId == null) {
-            throw new ServiceException("签署方在册成员缺失，无法标记弃权：" + side
+            throw new IpdBusinessException("签署方在册成员缺失，无法标记弃权：" + side
                 + "（projectId=" + gate.getProjectId() + "）");
         }
         reviewMapper.insert(GateReview.builder()
