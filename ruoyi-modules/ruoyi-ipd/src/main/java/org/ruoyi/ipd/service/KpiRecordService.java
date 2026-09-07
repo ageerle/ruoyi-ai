@@ -419,11 +419,16 @@ public class KpiRecordService {
     }
 
     /**
-     * ROOT-R3-P0-2：守卫 preCheck 包装（无守卫注入时降级 no-op，兼容旧测试）
+     * ROOT-R3-P0-2 修复：守卫 preCheck 包装（fail-closed 模式）。
+     *
+     * <p>守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass）。
+     * 测试兼容：KpiRecordServiceTest 通过 setStateMachineGuard(...) 注入 mock；
+     * MockitoExtension STRICT_STUBS 模式下空 mock 必显式 fail。
      */
     private void preCheckGuard(String entityType, String fromState, String toState, String trigger) {
         if (stateMachineGuard == null) {
-            return;
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "状态机守卫未装配 entityType=" + entityType + " from=" + fromState + " to=" + toState);
         }
         stateMachineGuard.preCheck(entityType, fromState, toState, trigger);
     }

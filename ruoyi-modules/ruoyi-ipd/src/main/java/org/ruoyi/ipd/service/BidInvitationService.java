@@ -248,6 +248,10 @@ public class BidInvitationService {
         if (inv == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + invitationId);
         }
+        // MEDIUM-info-disclosure 修复：强制要求已登录 actor，避免 eq(field, null) IS-NULL 语义泄露遗留数据
+        if (currentPersonId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "未登录或会话失效");
+        }
         LambdaQueryWrapper<BidResponse> qw = new LambdaQueryWrapper<BidResponse>()
             .eq(BidResponse::getInvitationId, invitationId)
             .orderByDesc(BidResponse::getCreateTime);
