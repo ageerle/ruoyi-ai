@@ -97,6 +97,32 @@ public class IpdPermission {
         return new IpdActor(person.getId(), person.getName(), person.getPersonType(), person.getGroupId());
     }
 
+    /**
+     * 自助改密专属守门（[SEC-AUTH-DEADLOCK] 2026-09-07 真端到端发现）：
+     * 原 {@link #requireInternal()} 在 scope=PASSWORD_CHANGE_REQUIRED 时一律抛 20003
+     * 形成死锁——first-login 账号必须先改密才能 FULL，但改密口自身被同一守卫拦死。
+     * 本方法放宽 scope 限制：仅验 token + 内部角色，scope 仍可为 PASSWORD_CHANGE_REQUIRED
+     * / HANDOVER_ONLY（兼容冻结待移交态改密），NONE 仍拒。IDOR 防御由 service 层
+     * {@code changePassword(actor, personId, ...)} 维持：actor.id == personId 才放行。
+     */
+    public IpdActor requireInternalEvenIfPasswordScope() {
+        Person person;
+        try {
+            person = session.currentPerson();
+        } catch (NotLoginException e) {
+            throw new IpdPermissionException(401, ApiV1ErrorCode.UNAUTHORIZED);
+        }
+        if (person.getId() == null) {
+            throw new IpdPermissionException(401, ApiV1ErrorCode.UNAUTHORIZED);
+        }
+        IpdAuthService.Scope scope = authService.scopeOf(person);
+        if (scope == IpdAuthService.Scope.NONE) {
+            throw new IpdPermissionException(401, ApiV1ErrorCode.UNAUTHORIZED);
+        }
+        if (!INTERNAL_ROLES.contains(person.getPersonType())) throw denied();
+        return new IpdActor(person.getId(), person.getName(), person.getPersonType(), person.getGroupId());
+    }
+
     public IpdActor requireAdmin() {
         return requireRoles("SUPER_ADMIN");
     }

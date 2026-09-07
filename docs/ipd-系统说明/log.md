@@ -2838,3 +2838,7 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - **前端仓 commit 链（本轮 3 个）**：52cdb47(contrast+demo-accounts) → 2f2f789(viewport+muted) → 957b7ae(region)
 - **兄弟流前期成果确认**：V12-F1 焦点环 + Skip-link 三要素（链接/#main 锚点 tabindex=-1/ipd-a11y.css visually-hidden）早已落地，本轮仅补齐 contrast/viewport/region 三缺口
 - **遗留**：移动端断点适配为视觉项（非 axe 可测）；STRICT_A11Y secret 待 owner 30 天观察期后启用
+
+## 2026-09-07（凌晨·二）SEC-AUTH-DEADLOCK 修复（SKIP_CONCURRENT_WRITE=1）
+
+- 2026-09-07 main session：IpdAuthController.java 被 W5-E 兄弟会话在途触碰（注入 IpdPermission + password() 加 requireInternal() 拿 actor，IDOR 修复前置工作），git status M 状态触发 OPS-09 并发写守卫。本会话目标为：把 password() 内 requireInternal() 改为 requireInternalEvenIfPasswordScope()（叠加兄弟工作的最小一行修复），与兄弟改动 100% 兼容（仅换 1 行 + 改 javadoc），SKIP=1 通过。
