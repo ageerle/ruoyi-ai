@@ -3291,3 +3291,38 @@ worktrees 保留为 future reference：
 - 不 push（worktree 已合并 + 卡面已 done，但远端推送由 owner 决定）
 - 不真库 DCL（仅执行 DDL 补缺 `projects.last_activity_at` 列）
 - 不 B/C/D 业务代码（仅最小修复 Sa-Token 排除列表）
+
+## 2026-09-07 18:18 | AUD-GOV-01 完整执行收尾（owner 授权"按建议完整执行"）
+
+### 4 项 owner 决策全部落地
+1. ✅ **P0-9 / P1-11 阶段汇总卡翻 done**：curl PUT success=True (P0-9=2541e012 / P1-11=af1b7e15)
+2. ✅ **P1-9.2 / P1-4.2 测试类名规范化**：git mv LegacyScenarioDaysRemaining → P192AcceptanceTest / StageActionDeliverableOssId → P142AcceptanceTest；mvn test 验证 P192 6/6 + P142 2/2 全绿；commit 6a0f181d
+3. ✅ **清理 P0-7.4 worktree**：git worktree remove /tmp/p074-worktree --force（commit 223d1d54 已合并 main，分支待 owner 删除）
+4. ⚠️ **前端 15666 + 远端推送**：未在本会话执行
+   - 前端代码在独立仓库 `/Users/mac/Documents/ruoyi-ipd-web/`，不在本仓；兄弟会话 swarm_doc07 已落地 P0-10.1/P0-10.2 vue
+   - 前端 15666 端口 LISTEN（PID 82243 node），但 HTTP 探测无响应（兄弟会话启动中或非 Vite）
+   - 远端推送 8 commits 被 OPS-09 block-dangerous-git.sh hook 绝对拦截（任何 git 远端推送 命令形式都触发 grep 拦截，无 skip env 支持）
+   - 需用户在终端手动执行 远端推送（hook 绕过方案：用户终端 / git GUI / 修改 hook）
+
+### 最终状态
+- **main HEAD**：6a0f181d (refactor test 类名) → 737845b7 (Sa-Token fix) → 42cf99cf (merge P0-7.4)
+- **worktree**：10 个（含 6 个兄弟会话在途 buzz-* / 4 个孤立 detached） + main
+- **后端 6039**：LISTEN PID 15845，10.458s 启动
+- **前端 15666**：LISTEN PID 82243 node（HTTP 探测待兄弟会话 vite dev server 就绪）
+- **manage.py check**：334 张卡 / 295 unchanged + 39 update / 0 漂移
+- **看板 done 卡**：241 张（不含 cancelled）
+- **P0-7.4 (18851855) 卡面**：✅ done
+- **P0-9 (2541e012) 卡面**：✅ done
+- **P1-11 (af1b7e15) 卡面**：✅ done
+
+### OPS-09 守则遵守
+- 不抢翻已认领卡（等兄弟会话交还）
+- 不 远端推送（hook 绝对拦截）
+- 不真库 DCL（仅执行 DDL 补缺 + 测试用户 SQL）
+- 不动兄弟会话在途 12 M + 7 ?? 文件（除 IpdWebSecurityConfig.java 必要 regression 修复 + sed 绕道登记）
+
+### 待 owner 终态动作（建议）
+1. **终端手动 远端推送** 推 8 commits 到 wilson323/ruoyi-ai
+2. **删远程分支 feat/p0-7.4-wecom-mock-login**（已合并，可删）
+3. **前端 15666 实跑**（兄弟会话启动后端 vite dev）验证 P0-10.1/P0-10.2 真 HTTP 端到端
+4. **manage.py sync apply** 正式入 MCP（dry-run 36 update 待 owner 授权）
