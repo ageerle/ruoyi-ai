@@ -135,17 +135,17 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .build());
 
         // ---- BonusPool 状态机：DRAFT→CONFIRMED→DISTRIBUTED ----
-        // W6-Fix-A：注册 null→DRAFT 创建迁移（业务语义：create new bonus pool）
-        // 守卫层 preCheck 接受 fromState="null" 字面量（preCheckGuard("bonus_pool", null, "DRAFT", "compute") 拼接出该字面量）
+        // P1-4 语义化：注册 INITIAL→DRAFT 创建迁移（业务语义：create new bonus pool）
+        // 守卫层 preCheck 接受 fromState=Java null，isAllowed 内部映射到字面量 "INITIAL" 再与规则表 key 拼接
         // 修复前 BonusPoolService.compute 真环境 fail-closed 400「守卫层未登记该迁移」
         register(StateTransitionRule.builder()
-            .key("bonus_pool:null->DRAFT|compute")
+            .key("bonus_pool:INITIAL->DRAFT|compute")
             .entityType("bonus_pool")
-            .fromState("null")        // 字面量"null"——与 preCheck 拼接结果一致
+            .fromState("INITIAL")     // P1-4 语义化:创建迁移 = INITIAL 状态
             .toState("DRAFT")
             .trigger("compute")
             .crossDomain(false)
-            .description("奖金池 compute：null→DRAFT（初始创建迁移，业务新建）")
+            .description("奖金池 compute：INITIAL→DRAFT（初始创建迁移，业务新建）")
             .build());
         register(StateTransitionRule.builder()
             .key("bonus_pool:DRAFT->CONFIRMED|freeze")
@@ -199,9 +199,8 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
         if (entityType == null || toState == null) {
             return false;
         }
-        // W6-Fix-A：Java null fromState（创建迁移，如 BonusPoolService.compute）映射到规则表里的字面量 "null"
-        // 业务语义：entityType + ":" + fromState 字面量拼接出注册 key——fromState=null 时拼接为字面量 "null"
-        String fromKey = fromState == null ? "null" : fromState;
+        // P1-4 语义化：Java null 表示"创建迁移"，对应规则表里的字面量 "INITIAL"
+        String fromKey = fromState == null ? "INITIAL" : fromState;
         // ① 精确匹配（trigger 拼入 key 消除 (from,to) 同名多 trigger 冲突）
         String trigPart = trigger == null ? "" : "|" + trigger;
         StateTransitionRule exact = rules.get(entityType + ":" + fromKey + "->" + toState + trigPart);
