@@ -221,19 +221,37 @@ public class AiChatClient {
 
     /** 内网 / loopback / link-local IP 黑名单，覆盖 IPv4 + IPv6。 */
     private static boolean isBlockedIp(byte[] ip) {
-        if (ip.length == 4) {
-            int b0 = ip[0] & 0xFF;
-            if (b0 == 127) return true;
-            if (b0 == 10) return true;
-            if (b0 == 172 && (ip[1] & 0xF0) == 16) return true;
-            if (b0 == 192 && (ip[1] & 0xFF) == 168) return true;
-            if (b0 == 169 && (ip[1] & 0xFF) == 254) return true;
-            return false;
-        }
+        InetAddress addr = InetAddress.getByAddress(ip);
+        if (addr.isAnyLocalAddress())  return true;
+        if (addr.isLoopbackAddress())  return true;
+        if (addr.isLinkLocalAddress()) return true;
+        if (addr.isSiteLocalAddress())  return true;
+        if (addr.isMulticastAddress()) return true;
         if (ip.length == 16) {
-            if (ip[0] == (byte) 0x7f) return true;
-            if ((ip[0] & (byte) 0xFE) == (byte) 0xFC) return true;
+            boolean isMapped = true;
+            for (int i = 0; i < 10; i++) {
+                if (ip[i] != 0) { isMapped = false; break; }
+            }
+            if (isMapped && ip[10] == (byte) 0xFF && ip[11] == (byte) 0xFF) {
+                byte[] ipv4 = { ip[12], ip[13], ip[14], ip[15] };
+                return isBlockedIpv4(ipv4);
+            }
         }
+        if (ip.length == 4) return isBlockedIpv4(ip);
+        if (ip.length == 16 && (ip[0] & (byte) 0xFE) == (byte) 0xFC) return true;
+        return false;
+    }
+
+    private static boolean isBlockedIpv4(byte[] ip) {
+        int b0 = ip[0] & 0xFF;
+        int b1 = ip[1] & 0xFF;
+        if (b0 == 127) return true;
+        if (b0 == 10)  return true;
+        if (b0 == 172 && (b1 & 0xF0) == 16) return true;
+        if (b0 == 192 && b1 == 168) return true;
+        if (b0 == 169 && b1 == 254) return true;
+        if (b0 == 100 && (b1 & 0xC0) == 64) return true;
+        if (b0 == 0)   return true;
         return false;
     }
 
