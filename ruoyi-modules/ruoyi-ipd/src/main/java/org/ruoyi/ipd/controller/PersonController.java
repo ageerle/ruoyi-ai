@@ -2,6 +2,7 @@ package org.ruoyi.ipd.controller;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
@@ -34,13 +35,13 @@ public class PersonController {
     private final IpdPermission permission;
 
     /** 离职冻结请求（reason 必填）。 */
-    public record ResignRequest(@NotBlank String reason) { }
+    public record ResignRequest(@NotBlank @Size(max = 200) String reason) { }
 
     /** 复职请求（note 选填）。 */
     public record RehireRequest(String note) { }
 
     /** 企微解绑请求（reason 必填）。 */
-    public record UnbindRequest(@NotBlank String reason) { }
+    public record UnbindRequest(@NotBlank @Size(max = 200) String reason) { }
 
     /** 离职响应（待移交项目数 + 幂等标记）。 */
     public record ResignView(boolean idempotent, long pendingProjects, String message) {

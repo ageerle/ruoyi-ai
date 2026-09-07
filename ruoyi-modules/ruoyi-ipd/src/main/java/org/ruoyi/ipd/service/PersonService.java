@@ -105,7 +105,8 @@ public class PersonService {
      * <p>状态机：employment_status RESIGNED → ACTIVE；account_status FROZEN_PENDING_HANDOVER → ACTIVE；
      * DISABLED 需先调用 IpdAuthService 解禁（不允许直接复职）；ACTIVE 返 CONFLICT。
      *
-     * <p>不动 level/groupId（HR API 权威源；非本卡权限）。
+     * <p>SEC-01b/HIGH 跨组守卫：GROUP_LEADER 仅可复职本组员工，跨组返 FORBIDDEN；SUPER_ADMIN 例外。
+     * 不动 level/groupId（HR API 权威源；非本卡权限）。
      *
      * @param personId 人员主键
      * @param note 复职说明
@@ -113,6 +114,7 @@ public class PersonService {
      */
     public Person rehire(Long personId, String note, IpdActor operator) {
         Person person = requirePerson(personId);
+        assertSameGroupOrAdmin(person, operator, "复职");
         if (!EM_RESIGNED.equals(person.getEmploymentStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "当前雇佣状态不允许复职: " + person.getEmploymentStatus());
@@ -146,9 +148,19 @@ public class PersonService {
      * <p>副作用：清空 wecom_user_id + wecom_bound_at；account_status → DISABLED
      * （无企微账号 ⇒ 无法走企微扫码登录，禁用兜底）。RESIGNED 状态允许解绑（不抛错）。
      * 幂等：wecom_user_id 已空返 NOOP。
+     *
+     * <p>SEC-01b/HIGH 跨组守卫：GROUP_LEADER 仅可解绑本组员工企微，跨组返 FORBIDDEN；SUPER_ADMIN 例外。
+     * SEC-02b/MEDIUM 在职守卫：在职（employment_status=ACTIVE）员工被解绑企微将级联为 account=DISABLED
+     * 阻断登录，要求 HR 先触发离职冻结；SUPER_ADMIN 例外可强制解绑（合规/账号封禁场景）。
      */
     public Person unbindWecom(Long personId, String reason, IpdActor operator) {
         Person person = requirePerson(personId);
+        assertSameGroupOrAdmin(person, operator, "解绑企微");
+        if (EM_ACTIVE.equals(person.getEmploymentStatus())
+            && !"SUPER_ADMIN".equals(operator.role())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "在职员工解绑企微需先触发离职冻结");
+        }
         if (person.getWecomUserId() == null || person.getWecomUserId().isBlank()) {
             // 幂等 NOOP
             return person;
@@ -187,6 +199,21 @@ public class PersonService {
             .eq(ProjectMember::getPersonId, personId)
             .isNull(ProjectMember::getExitDate)
             .eq(ProjectMember::getDelFlag, "0"));
+    }
+
+    /**
+     * SEC-01b/HIGH 跨组守卫：GROUP_LEADER 仅可操作本组人员；SUPER_ADMIN 例外放行；其他角色（理论上
+     * Controller 已 requireLeaderOrAdmin 限过，但 service 内兜底）一律同组校验。失败抛 FORBIDDEN。
+     */
+    private void assertSameGroupOrAdmin(Person person, IpdActor operator, String action) {
+        if ("SUPER_ADMIN".equals(operator.role())) return;
+        if ("GROUP_LEADER".equals(operator.role())) {
+            if (operator.groupId() == null || !operator.groupId().equals(person.getGroupId())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN,
+                    "GROUP_LEADER 仅可" + action + "本组员工（操作组=" + operator.groupId()
+                        + "，员工组=" + person.getGroupId() + "）");
+            }
+        }
     }
 
     private Person requirePerson(Long personId) {

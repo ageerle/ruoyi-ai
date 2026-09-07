@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 /**
  * P2-1.3 人员账户状态联动验收测试（AC-USER-08/09/10；BR-USER-05/06）。
@@ -52,8 +53,10 @@ class P213PersonStateAcceptanceTest {
     void setUp() {
         hrActor = new IpdActor(100L, "Alice-HR", "GROUP_LEADER", 10L);
         selfActor = new IpdActor(200L, "Bob-Self", "MARKET_PM", 10L);
-        // 默认无活跃项目成员
-        when(memberMapper.selectCount(any())).thenReturn(0L);
+        // 不在 setUp 默认 stub memberMapper.selectCount：避免覆盖测试内的 .thenReturn().thenReturn() 链
+        // 需要返回 0L 默认的测试请自行 stub（lenient）
+        // 默认 updateById 返 1（成功路径需要；默认 Mockito 返 0 会触发 rows != 1 ServiceException）
+        lenient().when(personMapper.updateById(any(org.ruoyi.ipd.domain.Person.class))).thenReturn(1);
     }
 
     private Person person(Long id, String emp, String acc, String wecom) {
@@ -163,13 +166,15 @@ class P213PersonStateAcceptanceTest {
 
         assertThatThrownBy(() -> personService.rehire(7L, "x", hrActor))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("DISABLED");
+            .hasMessageContaining("禁用");  // pre-existing: 中文错误文案（不改 PersonService 文案避免契约漂移）
     }
 
     @Test
-    @DisplayName("unbindWecom: 清空 wecom_user_id + account→DISABLED + 审计")
+    @DisplayName("unbindWecom: 清空 wecom_user_id + account→DISABLED + 审计（RESIGNED 员工；ACTIVE 走新守卫另测）")
     void unbindWecom_clearsAndDisables() {
-        Person p = person(8L, "ACTIVE", "ACTIVE", "wc_999");
+        // SEC-02b/MEDIUM 新契约：在职员工解绑企微需 SUPER_ADMIN 或先离职冻结；
+        // 此测覆盖 RESIGNED 员工正常解绑联动路径。
+        Person p = person(8L, "RESIGNED", "FROZEN_PENDING_HANDOVER", "wc_999");
         when(personMapper.selectById(8L)).thenReturn(p);
 
         Person result = personService.unbindWecom(8L, "resigned wecom", hrActor);
@@ -179,13 +184,14 @@ class P213PersonStateAcceptanceTest {
         ArgumentCaptor<AuditLog> audit = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(audit.capture());
         assertThat(audit.getValue().getAction()).isEqualTo("WECOM_UNBIND");
-        assertThat(audit.getValue().getBeforeData()).contains("wc_999");
+        assertThat(audit.getValue().getBeforeData()).contains("wecom=***");  // snapshot() 屏蔽实际值；pre-existing 测断言 wc_999 错
     }
 
     @Test
-    @DisplayName("unbindWecom: 幂等命中（wecom 已空 返原 person + 不重复写）")
+    @DisplayName("unbindWecom: 幂等命中（wecom 已空 返原 person + 不重复写；RESIGNED 路径）")
     void unbindWecom_idempotent_whenAlreadyEmpty() {
-        Person p = person(9L, "ACTIVE", "ACTIVE", null);
+        // SEC-02b/MEDIUM：RESIGNED 员工可解绑（wecom 已空返 NOOP）
+        Person p = person(9L, "RESIGNED", "FROZEN_PENDING_HANDOVER", null);
         when(personMapper.selectById(9L)).thenReturn(p);
 
         Person result = personService.unbindWecom(9L, "再解绑一次", hrActor);
@@ -216,10 +222,8 @@ class P213PersonStateAcceptanceTest {
     void resign_pendingProjectsReflectsMemberships() {
         Person p = person(11L, "ACTIVE", "ACTIVE", "wc_x");
         when(personMapper.selectById(11L)).thenReturn(p);
-        // 初次调用（幂等检查 selectCount）返 0；写入后第二次 selectCount 返 2
-        when(memberMapper.selectCount(any()))
-            .thenReturn(0L)   // 幂等检查（第一次 resign 不会到这里，但保险）
-            .thenReturn(2L);  // 写入后返回待移交数
+        // resign 只在写入成功后调一次 selectCount（不存在幂等检查调用，ACTIVE 路径直接走 update）
+        when(memberMapper.selectCount(any())).thenReturn(2L);
 
         var result = personService.resign(11L, "team restructure", hrActor);
 
