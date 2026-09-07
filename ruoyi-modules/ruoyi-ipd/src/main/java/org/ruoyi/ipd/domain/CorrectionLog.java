@@ -20,6 +20,10 @@ import java.util.Date;
  *
  * <p>任何对 ProjectScore / KpiRecord 等核心实体的字段更正操作都必须落一条本表记录，
  * 含旧值/新值/原因/操作人/操作时间，确保审计追溯。删除走软删除。
+ *
+ * <p>R-P3-2.2-POSTREVIEW：{@link EntityType} 枚举约束实体类型取值范围（白名单），
+ * 防止自由字符串写入绕过入参校验。{@code entityType} DB 字段仍为字符串（DDL 兼容），
+ * 枚举仅作 Service 层校验用。
  */
 @Data
 @Builder
@@ -29,6 +33,19 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "correction_logs", autoResultMap = true)
 public class CorrectionLog extends BaseEntity implements SoftDeletable {
+
+    /**
+     * 更正留痕实体类型白名单（P3-2.2 + R-P3-2.2-POSTREVIEW）。
+     * 命名一律大写下划线，与现存 {@code entity_type} 列字符串对齐；
+     * Service 层校验「必须在该枚举内」，DB 列保留 varchar 兼容既有 DDL。
+     */
+    public enum EntityType {
+        PROJECT_SCORE,
+        KPI_RECORD,
+        SOP_TEMPLATE,
+        REQUIREMENT,
+        OTHER
+    }
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

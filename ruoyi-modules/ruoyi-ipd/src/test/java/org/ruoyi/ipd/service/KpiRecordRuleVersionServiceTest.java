@@ -198,4 +198,34 @@ class KpiRecordRuleVersionServiceTest {
             ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(snapshotMapper).selectList(cap.capture());
     }
+
+    // ============== R-P3-2.2-POSTREVIEW 新增测 ==============
+
+    @Test
+    @DisplayName("POSTREVIEW-1：snapshot insert 显式写 tenantId='000000'（治理元数据表）")
+    void snapshot_insertWritesExplicitTenantId() {
+        when(permission.requireAdmin()).thenReturn(admin());
+        when(snapshotMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        service.snapshotRuleVersion(input("{\"self\":0.6,\"market\":0.4}"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<KpiRuleSnapshot> cap = ArgumentCaptor.forClass(KpiRuleSnapshot.class);
+        verify(snapshotMapper, times(1)).insert(cap.capture());
+        // 治理元数据表（与 system_config_versions 同语义）：tenantId 必须显式为 000000
+        assertThat(cap.getValue().getTenantId()).isEqualTo("000000");
+    }
+
+    @Test
+    @DisplayName("POSTREVIEW-2：ruleJson 超过 64KiB 上限抛 PARAM_INVALID")
+    void snapshot_ruleJsonOver64K_rejected() {
+        when(permission.requireAdmin()).thenReturn(admin());
+        String tooLong = "x".repeat(65537);
+        KpiRuleSnapshot big = input(tooLong);
+        assertThatThrownBy(() -> service.snapshotRuleVersion(big))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.PARAM_INVALID);
+        verify(snapshotMapper, never()).insert(any(KpiRuleSnapshot.class));
+    }
 }

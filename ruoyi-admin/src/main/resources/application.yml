@@ -329,6 +329,11 @@ tenant:
     - ipd_business_config_versions
     - switching_acceptance
     - gate_review_observers
+    # R-P3-2.2-POSTREVIEW（2026-09-07）：P3-2.2 治理元数据表——kpi_rule_snapshots / correction_log
+    # 均为「全局规则/审计链」类治理表（与 system_config_versions / audit_logs 同语义），
+    # 不登记则多租户插件对其追加 tenant_id 过滤，跨租户联查/读审计链直接断行
+    - kpi_rule_snapshots
+    - correction_log
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
