@@ -114,6 +114,22 @@ spring:
     deserialization:
       # 允许对象忽略json中不存在的属性
       fail_on_unknown_properties: false
+  # W20-B：邮件通道 SMTP（W15-C Notification 中间件化 EMAIL 真实化）
+  mail:
+    host: ${MAIL_HOST:smtp.localhost}
+    port: ${MAIL_PORT:25}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
   # 数据源连接池默认参数（QA-05-P1）
   # 本项目数据源由 baomidou dynamic-datasource 创建，池参数生效路径是
   # spring.datasource.dynamic.hikari.*（Spring Boot 原生 spring.datasource.hikari.* 不生效）。
@@ -175,6 +191,24 @@ ipd:
     # 父基线无默认：prod profile 必须在 application-prod.yml 或环境变量 IPD_INITIAL_PWD 显式注入，缺失则 fail-fast
     # dev profile 在 application-dev.yml 显式覆盖默认值方便本地启动
     initial-password: ${IPD_INITIAL_PWD:}
+  notification:
+    # W20-B：Notification 中间件化真实通道配置
+    email:
+      # 发件人；空则用 spring.mail.username
+      from: ${IPD_NOTIFY_EMAIL_FROM:noreply@ipd.local}
+      # 收件人域后缀（Person 表无 email 字段，按 receiverId 合成 person-{id}@{domain}）
+      receiver-domain: ${IPD_NOTIFY_EMAIL_DOMAIN:ipd.local}
+      # 是否启用真实发送；false 时退化为 stub（仅日志），便于本地不接 SMTP
+      enabled: ${IPD_NOTIFY_EMAIL_ENABLED:false}
+      # 模板字符编码（默认 UTF-8 兼容中文）
+      encoding: UTF-8
+      # 主题前缀（便于邮件客户端筛选）
+      subject-prefix: "[IPD]"
+    websocket:
+      # 推送目的前缀（与 ruoyi-common-websocket 默认 /topic/ 兼容）
+      destination-prefix: /topic/notifications/
+      # 用户离线时是否落库（与 InApp 一致）：true=入 INBOX 兜底
+      offline-fallback-to-inbox: true
 
 # security配置
 security:

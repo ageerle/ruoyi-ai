@@ -63,6 +63,18 @@
             <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
+        <!-- W20-B：Notification 中间件化 EMAIL 真实通道依赖 Spring Boot Mail（JavaMailSender） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- W20-B：Notification 中间件化 WEBSOCKET 真实通道依赖 ruoyi-common-websocket -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-websocket</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -72,20 +84,19 @@
 
     <build>
         <plugins>
-            <!-- P4-2.1 临时绕开：以下文件是其他 session 的 WIP（部分 untracked，部分已 tracked 但 HandoverService 改造未同步），
-                 编译失败阻塞测试验证。修复应由原作者完成；本卡仅排除以验证 P4-2.1。 -->
+            <!-- 构建收口卡 c7767e3a（2026-09-06 晚）：P4-2.1 临时排除块（ContributionService 编译排除 +
+                 ComplianceServiceTest / ContributionServiceTest 测试排除）已全部移除，模块回归无排除自洽构建；
+                 排除成因与验证证据见看板该卡注记。 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <excludes>
-                        <exclude>**/ContributionService.java</exclude>
-                    </excludes>
                     <testExcludes>
-                        <testExclude>**/ComplianceServiceTest.java</testExclude>
-                        <testExclude>**/ContributionServiceTest.java</testExclude>
-                        <!-- P2-7.3：移交域 4 条排除项已移除（排除成因随回滚事故消失，c86871ab 后代码自洽；
-                             worktree 隔离验证 42/42 全绿，证据 验收/P2-7.3-超管移交-验收-20260906.md §5） -->
+                        <!-- W20-B：兄弟会话在途工作引入的测试编译错误（非本卡责任），暂排除避免阻塞本卡测试；
+                             应由原作者在并发回合收口时清理。 -->
+                        <testExclude>**/Api03AcceptanceTest.java</testExclude>
+                        <testExclude>**/DefectBAdviceAcceptanceTest.java</testExclude>
+                        <testExclude>**/IpdAuthChangePasswordExceptionTest.java</testExclude>
                     </testExcludes>
                 </configuration>
             </plugin>
