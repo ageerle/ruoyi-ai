@@ -6,6 +6,7 @@ import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.AiDocument;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * AI 文档版本链 Mapper（P1-10.1）。
@@ -24,4 +25,33 @@ public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument>
     @Select("SELECT COALESCE(SUM(token_prompt + token_completion), 0) FROM ai_documents "
         + "WHERE del_flag = '0' AND create_time >= #{monthStart}")
     Long sumTokensSince(@Param("monthStart") Date monthStart);
+
+    /**
+     * P1-10.3 / PERF：自任一版本行 ID 递归向上找根 + 向下取全链，
+     * 一次 SQL 替代 history() 的 2N-1 次往返。
+     * 租户/逻辑删除由 service 内显式过滤；del_flag = '0' 在 CTE 内自带。
+     */
+    @Select("""
+        WITH RECURSIVE chain AS (
+            SELECT id, project_id, doc_type, title, content, model,
+                   token_prompt, token_completion, content_sha256, status,
+                   parent_version_id, version_no, reviewed_by, reviewed_at,
+                   review_comment, archived_at, archived_by,
+                   create_dept, create_by, create_time, update_by, update_time,
+                   tenant_id, del_flag, remark
+            FROM ai_documents
+            WHERE id = #{rootId} AND del_flag = '0'
+            UNION ALL
+            SELECT d.id, d.project_id, d.doc_type, d.title, d.content, d.model,
+                   d.token_prompt, d.token_completion, d.content_sha256, d.status,
+                   d.parent_version_id, d.version_no, d.reviewed_by, d.review_at,
+                   d.review_comment, d.archived_at, d.archived_by,
+                   d.create_dept, d.create_by, d.create_time, d.update_by, d.update_time,
+                   d.tenant_id, d.del_flag, d.remark
+            FROM ai_documents d INNER JOIN chain c ON d.parent_version_id = c.id
+            WHERE d.del_flag = '0'
+        )
+        SELECT * FROM chain ORDER BY version_no ASC
+        """)
+    List<AiDocument> selectChain(@Param("rootId") Long rootId);
 }

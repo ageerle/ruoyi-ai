@@ -9,6 +9,9 @@ import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.ruoyi.common.core.constant.CacheNames;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -77,6 +80,7 @@ public class AiDocumentService {
      *
      * @return 落库行（versionNo=1，status=GENERATED，contentSha256 已算）
      */
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public AiDocument createGenerated(Long projectId, String docType, String title, String content,
                                       String model, Integer tokenPrompt, Integer tokenCompletion,
@@ -108,6 +112,7 @@ public class AiDocumentService {
      * @param title         新标题（空则沿用 HEAD）
      * @return 新版本行 v(n+1)（status=GENERATED，需重新人工审核）
      */
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#documentId")
     @Transactional(rollbackFor = Exception.class)
     public AiDocument revise(Long documentId, Long baseVersionId, String newContent,
                              String title, Long operatorId) {
@@ -146,6 +151,7 @@ public class AiDocumentService {
      *
      * @return 审核后（或幂等时既有）行
      */
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#versionId")
     @Transactional(rollbackFor = Exception.class)
     public AiDocument review(Long versionId, Long operatorId) {
         AiDocument row = mapper.selectById(versionId);
@@ -185,6 +191,7 @@ public class AiDocumentService {
      * @return 归档后行
      * @throws IpdBusinessException STATE_CONFLICT 未审核 / 已归档 / 已拒绝
      */
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#versionId")
     @Transactional(rollbackFor = Exception.class)
     public AiDocument archive(Long versionId, Long operatorId) {
         AiDocument row = mapper.selectById(versionId);
@@ -228,6 +235,7 @@ public class AiDocumentService {
      * @param operatorId 操作者（写入 reviewed_by 兜底；幂等拒绝时不覆盖）
      * @param comment    拒绝原因（必填；落 review_comment 审计完整性）
      */
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#versionId")
     @Transactional(rollbackFor = Exception.class)
     public AiDocument reject(Long versionId, Long operatorId, String comment) {
         requireArg(comment != null && !comment.isBlank(), "拒绝原因必填");
@@ -313,50 +321,34 @@ public class AiDocumentService {
      *
      * @return v1..vN 升序全链
      */
+        @Cacheable(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, key = "#documentId")
     public List<AiDocument> history(Long documentId) {
-        AiDocument from = mapper.selectById(documentId);
-        if (from == null) {
+        // P1-10.3 / PERF：一次性递归 CTE 取全链（替代原 2N-1 次 SQL）
+        List<AiDocument> chain = mapper.selectChain(documentId);
+        if (chain == null || chain.isEmpty()) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
-        AiDocument root = from;
-        while (root.getParentVersionId() != null) {
-            AiDocument parent = mapper.selectById(root.getParentVersionId());
-            if (parent == null) {
-                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
-            }
-            root = parent;
-        }
-        if (root.getVersionNo() == null || root.getVersionNo() != 1) {
+        // 校验版本号连续 + documentId 在链上（保留原 AC-AI-06 链完整性契约）
+        if (chain.get(0).getVersionNo() == null || chain.get(0).getVersionNo() != 1) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
-
-        List<AiDocument> chain = new ArrayList<>();
-        chain.add(root);
-        AiDocument cursor = root;
-        while (true) {
-            AiDocument child = mapper.selectOne(new LambdaQueryWrapper<AiDocument>()
-                .eq(AiDocument::getParentVersionId, cursor.getId()));
-            if (child == null) {
-                break;
-            }
-            if (child.getVersionNo() == null
-                || child.getVersionNo() != cursor.getVersionNo() + 1) {
-                // 缺版本/跳号（如链中版本被软删导致父链接跳空）
+        for (int i = 1; i < chain.size(); i++) {
+            if (chain.get(i).getVersionNo() != chain.get(i - 1).getVersionNo() + 1) {
                 throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
             }
-            chain.add(child);
-            cursor = child;
         }
         boolean onChain = chain.stream().anyMatch(r -> documentId.equals(r.getId()));
-        if (!onChain) {
-            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
-        }
+        if (!onChain) throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         return chain;
     }
 
     /** 当前链头（最新版本）。 */
     private AiDocument head(Long documentId) {
-        List<AiDocument> chain = history(documentId);
+        // 改走 selectChain 直查（规避 Spring AOP self-call 不拦截问题）
+        List<AiDocument> chain = mapper.selectChain(documentId);
+        if (chain == null || chain.isEmpty()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
         return chain.get(chain.size() - 1);
     }
 
