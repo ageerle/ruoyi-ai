@@ -71,8 +71,11 @@ jobs:
 
       - name: 双向引用校验（unitTestClass / docRef / linkedCommits / @DisplayName 反向）
         run: |
+          # bash 默认 -e：node 返回 2 会当场终止步骤，WARN 分支永远走不到——同 a11y-ci.yml axe-scan 的包法
+          set +e
           node .claude/helpers/acceptance-matrix-validate.cjs
           RC=$?
+          set -e
           echo "validate 退出码: $RC"
           if [ "$RC" = "1" ]; then
             echo "::error::acceptance-matrix 硬错误，PR 阻断"
