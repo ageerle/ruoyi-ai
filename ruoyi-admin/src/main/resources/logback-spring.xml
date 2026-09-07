@@ -24,9 +24,13 @@
 <configuration>
 
     <property name="log.path" value="./logs"/>
+    <!--
+      ~ P0.7 traceId 串联：日志格式追加 [%X{traceId}]，MDC 未设置时显示连字符占位，
+      ~ 保证日志行长度一致；高并发场景下 grep/syslog 可按 traceId 横向串联请求生命周期。
+      -->
     <property name="console.log.pattern"
-              value="%cyan(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
-    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+              value="%cyan(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) [%X{traceId:-}] %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId:-}] %-5level %logger{36} - %msg%n"/>
 
     <!-- 控制台输出 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
