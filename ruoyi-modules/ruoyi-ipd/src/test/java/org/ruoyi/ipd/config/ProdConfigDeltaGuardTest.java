@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,6 +27,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       （sensitive-field-guard 阻断智能体直写 application-prod.yml）；</li>
  *   <li>actuator 收窄：prod 无 management 段，靠父继承到 {@code health,info,metrics} + {@code WHEN_AUTHORIZED}，
  *       正向断言在 {@link ActuatorNarrowTest}，本处只守「prod 不得反向放宽」。</li>
+ *   <li><b>SEC-NEW-MED-3（第 5 条）</b>：prod 数据源凭证必须是 {@code ${SPRING_DATASOURCE_*:}} env 占位，
+ *       不得回滚为 root/root 字面量——2026-09-06 16:00 曾发生「patch 应用后被工作区回滚」事故，此条即回滚守卫；</li>
+ *   <li><b>SEC-NEW-MED-3（第 6 条）</b>：MED-3 归档 patch 声称已应用，其新增语义行必须真实落盘于
+ *       application-prod.yml（防「归档在、落盘无」的双重态）；归档件被清理后交由第 5 条独立把关。</li>
  * </ol>
  *
  * <p>第 4 条断言（patch 头部 + hunk 上下文自校验）是本轮踩过的坑：用 {@code git diff --no-index} 加
@@ -50,6 +55,8 @@ class ProdConfigDeltaGuardTest {
         REPO_ROOT.resolve("ruoyi-admin/src/main/resources/application-prod.yml");
     private static final Path DELTA_PATCH =
         REPO_ROOT.resolve("docs/ipd-系统说明/验收/application-prod-owner-item3-delta.patch");
+    private static final Path MED3_PATCH_ARCHIVE =
+        REPO_ROOT.resolve("docs/ipd-系统说明/验收/application-prod-med3-delta.patch.applied-20260905");
 
     private static final String PROD_YML_PATH = "ruoyi-admin/src/main/resources/application-prod.yml";
 
@@ -159,6 +166,43 @@ class ProdConfigDeltaGuardTest {
         assertThat(mismatched)
             .as("patch 若与目标文件当前内容错位，git apply 必失败（等价于 batch3.patch 的 rc=1 现场）")
             .isEmpty();
+    }
+
+    @Test
+    @DisplayName("5) SEC-NEW-MED-3：prod 数据源凭证必须为 env 占位，禁止回滚 root/root 字面量")
+    void prodDatasourceCredentialsMustBeEnvPlaceholders() throws IOException {
+        String prod = Files.readString(PROD_YML);
+        // 只查有效行：注释掉的 agent 段示例（L71-72）不是生效配置，不得误伤（否则红的是噪音不是契约）
+        String active = prod.lines()
+            .map(String::trim)
+            .filter(l -> !l.isEmpty() && !l.startsWith("#"))
+            .collect(Collectors.joining("\n"));
+        assertThat(active).as("prod 有效行不得再出现 username: root 字面量（2026-09-06 16:00 回滚事故的守卫）")
+            .doesNotContain("username: root");
+        assertThat(active).as("prod 有效行不得再出现 password: root 字面量").doesNotContain("password: root");
+        assertThat(prod).as("username 必须是 SPRING_DATASOURCE_USERNAME env 占位（无默认=未注入即启动失败）")
+            .contains("${SPRING_DATASOURCE_USERNAME:}");
+        assertThat(prod).as("password 必须是 SPRING_DATASOURCE_PASSWORD env 占位")
+            .contains("${SPRING_DATASOURCE_PASSWORD:}");
+    }
+
+    @Test
+    @DisplayName("6) SEC-NEW-MED-3：归档 patch 声称已应用，其新增语义行必须真实落盘")
+    void med3ArchivePatchMustBeReflectedOnDisk() throws IOException {
+        if (!Files.exists(MED3_PATCH_ARCHIVE)) {
+            return; // 归档件清理后由第 5 条独立把关，避免同一事实两处红
+        }
+        String prod = Files.readString(PROD_YML);
+        List<String> added = Files.readAllLines(MED3_PATCH_ARCHIVE).stream()
+            .filter(l -> l.startsWith("+") && !l.startsWith("+++"))
+            .map(l -> l.substring(1).trim())
+            .filter(l -> l.contains("SPRING_DATASOURCE_") || l.contains("SEC-NEW-MED-3"))
+            .toList();
+        assertThat(added)
+            .as("归档 patch 必须含 SEC-NEW-MED-3 语义新增行（文件被截断/换内容即失守）").isNotEmpty();
+        for (String line : added) {
+            assertThat(prod).as("patch 声称新增的行必须已落盘: %s", line).contains(line);
+        }
     }
 
     /** 解析 "@@ -284,3 +284,21 @@" 的旧起始行与旧行数（省略 ",count" 时按 1 计）。 */

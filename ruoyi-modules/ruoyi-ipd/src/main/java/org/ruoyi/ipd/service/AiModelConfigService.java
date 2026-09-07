@@ -145,7 +145,8 @@ public class AiModelConfigService {
             patch.setApiKeyEncrypted(encrypt(req.apiKey()));
         }
         patch.setModelName(req.model().trim());
-        patch.setConfigJson(configJsonOf(req.temperature(), req.maxTokens()));
+        // P4-2.2：合并而非重建——保留 budgetTokens/generateTimeoutMs 等扩展键（页48编辑不得抹掉生成侧护栏配置）
+        patch.setConfigJson(mergeConfigJson(exists.getConfigJson(), req.temperature(), req.maxTokens()));
         if (mapper.updateById(patch) != 1) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
@@ -419,6 +420,32 @@ public class AiModelConfigService {
             sb.append("\"maxTokens\":").append(maxTokens);
         }
         return sb.append('}').toString();
+    }
+
+    /**
+     * P4-2.2：update 合并 config_json——temperature/maxTokens 覆盖（null 沿用旧值，防误清），
+     * 其余扩展键（budgetTokens/generateTimeoutMs 等）原样保留。
+     */
+    static String mergeConfigJson(String oldJson, BigDecimal temperature, Integer maxTokens) {
+        JsonNode old = parseConfig(oldJson);
+        com.fasterxml.jackson.databind.node.ObjectNode out = JSON.createObjectNode();
+        old.fields().forEachRemaining(e -> {
+            if ("temperature".equals(e.getKey()) || "maxTokens".equals(e.getKey())) {
+                return;
+            }
+            out.set(e.getKey(), e.getValue());
+        });
+        BigDecimal t = temperature != null ? temperature
+            : (old.hasNonNull("temperature") ? old.get("temperature").decimalValue() : null);
+        Integer m = maxTokens != null ? maxTokens
+            : (old.hasNonNull("maxTokens") ? Integer.valueOf(old.get("maxTokens").asInt()) : null);
+        if (t != null) {
+            out.put("temperature", t);
+        }
+        if (m != null) {
+            out.put("maxTokens", m);
+        }
+        return out.toString();
     }
 
     private static JsonNode parseConfig(String configJson) {

@@ -10,6 +10,7 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.BidInvitationService;
 import org.ruoyi.ipd.service.BidResponseService;
 import org.springframework.web.bind.annotation.*;
@@ -158,17 +159,17 @@ public class BidController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/bid-responses")
     public ApiV1Response<BidResponse> submitResponse(@RequestBody BidResponse response) {
-        ipdPermission.requireInternal();
-        Person person = session.currentPerson();
+        // W5-E-2.4：捕获 actor 传入 service，service 层再做 UNAUTHORIZED 入口校验（IDOR 修复）
+        IpdActor actor = ipdPermission.requireInternal();
         // decision=reject 不留痕：BR-TEAM-03 以 code=0 + data=null 表达 204 语义
-        return ApiV1Response.ok(bidResponseService.submit(response, person.getId()));
+        return ApiV1Response.ok(bidResponseService.submit(actor, response));
     }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/bid-responses/{id}/withdraw")
     public ApiV1Response<BidResponse> withdrawResponse(@PathVariable Long id) {
-        ipdPermission.requireInternal();
-        Person person = session.currentPerson();
-        return ApiV1Response.ok(bidResponseService.withdraw(id, person.getId()));
+        // W5-E-2.4：捕获 actor 传入 service（IDOR 修复）
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(bidResponseService.withdraw(actor, id));
     }
 }

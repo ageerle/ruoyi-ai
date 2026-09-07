@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
 
 import java.util.Date;
@@ -119,7 +120,7 @@ class P231AcceptanceTest {
         when(bidResponseMapper.selectById(2001L)).thenReturn(resp);
 
         assertThatThrownBy(() -> bidInvitationService.selectResponse(1001L, 2001L, 300L))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("不属于该招标单");
     }
 
@@ -159,7 +160,7 @@ class P231AcceptanceTest {
         when(bidInvitationMapper.selectByIdForUpdate(1001L)).thenReturn(sampleInvitation);
 
         assertThatThrownBy(() -> bidInvitationService.withdraw(1001L))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("超过24小时不可撤回");
     }
 
@@ -170,7 +171,7 @@ class P231AcceptanceTest {
         when(bidInvitationMapper.selectByIdForUpdate(1001L)).thenReturn(sampleInvitation);
 
         assertThatThrownBy(() -> bidInvitationService.selectResponse(1001L, 2001L, 300L))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("状态非 OPEN");
     }
 
@@ -180,7 +181,7 @@ class P231AcceptanceTest {
         when(bidInvitationMapper.selectById(9999L)).thenReturn(null);
 
         assertThatThrownBy(() -> bidInvitationService.getById(9999L))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("招标单不存在");
     }
 

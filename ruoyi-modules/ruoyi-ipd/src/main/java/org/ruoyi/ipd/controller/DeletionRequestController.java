@@ -43,9 +43,10 @@ public class DeletionRequestController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
     public ApiV1Response<DeletionRequest> submit(@RequestBody SubmitReq body) {
+        // W5-E-2.2：actor 传入 service，service 层做 UNAUTHORIZED + 资源归属校验（IDOR 修复）
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(deletionRequestService.submit(
-            body.entityType(), body.entityId(), body.snapshot(), body.reason(), actor.id()));
+            actor, body.entityType(), body.entityId(), body.snapshot(), body.reason()));
     }
 
     /**
@@ -61,8 +62,9 @@ public class DeletionRequestController {
     public ApiV1Response<DeletionRequest> leaderDecision(@PathVariable Long id,
                                                          @RequestParam boolean approve,
                                                          @RequestParam(required = false) String opinion) {
+        // W5-E-2.2：actor 传入 service，service 层做组长角色 + 目标所属组匹配校验（防冒充组长）
         IpdActor actor = ipdPermission.requireLeaderOrAdmin();
-        return ApiV1Response.ok(deletionRequestService.leaderDecision(id, actor.id(), approve, opinion));
+        return ApiV1Response.ok(deletionRequestService.leaderDecision(actor, id, approve, opinion));
     }
 
     /**
@@ -78,8 +80,9 @@ public class DeletionRequestController {
     public ApiV1Response<DeletionRequest> adminDecision(@PathVariable Long id,
                                                         @RequestParam boolean approve,
                                                         @RequestParam(required = false) String opinion) {
+        // W5-E-2.2：actor 传入 service，service 层做 SUPER_ADMIN 硬校验（防冒充超管审批触发软删）
         IpdActor actor = ipdPermission.requireAdmin();
-        return ApiV1Response.ok(deletionRequestService.adminDecision(id, actor.id(), approve, opinion));
+        return ApiV1Response.ok(deletionRequestService.adminDecision(actor, id, approve, opinion));
     }
 
     /**

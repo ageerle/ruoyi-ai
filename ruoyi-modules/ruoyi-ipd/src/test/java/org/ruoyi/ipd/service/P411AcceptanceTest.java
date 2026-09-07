@@ -242,7 +242,8 @@ class P411AcceptanceTest {
             .andExpect(jsonPath("$.code").value(0))
             .andExpect(jsonPath("$.data.code").value("AB12CD34"))
             .andExpect(jsonPath("$.data.status").value("SUBMITTED"));
-        verify(mockService).submit(any(), eq("9.9.9.9"), any());
+        // SEC-REV-05：不信任 XFF（防限流绕过），实际 clientIp = servlet getRemoteAddr()
+        verify(mockService).submit(any(), eq("127.0.0.1"), any());
 
         mvc.perform(get("/api/v1/public/products"))
             .andExpect(status().isOk())

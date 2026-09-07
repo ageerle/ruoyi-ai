@@ -218,7 +218,8 @@ class P421AcceptanceTest {
         assertTrue(result.maskedKey().contains("fail"), "127.0.0.1:1 必拒连: " + result.maskedKey());
         assertFalse(result.maskedKey().contains(PLAIN_KEY), "不得含明文密钥");
         assertFalse(result.maskedKey().contains(cipher), "不得含密文");
-        assertTrue(result.maskedKey().contains("127.0.0.1"), "消息含 host 便于排障");
+        // SEC-REV 设计：errorCode 白名单输出，host 不进 maskedKey（防 endpoint 信息泄露）
+        assertFalse(result.maskedKey().contains("127.0.0.1"), "消息不得含 host（防端点泄露）");
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditChainHead;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AuditChainVerifyResult;
@@ -175,32 +176,59 @@ public class AuditLogService {
         return fixed;
     }
 
+    /** 审计导出硬上限（QA-05-P3 / PERF-AUD P2-2 防全量物化 OOM）。 */
+    public static final long EXPORT_HARD_LIMIT = 50_000L;
+
     /**
      * 按 operatorIds 范围分页查询（P0-5.4 / AC-AUD-04、AC-AUD-05）。
+     *
+     * <p>QA-05-P3 游标分页重载：{@code beforeSeq} 非 null 时走 {@code seq < beforeSeq ORDER BY seq DESC LIMIT n}
+     * 窗口扫描（命中 {@code idx_al_operator_seq} 覆盖索引），消除深页 OFFSET + filesort。
+     * {@code beforeSeq} 为 null 时保持旧 OFFSET 行为完全兼容（不传 = 旧调用路径）。
      *
      * @param operatorIds 允许看到的操作人 id 集合；{@code null} 或空 = 全局（仅 SUPER_ADMIN 之路）。
      * @param pageNo       1-based
      * @param pageSize     上限 200
+     * @param beforeSeq    游标（仅取 seq 严格小于此值，按 seq DESC）；null = 旧 OFFSET 行为
      * @return 倒序分页
      */
-    public IPage<AuditLog> listByOperatorIds(List<Long> operatorIds, int pageNo, int pageSize) {
+    public IPage<AuditLog> listByOperatorIds(List<Long> operatorIds, int pageNo, int pageSize, Long beforeSeq) {
         int capped = Math.min(Math.max(pageSize, 1), 200);
         Page<AuditLog> page = new Page<>(Math.max(pageNo, 1), capped);
         LambdaQueryWrapper<AuditLog> w = new LambdaQueryWrapper<>();
         if (operatorIds != null && !operatorIds.isEmpty()) {
             w.in(AuditLog::getOperatorId, operatorIds);
         }
+        // QA-05-P3：beforeSeq 非 null 走游标窗口（旧 OFFSET 调用方传 null 走全兼容旧路径）
+        if (beforeSeq != null) {
+            w.lt(AuditLog::getSeq, beforeSeq);
+        }
         w.orderByDesc(AuditLog::getSeq);
         return auditLogMapper.selectPage(page, w);
     }
 
-    /** 与 {@link #listByOperatorIds} 相同范围条件的计数（导出写审计前统计覆盖行数）。 */
+    /** 兼容旧调用方：未传 beforeSeq 走旧 OFFSET 路径（AC-AUD-04/05 历史消费者）。 */
+    public IPage<AuditLog> listByOperatorIds(List<Long> operatorIds, int pageNo, int pageSize) {
+        return listByOperatorIds(operatorIds, pageNo, pageSize, null);
+    }
+
+    /**
+     * 与 {@link #listByOperatorIds} 相同范围条件的计数（导出写审计前统计覆盖行数）。
+     *
+     * <p>QA-05-P3：超 {@link #EXPORT_HARD_LIMIT} 抛业务异常（中文文案），禁止全量物化 OOM。
+     * 上限 5 万行覆盖 50 万行库的全量导出场景，超出强制客户端缩小范围或按 seq 窗口分批导出。
+     */
     public long countByOperatorIds(List<Long> operatorIds) {
         LambdaQueryWrapper<AuditLog> w = new LambdaQueryWrapper<>();
         if (operatorIds != null && !operatorIds.isEmpty()) {
             w.in(AuditLog::getOperatorId, operatorIds);
         }
-        return auditLogMapper.selectCount(w);
+        long count = auditLogMapper.selectCount(w);
+        if (count > EXPORT_HARD_LIMIT) {
+            throw new ServiceException("审计导出行数 " + count + " 超过硬上限 " + EXPORT_HARD_LIMIT
+                + " 行，请缩小时间/人员范围后重试（QA-05-P3 防 OOM）");
+        }
+        return count;
     }
 
     /** DEF-4：写读两侧共用的 canonical 构造（时间戳一律截秒，与 datetime(0) 列精度对称）。 */

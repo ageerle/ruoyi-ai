@@ -10,9 +10,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import cn.hutool.crypto.digest.BCrypt;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.security.IpdActor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +37,11 @@ class IpdAuthServiceTest {
     private IpdAuthService service;
 
     private static final String HASH = BCrypt.hashpw("plain", BCrypt.gensalt(4));
+
+    /** W5-E-2.1 IDOR 修复：actor 模板（自改用 MARKET_PM=7L；越权测用 99L；超管豁免用 SUPER_ADMIN） */
+    private static final IpdActor SELF_ACTOR = new IpdActor(7L, "张三", "MARKET_PM", 1L);
+    private static final IpdActor ADMIN_ACTOR = new IpdActor(1L, "超管", "SUPER_ADMIN", 1L);
+    private static final IpdActor OTHER_ACTOR = new IpdActor(99L, "李四", "MARKET_PM", 1L);
 
     @BeforeEach
     void setUp() {
@@ -123,11 +130,11 @@ class IpdAuthServiceTest {
         Person p = person("ACTIVE", "ACTIVE", true);
         when(personMapper.selectById(7L)).thenReturn(p);
 
-        assertThatThrownBy(() -> service.changePassword(7L, "bad-old", "newPassword1"))
+        assertThatThrownBy(() -> service.changePassword(SELF_ACTOR, 7L, "bad-old", "newPassword1"))
             .isInstanceOf(IpdAuthInputException.class)
             .hasMessageContaining("原密码");
 
-        service.changePassword(7L, "plain", "newPassword1");
+        service.changePassword(SELF_ACTOR, 7L, "plain", "newPassword1");
         assertThat(p.getPasswordHash()).isNotEqualTo(HASH);
         assertThat(p.getMustChangePwd()).isEqualTo("0");
     }
@@ -135,7 +142,7 @@ class IpdAuthServiceTest {
     @Test
     @DisplayName("新密码最短 8 位")
     void changePasswordMinLength() {
-        assertThatThrownBy(() -> service.changePassword(7L, "plain", "short1"))
+        assertThatThrownBy(() -> service.changePassword(SELF_ACTOR, 7L, "plain", "short1"))
             .isInstanceOf(IpdAuthInputException.class)
             .hasMessageContaining("8 位");
     }
@@ -166,5 +173,54 @@ class IpdAuthServiceTest {
         Person frozen = person("FROZEN_PENDING_HANDOVER", "ACTIVE", false);
         when(personMapper.selectById(7L)).thenReturn(frozen);
         service.freezeForHandover(7L, 2L); // 不抛即通过
+    }
+
+    // ===== W5-E-2.1 IDOR 修复 新增 5 重校验 =====
+
+    @Test
+    @DisplayName("IDOR-1 自己改自己密码正常（旧密码对、新密码合规）")
+    void idorChangeOwnPasswordSucceeds() {
+        Person p = person("ACTIVE", "ACTIVE", true);
+        when(personMapper.selectById(7L)).thenReturn(p);
+
+        service.changePassword(SELF_ACTOR, 7L, "plain", "newPassword1");
+        assertThat(p.getPasswordHash()).isNotEqualTo(HASH);
+        assertThat(p.getMustChangePwd()).isEqualTo("0");
+    }
+
+    @Test
+    @DisplayName("IDOR-2 非超管改别人密码 → FORBIDDEN（核心 IDOR 修复，最高危 P0）")
+    void idorChangeOtherPasswordForbidden() {
+        // 即使旧密码对、新密码合规，actor(99L) 改 personId=7L 也应被 actor 校验前置拒绝（不触达 mapper）
+        assertThatThrownBy(() -> service.changePassword(OTHER_ACTOR, 7L, "plain", "newPassword1"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("无权修改他人密码");
+    }
+
+    @Test
+    @DisplayName("IDOR-3 SUPER_ADMIN 改别人密码豁免（运维场景）")
+    void idorAdminCanChangeOthersPassword() {
+        Person p = person("ACTIVE", "ACTIVE", false);
+        when(personMapper.selectById(7L)).thenReturn(p);
+
+        service.changePassword(ADMIN_ACTOR, 7L, "plain", "newPassword1");
+        assertThat(p.getPasswordHash()).isNotEqualTo(HASH);
+        assertThat(p.getMustChangePwd()).isEqualTo("0");
+    }
+
+    @Test
+    @DisplayName("IDOR-4 actor == null → UNAUTHORIZED（防御性兜底，控制器已守门）")
+    void idorNullActorUnauthorized() {
+        assertThatThrownBy(() -> service.changePassword(null, 7L, "plain", "newPassword1"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("未认证");
+    }
+
+    @Test
+    @DisplayName("IDOR-5 personId == null → PARAM_INVALID（参数校验）")
+    void idorNullPersonIdParamInvalid() {
+        assertThatThrownBy(() -> service.changePassword(SELF_ACTOR, null, "plain", "newPassword1"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("personId 不能为空");
     }
 }

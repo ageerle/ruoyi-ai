@@ -7,7 +7,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.controller.IpdAuthController;
 import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AuditAttemptService;
 import org.ruoyi.ipd.service.IpdAuthInputException;
 import org.ruoyi.ipd.service.IpdAuthService;
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -66,9 +69,13 @@ class Api03AcceptanceTest {
         Person actor = Person.builder()
             .id(PERSON_ID).name("张三").personType("MARKET_PM").groupId(9L).build();
         when(session.currentPerson()).thenReturn(actor);
+        // W5-E-2.1 IDOR 修复：Controller 注入 IpdPermission；mock requireInternal 返回 actor
+        IpdPermission permission = mock(IpdPermission.class);
+        when(permission.requireInternal()).thenReturn(
+            new IpdActor(actor.getId(), actor.getName(), actor.getPersonType(), actor.getGroupId()));
         // 注入真实生产 advice（非本地替身），才能证明 IpdAuthInputException 专用 handler 真的生效。
         mvc = MockMvcBuilders
-            .standaloneSetup(new IpdAuthController(authService, session, auditAttempt))
+            .standaloneSetup(new IpdAuthController(authService, session, auditAttempt, permission))
             .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
             .setControllerAdvice(new IpdServiceExceptionAdvice())
             .build();
@@ -86,7 +93,7 @@ class Api03AcceptanceTest {
     @DisplayName("反例①原密码错误 → HTTP 400 + code 10001，枚举消息保留（非 500/90001 兜底）")
     void currentPasswordIncorrectMapsTo400ParamInvalid() throws Exception {
         doThrow(new IpdAuthInputException(IpdAuthInputException.Reason.CURRENT_PASSWORD_INCORRECT))
-            .when(authService).changePassword(anyLong(), anyString(), anyString());
+            .when(authService).changePassword(any(IpdActor.class), anyLong(), anyString(), anyString());
 
         mvc.perform(changePwd("wrongOldPwd", "brandNewPwd1"))
             .andExpect(status().isBadRequest())                       // 修复前会是 500
@@ -98,7 +105,7 @@ class Api03AcceptanceTest {
     @DisplayName("反例②新旧密码相同 → HTTP 400 + code 10001")
     void passwordUnchangedMapsTo400ParamInvalid() throws Exception {
         doThrow(new IpdAuthInputException(IpdAuthInputException.Reason.PASSWORD_UNCHANGED))
-            .when(authService).changePassword(anyLong(), anyString(), anyString());
+            .when(authService).changePassword(any(IpdActor.class), anyLong(), anyString(), anyString());
 
         mvc.perform(changePwd("samePwd123", "samePwd123"))
             .andExpect(status().isBadRequest())
@@ -112,7 +119,7 @@ class Api03AcceptanceTest {
         // 30 个汉字：字符数 30 通过 @Size(min=8,max=72)，但 UTF-8 达 90 字节 > 72，服务层按字节上限拒绝。
         // 证明「新密码不足/超限」即便绕过 Bean Validation，由服务层抛出，仍映射 4xx 而非 500。
         doThrow(new IpdAuthInputException(IpdAuthInputException.Reason.PASSWORD_LENGTH))
-            .when(authService).changePassword(anyLong(), anyString(), anyString());
+            .when(authService).changePassword(any(IpdActor.class), anyLong(), anyString(), anyString());
 
         mvc.perform(changePwd("oldPwd123", "新".repeat(30)))
             .andExpect(status().isBadRequest())

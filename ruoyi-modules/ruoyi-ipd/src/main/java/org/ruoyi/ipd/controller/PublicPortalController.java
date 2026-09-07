@@ -4,9 +4,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.dto.GuestDemandSubmitReq;
 import org.ruoyi.ipd.dto.GuestDemandSubmittedView;
+import org.ruoyi.ipd.dto.PortalDemandTraceView;
 import org.ruoyi.ipd.dto.PublicProductView;
 import org.ruoyi.ipd.service.GuestDemandService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +21,7 @@ import java.util.List;
  * <ul>
  *   <li>POST /api/v1/public/demands——游客提交，返回 8 位查询码（页38）。</li>
  *   <li>GET /api/v1/public/products——三情形选择源（在售/在研/其他），仅返回 ACTIVE 产品。</li>
+ *   <li>GET /api/v1/public/demands/{code}——凭 8 位查询码查脱敏进度（页39；BR-REQ-09）。</li>
  * </ul>
  */
 @RestController
@@ -40,6 +43,13 @@ public class PublicPortalController {
     @GetMapping("/products")
     public ApiV1Response<List<PublicProductView>> products() {
         return ApiV1Response.ok(guestDemandService.publicProducts());
+    }
+
+    /** 页39：凭 8 位查询码查脱敏进度；同 submit 走 clientIp 限流与审计（不信任 XFF）。 */
+    @GetMapping("/demands/{code}")
+    public ApiV1Response<PortalDemandTraceView> trace(@PathVariable("code") String code,
+                                                      HttpServletRequest http) {
+        return ApiV1Response.ok(guestDemandService.traceByCode(code, clientIp(http)));
     }
 
     /**

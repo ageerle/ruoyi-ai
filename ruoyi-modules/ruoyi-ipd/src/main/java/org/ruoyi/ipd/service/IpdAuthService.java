@@ -4,9 +4,12 @@ import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -101,9 +104,38 @@ public class IpdAuthService {
         return List.of();
     }
 
-    /** 改密：验旧密码；成功后清除首登强制改密标记 */
+    /**
+     * 改密：验旧密码；成功后清除首登强制改密标记。
+     *
+     * <p>W5-E-2.1 IDOR 修复（最高危 P0）：原签名仅接受 personId，攻击者可用任意登录
+     * 会话调用此方法修改其他用户的密码——灾难性安全漏洞。新签名要求 caller 显式传入
+     * 当前会话 actor，服务层校验：
+     * <ol>
+     *   <li>{@code actor == null || actor.id() == null} → UNAUTHORIZED（防御性兜底，控制器已 {@code requireInternal} 守门）</li>
+     *   <li>{@code personId == null} → PARAM_INVALID（参数校验）</li>
+     *   <li>非 SUPER_ADMIN 且 {@code actor.id() != personId} → FORBIDDEN（核心：仅本人改本人密码，超管运维豁免）</li>
+     *   <li>其余业务逻辑（BCrypt 验旧密码、长度校验、新密码唯一性、must_change_pwd 清零、事务边界）保持不变</li>
+     * </ol>
+     *
+     * @param actor 当前会话身份（必填，由 Controller {@code permission.requireInternal()} 传入）
+     * @param personId 待修改密码的人员主键（必须 == actor.id()，除非 actor 为 SUPER_ADMIN）
+     * @param oldRaw 当前明文密码（用于验旧）
+     * @param newRaw 新明文密码（≥8 位 UTF-8 字节 ≤72）
+     */
     @Transactional(rollbackFor = Exception.class)
-    public void changePassword(Long personId, String oldRaw, String newRaw) {
+    public void changePassword(IpdActor actor, Long personId, String oldRaw, String newRaw) {
+        // 件 1.2：actor 缺失 → UNAUTHORIZED（防御性兜底，service 层不信任 controller 必传）
+        if (actor == null || actor.id() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.UNAUTHORIZED, "未认证或凭证失效");
+        }
+        // 件 1.3：personId 缺失 → PARAM_INVALID
+        if (personId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "personId 不能为空");
+        }
+        // 件 1.3 核心：仅本人改本人密码；SUPER_ADMIN 运维豁免（W5-E IDOR 修复）
+        if (!"SUPER_ADMIN".equals(actor.role()) && !actor.id().equals(personId)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权修改他人密码");
+        }
         if (newRaw == null || newRaw.length() < 8) {
             throw new IpdAuthInputException(IpdAuthInputException.Reason.PASSWORD_LENGTH);
         }

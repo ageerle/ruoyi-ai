@@ -75,6 +75,8 @@ class P032HttpAcceptanceTest {
     @Test
     @DisplayName("AC-CFG-03：PUT 更新后立即返回新值 + invalidated=true")
     void updateReturnsNewValueAndInvalidated() throws Exception {
+        when(ipdPermission.requireAdmin()).thenReturn(
+            new org.ruoyi.ipd.security.IpdActor(1L, "admin", "SUPER_ADMIN", null));
         when(configService.getValue(anyString(), anyString())).thenReturn("7");
         String body = "{\"value\":\"7\"}";
         mvc.perform(put("/api/v1/system-configs/gate.signDeadlineDays").contentType(MediaType.APPLICATION_JSON).content(body))

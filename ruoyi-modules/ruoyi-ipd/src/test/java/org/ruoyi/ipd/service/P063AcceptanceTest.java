@@ -14,6 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.mapper.ProductMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 
 
 import java.util.ArrayList;
@@ -66,6 +71,26 @@ class P063AcceptanceTest {
     @Mock
     private DeleteAuditService deleteAuditService;
 
+    /** W5-E-2.2：目标归属解析 mapper mock（本验收只走 withdraw/escalateOverdue 路径，不触达归属解析，占位注入即可） */
+    @Mock
+    private ProjectMemberMapper projectMemberMapper;
+    @Mock
+    private ProjectMapper projectMapper;
+    @Mock
+    private GateMapper gateMapper;
+    @Mock
+    private ProductMapper productMapper;
+    @Mock
+    private PersonMapper personMapper;
+
+    /**
+     * ROOT-R3-P0-1（dc0f0adc 守卫 fail-closed）遗漏跟随：P063 未注入守卫 mock，
+     * withdraw/escalateOverdue 路径 preCheckGuard 直接 fail-fast 抛「状态机守卫未装配」（HEAD 预存红）。
+     * W5-E-2.2 构造器扩展时顺带补上，恢复本验收绿基线（与 DeletionRequestServiceTest.setUp 同款）。
+     */
+    @Mock
+    private StateMachineGuard stateMachineGuard;
+
     private DeletionRequestService deletionRequestService;
 
     private static final Long TEST_REQUESTER = 900101L;
@@ -74,7 +99,11 @@ class P063AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        deletionRequestService = new DeletionRequestService(deletionRequestMapper, systemConfigService, auditLogService, deleteAuditService);
+        deletionRequestService = new DeletionRequestService(deletionRequestMapper, systemConfigService,
+            auditLogService, deleteAuditService, projectMemberMapper, projectMapper, gateMapper,
+            productMapper, personMapper);
+        // ROOT-R3-P0-1：fail-closed 守卫必显式注入（预存红修复）
+        deletionRequestService.setStateMachineGuard(stateMachineGuard);
         lenient().when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
         // HIGH-4: 驼峰键名必须与生产 DeletionRequestService.java:166/170 一致
         lenient().when(systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2)).thenReturn(2);

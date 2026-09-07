@@ -5,6 +5,7 @@ generated_by: Claude Code（基于已知数据点 + V3 规则自动生成）
 status: ✅ 已生成（**奖金池基数口径 2026-09-06 修订：目标销售额 → 实际回款**，依 owner 裁决 [CONSISTENCY-1]，详见审计报告 `前端对接/前后端一致性审计-20260906.md`）
 note: ZK-IPD 未发现现成 mock-data.js；本文件由 Claude Code 基于已确认的 4 个算例 + 13 角色 + 3 项目 + V3 决策表（全部已确认）+ 验收清单 v2.1（237 条 AC）综合生成
 口径裁决附注：演示数据保留 `targetSales/actualSales` 两字段仅作历史比较展示；奖金池基数计算统一以 **actualReceipts（实际回款净额）** 为权威入参（参见 BonusPoolService.calculateBonusPoolByZkFormula）。
+gateElements 作废附注（CONSISTENCY-5②，2026-09-06）：本文件 §5 的 gateElements/gateReviews 段是旧稿快照（33/14 要素清单与 seed 三重不一致、gateReviews 多签与领域单签规则冲突），**禁止作为前端联调或 seed 依据**；权威以 seed `2026-09-05-ipd-p0-seed-elements.sql` 与 GateReviewElement 域为准。
 ---
 
 # IPD 产品经理管理系统 — 演示数据
@@ -205,6 +206,8 @@ const specialActions = {
 ---
 
 ## 5. 五大 Gate + 33 项要素 + 14 项否决项
+
+> ⚠️ **本段已作废（CONSISTENCY-5②，2026-09-06）**：与权威 seed 不一致，仅留档勿引用；权威以 `2026-09-05-ipd-p0-seed-elements.sql` 为准。
 
 ```js
 const gateElements = {

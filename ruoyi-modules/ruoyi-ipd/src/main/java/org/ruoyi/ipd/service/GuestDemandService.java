@@ -11,6 +11,7 @@ import org.ruoyi.ipd.dto.GuestDemandSubmitReq;
 import org.ruoyi.ipd.dto.GuestDemandSubmittedView;
 import org.ruoyi.ipd.dto.GuestDemandUpdateReq;
 import org.ruoyi.ipd.dto.GuestDemandView;
+import org.ruoyi.ipd.dto.PortalDemandTraceView;
 import org.ruoyi.ipd.dto.PublicProductView;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
@@ -22,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -149,6 +152,88 @@ public class GuestDemandService {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
         return toView(r);
+    }
+
+    /**
+     * 页39：游客凭查询码查脱敏进度（BR-REQ-09；AC-REQ-04；规格 batch-04 §4；CONSISTENCY-2）。
+     * <p>安全红线：
+     * <ul>
+     *   <li>格式非法 / 查无此码 / 已撤回（WITHDRAWN）三态同返回 NOT_FOUND，不泄露存在性差异
+     *       （防枚举；规格原文 410 语义按 CONSISTENCY-2 裁决收口为同码）。</li>
+     *   <li>视图仅进度字段：customerName 脱敏（保留首字符，其余打码），绝不含 contact/submitterName/content 等联系信息。</li>
+     *   <li>同款 IP 限流（{@link GuestRateLimiter} 10 次/小时），trace: 前缀隔离配额池，查询不挤占提交配额。</li>
+     *   <li>审计 action=track，只落 ipHash 不落原始 IP/UA。</li>
+     * </ul>
+     */
+    public PortalDemandTraceView traceByCode(String queryCode, String clientIp) {
+        validateQueryCode(queryCode);
+        if (!rateLimiter.tryAcquire("trace:" + sha256Short(clientIp))) {
+            throw new IpdBusinessException(ApiV1ErrorCode.RATE_LIMITED);
+        }
+        Requirement r = requirementMapper.selectOne(new LambdaQueryWrapper<Requirement>()
+            .eq(Requirement::getQueryCode, queryCode));
+        if (r == null || "WITHDRAWN".equals(r.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        PortalDemandTraceView view = toTraceView(r);
+        auditGuestAction("track", r.getId(), sha256Short(clientIp), null,
+            "code=" + queryCode + ";status=" + r.getStatus());
+        return view;
+    }
+
+    /** 页39：受理前撤回窗口（BR-REQ-03 24h）。 */
+    public static final int TRACE_WITHDRAW_HOURS = 24;
+
+    /** 秒级 UTC ISO-8601（与 ApiV1Response.timestamp 的 P0-4.1 约定同源，不输出 epoch millis）。 */
+    private static final DateTimeFormatter ISO_UTC =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
+
+    /** 脱敏进度视图：timeline 的 stage 取「事件发生时所处阶段」（大写 8 态词表，无独立 ROUTED 键，
+     * 路由以 SUBMITTED 节点 + memo 表达），附件暂无游客设施恒空列表。 */
+    private PortalDemandTraceView toTraceView(Requirement r) {
+        List<PortalDemandTraceView.TimelineEntry> timeline = new ArrayList<>();
+        timeline.add(new PortalDemandTraceView.TimelineEntry("SUBMITTED", null, toIsoUtc(r.getCreateTime())));
+        if (r.getRoutedAt() != null) {
+            timeline.add(new PortalDemandTraceView.TimelineEntry("SUBMITTED", "已按产品路由至双 PM",
+                toIsoUtc(r.getRoutedAt())));
+        }
+        if (r.getAcceptedAt() != null) {
+            timeline.add(new PortalDemandTraceView.TimelineEntry("ACCEPTED", null, toIsoUtc(r.getAcceptedAt())));
+        }
+        String beyond = traceStageBeyondAcceptance(r.getStatus());
+        if (beyond != null) {
+            timeline.add(new PortalDemandTraceView.TimelineEntry(beyond, null, toIsoUtc(r.getUpdateTime())));
+        }
+        boolean beforeAcceptance = "SUBMITTED".equals(r.getStatus());
+        Date submittedAt = r.getCreateTime();
+        boolean withinWindow = beforeAcceptance && submittedAt != null
+            && System.currentTimeMillis() < submittedAt.getTime() + TRACE_WITHDRAW_HOURS * 3_600_000L;
+        String deadline = beforeAcceptance && submittedAt != null
+            ? toIsoUtc(new Date(submittedAt.getTime() + TRACE_WITHDRAW_HOURS * 3_600_000L)) : null;
+        return new PortalDemandTraceView(r.getQueryCode(), r.getStatus(),
+            maskCustomerName(r.getCustomerName()), withinWindow, beforeAcceptance, deadline,
+            List.copyOf(timeline), List.of());
+    }
+
+    /** 受理后更后段状态映射为 timeline 节点（无独立时间戳字段，occurredAt 取 updateTime）；其余返回 null。 */
+    private static String traceStageBeyondAcceptance(String status) {
+        return switch (status) {
+            case "EVALUATING", "SCHEDULED", "PROCESSING", "CLOSED", "ARCHIVED" -> status;
+            default -> null;
+        };
+    }
+
+    /** 页39 §6 脱敏：客户名保留首字符、其余打码（「深圳智控科技」→「深*****」），不泄露其余原文。 */
+    static String maskCustomerName(String name) {
+        if (name == null || name.isEmpty()) {
+            return "";
+        }
+        return name.charAt(0) + "*".repeat(name.length() - 1);
+    }
+
+    /** 秒级 UTC ISO-8601 字符串；null 安全（timeline 可空字段与测试共用）。 */
+    public static String toIsoUtc(Date d) {
+        return d == null ? null : ISO_UTC.format(d.toInstant());
     }
 
     /**

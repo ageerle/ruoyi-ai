@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -85,8 +86,11 @@ class NotificationDispatcherTest {
     void setUp() throws Exception {
         physicalQueue.clear();
         inAppHandler = new InAppChannelHandler();
-        emailHandler = new EmailChannelHandler();
-        webSocketHandler = new WebSocketChannelHandler();
+        // W20-B：EmailChannelHandler 真实化后要求 JavaMailSender；本卡注入 mock（不验证发送，仅走 dispatcher 路由）
+        org.springframework.mail.javamail.JavaMailSender mailSender = mock(org.springframework.mail.javamail.JavaMailSender.class);
+        emailHandler = new EmailChannelHandler(mailSender);
+        // W20-B：WebSocketChannelHandler 真实化后要求 ObjectMapper；本卡注入 mock 走 dispatcher 路由
+        webSocketHandler = new WebSocketChannelHandler(new com.fasterxml.jackson.databind.ObjectMapper());
         // RedissonClient mock 链：getBlockingQueue → RDelayedQueue → 真实物理 LinkedBlockingQueue
         // 用 Answer 模式：getBlockingQueue / getDelayedQueue 都返回 mock，offer/poll 直接走物理队列
         lenient().when(redissonClient.getBlockingQueue(AsyncNotificationDispatcher.QUEUE_KEY))
@@ -121,8 +125,22 @@ class NotificationDispatcherTest {
     @DisplayName("dispatch 失败：handler 抛异常 → dispatcher 抛 NotificationDispatchException")
     void dispatchFailureWraps() {
         NotificationEvent event = baseEvent(102L, "BID_INVITED", NotificationChannelType.EMAIL);
-        // EmailChannelHandler.deliver 抛 UnsupportedOperationException（stub 行为）
-        assertThatThrownBy(() -> dispatcher.dispatch(event))
+        // W20-B：EmailChannelHandler 真实化后由 JavaMailSender 异常驱动失败链路
+        // 注入 mailSender.send 抛 MailSendException → handler 包装为 NotificationDispatchException
+        org.springframework.mail.javamail.JavaMailSender failingMailSender =
+            mock(org.springframework.mail.javamail.JavaMailSender.class);
+        when(failingMailSender.createMimeMessage()).thenReturn(new jakarta.mail.internet.MimeMessage((jakarta.mail.Session) null));
+        org.mockito.Mockito.doThrow(new org.springframework.mail.MailSendException("SMTP failed"))
+            .when(failingMailSender).send(any(jakarta.mail.internet.MimeMessage.class));
+        EmailChannelHandler failingEmailHandler = new EmailChannelHandler(failingMailSender);
+        failingEmailHandler.applyOverrides("noreply@test.local", "test.local", true, "UTF-8", "[IPD-T]");
+        // 覆盖 dispatcher 内的 emailHandler：重建 dispatcher
+        java.util.List<org.ruoyi.ipd.service.NotificationChannelHandler> hs = new java.util.ArrayList<>();
+        hs.add(inAppHandler);
+        hs.add(failingEmailHandler);
+        hs.add(webSocketHandler);
+        AsyncNotificationDispatcher failingDispatcher = new AsyncNotificationDispatcher(mapper, redissonClient, hs);
+        assertThatThrownBy(() -> failingDispatcher.dispatch(event))
             .isInstanceOf(NotificationDispatcher.NotificationDispatchException.class)
             .hasMessageContaining("EMAIL");
     }
@@ -177,8 +195,22 @@ class NotificationDispatcherTest {
         physicalQueue.offer(9004L);
         when(mapper.selectById(9004L)).thenReturn(event);
         when(mapper.update(any(), any(LambdaUpdateWrapper.class))).thenReturn(1);
+        // W20-B：注入会失败的 mailSender → handler 连续失败 → DEAD
+        org.springframework.mail.javamail.JavaMailSender failingMailSender =
+            mock(org.springframework.mail.javamail.JavaMailSender.class);
+        when(failingMailSender.createMimeMessage()).thenReturn(new jakarta.mail.internet.MimeMessage((jakarta.mail.Session) null));
+        org.mockito.Mockito.doThrow(new org.springframework.mail.MailSendException("SMTP permanently failed"))
+            .when(failingMailSender).send(any(jakarta.mail.internet.MimeMessage.class));
+        EmailChannelHandler failingEmailHandler = new EmailChannelHandler(failingMailSender);
+        failingEmailHandler.applyOverrides("noreply@test.local", "test.local", true, "UTF-8", "[IPD-T]");
+        // 重建 dispatcher 装载失败 handler
+        java.util.List<org.ruoyi.ipd.service.NotificationChannelHandler> hs = new java.util.ArrayList<>();
+        hs.add(inAppHandler);
+        hs.add(failingEmailHandler);
+        hs.add(webSocketHandler);
+        AsyncNotificationDispatcher failingDispatcher = new AsyncNotificationDispatcher(mapper, redissonClient, hs);
 
-        Map<String, Integer> result = dispatcher.consumeOnce(10);
+        Map<String, Integer> result = failingDispatcher.consumeOnce(10);
         assertThat(result).containsEntry("dead", 1);
         assertThat(result).containsEntry("failed", 0);
         assertThat(result).containsEntry("sent", 0);

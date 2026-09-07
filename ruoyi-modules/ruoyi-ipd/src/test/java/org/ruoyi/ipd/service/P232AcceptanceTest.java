@@ -18,6 +18,8 @@ import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.security.IpdActor;
 
 import java.util.Date;
 import java.util.List;
@@ -40,6 +42,7 @@ class P232AcceptanceTest {
 
     @Mock private BidInvitationMapper bidInvitationMapper;
     @Mock private BidResponseMapper bidResponseMapper;
+    @Mock private ProjectMemberMapper projectMemberMapper;
     @Mock private AuditLogService auditLogService;
 
     @InjectMocks private BidResponseService bidResponseService;
@@ -49,6 +52,11 @@ class P232AcceptanceTest {
     private static final Long RD_PM_A = 200L;
     private static final Long RD_PM_B = 201L;
     private static final Long RD_PM_C = 202L;
+
+    /** W5-E-2.4：submit/withdraw 已升级 (IpdActor, ...) 签名，按人配 actor 投影 */
+    private static final IpdActor ACTOR_RD_PM_A = new IpdActor(RD_PM_A, "研发PM甲", "RD_PM", 1L);
+    private static final IpdActor ACTOR_RD_PM_B = new IpdActor(RD_PM_B, "研发PM乙", "RD_PM", 1L);
+    private static final IpdActor ACTOR_RD_PM_C = new IpdActor(RD_PM_C, "研发PM丙", "RD_PM", 1L);
 
     private BidInvitation oneToOneInvitation;
     private BidInvitation publicInvitation;
@@ -98,7 +106,7 @@ class P232AcceptanceTest {
         BidResponse payload = BidResponse.builder()
             .invitationId(1001L).decision("reject").build();
 
-        BidResponse result = bidResponseService.submit(payload, RD_PM_A);
+        BidResponse result = bidResponseService.submit(ACTOR_RD_PM_A, payload);
 
         assertThat(result).isNull();
         verifyNoInteractions(bidResponseMapper);
@@ -112,7 +120,7 @@ class P232AcceptanceTest {
     void submit_oneToOne_outsider_forbidden() {
         when(bidInvitationMapper.selectByIdForUpdate(1001L)).thenReturn(oneToOneInvitation);
 
-        assertThatThrownBy(() -> bidResponseService.submit(acceptPayload(1001L), RD_PM_B))
+        assertThatThrownBy(() -> bidResponseService.submit(ACTOR_RD_PM_B, acceptPayload(1001L)))
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
@@ -123,7 +131,7 @@ class P232AcceptanceTest {
     void submit_invitationMissing_notFound() {
         when(bidInvitationMapper.selectByIdForUpdate(9999L)).thenReturn(null);
 
-        assertThatThrownBy(() -> bidResponseService.submit(acceptPayload(9999L), RD_PM_A))
+        assertThatThrownBy(() -> bidResponseService.submit(ACTOR_RD_PM_A, acceptPayload(9999L)))
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.NOT_FOUND);
@@ -135,7 +143,7 @@ class P232AcceptanceTest {
         oneToOneInvitation.setStatus("SELECTED");
         when(bidInvitationMapper.selectByIdForUpdate(1001L)).thenReturn(oneToOneInvitation);
 
-        assertThatThrownBy(() -> bidResponseService.submit(acceptPayload(1001L), RD_PM_A))
+        assertThatThrownBy(() -> bidResponseService.submit(ACTOR_RD_PM_A, acceptPayload(1001L)))
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
@@ -148,7 +156,7 @@ class P232AcceptanceTest {
         BidResponse payload = BidResponse.builder()
             .invitationId(1001L).decision("accept").responseNote("太短的摘要").build();
 
-        assertThatThrownBy(() -> bidResponseService.submit(payload, RD_PM_A))
+        assertThatThrownBy(() -> bidResponseService.submit(ACTOR_RD_PM_A, payload))
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.PARAM_INVALID);
@@ -163,7 +171,7 @@ class P232AcceptanceTest {
         when(bidResponseMapper.selectOne(any())).thenReturn(null);
         when(bidResponseMapper.insert(any(BidResponse.class))).thenReturn(1);
 
-        BidResponse result = bidResponseService.submit(acceptPayload(1001L), RD_PM_A);
+        BidResponse result = bidResponseService.submit(ACTOR_RD_PM_A, acceptPayload(1001L));
 
         assertThat(result.getStatus()).isEqualTo("PENDING");
         assertThat(result.getRdPmId()).isEqualTo(RD_PM_A);
@@ -185,7 +193,7 @@ class P232AcceptanceTest {
         when(bidResponseMapper.selectOne(any())).thenReturn(existing);
         when(bidResponseMapper.updateById(any(BidResponse.class))).thenReturn(1);
 
-        BidResponse result = bidResponseService.submit(acceptPayload(1001L), RD_PM_A);
+        BidResponse result = bidResponseService.submit(ACTOR_RD_PM_A, acceptPayload(1001L));
 
         assertThat(result.getId()).isEqualTo(2001L);
         assertThat(result.getResponseNote()).contains("A方案");
@@ -202,7 +210,7 @@ class P232AcceptanceTest {
             .id(2001L).invitationId(1001L).rdPmId(RD_PM_A).status("ACCEPTED").build();
         when(bidResponseMapper.selectOne(any())).thenReturn(accepted);
 
-        assertThatThrownBy(() -> bidResponseService.submit(acceptPayload(1001L), RD_PM_A))
+        assertThatThrownBy(() -> bidResponseService.submit(ACTOR_RD_PM_A, acceptPayload(1001L)))
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
@@ -217,7 +225,7 @@ class P232AcceptanceTest {
         when(bidResponseMapper.selectOne(any())).thenReturn(null);
         when(bidResponseMapper.insert(any(BidResponse.class))).thenReturn(1);
 
-        BidResponse result = bidResponseService.submit(acceptPayload(1002L), RD_PM_C);
+        BidResponse result = bidResponseService.submit(ACTOR_RD_PM_C, acceptPayload(1002L));
 
         assertThat(result.getStatus()).isEqualTo("PENDING");
         assertThat(result.getRdPmId()).isEqualTo(RD_PM_C);
@@ -278,7 +286,7 @@ class P232AcceptanceTest {
         when(bidResponseMapper.selectById(2001L)).thenReturn(anonymous);
 
         assertThatThrownBy(() -> bidInvitationService.selectResponse(1002L, 2001L, MARKET_PM))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("研发PM身份");
     }
 
@@ -291,7 +299,7 @@ class P232AcceptanceTest {
         BidResponse payload = BidResponse.builder()
             .invitationId(1001L).decision("rejct").responseNote(summary("A方案")).build();
 
-        assertThatThrownBy(() -> bidResponseService.submit(payload, RD_PM_A))
+        assertThatThrownBy(() -> bidResponseService.submit(ACTOR_RD_PM_A, payload))
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.PARAM_INVALID);
@@ -306,7 +314,7 @@ class P232AcceptanceTest {
             .id(2001L).invitationId(1001L).rdPmId(RD_PM_A).status("PENDING").build();
         when(bidResponseMapper.selectById(2001L)).thenReturn(resp);
 
-        assertThatThrownBy(() -> bidResponseService.withdraw(2001L, RD_PM_B))
+        assertThatThrownBy(() -> bidResponseService.withdraw(ACTOR_RD_PM_B, 2001L))
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
@@ -320,7 +328,7 @@ class P232AcceptanceTest {
         when(bidResponseMapper.selectById(2001L)).thenReturn(resp);
         when(bidResponseMapper.updateById(any(BidResponse.class))).thenReturn(1);
 
-        BidResponse result = bidResponseService.withdraw(2001L, RD_PM_A);
+        BidResponse result = bidResponseService.withdraw(ACTOR_RD_PM_A, 2001L);
 
         assertThat(result.getStatus()).isEqualTo("WITHDRAWN");
     }

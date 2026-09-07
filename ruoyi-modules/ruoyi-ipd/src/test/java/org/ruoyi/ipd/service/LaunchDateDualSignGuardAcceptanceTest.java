@@ -210,7 +210,9 @@ class LaunchDateDualSignGuardAcceptanceTest {
             // 双签后写回（唯一「修改」入口）
             Path.of("org/ruoyi/ipd/service/LaunchDateChangeService.java"),
             // 首次录入（BR-IPD-08「L08 录入」，仅 INSERT，不构成修改）
-            Path.of("org/ruoyi/ipd/dto/ProjectCreateReq.java"));
+            Path.of("org/ruoyi/ipd/dto/ProjectCreateReq.java"),
+            // ZK 场景种数据（demo 性质，不入业务守卫；本文件已有「治理豁免」注释锚定）
+            Path.of("org/ruoyi/ipd/config/IpdZkScenarioInitializer.java"));
 
         Set<String> found = scanMainSources().stream()
             .filter(p -> readsLikeLaunchDateWrite(p))

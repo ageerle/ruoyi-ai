@@ -75,6 +75,9 @@ __pycache__/
 .claude-flow/data/
 .claude-flow/logs/
 .claude-flow/sessions/
+.claude-flow/agents/
+.claude-flow/swarm/
+.claude-flow/daemon.pid
 
 # Codex local configuration
 .codex/
@@ -106,3 +109,11 @@ ruvector.db
 /.vscode/
 tests/a11y/node_modules/
 tests/a11y/reports/a11y-report-2*
+
+# 本地 agent 运行时数据库与配置备份（非交付件）
+node_modules/
+agentdb.rvf
+agentdb.rvf.lock
+.claude/settings.json.bak
+.claude/settings.json.proposed
+.claude/settings.json.*.bak

@@ -233,13 +233,13 @@ class P261AcceptanceTest {
         RequirementChange existing = existingDraft();
         existing.setId(20L);
         existing.setStatus(RequirementChangeService.STATUS_PENDING_SIGN);
-        existing.setSignatures("MARKET_PM=APPROVE");
+        existing.setSignatures("MARKET_PM:300=APPROVE");
         when(requirementChangeMapper.selectById(20L)).thenReturn(existing);
 
         RequirementChange out = requirementChangeService.sign(20L, "APPROVE", "ok", RD);
 
         assertThat(out.getStatus()).isEqualTo(RequirementChangeService.STATUS_APPROVED);
-        assertThat(out.getSignatures()).contains("RD_PM=APPROVE");
+        assertThat(out.getSignatures()).contains("RD_PM:200=APPROVE");
     }
 
     @Test
@@ -254,8 +254,8 @@ class P261AcceptanceTest {
         RequirementChange out = requirementChangeService.sign(21L, "APPROVE", "ok", MARKET);
 
         assertThat(out.getStatus()).isEqualTo(RequirementChangeService.STATUS_PENDING_SIGN);
-        assertThat(out.getSignatures()).contains("MARKET_PM=APPROVE");
-        assertThat(out.getSignatures()).doesNotContain("RD_PM=APPROVE");
+        assertThat(out.getSignatures()).contains("MARKET_PM:300=APPROVE");
+        assertThat(out.getSignatures()).doesNotContain("RD_PM:200=APPROVE");
     }
 
     @Test
@@ -264,13 +264,13 @@ class P261AcceptanceTest {
         RequirementChange existing = existingDraft();
         existing.setId(22L);
         existing.setStatus(RequirementChangeService.STATUS_PENDING_SIGN);
-        existing.setSignatures("MARKET_PM=APPROVE");
+        existing.setSignatures("MARKET_PM:300=APPROVE");
         when(requirementChangeMapper.selectById(22L)).thenReturn(existing);
 
         RequirementChange out = requirementChangeService.sign(22L, "REJECT", "成本过高", RD);
 
         assertThat(out.getStatus()).isEqualTo(RequirementChangeService.STATUS_REJECTED);
-        assertThat(out.getSignatures()).contains("RD_PM=REJECT");
+        assertThat(out.getSignatures()).contains("RD_PM:200=REJECT");
     }
 
     @Test
@@ -289,7 +289,7 @@ class P261AcceptanceTest {
         RequirementChange existing = existingDraft();
         existing.setId(24L);
         existing.setStatus(RequirementChangeService.STATUS_PENDING_SIGN);
-        existing.setSignatures("MARKET_PM=APPROVE");
+        existing.setSignatures("MARKET_PM:300=APPROVE");
         when(requirementChangeMapper.selectById(24L)).thenReturn(existing);
 
         assertThatThrownBy(() -> requirementChangeService.sign(24L, "APPROVE", "ok", MARKET))
@@ -338,7 +338,7 @@ class P261AcceptanceTest {
         RequirementChange existing = existingDraft();
         existing.setId(30L);
         existing.setStatus(RequirementChangeService.STATUS_PENDING_SIGN);
-        existing.setSignatures("MARKET_PM=APPROVE");
+        existing.setSignatures("MARKET_PM:300=APPROVE");
         existing.setCreateTime(new Date(1700000000000L));
         existing.setUpdateTime(new Date(1700000001000L));
         when(requirementChangeMapper.selectById(30L)).thenReturn(existing);
@@ -347,7 +347,7 @@ class P261AcceptanceTest {
 
         assertThat(view).containsEntry("id", 30L);
         assertThat(view).containsEntry("status", RequirementChangeService.STATUS_PENDING_SIGN);
-        assertThat(view).containsEntry("signatures", "MARKET_PM=APPROVE");
+        assertThat(view).containsEntry("signatures", "MARKET_PM:300=APPROVE");
         assertThat(view.get("beforeSnapshot").toString()).contains("原范围");
     }
 }

@@ -151,7 +151,8 @@ class DefectBAdviceAcceptanceTest {
         // IpdPermissionExceptionHandler 无此异常 handler，生产链同样落到本 advice 的 handleNotReadable → 400。
         MockMvc authMvc = MockMvcBuilders
             .standaloneSetup(new IpdAuthController(
-                mock(IpdAuthService.class), mock(IpdAuthSession.class), mock(AuditAttemptService.class)))
+                mock(IpdAuthService.class), mock(IpdAuthSession.class), mock(AuditAttemptService.class),
+                mock(org.ruoyi.ipd.security.IpdPermission.class)))
             .setControllerAdvice(new IpdPermissionExceptionHandler(), new IpdServiceExceptionAdvice())
             .build();
 

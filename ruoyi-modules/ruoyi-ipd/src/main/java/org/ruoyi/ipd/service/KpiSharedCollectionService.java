@@ -1,7 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import org.ruoyi.common.tenant.helper.TenantHelper;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -440,11 +440,7 @@ public class KpiSharedCollectionService {
         if (project == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
         }
-        String currentTenant = TenantHelper.getTenantId();
-        if (currentTenant != null && project.getTenantId() != null
-            && !currentTenant.equals(project.getTenantId())) {
-            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
-        }
+        requireTenantMatch(LoginHelper.getTenantId(), project);
         // 件 1.5：SUPER_ADMIN 例外；其余角色须为项目在职成员（MEDIUM IDOR 核心修复）
         if (!"SUPER_ADMIN".equals(actor.role())) {
             boolean isMember = projectMemberMapper.selectCount(
@@ -474,6 +470,25 @@ public class KpiSharedCollectionService {
             YearMonth.parse(period);
         } catch (DateTimeParseException e) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "period 必须为 YYYY-MM");
+        }
+    }
+
+    /**
+     * W4-Security 件 1.4：跨租户守卫。租户匹配或租户上下文缺失时放行；
+     * 当前会话租户与项目租户不一致时抛 FORBIDDEN（不区分 null/不匹配，统一文案）。
+     *
+     * <p>注：{@code LoginHelper.getTenantId()} 在租户禁用或未登录场景下返回 {@code null} 或空串，
+     * 此方法对 null/空 视为"未启用租户隔离"放行，与多租户拦截器行为一致。
+     *
+     * @param currentTenant 当前会话租户（可为 null 或空串）
+     * @param project       已加载项目（必非 null）
+     * @throws IpdBusinessException {@link ApiV1ErrorCode#FORBIDDEN} 当 currentTenant 与 project.tenantId 不一致
+     */
+    static void requireTenantMatch(String currentTenant, Project project) {
+        if (currentTenant != null && !currentTenant.isEmpty()
+            && project != null && project.getTenantId() != null
+            && !currentTenant.equals(project.getTenantId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
         }
     }
 

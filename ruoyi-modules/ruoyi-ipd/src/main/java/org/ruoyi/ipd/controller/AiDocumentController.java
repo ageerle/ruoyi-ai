@@ -7,11 +7,13 @@ import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.AiDocument;
+import org.ruoyi.ipd.dto.AiGenerateReq;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.AiDocumentService;
+import org.ruoyi.ipd.service.AiGenerationService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +35,7 @@ import java.util.List;
 public class AiDocumentController {
 
     private final AiDocumentService aiDocumentService;
+    private final AiGenerationService aiGenerationService;
     private final IpdPermission ipdPermission;
 
     /**
@@ -45,6 +48,18 @@ public class AiDocumentController {
         return ApiV1Response.ok(aiDocumentService.createGenerated(
             body.projectId(), body.docType(), body.title(), body.content(),
             body.model(), body.tokenPrompt(), body.tokenCompletion(), actor.id()));
+    }
+
+    /**
+     * P4-2.2：AI 生成（AC-AI-02：PM 录入原始资料 → 模型润色/补齐/标准化 → 登记 v1 待审核）。
+     * 权限同登记（ipd:ai-document:add，PM 与组长对等，AC-AI-10）；超时/限流/预算
+     * 走生效模型配置（BR-AI-01）；输出透传不过滤（BR-AI-04），UI 层须有风险提示。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/generate")
+    public ApiV1Response<AiDocument> generate(@RequestBody AiGenerateReq body) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiGenerationService.generate(actor, body));
     }
 
     /**
