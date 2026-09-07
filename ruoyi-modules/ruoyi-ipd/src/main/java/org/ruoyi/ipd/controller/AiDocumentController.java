@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -93,6 +94,65 @@ public class AiDocumentController {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(aiDocumentService.history(id));
     }
+
+    /**
+     * AC-AI-05：版本链回溯视图 v1..vN（与 /versions 同源；独立 URL 便于前端按场景切换）。
+     * 输出格式：版本号、作者（createBy）、创建时间、当前状态四元组，便于历史侧栏渲染。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/{id}/history")
+    public ApiV1Response<List<HistoryItem>> history(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.history(id).stream()
+            .map(d -> new HistoryItem(d.getId(), d.getVersionNo(), d.getCreateBy(),
+                d.getCreateTime(), d.getStatus(), d.getReviewedBy(), d.getArchivedAt()))
+            .toList());
+    }
+
+    /**
+     * AC-AI-03 / BR-AI-02：未审核拒绝归档——仅 REVIEWED 行可归档。
+     * 权限复用 OPERATION_AI_DOCUMENT_REVIEW（与审核同义角色集——内部四角色）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/{id}/versions/{versionId}/archive")
+    public ApiV1Response<AiDocument> archive(@PathVariable Long id, @PathVariable Long versionId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.archive(versionId, actor.id()));
+    }
+
+    /**
+     * BR-AI-03 兜底：审核拒绝——REVIEWED → REJECTED（必须重新走审核才能归档）。
+     * 权限复用 OPERATION_AI_DOCUMENT_REVIEW（与 review 同行使）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/{id}/versions/{versionId}/reject")
+    public ApiV1Response<AiDocument> reject(@PathVariable Long id,
+                                             @PathVariable Long versionId,
+                                             @RequestBody RejectReq body) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.reject(
+            versionId, actor.id(), body != null ? body.comment() : null));
+    }
+
+    /**
+     * AC-AI-05：任意两版本字段级 diff。from/to 为版本行 ID（同链上才有意义；跨链由调用方负责）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/{id}/diff")
+    public ApiV1Response<AiDocumentService.DiffReport> diff(@PathVariable Long id,
+                                                           @RequestParam("from") Long fromVersionId,
+                                                           @RequestParam("to") Long toVersionId) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.diff(fromVersionId, toVersionId));
+    }
+
+    /** 回溯视图单行：版本行 ID + 版本号 + 创建者 + 创建时间 + 当前状态 + 审核人 + 归档时间 */
+    public record HistoryItem(Long versionId, Integer versionNo, Long author,
+                              java.util.Date createdAt, String status,
+                              Long reviewedBy, java.util.Date archivedAt) {}
+
+    /** 拒绝请求体（comment 必填，落 review_comment 审计完整性） */
+    public record RejectReq(@NotBlank @Size(max = 1000) String comment) {}
 
     /** 登记 AI 原始输出请求体 */
     public record CreateReq(@NotNull Long projectId,

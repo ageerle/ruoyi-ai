@@ -93,6 +93,21 @@ public class AiDocument extends BaseEntity implements SoftDeletable {
     private Date reviewedAt;
 
     /**
+     * 审核备注（P1-10.2：reject 原因 / review 批注，BR-AI-03 审计完整性）
+     */
+    private String reviewComment;
+
+    /**
+     * 归档时间（P1-10.2：archivedAt 落库时点，仅 ARCHIVED 行非空）
+     */
+    private Date archivedAt;
+
+    /**
+     * 归档操作者（P1-10.2：审计身份可信——actor.id 写入，归档行可回溯责任人）
+     */
+    private Long archivedBy;
+
+    /**
      * 软删除标志（0正常 1已删）
      */
     @TableLogic

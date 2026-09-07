@@ -43,8 +43,21 @@ public class AiDocumentService {
     public static final String STATUS_GENERATED = "GENERATED";
     /** 人工审核通过（BR-AI-03） */
     public static final String STATUS_REVIEWED = "REVIEWED";
-    /** 已归档（归档流程走 P0-6.2 删除审核，本卡不提供入口） */
+    /** 审核拒绝——终态，必须重新走 review 流后才能 archive（BR-AI-03 兜底） */
+    public static final String STATUS_REJECTED = "REJECTED";
+    /** 已归档——终态，仅 REVIEWED 行可归档；归档后不可改版/拒绝/再归档 */
     public static final String STATUS_ARCHIVED = "ARCHIVED";
+
+    /** AC-AI-03：未审核不可归档的对外文案（"须人工审核确认" 固定字面量） */
+    public static final String MSG_REVIEW_REQUIRED = "AI 文档须人工审核确认才可归档";
+
+    /** AC-AI-05：diff 报告结构——仅存差异字段，全文重写由调用方按 contentSha256 自查 */
+    public record FieldDiff(String field, String fromValue, String toValue, String fromSha256, String toSha256) {}
+
+    /** AC-AI-05：两版本 diff 报告（包含两条版本行 + 字段级差异列表） */
+    public record DiffReport(Long fromVersionId, Integer fromVersionNo,
+                             Long toVersionId, Integer toVersionNo,
+                             List<FieldDiff> differences) {}
 
     private final AiDocumentMapper mapper;
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -161,6 +174,136 @@ public class AiDocumentService {
         // 并发已被他人审核：重读终态返回，不报错不覆盖
         AiDocument fresh = mapper.selectById(versionId);
         return fresh != null ? fresh : row;
+    }
+
+    /**
+     * AC-AI-03 / BR-AI-02：未审核不可归档。仅流转 status + 归档落名三列；
+     * 仅 status=REVIEWED 行可归档（GENERATED/REJECTED 拒绝；ARCHIVED 幂等拒绝）。
+     *
+     * @param versionId  任一版本行 ID（服务自行定位行）
+     * @param operatorId 操作者（写入 archived_by 审计身份）
+     * @return 归档后行
+     * @throws IpdBusinessException STATE_CONFLICT 未审核 / 已归档 / 已拒绝
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public AiDocument archive(Long versionId, Long operatorId) {
+        AiDocument row = mapper.selectById(versionId);
+        if (row == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        // AC-AI-03：未审核（包括 GENERATED 初次/REJECTED 拒绝后未重审）→ 拒绝
+        if (!STATUS_REVIEWED.equals(row.getStatus())) {
+            throw new IpdBusinessException(
+                ApiV1ErrorCode.STATE_CONFLICT, MSG_REVIEW_REQUIRED);
+        }
+        Date now = Date.from(clock.instant());
+        // 条件 UPDATE：再次防御并发（他人同时归档覆盖 → 0 行受影响 → 重读终态）
+        int updated = mapper.update(null, Wrappers.<AiDocument>lambdaUpdate()
+            .eq(AiDocument::getId, versionId)
+            .eq(AiDocument::getStatus, STATUS_REVIEWED)
+            .set(AiDocument::getStatus, STATUS_ARCHIVED)
+            .set(AiDocument::getArchivedAt, now)
+            .set(AiDocument::getArchivedBy, operatorId));
+        if (updated > 0) {
+            row.setStatus(STATUS_ARCHIVED);
+            row.setArchivedAt(now);
+            row.setArchivedBy(operatorId);
+            return row;
+        }
+        // 并发已被他人归档：终态自洽返回
+        AiDocument fresh = mapper.selectById(versionId);
+        if (fresh != null && STATUS_ARCHIVED.equals(fresh.getStatus())) {
+            return fresh;
+        }
+        // 并发期间被 reject / delete 抢走：拒绝
+        throw new IpdBusinessException(
+            ApiV1ErrorCode.STATE_CONFLICT, MSG_REVIEW_REQUIRED);
+    }
+
+    /**
+     * 审核拒绝（BR-AI-03 兜底：审核可拒绝已 REVIEWED 行，强制重新走审核流才能 ARCHIVED）。
+     * 仅 status=REVIEWED 行可拒绝（GENERATED 状态无须拒绝、ARCHIVED 终态不可拒、REJECTED 幂等）。
+     *
+     * @param versionId  版本行 ID
+     * @param operatorId 操作者（写入 reviewed_by 兜底；幂等拒绝时不覆盖）
+     * @param comment    拒绝原因（必填；落 review_comment 审计完整性）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public AiDocument reject(Long versionId, Long operatorId, String comment) {
+        requireArg(comment != null && !comment.isBlank(), "拒绝原因必填");
+        AiDocument row = mapper.selectById(versionId);
+        if (row == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        if (STATUS_REJECTED.equals(row.getStatus())) {
+            return row; // 幂等：已拒绝不覆盖原 reviewComment / reviewedBy
+        }
+        if (STATUS_ARCHIVED.equals(row.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "已归档行不可拒绝（终态）");
+        }
+        if (!STATUS_REVIEWED.equals(row.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "仅 REVIEWED 行可拒绝（GENERATED 状态请先 review）");
+        }
+        Date now = Date.from(clock.instant());
+        int updated = mapper.update(null, Wrappers.<AiDocument>lambdaUpdate()
+            .eq(AiDocument::getId, versionId)
+            .eq(AiDocument::getStatus, STATUS_REVIEWED)
+            .set(AiDocument::getStatus, STATUS_REJECTED)
+            .set(AiDocument::getReviewComment, comment)
+            .set(AiDocument::getReviewedAt, now));
+        if (updated > 0) {
+            row.setStatus(STATUS_REJECTED);
+            row.setReviewComment(comment);
+            row.setReviewedAt(now);
+            return row;
+        }
+        AiDocument reread = mapper.selectById(versionId);
+        if (reread != null && STATUS_REJECTED.equals(reread.getStatus())) {
+            return reread;
+        }
+        throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+    }
+
+    /**
+     * AC-AI-05：两版本字段级 diff（fromVersionId 任意版本行 ID → toVersionId 任意版本行 ID）。
+     * 仅在同一条链上返回有意义的结果；跨链调用方需自行负责。
+     * 差异字段：title/content/contentSha256（review/archived 落名不参与 diff——属审计维度）。
+     *
+     * @return DiffReport，含两版本行 ID/版本号 + 字段级差异列表（无差异返回空列表）
+     */
+    public DiffReport diff(Long fromVersionId, Long toVersionId) {
+        requireArg(fromVersionId != null, "fromVersionId 必填");
+        requireArg(toVersionId != null, "toVersionId 必填");
+        AiDocument from = mapper.selectById(fromVersionId);
+        AiDocument to = mapper.selectById(toVersionId);
+        if (from == null || to == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        List<FieldDiff> diffs = new ArrayList<>();
+        // title：同链 v(n+1) 若未传 title 应等于 v(n)，此处等价视为无差异
+        if (!safeEq(from.getTitle(), to.getTitle())) {
+            diffs.add(new FieldDiff("title", from.getTitle(), to.getTitle(), null, null));
+        }
+        // content：必产生新版本 ⇒ 必有差异
+        if (!safeEq(from.getContent(), to.getContent())) {
+            diffs.add(new FieldDiff("content", from.getContent(), to.getContent(),
+                from.getContentSha256(), to.getContentSha256()));
+        }
+        // contentSha256：内容摘要差异（content 未变则摘要必同；列独立列便于审计溯源）
+        if (!safeEq(from.getContentSha256(), to.getContentSha256())) {
+            diffs.add(new FieldDiff("contentSha256",
+                from.getContentSha256(), to.getContentSha256(), null, null));
+        }
+        return new DiffReport(from.getId(), from.getVersionNo(),
+            to.getId(), to.getVersionNo(), diffs);
+    }
+
+    private static boolean safeEq(Object a, Object b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        return a.equals(b);
     }
 
     /**
