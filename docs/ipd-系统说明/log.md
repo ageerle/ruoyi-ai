@@ -3129,3 +3129,27 @@ worktrees 保留为 future reference：
 - 不动兄弟会话在途 dirty 文件（AiChatClient.java 等）
 - 不真库 DCL / 不 push / 不 B/C/D 业务代码
 - 不派单任何代码子 agent（R-NEW 5 项 U0 派单建议已在 R-NEW §5）
+
+## 2026-09-07 15:35 | owner 拍板落地（D1/D2/D4/D5 决策包）
+
+### 4 项拍板汇总（user-zker_vibe_kanban 已记）
+- D1 SOP 37 vs 69：A 保留 69 拍板；保留本仓基线，ZK V2 重写时再议 D-5
+- D2 真库 3 名超管违例存量收敛：a 杀一保留（软删）拍板；执行另起 `plan-d2-superadmin-converge` 子计划，需独立停写窗口
+- D3 main 推送时机：维持 ⏸ 待授权（未在本轮拍板）
+- D4 QA-08 GLB-12 翻 15：B 暂缓翻面拍板；等 D1 终态稳定后再议
+- D5 PROPOSAL-01 真库 DCL REVOKE：B 等 P3-4/P3-7 验收窗口拍板
+
+### 配套修改
+- SSOT 勘误级更新：`docs/ipd-系统说明/zk-ipd-决策-登记-20260907.md` 裁决 #4 行 🟡 暂裁决 → ✅ 已登记（关闭时间 2026-09-07）；依赖图注释 `暂不动` → `已登记 A 保留 69；ZK V2 时再 D-5`
+
+### 隔离 worktree
+- 分支：`draft/d1-d4-d5-decision-pack`（base `b7cad7db`, +2 commits ahead of main）
+- 包含：5 份决策草案 + D2/D5 子计划骨架（仅占位 SQL 与协调模板，不动真库）
+
+### OPS-09 守则遵守
+- 不动 21:09+ / 21:54+ / 15:25+ log.md 段（仅末段追加）
+- 不动看板镜像 / 收口 / 汇总验收 / 治理层 meta（HEAD `b7cad7db` 已含）
+- 不动兄弟会话在途 dirty 文件（application.yml / IpdPermissionCode.java / PostLaunchReviewService.java / PostLaunchReviewController.java / P256AcceptanceTest.java / 2026-09-07-ipd-p256-post-launch-reviews.sql 等）
+- 不真库 DCL / 不 push / 不 B/C/D 业务代码
+- 不派单任何代码子 agent
+
