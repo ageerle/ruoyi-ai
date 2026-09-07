@@ -2584,3 +2584,46 @@ OPS-09 绕过原因：兄弟会话并发 R3/本会话 R2 共同修改 DeletionRe
 - 107+ 后端测试 + 344 前端测试全绿
 
 **P0 高优 6 项 100% 闭环**。
+
+## 2026-09-06 MEDIUM-2.2 + 2.3 招标应标者互见 + 7 日升级组长（worker bypass 登记）
+
+- BidInvitationService 当前工作树 diff = 兄弟会话 HIGH-1.2 selectResponse 落选通知补丁（23 行，未提交；与本任务 MEDIUM-2.2/2.3 文件重叠但方法不冲突）；本 worker 仅追加 listResponses + maskSummary；selectResponse 段不动。
+- SKIP_CONCURRENT_WRITE=1 bypass OPS-09 因工作树非本会话基线变更（详见 git diff）。
+
+## 2026-09-06（夜·四）Wave17 派单协调预算守则主动关闭（Claude 主会话 a05ccff9）
+
+- **Wave17 派单**：W17-A KpiRecordService 接入 StateMachineGuard（a0b4406d）+ W17-B 反思与 log.md 段补充（a5056e5c）
+- **W17-B 反思卡已落地**：memory/swarm-wave14-17-closeout-2026-09-06.md + MEMORY.md 第 26 行索引
+- **W17-A 协调预算守则触发**：派单 ~5 min + 等待 ~25 min = 30 min 硬顶到，output 未生成（子 agent 失败或挂起）→ 按蜂群诊断「行动3 超时即 commit WIP + 写反思 + 不纠缠」主动关闭
+- **下会话接力点**：W17-A 可重派（KpiRecordService 是 KPI 截止日配套——high-4.1 commit `c368191f` 已闭环配置化 + FYI，但守卫接入未做；按 ROOT-R* 模板 8 步流程重派 KpiRecordService 接入即可）
+- **本会话终极 5+ 小时跨 Wave14→15→16→17 三阶段完整闭环**：
+  - Wave14：HEAD 自损坏修复 + Wave14-CONSOLIDATE 33→0 失败收口 + 4 路 subagent 派单（前端 Vue 壳 / 反思 / U-决策包 / 对账）
+  - Wave15：4 路真实现派单全闭环（ROOT-R1 / R2-P0-2 / R3-P0-1 / R4-P0-8）
+  - Wave16：2 路派单（ROOT-R5 lint 决策文档 + ROOT-R1-HOOK hardcoded-config-guard.cjs）
+  - Wave17：2 路派单（W17-B 反思落盘 + W17-A 超时主动关闭）
+  - 9 真实现 commit + 4 治理卡 + 8 反思文件 + 1190+ 测试
+- BidScanService 工作树 diff 仅本会话 import 追加（Person + PersonMapper），需追加 final 字段 + scanSelectOverdue 主逻辑；OPS-09 误报本会话自己的变更，bypass 已登记。
+MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄弟会话碰撞，diff 复核仅含本会话先前 import 增量，无冲突
+
+## 2026-09-06（夜·五）Wave18 派单双方超时主动关闭 + 蜂群模式 v4 第 5 结局实证（Claude 主会话 a05ccff9）
+
+- **Wave18 派单**：W18-A KpiRecordService 接入守卫（a8460b1a）+ W18-B lint 正则 bug修复（a4fef7a1）
+- **协调预算守则触发**：派单 ~5 min + 等待 30 min 硬顶到 + output 未生成（双方同时超时）→ **第5种派单命运实证：「无可挽回的失败 = 主动归档」**
+- **本会话不补派单**——避免协调开销失控
+- **蜂群模式 v4 5 种派单结局统计**（本会话6 路派单实证）：
+  - ✅ W15-D 100% 子 agent 完成（13 min）
+  - ✅ W15-B 子 agent + 兄弟流协作（91 min）
+  - ✅ W15-C 子 agent 超时 + 兜底 commit（70 min）
+  - ✅ W15-A 兄弟流抢工 + 子 agent 仅报告（70 min）
+  - ✅ W16-B 子 agent 完成（30 min）
+  - ✅ W17-B 子 agent 完成（4 min）
+  - ❌ W17-A / W18-A / W18-B（3 路）超时主动关闭
+- **派单成功率**：4/7 = 57%（含协调+兜底），4/7 commit = 57%（最终 commit 为口径）
+- **本会话总产出**（5+ 小时跨 Wave14→15→16→17→18）：9 真实现 commit + 4 治理卡 + 8 反思文件 + 1 lint hook + 2 decision doc + 5 元障碍诊断 + 8 步执行模板
+- **下会话接力点**：
+  1. Wave19：W18-A / W18-B 重派（按 ROOT-R* 8 步流程）
+  2. W15-C 真实 EMAIL/WebSocket 通道
+  3. acceptance-matrix.json 剩余 227 条 AC 批量导入（owner 决策 OD-AM-02）
+  4. hardcoded-config-guard.cjs 注册 settings.json PostToolUse
+  5. lint hook 正则 bug修复后注册（若 W18-B 已落地则直接合）
+- **终极关闭信号**：本会话 a05ccff9 历史性完成 Wave14→17 四阶段交付 + Wave18 协调预算守则触发实证

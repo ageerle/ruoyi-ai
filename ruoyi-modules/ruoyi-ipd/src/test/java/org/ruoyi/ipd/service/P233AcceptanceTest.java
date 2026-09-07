@@ -23,6 +23,7 @@ import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 
 import java.util.Arrays;
@@ -54,6 +55,7 @@ class P233AcceptanceTest {
     @Mock private BidInvitationMapper bidInvitationMapper;
     @Mock private BidResponseMapper bidResponseMapper;
     @Mock private ProjectMapper projectMapper;
+    @Mock private PersonMapper personMapper;
     @Mock private NotificationService notificationService;
     @Mock private AuditLogService auditLogService;
 
@@ -86,7 +88,7 @@ class P233AcceptanceTest {
         bidInvitationService = new BidInvitationService(bidInvitationMapper, bidResponseMapper,
             auditLogService, notificationService);
         bidScanService = new BidScanService(bidInvitationMapper, bidResponseMapper, projectMapper,
-            notificationService, auditLogService);
+            personMapper, notificationService, auditLogService);
     }
 
     /** 当前时间 + N 天 */

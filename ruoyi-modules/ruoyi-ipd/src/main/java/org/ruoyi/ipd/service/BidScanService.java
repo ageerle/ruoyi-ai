@@ -7,9 +7,11 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.domain.NotificationEvent;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,7 @@ public class BidScanService {
     private final BidInvitationMapper bidInvitationMapper;
     private final BidResponseMapper bidResponseMapper;
     private final ProjectMapper projectMapper;
+    private final PersonMapper personMapper;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
 
@@ -76,9 +79,10 @@ public class BidScanService {
     }
 
     /**
-     * AC-TEAM-07：到期有应标但超 7 天未遴选，升级通知产品组长。
+     * AC-TEAM-07：到期有应标但超 7 天未遴选，升级通知产品组长（MEDIUM-2.3 真发通知）。
      * 扫描范围：expireAt < (now-7d) 且 status=OPEN（说明有应标但还未遴选，否则 scanExpireNoResponse 已处理）。
-     * 升级目标：项目主组组长（简化为通知市场 PM + 主组关联管理员，由调用方 GroupMemberService 解析；此处先记日志）。
+     * 升级目标：项目主组组长（persons.person_type=GROUP_LEADER AND group_id=project.main_group_id）。
+     * 幂等：依赖 publishDaily 的自然日 dedup_key；同日重扫同一 overdue 单只发一次。
      */
     @Transactional(rollbackFor = Exception.class)
     public int scanSelectOverdue() {
@@ -108,17 +112,46 @@ public class BidScanService {
                     "/bid-invitations/" + inv.getId(),
                     now);
             }
-            // 主组组长（若项目有主组，简化方案：发至主组关联管理员占位；后续接入 GroupMemberService）
+            // MEDIUM-2.3：升级主组组长（person_type=GROUP_LEADER AND group_id=project.main_group_id）
             Project project = projectMapper.selectById(inv.getProjectId());
             if (project != null && project.getMainGroupId() != null) {
-                auditLogService.append(AuditLog.builder()
-                    .operatorId(null)
-                    .action("bid_select_overdue_escalate")
-                    .entityType("bid_invitation")
-                    .entityId(inv.getId())
-                    .reason("主组=" + project.getMainGroupId())
-                    .createTime(now)
-                    .build());
+                List<Person> leaders = personMapper.selectList(
+                    new LambdaQueryWrapper<Person>()
+                        .eq(Person::getPersonType, "GROUP_LEADER")
+                        .eq(Person::getGroupId, project.getMainGroupId()));
+                if (leaders != null && !leaders.isEmpty()) {
+                    String title = "招标遴选超期已升级组长";
+                    String content = "招标单 " + inv.getId() + "「" + inv.getTitle() + "」到期已超 7 日仍未遴选，已升级至主组组长处理。";
+                    for (Person leader : leaders) {
+                        if (leader.getId() == null) continue;
+                        notificationService.publishDaily(leader.getId(),
+                            NotificationService.Types.BID_SELECT_OVERDUE_ESCALATED,
+                            NotificationService.KIND_ACTION,
+                            "bid_invitation", inv.getId(),
+                            title,
+                            content,
+                            "/bid-invitations/" + inv.getId(),
+                            now);
+                    }
+                    auditLogService.append(AuditLog.builder()
+                        .operatorId(null)
+                        .action("bid_select_overdue_escalate")
+                        .entityType("bid_invitation")
+                        .entityId(inv.getId())
+                        .reason("主组=" + project.getMainGroupId() + "，已通知组长 " + leaders.size() + " 人")
+                        .createTime(now)
+                        .build());
+                } else {
+                    // MEDIUM-2.3：未找到组长时仅 audit 留痕，不发通知
+                    auditLogService.append(AuditLog.builder()
+                        .operatorId(null)
+                        .action("bid_select_overdue_escalate")
+                        .entityType("bid_invitation")
+                        .entityId(inv.getId())
+                        .reason("主组=" + project.getMainGroupId() + "，未找到 GROUP_LEADER，未发通知")
+                        .createTime(now)
+                        .build());
+                }
             }
             escalated++;
         }

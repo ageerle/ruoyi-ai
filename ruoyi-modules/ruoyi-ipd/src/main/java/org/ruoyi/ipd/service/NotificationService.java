@@ -60,6 +60,8 @@ public class NotificationService {
         public static final String BID_LOST = "BID_LOST";
         public static final String BID_EXPIRING_SOON = "BID_EXPIRING_SOON";
         public static final String BID_SELECT_OVERDUE = "BID_SELECT_OVERDUE";
+        /** MEDIUM-2.3：7 日升级通知主组组长（AC-TEAM-07 升级链第二跳） */
+        public static final String BID_SELECT_OVERDUE_ESCALATED = "BID_SELECT_OVERDUE_ESCALATED";
         public static final String BID_CONDITIONS_CHANGED = "BID_CONDITIONS_CHANGED";
         public static final String GATE_REJECTED = "GATE_REJECTED";
         public static final String GATE_SIGN_SOON = "GATE_SIGN_SOON";
@@ -91,6 +93,8 @@ public class NotificationService {
         public static final String NEGATIVE_FEEDBACK_LIFTED = "NEGATIVE_FEEDBACK_LIFTED";
         /** HIGH-4.1：KPI 月度截止日前 1 天提醒产品组长（FYI，不升级） */
         public static final String KPI_DUE_SOON = "KPI_DUE_SOON";
+        /** MEDIUM-1.3：Gate 列席人员邀请通知 */
+        public static final String GATE_OBSERVER_INVITED = "GATE_OBSERVER_INVITED";
 
         private Types() {
         }

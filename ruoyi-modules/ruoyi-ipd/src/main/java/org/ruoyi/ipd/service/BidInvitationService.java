@@ -232,10 +232,16 @@ public class BidInvitationService {
     }
 
     /**
-     * 查询招标单下的应标列表（P2-3.2 隐私：非发起人仅可见本人应标，不得暴露其他应标）
+     * 查询招标单下的应标列表（P2-3.2 隐私 + MEDIUM-2.2 公开招标应标者互见）
+     *
+     * <ul>
+     *   <li>ONE_TO_ONE 模式：非发起人仅见本人应标（不变）</li>
+     *   <li>PUBLIC 模式：所有 PENDING/ACCEPTED 记录对全员可见（WITHDRAWN/REJECTED 仅发起人或本人见）</li>
+     *   <li>PUBLIC 模式下非发起人视角脱敏：解决方案摘要仅展示前 80 字符（避免互抄）</li>
+     * </ul>
      *
      * @param invitationId    招标单 ID
-     * @param currentPersonId 会话用户 ID；等于发起人（createBy）时返回全量
+     * @param currentPersonId 会话用户 ID；等于发起人（createBy）时返回全量（含 WITHDRAWN/REJECTED）
      */
     public List<BidResponse> listResponses(Long invitationId, Long currentPersonId) {
         BidInvitation inv = bidInvitationMapper.selectById(invitationId);
@@ -245,10 +251,40 @@ public class BidInvitationService {
         LambdaQueryWrapper<BidResponse> qw = new LambdaQueryWrapper<BidResponse>()
             .eq(BidResponse::getInvitationId, invitationId)
             .orderByDesc(BidResponse::getCreateTime);
-        if (!currentPersonId.equals(inv.getCreateBy())) {
+        boolean isCreator = currentPersonId != null && currentPersonId.equals(inv.getCreateBy());
+        boolean isPublic = "PUBLIC".equals(inv.getMode());
+        if (isCreator) {
+            // 发起人：全量（含 WITHDRAWN/REJECTED），不动 responseNote
+        } else if (isPublic) {
+            // MEDIUM-2.2：PUBLIC 模式下 WITHDRAWN/REJECTED 仅本人可见，其余应标者互见
+            qw.and(w -> w.notIn(BidResponse::getStatus, "WITHDRAWN", "REJECTED")
+                .or().eq(BidResponse::getRdPmId, currentPersonId));
+        } else {
+            // ONE_TO_ONE：仅本人
             qw.eq(BidResponse::getRdPmId, currentPersonId);
         }
-        return bidResponseMapper.selectList(qw);
+        List<BidResponse> rows = bidResponseMapper.selectList(qw);
+        // MEDIUM-2.2：PUBLIC 模式下非发起人视角脱敏解决方案摘要为前 80 字符
+        if (isPublic && !isCreator) {
+            for (BidResponse r : rows) {
+                if (r.getRdPmId() != null && !r.getRdPmId().equals(currentPersonId)
+                    && r.getResponseNote() != null) {
+                    r.setResponseNote(maskSummary(r.getResponseNote()));
+                }
+            }
+        }
+        return rows;
+    }
+
+    /** MEDIUM-2.2：解决方案摘要脱敏（互见场景下避免互抄完整方案）；超长截断并附省略号 */
+    static String maskSummary(String note) {
+        if (note == null) {
+            return null;
+        }
+        if (note.length() <= 80) {
+            return note;
+        }
+        return note.substring(0, 80) + "…";
     }
 
 
