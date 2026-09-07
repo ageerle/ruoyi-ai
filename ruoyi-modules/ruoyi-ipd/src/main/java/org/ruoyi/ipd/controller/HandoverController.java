@@ -46,6 +46,13 @@ public class HandoverController {
 
     public record BatchResultView(Long projectId, String status, String reason) { }
 
+    /** P2-7.4 AC-HAND-02：超期扫描结果——升级 + 每日提醒各自命中数。 */
+    public record OverdueScanView(int escalated, int reminded) {
+        public static OverdueScanView from(HandoverService.OverdueScanResult r) {
+            return new OverdueScanView(r.escalated(), r.reminded());
+        }
+    }
+
     public record HandoverView(String id, String projectId, String fromPersonId, String toPersonId,
                                String handoverRole, String status, String note,
                                String confirmedAt, String completedAt,
@@ -120,5 +127,12 @@ public class HandoverController {
         IpdActor actor = permission.requireAdmin();
         handoverService.transferSuperAdmin(request.toPersonId(), request.note(), request.confirmation(), actor);
         return ApiV1Response.ok(null);
+    }
+
+    /** P2-7.4 AC-HAND-02: 超期 DRAFT 扫描入口 (SUPER_ADMIN 手动; 生产由 OPS-04 调度 cron 每日拉一次). 升级 + 每日提醒各自幂等. */
+    @PostMapping("/scan-overdue")
+    public ApiV1Response<OverdueScanView> scanOverdueDrafts() {
+        IpdActor actor = permission.requireAdmin();
+        return ApiV1Response.ok(OverdueScanView.from(handoverService.scanOverdueDrafts(actor)));
     }
 }

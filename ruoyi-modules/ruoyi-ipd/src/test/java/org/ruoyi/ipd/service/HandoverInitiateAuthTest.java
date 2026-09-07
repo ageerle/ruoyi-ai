@@ -58,6 +58,8 @@ class HandoverInitiateAuthTest {
     private ProjectMemberService projectMemberService;
     @Mock
     private IpdAuthSession ipdAuthSession;
+    @Mock
+    private NotificationService notificationService;
 
     private HandoverService service;
 
@@ -73,7 +75,7 @@ class HandoverInitiateAuthTest {
     void setUp() {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
-            ipdAuthSession);
+            ipdAuthSession, notificationService);
     }
 
     private Project projectInGroup(Long mainGroupId) {

@@ -68,6 +68,21 @@ public class HandoverRecord extends BaseEntity implements SoftDeletable {
     private Date completedAt;
 
     /**
+     * P2-7.4 AC-HAND-02：15 日截止时间（DRAFT 起算，调度扫描锚 idx_hr_deadline）
+     */
+    private Date deadlineAt;
+
+    /**
+     * P2-7.4 AC-HAND-02：每日提醒最后时间（同日去重，避免重复发提醒）
+     */
+    private Date lastRemindAt;
+
+    /**
+     * P2-7.4 AC-HAND-02：超管升级时间（一次性事件，NULL=未升级）
+     */
+    private Date escalatedAt;
+
+    /**
      * 软删除标志（0正常 1已删）
      */
     @TableLogic
@@ -90,4 +105,7 @@ public class HandoverRecord extends BaseEntity implements SoftDeletable {
 
     /** HIGH-3.1：撤销时间—COMPLETED → ROLLED_BACK 的时刻，与 rollbackReason 配套落审计 HANDOVER_ROLLBACK */
     private Date rollbackAt;
+
+    /** P2-7.4 AC-HAND-05：归档时间（COMPLETED 移交归档标记，NULL=未归档；幂等守卫）。 */
+    private Date archivedAt;
 }

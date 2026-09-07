@@ -63,6 +63,7 @@ class HandoverRollbackAcceptanceTest {
     @Mock private AuditLogService auditLogService;
     @Mock private ProjectMemberService projectMemberService;
     @Mock private IpdAuthSession ipdAuthSession;
+    @Mock private NotificationService notificationService;
 
     private HandoverService service;
 
@@ -79,7 +80,7 @@ class HandoverRollbackAcceptanceTest {
     void setUp() {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
-            ipdAuthSession);
+            ipdAuthSession, notificationService);
     }
 
     private IpdActor fromActor() {

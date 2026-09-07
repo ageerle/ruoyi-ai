@@ -70,6 +70,8 @@ class P272AcceptanceTest {
     private AuditLogService auditLogService;
     @Mock
     private IpdAuthSession ipdAuthSession;
+    @Mock
+    private NotificationService notificationService;
 
     private ProjectMemberService projectMemberService;
     private HandoverService handoverService;
@@ -98,7 +100,8 @@ class P272AcceptanceTest {
         projectMemberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
-            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession);
+            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession,
+            notificationService);
         lenient().when(projectMapper.selectById(anyLong())).thenReturn(projectWithGroup());
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(systemConfigService.getIntValue("allowance.projectCountThreshold", 3)).thenReturn(3);
