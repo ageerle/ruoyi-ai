@@ -151,7 +151,7 @@ spring:
   # 此处为未显式配池的 profile（如 ipd-local）提供安全基线：
   # 缺省时 HikariCP 默认 maximumPoolSize=10 + connectionTimeout=30s，并发>10 即排队雪崩。
   # application-dev.yml / application-prod.yml 以同名键覆盖
-  # （dev 已升 80；prod 走 application-prod-batch4-bcrypt-hikari.patch 提升至 80，待用户 apply + 压测验证）。
+  # （dev 已升 80；prod 已 apply application-prod-batch4-bcrypt-hikari.patch 上浮至 80，超原 spec 60 — 同步自 SEC-HIGH-1 R9-BC-COST BCrypt cost=10 持连接时间×10 的压测；详见 Wave3-实施规格包修订 + SEC-AUD rebuttal）。
   datasource:
     dynamic:
       # 性能分析插件（有性能损耗 不建议生产环境使用）
