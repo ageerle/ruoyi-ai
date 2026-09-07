@@ -178,7 +178,7 @@ class StateMachineGuardTest {
 
         // 热加载一条新规则
         StateTransitionRule rule = StateTransitionRule.builder()
-            .key("custom_entity:X->Y")
+            .key("custom_entity:X->Y|fire")
             .entityType("custom_entity")
             .fromState("X")
             .toState("Y")
@@ -193,7 +193,7 @@ class StateMachineGuardTest {
         assertThat(guard.ruleCount()).isPositive();
 
         // 卸载后失效
-        boolean removed = guard.removeRule("custom_entity:X->Y");
+        boolean removed = guard.removeRule("custom_entity:X->Y|fire");
         assertThat(removed).isTrue();
         assertThat(guard.isAllowed("custom_entity", "X", "Y", "fire")).isFalse();
     }

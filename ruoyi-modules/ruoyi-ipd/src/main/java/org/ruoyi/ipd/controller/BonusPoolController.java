@@ -76,8 +76,13 @@ public class BonusPoolController {
     /**
      * [SEC-FIX-HIGH-5.2] 自动推导 personalCoefficient 的奖金池计算——
      * 从 kpi_records.comprehensive_score 推导个人绩效系数（不接 personalCoefficient 入参）。
+     *
+     * <p>[SEC-FIX-HIGH-5.2-FOLLOWUP] 注解层守卫补齐：与 {@link #compute} 同注解
+     * {@code OPERATION_BONUS_POOL_COMPUTE}（Catalog GROUP_LEADER / SUPER_ADMIN），
+     * 防 Service 层兜底被绕过时注解防御失守。
      * @param req 含 projectId/actualReceipts/achievementRate/poolRate/period（period 必填 YYYY-MM）
      */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/auto-compute")
     public ApiV1Response<BonusPool> autoCompute(@Valid @RequestBody AutoComputeBonusPoolReq req) {
         IpdActor actor = ipdPermission.requireAdmin();

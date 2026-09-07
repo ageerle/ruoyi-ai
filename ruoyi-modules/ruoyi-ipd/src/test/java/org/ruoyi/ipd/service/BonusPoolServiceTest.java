@@ -88,7 +88,8 @@ class BonusPoolServiceTest {
             new BigDecimal("10000000"),  // actualReceipts
             new BigDecimal("100"),       // achievementRate → tier=1.0
             new BigDecimal("1.2"),       // personalCoefficient
-            new BigDecimal("0.05")
+            new BigDecimal("0.05"),
+            actor()                      // W4-B：compute 现在收 actor 落审计
         );
 
         // 10000000 × 0.05 × 1.8 × 1.0 × 1.2 = 1080000
@@ -185,7 +186,8 @@ class BonusPoolServiceTest {
             BigDecimal.ZERO,
             new BigDecimal("100"),
             new BigDecimal("1.0"),
-            new BigDecimal("0.05"));
+            new BigDecimal("0.05"),
+            actor());
 
         assertThat(pool.getFinalPool()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(pool.getStatus()).isEqualTo(BonusPoolService.STATUS_DRAFT);
@@ -202,7 +204,8 @@ class BonusPoolServiceTest {
             new BigDecimal("1000000"),
             new BigDecimal("100"),
             new BigDecimal("1.0"),
-            new BigDecimal("0.05")))
+            new BigDecimal("0.05"),
+            actor()))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("项目不存在");
     }
@@ -220,7 +223,8 @@ class BonusPoolServiceTest {
             new BigDecimal("1000000"),
             new BigDecimal("100"),
             new BigDecimal("1.0"),
-            new BigDecimal("0.05")))
+            new BigDecimal("0.05"),
+            actor()))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("S/A/B 差异化系数未配置");
     }
@@ -232,7 +236,8 @@ class BonusPoolServiceTest {
             new BigDecimal("-1"),
             new BigDecimal("100"),
             new BigDecimal("1.0"),
-            new BigDecimal("0.05")))
+            new BigDecimal("0.05"),
+            actor()))
             .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("不能为负");
     }
@@ -280,5 +285,120 @@ class BonusPoolServiceTest {
         // 幂等：no audit / no update
         verify(auditLogService, never()).append(any(AuditLog.class));
         verify(bonusPoolMapper, never()).updateById(any(BonusPool.class));
+    }
+
+    /* ====================== W4-B：compute 审计 + DuplicateKey 改 409 ====================== */
+
+    @Test
+    @DisplayName("W4-B 件 1：compute 落 1 条 BONUS_POOL_COMPUTE 审计（与 freeze/distribute 同严）")
+    void compute_appendsAudit_bonusPoolComputeAction() {
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
+        when(bonusPoolMapper.selectByProjectIdAndStatus(200L, BonusPoolService.STATUS_DRAFT))
+            .thenReturn(null);  // 无现有 DRAFT
+
+        service.compute(200L,
+            new BigDecimal("10000000"),
+            new BigDecimal("100"),
+            new BigDecimal("1.2"),
+            new BigDecimal("0.05"),
+            actor());
+
+        ArgumentCaptor<AuditLog> auditCaptor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService, times(1)).append(auditCaptor.capture());
+        AuditLog audit = auditCaptor.getValue();
+        assertThat(audit.getAction()).isEqualTo(BonusPoolService.ACTION_COMPUTE);
+        assertThat(audit.getEntityType()).isEqualTo("bonus_pools");
+        assertThat(audit.getOperatorRole()).isEqualTo("SUPER_ADMIN");
+        // [SEC-FIX-HIGH-5.2-FOLLOWUP] 结构化字段 afterData JSON 替代字符串拼接
+        assertThat(audit.getReason()).contains("projectId=200");
+        assertThat(audit.getReason()).contains("finalPool=");
+        assertThat(audit.getAfterData()).contains("\"projectId\":200");
+        assertThat(audit.getAfterData()).contains("\"actualReceipts\":10000000");
+        assertThat(audit.getAfterData()).contains("\"achievementRate\":100");
+        assertThat(audit.getAfterData()).contains("\"personalCoefficient\":1.2");
+        assertThat(audit.getAfterData()).contains("\"poolRate\":0.05");
+        assertThat(audit.getAfterData()).contains("\"status\":\"DRAFT\"");
+    }
+
+    @Test
+    @DisplayName("W4-B 件 2：同 projectId 已存在 DRAFT 二次 compute → IpdBusinessException(STATE_CONFLICT, 409)")
+    void compute_existingDraft_throwsStateConflict() {
+        // 不需要 stub projectMapper——查 DRAFT existing 命中即抛异常（在 buildPoolFromProjectWithAchievement 之前）
+        BonusPool existingDraft = new BonusPool();
+        existingDraft.setId(555L);
+        existingDraft.setProjectId(200L);
+        existingDraft.setStatus(BonusPoolService.STATUS_DRAFT);
+        when(bonusPoolMapper.selectByProjectIdAndStatus(200L, BonusPoolService.STATUS_DRAFT))
+            .thenReturn(existingDraft);
+
+        assertThatThrownBy(() -> service.compute(200L,
+            new BigDecimal("10000000"),
+            new BigDecimal("100"),
+            new BigDecimal("1.0"),
+            new BigDecimal("0.05"),
+            actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("已存在 DRAFT 奖金池")
+            .hasMessageContaining("id=555");
+        // 不写审计、不 insert
+        verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(bonusPoolMapper, never()).insert(any(BonusPool.class));
+    }
+
+    @Test
+    @DisplayName("W4-B 件 1+：审计失败不阻断主流程（mock append 抛异常，compute 仍成功）")
+    void compute_auditFailure_doesNotBlockBusiness() {
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
+        when(bonusPoolMapper.selectByProjectIdAndStatus(200L, BonusPoolService.STATUS_DRAFT))
+            .thenReturn(null);
+        // mock append 抛 RuntimeException，appendAudit 内 try/catch 应吞掉
+        org.mockito.Mockito.doThrow(new RuntimeException("audit append boom"))
+            .when(auditLogService).append(any(AuditLog.class));
+
+        BonusPool pool = service.compute(200L,
+            new BigDecimal("10000000"),
+            new BigDecimal("100"),
+            new BigDecimal("1.2"),
+            new BigDecimal("0.05"),
+            actor());
+
+        // 主流程成功：DRAFT 入库 + finalPool 正确计算
+        assertThat(pool.getStatus()).isEqualTo(BonusPoolService.STATUS_DRAFT);
+        assertThat(pool.getFinalPool()).isEqualByComparingTo(new BigDecimal("1080000"));
+        verify(bonusPoolMapper, times(1)).insert(any(BonusPool.class));
+    }
+
+    /* ====================== [SEC-FIX-HIGH-5.2-FOLLOWUP] 三件套校验 ====================== */
+
+    @Test
+    @DisplayName("[SEC-FIX-HIGH-5.2-FOLLOWUP] compute 异常：actualReceipts 超上限 → IpdBusinessException(PARAM_INVALID)")
+    void compute_exceedsActualReceiptsMax_throwsIpdBusinessException() {
+        // actualReceipts = 1e13 超过 ACTUAL_RECEIPTS_MAX (1e12)
+        assertThatThrownBy(() -> service.compute(200L,
+            new BigDecimal("10000000000000"),
+            new BigDecimal("100"),
+            new BigDecimal("1.0"),
+            new BigDecimal("0.05"),
+            actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("超过合理上限");
+        // 不写审计、不 insert
+        verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(bonusPoolMapper, never()).insert(any(BonusPool.class));
+    }
+
+    @Test
+    @DisplayName("[SEC-FIX-HIGH-5.2-FOLLOWUP] compute 异常：poolRate > 1 → 走 validatePoolRate 拒绝")
+    void compute_invalidPoolRate_throwsIpdBusinessException() {
+        assertThatThrownBy(() -> service.compute(200L,
+            new BigDecimal("1000000"),
+            new BigDecimal("100"),
+            new BigDecimal("1.0"),
+            new BigDecimal("1.5"),  // 超过 POOL_RATE_MAX=1
+            actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("poolRate");
+        verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(bonusPoolMapper, never()).insert(any(BonusPool.class));
     }
 }

@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
@@ -107,5 +108,46 @@ class AutoComputePersonalCoefficientAcceptanceTest {
     void nullScore() {
         when(kpiRecordMapper.selectList(any())).thenReturn(List.of(record(10L, "2026-01", null)));
         assertThat(service.resolvePersonalCoefficient(10L, "2026-01")).isEqualByComparingTo("1.0");
+    }
+
+    /* ====================== [SEC-FIX-HIGH-5.2-FOLLOWUP] ====================== */
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("[SEC-FIX-HIGH-5.2-FOLLOWUP] FINAL 行数超 RESOLVE_PERSONAL_COEFFICIENT_MAX_ROWS → fail-fast IpdBusinessException")
+    void failFast_exceedsMaxRows_throwsIpdBusinessException() {
+        // 任意 selectCount 返回 >12 都触发 fail-fast
+        when(kpiRecordMapper.selectCount(any())).thenReturn(13L);
+        assertThatThrownBy(() -> service.resolvePersonalCoefficient(10L, "2026-01"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("超过合理上限")
+            .hasMessageContaining("fail-fast");
+        // fail-fast 后不应查 selectList 取 max
+        verify(kpiRecordMapper, org.mockito.Mockito.atMost(1)).selectList(any());
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("[SEC-FIX-HIGH-5.2-FOLLOWUP] FINAL 行数 = 12（边界值）→ 放行（不 fail-fast）")
+    void failFast_atBoundary_doesNotFailFast() {
+        when(kpiRecordMapper.selectCount(any())).thenReturn(12L);
+        when(kpiRecordMapper.selectList(any())).thenReturn(List.of(record(10L, "2026-01", new BigDecimal("92"))));
+        when(projectScoreService.projectPerformanceCoefficient(new BigDecimal("92"))).thenReturn(new BigDecimal("1.0"));
+        assertThat(service.resolvePersonalCoefficient(10L, "2026-01")).isEqualByComparingTo("1.0");
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("[SEC-FIX-HIGH-5.2-FOLLOWUP] 排序按 comprehensiveScore DESC 取最高分（不是 createTime）")
+    void ordersByComprehensiveScoreDesc() {
+        KpiRecord lowerScoreLaterCreate = record(10L, "2026-01", new BigDecimal("70"));
+        // createTime 比另一条晚，但 comprehensive_score 低——应被忽略
+        lowerScoreLaterCreate.setCreateTime(new Date(System.currentTimeMillis() + 60_000));
+        KpiRecord higherScoreEarlierCreate = record(10L, "2026-01", new BigDecimal("95"));
+        higherScoreEarlierCreate.setCreateTime(new Date(System.currentTimeMillis() - 60_000));
+        // 模拟 selectList 在应用 orderByDesc + LIMIT 1 后只返回分数高的一条
+        when(kpiRecordMapper.selectCount(any())).thenReturn(2L);
+        when(kpiRecordMapper.selectList(any())).thenReturn(List.of(higherScoreEarlierCreate));
+        when(projectScoreService.projectPerformanceCoefficient(new BigDecimal("95"))).thenReturn(new BigDecimal("1.0"));
+        BigDecimal coef = service.resolvePersonalCoefficient(10L, "2026-01");
+        assertThat(coef).isEqualByComparingTo("1.0");
+        verify(projectScoreService, org.mockito.Mockito.never()).projectPerformanceCoefficient(new BigDecimal("70"));
     }
 }
