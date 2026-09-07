@@ -23,6 +23,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import java.util.List;
@@ -66,6 +67,8 @@ class P273AcceptanceTest {
     private HandoverMapper handoverMapper;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private IpdAuthSession ipdAuthSession;
 
     private ProjectMemberService projectMemberService;
     private HandoverService handoverService;
@@ -94,7 +97,7 @@ class P273AcceptanceTest {
         projectMemberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
             org.mockito.Mockito.mock(SystemConfigService.class), auditLogService);
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
-            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE);
+            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession);
 
         currentAdminPerson = personOf(900L, "现任超管", "SUPER_ADMIN", "ACTIVE", "ACTIVE", "wecom-current");
         newAdminPerson = personOf(NEW_ADMIN_ID, "新晋超管", "GROUP_LEADER", "ACTIVE", "ACTIVE", "wecom-new");

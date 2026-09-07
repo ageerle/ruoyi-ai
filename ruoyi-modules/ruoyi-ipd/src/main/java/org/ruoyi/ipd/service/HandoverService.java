@@ -3,6 +3,7 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
@@ -17,6 +18,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,7 @@ import java.util.Set;
  *       重复/超项备案/角色互斥/津贴快照校验全量继承（与 AC-TEAM-11 链贯通）</li>
  * </ul>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(rollbackFor = Exception.class)
@@ -70,6 +73,8 @@ public class HandoverService {
     private final AuditLogService auditLogService;
     private final ProjectMemberService projectMemberService;
     private final PlatformTransactionManager transactionManager;
+    /** HIGH-3.2：超管移交后强制下线旧 session——走 loginType=ipd 的 revokeAll。 */
+    private final IpdAuthSession ipdAuthSession;
 
     /** 本人发起移交（DRAFT，等待接手人 accept）。 */
     public HandoverRecord initiate(Long projectId, String role, Long toPersonId, String note, IpdActor operator) {
@@ -497,6 +502,14 @@ public class HandoverService {
                 "wecomUnbound", true))
             .createTime(now)
             .build());
+        // 4) HIGH-3.2：强制原超管 session 失效（ipd loginType revokeAll）
+        // 失败不抛业务异常：Sa-Token 故障不应阻塞主链路（DB 已提交，前端下次请求 401）。
+        try {
+            ipdAuthSession.revokeAll(currentAdmin.getId());
+        } catch (Exception e) {
+            log.warn("HIGH-3.2 super-admin logout failed: actor={}, fromPersonId={}",
+                operator.id(), currentAdmin.getId(), e);
+        }
     }
 
     /**

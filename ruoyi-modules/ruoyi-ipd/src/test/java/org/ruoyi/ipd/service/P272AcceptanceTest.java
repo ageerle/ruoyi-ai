@@ -24,6 +24,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import java.util.List;
@@ -67,6 +68,8 @@ class P272AcceptanceTest {
     private SystemConfigService systemConfigService;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private IpdAuthSession ipdAuthSession;
 
     private ProjectMemberService projectMemberService;
     private HandoverService handoverService;
@@ -95,7 +98,7 @@ class P272AcceptanceTest {
         projectMemberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
-            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE);
+            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession);
         lenient().when(projectMapper.selectById(anyLong())).thenReturn(projectWithGroup());
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(systemConfigService.getIntValue("allowance.projectCountThreshold", 3)).thenReturn(3);

@@ -25,6 +25,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import java.util.List;
@@ -68,6 +69,8 @@ class P271AcceptanceTest {
     private SystemConfigService systemConfigService;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private IpdAuthSession ipdAuthSession;
 
     private ProjectMemberService projectMemberService;
     private HandoverService handoverService;
@@ -95,7 +98,7 @@ class P271AcceptanceTest {
         projectMemberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
-            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE);
+            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession);
         // SEC-REV-HANDOVER-01 适配：assertSameGroup 需要 project.mainGroupId 与 leader.groupId 一致
         Project grouped = new Project();
         grouped.setMainGroupId(7L);

@@ -26,6 +26,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.support.NoopTransactionManager;
 
 import java.util.Date;
@@ -61,6 +62,7 @@ class HandoverRollbackAcceptanceTest {
     @Mock private HandoverMapper handoverMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private ProjectMemberService projectMemberService;
+    @Mock private IpdAuthSession ipdAuthSession;
 
     private HandoverService service;
 
@@ -76,7 +78,8 @@ class HandoverRollbackAcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
-            handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE);
+            handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
+            ipdAuthSession);
     }
 
     private IpdActor fromActor() {
