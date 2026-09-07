@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/login",
+    "scrollW": 375,
+    "clientW": 375,
+    "bodyScrollW": 375,
+    "overflowX": 0,
+    "verdict": "OK"
+  },
+  {
+    "path": "/workspace",
+    "scrollW": 375,
+    "clientW": 375,
+    "bodyScrollW": 375,
+    "overflowX": 0,
+    "verdict": "OK"
+  },
+  {
+    "path": "/project-list",
+    "scrollW": 375,
+    "clientW": 375,
+    "bodyScrollW": 375,
+    "overflowX": 0,
+    "verdict": "OK"
+  },
+  {
+    "path": "/gate-review",
+    "scrollW": 375,
+    "clientW": 375,
+    "bodyScrollW": 375,
+    "overflowX": 0,
+    "verdict": "OK"
+  },
+  {
+    "path": "/dashboard",
+    "scrollW": 375,
+    "clientW": 375,
+    "bodyScrollW": 375,
+    "overflowX": 0,
+    "verdict": "OK"
+  }
+]
