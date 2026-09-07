@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
 @org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
-class StageActionDeliverableOssIdAcceptanceTest {
+class P142AcceptanceTest {
 
     @Mock
     private DeliverableMapper deliverableMapper;

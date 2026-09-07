@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
-class LegacyScenarioDaysRemainingAcceptanceTest {
+class P192AcceptanceTest {
 
     @Mock private ProjectMapper projectMapper;
     @Mock private ProductMapper productMapper;
