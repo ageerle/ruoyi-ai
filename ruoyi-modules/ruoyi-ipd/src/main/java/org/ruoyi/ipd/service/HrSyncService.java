@@ -53,8 +53,14 @@ public class HrSyncService {
      * @return PersonService.ResignResult（含 wecomUnbound / sessionsRevoked / notificationsSent）
      */
     public PersonService.ResignResult markResignedByHr(Long personId, String reason, IpdActor operator) {
-        log.info("P2-2.2 hr-sync mark-resigned: personId={} operator={} reason={}",
-            personId, operator.id(), reason);
+        // [SEC-LOG-PII] 2026-09-07 push 后台安全审查：reason 是离职原因可能含 PII/劳资争议/纪律处分
+        // 不写 info 级日志，仅 debug 时输出，且 hash 化 reason 长度避免反向推断
+        log.info("P2-2.2 hr-sync mark-resigned: personId={} operator={} reasonLen={}",
+            personId, operator.id(), reason == null ? 0 : reason.length());
+        if (log.isDebugEnabled()) {
+            log.debug("P2-2.2 hr-sync mark-resigned reason-debug: personId={} reason={}",
+                personId, reason);
+        }
         return personService.resign(personId, reason, operator);
     }
 
@@ -126,13 +132,21 @@ public class HrSyncService {
                             + p.activeProjects + " 个项目仍待移交。请尽快处置。",
                         "/ipd/admin/handovers/pending");
                 } catch (Exception e) {
-                    log.warn("P2-2.2 升级通知失败: adminId={} personId={}", adminId, p.personId, e);
+                    // [SEC-LOG-PII] 2026-09-07 push 后台安全审查：personId 仅 debug 输出，warn 仅留异常类型
+                    log.warn("P2-2.2 升级通知失败: kind={}", e.getClass().getSimpleName(), e);
+                    if (log.isDebugEnabled()) {
+                        log.debug("P2-2.2 escalate-fail-detail: adminId={} personId={}", adminId, p.personId);
+                    }
                 }
             }
             escalated++;
         }
-        log.info("P2-2.2 升级扫描: staleCount={} escalated={} admins={} operator={}",
-            stale.size(), escalated, admins.size(), operator.id());
+        // [SEC-LOG-PII] 2026-09-07 push 后台安全审查：operator.id 仅 debug 输出
+        log.info("P2-2.2 升级扫描: staleCount={} escalated={} admins={}",
+            stale.size(), escalated, admins.size());
+        if (log.isDebugEnabled()) {
+            log.debug("P2-2.2 escalate-audit: operator={}", operator.id());
+        }
         return escalated;
     }
 
