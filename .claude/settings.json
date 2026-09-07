@@ -102,6 +102,16 @@
             "timeout": 3000
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/hardcoded-config-guard.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/hardcoded-config-guard.cjs\" < /dev/stdin'",
+            "timeout": 3000
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
