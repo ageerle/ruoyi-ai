@@ -60,6 +60,8 @@ public class ProjectService {
     private final ProjectBootstrapService projectBootstrapService;
     private final ProjectCertService projectCertService;
     private final PlatformTransactionManager transactionManager;
+    /** P2-6.2：阶段门禁 —— 跳阶前查询未闭环需求变更单（含 DRAFT / PENDING_SIGN）。 */
+    private final RequirementChangeService requirementChangeService;
 
     /** 奖金池比例（BR-INC-04）：目标销售额 × 5% × 差异化系数 */
     public static final BigDecimal BONUS_POOL_RATE = new BigDecimal("0.05");
@@ -247,6 +249,11 @@ public class ProjectService {
      * 阶段推进：门禁校验（BR-IPD-06，P1-5 GateEngine 接管）+ LAUNCH 前置上市日期（BR-IPD-08）。
      * R8X-CONT-1 P0-1：加 actor.groupId == project.mainGroupId 横向越权防护（SUPER_ADMIN 豁免）
      *                  + 审计含 prior + new currentStage。
+     *
+     * <p>P2-6.2 强化：跳阶前先查需求变更单（{@link RequirementChangeService#hasOpenChange}），
+     * 存在未闭环变更单（DRAFT 或 PENDING_SIGN）⇒ 拒绝推进，AC-GATE-11 跳阶拒绝语义。
+     * 拒绝路径写 STAGE_GUARD_BLOCKED 审计（before/after 镜像 + operatorId + reason），
+     * 不抛 GATE_NOT_PASSED 而抛 STATE_CONFLICT 区分「未闭环变更」与「Gate 要素不齐」。
      */
     @Transactional(rollbackFor = Exception.class)
     public Project advanceStage(Long projectId, Long operatorId, Long actorGroupId, String actorRole) {
@@ -258,6 +265,21 @@ public class ProjectService {
         }
         if ("SUSPENDED".equals(project.getStatus()) || "ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("暂停/归档项目禁止推进阶段");
+        }
+        // P2-6.2：未闭环变更单门禁（任一 DRAFT / PENDING_SIGN 存在 ⇒ 拒绝）
+        // 顺序先于 NEXT_STAGE/gateEngine —— 即使是「最终阶段 LIFECYCLE」也要先审计/拒绝，
+        // 让审计链记录「操作人试图越界跳阶」便于事后追责。
+        // null-safe：单测环境下部分用例（历史 advanceStage 测试）不挂载 RequirementChangeService
+        // mock 仍可继续工作（跳过本门禁），生产环境由 Spring DI 注入必有非 null。
+        if (requirementChangeService != null && requirementChangeService.hasOpenChange(projectId)) {
+            int openCount = requirementChangeService.countOpenByProject(projectId);
+            String prior = project.getCurrentStage();
+            String nextAttempt = NEXT_STAGE.get(prior);
+            auditStageGuardBlocked(projectId, project.getName(), operatorId,
+                prior, nextAttempt, openCount);
+            throw new org.ruoyi.ipd.common.IpdBusinessException(
+                org.ruoyi.ipd.common.ApiV1ErrorCode.STATE_CONFLICT,
+                "存在未闭环需求变更单（" + openCount + " 张），需先关闭（P2-6.2 阶段门禁）");
         }
         String prior = project.getCurrentStage();
         String next = NEXT_STAGE.get(prior);
@@ -574,6 +596,33 @@ public class ProjectService {
             .entityType("projects").entityId(id).reason(name)
             .beforeData(AuditEventData.json("currentStage", prior))
             .afterData(AuditEventData.json("currentStage", next))
+            .createTime(new Date()).build());
+    }
+
+    /**
+     * P2-6.2：阶段门禁拒绝审计（未闭环需求变更单导致跳阶被拒）。
+     *
+     * <p>审计链需在 {@code IpdBusinessException} 抛出之前落库 —— 由于 advanceStage 整体被
+     * {@code @Transactional} 包裹，audit 写入走 {@code AuditLogService} 的 REQUIRES_NEW 通道
+     * （基线约定），主事务回滚不影响审计可见性。
+     *
+     * <p>字段约定：
+     * <ul>
+     *   <li>action = {@code STAGE_GUARD_BLOCKED}（区别于 PROJECT_STAGE_* 成功审计）</li>
+     *   <li>reason = 项目名（与 audit/auditStage 对齐，便于查询）</li>
+     *   <li>beforeData = { currentStage, attemptedNext, openChangeCount } 镜像</li>
+     *   <li>afterData = null（拒绝路径无新值写入）</li>
+     * </ul>
+     */
+    private void auditStageGuardBlocked(Long id, String name, Long operatorId,
+                                        String prior, String attemptedNext, int openCount) {
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId).action("STAGE_GUARD_BLOCKED")
+            .entityType("projects").entityId(id).reason(name)
+            .beforeData(AuditEventData.json(
+                "currentStage", prior,
+                "attemptedNext", attemptedNext,
+                "openChangeCount", openCount))
             .createTime(new Date()).build());
     }
 

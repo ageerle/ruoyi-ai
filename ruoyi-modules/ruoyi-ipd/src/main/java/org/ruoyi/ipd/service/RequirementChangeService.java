@@ -3,6 +3,9 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -55,6 +58,15 @@ public class RequirementChangeService {
     /** 决策集合 */
     private static final Set<String> DECISIONS = Set.of("APPROVE", "REJECT");
 
+    /**
+     * 影响评估必填四维度键（P2-6.2 强化）。AC-REQ-08 要求变更必须显式覆盖范围/成本/时限/质量，
+     * 缺失任一维度 ⇒ PARAM_INVALID，从源头上杜绝「影响评估留白、双签走过场」的 state-drift。
+     */
+    private static final Set<String> REQUIRED_DIMENSION_KEYS = Set.of("范围", "成本", "时限", "质量");
+
+    /** 影响快照 JSON 解析器（共享，与 AuditEventData 隔离避免误传敏感上下文）。 */
+    private static final ObjectMapper SNAPSHOT_JSON = new ObjectMapper();
+
     /** 系统执行人（无登录态时审计落名） */
     private static final IpdActor SYSTEM_ACTOR = new IpdActor(0L, "system", "SYSTEM", null);
 
@@ -66,6 +78,10 @@ public class RequirementChangeService {
      * 创建变更单（草稿状态）。AC-REQ-08：需求转需求变更单 ⇒ 可生成。
      * 引用原需求 ID，影响评估快照由调用方提供（beforeSnapshot / afterSnapshot JSON），
      * 包含范围/成本/时限/质量四维度。
+     *
+     * <p>P2-6.2 强化：影响评估四维度在 create 阶段即强制校验 —— beforeSnapshot / afterSnapshot
+     * 必须为合法 JSON 且同时包含「范围/成本/时限/质量」四个键，任一缺失 ⇒ PARAM_INVALID。
+     * 提交阶段（{@link #submit}）的同口径校验作为兜底双保险（防御 create 之后回填快照路径）。
      */
     @Transactional(rollbackFor = Exception.class)
     public RequirementChange create(RequirementChange change, IpdActor actor) {
@@ -83,6 +99,9 @@ public class RequirementChangeService {
         if (change.getProjectId() == null) {
             change.setProjectId(requirement.getProjectId());
         }
+        // P2-6.2：影响评估四维度必填（create 阶段即校验，缺失即拒绝）
+        validateFourDimensionalSnapshot(change.getBeforeSnapshot(), "beforeSnapshot");
+        validateFourDimensionalSnapshot(change.getAfterSnapshot(), "afterSnapshot");
 
         change.setStatus(STATUS_DRAFT);
         change.setCreateTime(new Date());
@@ -96,6 +115,10 @@ public class RequirementChangeService {
     /**
      * 提交双签：DRAFT ⇒ PENDING_SIGN。
      * 提交校验影响评估四维度（范围/成本/时限/质量）全部非空——任一缺失拒绝。
+     *
+     * <p>P2-6.2 强化：复用 {@link #validateFourDimensionalSnapshot} 作为兜底双保险。
+     * 正常路径下 create 已校验；本方法在 create→submit 期间快照被外部覆盖/篡改时兜底拒绝，
+     * 防止「四维度在 create 后被偷换为留白快照」绕过校验。
      */
     @Transactional(rollbackFor = Exception.class)
     public RequirementChange submit(Long id, IpdActor actor) {
@@ -105,9 +128,8 @@ public class RequirementChangeService {
         if (!STATUS_DRAFT.equals(change.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
-        if (isBlank(change.getBeforeSnapshot()) || isBlank(change.getAfterSnapshot())) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
-        }
+        validateFourDimensionalSnapshot(change.getBeforeSnapshot(), "beforeSnapshot");
+        validateFourDimensionalSnapshot(change.getAfterSnapshot(), "afterSnapshot");
         change.setStatus(STATUS_PENDING_SIGN);
         change.setUpdateTime(new Date());
         requirementChangeMapper.updateById(change);
@@ -354,6 +376,54 @@ public class RequirementChangeService {
     private void requireNonBlankField(String v, String msg) {
         if (v == null || v.isBlank()) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+        }
+    }
+
+    /**
+     * P2-6.2：影响评估四维度（范围/成本/时限/质量）必填校验。
+     *
+     * <p>语义：
+     * <ul>
+     *   <li>null/空串 ⇒ PARAM_INVALID（影响快照未提交）</li>
+     *   <li>非合法 JSON / 非对象 ⇒ PARAM_INVALID（结构错）</li>
+     *   <li>对象节点上「范围/成本/时限/质量」任一键缺失或值为 null/空串 ⇒ PARAM_INVALID（维度遗漏）</li>
+     * </ul>
+     *
+     * <p>设计要点 —— 不挑「键值语义」（不强求数字/枚举），只确保四维度被显式登记；
+     * 这样：
+     * <ul>
+     *   <li>前端可以为「范围」「质量」存非数字（如「全国」「高」）</li>
+     *   <li>不会因校验器与业务字段语义不一致而误拒合法请求</li>
+     *   <li>未来若需要字段语义校验（如「成本」必须为数值），可加在 GateReview / 提交审批处，create 保持轻量</li>
+     * </ul>
+     */
+    private void validateFourDimensionalSnapshot(String snapshot, String fieldName) {
+        if (snapshot == null || snapshot.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                fieldName + " 必填影响评估四维度（范围/成本/时限/质量）");
+        }
+        JsonNode node;
+        try {
+            node = SNAPSHOT_JSON.readTree(snapshot);
+        } catch (JsonProcessingException ex) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                fieldName + " 不是合法 JSON：" + ex.getClass().getSimpleName());
+        }
+        if (node == null || !node.isObject()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                fieldName + " 必须是 JSON 对象（顶层 {}）");
+        }
+        for (String key : REQUIRED_DIMENSION_KEYS) {
+            JsonNode v = node.get(key);
+            if (v == null || v.isNull()) {
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                    fieldName + " 缺少影响维度「" + key + "」");
+            }
+            // 文本/数字/数组都允许 —— 但「空串」/「空对象」/「空数组」视为未填写
+            if (v.isTextual() && v.asText().isBlank()) {
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                    fieldName + " 维度「" + key + "」值不能为空");
+            }
         }
     }
 

@@ -440,7 +440,7 @@ class P131DatabaseIntegrationTest {
             }).when(audit).append(any(AuditLog.class));
             ProjectCertService certs = mock(ProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
-            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
+            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
             Project result = service.create(request, OPERATOR);
             assertThat(result.getId()).isPositive();
             assertThat(observed.get()).isTrue();
@@ -470,7 +470,7 @@ class P131DatabaseIntegrationTest {
             }).when(audit).append(any(AuditLog.class));
             ProjectCertService certs = mock(ProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
-            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE));
+            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
             assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR)))).isSameAs(original);
             assertThat(observed.get()).isTrue();
             assertThat(request.getId()).isPositive();

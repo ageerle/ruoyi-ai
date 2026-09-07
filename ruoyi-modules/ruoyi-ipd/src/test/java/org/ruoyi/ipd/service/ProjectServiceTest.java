@@ -55,7 +55,8 @@ class ProjectServiceTest {
     void setUp() {
         service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper,
             auditLogService, gateEngine,
-            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE);
+            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
+            null /* P2-6.2：未挂载需求变更单 service 时跳过 hasOpenChange 门禁 */);
     }
 
     private Project base(String level, String coefficient, String reason) {

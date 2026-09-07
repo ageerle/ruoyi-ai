@@ -60,7 +60,8 @@ class ProjectServiceConcurrencyTest {
     void setUp() {
         service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper,
             auditLogService, gateEngine,
-            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE);
+            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
+            null /* P2-6.2 */);
     }
 
     @Test

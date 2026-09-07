@@ -45,7 +45,7 @@ class P122AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE);
+        projectService = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
         launchDateChangeService = new LaunchDateChangeService(
             launchDateChangeRequestMapper, projectMapper, auditLogService);
     }
