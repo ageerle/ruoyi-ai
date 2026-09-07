@@ -43,10 +43,12 @@ public class PersonController {
     /** 企微解绑请求（reason 必填）。 */
     public record UnbindRequest(@NotBlank @Size(max = 200) String reason) { }
 
-    /** 离职响应（待移交项目数 + 幂等标记）。 */
-    public record ResignView(boolean idempotent, long pendingProjects, String message) {
+    /** 离职响应（待移交项目数 + 幂等标记 + P2-2.2 联动副作用标记）。 */
+    public record ResignView(boolean idempotent, long pendingProjects, String message,
+                            boolean wecomUnbound, boolean sessionsRevoked, int notificationsSent) {
         public static ResignView from(PersonService.ResignResult r) {
-            return new ResignView(r.idempotent(), r.pendingProjects(), r.message());
+            return new ResignView(r.idempotent(), r.pendingProjects(), r.message(),
+                r.wecomUnbound(), r.sessionsRevoked(), r.notificationsSent());
         }
     }
 

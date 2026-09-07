@@ -17,11 +17,13 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 
 /**
@@ -43,6 +45,10 @@ class P213PersonStateAcceptanceTest {
     @Mock PersonMapper personMapper;
     @Mock ProjectMemberMapper memberMapper;
     @Mock AuditLogService auditLogService;
+    /** P2-2.2 联动新增：session revoke（默认 doNothing — 仅在测联动行为时显式 stub）。 */
+    @Mock IpdAuthSession ipdAuthSession;
+    /** P2-2.2 联动新增：通知派发（默认 null 返 — 联动副作用调用走 try/catch 兜底）。 */
+    @Mock NotificationService notificationService;
 
     @InjectMocks PersonService personService;
 
@@ -78,7 +84,8 @@ class P213PersonStateAcceptanceTest {
     @Test
     @DisplayName("resign: ACTIVE → RESIGNED + FROZEN + 审计 + 返回 pendingProjects=0")
     void resign_active_freezes() {
-        Person p = person(1L, "ACTIVE", "ACTIVE", "wc_001");
+        // P2-2.2 改造：wecom=null 避免触发 autoUnbindWecomOnResign 二次 updateById，本测聚焦状态机+审计。
+        Person p = person(1L, "ACTIVE", "ACTIVE", null);
         when(personMapper.selectById(1L)).thenReturn(p);
 
         var result = personService.resign(1L, "personal reason", hrActor);
@@ -86,16 +93,18 @@ class P213PersonStateAcceptanceTest {
         assertThat(result.idempotent()).isFalse();
         assertThat(result.pendingProjects()).isZero();
         assertThat(result.message()).contains("冻结成功");
+        assertThat(result.wecomUnbound()).isFalse();
         ArgumentCaptor<Person> saved = ArgumentCaptor.forClass(Person.class);
         verify(personMapper).updateById(saved.capture());
         assertThat(saved.getValue().getEmploymentStatus()).isEqualTo("RESIGNED");
         assertThat(saved.getValue().getAccountStatus()).isEqualTo("FROZEN_PENDING_HANDOVER");
 
         ArgumentCaptor<AuditLog> audit = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(audit.capture());
-        assertThat(audit.getValue().getAction()).isEqualTo("RESIGN");
-        assertThat(audit.getValue().getEntityType()).isEqualTo("persons");
-        assertThat(audit.getValue().getOperatorId()).isEqualTo(100L);
+        // P2-2.2 改造：联动副作用多写一条 REVOKE_SESSIONS；断言 RESIGN 必须存在即可
+        verify(auditLogService, atLeastOnce()).append(audit.capture());
+        assertThat(audit.getAllValues()).extracting(AuditLog::getAction).contains("RESIGN");
+        assertThat(audit.getAllValues()).extracting(AuditLog::getEntityType).contains("persons");
+        assertThat(audit.getAllValues()).extracting(AuditLog::getOperatorId).contains(100L);
     }
 
     @Test

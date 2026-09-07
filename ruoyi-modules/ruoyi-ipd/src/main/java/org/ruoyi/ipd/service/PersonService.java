@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -11,9 +12,13 @@ import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.service.NotificationService.Types;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -52,20 +57,48 @@ public class PersonService {
     private final PersonMapper personMapper;
     private final ProjectMemberMapper memberMapper;
     private final AuditLogService auditLogService;
+    /** P2-2.2 离职冻结撤销会话（ipd loginType revokeAll；不改基线 sys_user）。 */
+    private final IpdAuthSession ipdAuthSession;
+    /** P2-2.2 离职通知派发（outbox 模式；NotificationChannel 仅留痕不外送）。 */
+    private final NotificationService notificationService;
+
+    /** P2-2.2 通知事件类型——离职冻结全链路知会（双方组长 + 本人 + 超管）。 */
+    public static final String EVT_RESIGN_PENDING_HANDOVER = "RESIGN_PENDING_HANDOVER";
+    /** P2-2.2 通知事件类型——15 日升级超管。 */
+    public static final String EVT_RESIGN_ESCALATION = "RESIGN_ESCALATION";
 
     /**
-     * 离职冻结（AC-USER-08；BR-USER-05）。
+     * 离职冻结（AC-USER-08；BR-USER-05；P2-2.2 联动：撤销会话 + 企微自动解绑 + 双方组长/本人/超管通知）。
      *
-     * <p>状态机：employment_status ACTIVE → RESIGNED；account_status ANY → FROZEN_PENDING_HANDOVER；
-     * 已 RESIGNED 返 NOOP（幂等）。FROZEN_PENDING_HANDOVER 返 CONFLICT（已冻结待移交，避免重复冻结）。
+     * <p>状态机：employment_status ACTIVE → RESIGNED；account_status ACTIVE → FROZEN_PENDING_HANDOVER；
+     * 已 RESIGNED 返 NOOP（幂等）。FROZEN_PENDING_HANDOVER / DISABLED 返 CONFLICT（避免重复冻结）。
      *
-     * <p>副作用：不动 project_members（移交代办由 HandoverService.initiateOnBehalf 接手；本卡只冻结账户），
-     * 但列表返回"待移交项目数"以供前端提示。
+     * <p>P2-2.2 联动副作用（同事务内；侧副作用 revokeAll / notify 走 best-effort try/catch，
+     * 不阻塞主链路 status 更新）：
+     * <ol>
+     *   <li>企微自动解绑：清空 wecom_user_id + wecom_bound_at，<b>不动 account_status</b>
+     *       （必须保留 FROZEN_PENDING_HANDOVER — B8 先移交后禁用；DISABLED 由 HandoverService 全清后置入）。
+     *       幂等：wecom 已空跳解绑审计。</li>
+     *   <li>撤销会话：ipd loginType revokeAll；旧 token 立即失效。
+     *       失败不抛（Sa-Token 故障不应阻塞主链路；前端下次请求由 scopeOf→NONE 兜底 401）。</li>
+     *   <li>通知派发（outbox 模式）：
+     *       <ul>
+     *         <li>本人 → FYI（离职冻结知会）</li>
+     *         <li>本人所属组组长（actor.groupId）→ ACTION（有项目待移交）/ FYI（无项目）</li>
+     *         <li>对方组长（MARKET_PM 离职时通知 RD 组组长，反之亦然；无对方组长时跳过）→ FYI</li>
+     *         <li>全部 SUPER_ADMIN → ACTION（升级兜底）</li>
+     *       </ul>
+     *       失败仅 warn 日志（已落 RESIGN，不回滚）。</li>
+     *   <li>不创建 HandoverRecord — 实际移交流程由 HandoverService.initiateOnBehalf 接手
+     *       （组长在收件箱看到通知后触发）。</li>
+     * </ol>
+     *
+     * <p>不动 project_members 绑定（exitDate 由 HandoverService.accept 写）。
      *
      * @param personId 人员主键
      * @param reason 离职原因（审计可见）
      * @param operator 操作者（需 HR 角色或本人）
-     * @return 影响 1 条 + 待移交项目数（0+）
+     * @return 影响 1 条 + 待移交项目数 + 联动副作用标记
      */
     public ResignResult resign(Long personId, String reason, IpdActor operator) {
         Person person = requirePerson(personId);
@@ -75,9 +108,9 @@ public class PersonService {
             assertSameGroupOrAdmin(person, operator, "离职冻结");
         }
         if (EM_RESIGNED.equals(person.getEmploymentStatus())) {
-            // 幂等 NOOP：返回当前快照，不抛错
+            // 幂等 NOOP：返回当前快照，不抛错；联动副作用不重复触发
             long pending = countActiveMemberships(personId);
-            return new ResignResult(true, pending, "已离职，幂等返回");
+            return new ResignResult(true, pending, "已离职，幂等返回", false, false, 0);
         }
         if (AC_FROZEN.equals(person.getAccountStatus()) || AC_DISABLED.equals(person.getAccountStatus())) {
             // FROZEN_PENDING_HANDOVER / DISABLED 是"移交中"或"已禁用"，离职应在 ACTIVE 发起
@@ -100,8 +133,165 @@ public class PersonService {
             .beforeData(snapshot(before))
             .afterData(snapshot(person) + " | pendingProjects=" + pending + " | reason=" + safe(reason))
             .build());
-        log.info("P2-1.3 resign: personId={} operator={} pendingProjects={}", personId, operator.id(), pending);
-        return new ResignResult(false, pending, "冻结成功");
+
+        // P2-2.2 联动 — 企微自动解绑（不动 accountStatus；保留 FROZEN_PENDING_HANDOVER）
+        boolean wecomUnbound = autoUnbindWecomOnResign(person, operator);
+
+        // P2-2.2 联动 — 撤销会话（best-effort；DB 已提交）
+        boolean sessionsRevoked = revokeIpdSessions(personId, operator);
+
+        // P2-2.2 联动 — 通知派发（best-effort；outbox 模式 publish 内部 try/catch DuplicateKeyException）
+        int notificationsSent = publishResignNotifications(person, pending, reason, operator);
+
+        log.info("P2-2.2 resign 联动: personId={} operator={} pendingProjects={} wecomUnbound={} sessionsRevoked={} notificationsSent={}",
+            personId, operator.id(), pending, wecomUnbound, sessionsRevoked, notificationsSent);
+        return new ResignResult(false, pending, "冻结成功", wecomUnbound, sessionsRevoked, notificationsSent);
+    }
+
+    /**
+     * P2-2.2：离职冻结时企微自动解绑（保留 accountStatus=FROZEN_PENDING_HANDOVER；不写 DISABLED）。
+     * 幂等：wecom 已空跳解绑审计。
+     *
+     * @return true=本次实际执行了清空
+     */
+    private boolean autoUnbindWecomOnResign(Person person, IpdActor operator) {
+        if (person.getWecomUserId() == null || person.getWecomUserId().isBlank()) {
+            return false;
+        }
+        String beforeWecom = "***";
+        person.setWecomUserId(null);
+        person.setWecomBoundAt(null);
+        int rows = personMapper.updateById(person);
+        if (rows != 1) {
+            log.warn("P2-2.2 企微解绑更新影响行数≠1: personId={} rows={}", person.getId(), rows);
+            return false;
+        }
+        auditLogService.append(AuditLog.builder()
+            .entityType("persons")
+            .entityId(person.getId())
+            .action("UNBIND_WECHAT")
+            .operatorId(operator.id())
+            .reason("离职冻结自动解绑企微（AC-AUTH-06）")
+            .beforeData("{wecom=" + beforeWecom + "}")
+            .afterData("{wecom=null, accountStatus=" + person.getAccountStatus() + "}")
+            .build());
+        return true;
+    }
+
+    /**
+     * P2-2.2：撤销 IPD 独立会话（loginType=ipd）。
+     * 失败不抛（Sa-Token 故障不应阻塞主链路；前端下次请求由 IpdAuthService.scopeOf→NONE 兜底 401）。
+     */
+    private boolean revokeIpdSessions(Long personId, IpdActor operator) {
+        try {
+            ipdAuthSession.revokeAll(personId);
+            auditLogService.append(AuditLog.builder()
+                .entityType("persons")
+                .entityId(personId)
+                .action("REVOKE_SESSIONS")
+                .operatorId(operator.id())
+                .reason("离职冻结撤销会话（AC-AUTH-06）")
+                .build());
+            return true;
+        } catch (Exception e) {
+            log.warn("P2-2.2 撤销会话失败（不影响主链路）: personId={}", personId, e);
+            return false;
+        }
+    }
+
+    /**
+     * P2-2.2：通知派发 — 本人 + 双方组长 + 全部超管。
+     * 收件人去重：本人与 actor 同人时跳过本人；同组组长与对方组长同人时仅发一次。
+     */
+    private int publishResignNotifications(Person person, long pendingProjects, String reason, IpdActor operator) {
+        int sent = 0;
+        String kindLeader = pendingProjects > 0
+            ? NotificationService.KIND_ACTION  // 待移交 — 需行动
+            : NotificationService.KIND_FYI;     // 无项目 — 知会即可
+        String contentLeader = pendingProjects > 0
+            ? "您组内 " + person.getName() + " 离职冻结，名下有 " + pendingProjects + " 个项目待移交，请尽快处理。"
+            : "您组内 " + person.getName() + " 离职冻结，名下无活跃项目。";
+        String contentSelf = "您的账号已冻结（" + (reason == null ? "未注明原因" : reason)
+            + "），仅保留移交相关权限。如需复职请联系 HR。";
+        // 1) 本人 FYI（actor=本人时跳过，避免自收件箱冗余）
+        if (!operator.id().equals(person.getId())) {
+            try {
+                notificationService.publish(person.getId(), EVT_RESIGN_PENDING_HANDOVER,
+                    NotificationService.KIND_FYI, "persons", person.getId(),
+                    "账号已冻结（离职）", contentSelf, "/ipd/profile");
+                sent++;
+            } catch (Exception e) {
+                log.warn("P2-2.2 通知派发本人失败: personId={}", person.getId(), e);
+            }
+        }
+        // 2) 本组组长 ACTION/FYI
+        if (person.getGroupId() != null) {
+            List<Long> groupLeaders = personMapper.selectList(
+                new LambdaQueryWrapper<Person>()
+                    .eq(Person::getGroupId, person.getGroupId())
+                    .eq(Person::getPersonType, "GROUP_LEADER")
+                    .eq(Person::getEmploymentStatus, "ACTIVE")
+                    .eq(Person::getAccountStatus, "ACTIVE")
+                    .eq(Person::getDelFlag, "0"))
+                .stream().map(Person::getId).toList();
+            for (Long leaderId : groupLeaders) {
+                try {
+                    notificationService.publish(leaderId, EVT_RESIGN_PENDING_HANDOVER,
+                        kindLeader, "persons", person.getId(),
+                        "组员离职待移交（" + person.getName() + "）",
+                        contentLeader, "/ipd/handovers/inbox");
+                    sent++;
+                } catch (Exception e) {
+                    log.warn("P2-2.2 通知本组组长失败: leaderId={}", leaderId, e);
+                }
+            }
+        }
+        // 3) 对方组长 FYI（MARKET_PM ↔ RD_PM；如有反向组长）
+        String counterpartRole = "MARKET_PM".equals(person.getPersonType()) ? "RD_PM" : "MARKET_PM";
+        // 对方组长 = 另一 personType 下的 GROUP_LEADER（跨 personType 必有；不限组）
+        List<Long> counterpartLeaders = personMapper.selectList(
+            new LambdaQueryWrapper<Person>()
+                .eq(Person::getPersonType, "GROUP_LEADER")
+                .eq(Person::getEmploymentStatus, "ACTIVE")
+                .eq(Person::getAccountStatus, "ACTIVE")
+                .eq(Person::getDelFlag, "0"))
+            .stream()
+            .filter(p -> !p.getGroupId().equals(person.getGroupId()))
+            .map(Person::getId).toList();
+        for (Long leaderId : counterpartLeaders) {
+            try {
+                notificationService.publish(leaderId, EVT_RESIGN_PENDING_HANDOVER,
+                    NotificationService.KIND_FYI, "persons", person.getId(),
+                    "对方 PM 离职知会（" + person.getName() + "）",
+                    counterpartRole + " 角色 " + person.getName() + " 离职冻结，对方侧项目移交请关注。",
+                    "/ipd/handovers/inbox");
+                sent++;
+            } catch (Exception e) {
+                log.warn("P2-2.2 通知对方组长失败: leaderId={}", leaderId, e);
+            }
+        }
+        // 4) 全部 SUPER_ADMIN ACTION（升级兜底）
+        List<Long> admins = personMapper.selectList(
+            new LambdaQueryWrapper<Person>()
+                .eq(Person::getPersonType, "SUPER_ADMIN")
+                .eq(Person::getEmploymentStatus, "ACTIVE")
+                .eq(Person::getAccountStatus, "ACTIVE")
+                .eq(Person::getDelFlag, "0"))
+            .stream().map(Person::getId).toList();
+        for (Long adminId : admins) {
+            try {
+                notificationService.publish(adminId, EVT_RESIGN_PENDING_HANDOVER,
+                    NotificationService.KIND_ACTION, "persons", person.getId(),
+                    "离职冻结升级通知（" + person.getName() + "）",
+                    "人员 " + person.getName() + " 已离职冻结，15 日倒计时开始。名下 "
+                        + pendingProjects + " 个项目待移交。",
+                    "/ipd/admin/handovers/pending");
+                sent++;
+            } catch (Exception e) {
+                log.warn("P2-2.2 通知超管失败: adminId={}", adminId, e);
+            }
+        }
+        return sent;
     }
 
     /**
@@ -251,6 +441,9 @@ public class PersonService {
         return s == null ? "" : s.replaceAll("[\\r\\n]", " ").substring(0, Math.min(s.length(), 200));
     }
 
-    /** 离职结果：idempotent=true 表示幂等命中；pendingProjects 为待移交项目成员绑定数。 */
-    public record ResignResult(boolean idempotent, long pendingProjects, String message) { }
+    /** 离职结果：idempotent=true 表示幂等命中；pendingProjects 为待移交项目成员绑定数。
+     * <p>P2-2.2 联动副作用标记：wecomUnbound=企微是否本次清空；sessionsRevoked=会话是否撤销成功；
+     * notificationsSent=通知派发条数（本人 + 双方组长 + 全部超管）。 */
+    public record ResignResult(boolean idempotent, long pendingProjects, String message,
+                              boolean wecomUnbound, boolean sessionsRevoked, int notificationsSent) { }
 }

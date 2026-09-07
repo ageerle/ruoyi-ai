@@ -18,12 +18,14 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -52,6 +54,12 @@ class PersonGroupBoundarySecurityScenarioTest {
     private ProjectMemberMapper memberMapper;
     @Mock
     private AuditLogService auditLogService;
+    /** P2-2.2 联动新增：session revoke mock。 */
+    @Mock
+    private IpdAuthSession ipdAuthSession;
+    /** P2-2.2 联动新增：通知派发 mock。 */
+    @Mock
+    private NotificationService notificationService;
 
     private PersonService service;
 
@@ -61,7 +69,8 @@ class PersonGroupBoundarySecurityScenarioTest {
 
     @BeforeEach
     void setUp() {
-        service = new PersonService(personMapper, memberMapper, auditLogService);
+        service = new PersonService(personMapper, memberMapper, auditLogService,
+            ipdAuthSession, notificationService);
         leaderA = new IpdActor(101L, "Leader-A", "GROUP_LEADER", 10L);
         leaderB = new IpdActor(102L, "Leader-B", "GROUP_LEADER", 20L);
         superAdmin = new IpdActor(999L, "Root", "SUPER_ADMIN", 99L);
@@ -297,9 +306,10 @@ class PersonGroupBoundarySecurityScenarioTest {
         assertThat(self.getEmploymentStatus()).isEqualTo(PersonService.EM_RESIGNED);
         assertThat(self.getAccountStatus()).isEqualTo(PersonService.AC_FROZEN);
         ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo("RESIGN");
-        assertThat(captor.getValue().getOperatorId()).isEqualTo(102L);
+        // P2-2.2 改造：联动副作用多写一条 REVOKE_SESSIONS 审计；断言 RESIGN 必须存在即可
+        verify(auditLogService, atLeastOnce()).append(captor.capture());
+        assertThat(captor.getAllValues()).extracting(AuditLog::getAction).contains("RESIGN");
+        assertThat(captor.getAllValues()).extracting(AuditLog::getOperatorId).contains(102L);
     }
 
     @Test
@@ -309,10 +319,10 @@ class PersonGroupBoundarySecurityScenarioTest {
         stubPerson(member);
         PersonService.ResignResult result = service.resign(22L, "合同到期", leaderA);
         assertThat(result.message()).contains("冻结成功");
-        verify(personMapper).updateById(any(Person.class));
+        verify(personMapper, atLeastOnce()).updateById(any(Person.class));
         ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo("RESIGN");
+        verify(auditLogService, atLeastOnce()).append(captor.capture());
+        assertThat(captor.getAllValues()).extracting(AuditLog::getAction).contains("RESIGN");
 
         // 超管不受组属限制
         Person other = activePerson(23L, 30L);
