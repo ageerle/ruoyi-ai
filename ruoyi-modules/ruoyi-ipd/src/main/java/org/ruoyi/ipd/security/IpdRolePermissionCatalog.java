@@ -56,6 +56,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_GATE_REVIEW_INITIATE,
         IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT,
+        // SEC-MED-3：撤返码独立登记（仅申请人角色可用——与 SUBMIT 同集合，因角色级别无
+        // 法区分 actor 与资源 ownership；具体 IDOR 校验由 service 维持 + 全 NOT_FOUND 防侧信道）
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_WITHDRAW,
         IpdPermissionCode.OPERATION_COEFFICIENT_PROPOSE,
         // P1-10.1：AI 文档登记原始输出 / 人工改版 / 人工审核（BR-AI-03）
         IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE,

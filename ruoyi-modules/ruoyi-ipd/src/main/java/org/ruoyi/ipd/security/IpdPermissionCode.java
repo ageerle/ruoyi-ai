@@ -39,6 +39,8 @@ public interface IpdPermissionCode {
     String OPERATION_DELETION_REQUEST_SUBMIT = "ipd:deletion-request:submit";
     String OPERATION_DELETION_REQUEST_LEADER = "ipd:deletion-request:leader";
     String OPERATION_DELETION_REQUEST_ADMIN = "ipd:deletion-request:admin";
+    /** SEC-MED-3：撤返（独立权限码 + 与 SUBMIT 解耦 + 防侧信道） */
+    String OPERATION_DELETION_REQUEST_WITHDRAW = "ipd:deletion-request:withdraw";
 
     String OPERATION_GATE_REVIEW = "ipd:gate-review:list";
     String OPERATION_GATE_REVIEW_INITIATE = "ipd:gate-review:add";

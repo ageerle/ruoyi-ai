@@ -1,15 +1,21 @@
 package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.exception.NotPermissionException;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
+import org.ruoyi.ipd.security.IpdPermissionException;
 import org.ruoyi.ipd.service.DeletionArchiveService;
 import org.ruoyi.ipd.service.DeletionRequestService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.HandlerMethod;
+
+import java.lang.reflect.Method;
 
 import java.util.List;
 
@@ -112,13 +121,40 @@ public class DeletionRequestController {
 
     /**
      * 申请人撤回：限申请人本人在 24h 内、未终态；超 24h 不可撤回（AC-DEL-06）。
-     * 权限用 SUBMIT 码 + actor.id 必须等于 requesterId（应用层兜底防越权自审）。
+     * <p>SEC-MED-3：权限码改为独立 {@link IpdPermissionCode#OPERATION_DELETION_REQUEST_WITHDRAW}（与 SUBMIT 解耦），
+     * 委托 {@link DeletionRequestService#withdrawIfExistsOrNotFound(IpdActor, Long)} 单代码路径，
+     * 不存在 / 非本人 / 终态 / 超时限 → 统一 404 NOT_FOUND「资源不存在」防侧信道。
      */
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT, type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_WITHDRAW, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/withdraw")
     public ApiV1Response<DeletionRequest> withdraw(@PathVariable Long id) {
-        IpdActor actor = ipdPermission.requireInternal();
-        return ApiV1Response.ok(deletionRequestService.withdraw(id, actor.id()));
+        try {
+            IpdActor actor = ipdPermission.requireInternal();
+            return ApiV1Response.ok(deletionRequestService.withdrawIfExistsOrNotFound(actor, id));
+        } catch (IpdPermissionException e) {
+            // SEC-MED-3 防侧信道：requireInternal 401/403 → 统一 404 NOT_FOUND（不暴露"未登录 / 非内部角色"）
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
+        }
+    }
+
+    /**
+     * SEC-MED-3 防侧信道：仅 {@code withdraw} 方法的 {@link NotPermissionException}（@SaCheckPermission 拒绝）
+     * 转 404 NOT_FOUND 与 service 同返；其他方法继续走 {@code IpdPermissionExceptionHandler} 默认 403 行为。
+     * <p>实现要点：通过 {@link HandlerMethod} 反射判断抛异常的 handler 方法名，只对 withdraw 短路；
+     * 非 withdraw 方法重新抛出让全局 {@code IpdPermissionExceptionHandler} 接住，保持原有 403 语义不变。
+     */
+    @ExceptionHandler(NotPermissionException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleNotPermissionForWithdraw(
+        NotPermissionException exception, HandlerMethod handlerMethod) {
+        Method method = handlerMethod.getMethod();
+        if ("withdraw".equals(method.getName())
+            && method.getDeclaringClass() == DeletionRequestController.class) {
+            // withdraw 端点：与 service NOT_FOUND 完全同返（含 errorCode / message / httpStatus）
+            return ResponseEntity.status(ApiV1ErrorCode.NOT_FOUND.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.NOT_FOUND, "资源不存在"));
+        }
+        // 其他端点：重新抛出让 IpdPermissionExceptionHandler 接住（403 FORBIDDEN 默认行为不变）
+        throw exception;
     }
 
     /**

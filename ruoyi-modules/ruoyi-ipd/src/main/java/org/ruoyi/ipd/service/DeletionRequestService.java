@@ -139,6 +139,59 @@ public class DeletionRequestService {
     }
 
     /**
+     * SEC-MED-3 侧信道防御版撤返：所有失败路径统一抛 {@link ApiV1ErrorCode#NOT_FOUND}，
+     * 与 404 不存在资源错误码 + 文案 + HTTP 状态完全一致，防止攻击者基于 403/500/200
+     * 响应差异推断删除申请存在性 / 所有权 / 状态。
+     *
+     * <p>失败归一情形：
+     * <ul>
+     *   <li>申请不存在 → NOT_FOUND「资源不存在」</li>
+     *   <li>非本人申请 → NOT_FOUND「资源不存在」（不暴露所有权）</li>
+     *   <li>已终态（DELETED / REJECTED / WITHDRAWN）→ NOT_FOUND「资源不存在」</li>
+     *   <li>超过 withdrawHours 时限 → NOT_FOUND「资源不存在」（不暴露时限）</li>
+     * </ul>
+     *
+     * <p>成功路径与原 {@link #withdraw} 行为一致：状态机守卫 → 写 WITHDRAWN → 写审计 → 注册 postCommit。
+     * 单代码路径设计保证 4 类失败耗时近似，杜绝 timing 侧信道。
+     *
+     * @param actor     当前操作人（actor.id() 必须等于 request.requesterId；非本人按"不存在"处理）
+     * @param requestId 申请 ID
+     * @return 撤回后的 DeletionRequest（status=WITHDRAWN）
+     * @throws IpdBusinessException {@code NOT_FOUND} 失败归一异常
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DeletionRequest withdrawIfExistsOrNotFound(IpdActor actor, Long requestId) {
+        requireAuthenticated(actor);
+        // 单次 selectById 后，所有失败统一 NOT_FOUND（防侧信道：避免差异响应暴露资源状态）
+        DeletionRequest request = deletionRequestMapper.selectById(requestId);
+        int withdrawHours;
+        // ROOT-R1 P0-7：先读 BusinessConfigService.DELETION_ESCALATE_TIMEOUT_HOURS，回退 SystemConfig
+        Integer bv = readBusinessInt(BusinessConfigKeys.DELETION_ESCALATE_TIMEOUT_HOURS);
+        if (bv != null) {
+            withdrawHours = bv;
+        } else {
+            withdrawHours = systemConfigService.getIntValue("deletion.withdrawHours", 24);
+        }
+        if (request == null
+            || !actor.id().equals(request.getRequesterId())
+            || isTerminal(request.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
+        }
+        Date deadline = new Date(request.getCreateTime().getTime() + withdrawHours * 3600_000L);
+        if (new Date().after(deadline)) {
+            // 超时限 → 同样 NOT_FOUND 化（不暴露时限长度 / 当前是否在窗口内）
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
+        }
+        // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
+        preCheckGuard("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw");
+        request.setStatus(ST_WITHDRAWN);
+        deletionRequestMapper.updateById(request);
+        audit(request.getEntityType(), request.getEntityId(), actor.id(), "DELETE_REQUEST_WITHDRAW", request.getId());
+        registerPostCommit("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw", actor.id(), request.getId());
+        return request;
+    }
+
+    /**
      * 组长初审：APPROVE → 超管终审；REJECT → 终态。
      * <p>W5-E-2.2（P0 #2）IDOR 修复：仅目标所属组组长（GROUP_LEADER 且 groupId 匹配）或
      * SUPER_ADMIN 可初审（修复前任何人可冒充组长审批）；leaderId 改为服务端权威取
