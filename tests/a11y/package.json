@@ -1,0 +1,23 @@
+{
+  "name": "ruoyi-ai-a11y",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A11y automation for ruoyi-ai (axe-core + lighthouse CI). Scans the IPD frontend (ZK-IPD / ruoyi-web / ruoyi-admin) reachable via A11Y_TARGET_BASE_URL. Default WARN mode — does NOT block PRs (matches docs-link-check convention).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test:a11y": "node ./axe-scan.mjs",
+    "test:a11y:fixture": "A11Y_TARGET_BASE_URL=http://127.0.0.1:4173 node ./axe-scan.mjs",
+    "ci:a11y": "lhci autorun --config=./lighthouserc.json",
+    "serve:fixture": "node ./serve-fixture.mjs",
+    "lint:a11y-config": "node -e \"JSON.parse(require('fs').readFileSync('./lighthouserc.json','utf8'));console.log('lighthouserc.json OK')\""
+  },
+  "devDependencies": {
+    "axe-core": "^4.10.0",
+    "jsdom": "^24.1.0",
+    "puppeteer-core": "^23.6.0",
+    "@lhci/cli": "^0.14.0"
+  }
+}
