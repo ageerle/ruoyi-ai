@@ -3101,3 +3101,31 @@ worktrees 保留为 future reference：
 - 不动 21:54+ log.md 段（兄弟在途让路）
 - 不动收口 / 汇总验收 / 治理层 meta（HEAD dcb8d60f 已含）
 - 不真库 DCL / 不 push / 不 B/C/D 业务代码
+
+---
+
+## 2026-09-07 15:25 | 选项 A 后续会话（plan-c388d58f）— 治理层执行矩阵落盘
+
+### Commit（待落）
+- `docs/ipd-系统说明/zk-ipd-裁决-执行矩阵-20260907.md`（新增，~150 行）：4 个 § — §1 残留 owner 决策 5 项 + 裁决 #2/#3 待执行 B/C 卡墙 / §2 R-NEW 5 项 U0 verbatim / §3 owner 拍板路径建议 / §4 回滚预案
+- `docs/ipd-系统说明/log.md`（追加本段，~30 行）
+
+### 决策清单汇总（5 项待 owner 拍板）
+- D1 SOP 37 vs 69 终态切换（裁决 #4 🟡 暂裁决）
+- D2 真库 3 名超管违例存量收敛（跨裁决 🟡 待拍板）
+- D3 main 54 commits ahead origin push 时机（⏸ 待授权）
+- D4 QA-08 GLB-12 卡面 description 14→15 + matrix 翻 15（🟡 等授权）
+- D5 PROPOSAL-01 真库 DCL 执行（DEF-5 🟡 等授权）
+
+### R-NEW 5 项 U0 紧急风险 verbatim 引自 `R-NEW-2026-09-07-全局反思.md` §5
+- R-NEW-SEC-6（HIGH，0.5h）：tenant.excludes 增补 post_launch_reviews
+- R-NEW-SEC-1（HIGH，0.5h）：PostLaunchReviewService 入口加 IpdIdorGuard + 角色门
+- R-NEW-AI-5（HIGH，1h）：coding harness execute-process 默认改 false + 路径白名单
+- （注：R-NEW §5 实际派单 3 项；§1/§2/§3/§4 列出 SEC-1/SEC-6/AI-5/ARCH-1 等共 5 项 U0 候选，本矩阵仅汇总 §5 派单段）
+
+### OPS-09 守则遵守
+- 不动 21:54+ 与 15:25 上游 log.md 段（仅末段追加）
+- 不动看板镜像 / 收口 / 汇总验收 / 治理层 meta（HEAD `53f25ab8` 已含）
+- 不动兄弟会话在途 dirty 文件（AiChatClient.java 等）
+- 不真库 DCL / 不 push / 不 B/C/D 业务代码
+- 不派单任何代码子 agent（R-NEW 5 项 U0 派单建议已在 R-NEW §5）
