@@ -56,6 +56,8 @@ class P034AcceptanceTest {
     @Mock
     private org.ruoyi.ipd.mapper.GateArbitrationMapper arbitrationMapper;
     @Mock
+    private org.ruoyi.ipd.mapper.GateReviewObserverMapper observerMapper;
+    @Mock
     private ProjectMapper projectMapper;
     @Mock
     private SystemConfigService systemConfigService;
@@ -80,7 +82,7 @@ class P034AcceptanceTest {
     @BeforeEach
     void setUp() {
         gateReviewService = new GateReviewService(gateMapper, reviewMapper, memberMapper,
-            personMapper, arbitrationMapper, systemConfigService, auditLogService, notificationService);
+            personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
         memberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         lenient().when(projectMapper.selectById(anyLong())).thenReturn(new Project());

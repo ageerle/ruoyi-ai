@@ -10,11 +10,13 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateArbitration;
 import org.ruoyi.ipd.domain.GateReview;
+import org.ruoyi.ipd.domain.GateReviewObserver;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.GateArbitrationMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
+import org.ruoyi.ipd.mapper.GateReviewObserverMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
@@ -87,12 +89,15 @@ public class GateReviewService {
     /** G1/G5 双签最低人数（运行时由 BusinessConfigService.GATE_DUAL_SIGN_COUNT 覆盖；当前仅 1-2 个角色值，参与兜底） */
     static final String DUAL_SIGN_COUNT_KEY = BusinessConfigKeys.GATE_DUAL_SIGN_COUNT;
     private static final Set<String> SIGNER_ROLES = Set.of("MARKET_PM", "RD_PM");
+    /** MEDIUM-1.3：列席人员角色（销售/供应/售后/品质/合规）。 */
+    private static final Set<String> OBSERVER_ROLES = Set.of("SALES", "SUPPLY", "AFTERSALES", "QUALITY", "COMPLIANCE");
 
     private final GateMapper gateMapper;
     private final GateReviewMapper reviewMapper;
     private final ProjectMemberMapper memberMapper;
     private final PersonMapper personMapper;
     private final GateArbitrationMapper arbitrationMapper;
+    private final GateReviewObserverMapper observerMapper;
     private final SystemConfigService systemConfigService;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
@@ -553,6 +558,119 @@ public class GateReviewService {
             "Gate " + gate.getGateCode() + " 超管终裁：" + ("APPROVE".equals(decision) ? "支持通过" : "支持驳回"),
             "第 " + gate.getCurrentRound() + " 轮双PM分歧经组长仲裁未决，超管终裁意见已归档审计日志");
         return row;
+    }
+
+    // ==================== MEDIUM-1.3：Gate 列席人员邀请 ====================
+
+    /** 列席人角色白名单。 */
+    private static final Set<String> OBSERVER_ROLE_WHITELIST = OBSERVER_ROLES;
+
+    /**
+     * 邀请列席人员（MEDIUM-1.3）：仅超管/组长可邀请；
+     * 同 gate+observer 唯一约束兜底幂等（重复邀请不报错，返回既有行）。
+     *
+     * @param gateId      Gate 实例
+     * @param observerIds 列席人 personId 列表
+     * @param role        列席角色（5 类之一）
+     * @param actor       邀请人（必须 SUPER_ADMIN/GROUP_LEADER）
+     * @return 邀请行数（去重后）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int inviteObservers(Long gateId, List<Long> observerIds, String role, IpdActor actor) {
+        Gate gate = requireGate(gateId);
+        if (!"SUPER_ADMIN".equals(actor.role()) && !"GROUP_LEADER".equals(actor.role())) {
+            throw new IpdBusinessException("仅超管/产品组长可邀请列席人员");
+        }
+        if (role == null || !OBSERVER_ROLE_WHITELIST.contains(role)) {
+            throw new IpdBusinessException("列席角色仅允许 SALES|SUPPLY|AFTERSALES|QUALITY|COMPLIANCE");
+        }
+        if (observerIds == null || observerIds.isEmpty()) {
+            throw new IpdBusinessException("请选择至少 1 位列席人员");
+        }
+        Date now = new Date();
+        int invited = 0;
+        for (Long observerId : observerIds) {
+            if (observerId == null) continue;
+            // person 存在性校验
+            Person observer = personMapper.selectById(observerId);
+            if (observer == null) {
+                throw new IpdBusinessException("列席人不存在：personId=" + observerId);
+            }
+            // 幂等：先查再插；uk(gate_id, observer_id) 兜底
+            Long exist = observerMapper.selectCount(new LambdaQueryWrapper<GateReviewObserver>()
+                .eq(GateReviewObserver::getGateId, gateId)
+                .eq(GateReviewObserver::getObserverId, observerId));
+            if (exist != null && exist > 0) {
+                continue;
+            }
+            GateReviewObserver row = GateReviewObserver.builder()
+                .gateId(gateId)
+                .observerId(observerId)
+                .role(role)
+                .invitedBy(actor.id())
+                .invitedAt(now)
+                .attended(0)
+                .build();
+            observerMapper.insert(row);
+            invited++;
+            // 知会被邀请人
+            notificationService.publish(observerId,
+                NotificationService.Types.GATE_OBSERVER_INVITED, NotificationService.KIND_ACTION,
+                "gate", gateId,
+                "Gate " + gate.getGateCode() + " 邀请您列席",
+                "您被邀请作为 " + role + " 角色列席 Gate " + gate.getGateCode()
+                    + " 评审（MEDIUM-1.3），请提交列席意见",
+                "/reviews/gate/" + gateId);
+        }
+        audit(actor, gate, "GATE_OBSERVER_INVITED",
+            "邀请列席人员（" + role + "，" + invited + " 人）",
+            "role", role, "count", invited);
+        return invited;
+    }
+
+    /**
+     * 列席人提交意见（MEDIUM-1.3）：仅 observer 本人可写自己的一行；
+     * 不入主审投票（不动 gate_reviews）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public GateReviewObserver recordOpinion(Long gateId, Long observerId, String opinion, IpdActor actor) {
+        Gate gate = requireGate(gateId);
+        if (!actor.id().equals(observerId)) {
+            throw new IpdBusinessException("仅本人可提交自己的列席意见（MEDIUM-1.3）");
+        }
+        if (opinion == null || opinion.isBlank()) {
+            throw new IpdBusinessException("列席意见不能为空");
+        }
+        if (opinion.length() > 2000) {
+            throw new IpdBusinessException("列席意见最长 2000 字符");
+        }
+        GateReviewObserver row = observerMapper.selectOne(new LambdaQueryWrapper<GateReviewObserver>()
+            .eq(GateReviewObserver::getGateId, gateId)
+            .eq(GateReviewObserver::getObserverId, observerId));
+        if (row == null) {
+            throw new IpdBusinessException("您未在 Gate " + gateId + " 的列席名单中");
+        }
+        row.setOpinion(opinion);
+        row.setAttended(1);
+        observerMapper.updateById(row);
+        audit(actor, gate, "GATE_OBSERVER_OPINION",
+            "列席人提交意见",
+            "observerId", observerId, "opinionLength", opinion.length());
+        return row;
+    }
+
+    /**
+     * 查 gate 全部列席人员 + 意见（MEDIUM-1.3）：仅 PRODUCT_LEADER/GROUP_LEADER/SUPER_ADMIN 可见。
+     */
+    public List<GateReviewObserver> listObservers(Long gateId, IpdActor actor) {
+        requireGate(gateId);
+        String role = actor.role();
+        if (!"GROUP_LEADER".equals(role) && !"SUPER_ADMIN".equals(role)) {
+            throw new IpdBusinessException("仅组长/超管可查询列席人员名单");
+        }
+        return observerMapper.selectList(new LambdaQueryWrapper<GateReviewObserver>()
+            .eq(GateReviewObserver::getGateId, gateId)
+            .orderByDesc(GateReviewObserver::getInvitedAt));
     }
 
     /** 延长签署期限（AC-GATE-21）：仅超管、仅在签 Gate；最多 3 次，第 4 次拒绝。 */

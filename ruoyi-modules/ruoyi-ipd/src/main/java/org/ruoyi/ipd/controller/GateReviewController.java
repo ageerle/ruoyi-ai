@@ -9,11 +9,13 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateArbitration;
 import org.ruoyi.ipd.domain.GateReview;
+import org.ruoyi.ipd.domain.GateReviewObserver;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.GateReviewService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,6 +28,9 @@ import java.util.Map;
  *   <li>POST /extend-deadline —— 超管延长签署期限，最多 3 次（AC-GATE-21）</li>
  *   <li>POST /arbitrate —— 组长仲裁意见（AC-GATE-10 中段）</li>
  *   <li>POST /final-ruling —— 超管终裁（AC-GATE-10 尾段）</li>
+ *   <li>POST /observers/invite —— MEDIUM-1.3 列席人员邀请（销售/供应/售后/品质/合规）</li>
+ *   <li>POST /observers/{observerId}/opinion —— MEDIUM-1.3 列席人提交意见</li>
+ *   <li>GET  /observers —— MEDIUM-1.3 列席人员 + 意见查询（仅组长/超管）</li>
  * </ul>
  */
 @RestController
@@ -45,6 +50,13 @@ public class GateReviewController {
     /** AC-GATE-10：仲裁/终裁意见 */
     public record ArbitrateRequest(@NotBlank String decision,
                                    @Size(max = 1000) String opinion) { }
+
+    /** MEDIUM-1.3：列席人员邀请请求 */
+    public record InviteObserversRequest(@NotNull List<Long> observerIds,
+                                         @NotBlank String role) { }
+
+    /** MEDIUM-1.3：列席人提交意见请求 */
+    public record ObserverOpinionRequest(@NotBlank @Size(max = 2000) String opinion) { }
 
     public record SignView(String id, String gateId, String reviewerType, String decision,
                            String opinion, String signedAt, String dueAt, Integer round) {
@@ -115,6 +127,36 @@ public class GateReviewController {
             service.finalRuling(gateId, request.decision(), request.opinion(), actor)));
     }
 
+    /** MEDIUM-1.3：列席人员邀请。仅超管/组长。邀请后 audit + 知会被邀请人。 */
+    @PostMapping("/observers/invite")
+    public ApiV1Response<Map<String, Object>> inviteObservers(@PathVariable Long gateId,
+                                                              @Valid @RequestBody InviteObserversRequest request) {
+        IpdActor actor = permission.requireInternal();
+        int count = service.inviteObservers(gateId, request.observerIds(), request.role(), actor);
+        return ApiV1Response.ok(Map.of(
+            "gateId", String.valueOf(gateId),
+            "role", request.role(),
+            "invitedCount", count));
+    }
+
+    /** MEDIUM-1.3：列席人提交意见（仅本人）。 */
+    @PostMapping("/observers/{observerId}/opinion")
+    public ApiV1Response<ObserverView> recordObserverOpinion(@PathVariable Long gateId,
+                                                             @PathVariable Long observerId,
+                                                             @Valid @RequestBody ObserverOpinionRequest request) {
+        IpdActor actor = permission.requireInternal();
+        return ApiV1Response.ok(ObserverView.from(
+            service.recordOpinion(gateId, observerId, request.opinion(), actor)));
+    }
+
+    /** MEDIUM-1.3：查 Gate 列席人员 + 意见（仅组长/超管）。 */
+    @GetMapping("/observers")
+    public ApiV1Response<List<ObserverView>> listObservers(@PathVariable Long gateId) {
+        IpdActor actor = permission.requireInternal();
+        return ApiV1Response.ok(service.listObservers(gateId, actor).stream()
+            .map(ObserverView::from).toList());
+    }
+
     /** 仲裁/终裁行视图。 */
     public record ArbitrationView(String id, String gateId, Integer round, String arbitratorType,
                                   String arbitratorId, String decision, String opinion) {
@@ -122,6 +164,17 @@ public class GateReviewController {
             return new ArbitrationView(String.valueOf(r.getId()), String.valueOf(r.getGateId()),
                 r.getRound(), r.getArbitratorType(), String.valueOf(r.getArbitratorId()),
                 r.getDecision(), r.getOpinion());
+        }
+    }
+
+    /** MEDIUM-1.3：列席人视图。 */
+    public record ObserverView(String id, String gateId, String observerId, String role,
+                               Integer attended, String opinion, String invitedAt) {
+        public static ObserverView from(GateReviewObserver o) {
+            return new ObserverView(String.valueOf(o.getId()), String.valueOf(o.getGateId()),
+                String.valueOf(o.getObserverId()), o.getRole(),
+                o.getAttended(), o.getOpinion(),
+                o.getInvitedAt() == null ? null : o.getInvitedAt().toString());
         }
     }
 }

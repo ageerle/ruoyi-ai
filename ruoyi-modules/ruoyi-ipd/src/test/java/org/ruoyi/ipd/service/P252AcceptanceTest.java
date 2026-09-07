@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.ProjectMember;
@@ -65,6 +66,8 @@ class P252AcceptanceTest {
     @Mock
     private org.ruoyi.ipd.mapper.GateArbitrationMapper arbitrationMapper;
     @Mock
+    private org.ruoyi.ipd.mapper.GateReviewObserverMapper observerMapper;
+    @Mock
     private SystemConfigService systemConfigService;
     @Mock
     private AuditLogService auditLogService;
@@ -92,7 +95,7 @@ class P252AcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new GateReviewService(gateMapper, reviewMapper, memberMapper,
-            personMapper, arbitrationMapper, systemConfigService, auditLogService, notificationService);
+            personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
         gate = new Gate();
         gate.setId(501L);
         gate.setProjectId(11L);
@@ -207,7 +210,7 @@ class P252AcceptanceTest {
         gate.setGateCode("G3");
 
         assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("研发PM主导签署");
 
         service.sign(501L, "APPROVE", "进度可控", RD);
@@ -220,7 +223,7 @@ class P252AcceptanceTest {
         gate.setGateCode("G4");
 
         assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("研发PM主导签署");
 
         service.sign(501L, "APPROVE", null, RD);
@@ -233,7 +236,7 @@ class P252AcceptanceTest {
         gate.setGateCode("G2");
 
         assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, RD))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("市场PM主导签署");
 
         service.sign(501L, "APPROVE", null, MARKET);
@@ -246,10 +249,10 @@ class P252AcceptanceTest {
     @DisplayName("非授权角色：组长/超管签署拒绝（列席与仲裁归 P2-5.4）")
     void sign_leaderOrSuper_rejected() {
         assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, LEADER))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("仅市场PM/研发PM");
         assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, SUPER))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("仅市场PM/研发PM");
     }
 
@@ -259,7 +262,7 @@ class P252AcceptanceTest {
         service.sign(501L, "APPROVE", null, MARKET);
 
         assertThatThrownBy(() -> service.sign(501L, "REJECT", null, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("不可重复签署");
     }
 
@@ -269,7 +272,7 @@ class P252AcceptanceTest {
         gate.setStartedAt(null);
 
         assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("尚未提交");
     }
 
@@ -277,7 +280,7 @@ class P252AcceptanceTest {
     @DisplayName("decision 非法值拒绝（ABSTAIN 超时流转归 P2-5.4）")
     void sign_invalidDecision_rejected() {
         assertThatThrownBy(() -> service.sign(501L, "ABSTAIN", null, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("APPROVE|REJECT");
     }
 

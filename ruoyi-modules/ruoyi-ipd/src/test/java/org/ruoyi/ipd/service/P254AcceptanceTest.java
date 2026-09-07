@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateArbitration;
@@ -20,6 +21,7 @@ import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.GateArbitrationMapper;
+import org.ruoyi.ipd.mapper.GateReviewObserverMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
@@ -75,6 +77,8 @@ class P254AcceptanceTest {
     @Mock
     private GateArbitrationMapper arbitrationMapper;
     @Mock
+    private GateReviewObserverMapper observerMapper;
+    @Mock
     private SystemConfigService systemConfigService;
     @Mock
     private AuditLogService auditLogService;
@@ -121,7 +125,7 @@ class P254AcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new GateReviewService(gateMapper, reviewMapper, memberMapper,
-            personMapper, arbitrationMapper, systemConfigService, auditLogService, notificationService);
+            personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
         gate = new Gate();
         gate.setId(601L);
         gate.setProjectId(11L);
@@ -190,15 +194,15 @@ class P254AcceptanceTest {
     @DisplayName("AC-GATE-06 反例：PENDING/APPROVED 不可重新发起；组长无权重发")
     void reopen_onlyRejectedOrTimeout() {
         assertThatThrownBy(() -> service.reopen(601L, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("仅被驳回或双弃权超时");
         gate.setStatus("APPROVED");
         assertThatThrownBy(() -> service.reopen(601L, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("仅被驳回或双弃权超时");
         gate.setStatus("REJECTED");
         assertThatThrownBy(() -> service.reopen(601L, LEADER_A))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("仅签署双方或超管");
     }
 
@@ -397,10 +401,10 @@ class P254AcceptanceTest {
         assertThat(auditActions()).doesNotContain("GATE_ARBITRATION_OPEN");
 
         assertThatThrownBy(() -> service.arbitrate(601L, "APPROVE", null, LEADER_A))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("无双 PM 意见分歧");
         assertThatThrownBy(() -> service.finalRuling(601L, "REJECT", null, SUPER))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("无双 PM 意见分歧");
 
         // 构造分歧后：同组长重复提交被拒（共享签名簿先清场，避免 601 行污染 602 的同轮查重）
@@ -420,7 +424,7 @@ class P254AcceptanceTest {
         service.sign(602L, "REJECT", "分歧", RD);
         service.arbitrate(602L, "APPROVE", null, LEADER_A);
         assertThatThrownBy(() -> service.arbitrate(602L, "REJECT", null, LEADER_A))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("不可重复提交");
     }
 
@@ -439,7 +443,7 @@ class P254AcceptanceTest {
         assertThat(auditActions()).contains("GATE_SIGN_EXTEND");
 
         assertThatThrownBy(() -> service.extendDeadline(601L, 5, SUPER))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("最多延长 3 次");
     }
 
@@ -447,11 +451,11 @@ class P254AcceptanceTest {
     @DisplayName("AC-GATE-21 反例：非超管拒绝；非在签（REJECTED）Gate 拒绝")
     void extendDeadline_guards() {
         assertThatThrownBy(() -> service.extendDeadline(601L, 5, MARKET))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("仅超级管理员");
         gate.setStatus("REJECTED");
         assertThatThrownBy(() -> service.extendDeadline(601L, 5, SUPER))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("仅签署中的 Gate");
     }
 
