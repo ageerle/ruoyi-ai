@@ -109,18 +109,52 @@ public class AuditLogController {
      * 角色范围分页查询（P0-5.4 / AC-AUD-04、AC-AUD-05）。
      * <p>任何内部已登录角色可调用；过滤由 service 透明按 actor 角色解析。
      * <p>未登录游客 → {@code IpdWebSecurityConfig} 拦截 401（AC-AUD-06）。
+     *
+     * <p>PERF-P0-3（QA-05-P3 接入）：传 {@code beforeSeq} 走 4-arg 游标路径（{@code seq<beforeSeq ORDER BY seq DESC}），
+     * 命中 {@code idx_al_operator_seq} 覆盖索引消除深页 OFFSET+filesort，返回结构额外带
+     * {@code nextBeforeSeq}（取本页最小 seq-1，即下一页游标；无下一页时为 null）。
+     * 不传 {@code beforeSeq} 走 3-arg 旧 OFFSET 路径（兼容既有消费者；返回结构不含 {@code nextBeforeSeq}）。
      */
     @GetMapping("/scope")
     public ApiV1Response<Map<String, Object>> listByScope(
             @RequestParam(defaultValue = "1") int pageNo,
-            @RequestParam(defaultValue = "20") int pageSize) {
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) Long beforeSeq) {
         IpdActor actor = ipdPermission.requireInternal();
         List<Long> operatorIds = resolveOperatorIds(actor);
-        IPage<AuditLog> page = auditLogService.listByOperatorIds(operatorIds, pageNo, pageSize);
-        return ApiV1Response.ok(Map.of(
-            "scope", operatorIds == null ? "GLOBAL" : (operatorIds.size() == 1 && operatorIds.get(0).equals(actor.id())) ? "OWN" : "GROUP",
-            "operatorIds", operatorIds == null ? List.of() : operatorIds,
-            "page", page));
+        // PERF-P0-3：beforeSeq 非 null 走游标路径，否则保持 3-arg 兼容路径
+        IPage<AuditLog> page;
+        boolean cursorMode;
+        if (beforeSeq != null) {
+            page = auditLogService.listByOperatorIds(operatorIds, pageNo, pageSize, beforeSeq);
+            cursorMode = true;
+        } else {
+            page = auditLogService.listByOperatorIds(operatorIds, pageNo, pageSize);
+            cursorMode = false;
+        }
+        // 游标模式下计算下一页游标：取本页最小 seq-1（seq DESC 序，尾行最小；strict less than 故 -1）
+        Long nextBeforeSeq = null;
+        if (cursorMode && !page.getRecords().isEmpty()) {
+            Long minSeqInPage = null;
+            for (AuditLog r : page.getRecords()) {
+                Long s = r.getSeq();
+                if (s == null) continue;
+                if (minSeqInPage == null || s < minSeqInPage) minSeqInPage = s;
+            }
+            if (minSeqInPage != null) {
+                nextBeforeSeq = minSeqInPage - 1;
+            }
+        }
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("scope", operatorIds == null ? "GLOBAL"
+            : (operatorIds.size() == 1 && operatorIds.get(0).equals(actor.id())) ? "OWN" : "GROUP");
+        body.put("operatorIds", operatorIds == null ? List.of() : operatorIds);
+        body.put("page", page);
+        if (cursorMode) {
+            body.put("cursorMode", true);
+            body.put("nextBeforeSeq", nextBeforeSeq);
+        }
+        return ApiV1Response.ok(body);
     }
 
     /**
