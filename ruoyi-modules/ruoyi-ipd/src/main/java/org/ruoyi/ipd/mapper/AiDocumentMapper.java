@@ -44,7 +44,7 @@ public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument>
             UNION ALL
             SELECT d.id, d.project_id, d.doc_type, d.title, d.content, d.model,
                    d.token_prompt, d.token_completion, d.content_sha256, d.status,
-                   d.parent_version_id, d.version_no, d.reviewed_by, d.review_at,
+                   d.parent_version_id, d.version_no, d.reviewed_by, d.reviewed_at,
                    d.review_comment, d.archived_at, d.archived_by,
                    d.create_dept, d.create_by, d.create_time, d.update_by, d.update_time,
                    d.tenant_id, d.del_flag, d.remark

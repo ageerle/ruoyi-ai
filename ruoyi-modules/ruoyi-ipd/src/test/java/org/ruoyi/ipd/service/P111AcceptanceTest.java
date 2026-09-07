@@ -1,6 +1,11 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -10,6 +15,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
@@ -21,6 +28,8 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,6 +62,13 @@ class P111AcceptanceTest {
     private org.ruoyi.ipd.mapper.KpiRecordMapper kpiRecordMapper;
     private ProductService productService;
     private ProjectService projectService;
+
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, Product.class);
+        TableInfoHelper.initTableInfo(assistant, Project.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -102,15 +118,18 @@ class P111AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-PROD-01 已挂项目的产品再关联第二个项目 → 拒绝「一个产品仅对应一个项目」")
+    @DisplayName("AC-PROD-01 已挂项目的产品再关联第二个项目 → 拒绝「一个产品仅对应一个项目」（409 STATE_CONFLICT）")
     void productAlreadyBoundRejectsSecondProject() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
         when(productMapper.selectById(3L)).thenReturn(product);
 
-        assertThatThrownBy(() -> productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
-            .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("一个产品仅对应一个项目");
-        verify(productMapper, never()).updateById(any(Product.class));
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("一个产品仅对应一个项目")
+            .actual();
+        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+        verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
     }
 
     @Test
@@ -136,20 +155,24 @@ class P111AcceptanceTest {
     }
 
     @Test
-    @DisplayName("bindProject 成功：两端同事务回填 product.projectId 与 project.productId")
+    @DisplayName("bindProject 成功：两端条件 UPDATE affected=1 + 终态自洽 + 审计")
     void bindProjectBidirectional() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, null);
         Project project = aliveProject(9L, null);
         when(productMapper.selectById(3L)).thenReturn(product);
-        when(productMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         when(projectMapper.selectById(9L)).thenReturn(project);
+        // P1-1.1：bindProject 改为条件 UPDATE（LambdaUpdateWrapper）+ 自洽终态重读
+        doAnswer(inv -> { product.setProjectId(9L); return 1; })
+            .when(productMapper).update(isNull(), any(LambdaUpdateWrapper.class));
+        doAnswer(inv -> { project.setProductId(3L); return 1; })
+            .when(projectMapper).update(isNull(), any(LambdaUpdateWrapper.class));
 
         productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM");
 
         assertThat(product.getProjectId()).isEqualTo(9L);
         assertThat(project.getProductId()).isEqualTo(3L);
-        verify(productMapper).updateById(product);
-        verify(projectMapper).updateById(project);
+        verify(productMapper).update(isNull(), any(LambdaUpdateWrapper.class));
+        verify(projectMapper).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService).append(any());
     }
 
@@ -157,23 +180,29 @@ class P111AcceptanceTest {
     @DisplayName("bindProject 幂等：已绑定同一项目 → 不写库不写审计")
     void bindProjectIdempotent() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
+        Project project = aliveProject(9L, 3L);
         when(productMapper.selectById(3L)).thenReturn(product);
+        when(projectMapper.selectById(9L)).thenReturn(project);
 
         productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM");
 
-        verify(productMapper, never()).updateById(any(Product.class));
+        verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any());
     }
 
     @Test
-    @DisplayName("GUEST_OTHER 不可 bindProject")
+    @DisplayName("GUEST_OTHER 不可 bindProject → 拒绝 409 STATE_CONFLICT")
     void guestOtherCannotBind() {
         Product product = aliveProduct(3L, Product.SRC_GUEST_OTHER, null);
         when(productMapper.selectById(3L)).thenReturn(product);
 
-        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
-            .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("其他");
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("其他")
+            .actual();
+        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
     }
 
     @Test
@@ -197,16 +226,19 @@ class P111AcceptanceTest {
     }
 
     @Test
-    @DisplayName("项目已被其他产品占用 → 拒绝 1:1")
+    @DisplayName("项目已被其他产品占用 → 拒绝 1:1（409 STATE_CONFLICT）")
     void projectTakenByOtherProduct() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, null);
         Project project = aliveProject(9L, 7L);
         when(productMapper.selectById(3L)).thenReturn(product);
         when(projectMapper.selectById(9L)).thenReturn(project);
 
-        assertThatThrownBy(() -> productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
-            .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("1:1");
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("1:1")
+            .actual();
+        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
     }
 
     @Test
@@ -214,10 +246,12 @@ class P111AcceptanceTest {
     void noMultiProjectPoolAllocation() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
         when(productMapper.selectById(3L)).thenReturn(product);
-        assertThatThrownBy(() -> productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
-            .isInstanceOf(ServiceException.class)
+        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
+            productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("一个产品仅对应一个项目")
-            .satisfies(t -> assertThat(t.getMessage()).doesNotContain("分摊").doesNotContain("池"));
+            .actual();
+        assertThat(ex.getMessage()).doesNotContain("分摊").doesNotContain("池");
     }
 
     @Test

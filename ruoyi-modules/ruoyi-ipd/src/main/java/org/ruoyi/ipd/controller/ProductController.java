@@ -94,6 +94,15 @@ public class ProductController {
         return ApiV1Response.ok(null);
     }
 
+    /** P1-1.1：解绑项目（产品 ↔ 项目双向 1:1），需 ipd:product:edit 权限 */
+    @PostMapping("/{id}/unbind-project")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<Void> unbindProject(@PathVariable Long id, @RequestParam Long projectId) {
+        IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
+        productService.unbindProject(id, projectId, actor.id(), actor.groupId(), actor.role());
+        return ApiV1Response.ok(null);
+    }
+
     /** 变更产品状态，需 ipd:product:edit 权限 */
     @PostMapping("/{id}/status")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)

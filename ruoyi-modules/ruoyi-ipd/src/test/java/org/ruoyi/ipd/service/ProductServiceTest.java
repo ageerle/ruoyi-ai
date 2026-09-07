@@ -1,6 +1,11 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -17,6 +22,8 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +42,13 @@ class ProductServiceTest {
     private AuditLogService auditLogService;
 
     private ProductService service;
+
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, Product.class);
+        TableInfoHelper.initTableInfo(assistant, Project.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -96,12 +110,17 @@ class ProductServiceTest {
         Product p = product("PM_NEW", null, null);
         p.setId(3L);
         p.setDelFlag("0");
+        p.setGroupId(1L);
         when(productMapper.selectById(3L)).thenReturn(p);
-        when(productMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         Project project = new Project();
         project.setId(9L);
         project.setDelFlag("0");
         when(projectMapper.selectById(9L)).thenReturn(project);
+        // P1-1.1：bindProject 改为条件 UPDATE（LambdaUpdateWrapper）+ 自洽终态
+        doAnswer(inv -> { p.setProjectId(9L); return 1; })
+            .when(productMapper).update(isNull(), any(LambdaUpdateWrapper.class));
+        doAnswer(inv -> { project.setProductId(3L); return 1; })
+            .when(projectMapper).update(isNull(), any(LambdaUpdateWrapper.class));
 
         service.bindProject(3L, 9L, 1L, 1L, "MARKET_PM");
         assertThat(p.getProjectId()).isEqualTo(9L);

@@ -1,13 +1,18 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +34,7 @@ import java.util.stream.Collectors;
  *
  * Round 8 / R8-P0-7：batchImportOnSale 预取优化（一次性 selectList in (...) → Map.get）
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -216,10 +222,13 @@ public class ProductService {
     }
 
     /**
-     * 关联项目到已有产品（产品:项目 = 1:1，两端同事务维护）。
-     * <p>AC-PROD-01：已挂项目的产品再关联第二个项目 ⇒ 拒绝「一个产品仅对应一个项目」。
+     * P1-1.1：关联项目到已有产品（产品:项目 = 1:1，两端同事务维护）。
+     * <p>AC-PROD-01：已挂项目的产品再关联第二个项目 ⇒ 拒绝「一个产品仅对应一个项目」（409 STATE_CONFLICT）。
      * <p>GUEST_OTHER 占位不可绑定；软删项目/产品拒绝；同 id 重绑幂等成功不写二次审计。
-     * <p>R8X-CONT-1 P0-2：加 actor.groupId == product.groupId 横向越权防护（SUPER_ADMIN 豁免）。
+     * <p>R8X-CONT-1 P0-2：加 actor.groupId == product.groupId 横向越权防护（SUPER_ADMIN 豁免，403 FORBIDDEN）。
+     * <p>P1-1.1 并发防御：product 端用条件 UPDATE {@code id=? AND project_id IS NULL}（行锁原子）；
+     * project 端用条件 UPDATE {@code id=? AND product_id IS NULL}；任一端 affected=0 即拒绝。
+     * DB 兜底：{@code uk_products_project(project_id)} + {@code uk_projects_product(product_id)} UNIQUE。
      *
      * @param productId    产品 ID
      * @param projectId    目标项目 ID
@@ -231,29 +240,120 @@ public class ProductService {
     public void bindProject(Long productId, Long projectId, Long operatorId,
                             Long actorGroupId, String actorRole) {
         Product product = require(productId);
-        assertSameGroup(actorRole, actorGroupId, product.getGroupId(), "操作人");
+        assertSameGroupIpd(actorRole, actorGroupId, product.getGroupId());
         if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
-            throw new ServiceException("游客「其他」占位产品不可关联项目");
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "游客「其他」占位产品不可关联项目");
         }
-        if (product.getProjectId() != null) {
-            if (product.getProjectId().equals(projectId)) {
+        // 同 id 重绑幂等：产品已绑该 project 且 project 已绑该 product 视为成功
+        if (projectId.equals(product.getProjectId())) {
+            Project cur = projectMapper.selectById(projectId);
+            if (cur != null && productId.equals(cur.getProductId())) {
                 return;
             }
-            throw new ServiceException("一个产品仅对应一个项目");
+        }
+        if (product.getProjectId() != null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "一个产品仅对应一个项目（当前已绑 projectId=" + product.getProjectId() + "）");
         }
         Project project = requireProject(projectId);
         if (project.getProductId() != null && !project.getProductId().equals(productId)) {
-            throw new ServiceException("该项目已关联其他产品（产品:项目 = 1:1）");
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "该项目已关联其他产品（产品:项目 = 1:1，当前 productId=" + project.getProductId() + "）");
         }
-        checkProjectNotTaken(projectId);
 
-        product.setProjectId(projectId);
-        productMapper.updateById(product);
-        if (!productId.equals(project.getProductId())) {
-            project.setProductId(productId);
-            projectMapper.updateById(project);
+        try {
+            // product 端条件 UPDATE：行锁 + 1:1 自洽守卫
+            int rows1 = productMapper.update(null, new LambdaUpdateWrapper<Product>()
+                .eq(Product::getId, productId)
+                .isNull(Product::getProjectId)
+                .set(Product::getProjectId, projectId));
+            if (rows1 == 0) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                    "一个产品仅对应一个项目（条件更新冲突，请先解绑）");
+            }
+            // project 端条件 UPDATE：行锁 + 1:1 自洽守卫
+            int rows2 = projectMapper.update(null, new LambdaUpdateWrapper<Project>()
+                .eq(Project::getId, projectId)
+                .isNull(Project::getProductId)
+                .set(Project::getProductId, productId));
+            if (rows2 == 0) {
+                // product 端已写入但 project 端失败 → 事务回滚（@Transactional）
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                    "该项目已被其他产品绑定（产品:项目 = 1:1）");
+            }
+        } catch (DuplicateKeyException dup) {
+            // DB UNIQUE 兜底：uk_products_project / uk_projects_product
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "绑定冲突：产品或项目已被占用（产品:项目 = 1:1）");
+        }
+        // 自洽终态校验：重读两端确认一致（DB UNIQUE 兜底后的最后一道）
+        Product reread = productMapper.selectById(productId);
+        Project rereadP = projectMapper.selectById(projectId);
+        if (reread == null || rereadP == null
+            || !projectId.equals(reread.getProjectId())
+            || !productId.equals(rereadP.getProductId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "绑定终态自洽校验失败（产品:项目 = 1:1）");
         }
         audit(productId, product.getProductName(), operatorId, "PRODUCT_BIND_PROJECT");
+    }
+
+    /**
+     * P1-1.1：解绑项目（产品 ↔ 项目双向 1:1）。
+     * <p>产品未绑该项目 / 项目未绑该产品 ⇒ 拒绝 409（终态自洽，避免「解绑非绑定对端」静默成功）。
+     * <p>条件 UPDATE：product 端 {@code id=? AND project_id=?} 与 project 端 {@code id=? AND product_id=?};
+     * 任一端 affected=0 即 STATE_CONFLICT。审计 PRODUCT_UNBIND_PROJECT（operator_id/actor 一致）。
+     * <p>R8X-CONT-1 P0-2：actor.groupId == product.groupId 横向越权防护（SUPER_ADMIN 豁免）。
+     *
+     * @param productId    产品 ID
+     * @param projectId    目标项目 ID
+     * @param operatorId   操作人 ID
+     * @param actorGroupId 操作人所属产品组
+     * @param actorRole    操作人角色
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void unbindProject(Long productId, Long projectId, Long operatorId,
+                              Long actorGroupId, String actorRole) {
+        Product product = require(productId);
+        assertSameGroupIpd(actorRole, actorGroupId, product.getGroupId());
+        if (!projectId.equals(product.getProjectId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "产品未绑定该项目（产品:项目 = 1:1 自洽）");
+        }
+        Project project = requireProject(projectId);
+        if (!productId.equals(project.getProductId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "项目未绑定该产品（产品:项目 = 1:1 自洽）");
+        }
+        // product 端条件 UPDATE
+        int rows1 = productMapper.update(null, new LambdaUpdateWrapper<Product>()
+            .eq(Product::getId, productId)
+            .eq(Product::getProjectId, projectId)
+            .set(Product::getProjectId, null));
+        if (rows1 == 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "解绑冲突：产品端条件更新受影响行 0");
+        }
+        // project 端条件 UPDATE
+        int rows2 = projectMapper.update(null, new LambdaUpdateWrapper<Project>()
+            .eq(Project::getId, projectId)
+            .eq(Project::getProductId, productId)
+            .set(Project::getProductId, null));
+        if (rows2 == 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "解绑冲突：项目端条件更新受影响行 0");
+        }
+        // 自洽终态校验：两端均已解绑
+        Product reread = productMapper.selectById(productId);
+        Project rereadP = projectMapper.selectById(projectId);
+        if (reread == null || rereadP == null
+            || reread.getProjectId() != null
+            || rereadP.getProductId() != null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "解绑终态自洽校验失败（产品:项目 = 1:1）");
+        }
+        audit(productId, product.getProductName(), operatorId, "PRODUCT_UNBIND_PROJECT");
     }
 
     public Product getById(Long id) {
@@ -307,7 +407,19 @@ public class ProductService {
     /**
      * R8X-CONT-1 P0-2：横向越权防护——SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == product.groupId。
      * 复用 ProjectService.assertSameGroup 语义，本类独享以避免 service 间循环依赖。
+     * P1-1.1 / SEC-02：改用 IpdBusinessException(FORBIDDEN=30001)，HTTP 403 而非旧 ServiceException 50000。
      */
+    private void assertSameGroupIpd(String actorRole, Long actorGroupId, Long objectGroupId) {
+        if ("SUPER_ADMIN".equals(actorRole)) {
+            return;
+        }
+        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN,
+                "操作人必须归属产品组（横向越权防护 SEC-02）");
+        }
+    }
+
+    /** 兼容旧调用点（create/update/changeStatus），仍走 ServiceException 路径以维持既有契约。 */
     private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
         if ("SUPER_ADMIN".equals(actorRole)) {
             return;
