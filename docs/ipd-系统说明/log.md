@@ -2794,3 +2794,24 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 **验证**：136 表（112 备份 + 24 迁移新增）；schema_history 8 版本全 COMPLETE；种子 system_configs=54 / gate_review_elements=33 / cert_templates=21 / persons=17 / ipd_business_config=12；登录 POST /api/v1/auth/login code=0 发 token；GET /auth/me 回 ipd-admin（SUPER_ADMIN）；GET /projects 返回 20003「首登强制改密」——4 个 bootstrap 账号 must_change_pwd=1 为备份忠实回滚（业务设计冻结，非故障），**用户浏览器内此前改的密码已随回滚失效，需用 bootstrap 初始密码重登并重走改密**。
 
 **环境事实勘误（覆盖 AGENTS.md「socket 与 13306 是同一实例已验」）**：127.0.0.1:13306 现由 socat → Docker 容器 ruoyi-ai-mysql 承接；本机原生 MySQL 已停（socket 陈旧）；`mysql-client.cnf`（root@socket）与 `mysql-migrator.cnf` 已失效，容器内管理用 `docker exec ruoyi-ai-mysql mysql -uroot -p<密码不入版本库>`；`mysql-app.cnf`（ipd_app@13306）仍有效。**教训：备份重放不能整脚本跑——「旧备份 + 增量回写脚本」场景会被脚本中部非幂等语句卡死，迁移脚本须全量幂等或逐段守卫。**
+
+## 2026-09-06（夜·七）Wave22 a11y 闭环 + 前端 30 测失败归因翻案（Claude 主会话 a05ccff9）
+
+- **#1 a11y 重扫闭环（V12 实质推进）**：
+  - 4173 真相：ZK-IPD 参考仓 vite dev server（只读）；残留 fixture-server（49890）已清
+  - 起 ruoyi-ipd-web dev server（4175）→ axe-core 真仓扫描
+  - 首扫 16 violations → 修复 2 项 → 重扫 5（全部 moderate region 框架层）
+  - 修复 1：meta-viewport 解禁缩放（WCAG 1.4.4，maximum-scale/user-scalable 移除）
+  - 修复 2：--muted #697388 → #556479（5.36:1，login.vue + change-password.vue）
+  - 前端仓 commit：52cdb47（color-contrast + 捎带 demo-accounts）+ 2f2f789（viewport + muted）
+  - 0 回归实证：stash 基线对比法（30F/287P 有无改动一致）
+  - 遗留：5 moderate region（#__app-loading__ vben 框架加载屏，登记 V12 框架层）
+
+- **#2 前端 30 测失败归因翻案**：
+  - 表象：64 failed / 30 passed（api/ipd contract 测全灭）
+  - 根因：**跑错命令**——正确命令 `pnpm test:unit` = `vitest run --dom`（--dom 启 DOM 环境）
+  - 裸跑 `pnpm vitest run` 在纯 node 环境 → `window is not defined`（StorageManager localStorage）
+  - **非兄弟流代码 bug，非在途工作破坏**——纯命令误用；正确命令全量重跑进行中（后台）
+  - 教训：前端仓测试入口是 test:unit（带 --dom），不是裸 vitest
+
+- **工具链沉淀**：axe-scan 双目标模式验证（A11Y_TARGET_BASE_URL 指真仓 dev / 参考仓 dev / fixture-server 三态）
