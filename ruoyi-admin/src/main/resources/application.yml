@@ -67,7 +67,9 @@ logging:
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
-  config: classpath:logback-plus.xml
+  # 使用 logback-spring.xml 以支持 <springProfile name="dev|prod"> 切换 root level
+  # （详见 logback-spring.xml 头部注释；logback-plus.xml 已废弃仅保留向后兼容）
+  config: classpath:logback-spring.xml
 
 # 用户配置
 user:
