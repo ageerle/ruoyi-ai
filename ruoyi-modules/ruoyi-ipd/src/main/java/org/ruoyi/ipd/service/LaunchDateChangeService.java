@@ -19,9 +19,17 @@ import java.util.Set;
  * AC-INC-33：修改上市日期需双签 + 审计；不可单方面改 {@code projects.launch_date}。
  * Round 8 / R8X-2 P0-1：propose / secondDecision 入口加 actor.groupId == project.mainGroupId
  * 横向越权防护（除 SUPER_ADMIN 豁免外，所有双签人必须归属同一项目主组）。
+ *
+ * <p>PERF-P1-6 框架（2026-09-07）：所有写方法统一 {@code @Transactional(rollbackFor = Exception.class)}
+ * 类级默认值；{@link #propose}/{@link #secondDecision}/{@link #initialRecord} 在同一事务内完成业务写入，
+ * {@link AuditLogService#append} 走 {@code REQUIRES_NEW} 与业务回滚解耦——审计完整性 vs 性能 trade-off。
+ * 当前 {@link LaunchDateChangeRequest} 已带 {@code @Version} 乐观锁（{@code secondDecision} 用
+ * {@code updateById==0} 判定并发失败、阻止重复审计写入，幂等性已闭合）。4 SQL → 1 批插入目标需
+ * 引入 {@code AppendAuditBatchUtil}（见 docs/ipd-系统说明/治理/ 待办），当前提交只做事务边界同质化收敛。
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(rollbackFor = Exception.class)
 public class LaunchDateChangeService {
 
     public static final String ACTION_PROPOSE = "LAUNCH_DATE_PROPOSE";

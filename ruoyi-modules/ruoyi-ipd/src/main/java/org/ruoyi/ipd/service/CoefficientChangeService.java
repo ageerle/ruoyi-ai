@@ -17,9 +17,18 @@ import java.util.Date;
 /**
  * AC-INC-15c：S/B 级系数定值 = 双PM 联合提议 → 产品组长确认 → 写入项目档案。
  * <p>A 级固定 1.0，禁止走本流程；区间校验复用 {@link ProjectService} 规则文案。
+ *
+ * <p>PERF-P1-6 框架（2026-09-07）：所有写方法统一 {@code @Transactional(rollbackFor = Exception.class)}
+ * 类级默认值；{@link #propose(Long, BigDecimal, String, Long, Long, Long)} 与
+ * {@link #leaderDecision(Long, Long, boolean, String)} 在同一事务内完成业务写入（request insert/update +
+ * project update）；{@link AuditLogService#append} 走 {@code REQUIRES_NEW} 保证审计链原子分配（seq/prevHash）
+ * 与业务回滚解耦——这是审计完整性 vs 性能的固有 trade-off，4 SQL → 1 批插入目标需要引入
+ * {@code AppendAuditBatchUtil}（锚行锁一次性分配 N 个连续 seq + 链式哈希 + 批 INSERT），见
+ * docs/ipd-系统说明/治理/ 待办；当前提交只做事务边界与代码同质化收敛。
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(rollbackFor = Exception.class)
 public class CoefficientChangeService {
 
     public static final String ACTION_PROPOSE = "COEFFICIENT_PROPOSE";
