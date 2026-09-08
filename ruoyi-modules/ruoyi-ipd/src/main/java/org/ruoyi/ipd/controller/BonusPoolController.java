@@ -1,6 +1,8 @@
 package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
@@ -31,13 +33,14 @@ import java.util.List;
 /**
  * 奖金池核算 Controller（P3-4.4 + P3-4.5，前端 P0-10.34 激励管理-奖金池核算）
  *
- * <p>6 端点：
+ * <p>7 端点：
  * <ul>
  *   <li>{@code POST /api/v1/bonus-pool/compute} — 计算并落库（DRAFT），权限 ipd:bonus-pool:compute</li>
  *   <li>{@code POST /api/v1/bonus-pool/{id}/freeze} — 冻结/确认（DRAFT→CONFIRMED），权限 ipd:bonus-pool:freeze</li>
  *   <li>{@code POST /api/v1/bonus-pool/{id}/distribute} — 分配（DRAFT/CONFIRMED→DISTRIBUTED），权限 ipd:bonus-pool:distribute</li>
  *   <li>{@code GET  /api/v1/bonus-pool/{id}} — 详情，权限 ipd:bonus-pool:query</li>
- *   <li>{@code GET  /api/v1/bonus-pool/list} — 项目奖金池列表，权限 ipd:bonus-pool:query</li>
+ *   <li>{@code GET  /api/v1/bonus-pool/list} — 项目奖金池列表（全量，标 @Deprecated），权限 ipd:bonus-pool:query</li>
+ *   <li>{@code GET  /api/v1/bonus-pool/page} — 项目奖金池分页（PERF-P0-2 替代 /list），权限 ipd:bonus-pool:query</li>
  *   <li>{@code POST /api/v1/bonus-pool/coefficient/preview} — 项目绩效系数试算（P3-4.5），权限 ipd:bonus-pool:compute</li>
  * </ul>
  *
@@ -144,12 +147,42 @@ public class BonusPoolController {
 
     /**
      * P3-4.4 §2.5：按项目查询奖金池列表（按 calculatedAt 倒序）。
+     *
+     * @deprecated 性能废弃（PERF-P0-2 2026-09-07）：全量 List 返回在大项目（1000+ 行）存在 OOM / 超时；
+     * 请改用 {@link #page} 端点（分页）。web-antd 旧调用方暂保留兼容。
      */
+    @Deprecated
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/list")
     public ApiV1Response<List<BonusPoolVO>> list(@RequestParam Long projectId) {
         ipdPermission.requireInternal();
         return ApiV1Response.ok(bonusPoolService.listByProject(projectId).stream().map(BonusPoolVO::from).toList());
+    }
+
+    /**
+     * PERF-P0-2：按项目分页查询奖金池（替代全量 {@link #list}）。
+     *
+     * <p>与 {@link #list} 的差异：
+     * <ul>
+     *   <li>物理分页（DB 层 LIMIT/OFFSET），大项目 1000+ 行不 OOM</li>
+     *   <li>pageSize 默认 20，上限 200（与 AuditLogController.list 同型）</li>
+     *   <li>响应 {@link IPage} 含 total/records/pages/current/size</li>
+     *   <li>排序与软删语义与 /list 完全一致（{@code calculatedAt} DESC，{@code del_flag=0} 自动过滤）</li>
+     * </ul>
+     *
+     * <p>权限与 /list 一致：仅内部已登录角色可查；{@link #list} 旧端点保留兼容 web-antd 调用方，
+     * 切量完成后下线。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/page")
+    public ApiV1Response<IPage<BonusPoolVO>> page(@RequestParam Long projectId,
+                                                  @RequestParam(defaultValue = "1") int pageNo,
+                                                  @RequestParam(defaultValue = "20") int pageSize) {
+        ipdPermission.requireInternal();
+        // pageSize 兜底（Controller 层先卡一道，Service 层二次防御）
+        Page<BonusPool> pageReq = new Page<>(pageNo, Math.min(pageSize, BonusPoolService.PAGE_SIZE_MAX));
+        IPage<BonusPool> result = bonusPoolService.pageByProject(projectId, pageReq);
+        return ApiV1Response.ok(result.convert(BonusPoolVO::from));
     }
 
     /**

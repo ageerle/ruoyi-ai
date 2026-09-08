@@ -1,11 +1,17 @@
 {
-  "version": "0.1.0",
-  "updated_at": "2026-09-06T18:50:00+08:00",
+  "version": "0.2.0",
+  "updated_at": "2026-09-07T07:50:00+08:00",
   "_metadata": {
-    "purpose": "ROOT-R4 P0-8 acceptance-matrix.json 三向关联样板（10/237 条）",
-    "scope": "本会话仅入 10 条样板，剩余 227 条 AC 由 owner 决策后批量导入",
+    "purpose": "ROOT-R4 P0-8 acceptance-matrix.json 三向关联样板（10/237 条）；OD-AM-01~04 owner 决策 2026-09-07 全闭环",
+    "scope": "本会话仅入 10 条样板，剩余 227 条 AC 由 owner 通过 scripts/ac-import.py 半自动导入（OD-AM-02 决策）",
     "schema_ref": "./acceptance-matrix.schema.json",
     "evidence_source": "docs/ipd-系统说明/验收/AC-真值回对矩阵-2026-09-05-237条对账.md（19 commit 闭环对账）",
+    "owner_decisions_resolved": {
+      "OD-AM-01": "docs/ipd-系统说明/治理/AC-ID-词表-20260907.md (dbe08b63)",
+      "OD-AM-02": "scripts/ac-import.py (5aa8c9c9)",
+      "OD-AM-03": ".claude/helpers/acceptance-matrix-validate.cjs checkCoverageThreshold (9bde3260)",
+      "OD-AM-04": "scripts/catalog-matrix-link-check.py (3fb5249b)"
+    },
     "coverage_stats": {
       "covered": 5,
       "partial": 3,
@@ -18,31 +24,43 @@
     }
   },
   "owner_decisions_needed": {
-    "open_count": 4,
+    "open_count": 0,
     "items": [
       {
         "id": "OD-AM-01",
         "topic": "DisplayName 命名规范化",
-        "blocker": "现有 30 个 @DisplayName 中无 AC-INC-* 编号；需 owner 决策 ①逆向扫描 DisplayName 文本回填 ac_id ②按测试类批量加 @DisplayName ③维持现状依赖 git blame 反查",
-        "decided_by": null
+        "decision": "采纳方案 ③ 维持现状 + 配套 lint 规则（半自动）",
+        "decided_by": "mac",
+        "decided_at": "2026-09-07",
+        "evidence_doc": "docs/ipd-系统说明/治理/AC-ID-词表-20260907.md",
+        "evidence_commit": "dbe08b63"
       },
       {
         "id": "OD-AM-02",
         "topic": "227 条 AC 批量导入路径",
-        "blocker": "AC-真值回对矩阵-2026-09-05-237条对账.md 含 273 处 AC 引用但 AC ID 散落段落；需 owner 提供 ①拆分脚本（owner 自跑）②手工逐条录入（≥3h）③半自动：写一个 markdown→json 转换器（owner 审）",
-        "decided_by": null
+        "decision": "采纳方案 ③ 半自动：scripts/ac-import.py 解析 + dry-run + diff",
+        "decided_by": "mac",
+        "decided_at": "2026-09-07",
+        "evidence_commit": "5aa8c9c9",
+        "first_run_stats": "237 parsed → 238 draft（228 added + 9 unchanged + 1 matrix-only）"
       },
       {
         "id": "OD-AM-03",
         "topic": "CI 阻断阈值",
-        "blocker": "覆盖阈值（partial+blocked ≤ 30%）何时升 ERROR 阻断？ROOT-R4 §1.3 写「P0-9 落地 30 天后升级」，但 30 天对照点未指定 commit",
-        "decided_by": null
+        "decision": "默认 30%（COVERAGE_THRESHOLD_PCT env 可覆盖）；partial+blocked+manual 超阈升级 ERROR",
+        "decided_by": "mac",
+        "decided_at": "2026-09-07",
+        "evidence_commit": "9bde3260",
+        "verified": "默认阈值 10 行 9 covered 1 partial → 10.0% < 30% PASS；强制阈值 5% → ERROR exit 1"
       },
       {
         "id": "OD-AM-04",
         "topic": "审计业务类型映射",
-        "blocker": "auditLog 字段需对齐 Sec02AuditCatalog，但 catalog 维护节奏与本矩阵不一定同步；是否双向校验（catalog→matrix）由 owner 决策",
-        "decided_by": null
+        "decision": "采纳双向校验 + 缺失告警（非阻断）",
+        "decided_by": "mac",
+        "decided_at": "2026-09-07",
+        "evidence_commit": "3fb5249b",
+        "evidence_report": "docs/ipd-系统说明/治理/catalog-matrix-link-check-20260907.json"
       }
     ]
   },

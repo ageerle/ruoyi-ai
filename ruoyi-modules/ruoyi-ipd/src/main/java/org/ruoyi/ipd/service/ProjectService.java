@@ -29,6 +29,8 @@ import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.dto.ProjectListItemView;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 
 /**
  * 项目服务（核心实体）
@@ -177,7 +179,8 @@ public class ProjectService {
     public Project changeStatus(Long projectId, String target, Long operatorId,
                                 Long actorGroupId, String actorRole) {
         Project project = require(projectId);
-        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         // ZK-IPD §二.10：归档后只读——禁所有迁出（即使变更到 SUSPENDED/ACTIVE 也拒）
         if ("ARCHIVED".equals(project.getStatus()) && !"ARCHIVED".equals(target)) {
             throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止迁出");
@@ -208,7 +211,8 @@ public class ProjectService {
     public Project updateBaselines(Long projectId, Project patch, Long operatorId,
                                    Long actorGroupId, String actorRole) {
         Project project = require(projectId);
-        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         // ZK-IPD §二.10：归档后只读——禁四基准修改
         if ("ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止修改四基准");
@@ -258,7 +262,8 @@ public class ProjectService {
     @Transactional(rollbackFor = Exception.class)
     public Project advanceStage(Long projectId, Long operatorId, Long actorGroupId, String actorRole) {
         Project project = require(projectId);
-        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         // ZK-IPD §二.10：归档后只读——禁阶段推进
         if ("ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止推进阶段");
@@ -305,7 +310,8 @@ public class ProjectService {
         if (keyword != null && !keyword.isBlank()) {
             qw.like(Project::getName, keyword);
         }
-        return projectMapper.selectList(qw.orderByDesc(Project::getId));
+        // PERF-P1-1：硬上限 1000 防 ≥10k 项目 OOM（IPD 单企业 ≥10k 项目场景）
+        return projectMapper.selectList(qw.orderByDesc(Project::getId).last("LIMIT 1000"));
     }
 
     /**
@@ -624,19 +630,6 @@ public class ProjectService {
                 "attemptedNext", attemptedNext,
                 "openChangeCount", openCount))
             .createTime(new Date()).build());
-    }
-
-    /**
-     * R8X-CONT-1 P0-1：横向越权防护——SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == project.mainGroupId。
-     * 复用 {@link LaunchDateChangeService#assertSameGroup} 语义，本类独享以避免 service 间循环依赖。
-     */
-    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
-        if ("SUPER_ADMIN".equals(actorRole)) {
-            return;
-        }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new ServiceException(roleLabel + "必须归属项目主组（横向越权防护）");
-        }
     }
 
     private static boolean isBlank(String v) {

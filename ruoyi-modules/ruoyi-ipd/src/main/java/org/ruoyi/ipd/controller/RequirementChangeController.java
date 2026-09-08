@@ -45,14 +45,17 @@ public class RequirementChangeController {
         return ApiV1Response.ok(requirementChangeService.create(change, actor));
     }
 
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    // R-NEW A-1：提交动作改用专属码 submit，与既有 create 的 MODULE_PROJECT_STATUS_CHANGE 区分；
+    // 真正的“谁能提交哪个需求变更”由 service 层对象级守卫承担。
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SUBMIT, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/requirement-changes/{id}/submit")
     public ApiV1Response<RequirementChange> submit(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(requirementChangeService.submit(id, actor));
     }
 
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    // R-NEW A-1：签署动作改用专属码 sign，与既有 create 的 MODULE_PROJECT_STATUS_CHANGE 区分。
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SIGN, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/requirement-changes/{id}/sign")
     public ApiV1Response<RequirementChange> sign(@PathVariable Long id,
                                                   @RequestParam String decision,

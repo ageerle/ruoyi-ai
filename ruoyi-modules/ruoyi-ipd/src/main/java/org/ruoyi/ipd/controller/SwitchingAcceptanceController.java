@@ -44,13 +44,15 @@ public class SwitchingAcceptanceController {
         return ApiV1Response.ok(switchingAcceptanceService.get(month));
     }
 
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_ADMIN, type = IpdAuthSession.LOGIN_TYPE)
+    // R-NEW A-1：锁定动作改用专属码 lock；保留 _ADMIN 作历史别名（同字面量值不重复登记以防污染目录）。
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{month}/lock")
     public ApiV1Response<SwitchingAcceptanceReport> lock(@PathVariable String month) {
         return ApiV1Response.ok(switchingAcceptanceService.lock(month));
     }
 
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_ADMIN, type = IpdAuthSession.LOGIN_TYPE)
+    // R-NEW A-1：解锁动作改用专属码 unlock。
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{month}/unlock")
     public ApiV1Response<SwitchingAcceptanceReport> unlock(@PathVariable String month,
                                                           @RequestBody @Valid SwitchingAcceptanceUnlockReq req) {

@@ -71,6 +71,8 @@ class P271AcceptanceTest {
     private AuditLogService auditLogService;
     @Mock
     private IpdAuthSession ipdAuthSession;
+    @Mock
+    private NotificationService notificationService;
 
     private ProjectMemberService projectMemberService;
     private HandoverService handoverService;
@@ -98,7 +100,8 @@ class P271AcceptanceTest {
         projectMemberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
-            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession);
+            auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession,
+            notificationService);
         // SEC-REV-HANDOVER-01 适配：assertSameGroup 需要 project.mainGroupId 与 leader.groupId 一致
         Project grouped = new Project();
         grouped.setMainGroupId(7L);

@@ -43,6 +43,9 @@ public class DeletionArchiveService {
      *
      * @return 未清除的已删除申请
      */
+    // SEC-LOW-6：readOnly=true 让 Spring 在事务内走 MySQL/连接池只读优化（不取写锁、不参与 TX 日志 fsync）。
+    // 列表查询无副作用，写入路径仍走 {@link #purge(Long)} 的读写事务。
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
     public List<DeletionRequest> listArchive() {
         ipdPermission.requireAdmin();
         return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()

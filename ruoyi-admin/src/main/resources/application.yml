@@ -31,6 +31,19 @@ coding:
       execute-process:
         enabled: true
 
+--- # websocket
+websocket:
+  # 如果关闭 需要和前端开关一起关闭
+  enabled: false
+  # 路径
+  path: /resource/websocket
+  # 设置访问源地址
+  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
+  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
+  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
+  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
+  allowedOrigins: ''
+
 --- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
 chat:
   default-model: deepseek-v4-flash
@@ -54,7 +67,9 @@ logging:
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
-  config: classpath:logback-plus.xml
+  # 使用 logback-spring.xml 以支持 <springProfile name="dev|prod"> 切换 root level
+  # （详见 logback-spring.xml 头部注释；logback-plus.xml 已废弃仅保留向后兼容）
+  config: classpath:logback-spring.xml
 
 # 用户配置
 user:
@@ -136,7 +151,7 @@ spring:
   # 此处为未显式配池的 profile（如 ipd-local）提供安全基线：
   # 缺省时 HikariCP 默认 maximumPoolSize=10 + connectionTimeout=30s，并发>10 即排队雪崩。
   # application-dev.yml / application-prod.yml 以同名键覆盖
-  # （dev 已升 80；prod 走 application-prod-batch4-bcrypt-hikari.patch 提升至 80，待用户 apply + 压测验证）。
+  # （dev 已升 80；prod 已 apply application-prod-batch4-bcrypt-hikari.patch 上浮至 80，超原 spec 60 — 同步自 SEC-HIGH-1 R9-BC-COST BCrypt cost=10 持连接时间×10 的压测；详见 Wave3-实施规格包修订 + SEC-AUD rebuttal）。
   datasource:
     dynamic:
       # 性能分析插件（有性能损耗 不建议生产环境使用）
@@ -290,6 +305,7 @@ tenant:
     - receipt_ledger
     - audit_logs
     - kpi_records
+    - kpi_shared_confirms
     - allowance_ledgers
     - bonus_pools
     - ai_documents
@@ -307,6 +323,22 @@ tenant:
     - audit_log_chain_heads
     # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
     - notification_events
+    # AUD-02-FIX（2026-09-07）：4 张 DDL 新表登记——ipd_business_config / _versions / switching_acceptance / gate_review_observers
+    # 单企业私有部署，全部带 tenant_id 默认 '000000'，无多租户语义，必须排除租户过滤否则 SQL 加 tenant_id 后误判断行
+    - ipd_business_config
+    - ipd_business_config_versions
+    - switching_acceptance
+    - gate_review_observers
+    # R-P3-2.2-POSTREVIEW（2026-09-07）：P3-2.2 治理元数据表——kpi_rule_snapshots / correction_log
+    # 均为「全局规则/审计链」类治理表（与 system_config_versions / audit_logs 同语义），
+    # 不登记则多租户插件对其追加 tenant_id 过滤，跨租户联查/读审计链直接断行
+    - kpi_rule_snapshots
+    - correction_log
+    # R-NEW-SEC-6（2026-09-07）收口：post_launch_reviews（P2-5.6 实体/Service 已上线，表与登记均缺）。
+    # 单企业私有部署下 tenant_id 恒为 '000000'，无多租户语义；不登记则插件追加 tenant_id 过滤，
+    # 与 persons/projects/handover_records 等既有业务表同口径。建表脚本见
+    # docs/script/sql/update/2026-09-07-ipd-rnew-post-launch-reviews.sql（DDL 与本登记须同批上线）。
+    - post_launch_reviews
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
@@ -431,18 +463,6 @@ sse:
   enabled: true
   path: /resource/sse
 
---- # websocket
-websocket:
-  # 如果关闭 需要和前端开关一起关闭
-  enabled: false
-  # 路径
-  path: /resource/websocket
-  # 设置访问源地址
-  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
-  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
-  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
-  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
-  allowedOrigins: ''
 
 --- # 演示模式配置
 demo:

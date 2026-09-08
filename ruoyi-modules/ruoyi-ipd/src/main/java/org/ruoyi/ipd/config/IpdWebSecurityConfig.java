@@ -24,6 +24,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * 公开入口豁免：
  * <ul>
  *   <li>/api/v1/auth/login——认证入口</li>
+ *   <li>/api/v1/auth/wecom/qr-login——P0-7.4 企微 Mock 扫码登录入口（mock=true 走未绑定同错误信息）</li>
  *   <li>/api/v1/public/**——需求门户公开端点（P4-1.1 游客 submit/products/trace）</li>
  * </ul>
  */
@@ -49,13 +50,13 @@ public class IpdWebSecurityConfig implements WebMvcConfigurer {
                 return true;
             }
         }).addPathPatterns("/api/v1/**")
-            .excludePathPatterns("/api/v1/auth/login", "/api/v1/public/**")
+            .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/wecom/qr-login", "/api/v1/public/**")
             .order(Ordered.HIGHEST_PRECEDENCE);
 
         // 注解鉴权：依赖上一层已完成 ipd 登录；type=ipd 的 @SaCheckPermission 在此生效
         registry.addInterceptor(new SaInterceptor().isAnnotation(true))
             .addPathPatterns("/api/v1/**")
-            .excludePathPatterns("/api/v1/auth/login", "/api/v1/public/**")
+            .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/wecom/qr-login", "/api/v1/public/**")
             .order(Ordered.HIGHEST_PRECEDENCE + 1);
     }
 }

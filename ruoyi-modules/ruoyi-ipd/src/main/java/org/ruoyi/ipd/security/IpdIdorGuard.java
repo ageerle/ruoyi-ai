@@ -186,6 +186,20 @@ public final class IpdIdorGuard {
     }
 
     /**
+     * 守卫 7：项目与会话租户一致性（供 service 层直用，免跨 Service 静态调用）。
+     *
+     * <p>沿用 {@link #requireTenantMatch} 的容忍口径：会话租户为 null/空（未启用隔离、
+     * 异步线程、纯 JVM 单测）或项目租户缺失 → 放行；两侧均非空且不一致 → FORBIDDEN。
+     * 单企业私有部署下本守卫恒真，它的价值在于“一旦真的开多租户，跨租户接管会立即被拒”。
+     *
+     * @param project 已加载的项目（可为 null，null 时不在此报错，由调用方的存在性校验负责）
+     * @throws IpdBusinessException {@link ApiV1ErrorCode#FORBIDDEN} 当租户两侧均非空且不一致
+     */
+    public static void requireProjectTenantMatch(Project project) {
+        requireTenantMatch(currentTenantId(), project);
+    }
+
+    /**
      * 跨租户守卫（W4-Security 决策 1，KpiSharedCollectionService.requireTenantMatch 同口径）。
      *
      * <p>租户匹配或租户上下文缺失（null/空串，即租户隔离未启用或未登录场景）→ 放行；

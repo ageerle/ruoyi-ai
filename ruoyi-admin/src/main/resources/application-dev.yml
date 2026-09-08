@@ -223,77 +223,77 @@ justauth:
       # 注意 如下均配置均不需要修改 maxkey 已经内置好了数据
       server-url: http://sso.maxkey.top
       client-id: 876892492581044224
-      client-secret: x1Y5MTMwNzIwMjMxNTM4NDc3Mzche8
+      client-secret: ${JUSTAUTH_MAXKEY_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=maxkey
     topiam:
       # topiam 服务器地址
       server-url: http://127.0.0.1:1898/api/v1/authorize/y0q************spq***********8ol
       client-id: 449c4*********937************759
-      client-secret: ac7***********1e0************28d
+      client-secret: ${JUSTAUTH_TOPIAM_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=topiam
       scopes: [openid, email, phone, profile]
     qq:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_QQ_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=qq
       union-id: false
     weibo:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WEIBO_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=weibo
     gitee:
       client-id: 91436b7940090d09c72c7daf85b959cfd5f215d67eea73acbf61b6b590751a98
-      client-secret: 02c6fcfd70342980cd8dd2f2c06c1a350645d76c754d7a264c4e125f9ba915ac
+      client-secret: ${JUSTAUTH_GITEE_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=gitee
     dingtalk:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_DINGTALK_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=dingtalk
     baidu:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_BAIDU_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=baidu
     csdn:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_CSDN_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=csdn
     coding:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_CODING_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=coding
       coding-group-name: xx
     oschina:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_OSCHINA_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=oschina
     alipay_wallet:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_ALIPAY_WALLET_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
       alipay-public-key: MIIB**************DAQAB
     wechat_open:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WECHAT_OPEN_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_open
     wechat_mp:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WECHAT_MP_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_mp
     wechat_enterprise:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_enterprise
       agent-id: 1000002
     gitlab:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_GITLAB_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=gitlab
     gitea:
       # 前端改动 https://gitee.com/JavaLionLi/plus-ui/pulls/204
       # gitea 服务器地址
       server-url: https://demo.gitea.com
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_GITEA_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=gitea
 
 --- # Actuator 监控端点

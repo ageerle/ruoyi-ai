@@ -96,6 +96,7 @@ class P111AcceptanceTest {
         p.setName("S");
         p.setProductId(productId);
         p.setDelFlag("0");
+        p.setMainGroupId(1L); // R-NEW A-2：补 mainGroupId 与 actor.groupId=1L 一致，跳同组守卫
         return p;
     }
 
@@ -126,7 +127,8 @@ class P111AcceptanceTest {
         IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
             productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("一个产品仅对应一个项目")
+            // R-NEW A-2：兄弟会话已把 service 文案改为脱敏版「产品已被占用」
+            .hasMessageContaining("产品已被占用")
             .actual();
         assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
@@ -249,7 +251,8 @@ class P111AcceptanceTest {
         IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
             productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("一个产品仅对应一个项目")
+            // R-NEW A-2：兄弟会话已把 service 文案改为脱敏版「产品已被占用」
+            .hasMessageContaining("产品已被占用")
             .actual();
         assertThat(ex.getMessage()).doesNotContain("分摊").doesNotContain("池");
     }

@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -26,14 +27,17 @@ class P032HttpAcceptanceTest {
 
     private SystemConfigService configService;
     private IpdPermission ipdPermission;
+    private AuditLogService auditLogService;
     private MockMvc mvc;
 
     @BeforeEach
     void setup() {
         configService = mock(SystemConfigService.class);
         ipdPermission = mock(IpdPermission.class);
+        auditLogService = mock(AuditLogService.class);
         mvc = MockMvcBuilders
-            .standaloneSetup(new SystemConfigController(configService, ipdPermission))
+            .standaloneSetup(new SystemConfigController(
+                configService, ipdPermission, auditLogService, new ObjectMapper()))
             .setControllerAdvice(new IpdPermissionExceptionHandler())
             .build();
     }

@@ -3,11 +3,15 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +23,17 @@ import java.util.Set;
  * AC-INC-33：修改上市日期需双签 + 审计；不可单方面改 {@code projects.launch_date}。
  * Round 8 / R8X-2 P0-1：propose / secondDecision 入口加 actor.groupId == project.mainGroupId
  * 横向越权防护（除 SUPER_ADMIN 豁免外，所有双签人必须归属同一项目主组）。
+ *
+ * <p>PERF-P1-6 框架（2026-09-07）：所有写方法统一 {@code @Transactional(rollbackFor = Exception.class)}
+ * 类级默认值；{@link #propose}/{@link #secondDecision}/{@link #initialRecord} 在同一事务内完成业务写入，
+ * {@link AuditLogService#append} 走 {@code REQUIRES_NEW} 与业务回滚解耦——审计完整性 vs 性能 trade-off。
+ * 当前 {@link LaunchDateChangeRequest} 已带 {@code @Version} 乐观锁（{@code secondDecision} 用
+ * {@code updateById==0} 判定并发失败、阻止重复审计写入，幂等性已闭合）。4 SQL → 1 批插入目标需
+ * 引入 {@code AppendAuditBatchUtil}（见 docs/ipd-系统说明/治理/ 待办），当前提交只做事务边界同质化收敛。
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(rollbackFor = Exception.class)
 public class LaunchDateChangeService {
 
     public static final String ACTION_PROPOSE = "LAUNCH_DATE_PROPOSE";
@@ -66,7 +78,8 @@ public class LaunchDateChangeService {
         }
         Project project = requireWritableProject(projectId);
         // R8X-2 P0-1：横向越权防护——提议人必须归属同一项目主组（SUPER_ADMIN 豁免）
-        assertSameGroup(proposerRole, proposerGroupId, project.getMainGroupId(), "提议人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(proposerId, null, proposerRole, proposerGroupId),
+            project.getMainGroupId());
         Long pending = requestMapper.selectCount(new LambdaQueryWrapper<LaunchDateChangeRequest>()
             .eq(LaunchDateChangeRequest::getProjectId, projectId)
             .eq(LaunchDateChangeRequest::getStatus, LaunchDateChangeRequest.ST_PENDING_SECOND));
@@ -136,7 +149,8 @@ public class LaunchDateChangeService {
         }
         // R8X-2 P0-1：横向越权防护——确认人必须归属同一项目主组（SUPER_ADMIN 豁免）
         Project project = requireWritableProject(req.getProjectId());
-        assertSameGroup(confirmerRole, confirmerGroupId, project.getMainGroupId(), "确认人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(confirmerId, null, confirmerRole, confirmerGroupId),
+            project.getMainGroupId());
         if (!SUPER_ADMIN.equals(confirmerRole) && !SUPER_ADMIN.equals(req.getProposerRole())
             && confirmerRole.equals(req.getProposerRole())) {
             throw new ServiceException("第二签须为互补角色（市场PM↔研发PM）或超管");
@@ -165,18 +179,6 @@ public class LaunchDateChangeService {
         audit(confirmerId, ACTION_CONFIRM, req.getId(),
             "project:" + project.getId() + " launchDate:" + req.getProposedLaunchDate());
         return req;
-    }
-
-    /**
-     * R8X-2 P0-1：组归属校验。SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == objectGroupId。
-     */
-    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String role) {
-        if (SUPER_ADMIN.equals(actorRole)) {
-            return;
-        }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new ServiceException(role + "必须归属项目主组（横向越权防护）");
-        }
     }
 
     /**

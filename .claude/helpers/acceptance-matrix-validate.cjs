@@ -76,8 +76,8 @@ function checkMatrix(matrix) {
     }
     acIds.add(row.ac_id);
 
-    // 2. ac_id 格式
-    if (!/^AC-(INC|EXT|MIN|AUTH|AUD|ENV|GATE|GLB|CFG|PROD)-\d+[a-z]?$/.test(row.ac_id)) {
+    // 2. ac_id 格式（17 个模块前缀，OD-AM-02 批量导入时同步扩充）
+    if (!/^AC-(INC|EXT|MIN|AUTH|AUD|ENV|GATE|GLB|CFG|PROD|AI|DEL|HAND|HR|IPD|KPI|REQ|TEAM)-\d+[a-z]?$/.test(row.ac_id)) {
       log('ERROR', `ac_id 格式不合规: ${row.ac_id}`);
     }
 
@@ -120,6 +120,26 @@ function checkMatrix(matrix) {
     }
   }
   return acIds;
+}
+
+function checkCoverageThreshold(matrix) {
+  // OD-AM-03 决策：CI 阻断阈值（partial + blocked ≤ 30% PASS，否则 ERROR）
+  // 阈值通过 COVERAGE_THRESHOLD_PCT 环境变量覆盖，默认 30
+  // 用途：防止「批量导入后无人补 unitTestClass」导致 matrix 看似 237/237 但实际未覆盖
+  const threshold = parseFloat(process.env.COVERAGE_THRESHOLD_PCT || '30');
+  const rows = matrix.rows || [];
+  if (rows.length === 0) return;
+  const partial = rows.filter(r => r.status === 'partial').length;
+  const blocked = rows.filter(r => r.status === 'blocked').length;
+  const manual = rows.filter(r => r.status === 'manual').length;
+  const incomplete = partial + blocked + manual;
+  const pct = (incomplete / rows.length) * 100;
+  const line = `OD-AM-03 覆盖率阈值检查：partial=${partial} blocked=${blocked} manual=${manual} incomplete=${incomplete}/${rows.length} (${pct.toFixed(1)}%, threshold=${threshold}%)`;
+  if (pct > threshold) {
+    log('ERROR', `${line} → 超过阈值，升级 ERROR 阻断`);
+  } else {
+    log('INFO', `${line} → 在阈值内，PASS`);
+  }
 }
 
 function checkReverse(matrix, acIds) {
@@ -168,6 +188,7 @@ function main() {
 
   const acIds = checkMatrix(matrix);
   checkReverse(matrix, acIds);
+  checkCoverageThreshold(matrix);
 
   console.log('');
   console.log('=== acceptance-matrix-validate 总结 ===');
@@ -177,6 +198,11 @@ function main() {
   console.log(`  blocked:     ${(matrix.rows || []).filter(r => r.status === 'blocked').length}`);
   console.log(`  manual:      ${(matrix.rows || []).filter(r => r.status === 'manual').length}`);
   console.log(`  deprecated:  ${(matrix.rows || []).filter(r => r.status === 'deprecated').length}`);
+  const _inc = (matrix.rows || []).filter(r => ['partial','blocked','manual'].includes(r.status)).length;
+  const _total = (matrix.rows || []).length || 1;
+  const _pct = (_inc / _total * 100).toFixed(1);
+  const _thr = process.env.COVERAGE_THRESHOLD_PCT || '30';
+  console.log(`  threshold:   partial+blocked+manual=${_pct}% (cap=${_thr}%, OD-AM-03)`);
   console.log(`  errors:      ${errors.length}`);
   console.log(`  warnings:    ${warnings.length}`);
 

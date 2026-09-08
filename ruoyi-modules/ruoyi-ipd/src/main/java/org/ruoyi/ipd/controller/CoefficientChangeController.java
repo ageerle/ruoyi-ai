@@ -46,7 +46,7 @@ public class CoefficientChangeController {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(coefficientChangeService.propose(
             body.projectId(), body.proposedCoefficient(), body.reason(),
-            body.marketPmId(), body.rdPmId(), actor.id()));
+            body.marketPmId(), body.rdPmId(), actor.id(), actor));
     }
 
     /**
@@ -64,7 +64,7 @@ public class CoefficientChangeController {
                                                                   @RequestParam(required = false) String opinion) {
         IpdActor actor = ipdPermission.requireLeaderOrAdmin();
         return ApiV1Response.ok(coefficientChangeService.leaderDecision(
-            id, actor.id(), approve, opinion));
+            id, actor.id(), approve, opinion, actor));
     }
 
     /** 联合提议入参。 */
