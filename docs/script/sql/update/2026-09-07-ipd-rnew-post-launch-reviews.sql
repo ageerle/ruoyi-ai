@@ -4,6 +4,15 @@
 --   ipd_dev@127.0.0.1:13306 的 information_schema.tables 中 post_launch_reviews 计数 = 0（表缺失）；
 --   同库 launch_date_change_requests / kpi_shared_confirms / bonus_pools / handover_records 均存在。
 --   → P2-5.6 当时只有 Mockito 单测绿，Service 写库路径在真库上不可用（属"代码已就位、表未上线"半套状态）。
+-- 已应用（2026-09-07 后续兄弟会话在途建表，R-NEW commit 4 已 committed 此 DDL 作 SSOT 参考）：
+--   实际真库 ipd_dev.post_launch_reviews 当前 schema 与本 DDL 在以下列存在差异——真库选用更宽泛类型：
+--     * scheduled_at    : DDL nullable      → 真库 NOT NULL（派生列不允许 null）
+--     * actual_revenue  : DDL decimal(14,2) → 真库 decimal(18,2)（保留大额营收精度）
+--     * customer_feedback / kpi_achievement : DDL varchar(2000) → 真库 TEXT
+--     * lessons         : DDL varchar(4000) → 真库 TEXT
+--     * tenant_id       : DDL varchar(20)   → 真库 varchar(32)（与 persons/projects 对齐）
+--   本 DDL 已 reflect 真库实际 schema 作 SSOT，未来重建须按此口径执行。
+--
 -- 业务规则（不变，仅补持久层）：
 --   ① scheduleReview：launchDate + 90d 生成 status=PENDING 待办；同 projectId 已有 PENDING ⇒ 复用不新建（幂等靠 Service 查询，非唯一约束）；
 --   ② completeReview：填复盘数据 + status=COMPLETED + completed_at=now；已 COMPLETED 拒绝重复完成；
@@ -18,20 +27,20 @@
 CREATE TABLE IF NOT EXISTS `post_launch_reviews` (
   `id` bigint NOT NULL COMMENT '主键（雪花，应用侧 ASSIGN_ID 生成）',
   `project_id` bigint NOT NULL COMMENT '项目ID（关联 projects.id）',
-  `scheduled_at` datetime DEFAULT NULL COMMENT '复盘截止日 = launchDate + 90d',
+  `scheduled_at` datetime NOT NULL COMMENT '复盘截止日 = launchDate + 90d',
   `status` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING|COMPLETED|OVERDUE（OVERDUE 读时派生）',
   `assignee_id` bigint DEFAULT NULL COMMENT '当前负责 PM（personId，移交后跟随 ProjectMember 主 MARKET_PM）',
-  `actual_revenue` decimal(14,2) DEFAULT NULL COMMENT '实际营收（复盘完成时填写）',
-  `customer_feedback` varchar(2000) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '客户反馈（≤2000 字符）',
-  `kpi_achievement` varchar(2000) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'KPI 达成情况（≤2000 字符）',
-  `lessons` varchar(4000) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '经验教训（≤4000 字符）',
+  `actual_revenue` decimal(18,2) DEFAULT NULL COMMENT '实际营收（复盘完成时填写；decimal(18,2) 保留大额精度）',
+  `customer_feedback` text COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '客户反馈',
+  `kpi_achievement` text COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'KPI 达成情况',
+  `lessons` text COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '经验教训',
   `completed_at` datetime DEFAULT NULL COMMENT '复盘完成时间',
   `create_dept` bigint DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint DEFAULT NULL COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `tenant_id` varchar(20) COLLATE utf8mb4_general_ci DEFAULT '000000' COMMENT '租户编号（单企业部署常量）',
+  `tenant_id` varchar(32) COLLATE utf8mb4_general_ci DEFAULT '000000' COMMENT '租户编号（单企业部署常量，与 persons/projects 对齐）',
   `del_flag` char(1) COLLATE utf8mb4_general_ci DEFAULT '0' COMMENT '删除标志（0 存在 1 已删，走 @TableLogic）',
   PRIMARY KEY (`id`),
   KEY `idx_plr_project_status` (`project_id`, `status`, `del_flag`) COMMENT 'scheduleReview 幂等查询 + 页47 PENDING 入口',
