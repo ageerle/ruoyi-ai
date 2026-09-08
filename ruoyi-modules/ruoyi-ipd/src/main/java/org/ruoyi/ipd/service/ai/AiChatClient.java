@@ -20,10 +20,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * P4-2.2 生成调用器：OpenAI 兼容 chat/completions 非流式单轮。
@@ -57,6 +59,8 @@ public class AiChatClient {
      * 169.254.169.254 元数据端点，配合 Bearer 转发可能让 SSRF 命中点伪装为已认证用户。
      */
     private final String allowedHosts;
+    /** R-NEW S-7：promptLen bucket 切换日志聚合器；每实例独立，线程安全。 */
+    private final PromptLenBucketLogger bucketLogger;
 
     /**
      * P2-7.4 HTTP 重启附加：显式 @Autowired 标记主 ctor。
@@ -69,6 +73,7 @@ public class AiChatClient {
                         @Value("${ai.allowed-hosts:}") String allowedHosts) {
         this.debugEnabled = debugEnabled;
         this.allowedHosts = allowedHosts == null ? "" : allowedHosts;
+        this.bucketLogger = new PromptLenBucketLogger();
         // 显式 HTTP/1.1：避免部分模型网关（MiniMax 等）对 h2 协商 POST 的兼容性差异（P4-2.2 真机验收 400 排查）
         this.http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(10)).build();
@@ -84,6 +89,7 @@ public class AiChatClient {
         this.http = http;
         this.debugEnabled = debugEnabled;
         this.allowedHosts = "";
+        this.bucketLogger = new PromptLenBucketLogger();
     }
 
     /**
@@ -139,9 +145,12 @@ public class AiChatClient {
             // 排障观测：仅落非敏感结构化字段（model/bodyLen/promptLen/maxTokens/temperature），
             // 配合 reqHash 短指纹便于请求/响应配对。prompt 与响应原文一律不进日志（BR-AI-04 / P4-2.2 安全审查闭环）。
             int promptLen = prompt == null ? 0 : prompt.length();
+            // R-NEW S-7：连续 promptLen 进日志构成「长度指纹」侧信道；改离散桶消除指纹并保留分布决策能力
+            boolean transitioned = bucketLogger.record(promptLen);
+            String bucket = PromptLenBucket.of(promptLen).label();
             String reqHash = shortHash(reqBody);
-            log.warn("[AI] chat request: model={} bodyLen={} promptLen={} maxTokens={} temperature={} reqHash={}",
-                cfg.modelName(), reqBody.length(), promptLen,
+            log.warn("[AI] chat request: model={} bodyLen={} promptLenBucket={} bucketTransitioned={} maxTokens={} temperature={} reqHash={}",
+                cfg.modelName(), reqBody.length(), bucket, transitioned,
                 maxTokens == null ? "default" : maxTokens.toString(),
                 temperature == null ? "default" : temperature.toPlainString(),
                 reqHash);
@@ -194,9 +203,14 @@ public class AiChatClient {
 
 
     /**
-     * SSRF 防御（SEC P1-3/P1-15）：先解析 baseUrl 的 host，再解析 IP。
-     * 拒绝：RFC1918 10/8、172.16/12、192.168/16、loopback 127/8、link-local 169.254/16（含 AWS 元数据）、
-     * IPv6 ::1、IPv6 fc00::/7。allowlist 留空时仅做内网黑名单（向后兼容）。
+     * SSRF 防御（SEC P1-3/P1-15 + R-NEW S-6）：
+     * <ol>
+     *   <li>解析 host →拿到首个 InetAddress → 字节级黑名单（含 IPv6 fe80::/10 显式断言）</li>
+     *   <li><b>DNS rebinding 防御</b>：再解析一次 → 与首次结果比对；任一 IP 落入黑名单或两次解析不一致 → 拒。
+     *       Why：JVM 的 networkaddress.cache.ttl 默认 30s（成功）/10s（失败）；攻击者把 TTL=0，
+     *       首解析 1.2.3.4 公网放行 → 缓存过期重解析到 fe80:: → 不双解析即被绕过。</li>
+     *   <li>allowlist 留空时仅做内网黑名单（向后兼容）</li>
+     * </ol>
      */
     private void validateEndpoint(String baseUrl) {
         URI uri = URI.create(baseUrl);
@@ -204,16 +218,31 @@ public class AiChatClient {
         if (host == null) {
             throw new IpdBusinessException("endpoint host missing");
         }
-        InetAddress addr;
+        InetAddress[] firstAddrs;
+        InetAddress[] secondAddrs;
         try {
-            addr = InetAddress.getByName(host);
+            firstAddrs  = InetAddress.getAllByName(host);
+            secondAddrs = InetAddress.getAllByName(host); // S-6 增量：二次解析防 DNS rebinding
         } catch (UnknownHostException e) {
             throw new IpdBusinessException("endpoint host unresolvable: " + host);
         }
-        byte[] ip = addr.getAddress();
-        if (isBlockedIp(ip)) {
-            log.warn("[AI] SSRF blocked endpoint host={} ip={}", host, addr.getHostAddress());
-            throw new IpdBusinessException("SSRF blocked: private/loopback/link-local endpoint " + host);
+        // S-6 增量：任一解析序列含黑名单 IP 即拒
+        for (InetAddress a : firstAddrs) {
+            if (isBlockedIp(a.getAddress())) {
+                log.warn("[AI] SSRF blocked endpoint host={} ip={} (first resolve)", host, a.getHostAddress());
+                throw new IpdBusinessException("SSRF blocked: private/loopback/link-local endpoint " + host);
+            }
+        }
+        for (InetAddress a : secondAddrs) {
+            if (isBlockedIp(a.getAddress())) {
+                log.warn("[AI] SSRF blocked endpoint host={} ip={} (second resolve - DNS rebinding)", host, a.getHostAddress());
+                throw new IpdBusinessException("SSRF blocked: private/loopback/link-local endpoint " + host);
+            }
+        }
+        // S-6 增量：DNS rebinding 防御——两次解析 IP 集合不相等即拒
+        if (!ipSet(firstAddrs).equals(ipSet(secondAddrs))) {
+            log.warn("[AI] SSRF DNS-rebinding suspected host={} first={} second={}", host, ipSet(firstAddrs), ipSet(secondAddrs));
+            throw new IpdBusinessException("SSRF blocked: DNS rebinding suspected for " + host);
         }
         String allowList = allowedHosts.trim();
         if (!allowList.isEmpty()) {
@@ -227,7 +256,14 @@ public class AiChatClient {
         }
     }
 
-    /** 内网 / loopback / link-local IP 黑名单，覆盖 IPv4 + IPv6。 */
+    /** S-6 增量 helper：InetAddress[] → IP 字符串集合（去重）。 */
+    private static Set<String> ipSet(InetAddress[] addrs) {
+        Set<String> set = new HashSet<>(addrs.length * 2);
+        for (InetAddress a : addrs) set.add(a.getHostAddress());
+        return set;
+    }
+
+    /** 内网 / loopback / link-local IP 黑名单，覆盖 IPv4 + IPv6。S-6 增量：fe80::/10 字节级显式断言。 */
     private static boolean isBlockedIp(byte[] ip) {
         if (ip == null) {
             return true;
@@ -253,7 +289,14 @@ public class AiChatClient {
             }
         }
         if (ip.length == 4) return isBlockedIpv4(ip);
-        if (ip.length == 16 && (ip[0] & (byte) 0xFE) == (byte) 0xFC) return true;
+        if (ip.length == 16 && (ip[0] & (byte) 0xFE) == (byte) 0xFC) return true;  // fc00::/7 ULA
+        // S-6 增量：IPv6 fe80::/10 字节级显式断言（不依赖 JDK isLinkLocalAddress 语义；纵深防御 + 抗 JDK 升级漂移）
+        // fe80::/10 = ip[0]==0xFE 且 ip[1] 高 2 位为 10（即 ip[1] ∈ [0x80, 0xBF]）
+        if (ip.length == 16
+            && ip[0] == (byte) 0xFE
+            && (ip[1] & (byte) 0xC0) == (byte) 0x80) {
+            return true;
+        }
         return false;
     }
 
