@@ -1,0 +1,85 @@
+# IPD commit 模板（病根 2 根治：commit 治理无门禁）
+#
+# 用法：
+#   git config --global commit.template .gitmessage
+#   或：git commit -t .gitmessage
+#
+# 背景：
+#   commit 写「feat」但只动 test 文件（如 3ce9f0f6 P2-8.1）
+#   commit 写「整链验收」但实际 Mockito Mock
+#   commit 写「P2 阶段 22 张细卡全 done」但 P2-5.3 仍在途
+#   → 看板卡误判翻 done，业务链真活未验证
+#
+# 强制要求（翻 done 必须填）：
+#   1. 真活证据（HTTP 端点 + DB 业务表行数）
+#   2. DDL apply 状态
+#   3. 测试类型（SpringBootTest 真活 / Mockito Mock 契约）
+#   4. 业务链 E2E 验证
+#
+# 边界：
+#   - 契约测试（Mockito Mock）commit 写「test」不写「feat」
+#   - 翻 done commit 必须列「真活证据」段
+#   - docs-only commit 写「docs」不写「feat」
+
+# <type>(<scope>): <subject>
+#
+# type: feat / fix / test / docs / refactor / perf / chore
+# scope: ipd / P2-8.1 / DEF-5 / 等
+# subject: 一句话讲清做了什么（≤50 字符）
+#
+# 示例：
+#   feat(ipd,P2-8.1): 双PM组队到Gate变更移交整链验收
+#   test(ipd,P2-8.1): P281AcceptanceTest Mockito Mock 契约测试 19/19 绿
+#   docs(ipd,P2): P2-5/6 阶段动作收口验收报告
+
+# <body>
+#
+# 详细说明做了什么、为什么这么做（≤72 字符/行）
+#
+# 翻 done 必填段（删除不适用项）：
+#
+# 真活证据：
+#   - HTTP 端点：POST /api/v1/handovers → 200 code=0（16049 真活实例）
+#   - DB 业务表：handover_records 2 行（fresh SELECT COUNT(*)）
+#   - DDL apply：uk_al_person_project_month 索引在位（SHOW INDEX 验证）
+#
+# 测试类型：
+#   - SpringBootTest 真活：HandoverIntegrationTest extends IpdIntegrationTestBase
+#   - Mockito Mock 契约：P281AcceptanceTest @ExtendWith(MockitoExtension.class)
+#
+# 业务链 E2E：
+#   - 双签全流程：需求变更申请 → 影响评估 → 双签 → 阶段门禁 → 闭环
+#   - 真活验证：scripts/e2e-ipd-business-chain.py PASS
+#
+# 边界声明：
+#   - 未改 Java/Vue/yml/SQL 仓内文件（仅 docs）
+#   - 未 commit / push（按 AGENTS.md 守则）
+#   - 兄弟会话 N 个 modified 文件全部未动
+
+# <footer>
+#
+# BREAKING CHANGE: <描述>
+# Closes #<issue>
+# Refs: <相关 commit / 卡号>
+#
+# 示例：
+#   Closes #123
+#   Refs: 9a680183 (P2-6.1), 4d6c2ed6 (P2-6.2)
+
+# ============================================================================
+# 病根 2 根治：pre-commit hook 会拦截以下失真 commit
+# ============================================================================
+#
+# 拦截规则 1：commit msg 写「feat」但只动 test 文件（无 Service/Controller/Mapper）
+#   → 改为「test」type
+#
+# 拦截规则 2：commit msg 写「整链验收」「真活」但实际 Mockito Mock
+#   → 必须列「真活证据」段（HTTP 端点 + DB 业务表行数）
+#
+# 拦截规则 3：commit msg 写「全 done」「阶段收口」但看板真实有 todo/inprogress
+#   → 必须 fresh 拉看板验证（scripts/check-mirror-vs-board.py）
+#
+# 拦截规则 4：翻 done commit 但验收报告缺失
+#   → 必须存在 docs/ipd-系统说明/验收/<卡号>-*.md
+#
+# 见 .claude/hooks/check-commit-truthfulness.sh
