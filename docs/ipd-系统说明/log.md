@@ -1,4 +1,21 @@
 
+## 2026-09-08 08:47 PDT Qoder 接续会话：OD-AM-05 收口（方案②回填 2 条方法级）+ 已合并分支清理
+
+### OD-AM-05：owner 拍板方案②，治理矩阵 6 项决策全闭环（open_count 1→0）
+- **背景**：原 10/10 行 `#方法名` 全系编造（如 AC-INC-02→P034#testAC02 查无此法），已诚实剥离为类级；仅 2 条可机器确证到方法。
+- **落地（证据 commit 30ba3334 + 本治理 commit）**：
+  - `AC-INC-15b → P121AcceptanceTest#acInc15bARejectCustom`（@DisplayName L130 携带 ac_id，全测试目录唯一命中）
+  - `AC-AUD-04 → P054AcceptanceTest#ownScopeInvokesSelectPage`（@DisplayName L53，类内唯一）
+  - 其余 8 行维持类级（3 行一 AC 多方法覆盖：AC-INC-16/16b/AC-AUTH-08；5 行无携带 ac_id 的 @DisplayName，不满足唯一确证条件）
+  - AC-ID-词表 §3.2 勘误注同步「已决」+ 回填规则
+- **确立规则**：方法级仅当 @DisplayName 携带 ac_id 且在该测试类内唯一时可回填，禁止凭方法名相似度猜测；后续 227 条 ac-import.py 导入沿用。
+- **方案③否决理由**：需动 ~8 个测试类补注解，与 OD-AM-01 已决「维持现状+lint」方向冲突。
+- **四道校验**：AcceptanceMatrixValidationTest（含 #方法名存在性断言）/ AJV schema（pattern 允许 #）/ validate.cjs / JSON 二态 open_count=0。
+
+### 已合并分支清理
+- 远端删 8 条（PR #4/#5/#6/#7/#8/#11/#12/#13 全 MERGED）+ prune；本地对应 8 条同步删。
+- 保留：`ci/ipd-frontend-drift`（在途 open PR #9）、`governance/20260908-4cards-ssot`（无 PR 记录，疑兄弟会话）、`main`。
+
 ## 2026-09-08 08:08 PDT Qoder 接续会话：P073Behavior hermetic 加固落地（收口 06:40 追踪项，owner 选「hermetic 加固」）
 
 接上条 06:40 登记的 P073 flaky 追踪项。owner 从三选项（深挖根因 / hermetic 加固 / 暂仅追踪）拍板 **hermetic 加固**，本条记录落地 + 验证证据 + 诚实边界。
