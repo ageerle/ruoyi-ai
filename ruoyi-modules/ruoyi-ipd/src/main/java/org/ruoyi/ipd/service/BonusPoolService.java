@@ -11,10 +11,16 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.BonusAllocation;
 import org.ruoyi.ipd.domain.BonusPool;
+import org.ruoyi.ipd.domain.Contribution;
 import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.mapper.BonusAllocationMapper;
 import org.ruoyi.ipd.mapper.BonusPoolMapper;
+import org.ruoyi.ipd.mapper.ContributionMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -60,6 +66,27 @@ public class BonusPoolService {
     /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
+
+    /** P-DATA-gap-1 接线（A3 裁决）：distribute 批量写 bonus_allocations 台账（可选注入，nullable 兼容旧测试） */
+    @Autowired(required = false)
+    private BonusAllocationMapper bonusAllocationMapper;
+    @Autowired(required = false)
+    private ProjectMemberMapper projectMemberMapper;
+    @Autowired(required = false)
+    private ContributionMapper contributionMapper;
+
+    /** P-DATA-gap-1 接线：测试显式注入入口（对齐 setStateMachineGuard 模式）。 */
+    public void setBonusAllocationMapper(BonusAllocationMapper bonusAllocationMapper) {
+        this.bonusAllocationMapper = bonusAllocationMapper;
+    }
+
+    public void setProjectMemberMapper(ProjectMemberMapper projectMemberMapper) {
+        this.projectMemberMapper = projectMemberMapper;
+    }
+
+    public void setContributionMapper(ContributionMapper contributionMapper) {
+        this.contributionMapper = contributionMapper;
+    }
     /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（fail-closed 改造后，测试可显式注入 mock） */
     public void setStateMachineGuard(org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard) {
         this.stateMachineGuard = stateMachineGuard;
@@ -957,6 +984,8 @@ public class BonusPoolService {
             throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "分配结果 JSON 序列化失败");
         }
         bonusPoolMapper.updateById(pool);
+        // A3 接线（P-DATA-gap-1）：翻状态后批量写 bonus_allocations 台账（双 PM 行）
+        writeBonusAllocations(pool, marketShare, rdShare, marketAmount, rdAmount);
         // ROOT-R3-P0-1：postCommit 跨域副作用（事务提交后触发）
         registerPostCommit("bonus_pool", before, STATUS_DISTRIBUTED, "distribute",
             actor != null ? actor.id() : null, pool.getId());
@@ -979,6 +1008,59 @@ public class BonusPoolService {
      */
 
     /* ----- 私有工具 ----- */
+
+    /**
+     * A3 接线（P-DATA-gap-1，业务裁决提案-20260908）：distribute 翻状态后批量写
+     * bonus_allocations 台账（AC-INC-35）。
+     *
+     * <p>口径：分配对象 = 双 PM 两条线（project_members.role ∈ {MARKET_PM, RD_PM}，
+     * exit_date IS NULL）；contribution_rate = 贡献度五维加权分（contributions 最新一行
+     * tierCoefficient）× 本方占比（marketShare/rdShare）；allocated_amount = finalPool × 本方占比；
+     * performanceCoefficient 沿用奖金池项目差异化系数（coefficient）；status = DRAFT。
+     * 贡献度未评定时台账照写、contribution_rate 置 null（不阻断已验收的分配主契约）。
+     *
+     * <p>mapper 为 null（旧单测）时静默跳过，对齐 auditLogService 可选注入模式。
+     */
+    private void writeBonusAllocations(BonusPool pool, BigDecimal marketShare, BigDecimal rdShare,
+                                       BigDecimal marketAmount, BigDecimal rdAmount) {
+        if (bonusAllocationMapper == null || projectMemberMapper == null) {
+            return;
+        }
+        List<ProjectMember> pms = projectMemberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
+            .eq(ProjectMember::getProjectId, pool.getProjectId())
+            .in(ProjectMember::getRole, List.of(Contribution.ROLE_MARKET, Contribution.ROLE_RD))
+            .isNull(ProjectMember::getExitDate));
+        if (pms == null || pms.isEmpty()) {
+            return;
+        }
+        Contribution contribution = null;
+        if (contributionMapper != null) {
+            contribution = contributionMapper.selectOne(new LambdaQueryWrapper<Contribution>()
+                .eq(Contribution::getProjectId, pool.getProjectId())
+                .eq(Contribution::getDelFlag, "0")
+                .orderByDesc(Contribution::getId)
+                .last("limit 1"));
+        }
+        for (ProjectMember pm : pms) {
+            boolean isMarket = Contribution.ROLE_MARKET.equals(pm.getRole());
+            BigDecimal share = isMarket ? marketShare : rdShare;
+            BigDecimal amount = isMarket ? marketAmount : rdAmount;
+            BigDecimal contributionRate = null;
+            if (contribution != null && contribution.getTierCoefficient() != null) {
+                contributionRate = contribution.getTierCoefficient().multiply(share);
+            }
+            BonusAllocation row = BonusAllocation.builder()
+                .bonusPoolId(pool.getId())
+                .personId(pm.getPersonId())
+                .roleInProject(pm.getRole())
+                .contributionRate(contributionRate)
+                .performanceCoefficient(pool.getCoefficient())
+                .allocatedAmount(amount)
+                .status("DRAFT")
+                .build();
+            bonusAllocationMapper.insert(row);
+        }
+    }
 
     /**
      * 加载并校验奖金池：不存在或软删 → NOT_FOUND。

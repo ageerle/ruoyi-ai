@@ -307,6 +307,13 @@ tenant:
     - audit_log_chain_heads
     # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
     - notification_events
+    # R11（2026-09-08，蜂群B-U0）：ipd_business_config(+versions) 存业务参数真数据且 domain 带
+    # tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers / switching_acceptance
+    # 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错——单企业部署统一排除租户过滤
+    - ipd_business_config
+    - ipd_business_config_versions
+    - gate_review_observers
+    - switching_acceptance
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
