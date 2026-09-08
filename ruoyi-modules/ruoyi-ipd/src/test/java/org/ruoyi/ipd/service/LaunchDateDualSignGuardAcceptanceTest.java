@@ -247,7 +247,10 @@ class LaunchDateDualSignGuardAcceptanceTest {
     private static boolean readsLikeLaunchDateWrite(Path p) {
         try {
             String c = Files.readString(p);
-            return c.contains("setLaunchDate(") || c.contains(".launchDate(");
+            // 空参 .launchDate() 是 record accessor 读取（非写，如 PostLaunchReviewController/ProjectController）；
+            // 只识别 setLaunchDate( 与带参 builder 写 .launchDate(x
+            return c.contains("setLaunchDate(")
+                || java.util.regex.Pattern.compile("\\.launchDate\\([^)]").matcher(c).find();
         } catch (IOException e) {
             throw new IllegalStateException("读取失败: " + p, e);
         }

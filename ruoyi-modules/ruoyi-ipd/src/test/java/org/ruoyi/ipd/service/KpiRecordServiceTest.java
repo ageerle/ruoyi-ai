@@ -317,9 +317,9 @@ class KpiRecordServiceTest {
     @Test
     @DisplayName("ROOT-R1 P0-7: 注入 BusinessConfigService → 聚合 KPI 用 config 阈值 75（覆盖硬编码 60）")
     void businessConfigService_overridesHardcodedKpiDefault() {
-        // 给 5 档津贴补数：避免聚合路径因缺数短路
-        when(allowanceLedgerMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(allowanceListForLevels());
+        // 津贴路径走 selectOne（LIMIT 1），对齐 L100 绿测试模式；旧 selectList stub 属聚合路径，在本用例零消费
+        when(allowanceLedgerMapper.selectOne(any(LambdaQueryWrapper.class)))
+            .thenReturn(allowanceOf("3000.00", "L3"));
         when(projectScoreMapper.selectOne(any(LambdaQueryWrapper.class)))
             .thenReturn(projectScoreOf("85.00"));
 
@@ -344,8 +344,8 @@ class KpiRecordServiceTest {
     @Test
     @DisplayName("ROOT-R1 P0-7: BusinessConfigService 未注入 → 回退硬编码 60（兼容旧测试）")
     void businessConfigService_nullFallsBackToHardcoded() {
-        when(allowanceLedgerMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(allowanceListForLevels());
+        when(allowanceLedgerMapper.selectOne(any(LambdaQueryWrapper.class)))
+            .thenReturn(allowanceOf("3000.00", "L3"));
         when(projectScoreMapper.selectOne(any(LambdaQueryWrapper.class)))
             .thenReturn(projectScoreOf("85.00"));
 

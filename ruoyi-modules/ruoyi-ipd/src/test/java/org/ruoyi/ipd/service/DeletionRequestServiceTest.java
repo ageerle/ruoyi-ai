@@ -126,8 +126,11 @@ class DeletionRequestServiceTest {
         when(systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2)).thenReturn(2);
         // W5-E-2.2：在职 ProjectMember 路径（项目 100 成员）
         when(projectMemberMapper.selectCount(any())).thenReturn(1L);
-        // 周五提交（2026-09-04 是周五）→ +2 工作日 = 下周二
-        Date friday = date(2026, Calendar.SEPTEMBER, 4);
+        // 周五提交（2026-09-04 是周五）→ +2 工作日 = 下周二(8)。date() 月份 1-based：直传 9，
+        // 勿传 Calendar.SEPTEMBER（=8，helper 内 m-1 双重减一成 2026-08-04）；
+        // setClock 固定提交时刻，消除真实时钟摇摆（原断言随当天星期漂移）
+        Date friday = date(2026, 9, 4);
+        service.setClock(java.time.Clock.fixed(friday.toInstant(), java.time.ZoneId.systemDefault()));
         DeletionRequest request = service.submit(ACTOR_REQUESTER, "projects", 100L, "{}", "测试删除");
 
         assertThat(request.getStatus()).isEqualTo(DeletionRequestService.ST_LEADER_REVIEW);

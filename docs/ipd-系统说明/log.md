@@ -1,4 +1,29 @@
 
+## 2026-09-08 09:20 PDT Qoder 接续会话：基线红债务 20 条全部收敛（1938 tests / 0 红）
+
+### 授权与流程
+- owner 指令「收敛 20 条基线红债务全部充分利用多个专业智能体并行执行」。
+- 盘点 → 4 路 CodeReview subagent 并行只读诊断（蜂群纪律：只给文件路径+验证命令，不让自摸范围，禁跑 mvn 防 target 污染）→ 主会话串行实施 → 错峰验证 → 收口。
+
+### 诊断结论（20/20 根因闭环，零真业务缺陷）
+- **stub 滞后 12 条**（第五类假红）：P1101/P1101 0 处实现已改 `selectChain`（P1-10.3 递归 CTE）而测试仍 stub `selectById`/`selectOne`；KpiRecord 2 处津贴路径已改 `selectOne`（LIMIT 1）而 stub 仍是 `selectList`。
+- **测试数据过期 4 条**：P261×3 快照键英文（P2-6.2/AC-REQ-08 已定型中文四维度）；Qa04×1 断言固化旧分歧（StageAction [e388b7f8] 与 GateElement [7970a101] 均已有意恢复 delFlag @TableLogic 完整契约，DEF-04 收口）。
+- **守卫误伤 2 条**：LaunchDate 双签守卫把空参 record accessor 读当 builder 写（收紧为带参正则，强度不降反升）；P343 浮点等值扫描命中块注释分隔线（先剔注释行再扫）。
+- **缺判语义被 helper 抹掉 1 条**：P162 retry 用例第一轮想构造 G1-1 缺判，旧 helper `getOrDefault(code,"PASS")` 默认补 PASS 导致场景不存在；新增 `withOnlyJudged`（缺判=无 result 行，对齐 GateElementResultService 契约）。
+- **真实时钟摇摆 1 条**：DeletionRequest submit 用 `new Date()` 算期限，断言随当天星期漂移（周二跑必红）；实现仿 stateMachineGuard 模式加 `Clock` 可注入缝（生产零影响）+ 测试固定周五 2026-09-04，顺带修 helper 月份双重减一（Calendar.SEPTEMBER→直传 9）。
+
+### 证据
+- 隔离跑 9 类全绿（130 tests / 0 红，Qa04 含 GateElement 翻转后 6/6）。
+- 全量 `mvn -o -pl ruoyi-modules/ruoyi-ipd test`：**1938 tests / 0 Failures / 0 Errors / 26 Skipped / BUILD SUCCESS**（基线 20→0，总数不变）。
+- `extract --output` 重生成基线：0 红 / total_tests=1938 / 215 份报告；`check` PASS（「当前红 0 | 基线红 0，无新增红」）。
+- 防假绿：所有断言零改动（仅 DeletionRequest 修前置数据/时钟，断言 `isEqualTo(8)` 原样）；LaunchDate 守卫收紧后真写点（setLaunchDate×3 + 带参 builder×1）仍全部命中白名单。
+
+### 附带发现（已另开卡，不在本 PR 混修）
+- `AiDocumentMapper.selectChain` SQL 与自身 Javadoc 契约不符：Javadoc 称「自任一版本行 ID 递归向上找根+向下取全链」，CTE 锚点 `WHERE id=#{rootId}` 后只有向下递归段，无向上找根段；Controller 原样透传路径 id，从链中间行调用时 history 会误报 STATE_CONFLICT、head 会误取中间行。
+
+### 基线演进
+- 冻结基线红名单 20→0：自 2026-09-07 建立红名单机制以来首次清零；后续任何新红即为回归，无豁免名单可依赖。
+
 ## 2026-09-08 08:47 PDT Qoder 接续会话：OD-AM-05 收口（方案②回填 2 条方法级）+ 已合并分支清理
 
 ### OD-AM-05：owner 拍板方案②，治理矩阵 6 项决策全闭环（open_count 1→0）

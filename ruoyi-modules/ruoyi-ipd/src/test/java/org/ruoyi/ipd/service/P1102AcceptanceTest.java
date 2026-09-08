@@ -129,10 +129,9 @@ class P1102AcceptanceTest {
     @Test
     @DisplayName("改版重置：已 REVIEWED 文档 revise 后新版本 status=GENERATED，需重新审核")
     void revise_resetsReviewStateToGenerated() {
-        // v1 已 REVIEWED；历史接口走 mapper.selectById 找 HEAD；chain 需 selectOne 探测无子版本
+        // v1 已 REVIEWED；P1-10.3 后 head/history 统一走 selectChain 递归 CTE（升序链）
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED, "已审核 v1");
-        when(mapper.selectById(1L)).thenReturn(v1);
-        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(mapper.selectChain(1L)).thenReturn(List.of(v1));
 
         AiDocument v2 = service.revise(1L, 1L, "改版全文 v2", null, 7L);
 
@@ -187,10 +186,7 @@ class P1102AcceptanceTest {
         AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED, "v3 内容");
         v3.setCreateBy(9L);
 
-        when(mapper.selectById(3L)).thenReturn(v3);
-        when(mapper.selectById(2L)).thenReturn(v2);
-        when(mapper.selectById(1L)).thenReturn(v1);
-        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(v2, v3, (AiDocument) null);
+        when(mapper.selectChain(3L)).thenReturn(List.of(v1, v2, v3));
 
         List<AiDocument> chain = service.history(3L);
 

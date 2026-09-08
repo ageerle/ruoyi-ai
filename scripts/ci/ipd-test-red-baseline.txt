@@ -3,23 +3,3 @@
 # 修好任意一条后请重跑 extract 覆盖本文件，使基线单调收敛。
 # total_tests=1938
 # report_files=215
-org.ruoyi.ipd.qa.Qa04EntityContractTest#softDeletableEntitiesCarryDelFlag
-org.ruoyi.ipd.service.DeletionRequestServiceTest#submitGoesToLeaderReviewWithWorkdayDeadline
-org.ruoyi.ipd.service.KpiRecordServiceTest#businessConfigService_nullFallsBackToHardcoded
-org.ruoyi.ipd.service.KpiRecordServiceTest#businessConfigService_overridesHardcodedKpiDefault
-org.ruoyi.ipd.service.LaunchDateDualSignGuardAcceptanceTest#launchDateWriteSitesAreEnumerated
-org.ruoyi.ipd.service.P1101AcceptanceTest#history_brokenChain_rejected
-org.ruoyi.ipd.service.P1101AcceptanceTest#history_fullChainNoGap
-org.ruoyi.ipd.service.P1101AcceptanceTest#history_notFound
-org.ruoyi.ipd.service.P1101AcceptanceTest#history_rootNotV1_rejected
-org.ruoyi.ipd.service.P1101AcceptanceTest#history_versionJump_rejected
-org.ruoyi.ipd.service.P1101AcceptanceTest#reviseAfterReview_appendsV2KeepsV1
-org.ruoyi.ipd.service.P1101AcceptanceTest#revise_baseNotHead_conflict
-org.ruoyi.ipd.service.P1101AcceptanceTest#revise_concurrentDuplicateKey_mappedToConflict
-org.ruoyi.ipd.service.P1102AcceptanceTest#history_listsChainWithMetadata
-org.ruoyi.ipd.service.P1102AcceptanceTest#revise_resetsReviewStateToGenerated
-org.ruoyi.ipd.service.P162AcceptanceTest#retry_doesNotProduceDuplicateSnapshots
-org.ruoyi.ipd.service.P261AcceptanceTest#createDraft_normal
-org.ruoyi.ipd.service.P261AcceptanceTest#create_snapshotFrozen
-org.ruoyi.ipd.service.P261AcceptanceTest#submitDraft_normal
-org.ruoyi.ipd.service.P343AcceptanceTest#noFloatEqualityInTierMatching

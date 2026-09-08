@@ -110,8 +110,7 @@ class P1101AcceptanceTest {
     @DisplayName("AC-AI-04：审核通过后修改 ⇒ 追加 v2（parent=HEAD、需重审、摘要不同），v1 零触碰")
     void reviseAfterReview_appendsV2KeepsV1() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED);
-        when(mapper.selectById(1L)).thenReturn(v1);
-        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(mapper.selectChain(1L)).thenReturn(List.of(v1));
 
         AiDocument v2 = service.revise(1L, 1L, "人工改版全文 v2", null, 7L);
 
@@ -137,8 +136,8 @@ class P1101AcceptanceTest {
     void revise_baseNotHead_conflict() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_GENERATED);
         AiDocument v2 = row(2L, 2, 1L, AiDocumentService.STATUS_GENERATED);
-        when(mapper.selectById(1L)).thenReturn(v1);
-        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(v2, (AiDocument) null);
+        // P1-10.3：head/history 统一走 selectChain 递归 CTE（升序链，链尾即 HEAD）
+        when(mapper.selectChain(1L)).thenReturn(List.of(v1, v2));
 
         assertThatThrownBy(() -> service.revise(1L, 1L, "基于旧版的改版", null, 7L))
             .isInstanceOf(IpdBusinessException.class)
@@ -151,8 +150,7 @@ class P1101AcceptanceTest {
     @DisplayName("并发双写同一父版本撞 uk_ai_doc_parent ⇒ DuplicateKey 映射 STATE_CONFLICT（非静默覆盖）")
     void revise_concurrentDuplicateKey_mappedToConflict() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_GENERATED);
-        when(mapper.selectById(1L)).thenReturn(v1);
-        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(mapper.selectChain(1L)).thenReturn(List.of(v1));
         when(mapper.insert(any(AiDocument.class)))
             .thenThrow(new DuplicateKeyException("uk_ai_doc_parent"));
 
@@ -220,10 +218,7 @@ class P1101AcceptanceTest {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED);
         AiDocument v2 = row(2L, 2, 1L, AiDocumentService.STATUS_REVIEWED);
         AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED);
-        when(mapper.selectById(3L)).thenReturn(v3);
-        when(mapper.selectById(2L)).thenReturn(v2);
-        when(mapper.selectById(1L)).thenReturn(v1);
-        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(v2, v3, (AiDocument) null);
+        when(mapper.selectChain(3L)).thenReturn(List.of(v1, v2, v3));
 
         List<AiDocument> chain = service.history(3L);
 
@@ -241,9 +236,8 @@ class P1101AcceptanceTest {
     @DisplayName("链断裂（父版本被软删，向上走不到根）⇒ STATE_CONFLICT")
     void history_brokenChain_rejected() {
         AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED);
-        when(mapper.selectById(3L)).thenReturn(v3);
-        // v2 已软删：@TableLogic 过滤后 selectById 返回 null
-        when(mapper.selectById(2L)).thenReturn(null);
+        // v2 已软删：@TableLogic 过滤后递归 CTE 只回起点自身 [v3]，首版 versionNo≠1 ⇒ 断链
+        when(mapper.selectChain(3L)).thenReturn(List.of(v3));
 
         assertThatThrownBy(() -> service.history(3L))
             .isInstanceOf(IpdBusinessException.class)
@@ -256,9 +250,8 @@ class P1101AcceptanceTest {
     void history_versionJump_rejected() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_GENERATED);
         AiDocument v3 = row(3L, 3, 1L, AiDocumentService.STATUS_GENERATED);
-        when(mapper.selectById(3L)).thenReturn(v3);
-        when(mapper.selectById(1L)).thenReturn(v1);
-        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(v3, (AiDocument) null);
+        // 链跳号：CTE 回 [v1, v3]，首版=1 过根校验，1→3 不连续 ⇒ STATE_CONFLICT
+        when(mapper.selectChain(3L)).thenReturn(List.of(v1, v3));
 
         assertThatThrownBy(() -> service.history(3L))
             .isInstanceOf(IpdBusinessException.class)
@@ -269,7 +262,7 @@ class P1101AcceptanceTest {
     @Test
     @DisplayName("不存在/已删文档 ⇒ NOT_FOUND")
     void history_notFound() {
-        when(mapper.selectById(404L)).thenReturn(null);
+        when(mapper.selectChain(404L)).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.history(404L))
             .isInstanceOf(IpdBusinessException.class)
@@ -281,7 +274,7 @@ class P1101AcceptanceTest {
     @DisplayName("根非 v1（链被截头）⇒ STATE_CONFLICT")
     void history_rootNotV1_rejected() {
         AiDocument orphan = row(9L, 2, null, AiDocumentService.STATUS_GENERATED);
-        when(mapper.selectById(9L)).thenReturn(orphan);
+        when(mapper.selectChain(9L)).thenReturn(List.of(orphan));
 
         assertThatThrownBy(() -> service.history(9L))
             .isInstanceOf(IpdBusinessException.class)

@@ -138,9 +138,15 @@ class P343AcceptanceTest {
         java.nio.file.Path path = java.nio.file.Paths.get(
             "src/main/java/org/ruoyi/ipd/service/BonusPoolService.java");
         String src = new String(java.nio.file.Files.readAllBytes(path));
-        assertThat(src).doesNotContain("===");
-        assertThat(src).doesNotContain("equalityTolerance");
-        assertThat(src).doesNotContain("toFixed");
+        // 先剔除注释行再扫描：块注释装饰分隔线 /* ==== */ 会误伤 === 扫描
+        // （阶梯匹配实现已全 BigDecimal.compareTo，无浮点等值）
+        String codeOnly = java.util.Arrays.stream(src.split("\n", -1))
+            .filter(line -> { String t = line.trim();
+                return !t.startsWith("//") && !t.startsWith("/*") && !t.startsWith("*"); })
+            .collect(java.util.stream.Collectors.joining("\n"));
+        assertThat(codeOnly).doesNotContain("===");
+        assertThat(codeOnly).doesNotContain("equalityTolerance");
+        assertThat(codeOnly).doesNotContain("toFixed");
     }
 
     // ==================== AC-INC-16：奖金池基数与最终池 ====================

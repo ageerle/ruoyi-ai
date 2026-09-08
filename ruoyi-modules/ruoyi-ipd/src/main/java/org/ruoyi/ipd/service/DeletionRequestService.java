@@ -72,6 +72,17 @@ public class DeletionRequestService {
     public void setStateMachineGuard(org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard) {
         this.stateMachineGuard = stateMachineGuard;
     }
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定提交时刻消除真实时钟摇摆，生产零影响）。
+     *  当前仅 submit 路径接入，其余方法的时钟接入按需扩展。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private Date now() {
+        return Date.from(clock.instant());
+    }
     /** ROOT-R1 P0-7 字面量迁移：删除申请配置（冷静期/升级超时；B-RULE-05 配套）来源 */
     @Autowired(required = false)
     private BusinessConfigService businessConfigService;
@@ -95,10 +106,10 @@ public class DeletionRequestService {
             .reason(reason)
             .requesterId(requesterId)
             .status(ST_LEADER_REVIEW)
-            .leaderDueAt(Workdays.add(new Date(), leaderDeadlineDays()))
+            .leaderDueAt(Workdays.add(now(), leaderDeadlineDays()))
             .build();
         // ⚠️ @Builder 只覆盖本类字段，BaseEntity 的 createTime 须走 setter
-        request.setCreateTime(new Date());
+        request.setCreateTime(now());
         // ROOT-R3-P0-1：守卫 preCheck（跨域联动合法性校验）—— DRAFT->LEADER_REVIEW 合法
         preCheckGuard("deletion_request", "DRAFT", DeletionRequestService.ST_LEADER_REVIEW, "submit");
         deletionRequestMapper.insert(request);

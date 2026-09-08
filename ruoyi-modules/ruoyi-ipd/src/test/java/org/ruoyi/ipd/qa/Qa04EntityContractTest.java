@@ -25,7 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * docs/ipd-系统说明/验收/qa04_ddl_entity_mapping.py 完成，两者互为交叉验证）。
  *
  * 覆盖卡面要点：JSON 列 ↔ String 契约、datetime 列 ↔ Date、
- * del_flag 存在性（含 stage_actions/gate_review_elements 现状分歧的固化说明，见 QA-04 报告 DEF-04）、
+ * del_flag 存在性（stage_actions [SEC-FIX e388b7f8] 与 gate_review_elements
+ * [7970a101 DDL-LOGIC-LINT-CLEAN] 均已恢复完整契约，DEF-04 分歧已收口）、
  * audit_logs 只追加表不继承 BaseEntity 的设计约束。
  */
 @Tag("dev")
@@ -101,10 +102,12 @@ class Qa04EntityContractTest {
     void softDeletableEntitiesCarryDelFlag() throws Exception {
         assertThat(field(Project.class, "delFlag").getType()).isEqualTo(String.class);
         assertThat(field(Deliverable.class, "delFlag").getType()).isEqualTo(String.class);
-        // 现状分歧（QA-04 报告 DEF-04）：stage_actions / gate_review_elements 的 DDL 有 del_flag，
-        // 实体刻意不映射（当前无软删入口）。此处仅固化存在性事实，不做通过/失败判定。
-        assertThat(hasField(StageAction.class, "delFlag")).isFalse();
-        assertThat(hasField(GateElement.class, "delFlag")).isFalse();
+        // [SEC-FIX e388b7f8] stage_actions 与 [7970a101] gate_review_elements 均已恢复
+        // delFlag 完整契约（@TableLogic 映射，QA-04 DEF-04 分歧已收口）
+        assertThat(field(StageAction.class, "delFlag").getAnnotation(
+            com.baomidou.mybatisplus.annotation.TableLogic.class)).isNotNull();
+        assertThat(field(GateElement.class, "delFlag").getAnnotation(
+            com.baomidou.mybatisplus.annotation.TableLogic.class)).isNotNull();
     }
 
     private static boolean hasField(Class<?> type, String name) {

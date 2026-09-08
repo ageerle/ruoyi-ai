@@ -254,7 +254,28 @@ class P162AcceptanceTest {
         lenient().when(resultMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(rows);
     }
 
-    // ---------- AC-GLB-12 ① 33 要素按 Gate 全部可判定（5 Gate × 1 测试 = 5 测）----------
+    /** 仅对 codeToResult 显式给出的要素生成判定行（其余视为尚未判定，无 result 行）。
+     *  与 withJudgedForGate 的「缺省补 PASS」相对，用于构造缺判拒绝场景——
+     *  实现侧「未判定」语义是无 result 行（GateElementResultService judged.get(id)==null）。 */
+    private void withOnlyJudged(Gate gate, Map<String, String> codeToResult) {
+        List<GateElement> elements = elementsOf(gate.getGateCode());
+        lenient().when(elementMapper.selectList(argThat(
+            (com.baomidou.mybatisplus.core.conditions.Wrapper<GateElement> w) -> true)))
+            .thenReturn(elements);
+        lenient().when(gateMapper.selectById(gate.getId())).thenReturn(gate);
+
+        List<GateElementResult> rows = new ArrayList<>();
+        long rowId = 8001L;
+        for (GateElement e : elements) {
+            String result = codeToResult.get(e.getElementCode());
+            if (result == null) { continue; } // 缺判：不生成 result 行
+            String evidenceRef = "FAIL".equals(result) ? "https://oss.local/proof.pdf" : null;
+            rows.add(judgedRow(rowId++, e.getId(), result, evidenceRef));
+        }
+        lenient().when(resultMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(rows);
+    }
+
+    // ---------- AC-GLB-12 ① 33 要素按 Gate 全部可判定（5 Gate × 1 测试 = 5 测 ）----------
 
     @ParameterizedTest(name = "G{0} 要素清单含全部 {1} 项 + 否决位标识正确")
     @ValueSource(strings = {"G1:7", "G2:6", "G3:5", "G4:8", "G5:7"})
@@ -497,8 +518,8 @@ class P162AcceptanceTest {
     @DisplayName("拒绝/重试无重复快照：失败提交不写 element_snapshot；成功后幂等覆盖")
     void retry_doesNotProduceDuplicateSnapshots() {
         Gate gate = newGate(501L, "G1");
-        // 第一轮：G1-1 缺判 → 拒绝，不应写 element_snapshot
-        withJudgedForGate(gate, Map.of("G1-2", "PASS", "G1-3", "PASS"));
+        // 第一轮：G1-1 缺判 → 拒绝，不应写 element_snapshot（缺判=无 result 行，不能默认补 PASS）
+        withOnlyJudged(gate, Map.of("G1-2", "PASS", "G1-3", "PASS"));
 
         assertThatThrownBy(() -> service.submit(501L, 9001L, 9002L, MARKET_PM))
             .isInstanceOf(ServiceException.class)
