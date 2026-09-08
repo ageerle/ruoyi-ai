@@ -1,8 +1,8 @@
 {
   "version": "0.2.0",
-  "updated_at": "2026-09-07T07:50:00+08:00",
+  "updated_at": "2026-09-08T12:00:00+08:00",
   "_metadata": {
-    "purpose": "ROOT-R4 P0-8 acceptance-matrix.json 三向关联样板（10/237 条）；OD-AM-01~04 owner 决策 2026-09-07 全闭环",
+    "purpose": "ROOT-R4 P0-8 acceptance-matrix.json 三向关联样板（10/237 条）；OD-AM-01~04 owner 决策 2026-09-07 全闭环；OD-AM-06（pom testExcludes 收口）2026-09-08 全闭环，仅 OD-AM-05 待决",
     "scope": "本会话仅入 10 条样板，剩余 227 条 AC 由 owner 通过 scripts/ac-import.py 半自动导入（OD-AM-02 决策）",
     "schema_ref": "./acceptance-matrix.schema.json",
     "evidence_source": "docs/ipd-系统说明/验收/AC-真值回对矩阵-2026-09-05-237条对账.md（19 commit 闭环对账）",
@@ -10,7 +10,8 @@
       "OD-AM-01": "docs/ipd-系统说明/治理/AC-ID-词表-20260907.md (dbe08b63)",
       "OD-AM-02": "scripts/ac-import.py (5aa8c9c9)",
       "OD-AM-03": ".claude/helpers/acceptance-matrix-validate.cjs checkCoverageThreshold (9bde3260)",
-      "OD-AM-04": "scripts/catalog-matrix-link-check.py (3fb5249b)"
+      "OD-AM-04": "scripts/catalog-matrix-link-check.py (3fb5249b)",
+      "OD-AM-06": "ruoyi-modules/ruoyi-ipd/pom.xml testExcludes 撤销 + KpiSharedConfirmControllerTest/P312AcceptanceTest 恢复绿 (11535b67)"
     },
     "coverage_stats": {
       "covered": 5,
@@ -22,10 +23,10 @@
       "total_target": 237,
       "import_progress_pct": 4.2
     },
-    "known_gaps": "unitTestClass 仅到类级：原 10/10 行的 #方法名 经核验在测试源中全部不存在，已剥离以避免假证据；方法级追溯待 OD-AM-05 决策。AcceptanceMatrixValidationTest 已加固为「若写 #方法名 则该方法必须真实存在」。另有 2 个测试类因编译失败被 pom testExcludes 长期豁免（KPI 共担域），本轮已转为显式登记并交由 ipd-test-gate 看守，待 OD-AM-06 决策。"
+    "known_gaps": "unitTestClass 仅到类级：原 10/10 行的 #方法名 经核验在测试源中全部不存在，已剥离以避免假证据；方法级追溯待 OD-AM-05 决策。AcceptanceMatrixValidationTest 已加固为「若写 #方法名 则该方法必须真实存在」。原有 2 个测试类因编译失败被 pom testExcludes 长期豁免（KPI 共担域）；2026-09-08 经 OD-AM-06 决策修复编译错误并撤销豁免，214 个 *Test.java 首次全部编译执行、零豁免，恢复的 26 个测试全绿（11535b67）。"
   },
   "owner_decisions_needed": {
-    "open_count": 2,
+    "open_count": 1,
     "items": [
       {
         "id": "OD-AM-01",
@@ -77,7 +78,11 @@
         "id": "OD-AM-06",
         "topic": "pom testExcludes 长期豁免的 2 个测试类如何收口",
         "blocker": "ruoyi-modules/ruoyi-ipd/pom.xml 的 <testExcludes> 曾累积豁免 5 个测试类（分别由 4feb8ec9 / 221f6c30 / f1ce2db7 以「兄弟会话在途编译错误、暂排除」名义追加），旧注释自称「仅在 worktree 内追加，不影响 main 分支 HEAD 字节」但实际已进 main 长期生效；后果是这些类不编译不执行、一份 surefire 报告不出，mvn 依旧 BUILD SUCCESS（214 个 *Test.java 只编出 209 个 class），任何红名单比对均无法察觉。2026-09-08 实测：其中 3 条豁免理由已消解，撤销后编译通过并净增 16 个测试（1893→1909）、红数未增，且暴露出 Api03AcceptanceTest 的 stub 因实现漂移而全成假红（已修，5/5 绿）。剩下 2 条经实测确认仍真编译失败：KpiSharedConfirmControllerTest（BaseMapper insert/updateById 重载歧义 + 多处找不到符号）、P312AcceptanceTest（SharedKpiController 构造器漂移）。两者同属 KPI 共担域，而本轮 P-1/P-2 改动正在该域，意味着这些改动长期缺少这两道回归保护。需 owner 决策 ①修编译错误后撤销豁免（重载歧义可用显式类型或改用具体 mapper 类型消除；构造器漂移按现行签名对齐），恢复覆盖 ②维持豁免，作为长期债务按季复查 ③若其覆盖已由其他测试取代则直接删除这 2 个测试类。本轮已按「显式登记 + 门禁看守」处置：scripts/ci/ipd-test-red-baseline.txt 以 exempt_class 记录，ipd-test-gate.yml 强制每个测试类必须产出报告、未登记豁免即阻断",
-        "decided_by": null
+        "decided_by": "mac",
+        "decided_at": "2026-09-08",
+        "decision": "采纳方案①：修编译错误后撤销豁免，恢复覆盖。KpiSharedConfirmControllerTest 对齐 MyBatis-Plus insert/updateById 重载（裸 any()→any(KpiSharedConfirm.class)）、补 @BeforeAll TableInfo 引导 lambda 列名缓存、修 ct3/ct4 matcher 混用（eq(actor)）、补 s1-s4 缺失 when()、s2 stub 随 P-1 去 N+1 对齐 selectBatchIds、s2 confirmedByMe 断言依 VO+Controller 两处 Javadoc 明文契约由 allMatch 改 noneMatch（反向验证：生产翻 true→s2 变红，证断言承重）；P312AcceptanceTest 补 SharedKpiController 构造器第三依赖 KpiSharedConfirmService。pom testExcludes 块整删，214 个 *Test.java 首次全部编译执行、零豁免。",
+        "evidence_commit": "11535b67",
+        "verified": "恢复的 2 类 26 测试全绿（19+7）；全量 1938 tests / 20 红（较冻结基线 1912 净增 26、红数未增，单调收敛）；extract 重生成 total_tests 1912→1938、report_files 213→215、删 2 条 exempt_class；check PASS、selftest 13/13。"
       }
     ]
   },

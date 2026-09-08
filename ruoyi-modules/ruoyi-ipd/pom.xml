@@ -104,22 +104,12 @@
                          Controller 在 SEC-AUTH-DEADLOCK 修复中已改调 requireInternalEvenIfPasswordScope()
                          ——实现漂移被豁免掩盖，已修（该类 5/5 绿）。
 
-                         下面 2 条经实测确认仍真编译失败，暂予保留，但不再是隐性豁免：
-                         已在 scripts/ci/ipd-test-red-baseline.txt 以 exempt_class 显式登记，并由
-                         .github/workflows/ipd-test-gate.yml 强制「每个测试类都必须产出报告，否则阻断」，
-                         未登记的静默跳过会被当场拦下。台账见 OD-AM-06。
-                         修好后请同时删除此处 testExclude 与基线里的 exempt_class 行。 -->
-                    <testExcludes>
-                        <!-- KpiSharedConfirmControllerTest：BaseMapper.insert(T) 与 insert(Collection 泛型重载)
-                             重载歧义未消解。实测报错「对 insert 的引用不明确」「对 updateById 的引用不明确」
-                             及多处「找不到符号」（221f6c30 追加豁免）。 -->
-                        <!-- P312AcceptanceTest：SharedKpiController 构造器漂移。实测报错「无法将类
-                             SharedKpiController 中的构造器应用到给定类型」（221f6c30 追加豁免）。
-                             注意：本类与 KpiSharedConfirmControllerTest 同属 KPI 共担域，被豁免意味着
-                             该域的改动长期缺少这两道回归保护。 -->
-                        <testExclude>**/KpiSharedConfirmControllerTest.java</testExclude>
-                        <testExclude>**/P312AcceptanceTest.java</testExclude>
-                    </testExcludes>
+                         [2026-09-08 OD-AM-06 收尾] 最后 2 条（KpiSharedConfirmControllerTest /
+                         P312AcceptanceTest）编译错误已修复并撤销豁免，本 testExcludes 块整体删除，
+                         214 个 *Test.java 首次全部编译执行、零豁免。修复：前者对齐 MyBatis-Plus
+                         insert/updateById 重载（裸 any() → any(Entity.class)）、补 lambda 列名缓存
+                         TableInfo 引导、修 matcher 混用与一处滞后 stub；后者补 SharedKpiController
+                         构造器第三个依赖。基线 exempt_class 两行同步删除，台账 OD-AM-06 翻为已决。 -->
                 </configuration>
             </plugin>
         </plugins>

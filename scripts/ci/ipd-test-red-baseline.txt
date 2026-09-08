@@ -1,12 +1,8 @@
 # IPD 测试红名单基线 —— 由 scripts/ci/ipd-test-red-baseline.py extract 生成，勿手改
 # 语义：以下为「已知债务」，CI 不因其失败；出现本清单之外的新红即阻断。
 # 修好任意一条后请重跑 extract 覆盖本文件，使基线单调收敛。
-# total_tests=1912
-# report_files=213
-#
-# 下列测试类被显式豁免于「每个测试类都必须真跑」校验（手工登记，extract 不会删除）：
-# exempt_class=org.ruoyi.ipd.controller.KpiSharedConfirmControllerTest 理由=pom testExcludes（221f6c30 追加）：BaseMapper.insert(T) 与 insert(Collection<T>) 重载歧义未消解，实测编译失败（引用不明确） 登记=OD-AM-06
-# exempt_class=org.ruoyi.ipd.service.P312AcceptanceTest 理由=pom testExcludes（221f6c30 追加）：SharedKpiController 构造器漂移，实测编译失败（无法应用构造器） 登记=OD-AM-06
+# total_tests=1938
+# report_files=215
 org.ruoyi.ipd.qa.Qa04EntityContractTest#softDeletableEntitiesCarryDelFlag
 org.ruoyi.ipd.service.DeletionRequestServiceTest#submitGoesToLeaderReviewWithWorkdayDeadline
 org.ruoyi.ipd.service.KpiRecordServiceTest#businessConfigService_nullFallsBackToHardcoded

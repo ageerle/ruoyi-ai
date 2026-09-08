@@ -1,4 +1,35 @@
 
+## 2026-09-08 06:40 PDT Qoder 接续会话：OD-AM-06 收口（撤销最后 2 条 pom testExcludes 豁免）+ P073 flaky 二次目击登记
+
+### OD-AM-06：owner 决策①「修编译错误后撤销豁免」已落地（commit 11535b67）
+- **背景**：pom `<testExcludes>` 曾累积豁免 5 个测试类；PR #11（6dc2f5c4）已撤 3 条陈旧豁免，剩 2 条经实测确认真编译失败，且同属 KPI 共担域（本轮 P-1/P-2 改动区）——意味着该域长期缺这 2 道回归保护。owner 拍板方案①（修编译错误后撤销豁免，恢复覆盖）。
+- **KpiSharedConfirmControllerTest（19 测试恢复绿）**：
+  - MyBatis-Plus `insert`/`updateById` 重载歧义 → 裸 `any()` 改 `any(KpiSharedConfirm.class)`，消除「对 insert/updateById 的引用不明确」。
+  - lambda 列名缓存空 → 补 `@BeforeAll TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(),""), KpiSharedConfirm.class)`：`ensurePendingRows` 的 `lambdaUpdate().set(...)` 即时解析列名需 TableInfo（同仓 BidScanEscalation/P261 既有做法）。
+  - ct3/ct4 matcher 混用 → `collectSharedKpi(actor, isNull())` 改 `eq(actor)`（裸值+matcher 触发 InvalidUseOfMatchersException）。
+  - s1-s4 stub 缺 `when(...)` → 补齐（被豁免类从未编译，原 stub 是死代码）。
+  - s2 stub 随 P-1 去 N+1 漂移对齐：`selectById(99L)` → `selectBatchIds(List.of(99L))`（listConfirms 已改批量预加载姓名）。
+  - **s2 `confirmedByMe` 断言 `allMatch` → `noneMatch`**：依 VO Javadoc「待我确认/我已确认」+ Controller Javadoc「当前用户是否已参与签署」+ 生产语义（`actor.id==first/secondConfirmedBy`）三处一致契约；本用例 actor=超管(0L) 未签署 → 必 false。原 `allMatch` 来自从未运行过的被豁免测试，与明文契约相悖，**按真实契约改（非迁就实现）**。
+  - **反向验证（承重证明）**：临时把生产 `confirmedByMe=true` → s2 如期变红；`git checkout` 精确还原、0 残留。证明 `noneMatch` 有回归力，不是摆设。
+- **P312AcceptanceTest（7 测试恢复绿）**：补 `SharedKpiController` 构造器第三依赖 `KpiSharedConfirmService`（P3-1.2-BACKEND 双组长确认链后新增），mock 让 `ensurePendingRows` 成空操作。
+- **pom**：`<testExcludes>` 块整体删除，注释收尾为 OD-AM-06 完成记录 → **214 个 `*Test.java` 首次全部编译执行、零豁免**。
+- **基线单调收敛**：extract 重生成 `total_tests 1912→1938`（+26 = 恢复的 19+7）、`report_files 213→215`、删 2 条 `exempt_class` + 孤立标题；**20 条红债务一字未变**；`check` PASS、`selftest` 13/13。
+- **矩阵**：`acceptance-matrix.json` OD-AM-06 翻已决（decided_by=mac / decided_at=2026-09-08 / evidence_commit=11535b67 / verified 全量数据），`open_count 2→1`（仅 OD-AM-05 方法级追溯待决）。
+
+### P073Behavior flaky：门禁二次抓到，登记为带证据的追踪项（非 OD-AM-06 引入）
+- **触发**：main push 门禁 run `34224313772`（对 6dc2f5c4，PR #11 合并后的 push）failure，红名单差集抓到基线外 NEW 红 `P073BehaviorAcceptanceTest#expiredToken_rejectedAsNotLogin`（当前红 21 | 基线 20）。**这是门禁价值的又一实证**——挡住了一个不在冻结基线里的偶发红。
+- **定性**：失败签名 = `IpdAuthSession.currentPerson:44` 抛「凭证已更新」（credentialMarker 不匹配），耗时 0.004s（**远小于 1s TTL，排除时序抖动**）。
+- **非我引入**：本机全量 13 次 + 5 种 runOrder（alphabetical/reverse/3×random/failedfirst）仅 1 次红（~8%）；孤立跑 3× 全绿，各子集（config/security/dto/seed/util）全绿；PR #11 的 CI 跑同 SHA 绿、push 同 SHA 红。**OD-AM-06 只碰 KPI 共担域，与 auth 会话正交。**
+- **历史佐证（关键）**：本条非首见——`2026-09-06（晨·八）` 条目已登记同一 `P073 expiredToken_rejectedAsNotLogin` ERROR，注明「703f752f/056640ca 时代遗留…需后续兄弟会话修」，当时大盘 1F+1E 即含它。即这是**有文档历史的既有潜在缺陷**，本轮门禁把它再次曝光。
+- **根因收敛（未确定性复现）**：P073 依赖 Sa-Token 全局静态态（`SaManager.getConfig()` / 内存 Dao 按 loginType 全局共享）；`@BeforeAll` 仅部分隔离（存/还原 jwtSecret+timeout+context，但**不重置 Dao、不 pin isShare/isConcurrent、person 是 static 建一次无 @BeforeEach 重置**）；单 JVM surefire `reuseForks` 下跨测试类累积的全局态在特定顺序下污染 marker 比对。精确触发条件无法确定性复现。
+- **纪律决定（不臆测、不洗白）**：
+  - **不臆测性修复**无法确定性复现的 flaky——违反本会话反复确立的反向验证原则（改完无法证明它真挡住了 X）。
+  - **不洗进红名单基线**——门禁明令「不得为变绿而放宽断言/扩大基线」，把一个 auth 会话红永久豁免会掩盖真实回归。
+  - 已 `git checkout` 还原 P073 诊断改动至 HEAD 原状，登记为追踪项，就处置方向请示 owner（深挖根因 / hermetic 加固：@BeforeEach 重置 Dao+重建 person+pin isShare/isConcurrent / 暂仅追踪）。
+- **风险告知**：main push 门禁当前因 P073 偶发红；OD-AM-06 PR 的 CI 门禁有 ~8% 概率被同一 flaky 随机阻断（非本 PR 缺陷）。
+
+**commit 链**：`11535b67`（OD-AM-06 工作：pom+2 测试类+基线）→ 本治理 commit（矩阵翻已决 + log.md 登记）。
+
 ## 2026-09-08 05:10 PDT Qoder 接续会话：ipd-test-gate 首次 CI 实跑即抓到一条「断言指向不存在契约」的测试
 
 接上一条（04:25）。上一条记的基线 `total_tests=1909` 已由本条更新为 **1912**（红数仍 20）。

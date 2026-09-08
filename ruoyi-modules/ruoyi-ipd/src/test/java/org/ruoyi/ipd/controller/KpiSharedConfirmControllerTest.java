@@ -1,5 +1,9 @@
 package org.ruoyi.ipd.controller;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -11,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.KpiSharedConfirm;
 import org.ruoyi.ipd.domain.Person;
@@ -71,6 +76,17 @@ class KpiSharedConfirmControllerTest {
     private static final Long PROJECT_ID = 201L;
     private static final String PERIOD = "2026-09";
 
+    /**
+     * 纯 Mockito 单测未走 Spring/MyBatis 引导，KpiSharedConfirm 的 lambda 列名缓存为空；
+     * ensurePendingRows 的 lambdaUpdate().set(...) 会即时解析列名，故先手动初始化 TableInfo
+     * （同仓 BidScanEscalationAcceptanceTest / P261AcceptanceTest 既有做法）。
+     */
+    @BeforeAll
+    static void initTableInfo() {
+        TableInfoHelper.initTableInfo(
+            new MapperBuilderAssistant(new MybatisConfiguration(), ""), KpiSharedConfirm.class);
+    }
+
     /* ====================== Controller 层 ====================== */
 
     @Test
@@ -120,7 +136,7 @@ class KpiSharedConfirmControllerTest {
             metric("K01"), metric("K02"), metric("K03"), metric("K04"));
         SharedKpiCollectView view = new SharedKpiCollectView(
             PROJECT_ID, PERIOD, new BigDecimal("85.50"), metrics);
-        when(collectService.collectSharedKpi(actor, isNull())).thenReturn(view);
+        when(collectService.collectSharedKpi(eq(actor), isNull())).thenReturn(view);
 
         var resp = controller.collect(null);
 
@@ -138,7 +154,7 @@ class KpiSharedConfirmControllerTest {
     void ct4_collect_failure_no_ensure() {
         IpdActor actor = actorGroupLeader(99L);
         when(permission.requireInternal()).thenReturn(actor);
-        when(collectService.collectSharedKpi(actor, isNull()))
+        when(collectService.collectSharedKpi(eq(actor), isNull()))
             .thenThrow(new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "项目必须有且仅有一个在职MARKET_PM"));
 
         assertThatThrownBy(() -> controller.collect(null))
@@ -153,7 +169,7 @@ class KpiSharedConfirmControllerTest {
     @DisplayName("[S1] 空库 → 返回 []")
     void s1_listConfirms_empty() {
         ServiceLayer layer = new ServiceLayer();
-        layer.projectMapper.selectById(PROJECT_ID).thenReturn(project());
+        when(layer.projectMapper.selectById(PROJECT_ID)).thenReturn(project());
         IpdActor actor = actorSuperAdmin(0L);
 
         List<KpiSharedConfirmView> views =
@@ -173,9 +189,10 @@ class KpiSharedConfirmControllerTest {
             pendingRow(2L, "K02", new BigDecimal("0.10"), future, null, null, null, null),
             pendingRow(3L, "K03", new BigDecimal("0.10"), future, null, null, null, null),
             pendingRow(4L, "K04", new BigDecimal("0.05"), future, null, null, null, null));
-        layer.projectMapper.selectById(PROJECT_ID).thenReturn(project());
-        layer.confirmMapper.selectList(any()).thenReturn(rows);
-        layer.personMapper.selectById(99L).thenReturn(person(99L, "归集组长"));
+        when(layer.projectMapper.selectById(PROJECT_ID)).thenReturn(project());
+        when(layer.confirmMapper.selectList(any())).thenReturn(rows);
+        // P-1 去 N+1 后 listConfirms 走 selectBatchIds 批量预加载姓名，不再逐行 selectById（stub 随之对齐，断言不变）
+        when(layer.personMapper.selectBatchIds(List.of(99L))).thenReturn(List.of(person(99L, "归集组长")));
         IpdActor actor = actorSuperAdmin(0L);
 
         List<KpiSharedConfirmView> views =
@@ -185,7 +202,10 @@ class KpiSharedConfirmControllerTest {
         assertThat(views).extracting(KpiSharedConfirmView::metricCode)
             .containsExactly("K01", "K02", "K03", "K04");
         assertThat(views).allMatch(v -> "PENDING".equals(v.status()));
-        assertThat(views).allMatch(KpiSharedConfirmView::confirmedByMe);
+        // confirmedByMe 契约（VO + Controller Javadoc）：仅当 actor 已参与签署（first/second）才为 true。
+        // 本用例是新建待确认行、actor=超管(0L) 未签署 → 必为 false。原 allMatch 断言来自从未编译/运行过的
+        // 被豁免测试，与两处 Javadoc 明文契约及生产语义相悖，此处按真实契约改为 noneMatch（非迁就实现）。
+        assertThat(views).noneMatch(KpiSharedConfirmView::confirmedByMe);
         assertThat(views.get(0).projectName()).isEqualTo("项目X");
         assertThat(views.get(0).personName()).isEqualTo("归集组长");
         assertThat(views.get(0).weight()).isEqualByComparingTo("0.15");
@@ -196,8 +216,8 @@ class KpiSharedConfirmControllerTest {
     void s3_listConfirms_overdueDerived() {
         ServiceLayer layer = new ServiceLayer();
         Date past = new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2));
-        layer.projectMapper.selectById(PROJECT_ID).thenReturn(project());
-        layer.confirmMapper.selectList(any()).thenReturn(
+        when(layer.projectMapper.selectById(PROJECT_ID)).thenReturn(project());
+        when(layer.confirmMapper.selectList(any())).thenReturn(
             List.of(pendingRow(1L, "K01", new BigDecimal("0.15"), past, null, null, null, null)));
         IpdActor actor = actorSuperAdmin(0L);
 
@@ -214,8 +234,8 @@ class KpiSharedConfirmControllerTest {
         ServiceLayer layer = new ServiceLayer();
         Date past = new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2));
         Date future = new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5));
-        layer.projectMapper.selectById(PROJECT_ID).thenReturn(project());
-        layer.confirmMapper.selectList(any()).thenReturn(List.of(
+        when(layer.projectMapper.selectById(PROJECT_ID)).thenReturn(project());
+        when(layer.confirmMapper.selectList(any())).thenReturn(List.of(
             pendingRow(1L, "K01", new BigDecimal("0.15"), past, null, null, null, null),
             pendingRow(2L, "K02", new BigDecimal("0.10"), future, null, null, null, null)));
         IpdActor actor = actorSuperAdmin(0L);
@@ -267,7 +287,7 @@ class KpiSharedConfirmControllerTest {
             List.of(metric("K01")));
 
         verify(layer.confirmMapper, times(1)).update(isNull(), any());
-        verify(layer.confirmMapper, never()).insert(any());
+        verify(layer.confirmMapper, never()).insert(any(KpiSharedConfirm.class));
     }
 
     @Test
@@ -281,8 +301,8 @@ class KpiSharedConfirmControllerTest {
         layer.service.ensurePendingRows(PROJECT_ID, PERIOD, 99L,
             List.of(metric("K01")));
 
-        verify(layer.confirmMapper, times(1)).updateById(any());
-        verify(layer.confirmMapper, never()).insert(any());
+        verify(layer.confirmMapper, times(1)).updateById(any(KpiSharedConfirm.class));
+        verify(layer.confirmMapper, never()).insert(any(KpiSharedConfirm.class));
     }
 
     @Test
@@ -294,7 +314,7 @@ class KpiSharedConfirmControllerTest {
         layer.service.ensurePendingRows(PROJECT_ID, PERIOD, 99L, List.of());
 
         verify(layer.confirmMapper, never()).selectOne(any());
-        verify(layer.confirmMapper, never()).insert(any());
+        verify(layer.confirmMapper, never()).insert(any(KpiSharedConfirm.class));
     }
 
     /* ====================== Service 层：confirm 双签 ====================== */
@@ -356,7 +376,7 @@ class KpiSharedConfirmControllerTest {
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.DUAL_SIGN_INCOMPLETE);
 
-        verify(layer.confirmMapper, never()).updateById(any());
+        verify(layer.confirmMapper, never()).updateById(any(KpiSharedConfirm.class));
     }
 
     @Test

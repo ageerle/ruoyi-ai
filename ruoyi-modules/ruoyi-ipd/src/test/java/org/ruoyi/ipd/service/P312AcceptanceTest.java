@@ -52,6 +52,12 @@ class P312AcceptanceTest {
     @Mock private PersonMapper personMapper;
     @Mock private IpdPermission permission;
     @Mock private AuditLogService auditLogService;
+    /**
+     * SharedKpiController 在 P3-1.2-BACKEND 后多了第三个依赖（双组长确认链），
+     * 本类只验归集算分与 HTTP 包装，故用 mock 让 ensurePendingRows 成为空操作。
+     * 未 stub 的 mock 不会触发 STRICT_STUBS 的 UnnecessaryStubbing（那只针对 stubbing）。
+     */
+    @Mock private KpiSharedConfirmService confirmService;
 
     private KpiSharedCollectionService service;
     private IpdActor leader;
@@ -165,7 +171,7 @@ class P312AcceptanceTest {
         when(permission.requireInternal()).thenReturn(leader);
         when(permission.requireLeaderOrAdmin()).thenReturn(leader);
         MockMvc mvc = MockMvcBuilders.standaloneSetup(
-            new SharedKpiController(permission, service)).build();
+            new SharedKpiController(permission, service, confirmService)).build();
 
         mvc.perform(post("/api/v1/kpi/shared")
                 .contentType(MediaType.APPLICATION_JSON)
