@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
 
       - name: gitleaks scan
-        uses: gitleaks/gitleaks-action@9c49965b8a9027d056a85cfdff3b1d853ba9d7d8 # v2.3.0
+        uses: gitleaks/gitleaks-action@1938557f6a58837331b99822ab17b8e536e7bef9 # v2.3.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # GITLEAKS_LICENSE 仅 GitHub Organization 仓库需要（个人仓库免费）。
