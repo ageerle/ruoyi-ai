@@ -136,10 +136,16 @@ class SystemConfigServiceCacheTest {
     @DisplayName("PERF-P2-5 maximumSize：注入容量 cache，插入远超上限的键，驱逐生效 + 最终 size 上限受控")
     void maximumSize_evictsOverflow() {
         // 注入 capacity=50 + recordStats 的 cache，便于 <1s 内完成 + 验证驱逐计数
+        // executor(Runnable::run)：强制 Caffeine 在当前线程同步做维护。默认走
+        // ForkJoinPool.commonPool() 异步维护，写满 200 键后立即断言 estimatedSize() /
+        // evictionCount() 会读到滞后值。本机实测（2026-09-08 04:07 与 04:17）同一份代码
+        // 两次全量跑分别得 21 红与 20 红，差别正是本用例 —— 属 flaky 而非契约问题。
+        // 同步化只消除时序不确定性，被测契约（驱逐生效 + size 受控）与断言阈值均未改。
         Cache<String, Optional<String>> smallCache = Caffeine.newBuilder()
             .maximumSize(50)
             .expireAfterWrite(Duration.ofMinutes(5))
             .recordStats()
+            .executor(Runnable::run)
             .build();
         service.setCache(smallCache);
 

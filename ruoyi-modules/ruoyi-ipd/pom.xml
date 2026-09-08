@@ -91,15 +91,32 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <!-- [2026-09-08 治理] 本段曾被三个卡各自「临时」追加，累积豁免 5 个测试类，
+                         且旧注释自称「仅在 worktree 内追加排除，不影响 main 分支 HEAD 字节」——实际
+                         已随 4feb8ec9 / 221f6c30 / f1ce2db7 进 main 并长期生效。后果：这 5 个类不编译、
+                         不执行、一份 surefire 报告不出，mvn 依旧 BUILD SUCCESS；214 个 *Test.java 只编出
+                         209 个 class，任何红名单比对都看不见它们（静默跳过即假绿）。
+
+                         本轮实测已撤销其中 3 条（Api03AcceptanceTest / DefectBAdviceAcceptanceTest /
+                         IpdAuthChangePasswordExceptionTest）：豁免理由（W20-B「兄弟会话在途编译错误」）
+                         早已消解，撤销后编译通过、测试回归，净增 16 个测试（1893 → 1909）且红数未增。
+                         撤销同时暴露出 Api03AcceptanceTest 的 stub 仍打在 requireInternal() 上，而
+                         Controller 在 SEC-AUTH-DEADLOCK 修复中已改调 requireInternalEvenIfPasswordScope()
+                         ——实现漂移被豁免掩盖，已修（该类 5/5 绿）。
+
+                         下面 2 条经实测确认仍真编译失败，暂予保留，但不再是隐性豁免：
+                         已在 scripts/ci/ipd-test-red-baseline.txt 以 exempt_class 显式登记，并由
+                         .github/workflows/ipd-test-gate.yml 强制「每个测试类都必须产出报告，否则阻断」，
+                         未登记的静默跳过会被当场拦下。台账见 OD-AM-06。
+                         修好后请同时删除此处 testExclude 与基线里的 exempt_class 行。 -->
                     <testExcludes>
-                        <!-- W20-B：兄弟会话在途工作引入的测试编译错误（非本卡责任），暂排除避免阻塞本卡测试；
-                             应由原作者在并发回合收口时清理。 -->
-                        <testExclude>**/Api03AcceptanceTest.java</testExclude>
-                        <testExclude>**/DefectBAdviceAcceptanceTest.java</testExclude>
-                        <testExclude>**/IpdAuthChangePasswordExceptionTest.java</testExclude>
-                        <!-- P3-2.2：兄弟会话已 dirty 重命名为 .disabled 但未提交的测试，BaseMapper.insert(T)
-                             与 insert(Collection<T>) 重载歧义未消解，编译错误；本卡仅在 worktree 内追加排除，
-                             不影响 main 分支 HEAD 字节。 -->
+                        <!-- KpiSharedConfirmControllerTest：BaseMapper.insert(T) 与 insert(Collection 泛型重载)
+                             重载歧义未消解。实测报错「对 insert 的引用不明确」「对 updateById 的引用不明确」
+                             及多处「找不到符号」（221f6c30 追加豁免）。 -->
+                        <!-- P312AcceptanceTest：SharedKpiController 构造器漂移。实测报错「无法将类
+                             SharedKpiController 中的构造器应用到给定类型」（221f6c30 追加豁免）。
+                             注意：本类与 KpiSharedConfirmControllerTest 同属 KPI 共担域，被豁免意味着
+                             该域的改动长期缺少这两道回归保护。 -->
                         <testExclude>**/KpiSharedConfirmControllerTest.java</testExclude>
                         <testExclude>**/P312AcceptanceTest.java</testExclude>
                     </testExcludes>

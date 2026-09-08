@@ -7,8 +7,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -25,7 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   1) matrix 文件存在 + JSON 合法 + schema 文件存在
  *   2) 必填字段非空：ac_id / category / title / docRef / status / owner
  *   3) ac_id 唯一 + 格式合规（^AC-(INC|EXT|MIN)-\d+[a-z]?$）
- *   4) status=covered 的行 unitTestClass 必须存在且 linkedCommits ≥ 1
+ *   4) status=covered 的行 unitTestClass 拆 #后类文件与方法均需真实存在，且 linkedCommits ≥ 1
+ *   5) owner 决策项按生命周期二态校验（未决需 blocker / 已决需 decision+证据），
+ *      且 open_count 必须等于 items 中未决项的实际数量
  *
  * 关联工件：
  *   - docs/ipd-系统说明/治理/acceptance-matrix.json（SSOT）
@@ -140,12 +143,30 @@ class AcceptanceMatrixValidationTest {
             assertThat(unitTest)
                 .as("status=covered 的行 unitTestClass 必填: " + acId)
                 .isNotBlank();
-            // unitTestClass FQN → 物理路径
-            String relPath = unitTest.replace('.', '/') + ".java";
+            // unitTestClass 允许「类FQN#方法名」形式（现存 10/10 行均带 #）。
+            // 旧实现直接 replace('.','/') 使路径带 # 而永远不存在，
+            // 1 个红掩盖了 10 处校验未生效——拆开后类与方法分开校，比原断言更严。
+            int hash = unitTest.indexOf('#');
+            String classFqn = hash >= 0 ? unitTest.substring(0, hash) : unitTest;
+            String methodName = hash >= 0 ? unitTest.substring(hash + 1) : null;
+            assertThat(classFqn)
+                .as("unitTestClass 类 FQN 非空: " + acId)
+                .isNotBlank();
+            String relPath = classFqn.replace('.', '/') + ".java";
             File testFile = new File(root, "ruoyi-modules/ruoyi-ipd/src/test/java/" + relPath);
             assertThat(testFile)
-                .as("unitTestClass 对应 .java 文件必须存在: " + acId + " → " + unitTest)
+                .as("unitTestClass 对应 .java 文件必须存在: " + acId + " → " + classFqn)
                 .exists();
+            if (methodName != null) {
+                assertThat(methodName)
+                    .as("unitTestClass # 后方法名非空: " + acId)
+                    .isNotBlank();
+                String src = Files.readString(testFile.toPath(), StandardCharsets.UTF_8);
+                assertThat(Pattern.compile("\\b" + Pattern.quote(methodName) + "\\s*\\(").matcher(src).find())
+                    .as("unitTestClass 指向的方法必须在测试源中真实存在（防矩阵引用已删用例）: "
+                        + acId + " → " + unitTest)
+                    .isTrue();
+            }
 
             JsonNode commits = row.path("linkedCommits");
             assertThat(commits.isArray())
@@ -178,22 +199,47 @@ class AcceptanceMatrixValidationTest {
         assertThat(rows.size())
             .as("样板 ≤ 237（避免 4 文件清单外的扩展）")
             .isLessThanOrEqualTo(237);
-        assertThat(ownerDecisions.path("open_count").asInt())
-            .as("owner 决策项 open_count ≥ 1（OD-AM-01 ~ 04 必备）")
-            .isGreaterThanOrEqualTo(1);
         JsonNode items = ownerDecisions.path("items");
-        assertThat(items.isArray()).isTrue();
-        assertThat(items.size()).isGreaterThanOrEqualTo(1);
+        assertThat(items.isArray()).as("owner_decisions_needed.items 必须是数组").isTrue();
+        // 不断言固定数量：决策项可新增（如 OD-AM-05），但已登记的历史决策不得删除。
+        Set<String> ids = new HashSet<>();
+        for (JsonNode d : items) {
+            String id = d.path("id").asText(null);
+            assertThat(id).as("owner 决策项 id 必填").isNotBlank();
+            assertThat(ids.add(id)).as("owner 决策项 id 必须唯一: " + id).isTrue();
+        }
+        assertThat(ids)
+            .as("OD-AM-01 ~ 04 四项已决决策必须永久在册（含 decision 与 evidence_commit，不得因闭环而删除）")
+            .contains("OD-AM-01", "OD-AM-02", "OD-AM-03", "OD-AM-04");
 
-        // 校验每条决策项必含 id/topic/blocker
-        Iterator<JsonNode> it = items.elements();
-        while (it.hasNext()) {
-            JsonNode d = it.next();
-            for (String f : new String[]{"id", "topic", "blocker"}) {
-                assertThat(d.path(f).asText(null))
-                    .as("owner 决策项字段 " + f + " 必填")
+        // 生命周期二态：未决（有 blocker、无 decision）/ 已决（decision + decided_by + decided_at + evidence_commit）。
+        // 不再断言 open_count ≥ 1：决策闭环后归零是正确状态，旧断言等于禁止闭环，
+        // 会逼人回填假未决项使其转绿（AGENTS.md 假绿陷阱第二形态）。
+        // 改为校验 open_count 必须等于实际未决数——门禁强度不降反升。
+        int actualOpen = 0;
+        for (JsonNode d : items) {
+            String id = d.path("id").asText("<missing>");
+            assertThat(d.path("topic").asText(null))
+                .as("owner 决策项 topic 必填: " + id)
+                .isNotBlank();
+
+            String decision = d.path("decision").asText(null);
+            if (decision == null || decision.isBlank()) {
+                actualOpen++;
+                assertThat(d.path("blocker").asText(null))
+                    .as("未决项必须有 blocker 提问原文: " + id)
                     .isNotBlank();
+            } else {
+                assertThat(d.path("decided_by").asText(null))
+                    .as("已决项必须有 decided_by: " + id).isNotBlank();
+                assertThat(d.path("decided_at").asText(null))
+                    .as("已决项必须有 decided_at: " + id).isNotBlank();
+                assertThat(d.path("evidence_commit").asText(null))
+                    .as("已决项必须有 evidence_commit 实证: " + id).isNotBlank();
             }
         }
+        assertThat(ownerDecisions.path("open_count").asInt(-1))
+            .as("open_count 必须等于 items 中无有效 decision 的项数（派生真值，防手工填错）")
+            .isEqualTo(actualOpen);
     }
 }

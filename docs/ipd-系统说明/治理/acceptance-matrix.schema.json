@@ -18,20 +18,41 @@
     },
     "owner_decisions_needed": {
       "type": "object",
-      "description": "owner 决策项（不阻断 CI 校验，仅提示）",
+      "description": "owner 决策项。生命周期二态：未决（有 blocker 提问、无 decision）/ 已决（有 decision + decided_by + decided_at + evidence_commit）。\n注意：本段由 docs-link-check.yml 的「AJV schema 强校验」步骤硬阻断，不是「仅提示」；旧 description 与实际门禁行为不符，已更正。\n决策闭环后 items 不删除，blocker 原文保留为历史记录。",
       "properties": {
-        "open_count": { "type": "integer" },
+        "open_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "派生值 = items 中无有效 decision 的项数。允许为 0（决策全部闭环）。一致性由 AcceptanceMatrixValidationTest 强校验，防手工填错。"
+        },
         "items": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["id", "topic", "blocker"],
+            "required": ["id", "topic"],
             "properties": {
-              "id":          { "type": "string" },
-              "topic":       { "type": "string" },
-              "blocker":     { "type": "string" },
-              "decided_by":  { "type": ["string", "null"] }
-            }
+              "id":              { "type": "string" },
+              "topic":           { "type": "string" },
+              "blocker":         { "type": "string", "description": "未决时的阻塞提问原文；决策闭环后保留为历史记录，不删除" },
+              "decided_by":      { "type": ["string", "null"] },
+              "decided_at":      { "type": ["string", "null"], "description": "决策日期 YYYY-MM-DD" },
+              "decision":        { "type": ["string", "null"], "description": "决策结论。为非空字符串即视为该项已闭环" },
+              "evidence_commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" },
+              "evidence_doc":    { "type": ["string", "null"] },
+              "evidence_report": { "type": ["string", "null"] },
+              "first_run_stats": { "type": ["string", "null"] },
+              "verified":        { "type": ["string", "null"] }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": ["decision"],
+                  "properties": { "decision": { "type": "string", "minLength": 1 } }
+                },
+                "then": { "required": ["decided_by", "decided_at", "evidence_commit"] },
+                "else": { "required": ["blocker"] }
+              }
+            ]
           }
         }
       }
@@ -67,7 +88,8 @@
           },
           "unitTestClass": {
             "type": ["string", "null"],
-            "description": "Java 单测类 FQN；如缺测试填 null，status 必须为 blocked/manual"
+            "pattern": "^[a-z][A-Za-z0-9_.]*(#[A-Za-z0-9_]+)?$",
+            "description": "Java 单测类 FQN，可带 #方法名 精确到用例（现存 10/10 行均为「类FQN#方法名」形式）；如缺测试填 null，status 必须为 blocked/manual。校验方须先按 # 拆分再解析物理路径，并核对方法在测试源中真实存在。"
           },
           "integrationTestPath": {
             "type": ["string", "null"],

@@ -1,4 +1,84 @@
 
+## 2026-09-08 05:10 PDT Qoder 接续会话：ipd-test-gate 首次 CI 实跑即抓到一条「断言指向不存在契约」的测试
+
+接上一条（04:25）。上一条记的基线 `total_tests=1909` 已由本条更新为 **1912**（红数仍 20）。
+
+### 门禁首次实跑就证明了自己不是纸面护栏
+PR #11 run `34221338056`：`ipd-compile-gate` 两个 job 全绿、`docs-link-check` / `gitleaks` 全绿，
+而 `ipd-test-gate` **阻断**——四道护栏全部通过（`total_tests=1909` 与基线精确吻合、无 SILENT 类、
+无幽灵报告），红名单差集抓到 1 条基线外新红：
+`ProjectServiceConcurrencyTest#nextCode_concurrent50_shouldReturnDistinctCodes`。
+本机上该测试 12/12 稳定绿，此前从未进过任何红名单。
+
+### 定性：不是 flaky，是断言指向了生产并不具备的契约
+- `ProjectService#create` 的 Javadoc 明写「READ_COMMITTED 下 `synchronized(nextCode)` **无法覆盖
+  『取号→提交』窗口**，HTTP 并发会撞号」；唯一性由 `uk_projects_code` 唯一键 +
+  `CODE_CONFLICT_MAX_RETRY=8` 重试兜底，**不在 `nextCode()` 这一层**。`nextCode()` 只是
+  「读当年最大号 +1」的纯读算，DB 状态不变时并发调用返回同一个号本就是正确行为。
+- 旧测试用 `sharedMax.incrementAndGet()` 在锁**外**推进模拟 DB，等于亲手把那个窗口造了出来，
+  于是断言成立与否完全取决于调度时序：本机多核稳定绿，GitHub Actions 2 vCPU runner 上
+  50 线程挤 20 池线程必红。与 04:25 修的 Caffeine flaky 不同——那条是时序抖动，
+  **这条是断言本身错了**，加锁或加 sleep 都治不好。
+
+### 顺带挖出：生产真正的收口机制在 CI 里零覆盖
+唯一验证撞号收敛的 `Qa04MysqlConcurrencyTest`（3a 线）被
+`@EnabledIfSystemProperty(ipd.scope.mysql.enabled)` 门控，CI 实跑 **4 tests / 4 skipped**。
+全仓无任何单测断言 `CODE_CONFLICT_MAX_RETRY`（「项目编码冲突」在测试源零命中）。
+即：**在跑的并发测试断言了生产没有的性质，而生产真正依赖的收口机制无人看守。**
+
+### 重写为 4 条确定性断言（不是放宽，是改指真实契约）
+1. `nextCode()` 读-算临界区互斥（50 并发 → 50 个不同编码）
+2. 反射钉：`nextCode()` 确有 `synchronized` 修饰 + `@Lock4j(keys="'ipd:project:code'")`
+3. 撞号后 `create()` **换新号**重试成功（断言第二次编码为 `-002` 而非重发 `-001`）
+4. 重试耗尽**恰好 8 次**后抛「项目编码冲突，请重试」
+
+③④ 补上了 CI 零覆盖的真实机制；①② 合起来才等价于旧版想要而没能可靠表达的 PERF-01 回归意图。
+
+### 反向验证抓到我自己写的第一版是假的（本条最重要的教训）
+第一版用 Mockito `thenAnswer` 模拟 DB，Javadoc 与断言文案都写了「摘掉 `synchronized` 会立刻重号」。
+**实测推翻**：摘掉后反射钉如期变红，但并发断言 3/3 次依旧全绿。根因是 Mockito 的
+`InvocationContainerImpl` 对 answer 调用自带 `mutex` 同步，`thenAnswer` 里的代码本就被串行化了
+——测试通过但对 PERF-01 **零回归力**。改手写 `Proxy` 假 mapper（绕开该 mutex）+ 在读改写之间夹
+`Thread.yield()` 放大竞态窗口后，反向验证 **3/3 可靠失败**（①② 同时红），正向 6/6 稳定绿。
+
+教训与 04:25 门禁自测同源：**「绿灯 ≠ 有保护」**。一条测试有没有回归力，只能用反向验证
+（把被测保护摘掉看它会不会红）证明，不能靠读代码推断；写在注释里的「这条能挡住 X」
+若未经反向验证，就是下一句「不影响 main 分支 HEAD 字节」式的不实陈述。
+
+### CI 覆盖底数（供门禁「测试总数骤降」护栏参照）
+CI 的 26 个 skipped 精确分解为三个环境门控类：`P131DatabaseIntegrationTest` 18 +
+`Qa04MysqlConcurrencyTest` 4 + `HandoverIntegrationTest` 4。已核 `acceptance-matrix.json`
+10 行无一引用这三个类，故不构成假证据，未改 matrix。
+
+### 结果
+基线 `total_tests` 1909→**1912**（红数仍 **20**，一条未增），`check` PASS，门禁自测 **13/13** 全绿。
+
+---
+
+## 2026-09-08 04:25 PDT Qoder 会话：CI 测试门禁上线 + 治理契约生命周期修正 + pom 静默豁免勘误
+
+### 勘误登记（G-04 要求：勘误级更新须在此登记）
+1. **`治理/AC-ID-词表-20260907.md` §3.2**：原列 10 条「类FQN#方法名」映射，经核验方法名在测试源中**全部不存在**（`testACnn` 式编造，如 `P034AcceptanceTest#testAC02`，该类实际方法为 `cfg02_*`/`hr05_*`/`glb10_*`）。已剥离方法名降为类级并追加勘误说明；**不编造回填**。
+2. **`治理/acceptance-matrix.json`**：同源同错的 10 行 `unitTestClass` 一并剥离方法后缀。
+3. **`治理/acceptance-matrix.schema.json`**：`owner_decisions_needed` 原 description 称「不阻断 CI 校验，仅提示」，但 `docs-link-check.yml` 的 AJV 步骤实际**硬阻断**（main 上 acceptance-matrix 长期红即由此产生）。已按实际门禁行为更正描述。
+4. **`ruoyi-modules/ruoyi-ipd/pom.xml` `<testExcludes>` 注释**：原称「本卡仅在 worktree 内追加排除，不影响 main 分支 HEAD 字节」——**不实**。实测该段已随 `4feb8ec9` / `221f6c30` / `f1ce2db7` 进 main 并长期生效。注释已更正为可追溯的治理记录。
+
+### 工程修复
+- **撤销 3 条陈旧测试豁免**（`Api03AcceptanceTest` / `DefectBAdviceAcceptanceTest` / `IpdAuthChangePasswordExceptionTest`）：豁免理由（W20-B「兄弟会话在途编译错误」）早已消解，实测编译通过。净增 16 个测试（1893→1909）、执行类 209→212，红数未增。
+- **修 `Api03AcceptanceTest` 实现漂移假红**：stub 打在 `requireInternal()`，而 Controller 在 SEC-AUTH-DEADLOCK 修复中已改调 `requireInternalEvenIfPasswordScope()`；stub 未命中 → `actor` 为 null → Mockito `any(IpdActor.class)` 不匹配 null → `doThrow` 失效 → 3 条「应返回 400」的反例静默返回 200。仅对齐 stub 方法名，**断言一字未改**，该类 5/5 绿。
+- **根治 `SystemConfigServiceCacheTest#maximumSize_evictsOverflow` flaky**：测试自建 cache 未指定 executor，Caffeine 走 `ForkJoinPool.commonPool()` 异步维护，`estimatedSize()`/`evictionCount()` 断言读到滞后值（同一份代码 04:07 与 04:17 两次全量跑得 21 红与 20 红，差别正是本用例）。加 `.executor(Runnable::run)` 同步化，连跑 5 次 9/9 稳定绿。
+- **治理契约生命周期二态**：schema 用 `allOf` + `if/then/else` 建模「未决（必有 blocker）/ 已决（必有 decision + decided_by + decided_at + evidence_commit）」；Java 守护同步为派生校验 `open_count == 无 decision 项数`，并把 `unitTestClass` 的 `#方法名` 加固为「写了就必须真实存在」。门禁强度未降，另新增 `evidence_commit` 必填、`unitTestClass` pattern、`open_count` 派生一致性三项约束。
+
+### 新增门禁
+- `.github/workflows/ipd-test-gate.yml` + `scripts/ci/ipd-test-red-baseline.py` + 基线 `scripts/ci/ipd-test-red-baseline.txt`（20 红 / total_tests=1909 / 2 条 exempt_class）。语义为「基线冻结 + 只挡新增红」，另含四道防假绿护栏：报告不可信即阻断（不静默跳过）、mtime 离群即判幽灵残留、测试总数骤降即判套件未正常执行、**每个测试类必须产出报告否则阻断**（只有这条拦得住 pom 静默豁免）。
+- `scripts/ci/ipd-test-red-baseline-selftest.py`：门禁自测 13 用例，10 条阻断分支逐个用构造样本触发。自测本身已抓到一个真缺陷（报告全损时 `files==0` 判定先于 `bad`，会把「跑了但报告坏了」误报为「没跑」），已修。
+
+### 遗留
+- `OD-AM-05`（方法级追溯精度）、`OD-AM-06`（2 个仍真编译失败的豁免类如何收口）待 owner 决策；两者均在 `acceptance-matrix.json` 带完整 blocker 原文，`open_count=2`。
+- 剩余 20 条基线红为已知债务，清单见基线文件，只允许单调收敛（修好一条重跑 extract 覆盖，不得为过检往里加条目）。
+
+---
+
 ## 2026-09-05 22:15 PDT Qoder 接续会话（owner「1确认 2推送 3审计日志上线」）：审计链①②③上线完成 + P0-9.1 run9 79/79 ALL PASS ✅
 
 ### 三件指令执行结果

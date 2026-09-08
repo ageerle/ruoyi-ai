@@ -69,9 +69,14 @@ class Api03AcceptanceTest {
         Person actor = Person.builder()
             .id(PERSON_ID).name("张三").personType("MARKET_PM").groupId(9L).build();
         when(session.currentPerson()).thenReturn(actor);
-        // W5-E-2.1 IDOR 修复：Controller 注入 IpdPermission；mock requireInternal 返回 actor
+        // W5-E-2.1 IDOR 修复：Controller 注入 IpdPermission。
+        // [SEC-AUTH-DEADLOCK 2026-09-07 后] Controller 已改调 requireInternalEvenIfPasswordScope()
+        // （first-login 账号 scope=PASSWORD_CHANGE_REQUIRED 走 requireInternal() 会被 20003 拦死成死锁）。
+        // 本测试当时正被 pom testExcludes 豁免，实现漂移无人发现：stub 打在旧方法上 → actor 为 null
+        // → Mockito any(IpdActor.class) 不匹配 null → doThrow 失效 → 静默返回 200，3 条反例全假红。
+        // 此处只对齐 stub 的方法名，断言（400 + code 10001 + 枚举消息）一字未改。
         IpdPermission permission = mock(IpdPermission.class);
-        when(permission.requireInternal()).thenReturn(
+        when(permission.requireInternalEvenIfPasswordScope()).thenReturn(
             new IpdActor(actor.getId(), actor.getName(), actor.getPersonType(), actor.getGroupId()));
         // 注入真实生产 advice（非本地替身），才能证明 IpdAuthInputException 专用 handler 真的生效。
         mvc = MockMvcBuilders

@@ -21,10 +21,11 @@
       "total_sample": 10,
       "total_target": 237,
       "import_progress_pct": 4.2
-    }
+    },
+    "known_gaps": "unitTestClass 仅到类级：原 10/10 行的 #方法名 经核验在测试源中全部不存在，已剥离以避免假证据；方法级追溯待 OD-AM-05 决策。AcceptanceMatrixValidationTest 已加固为「若写 #方法名 则该方法必须真实存在」。另有 2 个测试类因编译失败被 pom testExcludes 长期豁免（KPI 共担域），本轮已转为显式登记并交由 ipd-test-gate 看守，待 OD-AM-06 决策。"
   },
   "owner_decisions_needed": {
-    "open_count": 0,
+    "open_count": 2,
     "items": [
       {
         "id": "OD-AM-01",
@@ -65,6 +66,18 @@
         "decision": "采纳双向校验 + 缺失告警（非阻断）",
         "evidence_commit": "3fb5249b",
         "evidence_report": "docs/ipd-系统说明/治理/catalog-matrix-link-check-20260907.json"
+      },
+      {
+        "id": "OD-AM-05",
+        "topic": "acceptance-matrix 方法级追溯精度",
+        "blocker": "10/10 行 unitTestClass 的 #方法名 在测试源中不存在（如 AC-INC-02 → P034AcceptanceTest#testAC02，该类实际方法为 cfg02_*/hr05_*/glb10_* 等）；AC-ID-词表-20260907.md §3.2 同源同错。机器可确证的映射仅 2/10（@DisplayName 含 ac_id 且唯一：AC-INC-15b、AC-AUD-04）；3/10 为一条 AC 由多方法覆盖（AC-INC-16/16b、AC-AUTH-08）；5/10 无携带 ac_id 的 @DisplayName。需 owner 决策 ①维持类级追溯、方法级留空（本次已按此降级，不编造方法名）②仅回填 2 条可机器确证者、其余保持类级 ③要求测试补 @DisplayName 携带 ac_id 后再全量回填（与 OD-AM-01 已决方案③「维持现状+lint」冲突，需一并复核）",
+        "decided_by": null
+      },
+      {
+        "id": "OD-AM-06",
+        "topic": "pom testExcludes 长期豁免的 2 个测试类如何收口",
+        "blocker": "ruoyi-modules/ruoyi-ipd/pom.xml 的 <testExcludes> 曾累积豁免 5 个测试类（分别由 4feb8ec9 / 221f6c30 / f1ce2db7 以「兄弟会话在途编译错误、暂排除」名义追加），旧注释自称「仅在 worktree 内追加，不影响 main 分支 HEAD 字节」但实际已进 main 长期生效；后果是这些类不编译不执行、一份 surefire 报告不出，mvn 依旧 BUILD SUCCESS（214 个 *Test.java 只编出 209 个 class），任何红名单比对均无法察觉。2026-09-08 实测：其中 3 条豁免理由已消解，撤销后编译通过并净增 16 个测试（1893→1909）、红数未增，且暴露出 Api03AcceptanceTest 的 stub 因实现漂移而全成假红（已修，5/5 绿）。剩下 2 条经实测确认仍真编译失败：KpiSharedConfirmControllerTest（BaseMapper insert/updateById 重载歧义 + 多处找不到符号）、P312AcceptanceTest（SharedKpiController 构造器漂移）。两者同属 KPI 共担域，而本轮 P-1/P-2 改动正在该域，意味着这些改动长期缺少这两道回归保护。需 owner 决策 ①修编译错误后撤销豁免（重载歧义可用显式类型或改用具体 mapper 类型消除；构造器漂移按现行签名对齐），恢复覆盖 ②维持豁免，作为长期债务按季复查 ③若其覆盖已由其他测试取代则直接删除这 2 个测试类。本轮已按「显式登记 + 门禁看守」处置：scripts/ci/ipd-test-red-baseline.txt 以 exempt_class 记录，ipd-test-gate.yml 强制每个测试类必须产出报告、未登记豁免即阻断",
+        "decided_by": null
       }
     ]
   },
@@ -74,7 +87,7 @@
       "category": "INC",
       "title": "项目成员锁定级别在绑定时固化，升 L3 该项目仍按 L2 发放津贴",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P034AcceptanceTest#testAC02",
+      "unitTestClass": "org.ruoyi.ipd.service.P034AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P034AcceptanceTest.java",
       "auditLog": "MEMBER_LEVEL_LOCK",
       "status": "covered",
@@ -90,7 +103,7 @@
       "category": "INC",
       "title": "奖金池 A 级项目等级系数固定为 1.0（不得漂移）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P121AcceptanceTest#testALevelFixedAt1",
+      "unitTestClass": "org.ruoyi.ipd.service.P121AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P121AcceptanceTest.java",
       "auditLog": "BONUS_LEVEL_COEFFICIENT",
       "status": "covered",
@@ -106,7 +119,7 @@
       "category": "INC",
       "title": "奖金池基数 = 实际回款 × 5% × 项目等级系数（ZK 实际回款口径，2026-09-06 owner 裁决 [CONSISTENCY-1]）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P342AcceptanceTest#testActualReceiptsBase5Pct",
+      "unitTestClass": "org.ruoyi.ipd.service.P342AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P342AcceptanceTest.java",
       "auditLog": "BONUS_CALC",
       "status": "covered",
@@ -124,7 +137,7 @@
       "category": "INC",
       "title": "回款口径硬约束：source 必须 = RECEIPT（拒绝 SHIPMENT）；金额必须为正数",
       "docRef": "docs/ipd-系统说明/验收/AC-真值回对矩阵-2026-09-05-237条对账.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P341AcceptanceTest#testSourceMustBeReceipt",
+      "unitTestClass": "org.ruoyi.ipd.service.P341AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P341AcceptanceTest.java",
       "auditLog": "RECEIPT_LEDGER_REJECT",
       "status": "covered",
@@ -140,7 +153,7 @@
       "category": "INC",
       "title": "奖金达成区间系数实现（Infinity=1.2 / 120=1.0 / 85=0.8 / 70=0.6 / 50=0.3 / 0=0）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P343AcceptanceTest#testAchievementTiersBoundary",
+      "unitTestClass": "org.ruoyi.ipd.service.P343AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P343AcceptanceTest.java",
       "auditLog": "BONUS_TIER_COEFFICIENT",
       "status": "covered",
@@ -157,7 +170,7 @@
       "category": "AUTH",
       "title": "QA-03 矩阵 v7 业务腿 13 rows / 65 cells + 管理端点 9 rows / 43 cells 全绿",
       "docRef": "docs/ipd-系统说明/验收/QA-03-权限与审计矩阵实测-20260905.md",
-      "unitTestClass": "org.ruoyi.ipd.security.Sec02AcceptanceTest#testAC09",
+      "unitTestClass": "org.ruoyi.ipd.security.Sec02AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec02AcceptanceTest.java",
       "auditLog": "PERMISSION_DENIED",
       "status": "covered",
@@ -173,7 +186,7 @@
       "category": "AUTH",
       "title": "越权防护：普通 PM 调用超管接口（认证模板/评审要素）→ 403 且零写入",
       "docRef": "docs/ipd-系统说明/验收/QA-03-权限与审计矩阵实测-20260905.md",
-      "unitTestClass": "org.ruoyi.ipd.security.Sec01AcceptanceTest#testAC08",
+      "unitTestClass": "org.ruoyi.ipd.security.Sec01AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java",
       "auditLog": "PERMISSION_DENIED",
       "status": "covered",
@@ -189,7 +202,7 @@
       "category": "AUD",
       "title": "审计查询本人范围透传（page + wrapper 不被中间件吞掉）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P054AcceptanceTest#testAC04",
+      "unitTestClass": "org.ruoyi.ipd.service.P054AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P054AcceptanceTest.java",
       "auditLog": "AUDIT_QUERY",
       "status": "covered",
@@ -205,7 +218,7 @@
       "category": "AUD",
       "title": "审计表只追加（无 update_time / 无 del_flag / 无业务更新）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.util.AuditHashChainTest#testSchemaNoUpdateNoDel",
+      "unitTestClass": "org.ruoyi.ipd.util.AuditHashChainTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/util/AuditHashChainTest.java",
       "auditLog": "AUDIT_SCHEMA_ASSERT",
       "status": "covered",
@@ -222,7 +235,7 @@
       "category": "GATE",
       "title": "Gate 评审否决项硬阻断（33 要素 + 14 否决项）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_五大Gate评审要素_v1.md",
-      "unitTestClass": "org.ruoyi.ipd.service.GateEngineTest#testVetoHardBlock",
+      "unitTestClass": "org.ruoyi.ipd.service.GateEngineTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/GateEngineTest.java",
       "auditLog": "GATE_REJECTED",
       "status": "partial",
