@@ -1,0 +1,17 @@
+#!/bin/sh
+# 拦截对 origin/main 的非 fast-forward（force 类）推送。
+# stdin 每行：<本地ref> <本地sha> <远端ref> <远端sha>
+ZERO=0000000000000000000000000000000000000000
+while read -r lref lsha rref rsha; do
+  case "$rref" in
+    refs/heads/main)
+      if [ -n "$rsha" ] && [ "$rsha" != "$ZERO" ]; then
+        git merge-base --is-ancestor "$rsha" "$lsha" 2>/dev/null || {
+          echo "BLOCKED: 疑似 force push 到 origin/main 被 .githooks/pre-push 拦截。" >&2
+          exit 1
+        }
+      fi
+      ;;
+  esac
+done
+exit 0
