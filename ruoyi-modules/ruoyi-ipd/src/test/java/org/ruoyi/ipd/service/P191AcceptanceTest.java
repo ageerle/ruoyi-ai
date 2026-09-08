@@ -16,6 +16,7 @@ import org.ruoyi.ipd.dto.GateChecklistView;
 import org.ruoyi.ipd.dto.LegacyImportReq;
 import org.ruoyi.ipd.dto.LegacyImportResult;
 import org.ruoyi.ipd.dto.LegacyImportRowResult;
+import org.ruoyi.ipd.mapper.LegacyImportMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.springframework.beans.factory.ObjectProvider;
@@ -47,6 +48,7 @@ class P191AcceptanceTest {
     @Mock private ProjectService projectService;
     @Mock private ProjectMapper projectMapper;
     @Mock private StageActionMapper stageActionMapper;
+    @Mock private LegacyImportMapper legacyImportMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private ObjectProvider<LegacyImportService> self;
     @Mock private SystemConfigService configService;
@@ -59,7 +61,7 @@ class P191AcceptanceTest {
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(self.getIfAvailable()).thenReturn(null);
         legacyImportService = new LegacyImportService(
-            projectService, projectMapper, stageActionMapper, auditLogService, self,
+            projectService, projectMapper, stageActionMapper, legacyImportMapper, auditLogService, self,
             (Runnable r) -> new Thread(r).start());
         gateEngine = new GateEngine(stageActionMapper, configService);
     }

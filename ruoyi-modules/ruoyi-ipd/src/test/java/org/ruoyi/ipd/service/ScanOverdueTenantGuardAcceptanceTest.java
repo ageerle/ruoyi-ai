@@ -1,1 +1,0 @@
-@/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ScanOverdueTenantGuardAcceptanceTest.java

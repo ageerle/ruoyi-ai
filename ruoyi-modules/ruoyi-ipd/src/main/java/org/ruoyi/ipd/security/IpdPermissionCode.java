@@ -85,6 +85,13 @@ public interface IpdPermissionCode {
     /** P3-4.4：奖金池分配 */
     String OPERATION_BONUS_POOL_DISTRIBUTE = "ipd:bonus-pool:distribute";
 
+    /** 上市后复盘创建 */
+    String OPERATION_POST_LAUNCH_REVIEW_CREATE = "ipd:post-launch-review:create";
+    /** 上市后复盘完成 */
+    String OPERATION_POST_LAUNCH_REVIEW_COMPLETE = "ipd:post-launch-review:complete";
+    /** 上市后复盘查询 */
+    String OPERATION_POST_LAUNCH_REVIEW_QUERY = "ipd:post-launch-review:query";
+
     /** P3-6.2：贡献度查询 */
     String OPERATION_CONTRIBUTION_QUERY = "ipd:contribution:query";
     /** P3-6.2：贡献度保存 */

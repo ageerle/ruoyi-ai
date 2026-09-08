@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.ReceiptLedger;
 import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -51,7 +52,7 @@ class IncentiveCaseCReceiptChainTest {
 
     @BeforeEach
     void setUp() {
-        receiptService = new ReceiptLedgerService(receiptLedgerMapper);
+        receiptService = new ReceiptLedgerService(receiptLedgerMapper, projectMapper);
         bonusService = new BonusPoolService(bonusPoolMapper, projectMapper);
     }
 
@@ -103,7 +104,7 @@ class IncentiveCaseCReceiptChainTest {
             .build();
 
         assertThatThrownBy(() -> receiptService.recordReceipt(shipment))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("RECEIPT");
     }
 

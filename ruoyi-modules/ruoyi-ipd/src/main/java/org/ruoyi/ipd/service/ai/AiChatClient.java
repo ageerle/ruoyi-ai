@@ -221,7 +221,12 @@ public class AiChatClient {
 
     /** 内网 / loopback / link-local IP 黑名单，覆盖 IPv4 + IPv6。 */
     private static boolean isBlockedIp(byte[] ip) {
-        InetAddress addr = InetAddress.getByAddress(ip);
+        InetAddress addr;
+        try {
+            addr = InetAddress.getByAddress(ip);
+        } catch (java.net.UnknownHostException e) {
+            return true; // byte[] 长度异常 → 视为不安全 IP
+        }
         if (addr.isAnyLocalAddress())  return true;
         if (addr.isLoopbackAddress())  return true;
         if (addr.isLinkLocalAddress()) return true;

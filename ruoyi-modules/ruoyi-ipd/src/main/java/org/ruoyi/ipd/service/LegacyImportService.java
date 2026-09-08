@@ -9,6 +9,8 @@ import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.dto.LegacyImportReq;
 import org.ruoyi.ipd.dto.LegacyImportResult;
 import org.ruoyi.ipd.dto.LegacyImportRowResult;
+import org.ruoyi.ipd.domain.LegacyImport;
+import org.ruoyi.ipd.mapper.LegacyImportMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
@@ -28,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 /**
@@ -74,6 +79,7 @@ public class LegacyImportService {
     private final ProjectService projectService;
     private final ProjectMapper projectMapper;
     private final StageActionMapper stageActionMapper;
+    private final LegacyImportMapper legacyImportMapper;
     private final AuditLogService auditLogService;
     private final ObjectProvider<LegacyImportService> self;
     /** R8-P0-10：并行导入执行器。2026-09-05 修正：必须具名 mainExecutor——上下文存在多个
@@ -144,6 +150,8 @@ public class LegacyImportService {
         if (rows.size() > MAX_BATCH_SIZE) {
             throw new ServiceException("单次导入最多 " + MAX_BATCH_SIZE + " 行（实际 " + rows.size() + " 行）");
         }
+        // 2026-09-08 缺口补齐：开批次 → 逐行导入 → 关批次（写 legacy_imports 落账）
+        LegacyImport batch = openBatch(rows.size(), operatorId);
         LegacyImportService proxy = self.getIfAvailable() == null ? this : self.getObject();
         List<CompletableFuture<LegacyImportRowResult>> futures = new ArrayList<>(rows.size());
         for (int i = 0; i < rows.size(); i++) {
@@ -160,9 +168,39 @@ public class LegacyImportService {
                 }
             }, executor));
         }
-        return futures.stream()
+        List<LegacyImportRowResult> results = futures.stream()
             .map(CompletableFuture::join)
             .collect(Collectors.toList());
+        closeBatch(batch, results);
+        return results;
+    }
+
+    /**
+     * 2026-09-08 缺口补齐：开批次记录（IN_PROGRESS 状态，batchNo 唯一）。
+     */
+    private LegacyImport openBatch(int totalRows, Long operatorId) {
+        LegacyImport batch = new LegacyImport();
+        batch.setBatchNo("LEG-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+            + "-" + ThreadLocalRandom.current().nextInt(100, 1000));
+        batch.setSourceSystem("MANUAL_IMPORT");
+        batch.setImportStatus("IN_PROGRESS");
+        batch.setTotalCount(totalRows);
+        batch.setImportedBy(operatorId);
+        batch.setStartedAt(new Date());
+        legacyImportMapper.insert(batch);
+        return batch;
+    }
+
+    /**
+     * 2026-09-08 缺口补齐：关批次（终态：全成功 SUCCESS / 全失败 FAILED / 混合 PARTIAL）。
+     */
+    private void closeBatch(LegacyImport batch, List<LegacyImportRowResult> results) {
+        long success = results.stream().filter(LegacyImportRowResult::ok).count();
+        batch.setSuccessCount((int) success);
+        batch.setErrorCount(results.size() - (int) success);
+        batch.setImportStatus(success == results.size() ? "SUCCESS" : success == 0 ? "FAILED" : "PARTIAL");
+        batch.setCompletedAt(new Date());
+        legacyImportMapper.updateById(batch);
     }
 
     /**
