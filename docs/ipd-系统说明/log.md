@@ -2898,3 +2898,25 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 3. L144-149 escalateStaleResignations: info `operator={}` → 仅 debug
 
 **基线**: P222AcceptanceTest 19/19 全绿（按子 agent 已交 patch 的 19 测验证 + 当前 log 改不影响业务路径）
+
+## 2026-09-08 | 业务裁决闭环（11 项：A1-A4 spec 明文 + B1-B4 owner 拍板）
+
+- **spec 勘误（B3）**：「30 日挂起超管指派」为工程补充设计（spec 原文与 ZK-IPD 原型均无此设计），业务价值：防项目长期无人认领。owner 拍板保留，特此登记避免下轮一致性审计再报漂移。涉及 P2-3 招标组队 + bid/list。
+- **A1 津贴移交归属（spec 明文）**：BR-INC-11——移交生效日所在月初，PM 领取当月全额津贴，按月结算不按在岗日折算。1 月中旬市场→研发移交，1 月津贴归接手方（研发 PM）全额。
+- **B1 评分跨月归属（owner 拍板）**：与津贴同口径——移交生效月初之后的评分归接手方，之前归原 PM。
+- **A2 五维贡献权重（spec 明文）**：固定 25/25/20/20/10（立项主导/差异化创新/上市节奏/市场结果/协同领导力，batch-03:1578-1579）；市场 40-65% / 研发 35-60% / 和恒 100%。
+- **A3 bonus_allocations 系数来源（spec 明文）**：贡献度五维评定（P3-6.1），非 KPI 月度（_导航地图:157）；分配对象 = 双 PM 两线；接线 = POST /{id}/distribute 翻状态后批量 insert。
+- **A4 project_scores 主表（spec 明文）**：保留表与实体 + 注释「暂不写，由 project_score_records 实时算，本表为未来版本快照位」，不 drop（P3-2.2 records-only 已验收，硬写快照会双源不一致）。
+- **B2 升降级细则（owner 拍板）**：常规升降级 = 连续 2 个季度 L 评级同向变动升/降一档；重大失误降级 = 主责负反馈即时触发降级评审；退出 = BR-USER-06 先移交后禁用。
+- **B4 WB-17-1 前置 4 项（owner 拍板）**：①枚举采 spec 页03:165 权威 17 类（DICT-1 已落地同款字典）②projectName 一级分组 + taskType 二级③stats 按主任务总数④4 类缺表（waiver_review/rd_replacement/retirement_review/capacity_approval）第二批暂缓等 spec 补 BR 细则。
+- 7 张看板卡（WB-17-1 / P-DATA-gap-1 / P-DATA-gap-2 / P3-8.3 / P3-3 / P3-6.1 / P2-3）已 PUT + LIST 复核注记；提案全文见同目录 业务裁决提案-20260908.md。
+
+## 2026-09-08 R10 | B/C/D 批次防复发机制落地（四路蜂群只读盘点 + 主会话串行落地）
+
+- **B 批次机制 1（taskType 契约登记）**：`docs/ipd-系统说明/workbench-tasktype-契约登记.yaml`（17 类契约卡：9 implemented + 8 PLANNED；key_gate / strategic_change(LD+CC) / contribution_confirm 四卡带 known_deadlock 字段）+ 门禁测试 `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/workbench/WorkbenchTaskContractDriftTest.java`（4 用例：键集==WorkbenchService.ALL_TASK_TYPES 双向零差 / 已实现 9 类五必需字段 / 聚合器源文件存在+return "<taskType>" 字面量 / 8 个包私有状态常量与登记文本交联；零依赖行扫描解析不引 snakeyaml）。新增任务先登记契约再写聚合器。
+- **D 批次机制 2（apply-check 扩项）**：`验收/p1-ddl-apply-check.py` 新增 COLUMN_RULES / GRANT_RULES(20 表) / DOMAIN_RULES + --strict 门禁。真库复跑实证：列约束 OK 4/4、值域 OK 4/4、**表级 GRANT 抓出 12/20 缺口**（contribution_versions/sop_template_instances/post_launch_reviews/switching_acceptance/project_score_records/project_score_tasks/gate_review_observers/correction_logs/kpi_rule_snapshots/ipd_business_config/ipd_business_config_versions/notification_events）、--strict exit 1。补授 SQL 登记件 `docs/script/sql/update/2026-09-08-ipd-grant-12-tables-dml.sql` **未 apply，等 owner 授权**（notification_events UPDATE 链路疑似从未真活走通，补授权后首走可能暴露隐藏缺陷属预期）。
+- **D 批次机制 3（mock 合法性规约）**：规约本体 `docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md`（三条硬规约 + 蜂群盘点 A 类 4 死路【LD/CC/CT/GR 卡真活恒空，同构病根】+ B 类 NOT NULL 清单 + 修复方向甲/乙待 owner 拍板；真库现存 1 条在途 PENDING_SECOND 死路待办）。挂载两处：`.claude/skills/gen-test/SKILL.md` 新增「Mock 合法性规约」节+禁止清单一条；`AGENTS.md`「构建/测试」假绿陷阱补第三形态（含指向登记文档）。
+- **D 批次机制 4（DOC 回迁）**：现存三本体回迁主仓 `docs/ipd-系统说明/工程合同/`（DOC-01.md / DOC-05.md / 业务决策确认-20260905.md，md5 与 .codex/ipd-integration/20260905-1230-shared 快照一致；蜂群事实修正：DOC-02/04 无本体、DOC-03 仅 .before 备份、DOC-06 散落 .codex/ruflo，回迁无源）。引用同步 4 处：全局根源性修复建议病根一表/机制4/证据索引、蜂群D报告头部、看板镜像 R8 段补注。
+- **C 批次（14 问澄清）**：`docs/ipd-系统说明/缺表4类-14问澄清-20260908.md`（通用 2 + waiver 3 + rd_replacement 3 + retirement 3 + capacity 3；每问背景/选项/建议/拍板栏 + 汇总空表；契约 yaml PLANNED 段已引用此文件为建模前置）。
+- **dev-accounts.yaml 处置**：从 docs/ipd-系统说明/ mv 至 `.codex/ipd-dev/config/`（git check-ignore 实证 .gitignore:83 `.codex/` 覆盖，不再入 docs 目录）。
+- 蜂群四路只读盘点先行（契约面/apply-check 面/mock 面/DOC 回迁源面），遵守 Java 单写者红线：蜂群只出报告，落地由主会话串行写。

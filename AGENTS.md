@@ -15,7 +15,7 @@
 ## 构建 / 测试（每条都吃过亏）
 
 - 只在仓库根执行 `mvn`（父 POM 管 `<modules>`）；不要进子模块目录单独构建。Maven 装在 `/Users/mac/tools/maven/bin/mvn`（3.9.11）、JDK 17 在 `/Users/mac/tools/jdk-17/Contents/Home`，都不在精简 PATH 里——非交互 shell 先补 `export PATH="$HOME/tools/maven/bin:$PATH"` 和 `export JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"`，否则依次报 `mvn: command not found` / `Unable to locate a Java Runtime`。
-- **假绿陷阱**：Surefire 按 `<groups>${profiles.active}</groups>` 过滤（pom.xml:472），默认 dev profile 下没有 `@Tag("dev")` 的测试类被**静默跳过**——新测试不加 tag，"测试全绿"毫无意义。另一形态：把测试断言改成"现状"（例如把期望异常类型改成新类型）能让用例转绿而契约缺口仍在，收口前须确认绿的是**契约**不是**既有实现**。
+- **假绿陷阱**：Surefire 按 `<groups>${profiles.active}</groups>` 过滤（pom.xml:472），默认 dev profile 下没有 `@Tag("dev")` 的测试类被**静默跳过**——新测试不加 tag，"测试全绿"毫无意义。另一形态：把测试断言改成"现状"（例如把期望异常类型改成新类型）能让用例转绿而契约缺口仍在，收口前须确认绿的是**契约**不是**既有实现**。第三形态（WB-17-1 仲裁卡教训）：mock 造了真库写入路径不可能产生的数据组合（如 PENDING_SECOND 态配 confirmerId、`decision IS NULL` 但无任何生产者落 NULL 行）——单测全绿但真活卡恒空；三条硬规约与存量违法清单见 `docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md`，生成测试时规约见 `.claude/skills/gen-test/SKILL.md`。
 - `demo.enabled` 现**默认 false**（R8-P0-2 已把默认翻成关闭，父 `application.yml` 的 `demo:` 段）。一旦被改回 true，所有写操作被拦截并返回"演示模式，不允许操作"（白名单在同段 `demo.excludes`）。需要演示模式时在 `application-dev.yml` 显式覆盖，反之用 `-Ddemo.enabled=false`。
 - 多租户默认开启：新建"租户共享"表必须登记父 `application.yml` 的 `tenant.excludes`，否则查询被自动追加租户过滤，表现为"数据查不到"。反例同样成立：已登记的 `person_roles` 在任何库都还没建表（属"超前登记"，见 `docs/ipd-系统说明/验收/P1-项5-DDL-apply核验-20260905.md` §3）。
 - **引用配置用键名，别用行号**：本仓 yml 行号在分钟级就会漂——同一个 `application.yml` 的 `demo:` 段，20:56 实测在 :396、21:10 已到 :400（成因：多会话共工同一工作树，兄弟在途未提交编辑就会推号；`tenant.excludes` 则从早期文档的 :148 漂到 :198）。行号型断言的历史记录一律按"键名 + 当时的值"复核，而不是去对号。

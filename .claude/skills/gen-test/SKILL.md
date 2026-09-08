@@ -125,9 +125,22 @@ class ChatAgentIntegrationTest {
 5. **幂等 / 重复操作**：update / delete 重复调用不报错。
 6. **异常转换**：`RuntimeException` 是否被捕获并转 `ServiceException`（参考 `GlobalExceptionHandler`）。
 
+## Mock 合法性规约（2026-09-08 立，防假绿）
+
+> 触发：WB-17-1 Gate 仲裁真活验证发现 mock 造了真库不可能的数据组合，单测全绿业务死路。规约本体与存量违法清单（A/B 类）见 `docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md`。
+
+为聚合器 / 待办类 Service 生成测试时，三条硬规则：
+
+1. **写测试前先读写入路径**：mock 的投递锚字段（confirmerId / leaderId / reviewerId / decision / arbitratorId 等）取值，必须能由真实写入路径产生——先 grep 对应 Service 的 insert/update 链，确认「什么状态下哪些字段是什么值」。反例：mock 给 PENDING_SECOND 态配了 confirm 时才回填的 confirmerId。
+2. **状态组合必须满足状态机**：外层状态与子行状态的组合必须真实可达（仲裁行只挂 REJECTED gate；「确认人 ID 回填」与离开待办态是同一事务的两面）。复制粘贴相邻聚合器测试时，强制 diff 检查状态过滤条件。
+3. **NOT NULL 列必须显式赋值**：mock 依赖表的 NOT NULL 列在 builder 中必须给值——与被测路径无关也要补，防「真库不可能行」潜伏。
+
+配套：「未办态」用例优先走真实写入路径构造数据（如 `service.sign()` 真实触发而非 builder 直造）；纯 mock 用例须在 `@DisplayName` 标注「未覆盖 DDL 合法性」。
+
 ## 禁止清单
 
 - ❌ 测试类不加 `@Tag("dev")`（会被静默跳过）。
+- ❌ mock 真库不可能的数据组合（违反上节三条硬规则——单测全绿业务死路）。
 - ❌ 用 `@SpringBootTest` 测纯 Service（速度慢且没必要）。
 - ❌ 用真实数据库 / Redis（mock 即可；集成测试另起 `@Tag("integration")`）。
 - ❌ 复制 `RuoYiAIApplication` 启动做集成测试（已有 `ruoyi-admin` 即可）。
