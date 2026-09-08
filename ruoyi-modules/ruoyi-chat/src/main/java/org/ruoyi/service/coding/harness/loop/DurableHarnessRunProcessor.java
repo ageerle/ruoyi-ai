@@ -2040,7 +2040,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                     .map(org.ruoyi.service.coding.harness.tool.ToolDescriptor::toolName)
                     .filter(PLAN_GATED_MUTATION_TOOLS::contains)
                     .collect(java.util.stream.Collectors.toCollection(HashSet::new));
-                if (failedEvidenceSupportsActiveStep(plan)) {
+                if (externalVerification(session) || failedEvidenceSupportsActiveStep(plan)) {
                     activeActionTools.add("plan_step");
                 }
                 return registry.restrictedTo(Set.copyOf(activeActionTools));
@@ -2051,7 +2051,10 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
             return registry.restrictedTo(actionable);
         }
-        if (plan != null && plan.inProgressStep().isPresent()
+        // EXTERNAL deliberately disables automatic step completion: a successful write may be
+        // only part of the implementation. Keep the evidence-validated manual transition visible
+        // so the model can finish its step before entering VERIFY.
+        if (!externalVerification(session) && plan != null && plan.inProgressStep().isPresent()
             && !failedEvidenceSupportsActiveStep(plan)) {
             Set<String> withoutNarrativeTransition = registry.descriptors().stream()
                 .map(org.ruoyi.service.coding.harness.tool.ToolDescriptor::toolName)
