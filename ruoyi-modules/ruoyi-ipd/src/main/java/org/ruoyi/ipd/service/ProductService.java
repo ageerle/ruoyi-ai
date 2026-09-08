@@ -12,6 +12,8 @@ import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,7 +97,8 @@ public class ProductService {
     public Product update(Long productId, Product patch, Long operatorId,
                           Long actorGroupId, String actorRole) {
         Product product = require(productId);
-        assertSameGroup(actorRole, actorGroupId, product.getGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            product.getGroupId());
         if (patch.getProductName() != null && !patch.getProductName().isBlank()) {
             product.setProductName(patch.getProductName().trim());
         }
@@ -215,7 +218,8 @@ public class ProductService {
             throw new ServiceException("产品状态非法: " + status + "（允许 ON_SALE|IN_RD|INACTIVE|ACTIVE）");
         }
         Product product = require(productId);
-        assertSameGroup(actorRole, actorGroupId, product.getGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            product.getGroupId());
         product.setStatus(status);
         productMapper.updateById(product);
         audit(productId, product.getProductName(), operatorId, "PRODUCT_STATUS_" + status);
@@ -240,7 +244,8 @@ public class ProductService {
     public void bindProject(Long productId, Long projectId, Long operatorId,
                             Long actorGroupId, String actorRole) {
         Product product = require(productId);
-        assertSameGroupIpd(actorRole, actorGroupId, product.getGroupId());
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            product.getGroupId());
         if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "游客「其他」占位产品不可关联项目");
@@ -259,7 +264,8 @@ public class ProductService {
         }
         Project project = requireProject(projectId);
         // W28-2 commit 后台安全审查 high cross-group-idor 闭环：必须校验 actor 归属 vs. project 主组
-        assertSameGroupIpd(actorRole, actorGroupId, project.getMainGroupId());
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         if (project.getProductId() != null && !project.getProductId().equals(productId)) {
             // 文案脱敏：不暴露 project 当前 productId
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
@@ -320,14 +326,16 @@ public class ProductService {
     public void unbindProject(Long productId, Long projectId, Long operatorId,
                               Long actorGroupId, String actorRole) {
         Product product = require(productId);
-        assertSameGroupIpd(actorRole, actorGroupId, product.getGroupId());
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            product.getGroupId());
         if (!projectId.equals(product.getProjectId())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "产品未绑定该项目（产品:项目 = 1:1 自洽）");
         }
         Project project = requireProject(projectId);
         // W28-2 commit 后台安全审查 high cross-group-idor 闭环：必须校验 actor 归属 vs. project 主组
-        assertSameGroupIpd(actorRole, actorGroupId, project.getMainGroupId());
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         if (!productId.equals(project.getProductId())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "项目未绑定该产品（产品:项目 = 1:1 自洽）");
@@ -408,31 +416,6 @@ public class ProductService {
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action(action).entityType("products").entityId(id).reason(name)
             .createTime(new Date()).build());
-    }
-
-    /**
-     * R8X-CONT-1 P0-2：横向越权防护——SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == product.groupId。
-     * 复用 ProjectService.assertSameGroup 语义，本类独享以避免 service 间循环依赖。
-     * P1-1.1 / SEC-02：改用 IpdBusinessException(FORBIDDEN=30001)，HTTP 403 而非旧 ServiceException 50000。
-     */
-    private void assertSameGroupIpd(String actorRole, Long actorGroupId, Long objectGroupId) {
-        if ("SUPER_ADMIN".equals(actorRole)) {
-            return;
-        }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN,
-                "操作人必须归属产品组（横向越权防护 SEC-02）");
-        }
-    }
-
-    /** 兼容旧调用点（create/update/changeStatus），仍走 ServiceException 路径以维持既有契约。 */
-    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
-        if ("SUPER_ADMIN".equals(actorRole)) {
-            return;
-        }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new ServiceException(roleLabel + "必须归属产品组（横向越权防护）");
-        }
     }
 
     private static boolean isBlank(String v) {

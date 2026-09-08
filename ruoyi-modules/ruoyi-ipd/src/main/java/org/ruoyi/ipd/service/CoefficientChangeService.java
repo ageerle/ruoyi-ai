@@ -3,11 +3,14 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CoefficientChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,8 +55,9 @@ public class CoefficientChangeService {
      */
     @Transactional(rollbackFor = Exception.class)
     public CoefficientChangeRequest propose(Long projectId, BigDecimal coefficient, String reason,
-                                            Long marketPmId, Long rdPmId, Long proposerId) {
-        if (projectId == null || coefficient == null || marketPmId == null || rdPmId == null || proposerId == null) {
+                                            Long marketPmId, Long rdPmId, Long proposerId, IpdActor actor) {
+        if (projectId == null || coefficient == null || marketPmId == null || rdPmId == null || proposerId == null
+                || actor == null || actor.id() == null) {
             throw new ServiceException("项目、系数、双PM 与提交人不能为空");
         }
         if (reason == null || reason.isBlank()) {
@@ -63,6 +67,14 @@ public class CoefficientChangeService {
             throw new ServiceException("联合提议须由市场PM与研发PM两位不同人员");
         }
         Project project = requireProject(projectId);
+        // R-NEW CoefficientChange（依赖 A-2 落地的 IpdIdorGuard.assertSameGroupIpd）：
+        // ① 同组归属（SUPER_ADMIN 豁免）；② 提交人必须是双 PM 之一或超管代提。
+        IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
+        if (!actor.id().equals(marketPmId) && !actor.id().equals(rdPmId)
+                && !"SUPER_ADMIN".equals(actor.role())) {
+            throw new IpdBusinessException(org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN,
+                "提交人必须是双 PM 之一或超管代提");
+        }
         String level = project.getLevel();
         if ("A".equals(level)) {
             throw new ServiceException("A 级为固定 1.0 不可改");
@@ -103,10 +115,17 @@ public class CoefficientChangeService {
      * @return 终态申请
      */
     @Transactional(rollbackFor = Exception.class)
-    public CoefficientChangeRequest leaderDecision(Long requestId, Long leaderId, boolean approve, String opinion) {
+    public CoefficientChangeRequest leaderDecision(Long requestId, Long leaderId, boolean approve, String opinion,
+                                                   IpdActor actor) {
         if (leaderId == null) {
             throw new ServiceException("组长不能为空");
         }
+        if (actor == null || actor.id() == null) {
+            throw new ServiceException("actor 不能为空");
+        }
+        // R-NEW CoefficientChange：服务内兜底 + 同组归属——Controller 已有 requireLeaderOrAdmin，
+        // service 层补强防注解/Catalog 漂移。
+        IpdIdorGuard.requireRoleOrSuperAdmin(actor, "GROUP_LEADER");
         CoefficientChangeRequest req = requestMapper.selectById(requestId);
         if (req == null) {
             throw new ServiceException("系数定值申请不存在: " + requestId);
@@ -124,7 +143,10 @@ public class CoefficientChangeService {
             audit(leaderId, ACTION_REJECT, req.getId(), opinion);
             return req;
         }
+        // approve 路径：加载项目 → 同组归属 → 区间校验 → 写档。
+        // 必须在状态机校验之后、任何写库之前——同组守卫抛 FORBIDDEN 不污染 REJECTED 路径。
         Project project = requireProject(req.getProjectId());
+        IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
         ProjectService.validateCoefficientRange(project.getLevel(), req.getProposedCoefficient());
         project.setLevelCoefficient(req.getProposedCoefficient());
         project.setLevelCoefficientReason(req.getReason());
