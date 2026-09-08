@@ -260,7 +260,8 @@ class P1_1_1_BidirectionalBindingTest {
         IpdBusinessException ex5 = (IpdBusinessException) assertThatThrownBy(() ->
             service.bindProject(3L, 9L, 1L, 99L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("横向越权")
+            // W4-Security 决策 3：IpdIdorGuard.assertSameGroupIpd 统一文案「无权操作」（防存在性 oracle）
+            .hasMessageContaining("无权操作")
             .actual();
         assertThat(ex5.getErrorCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN);
 
@@ -349,8 +350,8 @@ class P1_1_1_BidirectionalBindingTest {
         IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
             service.unbindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            // ProductService 内本地 assertSameGroupIpd 文案：操作人必须归属产品组（SEC-02）
-            .hasMessageContaining("横向越权防护")
+            // W4-Security 决策 3：IpdIdorGuard.assertSameGroupIpd 统一文案「无权操作」（防存在性 oracle）
+            .hasMessageContaining("无权操作")
             .actual();
         assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN);
 
@@ -375,7 +376,8 @@ class P1_1_1_BidirectionalBindingTest {
         IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
             service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("横向越权防护")
+            // W4-Security 决策 3：IpdIdorGuard.assertSameGroupIpd 统一文案「无权操作」（防存在性 oracle）
+            .hasMessageContaining("无权操作")
             .actual();
         assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN);
 

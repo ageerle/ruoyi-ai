@@ -3,11 +3,15 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,7 +78,8 @@ public class LaunchDateChangeService {
         }
         Project project = requireWritableProject(projectId);
         // R8X-2 P0-1：横向越权防护——提议人必须归属同一项目主组（SUPER_ADMIN 豁免）
-        assertSameGroup(proposerRole, proposerGroupId, project.getMainGroupId(), "提议人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(proposerId, null, proposerRole, proposerGroupId),
+            project.getMainGroupId());
         Long pending = requestMapper.selectCount(new LambdaQueryWrapper<LaunchDateChangeRequest>()
             .eq(LaunchDateChangeRequest::getProjectId, projectId)
             .eq(LaunchDateChangeRequest::getStatus, LaunchDateChangeRequest.ST_PENDING_SECOND));
@@ -144,7 +149,8 @@ public class LaunchDateChangeService {
         }
         // R8X-2 P0-1：横向越权防护——确认人必须归属同一项目主组（SUPER_ADMIN 豁免）
         Project project = requireWritableProject(req.getProjectId());
-        assertSameGroup(confirmerRole, confirmerGroupId, project.getMainGroupId(), "确认人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(confirmerId, null, confirmerRole, confirmerGroupId),
+            project.getMainGroupId());
         if (!SUPER_ADMIN.equals(confirmerRole) && !SUPER_ADMIN.equals(req.getProposerRole())
             && confirmerRole.equals(req.getProposerRole())) {
             throw new ServiceException("第二签须为互补角色（市场PM↔研发PM）或超管");
@@ -173,18 +179,6 @@ public class LaunchDateChangeService {
         audit(confirmerId, ACTION_CONFIRM, req.getId(),
             "project:" + project.getId() + " launchDate:" + req.getProposedLaunchDate());
         return req;
-    }
-
-    /**
-     * R8X-2 P0-1：组归属校验。SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == objectGroupId。
-     */
-    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String role) {
-        if (SUPER_ADMIN.equals(actorRole)) {
-            return;
-        }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new ServiceException(role + "必须归属项目主组（横向越权防护）");
-        }
     }
 
     /**

@@ -58,7 +58,9 @@ public class SharedKpiController {
     /** P3-1.2-BACKEND：双组长确认链（看板卡 56d97bb0） */
     private final KpiSharedConfirmService confirmService;
 
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    // R-NEW A-1：归集动作改用专属码 collect，与既有 listShared/scanDeadlines 的 KPI_QUERY 区分；
+    // 真正的“谁可归集”由 service 层 confirmService.ensurePendingRows 内部对象级守卫承担。
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_SHARED_COLLECT, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping
     public ApiV1Response<SharedKpiCollectView> collect(@Valid @RequestBody SharedKpiCollectReq request) {
         IpdActor actor = permission.requireInternal();
@@ -145,7 +147,9 @@ public class SharedKpiController {
      * @param id kpi_shared_confirms 主键
      * @return {@code { confirmed, status, firstConfirmedBy, secondConfirmedBy }}
      */
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    // R-NEW A-1：双签动作改用专属码 confirm_sign——只有 GROUP_LEADER / SUPER_ADMIN 持有；
+    // MARKET_PM / RD_PM 持有 collect 但不持有 confirm_sign，注解层即拒（防“任何 PM 都能代签”）。
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_SHARED_CONFIRM_SIGN, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/confirm")
     public ApiV1Response<KpiSharedConfirmService.ConfirmResult> confirm(@PathVariable @NotNull Long id) {
         IpdActor actor = permission.requireInternal();

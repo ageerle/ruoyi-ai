@@ -90,6 +90,10 @@ class P256AcceptanceTest {
         reviewService = new PostLaunchReviewService(
             postLaunchReviewMapper, projectMapper, memberMapper, personMapper, auditLogService);
         gateService = new GateService(gateMapper, auditLogService);
+        // R-NEW-SEC-1 收口后，scheduleReview/completeReview 会过 IpdIdorGuard.requireProjectMemberOrSuperAdmin，
+        // 该守卫只靠 memberMapper.selectCount 判定“在任成员”。纯 JVM 单测里统一给 1（=在任），
+        // 具体拒绝分支交由 PostLaunchReviewAccessTest 逐角色细验。
+        org.mockito.Mockito.lenient().when(memberMapper.selectCount(any())).thenReturn(1L);
     }
 
     private Project project(long id, Date launchDate, String status) {
@@ -163,6 +167,8 @@ class P256AcceptanceTest {
             .scheduledAt(new Date(now.getTime() + 30L * 86_400_000L))
             .status("PENDING").build();
         when(postLaunchReviewMapper.selectById(9002L)).thenReturn(existing);
+        // 对象级守卫按记录真实 projectId 判定，需项目可加载
+        when(projectMapper.selectById(7003L)).thenReturn(project(7003L, now, "ACTIVE"));
         when(postLaunchReviewMapper.updateById(any(PostLaunchReview.class))).thenReturn(1);
 
         PostLaunchReview result = reviewService.completeReview(9002L,
