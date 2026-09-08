@@ -1,4 +1,32 @@
 
+## 2026-09-08 08:08 PDT Qoder 接续会话：P073Behavior hermetic 加固落地（收口 06:40 追踪项，owner 选「hermetic 加固」）
+
+接上条 06:40 登记的 P073 flaky 追踪项。owner 从三选项（深挖根因 / hermetic 加固 / 暂仅追踪）拍板 **hermetic 加固**，本条记录落地 + 验证证据 + 诚实边界。
+
+### 加固内容（只动隔离脚手架，6 个安全断言逐字未改）
+- **根因类**（06:40 已收敛）：Sa-Token 的 config/Dao/context 均为 **JVM 全局静态态**；单 JVM surefire `reuseForks` 下，兄弟 `@SpringBootTest`（ProdHikariConfigTest / IpdIntegrationTestBase / HandoverIntegrationTest / Api01AcceptanceTest）用 `application.yml` 替换全局 `SaManager.config` + 装入 Spring 管理的 Dao，跨类累积登录态污染本类 marker 比对。
+- **改法**（`P073BehaviorAcceptanceTest.java`，+66/-11）：
+  - 字段 `person/mapper/session` 由 `static` 改 **实例级**（每用例重建，杜绝 credentialChange 用例改写 person 后的残留）。
+  - `@BeforeAll saveGlobalState`：类级保存一次 Sa-Token 全局原始态（jwtSecret/timeout/isShare/isConcurrent/Dao）。
+  - `@BeforeEach hermeticReset`：**每个用例前**复位到已知干净态——全新内存 `SaTokenDaoDefaultImpl` + pin `jwtSecret/timeout=2592000/isShare=false/isConcurrent=true`（= Sa-Token 1.44 默认，javap 反编译确认，即本类各用例已隐式依赖的假设）+ 全新 stub 上下文 + 重建 person/mapper/session + 清 ThreadLocal。
+  - `@AfterEach clearContext` + `@AfterAll restoreGlobalState`：把全局态**原样交还**后续测试类（做好公民，不泄漏本类改动）。
+  - **6 个 `@Test` 方法体逐字未改**（refreshRotation / replayedOldToken / logout / revokeAll / expiredToken / credentialChange）——只加固隔离，不动安全覆盖。
+- **结构性消除两条机制**：(a) 每用例全新 Dao → 结构性切断跨类 token/session 碰撞路径；(b) pin config → 消除 `@SpringBootTest` 替换全局 config 造成的漂移。二者覆盖已确认根因类的两种可能机制，是**结构性**而非统计性保证。
+
+### 验证证据（三重）
+- **green-stays-green（隔离）**：`-Dtest=P073BehaviorAcceptanceTest` **6/6 绿**（新时序 2.684s @ 08:07 活跑）。
+- **green-stays-green（全量含污染源）**：全量单 JVM 跑里 P073 **6/6 绿**（1.997s），大盘 **1938 tests / 20 红 = 冻结基线一字未变**（零回归、基线中性，无需重生成红名单）。
+- **反向验证（marker 断言承重）**：临时 RV-BREAK 摘掉 `IpdAuthSession.currentPerson` 的 credentialMarker 比对 → `credentialChange_invalidatesOldTokens` 如期变红（:263「Expecting code to raise a throwable」），其余 5 绿 → 证明加固**完整保留安全断言承重**、未削弱覆盖；`git checkout` 精确还原（生产 no diff、marker 比对完整、RV-BREAK 全仓零残留）。
+
+### 诚实边界（不夸大）
+- **无法声称「确定性根治」**：加固前该 flaky ~1/13 偶发、无法确定性复现，故没有「改前必红→改后必绿」的确定性对照。能声称的是：**结构性消除了已确认根因类的两条机制** + **基线中性** + **6 断言逐字保留（反向验证承重）** + 把此前 ~8% 偶发红转为隔离/全量双跑 6/6 绿。**净严格正向**；残余风险 = 若存在另一条未识别的全新污染机制仍可能浮现，但有文档历史的根因类已闭合。
+- **陈旧回显澄清**：`/tmp/p073-rv.log`（07:59 反向验证 RV-BREAK 工件，破坏态）曾被回显误读为活失败；磁盘真值（生产已还原 + 08:07 隔离活跑 6/6 绿 + 08:02 全量 6/6 绿）证实其为陈旧 RV-BREAK 日志，非当前缺陷。
+
+### 收尾
+- **分支**：`fix/p073-hermetic-isolation` off origin/main（7d88c263）；**commit 仅** `P073BehaviorAcceptanceTest.java` + 本 log.md（避开 `.surefire-*` 临时目录，不 `git add -A`）。
+- **PR**：显式 `--repo wilson323/ruoyi-ai` base main；**合并决定留 owner**（与 PR #10/#11/#12 同流程）。
+- 06:40 追踪项「待 owner 决策处置方向」→ **已决：hermetic 加固落地**（本条）。
+
 ## 2026-09-08 06:40 PDT Qoder 接续会话：OD-AM-06 收口（撤销最后 2 条 pom testExcludes 豁免）+ P073 flaky 二次目击登记
 
 ### OD-AM-06：owner 决策①「修编译错误后撤销豁免」已落地（commit 11535b67）

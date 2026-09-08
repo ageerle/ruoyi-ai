@@ -5,10 +5,14 @@ import cn.dev33.satoken.context.SaTokenContext;
 import cn.dev33.satoken.context.model.SaRequest;
 import cn.dev33.satoken.context.model.SaResponse;
 import cn.dev33.satoken.context.model.SaStorage;
+import cn.dev33.satoken.dao.SaTokenDao;
+import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.hutool.crypto.digest.BCrypt;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,8 +42,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *   <li>凭证变更失效：改密后旧 token 因 credentialMarker 不匹配被拒（revokeAll 兜底路径）。</li>
  * </ul>
  *
- * <p>纯 JVM 行为测试：Sa-Token 1.44 默认内存 Dao + 自stub上下文（header 携带 token），
+ * <p>纯 JVM 行为测试：Sa-Token 1.44 内存 Dao + 自stub上下文（header 携带 token），
  * 不启动容器、不连 Redis/MySQL；真库 HTTP 验收另见 evidence-p073-*.json。
+ *
+ * <p><b>Hermetic 隔离（2026-09-08 加固，根治偶发假红）</b>：Sa-Token 的 config/Dao/context 均为 JVM
+ * 全局静态态，单 JVM surefire reuseForks 下会被兄弟 {@code @SpringBootTest}（用 application.yml 替换全局
+ * SaManager.config、装入 Spring 管理的 Dao）与彼此登录态跨类污染，导致本类偶发「凭证已更新」假红
+ * （login() 拿到的 token-session 与刚写入的 credentialMarker 错位，本机实测约 1/13）。故改为<b>每个用例前</b>
+ * （{@code @BeforeEach}）复位：全新内存 Dao + pin jwtSecret/timeout/isShare=false/isConcurrent=true
+ * （= Sa-Token 1.44 默认，即本类各用例已隐式依赖的假设）+ 全新 stub 上下文 + 重建 person/mapper/session；
+ * {@code @AfterAll} 把全局态原样交还后续测试类。<b>6 个用例的断言逐字未改</b>——只加固隔离脚手架，不动安全覆盖。
  */
 @Tag("dev")
 class P073BehaviorAcceptanceTest {
@@ -49,14 +61,48 @@ class P073BehaviorAcceptanceTest {
     /** 请求级 storage（login 会写入 just-created token，actingAs 时重置避免串扰）。 */
     private static final ThreadLocal<Map<String, Object>> REQ_STORAGE = ThreadLocal.withInitial(HashMap::new);
 
-    private static PersonMapper personMapper;
-    private static IpdAuthSession session;
-    private static Person person;
+    // 每用例重建（hermetic）：杜绝 static person 被 credentialChange 用例改写后的残留、
+    // 以及 session/mapper 跨用例共享导致的 Sa-Token 全局态串扰。
+    private PersonMapper personMapper;
+    private IpdAuthSession session;
+    private Person person;
+
+    // 类级保存一次 Sa-Token 全局原始态，@AfterAll 原样交还给后续测试类（做好公民，不泄漏本类改动）。
     private static String originalJwtSecret;
     private static long originalTimeout;
+    private static Boolean originalIsShare;
+    private static Boolean originalIsConcurrent;
+    private static SaTokenDao originalDao;
 
+    /** 类级：仅保存 Sa-Token 全局原始态，供 @AfterAll 还原。真正的隔离复位在每个用例前做（@BeforeEach）。 */
     @BeforeAll
-    static void setUp() {
+    static void saveGlobalState() {
+        originalJwtSecret = SaManager.getConfig().getJwtSecretKey();
+        originalTimeout = SaManager.getConfig().getTimeout();
+        originalIsShare = SaManager.getConfig().getIsShare();
+        originalIsConcurrent = SaManager.getConfig().getIsConcurrent();
+        originalDao = SaManager.getSaTokenDao();
+    }
+
+    /**
+     * 每用例前把 Sa-Token 全局态复位到已知干净状态，消除跨测试类/跨用例在共享内存 Dao 与全局 config
+     * 上的累积污染（P073 偶发「凭证已更新」假红的根因类）：
+     * <ol>
+     *   <li>全新内存 Dao —— 丢弃上游残留的 ipd token/session，本类登录也不再泄漏给下游；</li>
+     *   <li>pin jwtSecret/timeout/isShare=false/isConcurrent=true —— 即 Sa-Token 1.44 默认，
+     *       也是 revokeAll「多设备票票不同」等用例已隐式依赖的假设，显式钉死不再随全局漂移；</li>
+     *   <li>全新 stub 上下文 + 重建 person/mapper/session —— 杜绝 static person 被改写后的残留。</li>
+     * </ol>
+     */
+    @BeforeEach
+    void hermeticReset() {
+        SaManager.setSaTokenDao(new SaTokenDaoDefaultImpl());
+        SaManager.getConfig().setJwtSecretKey("p073-behavior-test-secret");
+        SaManager.getConfig().setTimeout(2592000L);
+        SaManager.getConfig().setIsShare(false);
+        SaManager.getConfig().setIsConcurrent(true);
+        SaManager.setSaTokenContext(stubContext());
+
         personMapper = Mockito.mock(PersonMapper.class);
         person = Person.builder()
             .id(1L).username("p073").name("P073行为测试")
@@ -67,17 +113,26 @@ class P073BehaviorAcceptanceTest {
         Mockito.when(personMapper.selectById(1L)).thenReturn(person);
         session = new IpdAuthSession(personMapper);
 
-        // Sa-Token 全局配置：JWT Simple 模式必须提供签名密钥；测试内隔离并最终还原
-        originalJwtSecret = SaManager.getConfig().getJwtSecretKey();
-        originalTimeout = SaManager.getConfig().getTimeout();
-        SaManager.getConfig().setJwtSecretKey("p073-behavior-test-secret");
-        SaManager.setSaTokenContext(stubContext());
+        TOKEN_HOLDER.remove();
+        REQ_STORAGE.remove();
     }
 
+    /** 每用例后清掉本类装的 stub 上下文与 ThreadLocal，避免跨用例串扰。 */
+    @AfterEach
+    void clearContext() {
+        SaManager.setSaTokenContext(null);
+        TOKEN_HOLDER.remove();
+        REQ_STORAGE.remove();
+    }
+
+    /** 类级：把 Sa-Token 全局态原样交还给后续测试类（含 Dao / isShare / isConcurrent），做好公民不泄漏。 */
     @AfterAll
-    static void tearDown() {
+    static void restoreGlobalState() {
+        SaManager.setSaTokenDao(originalDao);
         SaManager.getConfig().setJwtSecretKey(originalJwtSecret);
         SaManager.getConfig().setTimeout(originalTimeout);
+        SaManager.getConfig().setIsShare(originalIsShare);
+        SaManager.getConfig().setIsConcurrent(originalIsConcurrent);
         SaManager.setSaTokenContext(null);
         TOKEN_HOLDER.remove();
         REQ_STORAGE.remove();
