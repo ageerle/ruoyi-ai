@@ -1,19 +1,24 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Contribution;
+import org.ruoyi.ipd.domain.ContributionVersion;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.dto.ContributionSaveReq;
+import org.ruoyi.ipd.dto.ContributionVersionView;
 import org.ruoyi.ipd.dto.ContributionView;
 import org.ruoyi.ipd.mapper.ContributionMapper;
+import org.ruoyi.ipd.mapper.ContributionVersionMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,15 +48,18 @@ public class ContributionService {
     private static final Logger log = LoggerFactory.getLogger(ContributionService.class);
 
     private final ContributionMapper contributionMapper;
+    private final ContributionVersionMapper versionMapper;
     private final ProjectMapper projectMapper;
     private final AuditLogService auditLogService;
     private final IpdPermission ipdPermission;
 
     public ContributionService(ContributionMapper contributionMapper,
+                                ContributionVersionMapper versionMapper,
                                 ProjectMapper projectMapper,
                                 AuditLogService auditLogService,
                                 IpdPermission ipdPermission) {
         this.contributionMapper = contributionMapper;
+        this.versionMapper = versionMapper;
         this.projectMapper = projectMapper;
         this.auditLogService = auditLogService;
         this.ipdPermission = ipdPermission;
@@ -386,7 +394,81 @@ public class ContributionService {
 
         log.info("[{}] 组长确认贡献度 projectId={} decision={} tier={}",
             actor.id(), projectId, decision, entity.getTierCoefficient().toPlainString());
+
+        // BR-INC-09「归档版本可追溯」：APPROVE 确认时刻归档不可变快照（REJECT 不归档）
+        if ("APPROVE".equals(decision)) {
+            archiveConfirmed(entity, actor.id());
+        }
         return toView(entity);
+    }
+
+    /**
+     * 版本历史列表：该项目的历次确认归档快照（versionNo 降序，最新确认在前）。
+     * <p>2026-09-08 前端契约对照轮补交：此前仅单行 contributions，无版本追溯。
+     */
+    @Transactional(readOnly = true)
+    public List<ContributionVersionView> listVersions(Long projectId) {
+        ipdPermission.requireInternal();
+        requireProject(projectId);
+        List<ContributionVersion> rows = versionMapper.selectList(
+            Wrappers.<ContributionVersion>lambdaQuery()
+                .eq(ContributionVersion::getProjectId, projectId)
+                .orderByDesc(ContributionVersion::getVersionNo));
+        return rows.stream().map(ContributionService::toVersionView).toList();
+    }
+
+    /**
+     * 归档确认快照。versionNo = 同项目历史最大版次 + 1；
+     * uk(project_id, version_no) 冲突时重算重试一次（同项目双组长并发的窄场景）。
+     */
+    private void archiveConfirmed(Contribution entity, Long operatorId) {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            ContributionVersion snapshot = ContributionVersion.builder()
+                .sourceId(entity.getId())
+                .projectId(entity.getProjectId())
+                .versionNo(nextVersionNo(entity.getProjectId()))
+                .status(Contribution.ST_CONFIRMED)
+                .marketShare(entity.getMarketShare())
+                .rdShare(entity.getRdShare())
+                .marketSelfInitiation(entity.getMarketSelfInitiation())
+                .marketSelfInnovation(entity.getMarketSelfInnovation())
+                .marketSelfLaunch(entity.getMarketSelfLaunch())
+                .marketSelfMarketResult(entity.getMarketSelfMarketResult())
+                .marketSelfLeadership(entity.getMarketSelfLeadership())
+                .rdSelfInitiation(entity.getRdSelfInitiation())
+                .rdSelfInnovation(entity.getRdSelfInnovation())
+                .rdSelfLaunch(entity.getRdSelfLaunch())
+                .rdSelfMarketResult(entity.getRdSelfMarketResult())
+                .rdSelfLeadership(entity.getRdSelfLeadership())
+                .tierCoefficient(entity.getTierCoefficient())
+                .marketComment(entity.getMarketComment())
+                .rdComment(entity.getRdComment())
+                .leaderId(entity.getLeaderId())
+                .leaderDecision(entity.getLeaderDecision())
+                .leaderDecidedAt(entity.getLeaderDecidedAt())
+                .leaderOpinion(entity.getLeaderOpinion())
+                .submittedAt(entity.getSubmittedAt())
+                .archivedBy(operatorId)
+                .archivedAt(new Date())
+                .build();
+            try {
+                versionMapper.insert(snapshot);
+                return;
+            } catch (DuplicateKeyException duplicate) {
+                if (attempt > 0) {
+                    throw duplicate;
+                }
+            }
+        }
+    }
+
+    private Integer nextVersionNo(Long projectId) {
+        List<ContributionVersion> latest = versionMapper.selectList(
+            Wrappers.<ContributionVersion>lambdaQuery()
+                .eq(ContributionVersion::getProjectId, projectId)
+                .orderByDesc(ContributionVersion::getVersionNo)
+                .last("limit 1"));
+        return latest.isEmpty() ? 1 : latest.get(0).getVersionNo() + 1;
     }
 
     /* ===========================================================
@@ -487,6 +569,32 @@ public class ContributionService {
             .submittedAt(c.getSubmittedAt())
             .createTime(c.getCreateTime())
             .updateTime(c.getUpdateTime())
+            .build();
+    }
+
+    private static ContributionVersionView toVersionView(ContributionVersion v) {
+        return ContributionVersionView.builder()
+            .id(v.getId())
+            .projectId(v.getProjectId())
+            .versionNo(v.getVersionNo())
+            .status(v.getStatus())
+            .marketShare(v.getMarketShare())
+            .rdShare(v.getRdShare())
+            .dimInitiation(maxOrNull(v.getMarketSelfInitiation(), v.getRdSelfInitiation()))
+            .dimInnovation(maxOrNull(v.getMarketSelfInnovation(), v.getRdSelfInnovation()))
+            .dimLaunch(maxOrNull(v.getMarketSelfLaunch(), v.getRdSelfLaunch()))
+            .dimMarketResult(maxOrNull(v.getMarketSelfMarketResult(), v.getRdSelfMarketResult()))
+            .dimLeadership(maxOrNull(v.getMarketSelfLeadership(), v.getRdSelfLeadership()))
+            .tierCoefficient(v.getTierCoefficient())
+            .marketComment(v.getMarketComment())
+            .rdComment(v.getRdComment())
+            .leaderId(v.getLeaderId())
+            .leaderDecision(v.getLeaderDecision())
+            .leaderDecidedAt(v.getLeaderDecidedAt())
+            .leaderOpinion(v.getLeaderOpinion())
+            .submittedAt(v.getSubmittedAt())
+            .archivedBy(v.getArchivedBy())
+            .archivedAt(v.getArchivedAt())
             .build();
     }
 

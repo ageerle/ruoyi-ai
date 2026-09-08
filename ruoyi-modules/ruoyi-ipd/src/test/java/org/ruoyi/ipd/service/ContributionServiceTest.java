@@ -45,6 +45,7 @@ import static org.mockito.Mockito.when;
 class ContributionServiceTest {
 
     @Mock private ContributionMapper contributionMapper;
+    @Mock private org.ruoyi.ipd.mapper.ContributionVersionMapper versionMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private IpdPermission ipdPermission;
@@ -58,7 +59,7 @@ class ContributionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ContributionService(contributionMapper, projectMapper,
+        service = new ContributionService(contributionMapper, versionMapper, projectMapper,
             auditLogService, ipdPermission);
     }
 
@@ -340,11 +341,19 @@ class ContributionServiceTest {
             .tierCoefficient(new BigDecimal("83.00"))
             .delFlag("0").build();
         when(contributionMapper.selectOne(any())).thenReturn(existing);
+        // 归档前置：无历史版本 → 本次确认归档为 versionNo=1
+        when(versionMapper.selectList(any())).thenReturn(java.util.List.of());
 
         var view = service.confirm(PROJECT_ID, "APPROVE", "评定通过");
         assertThat(view.status()).isEqualTo(Contribution.ST_CONFIRMED);
         assertThat(view.leaderDecision()).isEqualTo("APPROVE");
         verify(auditLogService).append(any());
+        // BR-INC-09 归档版本可追溯：APPROVE 必归档一份快照
+        verify(versionMapper).insert(org.mockito.ArgumentMatchers
+            .<org.ruoyi.ipd.domain.ContributionVersion>argThat(cv ->
+                cv.getVersionNo() == 1
+                    && cv.getProjectId().equals(PROJECT_ID)
+                    && "CONFIRMED".equals(cv.getStatus())));
     }
 
     @Test

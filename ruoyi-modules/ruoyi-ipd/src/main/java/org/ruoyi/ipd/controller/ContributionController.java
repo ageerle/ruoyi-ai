@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.dto.ContributionSaveReq;
+import org.ruoyi.ipd.dto.ContributionVersionView;
 import org.ruoyi.ipd.dto.ContributionView;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 贡献度评定 Controller（P3-6.2；BR-INC-09 / AC-INC-25~28）。
@@ -29,6 +31,7 @@ import java.math.BigDecimal;
  * <p>5 端点：
  * <ul>
  *   <li>{@code GET    /api/v1/contributions/{projectId}}                  — 查询最新评定</li>
+ *   <li>{@code GET    /api/v1/contributions/{projectId}/versions}         — 历次确认归档快照（BR-INC-09 版本可追溯）</li>
  *   <li>{@code GET    /api/v1/contributions/{projectId}/preview}           — 公式预览（tier 修正因子）</li>
  *   <li>{@code POST   /api/v1/contributions/{projectId}/save}              — 双 PM 自评保存</li>
  *   <li>{@code POST   /api/v1/contributions/{projectId}/market-share}      — 调整市场 PM 比例（40-65% 联动研发）</li>
@@ -56,6 +59,15 @@ public class ContributionController {
     @GetMapping("/{projectId}")
     public ApiV1Response<ContributionView> get(@PathVariable Long projectId) {
         return ApiV1Response.ok(contributionService.getByProject(projectId));
+    }
+
+    /**
+     * 历次确认归档快照（versionNo 降序，最新确认在前；BR-INC-09 归档版本可追溯）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_CONTRIBUTION_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/{projectId}/versions")
+    public ApiV1Response<List<ContributionVersionView>> listVersions(@PathVariable Long projectId) {
+        return ApiV1Response.ok(contributionService.listVersions(projectId));
     }
 
     /**

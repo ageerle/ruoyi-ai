@@ -276,6 +276,7 @@ tenant:
     - coefficient_change_requests
     - cms_content
     - negative_feedbacks
+    - contribution_versions
     - requirement_pool
     # R10 补登：绩效记录/任务、项目跟随、协同圈、Gate 仲裁等 DDL 新表（无多租户语义）
     - project_score_records

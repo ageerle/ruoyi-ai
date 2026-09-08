@@ -15,6 +15,7 @@ import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreTaskMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 上市 30 日双 PM 自评、90 日两组长评定的待办调度器（P3-2.3）。
@@ -269,5 +273,86 @@ public class ProjectScoreScheduleService {
         int reminders,
         int escalations,
         int updatedTasks
+    ) { }
+
+    /**
+     * 我的在途评分待办（2026-09-08 前端契约对照轮补交；对应 GET /api/v1/project-score-tasks/my）。
+     *
+     * <p>语义：「我的」= ① 我的 SELF_SCORING 自评待办（personId=我）；
+     * ② 我任组长的产品组成员的 LEADER_REVIEW 评审待办（组长是成员所在组的 leaderPersonId，
+     * 任务行 personId 记录的是被评成员）。均限 PENDING（在途），dueAt 升序。
+     */
+    @Transactional(readOnly = true)
+    public List<MyScoreTaskView> myTasks(IpdActor actor) {
+        LocalDate today = LocalDate.now();
+        List<ProjectScoreTask> pending = new java.util.ArrayList<>(taskMapper.selectList(
+            Wrappers.<ProjectScoreTask>lambdaQuery()
+                .eq(ProjectScoreTask::getPersonId, actor.id())
+                .eq(ProjectScoreTask::getTargetType, TYPE_SELF)
+                .eq(ProjectScoreTask::getStatus, STATUS_PENDING)));
+
+        // 我任组长的组 → 组成员 → 他们的 LEADER_REVIEW 待办
+        List<ProductGroup> ledGroups = groupMapper.selectList(
+            Wrappers.<ProductGroup>lambdaQuery()
+                .eq(ProductGroup::getLeaderPersonId, actor.id()));
+        if (!ledGroups.isEmpty()) {
+            Set<Long> groupIds = ledGroups.stream().map(ProductGroup::getId).collect(Collectors.toSet());
+            List<Person> members = personMapper.selectList(
+                Wrappers.<Person>lambdaQuery()
+                    .in(Person::getGroupId, groupIds)
+                    .ne(Person::getDelFlag, "1"));
+            if (!members.isEmpty()) {
+                Set<Long> memberIds = members.stream().map(Person::getId).collect(Collectors.toSet());
+                pending.addAll(taskMapper.selectList(
+                    Wrappers.<ProjectScoreTask>lambdaQuery()
+                        .in(ProjectScoreTask::getPersonId, memberIds)
+                        .eq(ProjectScoreTask::getTargetType, TYPE_LEADER)
+                        .eq(ProjectScoreTask::getStatus, STATUS_PENDING)));
+            }
+        }
+        if (pending.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量补齐项目名/被评人名，避免 N+1
+        Set<Long> projectIds = pending.stream().map(ProjectScoreTask::getProjectId).collect(Collectors.toSet());
+        Map<Long, Project> projects = projectMapper.selectBatchIds(projectIds).stream()
+            .collect(Collectors.toMap(Project::getId, Function.identity()));
+        Set<Long> personIds = pending.stream().map(ProjectScoreTask::getPersonId).collect(Collectors.toSet());
+        Map<Long, Person> persons = personMapper.selectBatchIds(personIds).stream()
+            .collect(Collectors.toMap(Person::getId, Function.identity()));
+
+        return pending.stream()
+            .map(task -> {
+                Project project = projects.get(task.getProjectId());
+                Person person = persons.get(task.getPersonId());
+                LocalDate due = localDate(task.getDueAt());
+                return new MyScoreTaskView(
+                    task.getProjectId(),
+                    project == null ? null : project.getCode(),
+                    task.getPersonId(),
+                    person == null ? null : person.getName(),
+                    task.getTargetType(),
+                    task.getDueAt(),
+                    task.getStatus(),
+                    task.getActionUrl(),
+                    due != null && today.isAfter(due));
+            })
+            .sorted(java.util.Comparator.comparing(MyScoreTaskView::dueAt,
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+            .toList();
+    }
+
+    /** 我的在途评分待办视图。overdue = dueAt 已过今天。 */
+    public record MyScoreTaskView(
+        Long projectId,
+        String projectCode,
+        Long personId,
+        String personName,
+        String targetType,
+        Date dueAt,
+        String status,
+        String actionUrl,
+        boolean overdue
     ) { }
 }
