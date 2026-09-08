@@ -57,6 +57,9 @@ public class AiChatClient {
      */
     private final String allowedHosts;
 
+    /** 2026-09-08 修复：多构造器必须显式 @Autowired，否则 clean 全量编译后 Spring 无法选主构造器
+     * （No default constructor found——增量编译残旧 .class 曾掩盖此缺陷，P-BACKLOG-1 重启真活暴露）。 */
+    @org.springframework.beans.factory.annotation.Autowired
     public AiChatClient(@Value("${ai.debug.enabled:false}") boolean debugEnabled,
                         @Value("${ai.allowed-hosts:}") String allowedHosts) {
         this.debugEnabled = debugEnabled;

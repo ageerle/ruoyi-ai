@@ -68,6 +68,18 @@ public class ReceiptLedgerService {
         if (ledger.getWindowStart() == null && project.getLaunchDate() != null) {
             ledger.setWindowStart(project.getLaunchDate());
         }
+        // 2026-09-08 P-BACKLOG-1：月份重复业务校验——真库唯一键 uk_receipt_project_month
+        // 防线前移，真活复跑曾暴露 Duplicate entry SQL 异常逃逸为 90001 ISE，
+        // 现收敛为 STATE_CONFLICT 业务拒绝，不再泄漏系统内部错误码
+        ReceiptLedger duplicated = receiptLedgerMapper.selectOne(
+            new LambdaQueryWrapper<ReceiptLedger>()
+                .eq(ReceiptLedger::getProjectId, ledger.getProjectId())
+                .eq(ReceiptLedger::getReceiptMonth, ledger.getReceiptMonth())
+        );
+        if (duplicated != null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "该月份已有回款记录，不可重复录入: " + ledger.getReceiptMonth());
+        }
         // 计算窗口
         computeWindow(ledger);
         ledger.setCreateTime(new Date());

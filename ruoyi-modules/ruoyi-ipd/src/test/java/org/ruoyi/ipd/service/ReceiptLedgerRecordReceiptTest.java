@@ -162,4 +162,26 @@ class ReceiptLedgerRecordReceiptTest {
             .hasMessageContaining("AC-INC-16b");
         verify(receiptLedgerMapper, never()).insert(any(ReceiptLedger.class));
     }
+
+    @Test
+    @DisplayName("月份重复 → STATE_CONFLICT 业务拒绝且不落库（P-BACKLOG-1：防线前移替代 SQL 异常逃逸）")
+    void recordReceipt_duplicateMonth_rejected() {
+        when(projectMapper.selectById(1L)).thenReturn(projectWithLaunch(date(2026, 1, 15)));
+        ReceiptLedger existing = new ReceiptLedger();
+        existing.setProjectId(1L);
+        existing.setReceiptMonth("2026-08");
+        when(receiptLedgerMapper.selectOne(any())).thenReturn(existing);
+
+        ReceiptLedger ledger = new ReceiptLedger();
+        ledger.setProjectId(1L);
+        ledger.setSource("RECEIPT");
+        ledger.setReceiptMonth("2026-08");
+        ledger.setReceiptAmount(new BigDecimal("999.00"));
+
+        assertThatThrownBy(() -> service.recordReceipt(ledger))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("不可重复录入")
+            .hasMessageContaining("2026-08");
+        verify(receiptLedgerMapper, never()).insert(any(ReceiptLedger.class));
+    }
 }
