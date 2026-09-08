@@ -20,6 +20,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,7 +115,7 @@ public class HandoverService {
         if (project == null) {
             throw new ServiceException("项目不存在: " + projectId);
         }
-        assertSameGroup(leader.role(), leader.groupId(), project.getMainGroupId(), "代移交项目");
+        IpdIdorGuard.assertSameGroupIpd(leader, project.getMainGroupId());
         ProjectMember current = memberMapper.selectOne(new LambdaQueryWrapper<ProjectMember>()
             .eq(ProjectMember::getProjectId, projectId)
             .eq(ProjectMember::getRole, role)
@@ -141,8 +142,26 @@ public class HandoverService {
 
     /**
      * 接手人确认接受：DRAFT → COMPLETED，原子转移角色绑定并联动账号禁用检查。
+     *
+     * <p>R-NEW-SEC-3 收口（2026-09-07）补三层守卫：
+     * <ol>
+     *   <li>身份兵底：{@link IpdIdorGuard#requireAuthenticated}（防 service 被内部直接传 null 调用）；</li>
+     *   <li>租户一致：按记录所属项目与会话租户比对（单企业部署恒真，真开多租户时即刻生效）；</li>
+     *   <li>接手人资格复核：建单时的三条谓词在 accept 时重新跑一次——DRAFT 最长挂
+     *       {@code DEADLINE_DAYS} 天，期间接手人可能离职/被冻结/转岗。</li>
+     * </ol>
+     *
+     * <p><b>为何不要求“接手人须为该项目在职成员”</b>：移交接手人在 accept 前恰恰还不是该项目
+     * 该角色的在任成员——绑定动作就是本方法做的（{@link ProjectMemberService#bindMember} 还显式
+     * 拒绝“已绑定此角色”的重复入组）。把“已是成员”作为前提会把正常的跨组接人移交全部拒掉，
+     * 属产品规则变更而非安全加固（SSOT 未授权）。租户与资格两条能落地的先落，
+     * 同组/跨组限制属产品口径，登记为待裁决项，不在此擅自收紧。
      */
     public HandoverRecord accept(Long handoverId, String approvalRef, IpdActor recipient) {
+        IpdIdorGuard.requireAuthenticated(recipient);
+        if (handoverId == null) {
+            throw new ServiceException("移交记录 ID 不能为空");
+        }
         HandoverRecord rec = handoverMapper.selectById(handoverId);
         if (rec == null) {
             throw new ServiceException("移交记录不存在: " + handoverId);
@@ -153,7 +172,27 @@ public class HandoverService {
         if (!recipient.id().equals(rec.getToPersonId())) {
             throw new ServiceException("仅接手人本人可确认移交");
         }
+        IpdIdorGuard.requireProjectTenantMatch(projectMapper.selectById(rec.getProjectId()));
+        assertRecipientEligible(rec.getToPersonId(), rec.getHandoverRole());
         return doAccept(rec, approvalRef, recipient);
+    }
+
+    /**
+     * 接手人资格复核：与建单时完全一致的三条谓词（不新增规则，仅防时移失效）。
+     *
+     * <p>抽自 {@code createDraft}，避免建单与接单两处文案漂移。
+     */
+    private void assertRecipientEligible(Long toPersonId, String role) {
+        Person to = personMapper.selectById(toPersonId);
+        if (to == null) {
+            throw new ServiceException("接手人不存在: " + toPersonId);
+        }
+        if ("RESIGNED".equals(to.getEmploymentStatus()) || "DISABLED".equals(to.getAccountStatus())) {
+            throw new ServiceException("接手人已离职/禁用，不可承接: " + to.getName());
+        }
+        if (!role.equals(to.getPersonType())) {
+            throw new ServiceException("角色不匹配：接手人类型 " + to.getPersonType() + " 不可承接 " + role);
+        }
     }
 
     /** 收件箱：待我接收或我发起的未完结移交。 */
@@ -261,16 +300,7 @@ public class HandoverService {
         if (project == null) {
             throw new ServiceException("项目不存在: " + projectId);
         }
-        Person to = personMapper.selectById(toPersonId);
-        if (to == null) {
-            throw new ServiceException("接手人不存在: " + toPersonId);
-        }
-        if ("RESIGNED".equals(to.getEmploymentStatus()) || "DISABLED".equals(to.getAccountStatus())) {
-            throw new ServiceException("接手人已离职/禁用，不可承接: " + to.getName());
-        }
-        if (!role.equals(to.getPersonType())) {
-            throw new ServiceException("角色不匹配：接手人类型 " + to.getPersonType() + " 不可承接 " + role);
-        }
+        assertRecipientEligible(toPersonId, role);
         Long dup = handoverMapper.selectCount(new LambdaQueryWrapper<HandoverRecord>()
             .eq(HandoverRecord::getProjectId, projectId)
             .eq(HandoverRecord::getHandoverRole, role)
@@ -578,20 +608,6 @@ public class HandoverService {
     }
 
     /**
-     * SEC-REV-HANDOVER-01：横向越权防护——SUPER_ADMIN 一律通过；
-     * 其他角色必须 actor.groupId == project.mainGroupId。
-     * 语义同 ProjectService.assertSameGroup（避免跨 service 依赖）。
-     */
-    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
-        if ("SUPER_ADMIN".equals(actorRole)) {
-            return;
-        }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new ServiceException(roleLabel + "必须归属项目主组（横向越权防护）");
-        }
-    }
-
-    /**
      * P2-7.4 AC-HAND-02：扫描超期 DRAFT 移交——升级超管（一次性）+ 每日提醒。
      *
      * <p>口径：
@@ -780,6 +796,8 @@ public class HandoverService {
      */
     @Transactional(rollbackFor = Exception.class)
     public HandoverRecord archiveCompletedHandover(Long handoverId, IpdActor actor) {
+        // 身份兵底：与 accept 同口径，防御性兜底。
+        IpdIdorGuard.requireAuthenticated(actor);
         if (handoverId == null) {
             throw new ServiceException("移交 ID 不能为空");
         }
@@ -787,24 +805,16 @@ public class HandoverService {
         if (rec == null) {
             throw new ServiceException("移交记录不存在: " + handoverId);
         }
+        // R-NEW-B-1 收口（2026-09-07）：鉴权必须先于幂等分支。原先“archived_at 非空
+        // 就直接 return”的逻辑位于鉴权之前——只有单测调用时不是问题，但开放为 HTTP
+        // 端点后，任何登录用户都能读已归档记录的 from/to/project/role/note，跨组越权
+        // + “是否归档”状态侧信道。现调为：鉴权 → 幂等 → 状态机 → 写。
+        assertArchivePermission(rec, actor);
         if (rec.getArchivedAt() != null) {
             return rec;
         }
         if (!ST_COMPLETED.equals(rec.getStatus())) {
             throw new ServiceException("仅 COMPLETED 移交可归档（当前 " + rec.getStatus() + "）");
-        }
-        boolean isParty = actor.id().equals(rec.getFromPersonId())
-            || actor.id().equals(rec.getToPersonId());
-        boolean isLeaderOrAdmin = "SUPER_ADMIN".equals(actor.role());
-        if (!isLeaderOrAdmin) {
-            Project project = projectMapper.selectById(rec.getProjectId());
-            if (project != null && "GROUP_LEADER".equals(actor.role())
-                && actor.groupId() != null && actor.groupId().equals(project.getMainGroupId())) {
-                isLeaderOrAdmin = true;
-            }
-        }
-        if (!isParty && !isLeaderOrAdmin) {
-            throw new ServiceException("仅移交双方、项目组长或超管可归档移交");
         }
         Date now = new Date();
         int updated = handoverMapper.update(null, new LambdaUpdateWrapper<HandoverRecord>()
@@ -831,6 +841,29 @@ public class HandoverService {
         return rec;
     }
 
+    /**
+     * 归档参与者判定：移交双方任一 OR SUPER_ADMIN OR 项目主组组长（继承 rollback 同款语义）。
+     *
+     * <p>从原 archiveCompletedHandover 提取，以便调用方在幂等短路前先判，避免新开放 HTTP
+     * 入口被“已归档”状态短路而绕过权限。
+     */
+    private void assertArchivePermission(HandoverRecord rec, IpdActor actor) {
+        boolean isParty = actor.id() != null
+            && (actor.id().equals(rec.getFromPersonId())
+                || actor.id().equals(rec.getToPersonId()));
+        boolean isLeaderOrAdmin = "SUPER_ADMIN".equals(actor.role());
+        if (!isLeaderOrAdmin) {
+            Project project = projectMapper.selectById(rec.getProjectId());
+            if (project != null && "GROUP_LEADER".equals(actor.role())
+                && actor.groupId() != null && actor.groupId().equals(project.getMainGroupId())) {
+                isLeaderOrAdmin = true;
+            }
+        }
+        if (!isParty && !isLeaderOrAdmin) {
+            throw new ServiceException("仅移交双方、项目组长或超管可归档移交");
+        }
+    }
+
     // ---------- P2-7.4 AC-HAND-08 月度归属（按月在任 PM）----------
 
     /**
@@ -846,6 +879,8 @@ public class HandoverService {
      * <p>口径：
      * <ul>
      *   <li>输入：projectId + month（yyyy-MM）</li>
+     *   <li>权限：该项目在职成员或 SUPER_ADMIN——归属视图含人员姓名与在任区间，
+     *       跨组可读即人员信息泄漏（R-NEW-B-1 补端点时一并收口，防止可达入口放大原缺陷）</li>
      *   <li>BINDING 来源：ProjectMember 在任绑定（exit_date is null 或 exit_date &gt;= monthEnd）</li>
      *   <li>TRANSFER 来源：当月 COMPLETED 移交 ⇒ 新 PM 从 month+1m 首日起享有</li>
      *   <li>本月跨月移交：本月仍归旧 PM（不按天折算）；新 PM 计入次月 TRANSFER</li>
@@ -855,6 +890,8 @@ public class HandoverService {
         if (projectId == null || month == null || !month.matches("^\\d{4}-(0[1-9]|1[0-2])$")) {
             throw new ServiceException("项目 ID 与月份（yyyy-MM）不能为空且格式正确");
         }
+        // 参数校验后、任何 DB 读前：非成员不进归属视图（SUPER_ADMIN 在守卫内短路，不触达 DB）
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, projectId, memberMapper, projectMapper);
         String[] parts = month.split("-");
         int year = Integer.parseInt(parts[0]);
         int mon = Integer.parseInt(parts[1]);
