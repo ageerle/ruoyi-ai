@@ -108,4 +108,12 @@ public class HandoverRecord extends BaseEntity implements SoftDeletable {
 
     /** P2-7.4 AC-HAND-05：归档时间（COMPLETED 移交归档标记，NULL=未归档；幂等守卫）。 */
     private Date archivedAt;
+
+    /**
+     * P0-共识（4 路专家 2026-09-08）：租户隔离字段 ——
+     * scanOverdueDrafts 升级/提醒循环按此字段过滤，避免跨租户扫描泄漏；
+     * SUPER_ADMIN 走 all-tenant 分支。
+     */
+    @TableField("tenant_id")
+    private String tenantId;
 }

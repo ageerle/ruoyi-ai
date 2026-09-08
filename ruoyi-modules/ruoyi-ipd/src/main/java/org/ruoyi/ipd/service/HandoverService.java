@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -599,14 +600,47 @@ public class HandoverService {
      *   <li>提醒：status=DRAFT AND deadline_at < now AND (last_remind_at IS NULL OR last_remind_at < today_start) ⇒ 每日 publishDaily（dedupKey 自动加 yyyyMMdd）+ 审计 + 标 last_remind_at</li>
      *   <li>单超管不变式违反（无在任超管）⇒ 跳过扫描、warn 日志，不抛异常（避免调度挂）</li>
      *   <li>事务：方法级 REQUIRED 加入类级事务；超期集合正常极小（单组织寥寥数个），事务时长可控</li>
+     *   <li><b>P0-共识 tenant 守卫（4 路专家共识 2026-09-08 闭环）</b>：
+     *       LambdaQueryWrapper 加 .eq(HandoverRecord::getTenantId, currentTenant)；SUPER_ADMIN 走 all-tenant 分支。
+     *       升级/提醒循环内对每条记录做 tenant 断言（非 SUPER_ADMIN 必匹配），审计 tenantId 与实体 tenantId 一致。</li>
      * </ul>
      *
      * <p>触发：OPS-04 调度 cron 每日扫一次 + HandoverController.scanOverdueDrafts 端点（SUPER_ADMIN 手动）。
      */
     public record OverdueScanResult(int escalated, int reminded) { }
 
+    /** P0-共识 tenant 守卫：超管角色字面量（与 IpdIdorGuard.ROLE_SUPER_ADMIN 同款）。 */
+    private static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
+
+    /** P0-共识 tenant 守卫：本地安全读取当前会话租户（null/空串 = 租户上下文缺失，按"放行 all"处理）。 */
+    private String safeCurrentTenantId() {
+        // 优先 IPD Person 路径（loginType="ipd"，LoginHelper.getTenantId() 在该会话下为空）
+        try {
+            Person p = ipdAuthSession != null ? ipdAuthSession.currentPerson() : null;
+            if (p != null && p.getTenantId() != null && !p.getTenantId().isEmpty()) {
+                return p.getTenantId();
+            }
+        } catch (Exception ignored) {
+            // 兜底：未登录 / 异步线程 / 非 IPD 会话——降级到基线 LoginHelper
+        }
+        try {
+            String t = LoginHelper.getTenantId();
+            return (t == null || t.isEmpty()) ? null : t;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public OverdueScanResult scanOverdueDrafts(IpdActor operator) {
+        // P0-共识 tenant 守卫：解析当前 actor 租户上下文；SUPER_ADMIN 也按 session tenant 过滤（更严格、避免跨租户扫描泄漏）
+        boolean isSuperAdmin = operator != null && ROLE_SUPER_ADMIN.equals(operator.role());
+        String currentTenant = safeCurrentTenantId();
+        log.info("P0-共识 scanOverdueDrafts actor={} role={} super={} tenant={}",
+            operator != null ? operator.id() : null,
+            operator != null ? operator.role() : null,
+            isSuperAdmin, currentTenant);
+
         // 单超管不变式（ZK-IPD §九 / AC-HAND-07；P2-7.3 数据治理后真库仅 1 名）
         List<Person> admins = personMapper.selectList(new LambdaQueryWrapper<Person>()
             .eq(Person::getPersonType, "SUPER_ADMIN")
@@ -619,13 +653,24 @@ public class HandoverService {
         Date now = new Date();
 
         // 1) 升级候选：deadline_at < now + escalated_at IS NULL（一次性事件）
-        List<HandoverRecord> toEscalate = handoverMapper.selectList(new LambdaQueryWrapper<HandoverRecord>()
+        //    P0-共识：session tenant 非空时一律加 tenant 过滤（SUPER_ADMIN 也不例外，避免跨租户扫描泄漏）
+        LambdaQueryWrapper<HandoverRecord> escalateWrap = new LambdaQueryWrapper<HandoverRecord>()
             .eq(HandoverRecord::getStatus, ST_DRAFT)
             .isNotNull(HandoverRecord::getDeadlineAt)
             .lt(HandoverRecord::getDeadlineAt, now)
-            .isNull(HandoverRecord::getEscalatedAt));
+            .isNull(HandoverRecord::getEscalatedAt);
+        if (currentTenant != null) {
+            escalateWrap.eq(HandoverRecord::getTenantId, currentTenant);
+        }
+        List<HandoverRecord> toEscalate = handoverMapper.selectList(escalateWrap);
         int escalated = 0;
         for (HandoverRecord rec : toEscalate) {
+            // P0-共识：循环内再断言每条记录 tenant 与当前 actor 一致（防御性兜底）
+            if (currentTenant != null && !currentTenant.equals(rec.getTenantId())) {
+                log.warn("P0-共识 skip escalate handoverId={} tenantId={} (actor tenant={})",
+                    rec.getId(), rec.getTenantId(), currentTenant);
+                continue;
+            }
             String title = "移交超期升级：项目" + rec.getProjectId() + " 角色" + rec.getHandoverRole() + " 超 " + DEADLINE_DAYS + " 日未完成";
             String content = "handoverId=" + rec.getId() + " from=" + rec.getFromPersonId() + " to=" + rec.getToPersonId()
                 + " deadlineAt=" + rec.getDeadlineAt();
@@ -636,12 +681,15 @@ public class HandoverService {
                 log.warn("P2-7.4 AC-HAND-02 publish escalation failed for handoverId={}", rec.getId(), e);
                 continue;
             }
+            // P0-共识：审计 tenantId 与实体 tenantId 一致（AuditLogService.append 仅在 null 时兜底 default）
+            String auditTenant = rec.getTenantId() != null ? rec.getTenantId() : currentTenant;
             auditLogService.append(AuditLog.builder()
                 .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
                 .action("HANDOVER_OVERDUE_ESCALATION").entityType("handover").entityId(rec.getId())
                 .reason(DEADLINE_DAYS + " 日内未完成移交（DRAFT）⇒ 升级超管告警（AC-HAND-02）")
                 .afterData(AuditEventData.json("deadlineAt", String.valueOf(rec.getDeadlineAt()),
-                    "superAdminId", superAdminId))
+                    "superAdminId", superAdminId, "tenantId", String.valueOf(auditTenant)))
+                .tenantId(auditTenant)
                 .createTime(now)
                 .build());
             // 并发守卫：仅 first writer 生效（affected=1）；escalated_at 非空者直接跳过
@@ -656,15 +704,26 @@ public class HandoverService {
         }
 
         // 2) 提醒候选：deadline_at < now + (last_remind_at IS NULL OR last_remind_at < today_start)
+        //    P0-共识：session tenant 非空时一律加 tenant 过滤
         Date todayStart = startOfDay(now);
-        List<HandoverRecord> toRemind = handoverMapper.selectList(new LambdaQueryWrapper<HandoverRecord>()
+        LambdaQueryWrapper<HandoverRecord> remindWrap = new LambdaQueryWrapper<HandoverRecord>()
             .eq(HandoverRecord::getStatus, ST_DRAFT)
             .isNotNull(HandoverRecord::getDeadlineAt)
             .lt(HandoverRecord::getDeadlineAt, now)
             .and(w -> w.isNull(HandoverRecord::getLastRemindAt)
-                .or().lt(HandoverRecord::getLastRemindAt, todayStart)));
+                .or().lt(HandoverRecord::getLastRemindAt, todayStart));
+        if (currentTenant != null) {
+            remindWrap.eq(HandoverRecord::getTenantId, currentTenant);
+        }
+        List<HandoverRecord> toRemind = handoverMapper.selectList(remindWrap);
         int reminded = 0;
         for (HandoverRecord rec : toRemind) {
+            // P0-共识：循环内 tenant 断言
+            if (currentTenant != null && !currentTenant.equals(rec.getTenantId())) {
+                log.warn("P0-共识 skip remind handoverId={} tenantId={} (actor tenant={})",
+                    rec.getId(), rec.getTenantId(), currentTenant);
+                continue;
+            }
             String title = "移交超期每日提醒：项目" + rec.getProjectId() + " 角色" + rec.getHandoverRole();
             String content = "handoverId=" + rec.getId() + " 接手人=" + rec.getToPersonId()
                 + " 已超 deadlineAt=" + rec.getDeadlineAt() + "；请尽快接受或拒绝";
@@ -675,12 +734,14 @@ public class HandoverService {
                 log.warn("P2-7.4 AC-HAND-02 publish daily reminder failed for handoverId={}", rec.getId(), e);
                 continue;
             }
+            String auditTenant = rec.getTenantId() != null ? rec.getTenantId() : currentTenant;
             auditLogService.append(AuditLog.builder()
                 .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
                 .action("HANDOVER_DAILY_REMINDER").entityType("handover").entityId(rec.getId())
                 .reason("AC-HAND-02 每日提醒（同日去重由 publishDaily 幂等保证）")
                 .afterData(AuditEventData.json("deadlineAt", String.valueOf(rec.getDeadlineAt()),
-                    "lastRemindAt", String.valueOf(now)))
+                    "lastRemindAt", String.valueOf(now), "tenantId", String.valueOf(auditTenant)))
+                .tenantId(auditTenant)
                 .createTime(now)
                 .build());
             int updated = handoverMapper.update(null, new LambdaUpdateWrapper<HandoverRecord>()
