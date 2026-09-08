@@ -1,5 +1,7 @@
 package org.ruoyi.observability;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,13 +25,14 @@ import java.util.function.Consumer;
  * @author ageerle@163.com
  * @date 2025/04/10
  */
+@Slf4j
 public class OutputChannel {
 
     private static final String DONE = "__DONE__";
     private static final Map<String, OutputChannel> REGISTRY = new ConcurrentHashMap<>();
 
     private final BlockingQueue<String> queue = new LinkedBlockingQueue<>(4096);
-    private final AtomicReference<Throwable> error = new AtomicReference<>();
+    private final AtomicReference<String> errorType = new AtomicReference<>();
     private final CountDownLatch completed = new CountDownLatch(1);
 
     /**
@@ -58,13 +61,13 @@ public class OutputChannel {
     /**
      * 写入：线程安全，非阻塞，队列满时丢弃
      */
-public void send(String text) {
+    public void send(String text) {
         if (text == null || text.isEmpty()) {
             return;
         }
         try {
             if (!queue.offer(text, 100, TimeUnit.MILLISECONDS)) {
-                System.err.println("[OutputChannel] 队列满，丢弃消息: " + truncate(text, 100));
+                log.warn("output_channel status=DROPPED reason=QUEUE_FULL payloadChars={}", text.length());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -83,8 +86,11 @@ public void send(String text) {
      * 标记错误完成
      */
     public void completeWithError(Throwable t) {
-        error.set(t);
-        queue.offer("\n[错误] 致命错误: " + t.getMessage());
+        String safeType = t == null ? "unknown" : t.getClass().getName();
+        errorType.set(safeType);
+        queue.offer("\n[错误] Agent 执行失败");
+        log.error("output_channel status=FAILED errorType={}",
+            safeType);
         queue.offer(DONE);
         completed.countDown();
     }
@@ -106,9 +112,9 @@ public void send(String text) {
                 }
             }
         }
-        Throwable t = error.get();
-        if (t != null && !(t instanceof InterruptedException)) {
-            throw new RuntimeException("Agent 执行出错", t);
+        String failureType = errorType.get();
+        if (failureType != null && !InterruptedException.class.getName().equals(failureType)) {
+            throw new RuntimeException("Agent 执行出错，errorType=" + failureType);
         }
     }
 
@@ -119,10 +125,4 @@ public void send(String text) {
         return completed.getCount() == 0;
     }
 
-    private String truncate(String s, int maxLen) {
-        if (s == null) {
-            return "null";
-        }
-        return s.length() > maxLen ? s.substring(0, maxLen) + "..." : s;
-    }
 }

@@ -25,9 +25,11 @@ public class MyAiServiceRequestIssuedListener implements AiServiceRequestIssuedL
         String aiServiceMethodName = invocationContext.methodName();
         ChatRequest request = event.request();
 
-        log.info("【请求已发出】调用唯一标识符: {}", invocationId);
-        log.info("【请求已发出】AI服务接口名: {}", aiServiceInterfaceName);
-        log.info("【请求已发出】调用的方法名: {}", aiServiceMethodName);
-        log.info("【请求已发出】发送给LLM的请求: {}", request);
+        int messageCount = request == null || request.messages() == null ? 0 : request.messages().size();
+        int toolCount = request == null || request.toolSpecifications() == null
+            ? 0 : request.toolSpecifications().size();
+        log.info("ai_service_request_issued invocationId={} interfaceType={} method={} status=ISSUED "
+                + "messageCount={} toolCount={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName, messageCount, toolCount);
     }
 }

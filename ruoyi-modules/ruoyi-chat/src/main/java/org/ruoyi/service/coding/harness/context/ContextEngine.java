@@ -89,7 +89,8 @@ public final class ContextEngine {
             return failed(ContextCompactionStatus.NO_SAFE_CUTOFF, state, budget, request,
                 grouping.detail());
         }
-        Cut cut = chooseCut(grouping.groups(), state, budget, request.emergency());
+        Cut cut = chooseCut(grouping.groups(), grouping.pinnedGroupIndex(), state, budget,
+            request.emergency());
         if (cut == null) {
             return failed(ContextCompactionStatus.NO_SAFE_CUTOFF, state, budget, request,
                 "no complete prefix can be removed while retaining a valid tail");
@@ -104,6 +105,13 @@ public final class ContextEngine {
             return failed(ContextCompactionStatus.NO_SAFE_CUTOFF, state, budget, request,
                 "pinned context and retained tail exceed usable input capacity");
         }
+        long preferredSummaryTokens = policy.preferredInputTokens(budget.usableInputTokens())
+            - before.pinTokens() - estimateMessages(cut.retained()) - artifactTokens;
+        if (!request.emergency() && preferredSummaryTokens >= Math.max(32, policy.summaryHeadroomTokens())) {
+            targetSummaryTokens = Math.min(targetSummaryTokens, preferredSummaryTokens);
+        }
+        targetSummaryTokens = Math.min(targetSummaryTokens,
+            policy.maximumSummaryTokens(budget.usableInputTokens()));
         SummaryRequest summaryRequest = new SummaryRequest(state.pins(), parentCheckpointId,
             state.checkpoint().summary(), cut.archived(), cut.fromSequence(), cut.toSequence(),
             targetSummaryTokens, request.modelIdentity(), request.sourceUsageTimestamp(),
@@ -142,29 +150,49 @@ public final class ContextEngine {
             project(compacted, budget), "compacted a structurally complete prefix");
     }
 
-    private Cut chooseCut(List<MessageGroup> groups, ContextState state,
+    private Cut chooseCut(List<MessageGroup> groups, int pinnedGroupIndex, ContextState state,
                           ContextTokenBudget budget, boolean emergency) {
         if (groups.size() < 2) {
             return null;
         }
+        // The latest tool-bearing assistant has not been consumed until a later provider
+        // assistant exists. Steering/plan-feedback USER records appended after its results do not
+        // change that fact. No compaction cut may archive that protocol group or anything after it.
+        int maximumCutGroupCount = pinnedGroupIndex < 0
+            ? groups.size() - 1 : pinnedGroupIndex;
+        if (maximumCutGroupCount < 1) {
+            return null;
+        }
         int cutGroupCount;
         if (emergency) {
-            cutGroupCount = groups.size() - 1;
+            cutGroupCount = maximumCutGroupCount;
         } else {
             long previousSummaryTokens = estimateText(state.checkpoint().summary());
-            long anticipatedSummaryTokens = Math.max(previousSummaryTokens,
-                policy.summaryHeadroomTokens());
+            long minimumFinalSummaryTokens = Math.max(Math.max(32, policy.summaryHeadroomTokens()),
+                Math.min(previousSummaryTokens, policy.maximumSummaryTokens(budget.usableInputTokens())));
             cutGroupCount = -1;
-            for (int candidate = 1; candidate < groups.size(); candidate++) {
+            for (int candidate = 1; candidate <= maximumCutGroupCount; candidate++) {
+                List<HarnessMessage> archived = flatten(groups.subList(0, candidate));
                 List<HarnessMessage> retained = flatten(groups.subList(candidate, groups.size()));
                 long retainedTokens = estimateMessages(retained);
                 if (retainedTokens < policy.minimumRetainedTokens()) {
                     break;
                 }
-                long anticipatedInput = add(anticipatedSummaryTokens, retainedTokens);
+                // Artifact handles are part of the final provider projection. A shallow cut can
+                // introduce enough newly archived handles to consume all summary capacity even
+                // though its retained message tail appears to fit. Evaluate the complete projected
+                // checkpoint and continue toward a deeper safe cut when it does not fit.
+                long artifactTokens = estimateArtifactHandles(
+                    collectArtifactHandles(state.checkpoint(), archived));
+                long anticipatedInput = add(add(minimumFinalSummaryTokens, artifactTokens),
+                    retainedTokens);
                 if (anticipatedInput <= budget.usableInputTokens()) {
+                    // Keep the deepest feasible fallback when a protected tail prevents the
+                    // preferred target. Never discard an unconsumed tool protocol group.
                     cutGroupCount = candidate;
-                    break;
+                    if (anticipatedInput <= policy.preferredInputTokens(budget.usableInputTokens())) {
+                        break;
+                    }
                 }
             }
             if (cutGroupCount < 0) {
@@ -230,7 +258,33 @@ public final class ContextEngine {
             groups.add(new MessageGroup(messages.subList(index, endExclusive)));
             index = endExclusive;
         }
-        return Grouping.valid(groups);
+        int pinnedGroupIndex = -1;
+        HarnessMessage latestAssistant = null;
+        for (int messageIndex = messages.size() - 1; messageIndex >= 0; messageIndex--) {
+            HarnessMessage candidate = messages.get(messageIndex);
+            if (candidate.role() == HarnessMessageRole.ASSISTANT) {
+                latestAssistant = candidate;
+                break;
+            }
+        }
+        if (latestAssistant != null && !latestAssistant.toolCalls().isEmpty()) {
+            for (int groupIndex = 0; groupIndex < groups.size(); groupIndex++) {
+                for (HarnessMessage grouped : groups.get(groupIndex).messages()) {
+                    if (grouped == latestAssistant) {
+                        pinnedGroupIndex = groupIndex;
+                        break;
+                    }
+                }
+                if (pinnedGroupIndex >= 0) {
+                    break;
+                }
+            }
+            if (pinnedGroupIndex < 0) {
+                return Grouping.invalid(
+                    "latest unconsumed tool protocol group could not be pinned");
+            }
+        }
+        return Grouping.valid(groups, pinnedGroupIndex);
     }
 
     private String validateDraft(SummaryDraft draft, SummaryRequest request) {
@@ -439,13 +493,14 @@ public final class ContextEngine {
         }
     }
 
-    private record Grouping(boolean valid, List<MessageGroup> groups, String detail) {
-        private static Grouping valid(List<MessageGroup> groups) {
-            return new Grouping(true, List.copyOf(groups), null);
+    private record Grouping(boolean valid, List<MessageGroup> groups, int pinnedGroupIndex,
+                            String detail) {
+        private static Grouping valid(List<MessageGroup> groups, int pinnedGroupIndex) {
+            return new Grouping(true, List.copyOf(groups), pinnedGroupIndex, null);
         }
 
         private static Grouping invalid(String detail) {
-            return new Grouping(false, List.of(), detail);
+            return new Grouping(false, List.of(), -1, detail);
         }
     }
 

@@ -34,7 +34,7 @@ public class QianWenChatServiceImpl implements AbstractChatService {
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo,ChatRequest chatRequest) {
         return QwenStreamingChatModel.builder()
-                .apiKey(chatModelVo.getApiKey())
+                .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
                 .modelName(chatModelVo.getModelName())
                 .listeners(List.of(new MyChatModelListener()))
                 .build();
@@ -43,7 +43,7 @@ public class QianWenChatServiceImpl implements AbstractChatService {
     @Override
     public ChatModel buildChatModel(ChatModelVo chatModelVo) {
         return QwenChatModel.builder()
-            .apiKey(chatModelVo.getApiKey())
+            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
             .modelName(chatModelVo.getModelName())
             .build();
     }

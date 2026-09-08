@@ -48,6 +48,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RequiredArgsConstructor
 public class CodingServiceImpl implements ICodingService {
 
+    static final String SAFE_CODING_ERROR_MESSAGE = "编程任务执行失败，请稍后重试";
+
     private final IChatModelService chatModelService;
     private final ChatServiceFactory chatServiceFactory;
     private final CodingWorkspaceService workspaceService;
@@ -73,7 +75,7 @@ public class CodingServiceImpl implements ICodingService {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } catch (Throwable t) {
-                    log.error("编程 SSE drain 线程异常", t);
+                    log.error("coding_sse operation=DRAIN status=FAILED errorType={}", errorType(t));
                 }
             }, "coding-sse-drain");
             drainThread.start();
@@ -121,18 +123,15 @@ public class CodingServiceImpl implements ICodingService {
                 completeEmitter(emitter);
 
             } catch (Exception e) {
-                log.error("编程对话失败", e);
-                String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                channel.send(CodingSseEvent.error(msg));
-                channel.completeWithError(e);
+                log.error("coding_chat status=FAILED errorType={}", errorType(e));
+                channel.send(safeFailureEvent(e));
+                channel.complete();
                 try {
                     drainThread.join(2_000);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
-                sendEmitterEvent(emitter, SseEmitter.event().name("error")
-                    .data(JsonUtils.toJsonString(Map.of("message", msg))));
-                completeEmitterWithError(emitter, e);
+                completeEmitter(emitter);
             }
         });
 
@@ -179,10 +178,11 @@ public class CodingServiceImpl implements ICodingService {
         try { emitter.complete(); } catch (IllegalStateException ignored) { }
     }
 
-    private void completeEmitterWithError(SseEmitter emitter, Throwable error) {
-        AtomicBoolean active = activeEmitters.get(emitter);
-        if (active == null || !active.compareAndSet(true, false)) return;
-        activeEmitters.remove(emitter);
-        try { emitter.completeWithError(error); } catch (IllegalStateException ignored) { }
+    static CodingSseEvent safeFailureEvent(Throwable ignored) {
+        return CodingSseEvent.error(SAFE_CODING_ERROR_MESSAGE);
+    }
+
+    private static String errorType(Throwable error) {
+        return error == null ? "unknown" : error.getClass().getName();
     }
 }

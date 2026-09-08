@@ -89,7 +89,8 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
      */
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("[transport error] sessionId: {} , exception:{}", session.getId(), exception.getMessage());
+        log.error("websocket_transport_failed sessionId={} exceptionType={}", session.getId(),
+            exception.getClass().getName());
     }
 
     /**

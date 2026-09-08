@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.common.tenant.core.TenantEntity;
 
 /**
  * MCP 市场工具关联实体
@@ -15,7 +15,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("mcp_market_tool")
-public class McpMarketTool extends BaseEntity {
+public class McpMarketTool extends TenantEntity {
 
     /**
      * ID

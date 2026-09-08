@@ -8,17 +8,25 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 
 /** Resolves an existing relative cwd without following a link or Windows reparse/junction node. */
 final class CommandWorkspaceGuard {
 
     private final Path root;
+    private final Object rootFileKey;
+    private final FileTime rootCreationTime;
 
     CommandWorkspaceGuard(RunContext context) {
         this.root = context.leaseRoot();
+        BasicFileAttributes attributes = readRootAttributes();
+        this.rootFileKey = attributes.fileKey();
+        this.rootCreationTime = attributes.creationTime();
+        verifyRootIdentity();
     }
 
     Path cwd(String input) {
+        verifyRootIdentity();
         if (input == null || input.isBlank() || input.equals(".")) {
             return root;
         }
@@ -54,6 +62,41 @@ final class CommandWorkspaceGuard {
             return real;
         } catch (IOException error) {
             throw new CommandToolException("INVALID_CWD", "cwd cannot be resolved", error);
+        }
+    }
+
+    private BasicFileAttributes readRootAttributes() {
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(root,
+                BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            if (!attributes.isDirectory() || attributes.isSymbolicLink() || attributes.isOther()
+                || Files.isSymbolicLink(root)) {
+                throw new CommandToolException("WORKSPACE_IDENTITY_CHANGED",
+                    "Workspace lease root is no longer an ordinary directory");
+            }
+            return attributes;
+        } catch (IOException error) {
+            throw new CommandToolException("WORKSPACE_IDENTITY_CHANGED",
+                "Workspace lease root identity cannot be verified", error);
+        }
+    }
+
+    private void verifyRootIdentity() {
+        BasicFileAttributes current = readRootAttributes();
+        boolean fileKeyChanged = rootFileKey != null && current.fileKey() != null
+            && !rootFileKey.equals(current.fileKey());
+        boolean fallbackIdentityChanged = (rootFileKey == null || current.fileKey() == null)
+            && !rootCreationTime.equals(current.creationTime());
+        try {
+            Path real = root.toRealPath();
+            if (fileKeyChanged || fallbackIdentityChanged
+                || !real.equals(root.toAbsolutePath().normalize())) {
+                throw new CommandToolException("WORKSPACE_IDENTITY_CHANGED",
+                    "Workspace lease root was replaced after authorization");
+            }
+        } catch (IOException error) {
+            throw new CommandToolException("WORKSPACE_IDENTITY_CHANGED",
+                "Workspace lease root identity cannot be resolved", error);
         }
     }
 

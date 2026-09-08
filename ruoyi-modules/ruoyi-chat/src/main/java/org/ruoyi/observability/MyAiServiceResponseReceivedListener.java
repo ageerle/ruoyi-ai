@@ -28,10 +28,15 @@ public class MyAiServiceResponseReceivedListener implements AiServiceResponseRec
         ChatRequest request = event.request();
         ChatResponse response = event.response();
 
-        log.info("【响应已接收】调用唯一标识符: {}", invocationId);
-        log.info("【响应已接收】AI服务接口名: {}", aiServiceInterfaceName);
-        log.info("【响应已接收】调用的方法名: {}", aiServiceMethodName);
-        log.info("【响应已接收】发送给LLM的请求: {}", request);
-        log.info("【响应已接收】从LLM收到的响应: {}", response);
+        int messageCount = request == null || request.messages() == null ? 0 : request.messages().size();
+        int toolCount = request == null || request.toolSpecifications() == null
+            ? 0 : request.toolSpecifications().size();
+        var usage = response == null ? null : response.tokenUsage();
+        log.info("ai_service_response_received invocationId={} interfaceType={} method={} status=RECEIVED "
+                + "messageCount={} toolCount={} inputTokens={} outputTokens={} finishReason={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName, messageCount, toolCount,
+            usage == null ? null : usage.inputTokenCount(),
+            usage == null ? null : usage.outputTokenCount(),
+            response == null ? null : response.finishReason());
     }
 }

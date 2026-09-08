@@ -48,11 +48,6 @@ public class StoreEmbeddingBo {
     private String embeddingModelName;
 
     /**
-     * 请求key
-     */
-    private String apiKey;
-
-    /**
      * 请求地址
      */
     private String baseUrl;

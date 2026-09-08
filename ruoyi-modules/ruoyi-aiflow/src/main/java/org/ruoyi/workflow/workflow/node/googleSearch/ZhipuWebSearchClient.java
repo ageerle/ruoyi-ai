@@ -7,6 +7,8 @@ import ai.z.openapi.service.web_search.WebSearchResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.security.ChatModelCredentialPolicy;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.springframework.stereotype.Component;
 
@@ -78,19 +80,23 @@ public class ZhipuWebSearchClient {
     }
 
     private Credential resolveCredential() {
-        if (isUsableApiKey(properties.getApiKey())) {
-            return new Credential(normalizeBaseUrl(properties.getBaseUrl()), properties.getApiKey().trim());
-        }
-
         ChatModelBo query = new ChatModelBo();
         query.setProviderCode(ZHIPU_PROVIDER_CODE);
-        return chatModelService.queryList(query).stream()
+        return chatModelService.queryAvailableList(query).stream()
             .filter(model -> isUsableApiKey(model.getApiKey()))
             .findFirst()
-            .map(model -> new Credential(normalizeBaseUrl(model.getApiHost()), model.getApiKey().trim()))
+            .map(this::credentialForConfiguredEndpoint)
             .orElseThrow(() -> new IllegalStateException(
-                "未配置智谱 API Key，请设置环境变量 ZAI_API_KEY，或在模型管理中配置 zhipu 厂商密钥"
+                "智谱凭据未进入受信 provider/model/endpoint 注册表，当前拒绝解析"
             ));
+    }
+
+    private Credential credentialForConfiguredEndpoint(ChatModelVo model) {
+        String finalBaseUrl = normalizeBaseUrl(model.getApiHost());
+        String apiKey = ChatModelCredentialPolicy.resolveApiKeyForUse(
+            ZHIPU_PROVIDER_CODE, model.getProviderCode(), model.getModelName(), finalBaseUrl,
+            model.getApiKey());
+        return new Credential(finalBaseUrl, apiKey);
     }
 
     private boolean isUsableApiKey(String apiKey) {

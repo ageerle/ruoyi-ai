@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 
 import javax.sql.DataSource;
 
+import org.ruoyi.agent.manager.TableSchemaManager;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.stereotype.Component;
 
@@ -20,14 +21,16 @@ import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 public class QueryTableSchemaTool implements BuiltinToolProvider {
 
     // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
-    private DataSource getDataSource() {
+    DataSource getDataSource() {
         return SpringUtils.getBean(DataSource.class);
+    }
+
+    TableSchemaManager getTableSchemaManager() {
+        return SpringUtils.getBean(TableSchemaManager.class);
     }
 
     @Tool("Query the CREATE TABLE statement (DDL) for a specific table by table name")
     public String queryTableSchema(String tableName) {
-        // 2. 手动推入数据源上下文
-        DynamicDataSourceContextHolder.push("agent");
         if (tableName == null || tableName.trim().isEmpty()) {
             return "Error: Table name cannot be empty";
         }
@@ -36,7 +39,18 @@ public class QueryTableSchemaTool implements BuiltinToolProvider {
             return "Error: Invalid table name format";
         }
 
+        try {
+            if (getTableSchemaManager().getAllowedTableNames().stream()
+                .noneMatch(allowed -> allowed.equalsIgnoreCase(tableName))) {
+                return "Error: Table is not in AGENT_ALLOWED_TABLES";
+            }
+        } catch (Exception e) {
+            log.error("sql_tool operation=QUERY_TABLE_SCHEMA status=FAILED errorType={}", e.getClass().getName());
+            return "Error: Database schema query failed";
+        }
         String sql = "SHOW CREATE TABLE `" + tableName + "`";
+        // 2. 只在进入受 finally 保护的数据库区段后推入数据源上下文。
+        DynamicDataSourceContextHolder.push("agent");
 
         try (Connection connection = getDataSource().getConnection();
                 PreparedStatement ps = connection.prepareStatement(sql);
@@ -48,13 +62,12 @@ public class QueryTableSchemaTool implements BuiltinToolProvider {
             return "Table not found: " + tableName;
 
         } catch (Exception e) {
-               // 3. 必须在 finally 中清除上下文，防止污染其他请求
-            DynamicDataSourceContextHolder.clear();
-            log.error("Error querying table schema: {}", tableName, e);
-            return "Error: " + e.getMessage();
+            log.error("sql_tool operation=QUERY_TABLE_SCHEMA status=FAILED errorType={}",
+                e.getClass().getName());
+            return "Error: Database schema query failed";
         } finally {
             // 3. 必须在 finally 中清除上下文，防止污染其他请求
-            DynamicDataSourceContextHolder.clear();
+            DynamicDataSourceContextHolder.poll();
         }
     }
 

@@ -18,6 +18,7 @@ import org.ruoyi.common.sse.dto.SseMessageDto;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SseMessageUtils {
 
+    private static final String SAFE_ERROR_MESSAGE = "请求处理失败，请稍后重试";
     private final static Boolean SSE_ENABLE = SpringUtils.getProperty("sse.enabled", Boolean.class, true);
     private static SseEmitterManager MANAGER;
 
@@ -196,7 +197,7 @@ public class SseMessageUtils {
      * @param error  错误信息
      */
     public static void sendError(Long userId, String error) {
-        sendEvent(userId, SseEventDto.error(error));
+        sendEvent(userId, SseEventDto.error(SAFE_ERROR_MESSAGE));
     }
 
     /**
@@ -206,7 +207,7 @@ public class SseMessageUtils {
      * @param error     错误信息
      */
     public static void sendError(String sessionId, String error) {
-        sendEvent(sessionId, SseEventDto.error(error));
+        sendEvent(sessionId, SseEventDto.error(SAFE_ERROR_MESSAGE));
     }
 
     /**

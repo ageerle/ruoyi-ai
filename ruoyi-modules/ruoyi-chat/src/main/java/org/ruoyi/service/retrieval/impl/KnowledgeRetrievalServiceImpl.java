@@ -354,7 +354,6 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         copy.setMaxResults(maxResults);
         copy.setVectorModelName(original.getVectorModelName());
         copy.setEmbeddingModelName(original.getEmbeddingModelName());
-        copy.setApiKey(original.getApiKey());
         copy.setBaseUrl(original.getBaseUrl());
         return copy;
     }

@@ -5,33 +5,38 @@ import dev.langchain4j.agent.tool.Tool;
 import org.ruoyi.service.coding.harness.tool.builtin.RunContext;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Run-bound argv process tool. No command string is parsed and no shell is involved.
+ * Run-bound argv process tool forced through a pinned, networkless Docker OS sandbox.
  *
- * <p>The executable allowlist is authorization only, never a sandbox. Programs including npm,
- * git, language runtimes, build tools, and test runners may execute repository-controlled code,
- * hooks, or plugins. Outer policy evaluation, per-call approval, an OS sandbox, and workspace
- * isolation must authorize every invocation before this object is called.</p>
+ * <p>The target executable is a container entrypoint, never a host path. Only the configured
+ * absolute Docker CLI starts on the host. The image/toolchain itself remains a trusted premise.</p>
  */
 public final class ExecuteProcessTool {
+
+    /** JVM-wide admission boundary; per-run tool instances must not multiply host capacity. */
+    private static final Semaphore GLOBAL_PROCESS_SLOTS = new Semaphore(
+        CommandToolConfig.DEFAULT.maxConcurrentProcesses(), true);
 
     private final RunContext context;
     private final CommandToolConfig config;
     private final CommandWorkspaceGuard workspaceGuard;
-    private final Map<String, String> environment;
     private final ExecutablePolicy executablePolicy;
+    private final DockerSandboxConfig sandbox;
+    private final DockerRuntime dockerRuntime;
+    private final DockerSandboxCommandBuilder commandBuilder;
     private final Semaphore processSlots;
 
     public ExecuteProcessTool(RunContext context) {
@@ -39,12 +44,25 @@ public final class ExecuteProcessTool {
     }
 
     public ExecuteProcessTool(RunContext context, CommandToolConfig config) {
+        this(context, config, new DockerCliRuntime());
+    }
+
+    ExecuteProcessTool(RunContext context, CommandToolConfig config,
+                       DockerRuntime dockerRuntime) {
         this.context = Objects.requireNonNull(context, "context");
         this.config = Objects.requireNonNull(config, "config");
         this.workspaceGuard = new CommandWorkspaceGuard(context);
-        this.environment = ControlledEnvironment.build(config);
-        this.executablePolicy = new ExecutablePolicy(config, environment);
-        this.processSlots = new Semaphore(config.maxConcurrentProcesses(), true);
+        this.executablePolicy = new ExecutablePolicy(config);
+        this.sandbox = config.dockerSandbox();
+        this.dockerRuntime = Objects.requireNonNull(dockerRuntime, "dockerRuntime");
+        sandbox.requireUsableDockerExecutable();
+        dockerRuntime.verifyAvailable(sandbox);
+        this.commandBuilder = new DockerSandboxCommandBuilder(sandbox, context.leaseRoot());
+        if (config.maxConcurrentProcesses() > CommandToolConfig.DEFAULT.maxConcurrentProcesses()) {
+            throw new IllegalArgumentException(
+                "Per-tool process capacity cannot exceed the JVM-wide sandbox limit");
+        }
+        this.processSlots = GLOBAL_PROCESS_SLOTS;
     }
 
     public RunContext context() {
@@ -56,9 +74,11 @@ public final class ExecuteProcessTool {
     }
 
     @Tool(name = "execute_process", value = {
-        "Execute one allowlisted program directly with an argv array inside the immutable workspace lease. "
-            + "No shell parses the arguments. The allowlist is not a sandbox: npm, git, build tools, "
-            + "test runners, and runtimes can still execute repository code and require outer approval. "
+        "Execute one allowlisted container program with a literal argv array inside the immutable workspace lease. "
+            + "No shell parses the arguments. A pinned Docker image runs read-only, networkless, "
+            + "non-root, resource bounded, and receives only the exact workspace bind mount. "
+            + "Maven/npm/pnpm are pinned to a credential-free workspace .harness-deps cache; "
+            + "dependency installation must use offline mode and may fail if it was not provisioned. "
             + "The command must terminate: never start a dev/static server, watch mode, or another "
             + "long-lived process, especially as exitCode=0 plan evidence. Inline Node/Python source "
             + "in argv or stdin is forbidden: do not use node -e/-p or python -c/-. Use a finite "
@@ -67,7 +87,7 @@ public final class ExecuteProcessTool {
     })
     public ProcessExecutionResult executeProcess(
         @P(name = "executable",
-            value = "Allowlisted executable name or explicitly allowlisted absolute executable path",
+            value = "Single allowlisted executable name supplied as the container entrypoint",
             required = true)
         String executable,
         @P(name = "argv", value = "Argument array passed literally; never a shell command string",
@@ -84,51 +104,113 @@ public final class ExecuteProcessTool {
             required = false)
         String stdin
     ) {
-        return executeProcessInternal(executable, argv, cwd, timeoutMs, stdin, false);
+        return executeProcessInternal(executable, argv, cwd, timeoutMs, stdin, false, false);
     }
 
     ProcessExecutionResult executeInlineProbe(String executable, List<String> argv,
-                                               String cwd, Long timeoutMs, String stdin) {
-        return executeProcessInternal(executable, argv, cwd, timeoutMs, stdin, true);
+                                               String cwd, Long timeoutMs, String stdin,
+                                               boolean workspaceReadOnly) {
+        return executeProcessInternal(executable, argv, cwd, timeoutMs, stdin, true,
+            workspaceReadOnly);
     }
 
     private ProcessExecutionResult executeProcessInternal(String executable, List<String> argv,
                                                            String cwd, Long timeoutMs, String stdin,
-                                                           boolean inlineProbe) {
+                                                           boolean inlineProbe,
+                                                           boolean workspaceReadOnly) {
         List<String> arguments = CommandValidation.validateArgv(argv, config);
         rejectDuplicatedExecutableArgument(executable, arguments);
         if (!inlineProbe) {
             rejectInlineInterpreterProgram(executable, arguments, stdin);
         }
-        Path authorizedExecutable = executablePolicy.authorize(executable);
+        String authorizedExecutable = executablePolicy.authorize(executable);
         Path workingDirectory = workspaceGuard.cwd(cwd);
         long timeout = effectiveTimeout(timeoutMs);
-        List<String> command = new ArrayList<>(arguments.size() + 1);
-        command.add(authorizedExecutable.toString());
-        command.addAll(arguments);
+        byte[] standardInput = validateStandardInput(stdin);
 
         boolean acquired = false;
-        Process process = null;
-        Thread stdoutThread = null;
-        Thread stderrThread = null;
-        BoundedOutputCollector stdout = null;
-        BoundedOutputCollector stderr = null;
         long started = System.nanoTime();
+        long hardDeadline = deadlineAfter(started, timeout);
+        long doubledTerminationGrace = config.terminationGraceMs() > Long.MAX_VALUE / 2
+            ? Long.MAX_VALUE : config.terminationGraceMs() * 2;
+        long cleanupReserveMs = timeout >= 4_000
+            ? Math.min(Math.max(3_000, doubledTerminationGrace), timeout / 3)
+            : Math.max(1, timeout / 4);
+        long terminationDeadline = subtractMillis(hardDeadline, cleanupReserveMs);
+        long runnableBudgetMs = Math.max(1, timeout - cleanupReserveMs);
+        long terminationReserveMs = Math.min(config.terminationGraceMs(),
+            Math.max(1, runnableBudgetMs / 4));
+        long processDeadline = subtractMillis(terminationDeadline, terminationReserveMs);
+        Throwable executionFailure = null;
+        DockerSandboxInvocation invocation = null;
         try {
-            if (!processSlots.tryAcquire(timeout, TimeUnit.MILLISECONDS)) {
+            if (!processSlots.tryAcquire(remainingUntil(processDeadline,
+                "PROCESS_SLOT_TIMEOUT"), TimeUnit.MILLISECONDS)) {
                 throw new CommandToolException("PROCESS_SLOT_TIMEOUT",
                     "Process concurrency limit remained saturated until timeout");
             }
             acquired = true;
-            ProcessBuilder builder = new ProcessBuilder(command);
-            builder.directory(workingDirectory.toFile());
-            builder.redirectErrorStream(false);
-            builder.environment().clear();
-            builder.environment().putAll(environment);
-            // Re-check cwd immediately before process creation to narrow link-swap races.
+            // Re-check cwd immediately before constructing the single bind mount.
             workingDirectory = workspaceGuard.cwd(cwd);
-            builder.directory(workingDirectory.toFile());
-            process = builder.start();
+            if (System.nanoTime() >= processDeadline) {
+                throw new CommandToolException("PROCESS_START_TIMEOUT",
+                    "Docker preflight and process-slot wait exhausted the command wall limit");
+            }
+            invocation = commandBuilder.build(context.runId(), workingDirectory,
+                authorizedExecutable, arguments, workspaceReadOnly);
+            return executeContainer(invocation, standardInput, started, processDeadline,
+                terminationDeadline);
+        } catch (RuntimeException | Error error) {
+            executionFailure = error;
+            throw error;
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            ProcessExecutionInterruptedException interrupted =
+                new ProcessExecutionInterruptedException(error);
+            executionFailure = interrupted;
+            throw interrupted;
+        } finally {
+            CommandToolException terminalCleanupFailure = null;
+            if (invocation != null) {
+                try {
+                    dockerRuntime.ensureRemoved(sandbox, invocation.containerName(),
+                        remainingUntil(hardDeadline, "CONTAINER_CLEANUP_FAILED"));
+                } catch (RuntimeException cleanupError) {
+                    CommandToolException cleanupFailure = cleanupError instanceof CommandToolException typed
+                        ? typed : new CommandToolException("CONTAINER_CLEANUP_FAILED",
+                            "Sandbox container cleanup failed", cleanupError);
+                    if (executionFailure != null) {
+                        executionFailure.addSuppressed(cleanupFailure);
+                    } else {
+                        terminalCleanupFailure = cleanupFailure;
+                    }
+                }
+            }
+            if (acquired) {
+                processSlots.release();
+            }
+            if (terminalCleanupFailure != null) {
+                throw terminalCleanupFailure;
+            }
+        }
+    }
+
+    private ProcessExecutionResult executeContainer(DockerSandboxInvocation invocation,
+                                                    byte[] standardInput, long started,
+                                                    long processDeadline,
+                                                    long terminationDeadline)
+        throws InterruptedException {
+        Process process = null;
+        OutputStream processInput = null;
+        Thread stdinThread = null;
+        AtomicReference<IOException> stdinFailure = new AtomicReference<>();
+        Thread stdoutThread = null;
+        Thread stderrThread = null;
+        BoundedOutputCollector stdout = null;
+        BoundedOutputCollector stderr = null;
+        try {
+            process = dockerRuntime.start(sandbox, invocation,
+                remainingUntil(processDeadline, "PROCESS_START_TIMEOUT"));
 
             stdout = new BoundedOutputCollector(process.getInputStream(),
                 config.maxOutputBytesPerStream());
@@ -138,16 +220,23 @@ public final class ExecuteProcessTool {
             stderrThread = collectorThread(stderr, "stderr", process.pid());
             stdoutThread.start();
             stderrThread.start();
-            writeStandardInput(process, stdin);
+            processInput = process.getOutputStream();
+            stdinThread = standardInputThread(processInput, standardInput, stdinFailure,
+                process.pid());
+            stdinThread.start();
 
-            long remainingTimeout = remainingTimeoutMillis(started, timeout);
+            long remainingTimeout = remainingUntil(processDeadline, "PROCESS_START_TIMEOUT");
             boolean exited = process.waitFor(remainingTimeout, TimeUnit.MILLISECONDS);
             boolean timedOut = !exited;
             if (timedOut) {
-                terminateProcessTree(process, config.terminationGraceMs());
+                terminateProcessTree(process, terminationDeadline);
             }
-            awaitCollectors(stdoutThread, stderrThread, stdout, stderr,
-                config.terminationGraceMs());
+            awaitStandardInput(stdinThread, processInput, terminationDeadline);
+            awaitCollectors(stdoutThread, stderrThread, stdout, stderr, terminationDeadline);
+            if (!timedOut && stdinFailure.get() != null) {
+                throw new CommandToolException("STDIN_WRITE_FAILED",
+                    "Bounded process stdin could not be delivered", stdinFailure.get());
+            }
             if (!timedOut && (stdout.failure() != null || stderr.failure() != null)) {
                 IOException failure = stdout.failure() != null ? stdout.failure() : stderr.failure();
                 throw new CommandToolException("OUTPUT_CAPTURE_FAILED",
@@ -161,29 +250,31 @@ public final class ExecuteProcessTool {
                 stdout.truncated(), stderr.truncated());
         } catch (InterruptedException error) {
             if (process != null) {
-                terminateProcessTreeUninterruptibly(process, config.terminationGraceMs());
+                terminateProcessTreeUninterruptibly(process, terminationDeadline);
             }
+            closeAndJoinStandardInputUninterruptibly(stdinThread, processInput,
+                terminationDeadline);
             closeAndJoinUninterruptibly(stdoutThread, stderrThread, stdout, stderr,
-                config.terminationGraceMs());
+                terminationDeadline);
             Thread.currentThread().interrupt();
             throw new ProcessExecutionInterruptedException(error);
         } catch (IOException error) {
             if (process != null) {
-                terminateProcessTreeUninterruptibly(process, config.terminationGraceMs());
+                terminateProcessTreeUninterruptibly(process, terminationDeadline);
             }
+            closeAndJoinStandardInputUninterruptibly(stdinThread, processInput,
+                terminationDeadline);
             throw new CommandToolException("PROCESS_START_FAILED",
                 "Authorized process could not be started", error);
         } catch (CommandToolException error) {
             if (process != null && process.isAlive()) {
-                terminateProcessTreeUninterruptibly(process, config.terminationGraceMs());
+                terminateProcessTreeUninterruptibly(process, terminationDeadline);
             }
+            closeAndJoinStandardInputUninterruptibly(stdinThread, processInput,
+                terminationDeadline);
             closeAndJoinUninterruptibly(stdoutThread, stderrThread, stdout, stderr,
-                config.terminationGraceMs());
+                terminationDeadline);
             throw error;
-        } finally {
-            if (acquired) {
-                processSlots.release();
-            }
         }
     }
 
@@ -247,15 +338,81 @@ public final class ExecuteProcessTool {
         return normalized;
     }
 
-    private void writeStandardInput(Process process, String stdin) throws IOException {
+    private byte[] validateStandardInput(String stdin) {
         byte[] bytes = stdin == null ? new byte[0] : stdin.getBytes(StandardCharsets.UTF_8);
         long maximum = Math.max(1L, (long) config.maxArgumentChars() * 4L);
         if (bytes.length > maximum) {
             throw new CommandToolException("STDIN_TOO_LARGE",
                 "stdin exceeds the configured UTF-8 byte limit of " + maximum);
         }
-        try (var output = process.getOutputStream()) {
-            output.write(bytes);
+        if (stdin != null) {
+            for (int index = 0; index < stdin.length(); index++) {
+                char character = stdin.charAt(index);
+                if ((character < 0x20 && character != '\t' && character != '\n'
+                    && character != '\r') || character == 0x7f) {
+                    throw new CommandToolException("STDIN_CONTROL_CHARACTER_DENIED",
+                        "stdin may contain text, tab, carriage return, and newline only");
+                }
+            }
+        }
+        return bytes;
+    }
+
+    private static Thread standardInputThread(OutputStream output, byte[] bytes,
+                                              AtomicReference<IOException> failure, long pid) {
+        Thread thread = new Thread(() -> {
+            try (output) {
+                output.write(bytes);
+            } catch (IOException error) {
+                failure.set(error);
+            }
+        }, "harness-execute-process-" + pid + "-stdin");
+        thread.setDaemon(true);
+        return thread;
+    }
+
+    private static void awaitStandardInput(Thread thread, OutputStream output,
+                                           long deadlineNanos)
+        throws InterruptedException {
+        joinUntil(thread, deadlineNanos);
+        if (thread.isAlive()) {
+            closeQuietly(output);
+            joinUntil(thread, deadlineNanos);
+        }
+        if (thread.isAlive()) {
+            throw new CommandToolException("STDIN_WRITE_STUCK",
+                "Bounded process stdin writer did not terminate");
+        }
+    }
+
+    private static void closeAndJoinStandardInputUninterruptibly(Thread thread,
+                                                                 OutputStream output,
+                                                                 long deadlineNanos) {
+        closeQuietly(output);
+        if (thread == null) {
+            return;
+        }
+        boolean interrupted = false;
+        while (thread.isAlive() && System.nanoTime() < deadlineNanos) {
+            try {
+                thread.join(50);
+            } catch (InterruptedException error) {
+                interrupted = true;
+            }
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void closeQuietly(OutputStream output) {
+        if (output == null) {
+            return;
+        }
+        try {
+            output.close();
+        } catch (IOException ignored) {
+            // Process termination and exact container cleanup remain authoritative.
         }
     }
 
@@ -270,9 +427,24 @@ public final class ExecuteProcessTool {
         return requested;
     }
 
-    private static long remainingTimeoutMillis(long started, long timeoutMs) {
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
-        return Math.max(1, timeoutMs - elapsed);
+    private static long deadlineAfter(long started, long timeoutMs) {
+        long duration = TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+        return started > Long.MAX_VALUE - duration ? Long.MAX_VALUE : started + duration;
+    }
+
+    private static long subtractMillis(long deadlineNanos, long millis) {
+        long duration = TimeUnit.MILLISECONDS.toNanos(Math.max(0, millis));
+        return deadlineNanos < Long.MIN_VALUE + duration
+            ? Long.MIN_VALUE : deadlineNanos - duration;
+    }
+
+    private static long remainingUntil(long deadlineNanos, String failureCode) {
+        long remaining = deadlineNanos - System.nanoTime();
+        if (remaining <= 0) {
+            throw new CommandToolException(failureCode,
+                "Process operation exhausted the shared wall deadline");
+        }
+        return Math.max(1, TimeUnit.NANOSECONDS.toMillis(remaining));
     }
 
     private static Thread collectorThread(BoundedOutputCollector collector, String stream,
@@ -286,15 +458,14 @@ public final class ExecuteProcessTool {
     private static void awaitCollectors(Thread stdoutThread, Thread stderrThread,
                                         BoundedOutputCollector stdout,
                                         BoundedOutputCollector stderr,
-                                        long graceMs) throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(graceMs, 1_000));
-        joinUntil(stdoutThread, deadline);
-        joinUntil(stderrThread, deadline);
+                                        long deadlineNanos) throws InterruptedException {
+        joinUntil(stdoutThread, deadlineNanos);
+        joinUntil(stderrThread, deadlineNanos);
         if (stdoutThread.isAlive() || stderrThread.isAlive()) {
             stdout.close();
             stderr.close();
-            joinUntil(stdoutThread, deadline + TimeUnit.MILLISECONDS.toNanos(500));
-            joinUntil(stderrThread, deadline + TimeUnit.MILLISECONDS.toNanos(500));
+            joinUntil(stdoutThread, deadlineNanos);
+            joinUntil(stderrThread, deadlineNanos);
         }
         if (stdoutThread.isAlive() || stderrThread.isAlive()) {
             throw new CommandToolException("OUTPUT_CAPTURE_STUCK",
@@ -313,12 +484,12 @@ public final class ExecuteProcessTool {
         }
     }
 
-    private static void terminateProcessTree(Process process, long graceMs)
+    private static void terminateProcessTree(Process process, long deadlineNanos)
         throws InterruptedException {
         ProcessHandle parent = process.toHandle();
         List<ProcessHandle> descendants = descendantsDeepestFirst(parent);
         descendants.forEach(ExecuteProcessTool::destroyQuietly);
-        waitForHandles(descendants, Math.max(50, graceMs / 3));
+        waitForHandles(descendants, deadlineNanos);
         List<ProcessHandle> remaining = new ArrayList<>(descendants);
         for (ProcessHandle discovered : descendantsDeepestFirst(parent)) {
             if (remaining.stream().noneMatch(existing -> existing.pid() == discovered.pid())) {
@@ -326,18 +497,19 @@ public final class ExecuteProcessTool {
             }
         }
         remaining.forEach(ExecuteProcessTool::destroyForciblyQuietly);
-        waitForHandles(remaining, Math.max(100, graceMs / 2));
+        waitForHandles(remaining, deadlineNanos);
         destroyQuietly(parent);
-        waitForHandles(List.of(parent), Math.max(50, graceMs / 3));
+        waitForHandles(List.of(parent), deadlineNanos);
         destroyForciblyQuietly(parent);
         List<ProcessHandle> all = new ArrayList<>(remaining);
         all.add(parent);
-        waitForHandles(all, Math.max(100, graceMs));
+        waitForHandles(all, deadlineNanos);
         if (all.stream().anyMatch(ProcessHandle::isAlive)) {
             throw new CommandToolException("PROCESS_TERMINATION_FAILED",
                 "Timed-out process tree could not be fully terminated");
         }
-        process.waitFor(Math.max(1, graceMs), TimeUnit.MILLISECONDS);
+        process.waitFor(remainingUntil(deadlineNanos, "PROCESS_TERMINATION_FAILED"),
+            TimeUnit.MILLISECONDS);
     }
 
     private static List<ProcessHandle> descendantsDeepestFirst(ProcessHandle parent) {
@@ -346,11 +518,12 @@ public final class ExecuteProcessTool {
         return descendants;
     }
 
-    private static void waitForHandles(List<ProcessHandle> handles, long timeoutMs)
+    private static void waitForHandles(List<ProcessHandle> handles, long deadlineNanos)
         throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
-        while (handles.stream().anyMatch(ProcessHandle::isAlive) && System.nanoTime() < deadline) {
-            Thread.sleep(10);
+        while (handles.stream().anyMatch(ProcessHandle::isAlive)
+            && System.nanoTime() < deadlineNanos) {
+            long remaining = deadlineNanos - System.nanoTime();
+            TimeUnit.NANOSECONDS.sleep(Math.min(TimeUnit.MILLISECONDS.toNanos(10), remaining));
         }
     }
 
@@ -374,12 +547,13 @@ public final class ExecuteProcessTool {
         }
     }
 
-    private static void terminateProcessTreeUninterruptibly(Process process, long graceMs) {
+    private static void terminateProcessTreeUninterruptibly(Process process,
+                                                            long deadlineNanos) {
         boolean interrupted = false;
         try {
             while (true) {
                 try {
-                    terminateProcessTree(process, graceMs);
+                    terminateProcessTree(process, deadlineNanos);
                     return;
                 } catch (InterruptedException error) {
                     interrupted = true;
@@ -400,20 +574,19 @@ public final class ExecuteProcessTool {
     private static void closeAndJoinUninterruptibly(Thread stdoutThread, Thread stderrThread,
                                                      BoundedOutputCollector stdout,
                                                      BoundedOutputCollector stderr,
-                                                     long graceMs) {
+                                                     long deadlineNanos) {
         if (stdout != null) {
             stdout.close();
         }
         if (stderr != null) {
             stderr.close();
         }
-        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(graceMs);
         Thread[] threads = {stdoutThread, stderrThread};
         for (Thread thread : threads) {
             if (thread == null) {
                 continue;
             }
-            while (thread.isAlive() && System.nanoTime() < deadline) {
+            while (thread.isAlive() && System.nanoTime() < deadlineNanos) {
                 try {
                     thread.join(25);
                 } catch (InterruptedException ignored) {

@@ -38,6 +38,19 @@ public class HarnessArtifactRepository {
         return store.put(scope(owner, sessionId, runId), "text/plain; charset=utf-8", bytes);
     }
 
+    public ArtifactRef putImage(HarnessOwner owner, String sessionId, String runId,
+                                String mediaType, byte[] content) {
+        if (mediaType == null || !mediaType.startsWith("image/")) {
+            throw new IllegalArgumentException("Image media type is required");
+        }
+        return store.put(scope(owner, sessionId, runId), mediaType, content);
+    }
+
+    public byte[] readImage(HarnessOwner owner, String sessionId, String runId,
+                            String artifactId, int maximumBytes) {
+        return store.readAll(scope(owner, sessionId, runId), artifactId, maximumBytes);
+    }
+
     public ArtifactReadResult readText(HarnessOwner owner, String sessionId, String runId,
                                        String artifactId, long offset, int length) {
         byte[] bytes = store.read(scope(owner, sessionId, runId), artifactId, offset, length);

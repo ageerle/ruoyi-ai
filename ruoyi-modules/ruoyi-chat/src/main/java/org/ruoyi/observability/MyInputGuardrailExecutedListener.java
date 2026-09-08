@@ -33,13 +33,10 @@ public class MyInputGuardrailExecutedListener implements InputGuardrailExecutedL
         Duration duration = event.duration();
         UserMessage rewrittenUserMessage = event.rewrittenUserMessage();
 
-        log.info("【输入Guardrail已执行】调用唯一标识符: {}", invocationId);
-        log.info("【输入Guardrail已执行】AI服务接口名: {}", aiServiceInterfaceName);
-        log.info("【输入Guardrail已执行】调用的方法名: {}", aiServiceMethodName);
-        log.info("【输入Guardrail已执行】Guardrail类名: {}", guardrailClass.getName());
-        log.info("【输入Guardrail已执行】输入Guardrail请求: {}", request);
-        log.info("【输入Guardrail已执行】输入Guardrail结果: {}", result);
-        log.info("【输入Guardrail已执行】重写后的用户消息: {}", rewrittenUserMessage);
-        log.info("【输入Guardrail已执行】执行耗时: {}ms", duration.toMillis());
+        log.info("input_guardrail_executed invocationId={} interfaceType={} method={} status=COMPLETED "
+                + "guardrailType={} resultType={} rewrittenMessageCount={} elapsedMs={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName, guardrailClass.getName(),
+            result == null ? "none" : result.getClass().getName(),
+            rewrittenUserMessage == null ? 0 : 1, duration == null ? -1L : duration.toMillis());
     }
 }

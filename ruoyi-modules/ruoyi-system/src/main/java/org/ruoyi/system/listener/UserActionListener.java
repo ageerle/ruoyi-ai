@@ -73,7 +73,7 @@ public class UserActionListener implements SaTokenListener {
         SpringUtils.context().publishEvent(logininforEvent);
         // 更新登录信息
         loginService.recordLoginInfo((Long) loginParameter.getExtra(LoginHelper.USER_KEY), ip);
-        log.info("user doLogin, userId:{}, token:{}", loginId, tokenValue);
+        log.info("{}", authenticationEventSummary("login", loginId));
     }
 
     /**
@@ -85,7 +85,7 @@ public class UserActionListener implements SaTokenListener {
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
-        log.info("user doLogout, userId:{}, token:{}", loginId, tokenValue);
+        log.info("{}", authenticationEventSummary("logout", loginId));
     }
 
     /**
@@ -97,7 +97,7 @@ public class UserActionListener implements SaTokenListener {
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
-        log.info("user doKickout, userId:{}, token:{}", loginId, tokenValue);
+        log.info("{}", authenticationEventSummary("kickout", loginId));
     }
 
     /**
@@ -109,7 +109,7 @@ public class UserActionListener implements SaTokenListener {
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
-        log.info("user doReplaced, userId:{}, token:{}", loginId, tokenValue);
+        log.info("{}", authenticationEventSummary("replaced", loginId));
     }
 
     /**
@@ -159,5 +159,10 @@ public class UserActionListener implements SaTokenListener {
      */
     @Override
     public void doRenewTimeout(String loginType, Object loginId, String tokenValue, long timeout) {
+    }
+
+    /** The logging boundary cannot accept a token, making accidental formatting impossible. */
+    static String authenticationEventSummary(String event, Object loginId) {
+        return "authentication event=" + event + ", userId=" + loginId;
     }
 }

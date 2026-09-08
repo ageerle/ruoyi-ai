@@ -41,7 +41,6 @@ public final class HarnessApprovalExpiryMonitor {
     private final HarnessStore store;
     private final HarnessScheduler scheduler;
     private final HarnessSessionGate sessionGate;
-    private final HarnessEventHub eventHub;
     private final HarnessEventOutboxService eventOutboxService;
     private final ScheduledExecutorService maintenance;
     private final boolean enabled;
@@ -72,7 +71,6 @@ public final class HarnessApprovalExpiryMonitor {
         this.store = store;
         this.scheduler = scheduler;
         this.sessionGate = sessionGate;
-        this.eventHub = eventHub;
         this.eventOutboxService = eventOutboxService;
         this.maintenance = maintenance;
         this.enabled = enabled;
@@ -128,6 +126,13 @@ public final class HarnessApprovalExpiryMonitor {
                 scanned++;
                 HarnessRunState run = eventOutboxService.drainBestEffort(discovered.owner(),
                     discovered);
+                // A durable lifecycle/state event is a strict execution barrier. Never expire an
+                // approval, start another provider/tool turn, or publish a later direct event
+                // while the FIFO head is temporarily unavailable. Cursor rotation retries the
+                // drain; once empty, runnable runs are dispatched again below.
+                if (!run.eventOutbox().isEmpty()) {
+                    continue;
+                }
                 if (run.status() == HarnessRunStatus.WAITING_FOR_APPROVAL) {
                     expired += expireRun(run, now);
                 } else if (run.status() == HarnessRunStatus.QUEUED
@@ -155,9 +160,24 @@ public final class HarnessApprovalExpiryMonitor {
             if (run == null || run.status() != HarnessRunStatus.WAITING_FOR_APPROVAL) {
                 return 0;
             }
+            // The discovery snapshot was drained outside the gate and may already be stale. Re-read
+            // and drain again while holding the session writer before calculating capacity or
+            // mutating approvals; otherwise a concurrent lifecycle/control draft can be overtaken.
+            run = eventOutboxService.drainBestEffort(run.owner(), run);
+            if (run.status() != HarnessRunStatus.WAITING_FOR_APPROVAL
+                || !run.eventOutbox().isEmpty()) {
+                return 0;
+            }
             HarnessRunState next = run;
             int count = 0;
+            int available = Math.max(0, HarnessRunState.MAX_EVENT_OUTBOX_ENTRIES
+                - run.eventOutbox().size() - 1);
             for (ToolCallApprovalAggregate approval : run.toolApprovals().values()) {
+                // Reserve one FIFO slot for run.queued when this batch expires the final pending
+                // approval. Larger batches remain WAITING and are continued by the next sweep.
+                if (count >= available) {
+                    break;
+                }
                 if ((approval.state() == ApprovalState.PENDING
                     || approval.state() == ApprovalState.APPROVED)
                     && now >= approval.expiresAt()) {
@@ -171,6 +191,12 @@ public final class HarnessApprovalExpiryMonitor {
                             HarnessApprovalStatus.EXPIRED, preview.createdAt(), now, null,
                             "Approval expired before execution"), now);
                     }
+                    next = next.enqueueEvent(HarnessEvent.draftWithId(
+                        "approval:" + approval.approvalId() + ":expired:"
+                            + expired.revision(), run.sessionId(), run.runId(),
+                        "approval.expired", null, approval.toolCallId(),
+                        approval.approvalId(), Map.of("state", expired.state().name(),
+                            "revision", expired.revision()), now), now);
                     count++;
                 }
             }
@@ -182,21 +208,18 @@ public final class HarnessApprovalExpiryMonitor {
                     || approval.state() == ApprovalState.APPROVED);
             if (!unresolved) {
                 next = next.transition(HarnessRunStatus.QUEUED, null, now);
+                next = next.enqueueEvent(HarnessEvent.draftWithId(
+                    "run-state:" + run.runId() + ":run.queued:" + (run.revision() + 1),
+                    run.sessionId(), run.runId(), "run.queued", null, null, null,
+                    Map.of("status", HarnessRunStatus.QUEUED.name(),
+                        "revision", run.revision() + 1,
+                        "reason", "approval_expired"), now), now);
             }
             HarnessRunState saved = store.saveRun(run.owner(), next, run.revision());
-            for (ToolCallApprovalAggregate approval : saved.toolApprovals().values()) {
-                if (approval.state() == ApprovalState.EXPIRED
-                    && approval.updatedAt() == now) {
-                    eventHub.publish(run.owner(), HarnessEvent.draft(run.sessionId(), run.runId(),
-                        "approval.expired", null, approval.toolCallId(), approval.approvalId(),
-                        Map.of("state", approval.state().name()), now));
-                }
-            }
-            if (saved.status() == HarnessRunStatus.QUEUED) {
-                scheduleRunnable(saved);
-                eventHub.publish(run.owner(), HarnessEvent.draft(run.sessionId(), run.runId(),
-                    "run.queued", null, null, null,
-                    Map.of("reason", "approval_expired"), now));
+            HarnessRunState drained = eventOutboxService.drainBestEffort(run.owner(), saved);
+            if (drained.status() == HarnessRunStatus.QUEUED
+                && drained.eventOutbox().isEmpty()) {
+                scheduleRunnable(drained);
             }
             return count;
         });

@@ -49,7 +49,7 @@ public final class InlineProbeTool {
             + "the approved BUILD test evidence; use this probe for pure read-only assertions over current "
             + "source or imported side-effect-free modules. "
             + "and has exactly the same approval, "
-            + "allowlist, cancellation, timeout, environment, and non-sandbox security boundary."
+            + "allowlist, cancellation, timeout, and Docker sandbox boundary."
     })
     public ProcessExecutionResult runInlineProbe(
         @P(name = "runtime", value = "Exact runtime: node or python", required = true)
@@ -68,14 +68,14 @@ public final class InlineProbeTool {
             case "node" -> processTool.executeInlineProbe("node", readOnly
                     ? List.of("--permission", "--allow-fs-read=.", "--input-type=module")
                     : List.of("--input-type=module"),
-                ".", timeoutMs, script);
+                ".", timeoutMs, script, readOnly);
             case "python" -> {
                 if (readOnly) {
                     throw new CommandToolException("READ_ONLY_PROBE_RUNTIME",
                         "VERIFY permits only the Node read-only inline probe");
                 }
                 yield processTool.executeInlineProbe("python", List.of("-"), ".", timeoutMs,
-                    script);
+                    script, false);
             }
             default -> throw new CommandToolException("INVALID_INLINE_PROBE_RUNTIME",
                 "runtime must be exactly node or python");

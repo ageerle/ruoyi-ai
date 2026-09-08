@@ -1,6 +1,7 @@
 package org.ruoyi.mcp.tools;
 
 import dev.langchain4j.agent.tool.Tool;
+import org.ruoyi.common.process.ChildProcessSecretSanitizer;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 import org.ruoyi.service.coding.CodingEventChannel;
 import org.ruoyi.service.coding.CodingSseEvent;
@@ -125,7 +126,7 @@ public class ExecuteCommandTool implements BuiltinToolProvider {
             builder.directory(rootDirectory.toFile());
             builder.redirectErrorStream(true);
             builder.redirectOutput(logFile.toFile());
-            process = builder.start();
+            process = ChildProcessSecretSanitizer.start(builder);
 
             String result;
             if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {

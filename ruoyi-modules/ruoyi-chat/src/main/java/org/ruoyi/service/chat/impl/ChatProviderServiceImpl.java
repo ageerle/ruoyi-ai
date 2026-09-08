@@ -1,5 +1,6 @@
 package org.ruoyi.service.chat.impl;
 
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -73,7 +74,7 @@ public class ChatProviderServiceImpl implements IChatProviderService {
     private LambdaQueryWrapper<ChatProvider> buildQueryWrapper(ChatProviderBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ChatProvider> lqw = Wrappers.lambdaQuery();
-        lqw.orderByAsc(ChatProvider::getId);
+        lqw.orderByAsc(ChatProvider::getSortOrder, ChatProvider::getId);
         lqw.like(StringUtils.isNotBlank(bo.getProviderName()), ChatProvider::getProviderName, bo.getProviderName());
         lqw.eq(StringUtils.isNotBlank(bo.getProviderCode()), ChatProvider::getProviderCode, bo.getProviderCode());
         lqw.eq(StringUtils.isNotBlank(bo.getProviderIcon()), ChatProvider::getProviderIcon, bo.getProviderIcon());
@@ -85,6 +86,15 @@ public class ChatProviderServiceImpl implements IChatProviderService {
         return lqw;
     }
 
+    @Override
+    public void requireEnabled(String providerCode) {
+        if (StringUtils.isBlank(providerCode) || !baseMapper.exists(Wrappers.<ChatProvider>lambdaQuery()
+            .eq(ChatProvider::getProviderCode, providerCode)
+            .eq(ChatProvider::getStatus, "0"))) {
+            throw new ServiceException("模型厂商未配置或已停用，请在厂商管理中启用后重试");
+        }
+    }
+
     /**
      * 新增厂商管理
      *
@@ -94,7 +104,7 @@ public class ChatProviderServiceImpl implements IChatProviderService {
     @Override
     public Boolean insertByBo(ChatProviderBo bo) {
         ChatProvider add = MapstructUtils.convert(bo, ChatProvider.class);
-        validEntityBeforeSave(add);
+        validEntityBeforeSave(add, null);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setId(add.getId());
@@ -111,15 +121,27 @@ public class ChatProviderServiceImpl implements IChatProviderService {
     @Override
     public Boolean updateByBo(ChatProviderBo bo) {
         ChatProvider update = MapstructUtils.convert(bo, ChatProvider.class);
-        validEntityBeforeSave(update);
+        validEntityBeforeSave(update, update.getId());
         return baseMapper.updateById(update) > 0;
     }
 
     /**
      * 保存前的数据校验
      */
-    private void validEntityBeforeSave(ChatProvider entity){
-        //TODO 做一些数据校验,如唯一约束
+    private void validEntityBeforeSave(ChatProvider entity, Long excludeId) {
+        if (entity.getStatus() != null && !StringUtils.equalsAny(entity.getStatus(), "0", "1")) {
+            throw new ServiceException("厂商状态只能为启用或停用");
+        }
+        if (StringUtils.isBlank(entity.getProviderCode())) {
+            throw new ServiceException("厂商编码不能为空");
+        }
+        // 租户插件和逻辑删除条件限定当前租户的未删除记录，停用厂商仍占用编码。
+        boolean exists = baseMapper.exists(Wrappers.<ChatProvider>lambdaQuery()
+            .eq(ChatProvider::getProviderCode, entity.getProviderCode())
+            .ne(excludeId != null, ChatProvider::getId, excludeId));
+        if (exists) {
+            throw new ServiceException("当前租户下已存在相同的厂商编码，请勿重复配置");
+        }
     }
 
     /**

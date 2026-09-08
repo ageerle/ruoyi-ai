@@ -60,6 +60,8 @@ public final class HarnessPlanTools {
         "Transition one authoritative plan step with optimistic expectedRevision.",
         "Use only in BUILD and only with the revision in the current authoritative projection;",
         "never use an earlier tool result revision and never call plan_step in VERIFY.",
+        "BLOCK or FAIL requires evidenceIds containing failed mechanical evidence that matches",
+        "this step; analysis, output truncation, or model prose is never blocker evidence.",
         "COMPLETE requires ids of successful persisted evidence satisfying every bound criterion.",
         "The runtime normally records successful first-party evidence and advances bound steps",
         "automatically; call this only when the returned plan projection still requires it."

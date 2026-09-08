@@ -38,7 +38,6 @@ public class CustomVectorRetriever implements ContentRetriever {
         QueryVectorBo queryVectorBo = new QueryVectorBo();
         queryVectorBo.setQuery(query.text());
         queryVectorBo.setKid(String.valueOf(knowledgeInfoVo.getId()));
-        queryVectorBo.setApiKey(chatModelVo.getApiKey());
         queryVectorBo.setBaseUrl(chatModelVo.getApiHost());
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
         queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());

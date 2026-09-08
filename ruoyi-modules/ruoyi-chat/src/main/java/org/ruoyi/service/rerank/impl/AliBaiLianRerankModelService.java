@@ -87,7 +87,8 @@ public class AliBaiLianRerankModelService implements RerankModelService {
         String url = chatModelVo.getApiHost() + "/compatible-api/v1/reranks";
         Request httpRequest = new Request.Builder()
                 .url(url)
-                .addHeader("Authorization", "Bearer " + chatModelVo.getApiKey())
+                .addHeader("Authorization", "Bearer "
+                    + chatModelVo.resolveApiKeyForConfiguredEndpoint("qianwen"))
                 .addHeader("Content-Type", "application/json")
                 .post(body)
                 .build();

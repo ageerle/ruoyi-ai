@@ -6,7 +6,7 @@ FROM mysql:8.0
 ENV TZ=Asia/Shanghai
 
 # MySQL 官方入口会按文件名顺序执行初始化目录中的 SQL。
-# ruoyi-ai.sql 会导入 MYSQL_DATABASE，snail_job_mysql.sql 会自行创建并切换数据库。
+# 主库统一为 ruoyi-ai，与初始化 SQL 和 Compose 中的数据库配置保持一致。
 COPY docs/script/sql/ruoyi-ai.sql /docker-entrypoint-initdb.d/01-ruoyi-ai.sql
 COPY docs/script/sql/snail_job_mysql.sql /docker-entrypoint-initdb.d/02-snail-job.sql
 

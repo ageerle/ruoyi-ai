@@ -19,6 +19,7 @@ public record HarnessModelEffect(
 ) {
 
     private static final Pattern SHA256 = Pattern.compile("[0-9a-f]{64}");
+    private static final String EVENT_ID_PREFIX = "model-effect:";
 
     public HarnessModelEffect {
         if (effectId == null || effectId.isBlank() || iteration < 0
@@ -63,6 +64,18 @@ public record HarnessModelEffect(
         requirePending("abandon");
         return new HarnessModelEffect(effectId, iteration, requestSha256,
             HarnessModelEffectStatus.ABANDONED, startedAt, now, null, reason);
+    }
+
+    public String startedEventId() {
+        return EVENT_ID_PREFIX + effectId + ":started";
+    }
+
+    public String completedEventId() {
+        return EVENT_ID_PREFIX + effectId + ":completed";
+    }
+
+    public String abandonedEventId() {
+        return EVENT_ID_PREFIX + effectId + ":abandoned";
     }
 
     private void requirePending(String action) {

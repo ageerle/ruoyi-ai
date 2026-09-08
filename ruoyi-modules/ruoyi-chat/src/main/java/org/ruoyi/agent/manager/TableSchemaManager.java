@@ -44,7 +44,7 @@ public class TableSchemaManager {
     @Autowired(required = false)
     private DataSource agentDataSource;
 
-    @Value("${AGENT_ALLOWED_TABLES}")
+    @Value("${AGENT_ALLOWED_TABLES:}")
     private String allowedTables;
 
     /**
@@ -121,6 +121,8 @@ public class TableSchemaManager {
                 if (tableRs.next()) {
                     table.setTableComment(tableRs.getString("REMARKS"));
                     table.setTableType(tableRs.getString("TABLE_TYPE"));
+                } else {
+                    return null;
                 }
             }
 
@@ -231,7 +233,7 @@ public class TableSchemaManager {
         if (identifier == null || identifier.isEmpty()) {
             return false;
         }
-        return identifier.matches("^[a-zA-Z0-9_\\.]+$");
+        return identifier.matches("^[a-zA-Z0-9_]+$");
     }
 
     /**
@@ -242,8 +244,7 @@ public class TableSchemaManager {
         if (allowedTables == null || allowedTables.trim().isEmpty()) {
             return false;
         }
-        Set<String> tables = new HashSet<>(Arrays.asList(allowedTables.split(",")));
-        return tables.contains(tableName.trim());
+        return getAllowedTableNames().contains(tableName.trim());
     }
 
     /**

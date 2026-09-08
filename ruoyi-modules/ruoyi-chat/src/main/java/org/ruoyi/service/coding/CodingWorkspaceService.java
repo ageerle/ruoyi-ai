@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -28,7 +29,10 @@ public class CodingWorkspaceService {
     @Value("${coding.harness.workspace.owner-root:./data/coding-workspaces}")
     private String harnessOwnerRoot = "./data/coding-workspaces";
 
-    /** Empty by default. Setting this is an explicit operator opt-in to a shared repository. */
+    /**
+     * Empty by default. When configured, users may select an existing directory at or beneath
+     * this boundary as the immutable workspace for a new Harness session.
+     */
     @Value("${coding.harness.workspace.shared-root:}")
     private String harnessSharedRoot = "";
 
@@ -103,9 +107,10 @@ public class CodingWorkspaceService {
     }
 
     /**
-     * Resolves a Harness lease from authenticated ownership, never from a caller-selected path.
-     * A shared root is available only when the operator explicitly configures one; otherwise each
-     * tenant/user receives a physically distinct directory beneath the owner root.
+     * Resolves a Harness lease from authenticated ownership or an operator-approved shared root.
+     * Without a shared root, each tenant/user receives a physically distinct directory beneath
+     * the owner root. With a shared root, the requested existing directory must remain beneath
+     * that canonical boundary.
      */
     public Path resolveHarnessRoot(HarnessOwner owner, String requestedPath) {
         if (owner == null) {
@@ -113,16 +118,15 @@ public class CodingWorkspaceService {
         }
         Path configuredShared = harnessSharedRoot == null || harnessSharedRoot.isBlank()
             ? null : Paths.get(harnessSharedRoot).toAbsolutePath().normalize();
-        Path expected;
         if (configuredShared != null) {
-            expected = configuredShared;
-        } else {
-            Path ownerBase = Paths.get(harnessOwnerRoot).toAbsolutePath().normalize();
-            expected = ownerBase.resolve(tenantKey(owner.tenantId()))
-                .resolve(Long.toString(owner.userId())).normalize();
-            if (!expected.startsWith(ownerBase)) {
-                throw new IllegalArgumentException("Owner workspace escaped its configured root");
-            }
+            return resolveSharedHarnessRoot(configuredShared, requestedPath);
+        }
+
+        Path ownerBase = Paths.get(harnessOwnerRoot).toAbsolutePath().normalize();
+        Path expected = ownerBase.resolve(tenantKey(owner.tenantId()))
+            .resolve(Long.toString(owner.userId())).normalize();
+        if (!expected.startsWith(ownerBase)) {
+            throw new IllegalArgumentException("Owner workspace escaped its configured root");
         }
         if (requestedPath != null && !requestedPath.isBlank()) {
             Path requested = Paths.get(requestedPath).toAbsolutePath().normalize();
@@ -132,11 +136,9 @@ public class CodingWorkspaceService {
             }
         }
         try {
-            Path boundary = configuredShared != null
-                ? configuredShared : Paths.get(harnessOwnerRoot).toAbsolutePath().normalize();
-            Files.createDirectories(boundary);
+            Files.createDirectories(ownerBase);
             Files.createDirectories(expected);
-            Path boundaryReal = boundary.toRealPath();
+            Path boundaryReal = ownerBase.toRealPath();
             Path expectedReal = expected.toRealPath();
             if (!expectedReal.startsWith(boundaryReal)) {
                 throw new IllegalArgumentException("Workspace lease resolves outside its boundary");
@@ -144,6 +146,32 @@ public class CodingWorkspaceService {
             return expectedReal;
         } catch (IOException error) {
             throw new IllegalArgumentException("Cannot provision Harness workspace lease", error);
+        }
+    }
+
+    private Path resolveSharedHarnessRoot(Path boundary, String requestedPath) {
+        Path requested = requestedPath == null || requestedPath.isBlank()
+            ? boundary : Paths.get(requestedPath).toAbsolutePath().normalize();
+        if (!requested.startsWith(boundary)) {
+            throw new IllegalArgumentException(
+                "Workspace must be inside the configured shared root: " + boundary
+                    + "; requested: " + requested);
+        }
+        try {
+            Files.createDirectories(boundary);
+            if (!Files.isDirectory(requested, LinkOption.NOFOLLOW_LINKS)) {
+                throw new IllegalArgumentException(
+                    "Requested workspace must be an existing directory: " + requested);
+            }
+            Path boundaryReal = boundary.toRealPath();
+            Path requestedReal = requested.toRealPath();
+            if (!requestedReal.startsWith(boundaryReal)) {
+                throw new IllegalArgumentException(
+                    "Workspace lease resolves outside the configured shared root");
+            }
+            return requestedReal;
+        } catch (IOException error) {
+            throw new IllegalArgumentException("Cannot open shared Harness workspace", error);
         }
     }
 

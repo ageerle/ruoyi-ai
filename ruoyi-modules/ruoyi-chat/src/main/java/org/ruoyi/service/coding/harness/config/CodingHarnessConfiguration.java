@@ -1,10 +1,15 @@
 package org.ruoyi.service.coding.harness.config;
 
+import org.ruoyi.service.coding.harness.journal.FileRunJournalProjector;
+import org.ruoyi.service.coding.harness.journal.RunJournalProjector;
+import org.ruoyi.service.coding.harness.journal.StructuredContextSnapshotFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.nio.file.Path;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,6 +22,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
 public class CodingHarnessConfiguration {
+
+    @Bean
+    @ConditionalOnProperty(prefix = "coding.harness.journal", name = "enabled",
+        havingValue = "true")
+    public StructuredContextSnapshotFactory codingHarnessStructuredContextSnapshotFactory() {
+        return new StructuredContextSnapshotFactory();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "coding.harness.journal", name = "enabled",
+        havingValue = "true")
+    public RunJournalProjector codingHarnessRunJournalProjector(
+        @Value("${coding.harness.journal.output-directory:./data/coding-harness-journal}")
+        String outputDirectory) {
+        if (outputDirectory == null || outputDirectory.isBlank()) {
+            throw new IllegalArgumentException("Coding Harness journal output directory is required");
+        }
+        return new FileRunJournalProjector(Path.of(outputDirectory));
+    }
 
     @Bean(name = "codingHarnessDeliveryExecutor")
     public Executor codingHarnessDeliveryExecutor(

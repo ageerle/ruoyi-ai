@@ -56,7 +56,7 @@ public final class StreamingModelTurnAdapter {
         Objects.requireNonNull(request, "request");
         long timeoutNanos = positiveNanos(timeout);
         TurnState state = new TurnState(listener == null ? ModelTurnListener.NOOP : listener,
-            clock, timeout);
+            clock, timeout, timeoutScheduler);
         ModelTurnHandle handle = new ModelTurnHandle(state.result, state);
 
         ScheduledFuture<?> timeoutFuture;
@@ -79,8 +79,9 @@ public final class StreamingModelTurnAdapter {
         try {
             model.chat(request, new TurnHandler(state));
         } catch (Throwable failure) {
-            state.failed(ModelTurnFailureKind.PROVIDER_ERROR,
-                "Streaming model failed while starting the turn", failure, true);
+            state.failed(ProviderFailureClassifier.classify(failure),
+                safeProviderMessage("Streaming model failed while starting the turn", failure),
+                failure, true);
         }
         return handle;
     }
@@ -151,11 +152,16 @@ public final class StreamingModelTurnAdapter {
 
         @Override
         public void onError(Throwable error) {
-            state.failed(ModelTurnFailureKind.PROVIDER_ERROR,
-                "Streaming model reported an error",
-                error == null ? new IllegalStateException("Provider supplied a null error") : error,
-                true);
+            Throwable providerError = error == null
+                ? new IllegalStateException("Provider supplied a null error") : error;
+            state.failed(ProviderFailureClassifier.classify(providerError),
+                safeProviderMessage("Streaming model reported an error", providerError),
+                providerError, true);
         }
+    }
+
+    private static String safeProviderMessage(String prefix, Throwable failure) {
+        return prefix + " [" + ProviderFailureClassifier.safeDiagnosticCode(failure) + "]";
     }
 
     private static final class TurnState implements ModelTurnHandle.Control {
@@ -170,12 +176,16 @@ public final class StreamingModelTurnAdapter {
         private final Set<StreamingHandle> cancelledHandles =
             Collections.newSetFromMap(new IdentityHashMap<>());
         private ScheduledFuture<?> timeoutFuture;
+        private final ScheduledExecutorService timeoutScheduler;
+        private long lastProgressNanos = System.nanoTime();
         private boolean terminal;
 
-        private TurnState(ModelTurnListener listener, Clock clock, Duration timeout) {
+        private TurnState(ModelTurnListener listener, Clock clock, Duration timeout,
+                          ScheduledExecutorService timeoutScheduler) {
             this.listener = listener;
             this.clock = clock;
             this.timeout = timeout;
+            this.timeoutScheduler = timeoutScheduler;
             this.startedAt = clock.instant();
         }
 
@@ -250,6 +260,7 @@ public final class StreamingModelTurnAdapter {
                     return;
                 }
                 try {
+                    lastProgressNanos = System.nanoTime();
                     callback.invoke();
                 } catch (Throwable listenerFailure) {
                     terminalClaim = claimFailure(ModelTurnFailureKind.LISTENER_ERROR,
@@ -266,6 +277,14 @@ public final class StreamingModelTurnAdapter {
                     new IllegalStateException("Complete ChatResponse is required"), true);
                 return;
             }
+            String finishReasonRejection = ProviderFinishReasonGuard.rejectionReason(response);
+            if (finishReasonRejection != null) {
+                // The provider has already closed the stream. Surface a retryable provider failure
+                // without admitting partial text, tool calls, or usage to the durable ledger.
+                failed(ModelTurnFailureKind.PROVIDER_ERROR, finishReasonRejection,
+                    new IllegalStateException(finishReasonRejection), false);
+                return;
+            }
             Terminal claim;
             synchronized (lock) {
                 if (terminal) {
@@ -278,9 +297,28 @@ public final class StreamingModelTurnAdapter {
         }
 
         private void timedOut() {
-            failed(ModelTurnFailureKind.TIMEOUT,
-                "Model turn exceeded timeout " + timeout,
-                new java.util.concurrent.TimeoutException("Model turn timed out"), true);
+            Terminal claim;
+            synchronized (lock) {
+                if (terminal) {
+                    return;
+                }
+                long remaining = timeout.toNanos() - (System.nanoTime() - lastProgressNanos);
+                if (remaining > 0) {
+                    try {
+                        bindTimeout(timeoutScheduler.schedule(this::timedOut, remaining,
+                            TimeUnit.NANOSECONDS));
+                        return;
+                    } catch (RuntimeException schedulingFailure) {
+                        claim = claimFailure(ModelTurnFailureKind.START_FAILURE,
+                            "Unable to schedule model inactivity timeout", schedulingFailure, true);
+                    }
+                } else {
+                    claim = claimFailure(ModelTurnFailureKind.TIMEOUT,
+                        "Model response inactive for " + timeout,
+                        new java.util.concurrent.TimeoutException("Model response inactive"), true);
+                }
+            }
+            publish(claim);
         }
 
         private void failed(ModelTurnFailureKind kind, String message, Throwable cause,

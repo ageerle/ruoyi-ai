@@ -13,6 +13,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.ruoyi.common.websocket.constant.WebSocketConstants.LOGIN_USER_KEY;
 
@@ -23,6 +24,10 @@ import static org.ruoyi.common.websocket.constant.WebSocketConstants.LOGIN_USER_
  */
 @Slf4j
 public class PlusWebSocketInterceptor implements HandshakeInterceptor {
+
+    private static final Pattern CREDENTIAL_PATH_SEGMENT = Pattern.compile(
+        "(?i)(/(?:token(?:[-_]?id)?|access[-_]?token|refresh[-_]?token|api[-_]?key|"
+            + "monitor/online(?:/myself)?|myself)/)([^/?#;\\s]+)");
 
     /**
      * WebSocket握手之前执行的前置处理方法
@@ -54,7 +59,8 @@ public class PlusWebSocketInterceptor implements HandshakeInterceptor {
             attributes.put(LOGIN_USER_KEY, loginUser);
             return true;
         } catch (NotLoginException e) {
-            log.error("WebSocket 认证失败'{}',无法访问系统资源", e.getMessage());
+            log.error("websocket_handshake_failed category=NOT_LOGIN path={} exceptionType={}",
+                safePath(request), e.getClass().getName());
             return false;
         }
     }
@@ -70,6 +76,12 @@ public class PlusWebSocketInterceptor implements HandshakeInterceptor {
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
         // 在这个方法中可以执行一些握手成功后的后续处理逻辑，比如记录日志或者其他操作
+    }
+
+    private static String safePath(ServerHttpRequest request) {
+        String path = request.getURI().getPath();
+        return path == null ? null
+            : CREDENTIAL_PATH_SEGMENT.matcher(path).replaceAll("$1[REDACTED]");
     }
 
 }

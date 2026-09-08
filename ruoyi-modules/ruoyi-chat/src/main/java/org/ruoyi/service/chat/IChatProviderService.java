@@ -41,6 +41,9 @@ public interface IChatProviderService {
      */
     List<ChatProviderVo> queryList(ChatProviderBo bo);
 
+    /** 校验当前租户的厂商仍存在且处于启用状态，供模型保存及调用使用。 */
+    void requireEnabled(String providerCode);
+
     /**
      * 新增厂商管理
      *

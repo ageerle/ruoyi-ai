@@ -1,6 +1,6 @@
 package org.ruoyi.service.coding.harness.model;
 
-/** Hard run limits. Zero disables the corresponding cumulative token limit. */
+/** Optional spending limits. Legacy iteration/wall-time fields are retained as zero for wire compatibility. */
 public record HarnessBudget(
     int maxIterations,
     int maxToolCalls,
@@ -10,13 +10,14 @@ public record HarnessBudget(
 ) {
 
     public static HarnessBudget defaults() {
-        return new HarnessBudget(200, 600, 0, 100_000, 6 * 60 * 60 * 1000L);
+        return new HarnessBudget(0, 0, 0, 0, 0);
     }
 
     public HarnessBudget {
-        if (maxIterations < 1 || maxToolCalls < 1 || maxInputTokens < 0
-            || maxOutputTokens < 0 || maxWallTimeMillis < 1) {
+        if (maxToolCalls < 0 || maxInputTokens < 0 || maxOutputTokens < 0) {
             throw new IllegalArgumentException("Invalid Harness budget");
         }
+        maxIterations = 0;
+        maxWallTimeMillis = 0;
     }
 }

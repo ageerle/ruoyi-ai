@@ -56,7 +56,6 @@ import org.ruoyi.common.trace.core.TraceStreamSpan;
 import org.ruoyi.common.trace.domain.TraceNode;
 import org.ruoyi.common.trace.domain.TraceRun;
 import org.ruoyi.common.trace.service.TraceRecordService;
-import org.ruoyi.common.trace.util.TracePayloadUtils;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.agent.AgentVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
@@ -102,6 +101,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ChatServiceFacade implements IChatService {
 
     private static final Integer DEFAULT_MAX_MESSAGES = 20;
+
+    static final String SAFE_CHAT_ERROR_MESSAGE = "对话处理失败，请稍后重试";
 
     private final IChatModelService chatModelService;
 
@@ -170,12 +171,15 @@ public class ChatServiceFacade implements IChatService {
         if (agentMode) {
             agentVo = agentService.queryById(chatRequest.getAgentId());
             if (agentVo == null) {
-                throw new IllegalArgumentException("智能体不存在: " + chatRequest.getAgentId());
+                throw new IllegalArgumentException("智能体不存在");
+            }
+            if (!"0".equals(agentVo.getStatus())) {
+                throw new IllegalArgumentException("智能体已停用");
             }
             if (agentVo != null && agentVo.getModelId() != null) {
                 ChatModelVo agentModel = chatModelService.queryById(agentVo.getModelId());
                 if (agentModel == null) {
-                    throw new IllegalArgumentException("智能体绑定的模型不存在: " + agentVo.getModelId());
+                    throw new IllegalArgumentException("智能体绑定的模型不存在");
                 }
                 chatRequest.setModel(agentModel.getModelName());
             }
@@ -190,7 +194,7 @@ public class ChatServiceFacade implements IChatService {
         // 根据模型名称查询完整配置
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         if (chatModelVo == null) {
-            throw new IllegalArgumentException("模型不存在: " + chatRequest.getModel());
+            throw new IllegalArgumentException("模型不存在");
         }
 
         // 对话和智能体模式共用按会话隔离的 SSE。
@@ -258,9 +262,9 @@ public class ChatServiceFacade implements IChatService {
                 llmSpan.detach();
             }
             finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-            SseMessageUtils.sendError(String.valueOf(chatRequest.getSessionId()), e.getMessage());
+            SseMessageUtils.sendError(String.valueOf(chatRequest.getSessionId()), SAFE_CHAT_ERROR_MESSAGE);
             SseMessageUtils.completeConnection(String.valueOf(chatRequest.getSessionId()));
-            log.error("普通对话执行失败", e);
+            log.error("chat_operation operation=MODEL_CHAT status=FAILED errorType={}", errorType(e));
         }
         return chatRequest.getEmitter();
     }
@@ -335,7 +339,12 @@ public class ChatServiceFacade implements IChatService {
             .chatModel(plannerModel)
             .subAgents(searchAgent, sqlAgent, chartGenerationAgent, echartsAgent, chitChatAgent)
             .supervisorContext("仅当请求是问候或简单闲聊、不需要任何数据、搜索、技能或图表时,才使用 chitChatAgent;"
-                + "其余情况必须使用对应的专业 Agent")
+                + "其余情况必须使用对应的专业 Agent。"
+                + "数据库问数交给 SqlAgent；用户已提供完整数据时交给 ChartGenerationAgent。"
+                + "数据库转图表可交给 EchartsAgent；用户明确要求先查询再绘图时，先调用 SqlAgent，"
+                + "将其 SQL、筛选条件、单位、完整结果行和截断状态传给 ChartGenerationAgent。"
+                + "数据查询失败、为空或被截断时，返回限制说明，不得编造图表。"
+                + "图表生成后直接结束任务，保留最后结果的 echarts 代码块，不再调用闲聊 Agent 改写。")
             .responseStrategy(SupervisorResponseStrategy.LAST);
         SupervisorAgent supervisor = supervisorBuilder.build();
 
@@ -377,8 +386,8 @@ public class ChatServiceFacade implements IChatService {
                     llmSpan.finishError(e);
                 }
                 finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-                log.error("Supervisor 执行失败", e);
-                SseMessageUtils.sendError(sessionId, e.getMessage());
+                log.error("chat_operation operation=SUPERVISOR status=FAILED errorType={}", errorType(e));
+                SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
             } finally {
                 if (llmSpan != null) {
                     llmSpan.detach();
@@ -410,7 +419,8 @@ public class ChatServiceFacade implements IChatService {
         try {
             traceRecordService.startRun(run);
         } catch (Exception e) {
-            log.warn("写入 RAG chat trace run 失败，traceId={}", traceId, e);
+            log.warn("trace_persistence operation=START_RUN status=FAILED traceId={} errorType={}",
+                traceId, errorType(e));
         }
         return new TraceRunHandle(traceId, startMillis, run.getBusinessId(), run.getTenantId());
     }
@@ -449,7 +459,8 @@ public class ChatServiceFacade implements IChatService {
             TraceContext.pushNode(nodeId);
             return new DefaultTraceStreamSpan(traceRecordService, traceProperties, traceRun.traceId, nodeId, startMillis);
         } catch (Exception e) {
-            log.warn("写入 LLM trace 节点失败，traceId={}, nodeId={}", traceRun.traceId, nodeId, e);
+            log.warn("trace_persistence operation=START_NODE status=FAILED traceId={} nodeId={} errorType={}",
+                traceRun.traceId, nodeId, errorType(e));
             return null;
         }
     }
@@ -459,10 +470,11 @@ public class ChatServiceFacade implements IChatService {
             return;
         }
         try {
-            traceRecordService.finishRun(traceRun.traceId, status, TracePayloadUtils.error(error, traceProperties),
+            traceRecordService.finishRun(traceRun.traceId, status, traceErrorSummary(error),
                 new Date(), System.currentTimeMillis() - traceRun.startMillis);
         } catch (Exception e) {
-            log.warn("结束 RAG chat trace run 失败，traceId={}", traceRun.traceId, e);
+            log.warn("trace_persistence operation=FINISH_RUN status=FAILED traceId={} errorType={}",
+                traceRun.traceId, errorType(e));
         }
     }
 
@@ -470,7 +482,7 @@ public class ChatServiceFacade implements IChatService {
         try {
             return LoginHelper.getTenantId();
         } catch (Exception e) {
-            log.warn("获取 trace tenantId 失败: {}", e.getMessage());
+            log.warn("trace_context operation=RESOLVE_TENANT status=FAILED errorType={}", errorType(e));
             return null;
         }
     }
@@ -512,7 +524,7 @@ public class ChatServiceFacade implements IChatService {
             ChatMessage augmented = result.chatMessage();
             return augmented instanceof UserMessage ? ((UserMessage) augmented).singleText() : content;
         } catch (Exception e) {
-            log.warn("智能体对话 RAG 增强失败，回退原始输入: {}", e.getMessage());
+            log.warn("chat_rag operation=AUGMENT status=FALLBACK errorType={}", errorType(e));
             return content;
         }
     }
@@ -529,12 +541,12 @@ public class ChatServiceFacade implements IChatService {
         // 1. 根据模型名称查询完整配置
         ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
         if (chatModelVo == null) {
-            throw new IllegalArgumentException("模型不存在: " + chatRequest.getModel());
+            throw new IllegalArgumentException("模型不存在");
         }
 
         // 3. 路由服务提供商
         String providerCode = chatModelVo.getProviderCode();
-        log.info("跨模块调用 - 路由到服务提供商: {}, 模型: {}", providerCode, chatRequest.getModel());
+        log.info("chat_routing status=SELECTED");
         AbstractChatService chatService = chatServiceFactory.getOriginalService(providerCode);
 
         // 4. 获取用户信息
@@ -585,7 +597,7 @@ public class ChatServiceFacade implements IChatService {
                     .chatMemoryStore(store)
                     .build();
             } catch (Exception e) {
-                log.warn("创建聊天内存失败: {}", e.getMessage());
+                log.warn("chat_memory operation=CREATE status=FAILED errorType={}", errorType(e));
                 return null;
             }
         });
@@ -698,12 +710,12 @@ public class ChatServiceFacade implements IChatService {
                 }
                 ChatModelVo embModel = chatModelService.selectModelByName(kb.getEmbeddingModel());
                 if (embModel == null) {
-                    log.warn("知识库向量模型未配置或不存在: kid={}, embeddingModel={}", kid, kb.getEmbeddingModel());
+                    log.warn("knowledge_retriever status=SKIPPED reason=EMBEDDING_MODEL_UNAVAILABLE");
                     continue;
                 }
                 retrievers.add(new CustomVectorRetriever(knowledgeRetrievalService, kb, embModel));
             } catch (Exception e) {
-                log.warn("构建知识库检索器失败: kid={}, err={}", kid, e.getMessage());
+                log.warn("knowledge_retriever operation=BUILD status=FAILED errorType={}", errorType(e));
             }
         }
         if (retrievers.isEmpty()) {
@@ -736,7 +748,8 @@ public class ChatServiceFacade implements IChatService {
                             List<Content> part = r.retrieve(query);
                             return part == null ? List.<Content>of() : part;
                         } catch (Exception e) {
-                            log.warn("复合检索子检索器异常: {}", e.getMessage());
+                            log.warn("knowledge_retriever operation=RETRIEVE status=FAILED errorType={}",
+                                errorType(e));
                             return List.<Content>of();
                         }
                     })).toList();
@@ -770,7 +783,6 @@ public class ChatServiceFacade implements IChatService {
         QueryVectorBo queryVectorBo = new QueryVectorBo();
         queryVectorBo.setQuery(chatRequest.getContent());
         queryVectorBo.setKid(chatRequest.getKnowledgeId());
-        queryVectorBo.setApiKey(chatModel.getApiKey());
         queryVectorBo.setBaseUrl(chatModel.getApiHost());
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
         queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
@@ -820,7 +832,7 @@ public class ChatServiceFacade implements IChatService {
                             chatRequest.getModel()
                         );
                     } else {
-                        log.warn("普通对话返回空消息,会话:{}", chatRequest.getSessionId());
+                        log.warn("chat_stream status=EMPTY_RESPONSE");
                     }
                     if (llmSpan != null) {
                         llmSpan.finishSuccess(RagTracePayloadBuilder.streamOutputSummary(fullMessage.length()));
@@ -832,8 +844,8 @@ public class ChatServiceFacade implements IChatService {
                         llmSpan.finishError(e);
                     }
                     finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-                    SseMessageUtils.sendError(sessionId, e.getMessage());
-                    log.error("普通对话完成处理失败", e);
+                    SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
+                    log.error("chat_stream operation=COMPLETE status=FAILED errorType={}", errorType(e));
                 } finally {
                     if (llmSpan != null) {
                         llmSpan.detach();
@@ -849,9 +861,9 @@ public class ChatServiceFacade implements IChatService {
                     llmSpan.detach();
                 }
                 finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, error);
-                SseMessageUtils.sendError(sessionId, error.getMessage());
+                SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
                 SseMessageUtils.completeConnection(sessionId);
-                log.error("普通对话流式响应失败", error);
+                log.error("chat_stream operation=MODEL_STREAM status=FAILED errorType={}", errorType(error));
             }
         };
     }
@@ -915,7 +927,7 @@ public class ChatServiceFacade implements IChatService {
                         externalHandler.onCompleteResponse(completeResponse);
                     }
                 } catch (Exception e) {
-                    log.error("完成响应时出错: {}", e.getMessage(), e);
+                    log.error("chat_stream operation=COMPLETE status=FAILED errorType={}", errorType(e));
                 }
             }
 
@@ -923,15 +935,26 @@ public class ChatServiceFacade implements IChatService {
             public void onError(Throwable error) {
                 // 发送错误事件（工作流调用时由工作流引擎统一上报）
                 if (externalHandler == null) {
-                    SseMessageUtils.sendError(sessionId, error.getMessage());
+                    SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
                 }
-                log.error("流式响应错误: {}", error.getMessage(), error);
+                log.error("chat_stream operation=COMBINED_STREAM status=FAILED errorType={}", errorType(error));
 
                 // 转发给外部 handler
                 if (externalHandler != null) {
+                    // This is a trusted, in-process callback contract. Preserve the original
+                    // throwable identity for workflow recovery; only durable/log/SSE boundaries
+                    // redact untrusted exception messages.
                     externalHandler.onError(error);
                 }
             }
         };
+    }
+
+    private static String errorType(Throwable error) {
+        return error == null ? "unknown" : error.getClass().getName();
+    }
+
+    static String traceErrorSummary(Throwable error) {
+        return error == null ? null : "CHAT_OPERATION_FAILED errorType=" + errorType(error);
     }
 }

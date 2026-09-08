@@ -3462,7 +3462,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     private ChatModelVo findChatModel() {
         org.ruoyi.common.chat.domain.bo.chat.ChatModelBo query = new org.ruoyi.common.chat.domain.bo.chat.ChatModelBo();
         query.setCategory("chat");
-        List<ChatModelVo> models = chatModelService.queryList(query);
+        List<ChatModelVo> models = chatModelService.queryAvailableList(query);
         if (models != null && !models.isEmpty()) {
             return models.get(0);
         }

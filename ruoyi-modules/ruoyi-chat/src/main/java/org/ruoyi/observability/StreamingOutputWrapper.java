@@ -59,7 +59,11 @@ public class StreamingOutputWrapper implements StreamingChatModel, ChatModel {
 
     @Override
     public ChatResponse chat(ChatRequest request) {
-        log.info("【StreamingOutputWrapper】chat() 被调用，开始流式处理");
+        long startedAt = System.nanoTime();
+        log.info("streaming_chat status=STARTED messageCount={} toolCount={}",
+            request == null || request.messages() == null ? 0 : request.messages().size(),
+            request == null || request.toolSpecifications() == null
+                ? 0 : request.toolSpecifications().size());
         // 用于收集完整响应
         AtomicReference<ChatResponse> responseRef = new AtomicReference<>();
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -70,19 +74,16 @@ public class StreamingOutputWrapper implements StreamingChatModel, ChatModel {
             public void onPartialResponse(String token) {
                 // 推送到 channel
                 channel.send(token);
-                log.debug("【流式Token】{}", token);
             }
 
             @Override
             public void onPartialResponse(PartialResponse pr, PartialResponseContext ctx) {
                 channel.send(pr.text());
-                log.debug("【流式PartialResponse】{}", pr.text());
             }
 
             @Override
             public void onPartialThinking(PartialThinking thinking) {
                 channel.send("[思考] " + thinking.text());
-                log.debug("【流式思考】{}", thinking.text());
             }
 
             @Override
@@ -108,16 +109,20 @@ public class StreamingOutputWrapper implements StreamingChatModel, ChatModel {
 //                    channel.send("\n[Token统计] input=" + usage.inputTokenCount()
 //                        + " output=" + usage.outputTokenCount());
                 }
-                log.info("【StreamingOutputWrapper】流式处理完成");
+                log.info("streaming_chat status=COMPLETED elapsedMs={} inputTokens={} outputTokens={}",
+                    Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L),
+                    response.tokenUsage() == null ? null : response.tokenUsage().inputTokenCount(),
+                    response.tokenUsage() == null ? null : response.tokenUsage().outputTokenCount());
                 future.complete(null);
             }
 
             @Override
             public void onError(Throwable error) {
-                channel.send("\n[错误] " + error.getMessage());
                 channel.completeWithError(error);
                 future.completeExceptionally(error);
-                log.error("【StreamingOutputWrapper】流式处理出错", error);
+                log.error("streaming_chat status=FAILED elapsedMs={} errorType={}",
+                    Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L),
+                    error == null ? "unknown" : error.getClass().getName());
             }
         });
 
@@ -187,7 +192,6 @@ public class StreamingOutputWrapper implements StreamingChatModel, ChatModel {
 
             @Override
             public void onError(Throwable error) {
-                channel.send("\n[错误] " + error.getMessage());
                 channel.completeWithError(error);
                 original.onError(error);
             }

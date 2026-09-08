@@ -27,7 +27,7 @@ public class McpMarketListResult {
     /**
      * 市场列表
      */
-    private List<McpMarket> data;
+    private List<McpMarketListItem> data;
 
     /**
      * 总数
@@ -35,10 +35,13 @@ public class McpMarketListResult {
     private int total;
 
     public static McpMarketListResult of(List<McpMarket> data) {
+        List<McpMarketListItem> publicData = data == null
+            ? List.of()
+            : data.stream().map(McpMarketListItem::from).toList();
         return McpMarketListResult.builder()
             .success(true)
-            .data(data)
-            .total(data != null ? data.size() : 0)
+            .data(publicData)
+            .total(publicData.size())
             .build();
     }
 }

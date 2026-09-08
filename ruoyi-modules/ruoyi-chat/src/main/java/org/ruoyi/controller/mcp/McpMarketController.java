@@ -50,17 +50,18 @@ public class McpMarketController extends BaseController {
      */
     @SaCheckPermission("mcp:market:list")
     @GetMapping("/all")
-    public McpMarketListResult listAll(
+    public R<McpMarketListResult> listAll(
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false) String status) {
-        return mcpMarketService.listMarkets(keyword, status);
+        return R.ok(mcpMarketService.listMarkets(keyword, status));
     }
 
     /**
      * 导出 MCP 市场列表
      */
     @SaCheckPermission("mcp:market:export")
-    @Log(title = "MCP市场管理", businessType = BusinessType.EXPORT)
+    @Log(title = "MCP市场管理", businessType = BusinessType.EXPORT,
+        excludeParamNames = {"authConfig", "configJson", "toolMetadata"})
     @PostMapping("/export")
     public void export(McpMarketBo bo, HttpServletResponse response) {
         List<McpMarketVo> list = mcpMarketService.queryList(bo);
@@ -82,7 +83,8 @@ public class McpMarketController extends BaseController {
      * 新增市场
      */
     @SaCheckPermission("mcp:market:add")
-    @Log(title = "MCP市场管理", businessType = BusinessType.INSERT)
+    @Log(title = "MCP市场管理", businessType = BusinessType.INSERT,
+        excludeParamNames = {"authConfig", "configJson", "toolMetadata"})
     @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody McpMarketBo bo) {
@@ -94,7 +96,8 @@ public class McpMarketController extends BaseController {
      * 修改市场
      */
     @SaCheckPermission("mcp:market:edit")
-    @Log(title = "MCP市场管理", businessType = BusinessType.UPDATE)
+    @Log(title = "MCP市场管理", businessType = BusinessType.UPDATE,
+        excludeParamNames = {"authConfig", "configJson", "toolMetadata"})
     @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody McpMarketBo bo) {
@@ -131,17 +134,17 @@ public class McpMarketController extends BaseController {
      */
     @SaCheckPermission("mcp:market:query")
     @GetMapping("/{marketId}/tools")
-    public McpMarketToolListResult getMarketTools(
+    public R<McpMarketToolListResult> getMarketTools(
         @PathVariable Long marketId,
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "10") int size) {
-        return mcpMarketService.getMarketTools(marketId, page, size);
+        return R.ok(mcpMarketService.getMarketTools(marketId, page, size));
     }
 
     /**
      * 刷新市场工具列表
      */
-    @SaCheckPermission("mcp:market:edit")
+    @SaCheckPermission("mcp:market:refresh")
     @Log(title = "MCP市场管理", businessType = BusinessType.UPDATE)
     @PostMapping("/{marketId}/refresh")
     public R<McpMarketRefreshResult> refreshMarketTools(@PathVariable Long marketId) {
@@ -151,7 +154,7 @@ public class McpMarketController extends BaseController {
     /**
      * 加载单个工具到本地
      */
-    @SaCheckPermission("mcp:market:add")
+    @SaCheckPermission("mcp:market:load")
     @Log(title = "MCP市场管理", businessType = BusinessType.INSERT)
     @PostMapping("/tools/{toolId}/load")
     public R<Void> loadToolToLocal(@PathVariable Long toolId) {
@@ -162,7 +165,7 @@ public class McpMarketController extends BaseController {
     /**
      * 批量加载工具到本地
      */
-    @SaCheckPermission("mcp:market:add")
+    @SaCheckPermission("mcp:market:load")
     @Log(title = "MCP市场管理", businessType = BusinessType.INSERT)
     @PostMapping("/tools/batch-load")
     public R<Map<String, Object>> batchLoadTools(@RequestBody List<Long> toolIds) {

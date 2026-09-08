@@ -7,6 +7,7 @@ import org.ruoyi.service.coding.harness.model.HarnessMessage;
 import org.ruoyi.service.coding.harness.model.HarnessOwner;
 import org.ruoyi.service.coding.harness.model.HarnessRunState;
 import org.ruoyi.service.coding.harness.model.HarnessSessionState;
+import org.ruoyi.service.coding.harness.modelruntime.HarnessModelRouter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -26,6 +27,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -47,6 +49,7 @@ public class FileHarnessStore implements HarnessStore {
     private static final String RECOVERY_CURSOR =
         "[A-Za-z0-9_-]{1,128}/[1-9][0-9]*/[A-Za-z0-9_-]{1,128}/[A-Za-z0-9_-]{1,128}";
     private static final ReentrantLock[] PROCESS_LEDGER_LOCKS = createLedgerLockStripes(256);
+    private static final HarnessModelRouter LEGACY_MODEL_ROUTER = new HarnessModelRouter();
 
     private final ObjectMapper objectMapper;
     private final Path dataRoot;
@@ -118,11 +121,51 @@ public class FileHarnessStore implements HarnessStore {
                 .filter(Files::isRegularFile)
                 .map(path -> read(path, HarnessSessionState.class))
                 .peek(state -> verifyOwner(owner, state.owner()))
-                .sorted(Comparator.comparingLong(HarnessSessionState::updatedAt).reversed())
+                .filter(state -> state.deletedAt() == 0)
+                .sorted(Comparator.comparingLong(HarnessSessionState::pinnedAt).reversed()
+                    .thenComparing(Comparator.comparingLong(HarnessSessionState::updatedAt).reversed()))
                 .toList();
         } catch (IOException e) {
             throw new HarnessStoreException("Cannot list Harness sessions", e);
         }
+    }
+
+    @Override
+    public HarnessSessionState setSessionPinned(HarnessOwner owner, String sessionId, boolean pinned) {
+        requireSafeId("sessionId", sessionId);
+        return withSessionLock(owner, sessionId, () -> {
+            Path file = sessionFile(owner, sessionId);
+            HarnessSessionState current = readRequired(file, HarnessSessionState.class, "session");
+            verifyOwner(owner, current.owner());
+            if (current.deletedAt() != 0) {
+                throw new HarnessStoreException("会话已删除，请先恢复会话");
+            }
+            long pinnedAt = pinned ? (current.pinnedAt() == 0
+                ? System.currentTimeMillis() : current.pinnedAt()) : 0;
+            HarnessSessionState updated = current.withSidebarState(pinnedAt, 0);
+            atomicWrite(file, updated);
+            return updated;
+        });
+    }
+
+    @Override
+    public HarnessSessionState setSessionDeleted(HarnessOwner owner, String sessionId, boolean deleted) {
+        requireSafeId("sessionId", sessionId);
+        return withSessionLock(owner, sessionId, () -> {
+            Path file = sessionFile(owner, sessionId);
+            HarnessSessionState current = readRequired(file, HarnessSessionState.class, "session");
+            verifyOwner(owner, current.owner());
+            if (deleted && current.deletedAt() == 0
+                && listRuns(owner, sessionId).stream().anyMatch(run -> !run.status().isTerminal())) {
+                throw new HarnessStoreException("该会话还有未结束的任务，请先停止任务再删除会话");
+            }
+            long deletedAt = deleted ? (current.deletedAt() == 0
+                ? System.currentTimeMillis() : current.deletedAt()) : 0;
+            // Keep the pin position so undo restores the complete sidebar state.
+            HarnessSessionState updated = current.withSidebarState(current.pinnedAt(), deletedAt);
+            atomicWrite(file, updated);
+            return updated;
+        });
     }
 
     @Override
@@ -141,7 +184,21 @@ public class FileHarnessStore implements HarnessStore {
             if (!current.workspace().equals(session.workspace())) {
                 throw new HarnessStoreException("A session workspace lease is immutable");
             }
-            HarnessSessionState stored = session.withRevision(expectedRevision + 1);
+            if (!current.workspaceManifest().equals(session.workspaceManifest())) {
+                throw new HarnessStoreException("A session workspace manifest is immutable");
+            }
+            // 会话的思考等级、验证归属在创建后即固定，后续 withTitle/withActiveRun 等更新
+            // 必须原样保留；改动视为冲突并拒绝。模型同样固定。
+            if (!java.util.Objects.equals(current.model(), session.model())
+                || current.thinkingLevel() != session.thinkingLevel()
+                || current.verificationMode() != session.verificationMode()) {
+                throw new HarnessStoreException(
+                    "A session model, thinking level and verification mode are immutable");
+            }
+            // An execution snapshot may predate a pin/delete action. Preserve the latest sidebar
+            // state without making UI-only changes conflict with an in-flight agent update.
+            HarnessSessionState stored = session.withSidebarState(current.pinnedAt(), current.deletedAt())
+                .withRevision(expectedRevision + 1);
             atomicWrite(file, stored);
             return stored;
         });
@@ -156,6 +213,13 @@ public class FileHarnessStore implements HarnessStore {
             HarnessSessionState session = readRequired(sessionFile(owner, run.sessionId()),
                 HarnessSessionState.class, "session");
             verifyOwner(owner, session.owner());
+            if (session.deletedAt() != 0) {
+                throw new HarnessStoreException("会话已删除，请先恢复会话");
+            }
+            if (run.modelRoute() == null
+                || !session.model().equals(run.modelRoute().requestedModel())) {
+                throw new HarnessStoreException("Run model route does not belong to its session");
+            }
             Path file = runFile(owner, run.sessionId(), run.runId());
             if (Files.exists(file)) {
                 throw new HarnessStoreException("Run already exists: " + run.runId());
@@ -169,11 +233,19 @@ public class FileHarnessStore implements HarnessStore {
     public Optional<HarnessRunState> findRun(HarnessOwner owner, String sessionId, String runId) {
         requireSafeId("sessionId", sessionId);
         requireSafeId("runId", runId);
-        return withSessionLock(owner, sessionId, () -> readOptional(
-            runFile(owner, sessionId, runId), HarnessRunState.class).map(state -> {
+        return withSessionLock(owner, sessionId, () -> {
+            HarnessSessionState session = readOptional(sessionFile(owner, sessionId),
+                HarnessSessionState.class).orElse(null);
+            if (session == null) {
+                return Optional.empty();
+            }
+            verifyOwner(owner, session.owner());
+            return readOptional(runFile(owner, sessionId, runId), HarnessRunState.class)
+                .map(state -> recoverLegacyModelRoute(state, session)).map(state -> {
                 verifyOwner(owner, state.owner());
                 return state;
-            }));
+            });
+        });
     }
 
     @Override
@@ -191,7 +263,7 @@ public class FileHarnessStore implements HarnessStore {
                 return directories.filter(Files::isDirectory)
                     .map(path -> path.resolve("state.json"))
                     .filter(Files::isRegularFile)
-                    .map(path -> read(path, HarnessRunState.class))
+                    .map(path -> recoverLegacyModelRoute(read(path, HarnessRunState.class), session))
                     .peek(state -> verifyOwner(owner, state.owner()))
                     .sorted(Comparator.comparingLong(HarnessRunState::createdAt))
                     .toList();
@@ -206,23 +278,55 @@ public class FileHarnessStore implements HarnessStore {
         requireSafeId("sessionId", run.sessionId());
         requireSafeId("runId", run.runId());
         verifyOwner(owner, run.owner());
+        return withSessionLock(owner, run.sessionId(), () ->
+            saveRunUnderSessionLock(owner, run, expectedRevision));
+    }
+
+    @Override
+    public HarnessRunState saveRunIfMessageLedgerUnchanged(
+        HarnessOwner owner, HarnessRunState run, long expectedRevision,
+        long expectedMessageSequence
+    ) {
+        requireSafeId("sessionId", run.sessionId());
+        requireSafeId("runId", run.runId());
+        verifyOwner(owner, run.owner());
+        if (expectedMessageSequence < 0) {
+            throw new IllegalArgumentException("Message ledger high-watermark cannot be negative");
+        }
         return withSessionLock(owner, run.sessionId(), () -> {
-            Path file = runFile(owner, run.sessionId(), run.runId());
-            HarnessRunState current = readRequired(file, HarnessRunState.class, "run");
-            verifyOwner(owner, current.owner());
-            if (current.revision() != expectedRevision || run.revision() != expectedRevision) {
-                throw new HarnessOptimisticLockException("run " + run.runId(), expectedRevision,
-                    current.revision());
+            long actualSequence = maxMessageSequence(messagesFile(owner, run.sessionId()));
+            if (actualSequence != expectedMessageSequence) {
+                throw new HarnessMessageLedgerConflictException(run.sessionId(),
+                    expectedMessageSequence, actualSequence);
             }
-            if (!current.originalRequirement().equals(run.originalRequirement())
-                || current.permissionMode() != run.permissionMode()
-                || current.permissionRevision() != run.permissionRevision()) {
-                throw new HarnessStoreException("Run anchors are immutable");
-            }
-            HarnessRunState stored = run.withRevision(expectedRevision + 1);
-            atomicWrite(file, stored);
-            return stored;
+            return saveRunUnderSessionLock(owner, run, expectedRevision);
         });
+    }
+
+    private HarnessRunState saveRunUnderSessionLock(HarnessOwner owner, HarnessRunState run,
+                                                     long expectedRevision) {
+        Path file = runFile(owner, run.sessionId(), run.runId());
+        HarnessSessionState session = readRequired(sessionFile(owner, run.sessionId()),
+            HarnessSessionState.class, "session");
+        verifyOwner(owner, session.owner());
+        HarnessRunState current = recoverLegacyModelRoute(
+            readRequired(file, HarnessRunState.class, "run"), session);
+        HarnessRunState candidate = recoverLegacyModelRoute(run, session);
+        verifyOwner(owner, current.owner());
+        if (current.revision() != expectedRevision || candidate.revision() != expectedRevision) {
+            throw new HarnessOptimisticLockException("run " + run.runId(), expectedRevision,
+                current.revision());
+        }
+        if (!current.originalRequirement().equals(candidate.originalRequirement())
+            || current.permissionMode() != candidate.permissionMode()
+            || current.permissionRevision() != candidate.permissionRevision()
+            || !Objects.equals(current.modelRoute(), candidate.modelRoute())
+            || !session.model().equals(candidate.modelRoute().requestedModel())) {
+            throw new HarnessStoreException("Run anchors are immutable");
+        }
+        HarnessRunState stored = candidate.withRevision(expectedRevision + 1);
+        atomicWrite(file, stored);
+        return stored;
     }
 
     @Override
@@ -378,6 +482,23 @@ public class FileHarnessStore implements HarnessStore {
                 "Recovery run snapshot does not match its physical owner path");
         }
         return run;
+    }
+
+    private HarnessRunState recoverLegacyModelRoute(HarnessRunState run,
+                                                    HarnessSessionState session) {
+        if (run.modelRoute() != null) {
+            return run;
+        }
+        // Doubao 旧快照恢复时固定 Doubao，并沿用会话思考等级；DeepSeek 保持原有回退策略。
+        org.ruoyi.service.coding.harness.model.HarnessModelRoute route =
+            org.ruoyi.service.coding.harness.modelruntime.HarnessModelPolicy.isDoubao(session.model())
+                ? LEGACY_MODEL_ROUTER.route(session, run.originalRequirement(), false)
+                : LEGACY_MODEL_ROUTER.legacySessionFallback(
+                    session.model(), run.originalRequirement());
+        return run.withRecoveredModelRoute(new org.ruoyi.service.coding.harness.model.HarnessModelRoute(
+            route.policyVersion(), route.requestedModel(), route.selectedModel(),
+            route.taskClass(), route.thinkingEnabled(),
+            org.ruoyi.service.coding.harness.model.HarnessModelRouteSource.LEGACY_SESSION_FALLBACK));
     }
 
     private List<Path> sortedDirectories(Path parent, String label) {

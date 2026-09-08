@@ -43,6 +43,7 @@ public final class HarnessEventOutboxService {
                 current = store.findRun(owner, observed.sessionId(), observed.runId())
                     .orElse(current);
                 if (current.eventOutbox().isEmpty()) {
+                    ensureTerminalEventAfterBarrier(owner, current);
                     return current;
                 }
                 HarnessEventOutboxEntry entry = current.eventOutbox().get(0);
@@ -60,6 +61,21 @@ public final class HarnessEventOutboxService {
             }
         }
         return current;
+    }
+
+    /**
+     * Repairs a terminal state event only after the durable FIFO is empty. This deliberately does
+     * not drain first: callers decide when retrying publication is appropriate, while the hub
+     * performs a second snapshot check under its per-run publication lock.
+     */
+    public void ensureTerminalEventAfterBarrier(HarnessOwner owner, HarnessRunState observed) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(observed, "observed");
+        HarnessRunState latest = store.findRun(owner, observed.sessionId(), observed.runId())
+            .orElse(observed);
+        if (latest.status().isTerminal() && latest.eventOutbox().isEmpty()) {
+            eventHub.ensureTerminalEvent(owner, latest.sessionId(), latest.runId());
+        }
     }
 
     private HarnessRunState acknowledge(HarnessOwner owner, HarnessRunState observed,

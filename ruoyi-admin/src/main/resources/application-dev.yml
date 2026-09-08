@@ -17,6 +17,26 @@ mcp:
     enabled: false
     url: http://localhost:8085/sse
 
+--- # Local Harness workspace boundary. Override the environment variable to narrow it further.
+coding:
+  harness:
+    workspace:
+      shared-root: ${CODING_HARNESS_WORKSPACE_SHARED_ROOT:D:/Project}
+    journal:
+      # Keep local projection disabled unless an operator explicitly chooses a destination.
+      enabled: ${CODING_HARNESS_JOURNAL_ENABLED:false}
+      output-directory: ${CODING_HARNESS_JOURNAL_OUTPUT_DIRECTORY:./data/coding-harness-journal}
+    # 本地实战也必须显式提供 Docker CLI 绝对路径与不可变镜像；默认保持关闭。
+    tools:
+      execute-process:
+        enabled: ${CODING_HARNESS_EXECUTE_PROCESS_ENABLED:false}
+        sandbox:
+          docker-executable: ${CODING_HARNESS_DOCKER_EXECUTABLE:}
+          docker-executable-sha256: ${CODING_HARNESS_DOCKER_EXECUTABLE_SHA256:}
+          docker-config-directory: ${CODING_HARNESS_DOCKER_CONFIG_DIRECTORY:}
+          docker-host: ${CODING_HARNESS_DOCKER_HOST:}
+          image: ${CODING_HARNESS_SANDBOX_IMAGE:}
+
 --- # 上传文件地址
 sys:
   upload:
@@ -46,7 +66,7 @@ spring:
     # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
     dynamic:
       # 性能分析插件(有性能损耗 不建议生产环境使用)
-      p6spy: true
+      p6spy: false
       # 设置默认的数据源或者数据源组,默认值即为 master
       primary: master
       # 严格模式 匹配不到数据源则报错

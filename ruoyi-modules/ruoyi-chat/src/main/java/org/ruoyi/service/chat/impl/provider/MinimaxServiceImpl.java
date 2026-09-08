@@ -45,7 +45,7 @@ public class MinimaxServiceImpl implements AbstractChatService {
         if (isAnthropicBaseUrl(baseUrl)) {
             return AnthropicStreamingChatModel.builder()
                 .baseUrl(toAnthropicClientBaseUrl(baseUrl))
-                .apiKey(chatModelVo.getApiKey())
+                .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
                 .modelName(chatModelVo.getModelName())
                 .timeout(DEFAULT_TIMEOUT)
                 .listeners(List.of(new MyChatModelListener()))
@@ -56,7 +56,7 @@ public class MinimaxServiceImpl implements AbstractChatService {
 
         OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder builder = OpenAiStreamingChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(chatModelVo.getApiKey())
+            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
             .modelName(chatModelVo.getModelName())
             .timeout(DEFAULT_TIMEOUT)
             .listeners(List.of(new MyChatModelListener()))
@@ -73,14 +73,14 @@ public class MinimaxServiceImpl implements AbstractChatService {
         if (isAnthropicBaseUrl(baseUrl)) {
             return AnthropicChatModel.builder()
                 .baseUrl(toAnthropicClientBaseUrl(baseUrl))
-                .apiKey(chatModelVo.getApiKey())
+                .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
                 .modelName(chatModelVo.getModelName())
                 .timeout(DEFAULT_TIMEOUT)
                 .build();
         }
         return OpenAiChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(chatModelVo.getApiKey())
+            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
             .modelName(chatModelVo.getModelName())
             .timeout(DEFAULT_TIMEOUT)
             .build();

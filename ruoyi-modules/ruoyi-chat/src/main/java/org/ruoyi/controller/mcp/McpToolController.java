@@ -1,6 +1,7 @@
 package org.ruoyi.controller.mcp;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
@@ -56,10 +57,22 @@ public class McpToolController extends BaseController {
     }
 
     /**
+     * 查询智能体表单可选的已启用 MCP 工具。
+     */
+    @SaCheckPermission(value = {
+        "agent:agent:list", "agent:agent:add", "agent:agent:edit"
+    }, mode = SaMode.OR)
+    @GetMapping("/options")
+    public R<McpToolListResult> options() {
+        return R.ok(mcpToolService.listEnabledOptions());
+    }
+
+    /**
      * 导出 MCP 工具列表
      */
     @SaCheckPermission("mcp:tool:export")
-    @Log(title = "MCP工具管理", businessType = BusinessType.EXPORT)
+    @Log(title = "MCP工具管理", businessType = BusinessType.EXPORT,
+        excludeParamNames = {"authConfig", "configJson", "toolMetadata"})
     @PostMapping("/export")
     public void export(McpToolBo bo, HttpServletResponse response) {
         List<McpToolVo> list = mcpToolService.queryList(bo);
@@ -81,7 +94,8 @@ public class McpToolController extends BaseController {
      * 新增 MCP 工具
      */
     @SaCheckPermission("mcp:tool:add")
-    @Log(title = "MCP工具管理", businessType = BusinessType.INSERT)
+    @Log(title = "MCP工具管理", businessType = BusinessType.INSERT,
+        excludeParamNames = {"authConfig", "configJson", "toolMetadata"})
     @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody McpToolBo bo) {
@@ -93,7 +107,8 @@ public class McpToolController extends BaseController {
      * 修改 MCP 工具
      */
     @SaCheckPermission("mcp:tool:edit")
-    @Log(title = "MCP工具管理", businessType = BusinessType.UPDATE)
+    @Log(title = "MCP工具管理", businessType = BusinessType.UPDATE,
+        excludeParamNames = {"authConfig", "configJson", "toolMetadata"})
     @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody McpToolBo bo) {
@@ -128,7 +143,7 @@ public class McpToolController extends BaseController {
     /**
      * 测试工具连接
      */
-    @SaCheckPermission("mcp:tool:query")
+    @SaCheckPermission("mcp:tool:test")
     @PostMapping("/{id}/test")
     public R<McpToolTestResult> testTool(@PathVariable Long id) {
         return R.ok(mcpToolService.testTool(id));

@@ -195,7 +195,7 @@ public class ChatMemoryUsageExample {
             @Override
             protected StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
                 return ClaudeStreamingChatModel.builder()
-                    .apiKey(chatModelVo.getApiKey())
+                    .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
                     .modelName(chatModelVo.getModelName())
                     .build();
             }

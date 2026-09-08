@@ -31,12 +31,10 @@ public class MyOutputGuardrailExecutedListener implements OutputGuardrailExecute
         Class<OutputGuardrail> guardrailClass = event.guardrailClass();
         Duration duration = event.duration();
 
-        log.info("【输出Guardrail已执行】调用唯一标识符: {}", invocationId);
-        log.info("【输出Guardrail已执行】AI服务接口名: {}", aiServiceInterfaceName);
-        log.info("【输出Guardrail已执行】调用的方法名: {}", aiServiceMethodName);
-        log.info("【输出Guardrail已执行】Guardrail类名: {}", guardrailClass.getName());
-        log.info("【输出Guardrail已执行】输出Guardrail请求: {}", request);
-        log.info("【输出Guardrail已执行】输出Guardrail结果: {}", result);
-        log.info("【输出Guardrail已执行】执行耗时: {}ms", duration.toMillis());
+        log.info("output_guardrail_executed invocationId={} interfaceType={} method={} status=COMPLETED "
+                + "guardrailType={} resultType={} elapsedMs={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName, guardrailClass.getName(),
+            result == null ? "none" : result.getClass().getName(),
+            duration == null ? -1L : duration.toMillis());
     }
 }

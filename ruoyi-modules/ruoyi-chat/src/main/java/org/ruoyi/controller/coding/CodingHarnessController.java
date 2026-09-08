@@ -13,6 +13,7 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.service.coding.harness.app.CodingHarnessApplicationService;
 import org.ruoyi.service.coding.harness.app.CreateHarnessRunCommand;
 import org.ruoyi.service.coding.harness.app.CreateHarnessSessionCommand;
+import org.ruoyi.service.coding.harness.app.HarnessImageInput;
 import org.ruoyi.service.coding.harness.app.QueueHarnessInputCommand;
 import org.ruoyi.service.coding.harness.approval.ApprovalDecision;
 import org.ruoyi.service.coding.harness.event.HarnessEventHub;
@@ -26,10 +27,15 @@ import org.ruoyi.service.coding.harness.model.HarnessOwner;
 import org.ruoyi.service.coding.harness.model.HarnessPermissionMode;
 import org.ruoyi.service.coding.harness.model.HarnessRunState;
 import org.ruoyi.service.coding.harness.model.HarnessSessionState;
+import org.ruoyi.service.coding.harness.model.HarnessThinkingLevel;
+import org.ruoyi.service.coding.harness.model.HarnessVerificationMode;
+import org.ruoyi.service.coding.harness.model.WorkspaceManifest;
 import org.ruoyi.service.coding.harness.modelruntime.HarnessModelRegistry;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -72,10 +78,14 @@ public class CodingHarnessController {
             // Permission mode is a requested ceiling, never a client-granted authority.
             StpUtil.checkPermission("coding:harness:write");
         }
-        modelRegistry.requireConfigured(request.model());
+        modelRegistry.requireSessionModelReady(request.model());
+        HarnessThinkingLevel thinkingLevel = HarnessThinkingLevel.fromWire(request.thinkingLevel());
+        HarnessVerificationMode verificationMode = request.verificationMode() == null
+            ? HarnessVerificationMode.DEFAULT : request.verificationMode();
         return R.ok(applicationService.createSession(owner(), new CreateHarnessSessionCommand(
             request.workspacePath(), request.model(), request.permissionMode(),
-            request.approvalPolicy(), request.title(), request.idempotencyKey())));
+            request.approvalPolicy(), request.title(), request.idempotencyKey(),
+            request.workspaceManifest(), thinkingLevel, verificationMode)));
     }
 
     @GetMapping("/sessions")
@@ -87,6 +97,25 @@ public class CodingHarnessController {
     public R<HarnessSessionState> getSession(@PathVariable String sessionId) {
         return R.ok(applicationService.getSession(owner(), sessionId));
     }
+
+    @PutMapping("/sessions/{sessionId}/pin")
+    public R<HarnessSessionState> setSessionPinned(@PathVariable String sessionId,
+                                                  @Valid @RequestBody PinSessionRequest request) {
+        return R.ok(applicationService.setSessionPinned(owner(), sessionId, request.pinned()));
+    }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    public R<Void> deleteSession(@PathVariable String sessionId) {
+        applicationService.deleteSession(owner(), sessionId);
+        return R.ok();
+    }
+
+    @PostMapping("/sessions/{sessionId}/restore")
+    public R<HarnessSessionState> restoreSession(@PathVariable String sessionId) {
+        return R.ok(applicationService.restoreSession(owner(), sessionId));
+    }
+
+    public record PinSessionRequest(@NotNull Boolean pinned) { }
 
     @GetMapping("/sessions/{sessionId}/messages")
     public R<List<HarnessMessage>> messages(
@@ -102,7 +131,7 @@ public class CodingHarnessController {
         requireCurrentPermissionCeiling(sessionId);
         return R.ok(applicationService.createRun(owner(), sessionId,
             new CreateHarnessRunCommand(request.requirement(), request.budget(),
-                request.idempotencyKey())));
+                request.idempotencyKey(), request.images())));
     }
 
     @GetMapping("/sessions/{sessionId}/runs")
@@ -270,13 +299,28 @@ public class CodingHarnessController {
         @NotNull HarnessPermissionMode permissionMode,
         HarnessApprovalPolicy approvalPolicy,
         @Size(max = 200) String title,
-        @NotBlank @Size(max = 256) String idempotencyKey
-    ) { }
+        @NotBlank @Size(max = 256) String idempotencyKey,
+        @Valid WorkspaceManifest workspaceManifest,
+        /** Doubao 思考等级（none/minimal/low/medium/high/xhigh/max）；非 Doubao 模型忽略。 */
+        @Size(max = 16) String thinkingLevel,
+        /** 验证归属：AGENT（默认）或 EXTERNAL（独立外部验收）。 */
+        HarnessVerificationMode verificationMode
+    ) {
+        /** Backward-compatible constructor for direct callers predating workspace manifests. */
+        public CreateSessionRequest(String workspacePath, String model,
+                                    HarnessPermissionMode permissionMode,
+                                    HarnessApprovalPolicy approvalPolicy, String title,
+                                    String idempotencyKey) {
+            this(workspacePath, model, permissionMode, approvalPolicy, title, idempotencyKey,
+                null, null, null);
+        }
+    }
 
     public record CreateRunRequest(
         @NotBlank @Size(max = 200_000) String requirement,
         @Valid HarnessBudget budget,
-        @NotBlank @Size(max = 256) String idempotencyKey
+        @NotBlank @Size(max = 256) String idempotencyKey,
+        @Valid @Size(max = 5) List<HarnessImageInput> images
     ) { }
 
     public record QueueInputRequest(

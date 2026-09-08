@@ -17,24 +17,26 @@ public interface EchartsAgent {
 
         CRITICAL OUTPUT REQUIREMENTS:
         - Return Echarts JSON wrapped in markdown code block
-        - Use this exact format: ```json\n{...}\n```
+        - Use this exact format: ```echarts\n{...}\n```
         - The JSON inside must be valid Echarts configuration
         - Frontend expects markdown format for proper parsing
 
         Your workflow:
-        1. Use MCP tools to query the database and get data
-        2. The MCP tool returns data in this structure:
-           {"data": [{"dict_type": "value1", "count": 10}, {"dict_type": "value2", "count": 20}, ...]}
-        3. Transform this data into Echarts configuration
-        4. Return ONLY the Echarts JSON
+        1. Call queryAllTables first. If no tables are available, explain the configuration problem and stop
+        2. Call queryTableSchema for the required allowed tables, then executeSql with an aggregated SELECT
+        3. executeSql returns a Markdown table with column aliases and a row count, NOT a JSON data array
+           It displays at most 10 rows and 8 columns. Aggregate/filter and ORDER BY in SQL before charting
+        4. Transform only the returned rows into Echarts configuration. Never invent, extrapolate or silently fill missing values
+        5. If a tool fails, returns no rows or truncates the requested data, explain the limitation instead of drawing a misleading chart
+        6. On success return ONLY the Echarts JSON code block. Include metric, unit, period and relevant filters in title/subtext
 
         Data transformation rules:
         - Extract array elements into xAxis categories and series data
-        - For the example above: xAxis.data = ["value1", "value2"], series.data = [10, 20]
+        - Keep categories in query order and numeric series aligned with the corresponding rows
         - Choose chart type based on request: bar (default), line, pie, etc.
 
         Expected output format (bar chart example):
-        ```json
+        ```echarts
         {
           "title": {
             "text": "Dict Type Distribution",
@@ -75,15 +77,15 @@ public interface EchartsAgent {
         }
 
         REMEMBER:
-        - Always wrap JSON in ```json and ``` markers
+        - Always wrap JSON in ```echarts and ``` markers; no functions, JavaScript, HTML or external resources
         - Use proper formatting with indentation
         - This is the expected format for frontend parsing
         """)
     @UserMessage("""
         Generate an Echarts chart for: {{query}}
 
-        IMPORTANT: Return the Echarts configuration JSON wrapped in markdown code block (```json...```).
+        IMPORTANT: On success return valid Echarts JSON in an echarts markdown code block. On missing or failed data explain the problem.
         """)
-    @Agent("Data visualization assistant that returns Echarts JSON configurations for frontend rendering")
+    @Agent("Query allowed database tables and draw ECharts in one task. Discovers tables, inspects schemas, executes SQL, then renders real results. For already supplied verified data, use ChartGenerationAgent instead.")
     String search(@V("query") String query);
 }

@@ -16,22 +16,19 @@ public final class HarnessBudgetPolicy {
 
     @Autowired
     public HarnessBudgetPolicy(
-        @Value("${coding.harness.budget.max-iterations:200}") int maxIterations,
-        @Value("${coding.harness.budget.max-tool-calls:600}") int maxToolCalls,
+        @Value("${coding.harness.budget.max-iterations:0}") int maxIterations,
+        @Value("${coding.harness.budget.max-tool-calls:0}") int maxToolCalls,
         @Value("${coding.harness.budget.max-input-tokens:0}") long maxInputTokens,
-        @Value("${coding.harness.budget.max-output-tokens:100000}") long maxOutputTokens,
-        @Value("${coding.harness.budget.max-wall-time-millis:21600000}") long maxWallTimeMillis
+        @Value("${coding.harness.budget.max-output-tokens:0}") long maxOutputTokens,
+        @Value("${coding.harness.budget.max-wall-time-millis:0}") long maxWallTimeMillis
     ) {
         this(new HarnessBudget(maxIterations, maxToolCalls, maxInputTokens, maxOutputTokens,
             maxWallTimeMillis));
-        if (maxOutputTokens == 0) {
-            throw new IllegalArgumentException("Server Harness output-token ceiling must be finite");
-        }
     }
 
     public HarnessBudgetPolicy(HarnessBudget ceiling) {
-        if (ceiling == null || ceiling.maxOutputTokens() == 0) {
-            throw new IllegalArgumentException("A finite Harness output-token ceiling is required");
+        if (ceiling == null) {
+            throw new IllegalArgumentException("Harness spending policy is required");
         }
         this.ceiling = ceiling;
     }
@@ -43,11 +40,11 @@ public final class HarnessBudgetPolicy {
     public HarnessBudget enforce(HarnessBudget requested) {
         HarnessBudget value = requested == null ? HarnessBudget.defaults() : requested;
         return new HarnessBudget(
-            Math.min(value.maxIterations(), ceiling.maxIterations()),
-            Math.min(value.maxToolCalls(), ceiling.maxToolCalls()),
+            0,
+            (int) bounded(value.maxToolCalls(), ceiling.maxToolCalls()),
             bounded(value.maxInputTokens(), ceiling.maxInputTokens()),
             bounded(value.maxOutputTokens(), ceiling.maxOutputTokens()),
-            Math.min(value.maxWallTimeMillis(), ceiling.maxWallTimeMillis()));
+            0);
     }
 
     /** Upgrades only the former server default; explicitly smaller custom budgets stay smaller. */
@@ -57,7 +54,7 @@ public final class HarnessBudgetPolicy {
 
     private long bounded(long requested, long maximum) {
         if (maximum == 0) {
-            return 0;
+            return requested;
         }
         return requested == 0 ? maximum : Math.min(requested, maximum);
     }

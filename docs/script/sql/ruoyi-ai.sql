@@ -1,17 +1,5 @@
 /*
- RuoYi AI 全量初始化 SQL（合并版）
-
- 包含内容：
-   1. ruoyi-ai 主库：全部表结构 + 初始化数据（含 fid 迁移、provider_icon、
-      工作流节点消息模板、智谱 Web Search 节点等历史增量，均已内置）
-   2. 链路追踪表 trace_run / trace_node + 监控菜单
-   3. 注册默认角色 + 会话管理/知识附件/知识片段菜单权限
-   4. snail_job 任务调度库（独立数据库）
-
- 使用方法（全新安装一次执行即可）：
-   mysql -uroot -p < ruoyi-ai.sql
-
- 生成日期：2026-08-04
+ RuoYi-AI 全量初始化 SQL
 */
 
 -- ============================================================
@@ -127,7 +115,9 @@ CREATE TABLE `chat_model`  (
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
-INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 'deepseek-v4-flash', 'deepseek', 'deepseek-v4-flash', NULL, 'Y', 'https://api.deepseek.com', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', '对话模型', 0);
+INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 'deepseek-v4-flash', 'deepseek', 'DeepSeek V4 Flash', NULL, 'Y', 'https://api.deepseek.com', 'env:DEEPSEEK_API_KEY', 103, 1, '2025-12-15 23:16:54', 1, '2026-08-30 00:00:00', '简单快速编程任务', 0);
+INSERT INTO `chat_model` VALUES (2090000000000000001, 'chat', 'deepseek-v4-pro', 'deepseek', 'DeepSeek V4 Pro', NULL, 'Y', 'https://api.deepseek.com', 'env:DEEPSEEK_API_KEY', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '复杂编程、规划与审查', 0);
+INSERT INTO `chat_model` VALUES (2090000000000000002, 'chat', 'deepseek-v4-flash-vision-exp', 'deepseek', 'DeepSeek V4 Flash Vision (experimental)', NULL, 'Y', 'https://api.deepseek.com', 'env:DEEPSEEK_API_KEY', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '带图编程任务的视觉证据提取', 0);
 INSERT INTO `chat_model` VALUES (2007528268536287233, 'vector', 'embedding-3', 'zhipu', 'embedding-3', 2048, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-01-04 03:03:32', 1, '2026-03-15 19:18:51', '向量模型', 0);
 INSERT INTO `chat_model` VALUES (2045071617578237953, 'rerank', 'rerank', 'zhipu', 'rerank', NULL, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-04-17 17:27:24', 1, '2026-04-20 15:21:48', '重排序模型', 0);
 INSERT INTO `chat_model` VALUES (2000585866022060003, 'chat', 'deepseek-ai/deepseek-v4-flash', 'atlas', 'deepseek-v4-flash', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', '对话模型', 0);
@@ -1284,9 +1274,15 @@ CREATE TABLE `mcp_market_tool`  (
                                     `tool_metadata` json NULL COMMENT '工具元数据（JSON格式）',
                                     `is_loaded` tinyint(1) NULL DEFAULT 0 COMMENT '是否已加载到本地',
                                     `local_tool_id` bigint NULL DEFAULT NULL COMMENT '关联的本地工具ID',
+                                    `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+                                    `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                                    `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
                                     `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                                    `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                                    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
                                     PRIMARY KEY (`id`) USING BTREE,
                                     INDEX `idx_market_id`(`market_id` ASC) USING BTREE,
+                                    INDEX `idx_tenant_market`(`tenant_id` ASC, `market_id` ASC) USING BTREE,
                                     INDEX `idx_tool_name`(`tool_name` ASC) USING BTREE,
                                     INDEX `idx_is_loaded`(`is_loaded` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场工具关联表' ROW_FORMAT = DYNAMIC;
@@ -2715,6 +2711,11 @@ INSERT INTO `sys_menu` VALUES (2014, 'MCP市场删除', 2010, 4, '#', '', '', 1,
 INSERT INTO `sys_menu` VALUES (2015, 'MCP市场刷新', 2010, 5, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:refresh', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2016, 'MCP工具加载', 2010, 6, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:load', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2017, 'MCP市场导出', 2010, 7, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:export', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2020, 'URL管理', 1, 12, 'url', 'system/url/index', '', 1, 0, 'C', '0', '0', 'system:url:list', 'mdi:link-variant', 103, 1, '2026-09-01 00:00:00', NULL, NULL, 'URL管理菜单');
+INSERT INTO `sys_menu` VALUES (2021, 'URL查询', 2020, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:query', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2022, 'URL新增', 2020, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:add', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2023, 'URL修改', 2020, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:edit', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2024, 'URL删除', 2020, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:remove', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3000, '智能体管理', 0, 1, 'agent', '', '', 1, 0, 'M', '0', '0', '', 'mdi:robot', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '智能体管理目录');
 INSERT INTO `sys_menu` VALUES (3001, '智能体列表', 3000, 1, 'agent', 'agent/agent/index', '', 1, 0, 'C', '0', '0', 'agent:agent:list', 'mdi:robot-outline', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '智能体列表菜单');
 INSERT INTO `sys_menu` VALUES (3002, '智能体查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'agent:agent:query', '#', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '');
@@ -2798,6 +2799,33 @@ CREATE TABLE `sys_notice`  (
 -- ----------------------------
 INSERT INTO `sys_notice` VALUES (1, '000000', '温馨提醒：2018-07-01 新版本发布啦', '2', 0xE696B0E78988E69CACE58685E5AEB9, '0', 103, 1, '2026-02-03 05:14:52', NULL, NULL, '管理员');
 INSERT INTO `sys_notice` VALUES (2, '000000', '维护通知：2018-07-01 系统凌晨维护', '1', 0xE7BBB4E68AA4E58685E5AEB9, '0', 103, 1, '2026-02-03 05:14:52', NULL, NULL, '管理员');
+
+-- ----------------------------
+-- Table structure for sys_url
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_url`;
+CREATE TABLE `sys_url`  (
+                            `url_id` bigint NOT NULL AUTO_INCREMENT COMMENT '链接ID',
+                            `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '000000' COMMENT '租户编号',
+                            `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '链接名称',
+                            `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'HTTP(S) 地址',
+                            `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '链接说明',
+                            `sort_order` int NULL DEFAULT 0 COMMENT '显示顺序',
+                            `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
+                            `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
+                            `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
+                            `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+                            `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
+                            `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+                            `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+                            PRIMARY KEY (`url_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'URL 管理表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_url
+-- ----------------------------
+INSERT INTO `sys_url` VALUES (1, '000000', '若依官网', 'https://ruoyi.vip', 'RuoYi 官方网站，提供文档、源码与社区支持', 1, '0', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '初始公开链接');
+INSERT INTO `sys_url` VALUES (2, '000000', 'RuoYi-AI 开源仓库', 'https://github.com/ageerle/ruoyi-ai', 'RuoYi-AI 项目 GitHub 仓库', 2, '0', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '初始公开链接');
 
 -- ----------------------------
 -- Table structure for sys_oper_log
@@ -3669,7 +3697,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
 -- 第二部分：链路追踪（trace_run / trace_node + 监控菜单）
--- 来源：update/update-0615-trace.sql
+-- 来源：update/2026-06-15-trace.sql
 -- 说明：全新库中 CREATE TABLE 已含 tenant_id 及索引，
 --       原脚本中的旧表兼容 ALTER 段已省略；菜单插入加了判重守卫。
 -- ============================================================

@@ -236,7 +236,6 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
                 ? config.getSimilarityThreshold() : kb.getSimilarityThreshold());
             bo.setEmbeddingModelName(kb.getEmbeddingModel());
             bo.setVectorModelName(kb.getVectorModel());
-            bo.setApiKey(embModel.getApiKey());
             bo.setBaseUrl(embModel.getApiHost());
 
             String mode = config.getRetrievalMode() != null ? config.getRetrievalMode().toLowerCase() : "vector";

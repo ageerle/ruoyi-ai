@@ -32,7 +32,7 @@ public class MiMoServiceImpl implements AbstractChatService {
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return OpenAiStreamingChatModel.builder()
             .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.getApiKey())
+            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
             .modelName(chatModelVo.getModelName())
             .listeners(List.of(new MyChatModelListener()))
             .returnThinking(chatRequest.getEnableThinking())

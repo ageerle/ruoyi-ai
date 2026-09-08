@@ -11,6 +11,8 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.regex.Pattern;
+
 /**
  * Mybatis异常处理器
  *
@@ -20,13 +22,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class MybatisExceptionHandler {
 
+    private static final Pattern CREDENTIAL_PATH_SEGMENT = Pattern.compile(
+        "(?i)(/(?:token(?:[-_]?id)?|access[-_]?token|refresh[-_]?token|api[-_]?key|"
+            + "monitor/online(?:/myself)?|myself)/)([^/?#;\\s]+)");
+
     /**
      * 主键或UNIQUE索引，数据重复异常
      */
     @ExceptionHandler(DuplicateKeyException.class)
     public R<Void> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求地址'{}',数据库中已存在记录'{}'", requestURI, e.getMessage());
+        log.error("database_request_failed category=DUPLICATE_KEY method={} path={} exceptionType={}",
+            request.getMethod(), safePath(request), e.getClass().getName());
         return R.fail(HttpStatus.HTTP_CONFLICT, "数据库中已存在该记录，请联系管理员确认");
     }
 
@@ -35,18 +41,20 @@ public class MybatisExceptionHandler {
      */
     @ExceptionHandler(MyBatisSystemException.class)
     public R<Void> handleCannotFindDataSourceException(MyBatisSystemException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
         Throwable root = getRootCause(e);
         if (root instanceof NotLoginException) {
-            log.error("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, root.getMessage());
+            log.error("database_request_failed category=AUTHENTICATION method={} path={} exceptionType={}",
+                request.getMethod(), safePath(request), root.getClass().getName());
             return R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源");
         }
         if (root instanceof CannotFindDataSourceException) {
-            log.error("请求地址'{}', 未找到数据源", requestURI);
+            log.error("database_request_failed category=DATA_SOURCE_NOT_FOUND method={} path={} exceptionType={}",
+                request.getMethod(), safePath(request), root.getClass().getName());
             return R.fail(HttpStatus.HTTP_INTERNAL_ERROR, "未找到数据源，请联系管理员确认");
         }
-        log.error("请求地址'{}', Mybatis系统异常", requestURI, e);
-        return R.fail(HttpStatus.HTTP_INTERNAL_ERROR, e.getMessage());
+        log.error("database_request_failed category=MYBATIS_SYSTEM method={} path={} exceptionType={} rootType={}",
+            request.getMethod(), safePath(request), e.getClass().getName(), root.getClass().getName());
+        return R.fail(HttpStatus.HTTP_INTERNAL_ERROR, "数据库访问异常，请联系管理员确认");
     }
 
     /**
@@ -84,6 +92,18 @@ public class MybatisExceptionHandler {
             t = t.getCause();
         }
         return null;
+    }
+
+    private static String safePath(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (path == null) {
+            return null;
+        }
+        int queryIndex = path.indexOf('?');
+        if (queryIndex >= 0) {
+            path = path.substring(0, queryIndex);
+        }
+        return CREDENTIAL_PATH_SEGMENT.matcher(path).replaceAll("$1[REDACTED]");
     }
 
 }

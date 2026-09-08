@@ -202,7 +202,8 @@ public class AliBaiLianMultiEmbeddingProvider implements MultiModalEmbedModelSer
 
         Request httpRequest = new Request.Builder()
                 .url(chatModelVo.getApiHost())
-                .addHeader("Authorization", "Bearer " + chatModelVo.getApiKey())
+                .addHeader("Authorization", "Bearer "
+                    + chatModelVo.resolveApiKeyForConfiguredEndpoint("qianwen"))
                 .post(body)
                 .build();
 

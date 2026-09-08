@@ -5,8 +5,6 @@ import dev.langchain4j.agentic.observability.AgentRequest;
 import dev.langchain4j.agentic.observability.AgentResponse;
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
-import dev.langchain4j.service.tool.BeforeToolExecution;
-import dev.langchain4j.service.tool.ToolExecution;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -41,8 +39,9 @@ public class SupervisorStreamListener implements dev.langchain4j.agentic.observa
         AgentInstance agent = agentRequest.agent();
         AgenticScope scope = agentRequest.agenticScope();
         Map<String, Object> inputs = agentRequest.inputs();
-        // 只记录日志，不推送输入信息（避免干扰流式输出）
-        log.info("[Agent开始] {} 输入: {}", agent.name(), inputs);
+        log.info("supervisor_agent agentType={} status=STARTED inputCount={} priorInvocationCount={}",
+            agent.type().getName(), inputs == null ? 0 : inputs.size(),
+            scope.agentInvocations() == null ? 0 : scope.agentInvocations().size());
     }
 
     @Override
@@ -50,12 +49,10 @@ public class SupervisorStreamListener implements dev.langchain4j.agentic.observa
         AgentInstance agent = agentResponse.agent();
         Map<String, Object> inputs = agentResponse.inputs();
         Object output = agentResponse.output();
-        String outputStr = output != null ? output.toString() : "";
-
-        // 只记录日志，不推送输出信息
-        // 流式输出由 StreamingOutputWrapper 处理
-        // 当无子Agent被调用时，由 ChatServiceFacade 用 plannerModel 生成回复
-        log.info("[Agent完成] {} 输出长度: {}", agent.name(), outputStr.length());
+        int outputChars = output instanceof CharSequence text ? text.length() : -1;
+        log.info("supervisor_agent agentType={} status=COMPLETED inputCount={} outputType={} outputChars={}",
+            agent.type().getName(), inputs == null ? 0 : inputs.size(),
+            output == null ? "none" : output.getClass().getName(), outputChars);
     }
 
     @Override
@@ -64,40 +61,25 @@ public class SupervisorStreamListener implements dev.langchain4j.agentic.observa
         Map<String, Object> inputs = error.inputs();
         Throwable throwable = error.error();
 
-        channel.send("\n[Agent错误] " + agent.name()
-            + " 异常: " + throwable.getMessage());
-        log.error("[Agent错误] {} 异常: {}", agent.name(), throwable.getMessage(), throwable);
+        channel.send("\n[Agent错误] 执行失败");
+        log.error("supervisor_agent agentType={} status=FAILED inputCount={} errorType={}",
+            agent.type().getName(), inputs == null ? 0 : inputs.size(),
+            throwable == null ? "unknown" : throwable.getClass().getName());
     }
 
     // ==================== AgenticScope 生命周期 ====================
 
     @Override
     public void afterAgenticScopeCreated(AgenticScope agenticScope) {
-        log.info("[AgenticScope创建] memoryId: {}", agenticScope.memoryId());
+        log.info("supervisor_scope status=CREATED invocationCount={}",
+            agenticScope.agentInvocations() == null ? 0 : agenticScope.agentInvocations().size());
     }
 
     @Override
     public void beforeAgenticScopeDestroyed(AgenticScope agenticScope) {
-        log.info("[AgenticScope销毁] memoryId: {}", agenticScope.memoryId());
+        log.info("supervisor_scope status=DESTROYED invocationCount={}",
+            agenticScope.agentInvocations() == null ? 0 : agenticScope.agentInvocations().size());
     }
-
-    // ==================== 工具执行生命周期 ====================
-
-//    @Override
-//    public void beforeToolExecution(BeforeToolExecution beforeToolExecution) {
-//        var toolRequest = beforeToolExecution.request();
-////        channel.send("\n[工具即将执行] " + toolRequest.name()
-////            + " 参数: " + truncate(toolRequest.arguments(), 150));
-//        log.info("[工具即将执行] {} 参数: {}", toolRequest.name(), toolRequest.arguments());
-//    }
-
-//    @Override
-//    public void afterToolExecution(ToolExecution toolExecution) {
-//        var toolRequest = toolExecution.request();
-////        channel.send("\n[工具执行完成] " + toolRequest.name()
-////            + " 结果: " + truncate(String.valueOf(toolExecution.result()), 300));
-//        log.info("[工具执行完成] {} 结果: {}", toolRequest.name(), toolExecution.result());
-//    }
 
     // ==================== 继承机制 ====================
 
@@ -109,12 +91,4 @@ public class SupervisorStreamListener implements dev.langchain4j.agentic.observa
         return true;
     }
 
-    // ==================== 辅助方法 ====================
-
-    private String truncate(String s, int maxLen) {
-        if (s == null) {
-            return "null";
-        }
-        return s.length() > maxLen ? s.substring(0, maxLen) + "..." : s;
-    }
 }

@@ -36,6 +36,13 @@ public interface IMcpToolService {
     McpToolListResult listTools(String keyword, String type, String status);
 
     /**
+     * 查询智能体表单可选的已启用工具。
+     *
+     * @return 已启用工具选项
+     */
+    McpToolListResult listEnabledOptions();
+
+    /**
      * 查询工具列表（用于导出）
      *
      * @param bo 查询条件

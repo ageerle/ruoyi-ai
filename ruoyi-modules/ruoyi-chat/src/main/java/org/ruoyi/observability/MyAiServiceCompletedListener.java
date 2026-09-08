@@ -30,12 +30,11 @@ public class MyAiServiceCompletedListener implements AiServiceCompletedListener 
         Object chatMemoryId = invocationContext.chatMemoryId();
         Instant eventTimestamp = invocationContext.timestamp();
 
-        log.info("【AI服务完成】调用唯一标识符: {}", invocationId);
-        log.info("【AI服务完成】AI服务接口名: {}", aiServiceInterfaceName);
-        log.info("【AI服务完成】调用的方法名: {}", aiServiceMethodName);
-        log.info("【AI服务完成】AI服务方法参数: {}", aiServiceMethodArgs);
-        log.info("【AI服务完成】聊天记忆ID: {}", chatMemoryId);
-        log.info("【AI服务完成】调用发生的时间: {}", eventTimestamp);
-        log.info("【AI服务完成】调用结果: {}", result);
+        long elapsedMillis = Math.max(0L, java.time.Duration.between(eventTimestamp, Instant.now()).toMillis());
+        String resultType = result.map(value -> value.getClass().getName()).orElse("none");
+        log.info("ai_service_completed invocationId={} interfaceType={} method={} status=COMPLETED "
+                + "argumentCount={} resultType={} elapsedMs={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName,
+            aiServiceMethodArgs == null ? 0 : aiServiceMethodArgs.size(), resultType, elapsedMillis);
     }
 }
