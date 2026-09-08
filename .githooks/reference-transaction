@@ -1,0 +1,22 @@
+#!/bin/sh
+# 分支引用事务护栏：分支被回退/分叉移动（会孤儿化 commit）时，自动把旧值
+# 快照到 refs/snapshot/<分支>-<时间戳>，使孤儿 commit 保持可达、不被 GC，
+# reset 从"丢工作"降级为"无损事件"。
+# 用法由 git 自动调用，参数为 prepared|committed|aborted；stdin 每行 <old> <new> <ref>。
+# 本 hook 永远 exit 0：只做兜底快照，绝不阻断任何 git 操作。
+stage="$1"
+[ "$stage" = "committed" ] || exit 0
+ZERO=0000000000000000000000000000000000000000
+while read -r old new ref; do
+  case "$ref" in refs/heads/*) ;; *) continue ;; esac
+  [ "$old" != "$ZERO" ] || continue          # 新建分支，无孤儿风险
+  if [ "$new" != "$ZERO" ]; then
+    git merge-base --is-ancestor "$old" "$new" 2>/dev/null && continue  # 正常前进
+  fi
+  short=$(printf '%s' "$ref" | sed 's|refs/heads/||; s|/|-|g')
+  ts=$(date +%Y%m%dT%H%M%S 2>/dev/null) || ts=$$
+  snap="refs/snapshot/$short-$ts"
+  git update-ref "$snap" "$old" 2>/dev/null || true
+  echo "[githooks] $ref 被回退/分叉移动，旧值已快照 -> $snap（git log $snap 可找回）" >&2
+done
+exit 0

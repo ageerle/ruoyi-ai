@@ -1,0 +1,11 @@
+#!/bin/sh
+# 拦截直接 commit 到 main（2026-09-08 reset 孤儿事件后的仓库级护栏）。
+# core.hooksPath 指向本目录后，对所有 git 客户端生效（Claude Code / Qoder / Codex / 终端 / evox）。
+branch=$(git symbolic-ref --short -q HEAD || true)
+if [ "$branch" = "main" ] && [ "$ALLOW_MAIN_COMMIT" != "1" ]; then
+  echo "BLOCKED: 直接 commit 到 main 被 .githooks/pre-commit 拦截。" >&2
+  echo "  请在独立 worktree/分支上工作，走 GitHub PR 落地（main 只作集成目标）。" >&2
+  echo "  主协调会话确需直提：ALLOW_MAIN_COMMIT=1 git commit ..." >&2
+  exit 1
+fi
+exit 0
