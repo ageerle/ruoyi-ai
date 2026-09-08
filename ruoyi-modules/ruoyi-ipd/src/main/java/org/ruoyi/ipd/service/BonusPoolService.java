@@ -1,6 +1,8 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.service.ProjectScoreService;
@@ -160,15 +162,21 @@ public class BonusPoolService {
     /**
      * P3-4.5 AC-INC-22/23/24 + BR-INC-07：按综合得分 + 取数策略查项目绩效系数。
      *
-     * <p>策略路由（当前 MVP）：调用方传入 score（语义由 strategy 决定）：
+     * <p>策略路由（当前 MVP）：
      * <ul>
-     *   <li>PROJECT_SCORE：当期综合得分</li>
-     *   <li>WEIGHTED_AVG：多期加权平均分</li>
-     *   <li>LAST_QUARTER：上季度综合得分</li>
+     *   <li>PROJECT_SCORE：调用方传入“当期”综合得分</li>
+     *   <li>WEIGHTED_AVG：调用方传入多期加权平均分</li>
+     *   <li>LAST_QUARTER：调用方传入“上季度”综合得分</li>
      * </ul>
+     * 入参 score 的语义由 strategy 决定；本方法仅做参数校验 + 策略校验 + 委托分档计算。
      *
      * <p>分档映射委托 {@link ProjectScoreService#projectPerformanceCoefficient(BigDecimal)}。
-     * 严禁出现"以能力等级 L1–L5 代替绩效得分"的入参——能力等级与绩效得分独立（AC-INC-22b）。
+     * 严禁出现“以能力等级 L1–L5 代替绩效得分”的入参——能力等级与绩效得分独立（AC-INC-22b）。
+     *
+     * @param score    综合得分（0~100）
+     * @param strategy 取数策略（PROJECT_SCORE / WEIGHTED_AVG / LAST_QUARTER）
+     * @return 项目绩效系数；score < 60 ⇒ 0 取消奖金资格
+     * @throws ServiceException score 为 null / 越界 / strategy 非法
      */
     public BigDecimal calculatePerformanceCoefficient(BigDecimal score, String strategy) {
         if (score == null) {
@@ -178,6 +186,7 @@ public class BonusPoolService {
             throw new ServiceException("P3-4.5：综合得分必须在 [0, 100] 区间，当前=" + score.toPlainString());
         }
         ProjectScoreService.validateProjectPerfStrategy(strategy);
+        // 分档计算委托 ProjectScoreService 单源（防双源漂移）
         return projectScoreService.projectPerformanceCoefficient(score);
     }
 
@@ -185,6 +194,11 @@ public class BonusPoolService {
      * P3-4.5 BR-INC-07：从 system_configs 读取当前取数策略。
      *
      * <p>策略配置键：{@code bonus.performance.strategy}；缺省 = PROJECT_SCORE。
+     * 配置读取失败（key 不存在 / 配置服务异常）静默回退默认策略（不阻塞业务）。
+     *
+     * @param projectId 项目 ID（当前 MVP 未参与路由；预留给 P3-4.6 多项目叠加用）
+     * @param score     综合得分
+     * @return 项目绩效系数
      */
     public BigDecimal resolvePerformanceCoefficient(Long projectId, BigDecimal score) {
         String strategy = STRATEGY_PROJECT_SCORE;
@@ -195,16 +209,23 @@ public class BonusPoolService {
                     strategy = cfg;
                 }
             } catch (Exception ex) {
-                // 配置读取失败静默回退默认策略
+                // 配置读取失败静默回退默认策略（不阻塞业务；与 readActivePoolRate 同严）
             }
         }
         return calculatePerformanceCoefficient(score, strategy);
     }
 
     /**
-     * P3-4.5 preview 端点契约：预览系数（仅查表/计算，不写 audit、不落库）。
+     * P3-4.5 AC-INC-22b + preview 端点契约：预览系数（仅查表/计算，不写 audit、不落库）。
      *
-     * @return 预览 BonusPool（tierCode 已设置；finalPool = 0 表示无金额）
+     * <p>返回值：未持久化的 BonusPool（仅填 {@code tierCoefficient} 字段，其它字段保持原样）。
+     * 用途：前端 P0-10.34 激励管理页签「试算」按钮，仅做即时反馈，不入奖金池实算。
+     *
+     * @param projectId 项目 ID（预留给扩展：PROJECT_SCORE 策略下可顺带校验项目存在性）
+     * @param score     综合得分
+     * @param strategy  取数策略
+     * @param actor     当前操作人（仅日志；不落审计）
+     * @return 预览 BonusPool（tierCoefficient 已设置；finalPool = 0 表示无金额）
      */
     public BonusPool previewCoefficient(Long projectId, BigDecimal score, String strategy, IpdActor actor) {
         BigDecimal coef = calculatePerformanceCoefficient(score, strategy);
@@ -280,6 +301,8 @@ public class BonusPoolService {
     /**
      * P3-4.5：项目绩效系数分档依赖注入（兼容旧测试构造器）。
      * 4 参构造器未注入时为 null；P345AcceptanceTest 等单测通过 setter 注入 mock。
+     * 不可用 @Autowired(required=false) 直接标字段（与 BonusPoolMapper 等已有注入路径冲突），
+     * 故走 setter 模式，与 setStateMachineGuard / setAuditLogService 同严。
      */
     @Autowired(required = false)
     public void setProjectScoreService(ProjectScoreService projectScoreService) {
@@ -455,8 +478,66 @@ public class BonusPoolService {
         return pool;
     }
 
+    /**
+     * P3-4.4 §2.5：按项目查询奖金池列表（按 calculatedAt 倒序）。
+     *
+     * @deprecated 性能废弃（PERF-P0-2 2026-09-07）：全量 List 返回在大项目（1000+ 行）存在 OOM / 超时风险；
+     * web-antd 旧调用方暂保留兼容，新代码请改用 {@link #pageByProject(Long, Page)}。
+     * 计划在 web-antd 全量切到 /page 端点后下线。
+     */
+    @Deprecated
     public List<BonusPool> listByProject(Long projectId) {
         return bonusPoolMapper.selectList(
+            new LambdaQueryWrapper<BonusPool>()
+                .eq(BonusPool::getProjectId, projectId)
+                .orderByDesc(BonusPool::getCalculatedAt));
+    }
+
+    /* ====================== PERF-P0-2：分页契约 ====================== */
+    /* 大项目奖金明细可达 1000+ 行，原 listByProject 全量拉取存在 OOM / 超时。
+       新增 pageByProject 复用 MyBatis-Plus Page 入参，Mapper XML 不动
+       （BaseMapperPlus 继承 BaseMapper 提供 selectPage）。 */
+
+    /** PERF-P0-2：单次请求 pageSize 上限（与 AuditLogController.list 同型，防大查询拖死 DB） */
+    public static final int PAGE_SIZE_MAX = 200;
+    /** PERF-P0-2：pageSize 默认值（与 AuditLogController.list / RequirementChangeController.list 一致） */
+    public static final int PAGE_SIZE_DEFAULT = 20;
+    /** PERF-P0-2：pageNo 默认值 */
+    public static final int PAGE_NO_DEFAULT = 1;
+
+    /**
+     * PERF-P0-2：按项目分页查询奖金池（按 calculatedAt 倒序，物理分页）。
+     *
+     * <p>与 {@link #listByProject(Long)} 的差异：
+     * <ul>
+     *   <li>入参携带 {@link Page}（pageNo/pageSize），DB 层 LIMIT/OFFSET 物理裁剪</li>
+     *   <li>返回 {@link IPage}，含 total / records / pages / current / size 完整分页元信息</li>
+     *   <li>无项目数据时返回空 records，total=0（不抛错）</li>
+     * </ul>
+     *
+     * <p>排序与软删语义与 {@link #listByProject} 完全一致（{@code @TableLogic} 自动过滤 del_flag=0）。
+     *
+     * @param projectId 项目 ID（必填，null 抛 IpdBusinessException(PARAM_INVALID)）
+     * @param page      MyBatis-Plus 分页对象（pageNo ≥ 1 且 pageSize 1..200 由 Controller 端兜底）
+     * @return 分页结果（IPage<BonusPool>），records 已含当前页实体
+     * @throws IpdBusinessException(PARAM_INVALID) projectId 为 null
+     */
+    public IPage<BonusPool> pageByProject(Long projectId, Page<BonusPool> page) {
+        // 入参校验：projectId 必填（PERF-P0-2 决策 #5）
+        if (projectId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "PERF-P0-2：按项目分页查询奖金池时 projectId 不能为空");
+        }
+        if (page == null) {
+            // Controller 端已兜底 pageSize≤200；此处防御 null 入参（兼容旧测试 / 直接调用）
+            page = new Page<>(PAGE_NO_DEFAULT, PAGE_SIZE_DEFAULT);
+        }
+        // pageSize 范围保护（即使 Controller 漏防 Service 层再卡一道；与 AuditLogController 同型）
+        long safeSize = Math.min(Math.max(page.getSize(), 1), PAGE_SIZE_MAX);
+        long safeNo = Math.max(page.getCurrent(), 1);
+        Page<BonusPool> safePage = new Page<>(safeNo, safeSize);
+        // 排序 + 过滤：与 listByProject 完全等价（calculatedAt DESC，eq(projectId)）
+        return bonusPoolMapper.selectPage(safePage,
             new LambdaQueryWrapper<BonusPool>()
                 .eq(BonusPool::getProjectId, projectId)
                 .orderByDesc(BonusPool::getCalculatedAt));

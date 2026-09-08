@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -212,7 +213,8 @@ public class KpiSharedConfirmService {
         List<KpiSharedConfirm> rows = confirmMapper.selectList(wrapper);
 
         Date now = new Date();
-        Map<Long, String> personNameCache = new HashMap<>();
+        // P-1 性能优化：去 N+1 → 1 次 selectBatchIds 预加载姓名映射
+        Map<Long, String> personNameMap = preLoadPersonNames(rows);
         List<KpiSharedConfirmView> views = new ArrayList<>(rows.size());
         for (KpiSharedConfirm row : rows) {
             boolean overdue = ST_PENDING.equals(row.getStatus())
@@ -223,7 +225,7 @@ public class KpiSharedConfirmService {
             if (filterOverdue && !overdue) {
                 continue;
             }
-            views.add(toView(row, project, personNameCache, actor, overdue));
+            views.add(toView(row, project, personNameMap, actor, overdue));
         }
         return views;
     }
@@ -312,16 +314,54 @@ public class KpiSharedConfirmService {
 
     /* ---------- 私有 helpers ---------- */
 
-    private KpiSharedConfirmView toView(KpiSharedConfirm row, Project project,
-                                        Map<Long, String> personNameCache, IpdActor actor,
-                                        boolean overdue) {
-        String personName = null;
-        if (row.getPersonId() != null) {
-            personName = personNameCache.computeIfAbsent(row.getPersonId(), pid -> {
-                Person p = personMapper.selectById(pid);
-                return p == null ? null : p.getName();
-            });
+    /**
+     * 预加载 confirm 行集合所引用的归集人姓名映射（性能：N+1 → 1 次批量查询）。
+     *
+     * <p>行为契约：
+     * <ul>
+     *   <li>rows 为空 / 全 personId 为 null → 返回空 Map，不触发 SQL</li>
+     *   <li>distinct personId 去重后调 {@code personMapper.selectBatchIds(...)} 一次</li>
+     *   <li>Person 不存在或 name 为空 → name=null（与原 toView.computeIfAbsent 行为对齐）</li>
+     *   <li>LinkedHashMap 保序，便于调试/日志稳定输出</li>
+     * </ul>
+     *
+     * @param rows confirm 行（仅读，不修改）
+     * @return personId → name 映射；name 可能为 null（不存在/未填）
+     */
+    private Map<Long, String> preLoadPersonNames(List<KpiSharedConfirm> rows) {
+        // 1. 收集非空 personId，去重保序
+        List<Long> personIds = rows.stream()
+            .map(KpiSharedConfirm::getPersonId)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .toList();
+        if (personIds.isEmpty()) {
+            return Map.of();
         }
+        // 2. 防御：personMapper 注入失败 → 返回空 Map（与既有 confirmMapper == null 同思路）
+        if (personMapper == null) {
+            return Map.of();
+        }
+        // 3. 一次性批量查询（IN 子句，单次往返）
+        List<Person> people = personMapper.selectBatchIds(personIds);
+        if (people == null || people.isEmpty()) {
+            return Map.of();
+        }
+        // 4. 组装 LinkedHashMap（name 为空统一映射 null，与原 toView 行为一致）
+        Map<Long, String> nameMap = new LinkedHashMap<>(people.size());
+        for (Person p : people) {
+            if (p != null && p.getId() != null) {
+                nameMap.put(p.getId(), p.getName()); // p.getName() 可能 null → 视为未知
+            }
+        }
+        return nameMap;
+    }
+
+    private KpiSharedConfirmView toView(KpiSharedConfirm row, Project project,
+                                        Map<Long, String> personNameMap, IpdActor actor,
+                                        boolean overdue) {
+        // P-1 性能优化：姓名已由 listConfirms 内 preLoadPersonNames 批量加载，直接查表
+        String personName = row.getPersonId() == null ? null : personNameMap.get(row.getPersonId());
         boolean confirmedByMe = actor.id().equals(row.getFirstConfirmedBy())
             || actor.id().equals(row.getSecondConfirmedBy());
         return new KpiSharedConfirmView(
