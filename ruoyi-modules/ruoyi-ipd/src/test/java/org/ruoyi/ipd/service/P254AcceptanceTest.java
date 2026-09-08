@@ -148,6 +148,7 @@ class P254AcceptanceTest {
             return 1;
         });
         lenient().when(arbitrationMapper.selectList(any())).thenAnswer(inv -> new ArrayList<>(arbitrationRows));
+        lenient().when(arbitrationMapper.updateById(any(GateArbitration.class))).thenReturn(1);
         lenient().when(systemConfigService.getIntValue(eq("gate.signDeadlineDays"), eq(3))).thenReturn(3);
         lenient().when(memberMapper.selectList(any()))
             .thenReturn(List.of(member(301L, "MARKET_PM"), member(302L, "RD_PM")));
@@ -426,6 +427,43 @@ class P254AcceptanceTest {
         assertThatThrownBy(() -> service.arbitrate(602L, "REJECT", null, LEADER_A))
             .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("不可重复提交");
+    }
+
+    @Test
+    @DisplayName("AC-GATE-10 工作台对偶：开仲裁即预落两组长 decision=NULL 待裁行；提交后原行落决策不增行")
+    void openArbitration_preallocatesUndecidedRows() {
+        List<Person> leaders = List.of(person(304L, "王组长", "GROUP_LEADER", 7L),
+            person(305L, "李组长", "GROUP_LEADER", 8L));
+        when(personMapper.selectList(any())).thenReturn(leaders);
+        when(personMapper.selectBatchIds(any())).thenReturn(
+            List.of(person(301L, "陈市场", "MARKET_PM", 7L), person(302L, "刘研发", "RD_PM", 8L)));
+
+        service.sign(601L, "APPROVE", null, MARKET);
+        service.sign(601L, "REJECT", "基准值缺失", RD);
+
+        // 开仲裁即预落：两组长各一条待裁行（decision=NULL，工作台「分配即落行」可查）
+        assertThat(arbitrationRows).hasSize(2);
+        assertThat(arbitrationRows).allSatisfy(r -> {
+            assertThat(r.getDecision()).isNull();
+            assertThat(r.getArbitratorType()).isEqualTo("GROUP_LEADER");
+            assertThat(r.getGateId()).isEqualTo(601L);
+            assertThat(r.getRound()).isEqualTo(1);
+        });
+
+        // 组长提交：原行落决策（UPDATE），不新增行
+        service.arbitrate(601L, "APPROVE", "支持市场侧", LEADER_A);
+        assertThat(arbitrationRows).hasSize(2);
+        assertThat(arbitrationRows).anySatisfy(r -> {
+            assertThat(r.getArbitratorId()).isEqualTo(304L);
+            assertThat(r.getDecision()).isEqualTo("APPROVE");
+            assertThat(r.getOpinion()).isEqualTo("支持市场侧");
+        });
+        // 另一组长仍是待裁行（不误升级：305 未裁 ⇒ maybeEscalate 不触发）
+        assertThat(arbitrationRows).anySatisfy(r -> {
+            assertThat(r.getArbitratorId()).isEqualTo(305L);
+            assertThat(r.getDecision()).isNull();
+        });
+        assertThat(auditActions()).doesNotContain("GATE_ARBITRATION_ESCALATED");
     }
 
     // ---- AC-GATE-21 签署期限延长 ----

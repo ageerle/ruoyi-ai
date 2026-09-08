@@ -127,7 +127,7 @@ class P431AcceptanceTest {
             List.of(new StageSignAggregator(stageActionMapper),
                 new DeletionReviewAggregator(deletionRequestMapper),
                 new KeyGateAggregator(gateMapper, gateReviewMapper),
-                new KeyGateArbitrationAggregator(gateMapper, gateArbitrationMapper),
+                new KeyGateArbitrationAggregator(gateMapper, gateArbitrationMapper, projectMapper),
                 new HandoverAggregator(handoverMapper),
                 new ContributionConfirmAggregator(contributionMapper),
                 new CloseoutAggregator(projectScoreTaskMapper),

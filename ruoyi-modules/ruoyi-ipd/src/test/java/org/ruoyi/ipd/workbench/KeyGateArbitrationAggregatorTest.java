@@ -13,6 +13,7 @@ import org.ruoyi.ipd.domain.GateArbitration;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.GateArbitrationMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
 import java.util.Date;
@@ -37,12 +38,14 @@ class KeyGateArbitrationAggregatorTest {
     private GateMapper gateMapper;
     @Mock
     private GateArbitrationMapper gateArbitrationMapper;
+    @Mock
+    private ProjectMapper projectMapper;
 
     private KeyGateArbitrationAggregator aggregator;
 
     @BeforeEach
     void setUp() {
-        aggregator = new KeyGateArbitrationAggregator(gateMapper, gateArbitrationMapper);
+        aggregator = new KeyGateArbitrationAggregator(gateMapper, gateArbitrationMapper, projectMapper);
     }
 
     private Map<Long, Project> scope(Project... projects) {
@@ -54,8 +57,9 @@ class KeyGateArbitrationAggregatorTest {
     }
 
     private Gate gate(long id, long projectId, String gateCode) {
+        // 仲裁仅存在于被驳回的 Gate（requireArbitratable 语义，2026-09-08 修正）
         return Gate.builder()
-            .id(id).projectId(projectId).gateCode(gateCode).status("PENDING").build();
+            .id(id).projectId(projectId).gateCode(gateCode).status("REJECTED").build();
     }
 
     private GateArbitration arbitration(long id, long gateId, String type, long arbitratorId,
@@ -115,23 +119,77 @@ class KeyGateArbitrationAggregatorTest {
     }
 
     @Test
-    @DisplayName("gate 非 PENDING 不投递：gateMapper 空 → 短路不查仲裁表")
-    void collect_skipsSettledGates() {
+    @DisplayName("gate 非 REJECTED 不投递：签署中（PENDING）无仲裁语义 → 防御过滤拦下")
+    void collect_skipsNonRejectedGates() {
         IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
         Map<Long, Project> byId = scope(Project.builder()
             .id(10L).code("P-001").name("项目A").status("ACTIVE").build());
-        when(gateMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+        // mock 故意返回 PENDING gate + 未裁行：SQL 过滤在 mock 不生效，验证 Java 防御双保险
+        Gate pendingGate = Gate.builder()
+            .id(301L).projectId(10L).gateCode("G3").status("PENDING").build();
+        when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(pendingGate));
+        when(gateArbitrationMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(arbitration(601L, 301L, "GROUP_LEADER", 3L, null, 2)));
 
         assertThat(aggregator.collect(leader, byId, new Date())).isEmpty();
-        verify(gateArbitrationMapper, never()).selectList(any());
     }
 
     @Test
-    @DisplayName("边界：可见项目为空 → 不触发任何查询")
-    void collect_shortCircuitsOnEmptyScope() {
+    @DisplayName("边界：无未裁仲裁行 → 短路不查 gate（查询顺序以仲裁行为锚）")
+    void collect_skipsWhenNoUndecidedRows() {
         IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        when(gateArbitrationMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
         assertThat(aggregator.collect(leader, new LinkedHashMap<>(), new Date())).isEmpty();
         verify(gateMapper, never()).selectList(any());
+        verify(projectMapper, never()).selectList(any());
+    }
+
+    @Test
+    @DisplayName("回归（真活 gate 999101）：组长非项目成员（visibleProjects 空）→ 仲裁卡仍投递，项目补查 ACTIVE")
+    void collect_nonMemberLeaderStillGetsCard() {
+        IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        when(gateArbitrationMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(arbitration(601L, 301L, "GROUP_LEADER", 3L, null, 2)));
+        when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(gate(301L, 10L, "G3")));
+        // 组长不在 project_members → visibleProjects 空；补查返回 ACTIVE 项目
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(Project.builder()
+            .id(10L).code("P-001").name("项目A").status("ACTIVE").build()));
+
+        List<Map<String, Object>> tasks = aggregator.collect(leader, new LinkedHashMap<>(), new Date());
+
+        assertThat(tasks).hasSize(1);
+        assertThat(tasks.get(0).get("projectName")).isEqualTo("项目A");
+        assertThat(tasks.get(0).get("projectCode")).isEqualTo("P-001");
+    }
+
+    @Test
+    @DisplayName("防御：旧轮残留未裁行（round=1，gate 已在第 2 轮）不投，避免幽灵卡")
+    void collect_skipsStaleRoundRows() {
+        IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        Map<Long, Project> byId = scope(Project.builder()
+            .id(10L).code("P-001").name("项目A").status("ACTIVE").build());
+        when(gateArbitrationMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(arbitration(601L, 301L, "GROUP_LEADER", 3L, null, 1)));
+        Gate round2Gate = Gate.builder()
+            .id(301L).projectId(10L).gateCode("G3").status("REJECTED").currentRound(2).build();
+        when(gateMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(round2Gate));
+
+        assertThat(aggregator.collect(leader, byId, new Date())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("口径对齐：项目非 ACTIVE（补查空）不投卡")
+    void collect_skipsWhenProjectNotActive() {
+        IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        when(gateArbitrationMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(arbitration(601L, 301L, "GROUP_LEADER", 3L, null, 2)));
+        when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(gate(301L, 10L, "G3")));
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        assertThat(aggregator.collect(leader, new LinkedHashMap<>(), new Date())).isEmpty();
     }
 }

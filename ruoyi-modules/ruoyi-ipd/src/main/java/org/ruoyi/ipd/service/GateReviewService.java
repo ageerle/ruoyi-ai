@@ -500,20 +500,29 @@ public class GateReviewService {
         if (collectLeaders(gate).stream().noneMatch(l -> actor.id().equals(l.getId()))) {
             throw new IpdBusinessException("仅冲突双方所在组的产品组长可提交仲裁意见");
         }
-        boolean already = arbitrationRows(gate, ROLE_GROUP_LEADER).stream()
-            .anyMatch(o -> actor.id().equals(o.getArbitratorId()));
-        if (already) {
+        // 待裁行预落语义（WB-17-1 工作台对偶）：开仲裁时已为每位组长 INSERT decision=NULL 行，
+        // 提交 = 原行落决策（UPDATE）；无行时（存量数据/旧路径）退回 INSERT。
+        GateArbitration existing = arbitrationRows(gate, ROLE_GROUP_LEADER).stream()
+            .filter(o -> actor.id().equals(o.getArbitratorId()))
+            .findFirst().orElse(null);
+        if (existing != null && existing.getDecision() != null) {
             throw new IpdBusinessException("您已提交本轮仲裁意见，不可重复提交");
         }
-        GateArbitration row = GateArbitration.builder()
-            .gateId(gateId)
-            .round(gate.getCurrentRound())
-            .arbitratorType(ROLE_GROUP_LEADER)
-            .arbitratorId(actor.id())
-            .decision(decision)
-            .opinion(opinion)
-            .build();
-        arbitrationMapper.insert(row);
+        GateArbitration row;
+        if (existing != null) {
+            row = existing.setDecision(decision).setOpinion(opinion);
+            arbitrationMapper.updateById(row);
+        } else {
+            row = GateArbitration.builder()
+                .gateId(gateId)
+                .round(gate.getCurrentRound())
+                .arbitratorType(ROLE_GROUP_LEADER)
+                .arbitratorId(actor.id())
+                .decision(decision)
+                .opinion(opinion)
+                .build();
+            arbitrationMapper.insert(row);
+        }
         audit(actor, gate, "GATE_ARBITRATION", "组长仲裁意见",
             "decision", decision, "round", gate.getCurrentRound());
         maybeEscalateAfterArbitration(gate, actor);
@@ -529,7 +538,9 @@ public class GateReviewService {
         if (decision == null || !ARBITRATION_DECISIONS.contains(decision)) {
             throw new IpdBusinessException("终裁意见仅允许 APPROVE|REJECT");
         }
-        List<GateArbitration> leaderOpinions = arbitrationRows(gate, ROLE_GROUP_LEADER);
+        // 预落的待裁行（decision=NULL）不计入「两组对立意见」判断
+        List<GateArbitration> leaderOpinions = arbitrationRows(gate, ROLE_GROUP_LEADER).stream()
+            .filter(o -> o.getDecision() != null).toList();
         if (leaderOpinions.size() < 2) {
             throw new IpdBusinessException("组长仲裁尚未形成两组对立意见，暂无需超管终裁");
         }
@@ -722,11 +733,24 @@ public class GateReviewService {
         return approve && reject;
     }
 
-    /** 分歧自动开仲裁：审计开启 + 邀请双方组长（AC-GATE-10 链起点）。 */
+    /** 分歧自动开仲裁：审计开启 + 预落组长待裁行 + 邀请通知（AC-GATE-10 链起点）。
+     * <p>工作台对偶（WB-17-1）：开仲裁即预落每位组长一条 decision=NULL 待裁行
+     * （分配即落行，与 gate_reviews 预建占位行同构）；幂等由先查 + uk(gate_id, round, arbitrator_id) 兜底。 */
     private void openArbitration(Gate gate, IpdActor actor) {
         audit(actor, gate, "GATE_ARBITRATION_OPEN",
             "双PM意见分歧，自动发起组长仲裁（BR-GATE-06）", "round", gate.getCurrentRound());
+        List<GateArbitration> existingRows = arbitrationRows(gate, ROLE_GROUP_LEADER);
         for (Person leader : collectLeaders(gate)) {
+            boolean preallocated = existingRows.stream()
+                .anyMatch(o -> leader.getId().equals(o.getArbitratorId()));
+            if (!preallocated) {
+                arbitrationMapper.insert(GateArbitration.builder()
+                    .gateId(gate.getId())
+                    .round(gate.getCurrentRound())
+                    .arbitratorType(ROLE_GROUP_LEADER)
+                    .arbitratorId(leader.getId())
+                    .build()); // decision/opinion 留空 = 待裁（2026-09-08 ALTER 后可 NULL）
+            }
             notificationService.publish(leader.getId(),
                 NotificationService.Types.GATE_ARBITRATION_REQUEST, NotificationService.KIND_ACTION,
                 "gate", gate.getId(),
@@ -743,7 +767,9 @@ public class GateReviewService {
         if (leaders.isEmpty()) {
             return;
         }
-        List<GateArbitration> opinions = arbitrationRows(gate, ROLE_GROUP_LEADER);
+        // 只统计已裁行：预落的 decision=NULL 待裁行不算「已提交」
+        List<GateArbitration> opinions = arbitrationRows(gate, ROLE_GROUP_LEADER).stream()
+            .filter(o -> o.getDecision() != null).toList();
         boolean allOpined = leaders.stream().noneMatch(l -> opinions.stream()
             .noneMatch(o -> l.getId().equals(o.getArbitratorId())));
         if (!allOpined) {
