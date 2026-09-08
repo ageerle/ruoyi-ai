@@ -132,4 +132,35 @@ public interface IpdPermissionCode {
 
     /** HIGH-3.1：撤销已接受移交（24h 内；RLD_BACK 终态 + 副作用回滚） */
     String OPERATION_HANDOVER_CANCEL = "ipd:handover:cancel";
+
+    // ------------------------------------------------------------------
+    // R-NEW-SEC-5（2026-09-07）：补齐五类业务权限码。
+    // 背的缺陷不是“无鉴权”，而是“有端点无专用码”：写端点挂着 :query 码或只靠
+    // requireInternal()，导致权限目录无法审计、也无法按操作收紧。
+    // 统一口径：注解层只把住“此类操作可被哪一类内部角色调”，
+    // 对象级（项目成员/双签人/申请人）仍由 service 的 IpdIdorGuard 二次校验，
+    // 与既有 negative-feedback / contribution 系列完全同款。
+    // ------------------------------------------------------------------
+
+    /** 一、P2-5.6 / R-NEW-ARCH-1：G5 上市 90 天复盘——读（项目在职成员可见） */
+    String OPERATION_POST_LAUNCH_REVIEW_QUERY = "ipd:post-launch-review:query";
+    /** 一、G5 复盘：生成/重排 PENDING 待办（对象级限该项目 MARKET_PM 或超管） */
+    String OPERATION_POST_LAUNCH_REVIEW_CREATE = "ipd:post-launch-review:create";
+    /** 一、G5 复盘：填写复盘数据并置 COMPLETED（不可逆，对象级同上） */
+    String OPERATION_POST_LAUNCH_REVIEW_COMPLETE = "ipd:post-launch-review:complete";
+
+    /** 二、P3-1.2：共担 KPI 双组长确认签署（第一/第二签同码，同人重复签由 service 拒） */
+    String OPERATION_KPI_SHARED_CONFIRM_SIGN = "ipd:kpi-shared:confirm";
+    /** 三、P3-1.1：共担 KPI 归集执行（写 kpi_records，不应继续挂在 ipd:kpi:query 上） */
+    String OPERATION_KPI_SHARED_COLLECT = "ipd:kpi-shared:collect";
+
+    /** 四、P1-x：需求变更单提交/状态流转（旧沿用通用 project-status-change 码） */
+    String OPERATION_REQUIREMENT_CHANGE_SUBMIT = "ipd:requirement-change:submit";
+    /** 四、需求变更单签收（双签的另一签；签收人不等于提交人由 service 校） */
+    String OPERATION_REQUIREMENT_CHANGE_SIGN = "ipd:requirement-change:sign";
+
+    /** 五、P3-7.1：切换验收月结锁定（从现有 :admin 拆细，使解锁可单独收敛） */
+    String OPERATION_SWITCHING_ACCEPTANCE_LOCK = "ipd:switching-acceptance:lock";
+    /** 五、P3-7.1：切换验收月结解锁（仅超管；:admin 作为历史别名保留，不破坏现有注解） */
+    String OPERATION_SWITCHING_ACCEPTANCE_UNLOCK = "ipd:switching-acceptance:unlock";
 }

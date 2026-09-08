@@ -42,7 +42,9 @@ public final class IpdRolePermissionCatalog {
         // P3-4.4：奖金池详情/列表（内部全员可读；写操作仅超管）
         IpdPermissionCode.OPERATION_BONUS_POOL_QUERY,
         // AC-COMP-01/04/05：合规读（内部全员，角色范围 service 二次校验）
-        IpdPermissionCode.OPERATION_COMPLIANCE_READ
+        IpdPermissionCode.OPERATION_COMPLIANCE_READ,
+        // R-NEW-SEC-5：G5 复盘待办读（对象级由 service 限定为该项目在职成员）
+        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_QUERY
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -67,7 +69,16 @@ public final class IpdRolePermissionCatalog {
         // P3-6.2：贡献度评定保存（双 PM 自评）
         IpdPermissionCode.OPERATION_CONTRIBUTION_SAVE,
         // P3-8.2：负反馈录入（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN 均可）
-        IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_CREATE
+        IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_CREATE,
+        // R-NEW-SEC-5（2026-09-07）：补齐写码。注解层先按内部全员放行，
+        // 真正的“谁能签/谁能改谁的复盘”由 service 层 IpdIdorGuard 卡（与上面各系列同构）。
+        // 特别注意：这些码一旦没登目录，就会重现 2026-09-06 “连超管都被注解拒”的 403。
+        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_CREATE,
+        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_COMPLETE,
+        IpdPermissionCode.OPERATION_KPI_SHARED_CONFIRM_SIGN,
+        IpdPermissionCode.OPERATION_KPI_SHARED_COLLECT,
+        IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SUBMIT,
+        IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SIGN
     );
 
     /** 组长初审删除申请 + 系数定值确认。 */
@@ -120,7 +131,11 @@ public final class IpdRolePermissionCatalog {
         // P3-4.4：奖金池计算/冻结/分配（资金敏感操作仅超管；service 无二次校验，注解即终审）
         IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE,
         IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
-        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE
+        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE,
+        // R-NEW-SEC-5：切换验收锁定/解锁从 :admin 拆细（仅超管）。
+        // :admin 仍保留在本集合内作为现有注解的历史别名，避免拆码时改变 HTTP 行为。
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK,
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(

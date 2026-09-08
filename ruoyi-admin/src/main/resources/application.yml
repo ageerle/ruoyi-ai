@@ -334,6 +334,11 @@ tenant:
     # 不登记则多租户插件对其追加 tenant_id 过滤，跨租户联查/读审计链直接断行
     - kpi_rule_snapshots
     - correction_log
+    # R-NEW-SEC-6（2026-09-07）收口：post_launch_reviews（P2-5.6 实体/Service 已上线，表与登记均缺）。
+    # 单企业私有部署下 tenant_id 恒为 '000000'，无多租户语义；不登记则插件追加 tenant_id 过滤，
+    # 与 persons/projects/handover_records 等既有业务表同口径。建表脚本见
+    # docs/script/sql/update/2026-09-07-ipd-rnew-post-launch-reviews.sql（DDL 与本登记须同批上线）。
+    - post_launch_reviews
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

@@ -14,6 +14,7 @@ import org.ruoyi.ipd.mapper.PostLaunchReviewMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,16 @@ import java.util.List;
  *   <li>幂等：同 projectId 已有 PENDING ⇒ 直接返回旧记录（多触发源兼容）</li>
  *   <li>删除走 DeletionRequestService 软删除（暂未启用）</li>
  * </ul>
+ *
+ * <p><b>入口守卫（R-NEW-SEC-1 收口，2026-09-07）</b>：本服务三个公开写/读入口此前接受
+ * {@link IpdActor} 却不做任何校验，任何 internal 角色拿到 projectId 即可排期/完成别人的复盘。
+ * 现统一走 {@link IpdIdorGuard}，且角色校验先于任何 DB 读（fail-closed）：
+ * <ul>
+ *   <li>写入口（schedule/complete）：{@code MARKET_PM} 或 {@code SUPER_ADMIN} 角色门 + 该项目在职成员</li>
+ *   <li>读入口（pending 查询）：该项目在职成员或 {@code SUPER_ADMIN}</li>
+ * </ul>
+ * 因此内部调度方（如未来 G5 通过后的自动排期）必须以项目主 MARKET_PM 或超管身份传入 actor，
+ * 不能再传 GROUP_LEADER/RD_PM 视角的 actor——这是有意的权限收紧，不是回归。
  */
 @Service
 @RequiredArgsConstructor
@@ -43,6 +54,21 @@ public class PostLaunchReviewService {
 
     private static final String ST_PENDING = "PENDING";
     private static final String ST_COMPLETED = "COMPLETED";
+
+    /**
+     * 复盘写操作要求的业务角色（超管另由 {@link IpdIdorGuard} 豁免）。
+     * 与 P2-5.6 卡片口径一致：复盘待办只归项目主 MARKET_PM 与其超管。
+     */
+    private static final String ROLE_MARKET_PM = "MARKET_PM";
+
+    /**
+     * 单企业私有部署（R8）下 tenant_id 的固定值。
+     *
+     * <p>此前该字面量直接写在 {@code scheduleReview} 里（R-NEW-ARCH-3 指出的散落魔法值）。
+     * 提常量同时明确其语义：本表已登记 {@code tenant.excludes}，不参与多租户过滤，
+     * 该列仅作数据归属占位，改动它不影响查询行为，但会让新建行与既有行取值不一致。
+     */
+    private static final String DEFAULT_TENANT_ID = "000000";
 
     private final PostLaunchReviewMapper postLaunchReviewMapper;
     private final ProjectMapper projectMapper;
@@ -59,14 +85,17 @@ public class PostLaunchReviewService {
      *
      * @param projectId  项目
      * @param launchDate G5 通过日期（也是基准 +90d）
-     * @param operator   操作人（仅审计）
+     * @param operator   操作人（审计 + 守卫主体，须为该项目在职 MARKET_PM 或超管）
      * @return 待办记录（PENDING 或复用旧 PENDING）
      */
     @Transactional(rollbackFor = Exception.class)
     public PostLaunchReview scheduleReview(Long projectId, Date launchDate, IpdActor operator) {
+        // 守卫先于参数校验与任何 DB 读：角色不符的冒充者不应得知 projectId/launchDate 是否合法
+        IpdIdorGuard.requireRoleOrSuperAdmin(operator, ROLE_MARKET_PM);
         if (projectId == null || launchDate == null) {
             throw new ServiceException("项目与上市日期不能为空");
         }
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(operator, projectId, memberMapper, projectMapper);
         Project project = projectMapper.selectById(projectId);
         if (project == null || "1".equals(project.getDelFlag())) {
             throw new ServiceException("项目不存在: " + projectId);
@@ -92,7 +121,7 @@ public class PostLaunchReviewService {
             .status(ST_PENDING)
             .assigneeId(assigneeId)
             .build();
-        r.setTenantId("000000");
+        r.setTenantId(DEFAULT_TENANT_ID);
         r.setCreateTime(new Date());
         postLaunchReviewMapper.insert(r);
         auditLogService.append(AuditLog.builder()
@@ -111,6 +140,8 @@ public class PostLaunchReviewService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PostLaunchReview completeReview(Long reviewId, ReviewData data, IpdActor operator) {
+        // 守卫先于参数校验（与 scheduleReview 同口径，fail-closed）
+        IpdIdorGuard.requireRoleOrSuperAdmin(operator, ROLE_MARKET_PM);
         if (reviewId == null) {
             throw new ServiceException("复盘记录 ID 不能为空");
         }
@@ -118,6 +149,8 @@ public class PostLaunchReviewService {
         if (r == null || "1".equals(r.getDelFlag())) {
             throw new ServiceException("复盘记录不存在: " + reviewId);
         }
+        // 对象级守卫：按记录真正所属项目判定，不接受调用方自报 projectId（防 IDOR）
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(operator, r.getProjectId(), memberMapper, projectMapper);
         if (ST_COMPLETED.equals(r.getStatus())) {
             throw new ServiceException("复盘已完成（COMPLETED），不可重复完成");
         }
@@ -138,6 +171,34 @@ public class PostLaunchReviewService {
             .createTime(new Date())
             .build());
         return r;
+    }
+
+    /**
+     * 页 47 入口：取项目当前 PENDING 复盘（R-NEW-ARCH-1 随 Controller 一同补齐）。
+     *
+     * <p>读入口只要求“项目在职成员或超管”，不比写入口严（PM 交接期间接手人也要能看到待办）。
+     *
+     * @param projectId 项目
+     * @param operator  服务端会话身份
+     * @return PENDING 记录（按 id 升序取最早一条）
+     * @throws ServiceException 项目无 PENDING 复盘
+     */
+    public PostLaunchReview findPendingByProject(Long projectId, IpdActor operator) {
+        IpdIdorGuard.requireAuthenticated(operator);
+        if (projectId == null) {
+            throw new ServiceException("项目 ID 不能为空");
+        }
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(operator, projectId, memberMapper, projectMapper);
+        List<PostLaunchReview> rows = postLaunchReviewMapper.selectList(
+            new LambdaQueryWrapper<PostLaunchReview>()
+                .eq(PostLaunchReview::getProjectId, projectId)
+                .eq(PostLaunchReview::getStatus, ST_PENDING)
+                .orderByAsc(PostLaunchReview::getId)
+                .last("LIMIT 1"));
+        if (rows == null || rows.isEmpty()) {
+            throw new ServiceException("项目无待完成复盘: " + projectId);
+        }
+        return rows.get(0);
     }
 
     /**
