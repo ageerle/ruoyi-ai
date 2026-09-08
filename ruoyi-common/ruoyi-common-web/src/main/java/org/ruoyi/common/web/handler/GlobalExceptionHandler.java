@@ -14,6 +14,7 @@ import org.ruoyi.common.core.exception.SseException;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.json.utils.JsonUtils;
+import org.slf4j.MDC;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -28,9 +29,14 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * 全局异常处理器
+ *
+ * <p>P0.7 traceId 串联：每个 exception handler 在方法入口 put MDC、return 前 remove，
+ * 保证日志与响应体在同一 traceId 下关联。MDC 由 TraceIdFilter 在请求入口设置，
+ * 此处兜底保证非 HTTP 路径（如定时任务 / 异步）下也能正确生成 traceId。
  *
  * @author Lion Li
  */
@@ -44,9 +50,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public R<Void> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException e,
                                                                 HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求地址'{}',不支持'{}'请求", requestURI, e.getMethod());
-        return R.fail(HttpStatus.HTTP_BAD_METHOD, e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.error("请求地址'{}',不支持'{}'请求", requestURI, e.getMethod());
+            return R.fail(HttpStatus.HTTP_BAD_METHOD, e.getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -54,9 +65,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ServiceException.class)
     public R<Void> handleServiceException(ServiceException e, HttpServletRequest request) {
-        log.error(e.getMessage());
-        Integer code = e.getCode();
-        return ObjectUtil.isNotNull(code) ? R.fail(code, e.getMessage()) : R.fail(e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.error(e.getMessage());
+            Integer code = e.getCode();
+            return ObjectUtil.isNotNull(code) ? R.fail(code, e.getMessage()) : R.fail(e.getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -65,9 +81,14 @@ public class GlobalExceptionHandler {
     @ResponseStatus(org.springframework.http.HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(SseException.class)
     public String handleNotLoginException(SseException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.debug("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, e.getMessage());
-        return JsonUtils.toJsonString(R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源"));
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.debug("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, e.getMessage());
+            return JsonUtils.toJsonString(R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源"));
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -75,9 +96,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ServletException.class)
     public R<Void> handleServletException(ServletException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求地址'{}',发生未知异常.", requestURI, e);
-        return R.fail(e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.error("请求地址'{}',发生未知异常.", requestURI, e);
+            return R.fail(e.getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -85,8 +111,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BaseException.class)
     public R<Void> handleBaseException(BaseException e, HttpServletRequest request) {
-        log.error(e.getMessage());
-        return R.fail(e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.error(e.getMessage());
+            return R.fail(e.getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -94,9 +125,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MissingPathVariableException.class)
     public R<Void> handleMissingPathVariableException(MissingPathVariableException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求路径中缺少必需的路径变量'{}',发生系统异常.", requestURI);
-        return R.fail(String.format("请求路径中缺少必需的路径变量[%s]", e.getVariableName()));
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.error("请求路径中缺少必需的路径变量'{}',发生系统异常.", requestURI);
+            return R.fail(String.format("请求路径中缺少必需的路径变量[%s]", e.getVariableName()));
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -104,9 +140,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public R<Void> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求参数类型不匹配'{}',发生系统异常.", requestURI);
-        return R.fail(String.format("请求参数类型不匹配，参数[%s]要求类型为：'%s'，但输入值为：'%s'", e.getName(), e.getRequiredType().getName(), e.getValue()));
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.error("请求参数类型不匹配'{}',发生系统异常.", requestURI);
+            return R.fail(String.format("请求参数类型不匹配，参数[%s]要求类型为：'%s'，但输入值为：'%s'", e.getName(), e.getRequiredType().getName(), e.getValue()));
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -114,9 +155,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(NoHandlerFoundException.class)
     public R<Void> handleNoHandlerFoundException(NoHandlerFoundException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求地址'{}'不存在.", requestURI);
-        return R.fail(HttpStatus.HTTP_NOT_FOUND, e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.error("请求地址'{}'不存在.", requestURI);
+            return R.fail(HttpStatus.HTTP_NOT_FOUND, e.getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -126,18 +172,23 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IOException.class)
     public R<Void> handleIoException(IOException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        if (requestURI.contains("sse")) {
-            // sse 经常性连接中断 例如关闭浏览器 直接屏蔽
-            return null;
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            if (requestURI.contains("sse")) {
+                // sse 经常性连接中断 例如关闭浏览器 直接屏蔽
+                return null;
+            }
+            // 排除文件下载/导出相关的 IOException，让异常正常传播以便上层处理
+            if (requestURI.contains("/export") || requestURI.contains("/download")) {
+                // 重新抛出，让调用方处理
+                throw new RuntimeException("文件导出/下载IO异常: " + e.getMessage(), e);
+            }
+            log.error("请求地址'{}',连接中断", requestURI, e);
+            return R.fail(e.getMessage());
+        } finally {
+            MDC.remove("traceId");
         }
-        // 排除文件下载/导出相关的 IOException，让异常正常传播以便上层处理
-        if (requestURI.contains("/export") || requestURI.contains("/download")) {
-            // 重新抛出，让调用方处理
-            throw new RuntimeException("文件导出/下载IO异常: " + e.getMessage(), e);
-        }
-        log.error("请求地址'{}',连接中断", requestURI, e);
-        return R.fail(e.getMessage());
     }
 
     /**
@@ -152,16 +203,21 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RuntimeException.class)
     public R<Void> handleRuntimeException(RuntimeException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        // 对于文件导出相关异常，不进行封装处理，让原始异常信息传播
-        Throwable cause = e.getCause();
-        if (requestURI.contains("/export") || requestURI.contains("/download")) {
-            log.error("请求地址'{}',文件导出/下载异常.", requestURI, e);
-            // 对于文件导出，直接返回异常信息，不进行额外封装
-            return R.fail(cause != null ? cause.getMessage() : e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            // 对于文件导出相关异常，不进行封装处理，让原始异常信息传播
+            Throwable cause = e.getCause();
+            if (requestURI.contains("/export") || requestURI.contains("/download")) {
+                log.error("请求地址'{}',文件导出/下载异常.", requestURI, e);
+                // 对于文件导出，直接返回异常信息，不进行额外封装
+                return R.fail(cause != null ? cause.getMessage() : e.getMessage());
+            }
+            log.error("请求地址'{}',发生未知异常.", requestURI, e);
+            return R.fail(e.getMessage());
+        } finally {
+            MDC.remove("traceId");
         }
-        log.error("请求地址'{}',发生未知异常.", requestURI, e);
-        return R.fail(e.getMessage());
     }
 
     /**
@@ -169,9 +225,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public R<Void> handleException(Exception e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求地址'{}',发生系统异常.", requestURI, e);
-        return R.fail(e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.error("请求地址'{}',发生系统异常.", requestURI, e);
+            return R.fail(e.getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -179,9 +240,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BindException.class)
     public R<Void> handleBindException(BindException e) {
-        log.error(e.getMessage());
-        String message = StreamUtils.join(e.getAllErrors(), DefaultMessageSourceResolvable::getDefaultMessage, ", ");
-        return R.fail(message);
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.error(e.getMessage());
+            String message = StreamUtils.join(e.getAllErrors(), DefaultMessageSourceResolvable::getDefaultMessage, ", ");
+            return R.fail(message);
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -189,9 +255,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public R<Void> constraintViolationException(ConstraintViolationException e) {
-        log.error(e.getMessage());
-        String message = StreamUtils.join(e.getConstraintViolations(), ConstraintViolation::getMessage, ", ");
-        return R.fail(message);
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.error(e.getMessage());
+            String message = StreamUtils.join(e.getConstraintViolations(), ConstraintViolation::getMessage, ", ");
+            return R.fail(message);
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -199,9 +270,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public R<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        log.error(e.getMessage());
-        String message = StreamUtils.join(e.getBindingResult().getAllErrors(), DefaultMessageSourceResolvable::getDefaultMessage, ", ");
-        return R.fail(message);
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.error(e.getMessage());
+            String message = StreamUtils.join(e.getBindingResult().getAllErrors(), DefaultMessageSourceResolvable::getDefaultMessage, ", ");
+            return R.fail(message);
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -210,9 +286,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(JsonParseException.class)
     public R<Void> handleJsonParseException(JsonParseException e, HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        log.error("请求地址'{}' 发生 JSON 解析异常: {}", requestURI, e.getMessage());
-        return R.fail(HttpStatus.HTTP_BAD_REQUEST, "请求数据格式错误（JSON 解析失败）：" + e.getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String requestURI = request.getRequestURI();
+            log.error("请求地址'{}' 发生 JSON 解析异常: {}", requestURI, e.getMessage());
+            return R.fail(HttpStatus.HTTP_BAD_REQUEST, "请求数据格式错误（JSON 解析失败）：" + e.getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
     /**
@@ -220,8 +301,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public R<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e, HttpServletRequest request) {
-        log.error("请求地址'{}', 参数解析失败: {}", request.getRequestURI(), e.getMessage());
-        return R.fail(HttpStatus.HTTP_BAD_REQUEST, "请求参数格式错误：" + e.getMostSpecificCause().getMessage());
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.error("请求地址'{}', 参数解析失败: {}", request.getRequestURI(), e.getMessage());
+            return R.fail(HttpStatus.HTTP_BAD_REQUEST, "请求参数格式错误：" + e.getMostSpecificCause().getMessage());
+        } finally {
+            MDC.remove("traceId");
+        }
     }
 
 }

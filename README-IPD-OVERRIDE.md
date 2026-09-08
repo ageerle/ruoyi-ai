@@ -289,6 +289,82 @@
 
 ---
 
-**本文件最后更新**：2026-09-04，由 Claude Code 在 drift audit 完成后自动生成。
+## 十一、prod 部署参数披露（Batch-5 #5）
+
+本节披露安全加固过程中做出的、**会影响生产运行特征**的参数取舍。数值均取自工作树字节
+（`ruoyi-admin/src/main/resources/application*.yml`）与实测记录，非设计意图值。
+
+### 11.1 Hikari 连接池：connectionTimeout 30s → 5s
+
+池参数生效路径是 `spring.datasource.dynamic.hikari.*`（本项目数据源由 baomidou
+dynamic-datasource 创建，Spring Boot 原生 `spring.datasource.hikari.*` **不生效**）。
+
+| profile | maxPoolSize | connectionTimeout | 说明 |
+|---|---|---|---|
+| 父基线 `application.yml` | 20 | 5000ms | 未显式配池的 profile（如 `ipd-local`）的安全兜底 |
+| `dev` | 80 | 5000ms | 单实例压测口径 |
+| `prod` | 80 | 5000ms | Batch-3 由用户授权手动合并 |
+| HikariCP 出厂默认 | 10 | 30000ms | **被覆盖前的危险基线** |
+
+**取舍披露**：30s → 5s 是「快速失败」换「重试压力」。
+
+- 收益：高并发下取不到连接的请求 5s 内抛 `SQLTransientConnectionException` 并释放
+  Tomcat 工作线程；30s 排队会让线程池被慢等待占满，形成雪崩放大器。
+- 代价：数据库瞬时抖动（如主从切换、长事务持锁）超过 5s 时，原本能等到连接的请求会
+  直接失败。**这是有意接受的**——失败可观测、可重试，雪崩不可恢复。
+- 未覆盖：Redis/邮件等非数据源超时不在此列（邮件 `connectiontimeout` 另配 5000ms）。
+
+### 11.2 BCrypt cost=10（SEC-HIGH-1 / R9-BC-COST）
+
+- 取值：`BCrypt.gensalt(10)`，由 `IpdMockDataInitializerTest` 断言守卫
+  （断言 `contains("BCrypt.gensalt(10)")` + `doesNotContain("BCrypt.gensalt(4)")`）。
+- 实测耗时：单次 hash **~80ms**（cost=4 时 ~8ms，**提升 10 倍**）。
+- 取舍披露：cost=4 对离线爆破几乎无防护；cost=10 是 2026 年可接受下限。80ms 只落在
+  登录 / 改密路径，用户可感知延迟增量可忽略，但**每请求持连接时间 ×10**——这正是下面
+  池容量必须同步扩的原因。
+
+### 11.3 池容量与 BCrypt 的耦合：为什么是 80
+
+BCrypt cost 升级后，登录路径每请求持连接时间 ×10，原 20/40 池在 100 并发登录压测下
+会排队打满。因此 dev / prod 同步扩到 **80**，与 cost=10 同批发车。
+
+**53% 水位的推导**（确定性外推，非估算）：
+
+- 实测 `max_connections = 151`。
+- 锚点等式：本仓常态 4 实例并存（16039 / 16044 / 16045 / 16050），
+  `4 × HikariCP 默认 10 = 40` ≡ processlist 中 `ipd_app` 的 40 个连接，且**全为 Sleep 空闲态**
+  → 常驻连接数由池预留决定、与业务负载无关（零负载也占满），故可据此外推。
+- 单实例 80 / 151 ≈ **53% 水位**，留 71 个连接给压测与运维实例。
+
+**连接预算硬约束**：`在跑实例数 × maxPoolSize ≤ max_connections`。
+
+- 父基线取 20：`4 × 20 = 80` ≤ 151 ✅
+- 若父基线取 40：`4 × 40 = 160 > 151` → `ERROR 1040 Too many connections`。这比池排队
+  雪崩**更严重**：新实例根本起不来、运行中实例取不到连接，且 `ipd_app` 非 SUPER
+  拿不到 MySQL 保留连接。
+- ⚠️ **多实例部署告警**：`4 × 80 = 320 > 151`。dev/prod 的 80 是**单实例满载口径**。
+  多实例并存时稳态连接数仍由 `minIdle = 10` 决定（`4 × 10 = 40`），但满载会击穿预算。
+  多实例上线前必须按 `实例数 × 80` 重估 `max_connections`。
+
+### 11.4 监控阈值
+
+| 指标 | 当前值 | 告警阈值 | 数据来源 |
+|---|---|---|---|
+| 连接池水位 | 53%（单实例 80 / 151，2026-09-07 实测） | 70% | MySQL `max_connections` + processlist |
+| BCrypt 单次 hash | ~80ms | — | SEC-HIGH-1 实测 |
+
+达到 70% 时的处置顺序：先降 `maxPoolSize` 或减实例数，**不要**直接抬
+`max_connections`（内存放大 + 触发 1040 的时点只是被推后）。
+
+### 11.5 CI 侧凭证守卫（Batch-5 #4）
+
+`.github/workflows/gitleaks.yml` 在 push / PR to `main` 时全历史扫描凭证字面量。
+它与本地 `.claude/helpers/sensitive-field-guard.cjs`（PreToolUse hook）互补：hook 只在
+Claude Code 会话内拦 Write/Edit，人工 commit、其他 IDE、兄弟会话绕过均无覆盖，CI 补齐。
+
+---
+
+**本文件最后更新**：2026-09-07，Batch-5 增补 §十一 prod 部署参数披露。
+原始版本 2026-09-04 由 Claude Code 在 drift audit 完成后自动生成。
 
 **下次更新触发**：P0 阶段验收通过 / 改造方向重大调整 / 上游 wilson323/ruoyi-ai 重大更新。

@@ -28,6 +28,11 @@ public class IpdAuthController {
 
     public record LoginRequest(@NotBlank @Size(max = 64) String username,
                                @NotBlank @Size(max = 72) String password) { }
+    /**
+     * P0-7.4 企微 Mock 扫码登录入参（明确 Mock 不冒充真实企微接入；AC-AUTH-04）。
+     * <p>接受企微 userId（Mock 阶段），未来真实企微接入应替换为 OAuth2 code + state 入参。
+     */
+    public record WecomLoginRequest(@NotBlank @Size(max = 128) String wecomUserId) { }
     public record PasswordRequest(@NotBlank @Size(max = 72) String currentPassword,
                                   @NotBlank @Size(min = 8, max = 72) String newPassword) { }
     public record PersonView(String id, String name, String username, String personType,
@@ -47,6 +52,25 @@ public class IpdAuthController {
     @PostMapping("/login")
     public ApiV1Response<LoginView> login(@Valid @RequestBody LoginRequest request) {
         IpdAuthService.LoginResult result = authService.login(request.username(), request.password());
+        String token = session.login(result.person());
+        return ApiV1Response.ok(new LoginView(token, "Bearer", session.timeout(), result.scope().name(),
+            result.mustChangePwd(), PersonView.from(result.person())));
+    }
+
+    /**
+     * P0-7.4 企微 Mock 扫码登录（明确 Mock 不冒充真实企微接入；AC-AUTH-04 / AC-AUTH-05）。
+     *
+     * <p>接受企微 userId（Mock 入参），查 {@code persons.wecom_user_id} 绑定关系：
+     * <ul>
+     *   <li>已绑定 → 复用 {@code /login} 的 scope 计算 + 签发 JWT（mock=true 写入审计 reason）</li>
+     *   <li>未绑定 → 404 NOT_FOUND + "账号未绑定，请联系管理员"（不泄露在职状态）</li>
+     * </ul>
+     *
+     * <p>⚠ Mock 实现：未来真实企微接入应替换此端点为 OAuth2 code → userInfo 换取流程，本端点移除。
+     */
+    @PostMapping("/wecom/qr-login")
+    public ApiV1Response<LoginView> wecomQrLogin(@Valid @RequestBody WecomLoginRequest request) {
+        IpdAuthService.LoginResult result = authService.wecomMockLogin(request.wecomUserId());
         String token = session.login(result.person());
         return ApiV1Response.ok(new LoginView(token, "Bearer", session.timeout(), result.scope().name(),
             result.mustChangePwd(), PersonView.from(result.person())));

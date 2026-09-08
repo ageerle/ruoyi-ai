@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
@@ -37,8 +39,10 @@ import static org.mockito.Mockito.when;
  * <p>Bug 复现：HandoverService.initiateOnBehalf 入口未做项目归属校验，
  * 任何登录用户都可对任意 projectId 触发代移交，绕过项目归属（横向越权）。
  *
- * <p>修复：入口加 {@code projectMapper.selectById} + assertSameGroup
- * （SUPER_ADMIN 豁免）。
+ * <p>修复：入口加 {@code projectMapper.selectById} + IpdIdorGuard.assertSameGroupIpd
+ * （SUPER_ADMIN 豁免）。统一守卫文案「无权操作」（W4-Security 决策 3：FORBIDDEN 文案
+ * 统一，不区分资源不存在与无权限——防泄漏存在性），故本测试断言文案与
+ * {@code IpdIdorGuardSameGroupTest} 对齐，不再使用旧文案"代移交项目"。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -58,6 +62,8 @@ class HandoverInitiateAuthTest {
     private ProjectMemberService projectMemberService;
     @Mock
     private IpdAuthSession ipdAuthSession;
+    @Mock
+    private NotificationService notificationService;
 
     private HandoverService service;
 
@@ -73,7 +79,7 @@ class HandoverInitiateAuthTest {
     void setUp() {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
-            ipdAuthSession);
+            ipdAuthSession, notificationService);
     }
 
     private Project projectInGroup(Long mainGroupId) {
@@ -90,8 +96,11 @@ class HandoverInitiateAuthTest {
 
         assertThatThrownBy(() -> service.initiateOnBehalf(
                 100L, "MARKET_PM", 88L, "note", null, crossGroupLeader))
-            .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("代移交项目");
+            // W4-Security 决策 3：跨组守卫统一 IpdBusinessException(FORBIDDEN, "无权操作")
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("无权操作")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
 
         // 后续任何写入都不应发生 —— 边界在入口，未透传到底层
         verify(handoverMapper, never()).insert(any(org.ruoyi.ipd.domain.HandoverRecord.class));
@@ -112,7 +121,7 @@ class HandoverInitiateAuthTest {
         } catch (ServiceException e) {
             assertThat(e.getMessage())
                 .as("SUPER_ADMIN 应豁免项目归属校验，不应抛越权异常")
-                .doesNotContain("代移交项目");
+                .doesNotContain("无权操作");
         }
     }
 
@@ -128,7 +137,7 @@ class HandoverInitiateAuthTest {
         } catch (ServiceException e) {
             assertThat(e.getMessage())
                 .as("同组操作人不应抛越权异常；其他 mock 缺失链路可正常失败")
-                .doesNotContain("代移交项目");
+                .doesNotContain("无权操作");
         }
     }
 
@@ -154,7 +163,7 @@ class HandoverInitiateAuthTest {
             service.initiateOnBehalf(100L, "GUEST", 88L, "note", null, sameGroupLeader);
         } catch (ServiceException e) {
             // auth 已通过，但 createDraft 拒绝非法 role
-            assertThat(e.getMessage()).doesNotContain("代移交项目");
+            assertThat(e.getMessage()).doesNotContain("无权操作");
         }
     }
 }

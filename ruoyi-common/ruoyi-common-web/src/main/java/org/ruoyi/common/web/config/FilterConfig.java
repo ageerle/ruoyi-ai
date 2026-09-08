@@ -3,6 +3,7 @@ package org.ruoyi.common.web.config;
 import jakarta.servlet.DispatcherType;
 import org.ruoyi.common.web.config.properties.XssProperties;
 import org.ruoyi.common.web.filter.RepeatableFilter;
+import org.ruoyi.common.web.filter.TraceIdFilter;
 import org.ruoyi.common.web.filter.XssFilter;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,6 +20,21 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 @EnableConfigurationProperties(XssProperties.class)
 public class FilterConfig {
+
+    /**
+     * traceId 串联过滤器（P0.7 可观测性门），最高优先级以保证后续过滤器与 controller
+     * 处理阶段都能从 MDC 读取 traceId。
+     */
+    @Bean
+    @FilterRegistration(
+        name = "traceIdFilter",
+        urlPatterns = "/*",
+        order = FilterRegistrationBean.HIGHEST_PRECEDENCE,
+        dispatcherTypes = DispatcherType.REQUEST
+    )
+    public TraceIdFilter traceIdFilter() {
+        return new TraceIdFilter();
+    }
 
     @Bean
     @ConditionalOnProperty(value = "xss.enabled", havingValue = "true")

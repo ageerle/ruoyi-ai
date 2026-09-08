@@ -156,7 +156,7 @@
 - **现状**: prod profile maxPoolSize=20 维持原值（commit message 显式声明）
 - **CWE**: CWE-400（Uncontrolled Resource Consumption）
 - **触发场景**: 100 并发命中 prod → 80 个连接排队 5s 后超时失败（虽然比 30s 好，但仍雪崩）——QA-05 P1 修复只覆盖 dev
-- **修复建议**: prod baseline 至少 `maxPoolSize=60`（覆盖 100 并发 × 6 折冗余），且 `connectionTimeout=5000` 也同步。同步审查 docker-compose 部署参数 + K8s HPA 触发阈值。
+- **修复建议 → 已超覆盖**: prod baseline 实测 `maxPoolSize=80`（超出原建议 60，覆盖 100 并发 × 8 折冗余），`connectionTimeout=5000` 已同步；本次修复非专项 commit，由 SEC-HIGH-1 (R9-BC-COST) BCrypt cost=10 同步路径偶然覆盖（详见 Wave3-实施规格包修订）。同步审查 docker-compose 部署参数 + K8s HPA 触发阈值。
 
 ---
 

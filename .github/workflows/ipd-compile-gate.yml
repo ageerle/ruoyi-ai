@@ -1,0 +1,114 @@
+# IPD 后端编译门禁 — RuoYi-AI 主仓 required check
+# 触发：PR / push main 修改任意 .java 或 pom.xml
+#
+# 为什么必须有这道门（2026-09-08 事故实证）：
+#   本仓 4 个既有 workflow（a11y-ci / docs-link-check / publish-images / wiki-lint）
+#   中 mvn、javac、setup-java 命中数为 0 —— 后端不存在任何编译门禁。后果：
+#     1) dfb7828e 把 HandoverService.java(31559B) / HandoverRecord.java(2275B) /
+#        ScanOverdueTenantGuardAcceptanceTest.java 整体覆盖成 `@`+自身路径的引用
+#        token（111B/109B/132B），净删 666 行、零功能，却以「4/4 共识 P0 闭环」进 main；
+#     2) 6ff29d8a「SSRF 防御三层加固」的 isBlockedIp 未捕获受检 UnknownHostException，
+#        从未编译过即进 main。
+#   两者都使 origin/main 纯净检出 test-compile BUILD FAILURE。
+#   下面两个 job 分别机器化拦死这两类故障。
+
+name: ipd-compile-gate
+
+on:
+  pull_request:
+    paths:
+      - '**/*.java'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - '.github/workflows/ipd-compile-gate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.java'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - '.github/workflows/ipd-compile-gate.yml'
+
+jobs:
+  # 门 1：编译。主源 + 测试源都必须过。
+  # 用 test-compile 而非 compile —— 本次事故的 P032HttpAcceptanceTest 构造器漂移
+  # 只出现在测试源，compile 拦不住。
+  compile:
+    name: mvn test-compile (main + test sources)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Test-compile whole reactor
+        # -B 批处理 -ntp 不刷下载进度；不加 -o（CI 需联网取依赖）；
+        # 不加 -am / clean，与开发机「错峰 + 单模块」复核约定不冲突（CI 是全新环境）
+        run: mvn -B -ntp -DskipTests test-compile
+
+  # 门 2：源文件完整性。编译门只能覆盖被编译的文件；
+  # .sql / .yml / .xml / .md 里的同类污染编译拦不住，这里兜底。
+  integrity:
+    name: source integrity (no @-path token / no empty shell)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Scan for reference-token pollution and empty shells
+        shell: bash
+        run: |
+          set -uo pipefail
+          fail=0
+
+          echo "== 检查 1：源文件内容不得为 '@'+绝对路径 的引用 token =="
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            if [ "$(head -c 2 "$f" 2>/dev/null)" = "@/" ]; then
+              echo "POLLUTED: $f ($(wc -c < "$f") B) 内容为文件引用 token，不是源码"
+              fail=1
+            fi
+          done < <(find . -path ./node_modules -prune -o -path ./.git -prune -o \
+                   -type f \( -name '*.java' -o -name '*.ts' -o -name '*.vue' \
+                     -o -name '*.xml' -o -name '*.yml' -o -name '*.yaml' \
+                     -o -name '*.sql' -o -name '*.py' \) -print)
+
+          echo "== 检查 2：.java 不得为无类型声明的空壳 =="
+          # 豁免 package-info.java / module-info.java：二者是合法的无类型声明源文件
+          # （本地实跑门禁时 package-info.java 362 B 曾误报，故显式排除）
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            case "$(basename "$f")" in
+              package-info.java|module-info.java) continue ;;
+            esac
+            sz=$(wc -c < "$f")
+            if [ "$sz" -lt 400 ]; then
+              if ! grep -qE '\b(class|interface|enum|record|@interface)\b' "$f"; then
+                echo "SHELL: $f (${sz} B) 无任何类型声明"
+                fail=1
+              fi
+            fi
+          done < <(find . -path ./node_modules -prune -o -path ./.git -prune -o \
+                   -type f -name '*.java' -print)
+
+          if [ "$fail" -ne 0 ]; then
+            echo ""
+            echo "BLOCKED: 检出源文件完整性问题。这类文件会打断编译或伪装成已交付的测试。"
+            exit 1
+          fi
+          echo "OK: 无引用 token 污染，无空壳 .java"
