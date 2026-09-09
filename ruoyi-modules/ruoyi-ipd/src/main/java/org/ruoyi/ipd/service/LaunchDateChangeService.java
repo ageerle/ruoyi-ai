@@ -55,18 +55,25 @@ public class LaunchDateChangeService {
 
     /**
      * 提议变更上市日期（第一签）。
+     * <p>R11 / A1 修复（WB-17-1 收口后死路）:提议时预落 confirmer_id/confirmer_role/confirmer_group_id，
+     * 使 StrategicChangeAggregator 能正常投递 LD-卡（真活恒空死路）。与 Gate 仲裁方案 1 同构——
+     * propose 时刻已知第二签人（提议人选择/系统互补角色推导），即落库而非 confirm 时回填。
      *
-     * @param projectId      项目
-     * @param proposedDate   新上市日
-     * @param reason         理由
-     * @param proposerId     提议人
-     * @param proposerRole   角色
-     * @param proposerGroupId 提议人所属产品组（横向越权防护用）
-     * @return PENDING_SECOND 申请
+     * @param projectId         项目
+     * @param proposedDate      新上市日
+     * @param reason            理由
+     * @param proposerId        提议人
+     * @param proposerRole      角色
+     * @param proposerGroupId   提议人所属产品组（横向越权防护用）
+     * @param confirmerId       第二签确认人（提议时由前端选定，必传）
+     * @param confirmerRole     第二签角色
+     * @param confirmerGroupId  第二签人所属产品组（必传，与项目主组同）
+     * @return PENDING_SECOND 申请（confirmer 字段已落库）
      */
     @Transactional(rollbackFor = Exception.class)
     public LaunchDateChangeRequest propose(Long projectId, Date proposedDate, String reason,
-                                           Long proposerId, String proposerRole, Long proposerGroupId) {
+                                           Long proposerId, String proposerRole, Long proposerGroupId,
+                                           Long confirmerId, String confirmerRole, Long confirmerGroupId) {
         if (projectId == null || proposedDate == null || proposerId == null) {
             throw new ServiceException("项目、上市日期与提议人不能为空");
         }
@@ -80,6 +87,22 @@ public class LaunchDateChangeService {
         // R8X-2 P0-1：横向越权防护——提议人必须归属同一项目主组（SUPER_ADMIN 豁免）
         IpdIdorGuard.assertSameGroupIpd(new IpdActor(proposerId, null, proposerRole, proposerGroupId),
             project.getMainGroupId());
+        // R11 / A1 修复:提议时即选第二签人，fail-closed（不能后补、不能默认）
+        if (confirmerId == null || confirmerRole == null || confirmerGroupId == null) {
+            throw new ServiceException("提议上市日期变更必须同时指定第二签确认人（防工作台 LD-卡恒空）");
+        }
+        if (confirmerId.equals(proposerId)) {
+            throw new ServiceException("双签须由不同人员完成（AC-INC-33）");
+        }
+        if (!CONFIRMER_ROLES.contains(confirmerRole)) {
+            throw new ServiceException("仅市场PM/研发PM/超管可完成上市日期变更第二签");
+        }
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(confirmerId, null, confirmerRole, confirmerGroupId),
+            project.getMainGroupId());
+        if (!SUPER_ADMIN.equals(confirmerRole) && !SUPER_ADMIN.equals(proposerRole)
+            && confirmerRole.equals(proposerRole)) {
+            throw new ServiceException("第二签须为互补角色（市场PM↔研发PM）或超管");
+        }
         Long pending = requestMapper.selectCount(new LambdaQueryWrapper<LaunchDateChangeRequest>()
             .eq(LaunchDateChangeRequest::getProjectId, projectId)
             .eq(LaunchDateChangeRequest::getStatus, LaunchDateChangeRequest.ST_PENDING_SECOND));
@@ -93,6 +116,8 @@ public class LaunchDateChangeService {
             .reason(reason.trim())
             .proposerId(proposerId)
             .proposerRole(proposerRole)
+            .confirmerId(confirmerId)
+            .confirmerRole(confirmerRole)
             .status(LaunchDateChangeRequest.ST_PENDING_SECOND)
             .tenantId("000000")
             .delFlag("0")
@@ -139,6 +164,10 @@ public class LaunchDateChangeService {
         }
         if (confirmerId.equals(req.getProposerId())) {
             throw new ServiceException("双签须由不同人员完成（AC-INC-33）");
+        }
+        // R11 / A1 修复:必须匹配 propose 时刻预落的 confirmer_id（防提议人绕过预落自己确认）
+        if (req.getConfirmerId() != null && !confirmerId.equals(req.getConfirmerId())) {
+            throw new ServiceException("第二签人必须为提议时指定的确认人（confirmerId 预落校验）");
         }
         // P1（owner 2026-09-05 项1b）：第二签角色白名单，fail-closed。
         // 旧实现只在「两侧都非超管且角色相同」时拒绝，且因 `confirmerRole != null &&` 短路，

@@ -5,10 +5,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ReceiptLedger;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ReceiptLedgerMapper;
 
 import java.math.BigDecimal;
@@ -26,13 +28,20 @@ import static org.mockito.Mockito.*;
  * P3-4.1 销售回款台账验收测试（AC-INC-16b/16c/16d/31/31b/32）
  *
  * <p>形态为 Mockito 单元验收；真库 HTTP 验收另见 evidence-p341-http-acceptance-*.json。
+ *
+ * <p>2026-09-08 缺口补齐：service 注入 ProjectMapper 后 1 参构造失效，统一迁移到 2 参构造；
+ * 4 处 IllegalArgumentException / IllegalStateException 升级为 IpdBusinessException（业务拒绝统一包络）。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
 class P341AcceptanceTest {
 
-    @Mock private ReceiptLedgerMapper receiptLedgerMapper;
-    @InjectMocks private ReceiptLedgerService receiptLedgerService;
+    @Mock
+    private ReceiptLedgerMapper receiptLedgerMapper;
+    @Mock
+    private ProjectMapper projectMapper;
+
+    private ReceiptLedgerService receiptLedgerService;
 
     private ReceiptLedger sampleLedger;
     private Date windowStart;
@@ -40,6 +49,7 @@ class P341AcceptanceTest {
 
     @BeforeEach
     void setUp() {
+        receiptLedgerService = new ReceiptLedgerService(receiptLedgerMapper, projectMapper);
         // AC-INC-32：上市日期 2026-01-15，6自然月窗口 → 2026-07-14
         LocalDate start = LocalDate.of(2026, 1, 15);
         LocalDate end = start.plusMonths(6).minusDays(1);
@@ -61,9 +71,18 @@ class P341AcceptanceTest {
             .build();
     }
 
+    private Project projectLaunch2026Jan15() {
+        Project p = new Project();
+        p.setId(100L);
+        p.setDelFlag("0");
+        p.setLaunchDate(windowStart);
+        return p;
+    }
+
     @Test
     @DisplayName("AC-INC-16c 录入回款：月度金额 + 凭证附件 ⇒ 成功")
     void recordReceipt_success() {
+        when(projectMapper.selectById(100L)).thenReturn(projectLaunch2026Jan15());
         when(receiptLedgerMapper.insert(any(ReceiptLedger.class))).thenReturn(1);
 
         ReceiptLedger result = receiptLedgerService.recordReceipt(sampleLedger);
@@ -80,7 +99,7 @@ class P341AcceptanceTest {
         sampleLedger.setSource("SHIPMENT");
 
         assertThatThrownBy(() -> receiptLedgerService.recordReceipt(sampleLedger))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("AC-INC-16b")
             .hasMessageContaining("RECEIPT");
     }
@@ -91,7 +110,7 @@ class P341AcceptanceTest {
         sampleLedger.setReceiptAmount(BigDecimal.ZERO);
 
         assertThatThrownBy(() -> receiptLedgerService.recordReceipt(sampleLedger))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("正数");
     }
 
@@ -118,7 +137,7 @@ class P341AcceptanceTest {
         when(receiptLedgerMapper.selectOne(any())).thenReturn(outOfWindow);
 
         assertThatThrownBy(() -> receiptLedgerService.recordRefund(100L, "2026-09", new BigDecimal("10000.00")))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("AC-INC-31")
             .hasMessageContaining("窗口外退款不做回溯扣减");
     }
@@ -145,6 +164,7 @@ class P341AcceptanceTest {
     @Test
     @DisplayName("AC-INC-32 窗口计算：上市日期起算6自然月")
     void recordReceipt_computesWindow() {
+        when(projectMapper.selectById(100L)).thenReturn(projectLaunch2026Jan15());
         when(receiptLedgerMapper.insert(any(ReceiptLedger.class))).thenReturn(1);
         sampleLedger.setWindowEnd(null); // 让 service 计算
 
@@ -162,7 +182,7 @@ class P341AcceptanceTest {
         when(receiptLedgerMapper.selectOne(any())).thenReturn(null);
 
         assertThatThrownBy(() -> receiptLedgerService.recordRefund(100L, "2026-05", new BigDecimal("10000.00")))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("该月份无回款记录");
     }
 }

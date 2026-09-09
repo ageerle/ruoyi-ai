@@ -12,6 +12,12 @@ import java.util.Date;
  * IPD 项目绩效评定（BR-KPI-08）
  * 自评 20% + 市场组长 40% + 研发组长 40%（AC-KPI-16）
  * 两 PM 各自独立评分，删除走软删除
+ *
+ * <p><b>用途裁决（2026-09-08，业务裁决提案 A4 / P-DATA-gap-2）</b>：本实体与表
+ * {@code project_scores} 暂不写库——P3-2.2 已验收 records-only 方案（只写
+ * {@code project_score_records}，view 实时算 weightedScore）；硬写本表会与
+ * records 实时算口径双源不一致。本表保留为<b>未来版本快照位</b>，勿删实体
+ * （ProjectScoreController 正在引用），也勿在业务链路写入。
  */
 @Data
 @Builder

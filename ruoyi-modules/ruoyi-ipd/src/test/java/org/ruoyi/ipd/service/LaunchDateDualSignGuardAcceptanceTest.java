@@ -98,7 +98,9 @@ class LaunchDateDualSignGuardAcceptanceTest {
         when(requestMapper.insert(any(LaunchDateChangeRequest.class)))
             .thenThrow(new DuplicateKeyException("Duplicate entry '70' for key 'uk_ldcr_pending_project'"));
 
-        assertThatThrownBy(() -> service.propose(70L, DAY, "GTM 定档", 11L, "MARKET_PM", 70L))
+        assertThatThrownBy(() -> service.propose(70L, DAY, "GTM 定档", 11L, "MARKET_PM", 70L,
+            // R11 / A1 修复:预落 confirmer（提议人 MARKET_PM → 第二签人 RD_PM 22L，与同测试 1b 闭环）
+            22L, "RD_PM", 70L))
             .isInstanceOf(ServiceException.class)
             .hasMessage("该项目已有待第二签确认的上市日期变更申请");
 
@@ -112,7 +114,8 @@ class LaunchDateDualSignGuardAcceptanceTest {
         when(projectMapper.selectById(70L)).thenReturn(project(null));
         when(requestMapper.selectCount(any())).thenReturn(1L);
 
-        assertThatThrownBy(() -> service.propose(70L, DAY, "GTM 定档", 11L, "MARKET_PM", 70L))
+        assertThatThrownBy(() -> service.propose(70L, DAY, "GTM 定档", 11L, "MARKET_PM", 70L,
+            22L, "RD_PM", 70L))
             .isInstanceOf(ServiceException.class)
             .hasMessage("该项目已有待第二签确认的上市日期变更申请");
 
@@ -213,7 +216,10 @@ class LaunchDateDualSignGuardAcceptanceTest {
             // 首次录入（BR-IPD-08「L08 录入」，仅 INSERT，不构成修改）
             Path.of("org/ruoyi/ipd/dto/ProjectCreateReq.java"),
             // ZK 场景种数据（demo 性质，不入业务守卫；本文件已有「治理豁免」注释锚定）
-            Path.of("org/ruoyi/ipd/config/IpdZkScenarioInitializer.java"));
+            Path.of("org/ruoyi/ipd/config/IpdZkScenarioInitializer.java"),
+            // R11 修复:L08 首次录入 Controller 入口，委托给 launchDateChangeService.initialRecord。
+            // req.launchDate() 是 DTO 字段读（不是写库），写库动作全部封装在 Service。
+            Path.of("org/ruoyi/ipd/controller/ProjectController.java"));
 
         Set<String> found = scanMainSources().stream()
             .filter(p -> readsLikeLaunchDateWrite(p))

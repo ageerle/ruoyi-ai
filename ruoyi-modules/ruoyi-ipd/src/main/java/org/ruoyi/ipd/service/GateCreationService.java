@@ -76,7 +76,9 @@ public class GateCreationService {
             .projectId(projectId)
             .gateCode(gateCode)
             .reviewerType("MARKET_PM") // 默认发起方；具体双签由 GateReviewService.sign 后续覆盖
-            .decision("PENDING")
+            // R11 / A4 修复:不再写 decision="PENDING" 哨兵。
+            // 死路源头:KeyGateAggregator 锚点 .isNull(GateReview::getDecision) 永不可命中（哨兵不在 GateReview.decision 值域，注释 L56=APPROVE|REJECT|ABSTAIN）。
+            // 修复后决策字段保持 NULL（语义=待决），sign 时由 GateReviewService.sign L133 覆盖为 APPROVE/REJECTED。
             .round(1)
             .signDueAt(new Date(now().getTime() + 3L * 24 * 3600 * 1000)) // 默认 3 天签署期
             .signExtensionCount(0)

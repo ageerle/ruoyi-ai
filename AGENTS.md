@@ -15,7 +15,7 @@
 ## 构建 / 测试（每条都吃过亏）
 
 - 只在仓库根执行 `mvn`（父 POM 管 `<modules>`）；不要进子模块目录单独构建。Maven 装在 `/Users/mac/tools/maven/bin/mvn`（3.9.11）、JDK 17 在 `/Users/mac/tools/jdk-17/Contents/Home`，都不在精简 PATH 里——非交互 shell 先补 `export PATH="$HOME/tools/maven/bin:$PATH"` 和 `export JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"`，否则依次报 `mvn: command not found` / `Unable to locate a Java Runtime`。
-- **假绿陷阱**：Surefire 按 `<groups>${profiles.active}</groups>` 过滤（pom.xml:472），默认 dev profile 下没有 `@Tag("dev")` 的测试类被**静默跳过**——新测试不加 tag，"测试全绿"毫无意义。另一形态：把测试断言改成"现状"（例如把期望异常类型改成新类型）能让用例转绿而契约缺口仍在，收口前须确认绿的是**契约**不是**既有实现**。
+- **假绿陷阱**：Surefire 按 `<groups>${profiles.active}</groups>` 过滤（pom.xml:472），默认 dev profile 下没有 `@Tag("dev")` 的测试类被**静默跳过**——新测试不加 tag，"测试全绿"毫无意义。另一形态：把测试断言改成"现状"（例如把期望异常类型改成新类型）能让用例转绿而契约缺口仍在，收口前须确认绿的是**契约**不是**既有实现**。第三形态（WB-17-1 仲裁卡教训）：mock 造了真库写入路径不可能产生的数据组合（如 PENDING_SECOND 态配 confirmerId、`decision IS NULL` 但无任何生产者落 NULL 行）——单测全绿但真活卡恒空；三条硬规约与存量违法清单见 `docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md`，生成测试时规约见 `.claude/skills/gen-test/SKILL.md`。
 - `demo.enabled` 现**默认 false**（R8-P0-2 已把默认翻成关闭，父 `application.yml` 的 `demo:` 段）。一旦被改回 true，所有写操作被拦截并返回"演示模式，不允许操作"（白名单在同段 `demo.excludes`）。需要演示模式时在 `application-dev.yml` 显式覆盖，反之用 `-Ddemo.enabled=false`。
 - 多租户默认开启：新建"租户共享"表必须登记父 `application.yml` 的 `tenant.excludes`，否则查询被自动追加租户过滤，表现为"数据查不到"。反例同样成立：已登记的 `person_roles` 在任何库都还没建表（属"超前登记"，见 `docs/ipd-系统说明/验收/P1-项5-DDL-apply核验-20260905.md` §3）。
 - **引用配置用键名，别用行号**：本仓 yml 行号在分钟级就会漂——同一个 `application.yml` 的 `demo:` 段，20:56 实测在 :396、21:10 已到 :400（成因：多会话共工同一工作树，兄弟在途未提交编辑就会推号；`tenant.excludes` 则从早期文档的 :148 漂到 :198）。行号型断言的历史记录一律按"键名 + 当时的值"复核，而不是去对号。
@@ -49,3 +49,4 @@
 - 本工作区是 `ruoyi-ai`（IPD 产品经理管理系统）；勿与 `ZKER-staff`（`/Users/mac/Documents/ChatGPT/ZKER- staff`）或用户规则里的 IOE-DREAM 一卡通内容混淆。
 - 看板操作走 `user-zker_vibe_kanban` MCP，并与 SSOT 镜像 `docs/ipd-系统说明/开发计划-看板镜像.md` 对齐；Mock/单测绿不等于业务闭环，真库或 HTTP 未过不得伪完成。
 - 多会话并行时同一 Controller/测试签名会被兄弟会话改写；验收前以磁盘现态重编译，假红/假绿规则见上文「构建 / 测试」。
+- **五必现查规约（R13 立）**：hash / 端口字段 / 段号 / 看板回读 / 跨仓 cd 五类事实源必须现查现写，规约全文见 `docs/ipd-系统说明/事实源五必现查规约-20260908.md`。实测教训：R12.1 marker 凭记忆写 R11 hash、shell cwd 漂到前端仓导致 git log 显示错误 hash、看板 updated_at PUT 后不刷新（验证只认 desc_len + marker content）。跨仓命令必 `cd 绝对路径 &&` 开头。

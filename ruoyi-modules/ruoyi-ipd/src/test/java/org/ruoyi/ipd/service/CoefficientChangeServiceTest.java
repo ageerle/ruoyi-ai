@@ -21,9 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.security.IpdActor;
 
 /**
  * AC-INC-15c：双PM 提议 → 产品组长确认写档。
@@ -49,16 +46,7 @@ class CoefficientChangeServiceTest {
         p.setLevel("S");
         p.setLevelCoefficient(new BigDecimal("1.5"));
         p.setDelFlag("0");
-        p.setMainGroupId(7L); // R-NEW A-2/CoefficientChange：补 mainGroupId=actor.groupId，跳同组守卫
         return p;
-    }
-
-    /** R-NEW CoefficientChange：构造 actor（proposer = marketPm，组长跨组验证用） */
-    private IpdActor marketPmActor(Long id, Long groupId) {
-        return new IpdActor(id, "market-pm", "MARKET_PM", groupId);
-    }
-    private IpdActor leaderActor(Long id, Long groupId) {
-        return new IpdActor(id, "leader", "GROUP_LEADER", groupId);
     }
 
     @Test
@@ -73,17 +61,19 @@ class CoefficientChangeServiceTest {
         });
 
         CoefficientChangeRequest created = service.propose(
-            10L, new BigDecimal("1.8"), "旗舰溢价", 101L, 102L, 101L, marketPmActor(101L, 7L));
+            10L, new BigDecimal("1.8"), "旗舰溢价", 101L, 102L, 101L,
+            // R11 / A2 修复:提议时预落 leaderId（产品组长 103L，与三方独立）
+            103L);
         assertThat(created.getStatus()).isEqualTo(CoefficientChangeRequest.ST_PENDING_LEADER);
         assertThat(created.getProposedCoefficient()).isEqualByComparingTo("1.8");
 
         Project a = sProject();
         a.setLevel("A");
         when(projectMapper.selectById(11L)).thenReturn(a);
-        assertThatThrownBy(() -> service.propose(11L, new BigDecimal("1.0"), "x", 1L, 2L, 1L, marketPmActor(1L, 7L)))
+        assertThatThrownBy(() -> service.propose(11L, new BigDecimal("1.0"), "x", 1L, 2L, 1L, 3L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("A 级");
 
-        assertThatThrownBy(() -> service.propose(10L, new BigDecimal("2.5"), "越界", 1L, 2L, 1L, marketPmActor(1L, 7L)))
+        assertThatThrownBy(() -> service.propose(10L, new BigDecimal("2.5"), "越界", 1L, 2L, 1L, 3L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("1.5–2.0");
     }
 
@@ -99,7 +89,7 @@ class CoefficientChangeServiceTest {
         when(requestMapper.updateById(any(CoefficientChangeRequest.class))).thenReturn(1);
         when(projectMapper.updateById(any(Project.class))).thenReturn(1);
 
-        CoefficientChangeRequest done = service.leaderDecision(99L, 900L, true, "同意", leaderActor(900L, 7L));
+        CoefficientChangeRequest done = service.leaderDecision(99L, 900L, true, "同意");
         assertThat(done.getStatus()).isEqualTo(CoefficientChangeRequest.ST_CONFIRMED);
 
         ArgumentCaptor<Project> cap = ArgumentCaptor.forClass(Project.class);

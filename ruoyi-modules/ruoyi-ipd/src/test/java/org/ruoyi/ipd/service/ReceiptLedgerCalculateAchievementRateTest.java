@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.ReceiptLedger;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ReceiptLedgerMapper;
 
 import java.math.BigDecimal;
@@ -41,12 +42,14 @@ class ReceiptLedgerCalculateAchievementRateTest {
 
     @Mock
     private ReceiptLedgerMapper receiptLedgerMapper;
+    @Mock
+    private ProjectMapper projectMapper;
 
     private ReceiptLedgerService service;
 
     @BeforeEach
     void setUp() {
-        service = new ReceiptLedgerService(receiptLedgerMapper);
+        service = new ReceiptLedgerService(receiptLedgerMapper, projectMapper);
     }
 
     /**

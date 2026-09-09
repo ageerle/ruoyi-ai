@@ -44,7 +44,9 @@ public final class IpdRolePermissionCatalog {
         // AC-COMP-01/04/05：合规读（内部全员，角色范围 service 二次校验）
         IpdPermissionCode.OPERATION_COMPLIANCE_READ,
         // R-NEW-SEC-5：G5 复盘待办读（对象级由 service 限定为该项目在职成员）
-        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_QUERY
+        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_QUERY,
+        // P3-7.1：切换验收 run/get/list（内部全员可读；lock/unlock 拆细码见 BUSINESS_WRITE）
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_QUERY
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -132,8 +134,8 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE,
         IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
         IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE,
-        // R-NEW-SEC-5：切换验收锁定/解锁从 :admin 拆细（仅超管）。
-        // :admin 仍保留在本集合内作为现有注解的历史别名，避免拆码时改变 HTTP 行为。
+        // R-NEW-SEC-5 + P3-7.1 合并裁决：锁定/解锁采用拆细码 LOCK/UNLOCK（Controller 注解实际消费）；
+        // :admin 码保留常量但无注解消费端，不登记进目录避免 CatalogDrift 守卫误报
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK,
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK
     );

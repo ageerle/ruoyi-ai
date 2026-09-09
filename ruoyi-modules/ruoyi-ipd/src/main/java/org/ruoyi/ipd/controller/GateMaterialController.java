@@ -34,7 +34,7 @@ public class GateMaterialController {
     private final GateMaterialChecker gateMaterialChecker;
     private final GateMapper gateMapper;
 
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_REVIEW, type = "login")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_REVIEW, type = "ipd")
     @GetMapping
     public ApiV1Response<Map<String, Object>> materials(
             @PathVariable("gateId") Long gateId,

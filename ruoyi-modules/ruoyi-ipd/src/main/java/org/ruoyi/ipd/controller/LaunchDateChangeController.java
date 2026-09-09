@@ -51,9 +51,11 @@ public class LaunchDateChangeController {
         // R8-P0-11：LocalDate 转 Date（系统时区零时），避免时区漂移
         Date date = Date.from(body.proposedLaunchDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
         // R8X-2 P0-1：传 actor.groupId 给 Service 做横向越权防护
+        // R11 / A1 修复:前端传 confirmer 字段（提议人指定的第二签人），Service 预落库
         return ApiV1Response.ok(launchDateChangeService.propose(
             body.projectId(), date, body.reason(),
-            actor.id(), actor.role(), actor.groupId()));
+            actor.id(), actor.role(), actor.groupId(),
+            body.confirmerId(), body.confirmerRole(), body.confirmerGroupId()));
     }
 
     /**
@@ -75,10 +77,14 @@ public class LaunchDateChangeController {
             id, actor.id(), actor.role(), actor.groupId(), approve, opinion));
     }
 
-    /** 提议入参。Round 8：proposedLaunchDate 改 LocalDate + @JsonFormat("yyyy-MM-dd") 解决 Date 反序列化不一致。 */
+    /** 提议入参。Round 8：proposedLaunchDate 改 LocalDate + @JsonFormat("yyyy-MM-dd") 解决 Date 反序列化不一致。
+     * R11 / A1 修复:confirmer 字段（提议人指定第二签人，提议时必传）——前端需同步扩展。 */
     public record ProposeReq(
         @NotNull Long projectId,
         @NotNull @JsonFormat(pattern = "yyyy-MM-dd") LocalDate proposedLaunchDate,
-        @NotBlank @Size(max = 500) String reason) {
+        @NotBlank @Size(max = 500) String reason,
+        @NotNull Long confirmerId,
+        @NotBlank String confirmerRole,
+        @NotNull Long confirmerGroupId) {
     }
 }

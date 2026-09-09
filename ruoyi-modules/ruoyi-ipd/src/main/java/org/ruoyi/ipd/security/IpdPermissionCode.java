@@ -87,6 +87,13 @@ public interface IpdPermissionCode {
     /** P3-4.4：奖金池分配 */
     String OPERATION_BONUS_POOL_DISTRIBUTE = "ipd:bonus-pool:distribute";
 
+    /** 上市后复盘创建 */
+    String OPERATION_POST_LAUNCH_REVIEW_CREATE = "ipd:post-launch-review:create";
+    /** 上市后复盘完成 */
+    String OPERATION_POST_LAUNCH_REVIEW_COMPLETE = "ipd:post-launch-review:complete";
+    /** 上市后复盘查询 */
+    String OPERATION_POST_LAUNCH_REVIEW_QUERY = "ipd:post-launch-review:query";
+
     /** P3-6.2：贡献度查询 */
     String OPERATION_CONTRIBUTION_QUERY = "ipd:contribution:query";
     /** P3-6.2：贡献度保存 */
@@ -142,12 +149,8 @@ public interface IpdPermissionCode {
     // 与既有 negative-feedback / contribution 系列完全同款。
     // ------------------------------------------------------------------
 
-    /** 一、P2-5.6 / R-NEW-ARCH-1：G5 上市 90 天复盘——读（项目在职成员可见） */
-    String OPERATION_POST_LAUNCH_REVIEW_QUERY = "ipd:post-launch-review:query";
-    /** 一、G5 复盘：生成/重排 PENDING 待办（对象级限该项目 MARKET_PM 或超管） */
-    String OPERATION_POST_LAUNCH_REVIEW_CREATE = "ipd:post-launch-review:create";
-    /** 一、G5 复盘：填写复盘数据并置 COMPLETED（不可逆，对象级同上） */
-    String OPERATION_POST_LAUNCH_REVIEW_COMPLETE = "ipd:post-launch-review:complete";
+    // （G5 上市 90 天复盘三码已在上方 P2-5.6 段定义：POST_LAUNCH_REVIEW_QUERY/CREATE/COMPLETE，
+    //  合并去重：本地 R-NEW 段重复声明已删，避免同值常量双声明编译错）
 
     /** 二、P3-1.2：共担 KPI 双组长确认签署（第一/第二签同码，同人重复签由 service 拒） */
     String OPERATION_KPI_SHARED_CONFIRM_SIGN = "ipd:kpi-shared:confirm";

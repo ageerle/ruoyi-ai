@@ -291,6 +291,7 @@ tenant:
     - coefficient_change_requests
     - cms_content
     - negative_feedbacks
+    - contribution_versions
     - requirement_pool
     # R10 补登：绩效记录/任务、项目跟随、协同圈、Gate 仲裁等 DDL 新表（无多租户语义）
     - project_score_records
@@ -323,22 +324,27 @@ tenant:
     - audit_log_chain_heads
     # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
     - notification_events
-    # AUD-02-FIX（2026-09-07）：4 张 DDL 新表登记——ipd_business_config / _versions / switching_acceptance / gate_review_observers
-    # 单企业私有部署，全部带 tenant_id 默认 '000000'，无多租户语义，必须排除租户过滤否则 SQL 加 tenant_id 后误判断行
+    # AUD-02-FIX / R11（2026-09-07/08）：审计链与业务参数表——ipd_business_config(+versions) 存业务参数
+    # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers /
+    # switching_acceptance 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错
     - ipd_business_config
     - ipd_business_config_versions
-    - switching_acceptance
     - gate_review_observers
-    # R-P3-2.2-POSTREVIEW（2026-09-07）：P3-2.2 治理元数据表——kpi_rule_snapshots / correction_log
-    # 均为「全局规则/审计链」类治理表（与 system_config_versions / audit_logs 同语义），
-    # 不登记则多租户插件对其追加 tenant_id 过滤，跨租户联查/读审计链直接断行
+    - switching_acceptance
+    # R-P3-2.2 / R11：治理元数据表（与 system_config_versions / audit_logs 同语义；
+    # 真库实查表名 correction_logs 带 s，HEAD 侧旧拼写 correction_log 已废弃）
     - kpi_rule_snapshots
-    - correction_log
-    # R-NEW-SEC-6（2026-09-07）收口：post_launch_reviews（P2-5.6 实体/Service 已上线，表与登记均缺）。
-    # 单企业私有部署下 tenant_id 恒为 '000000'，无多租户语义；不登记则插件追加 tenant_id 过滤，
-    # 与 persons/projects/handover_records 等既有业务表同口径。建表脚本见
-    # docs/script/sql/update/2026-09-07-ipd-rnew-post-launch-reviews.sql（DDL 与本登记须同批上线）。
+    - kpi_shared_confirms
+    - correction_logs
+    # R-NEW-SEC-6 / R15 / c-batch-4（2026-09-09 owner 授权已 apply）:
+    # post_launch_reviews + c-batch 8 表——单企业私有部署，无多租户语义
     - post_launch_reviews
+    - sop_template_instances
+    - gate_waivers
+    - rd_replacements
+    - rd_replacement_approvals
+    - product_retirements
+    - multi_project_capacity_approvals
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

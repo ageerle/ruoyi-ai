@@ -7,13 +7,32 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.advice.IpdServiceExceptionAdvice;
 import org.ruoyi.ipd.controller.WorkbenchController;
+import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
+import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
+import org.ruoyi.ipd.mapper.ContributionMapper;
+import org.ruoyi.ipd.mapper.HandoverMapper;
+import org.ruoyi.ipd.mapper.KpiRecordMapper;
+import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
+import org.ruoyi.ipd.mapper.ProjectScoreTaskMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
+import org.ruoyi.ipd.mapper.GateArbitrationMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.mapper.GateReviewMapper;
+import org.ruoyi.ipd.workbench.CloseoutAggregator;
+import org.ruoyi.ipd.workbench.ContributionConfirmAggregator;
+import org.ruoyi.ipd.workbench.DeletionReviewAggregator;
+import org.ruoyi.ipd.workbench.HandoverAggregator;
+import org.ruoyi.ipd.workbench.KpiFillAggregator;
+import org.ruoyi.ipd.workbench.KeyGateAggregator;
+import org.ruoyi.ipd.workbench.KeyGateArbitrationAggregator;
+import org.ruoyi.ipd.workbench.StageSignAggregator;
+import org.ruoyi.ipd.workbench.StrategicChangeAggregator;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionException;
@@ -63,6 +82,15 @@ class P431AcceptanceTest {
     private StageActionMapper stageActionMapper;
     private DeletionRequestMapper deletionRequestMapper;
     private NotificationService notificationService;
+    private GateMapper gateMapper;
+    private GateReviewMapper gateReviewMapper;
+    private GateArbitrationMapper gateArbitrationMapper;
+    private HandoverMapper handoverMapper;
+    private ContributionMapper contributionMapper;
+    private ProjectScoreTaskMapper projectScoreTaskMapper;
+    private LaunchDateChangeRequestMapper launchDateChangeMapper;
+    private CoefficientChangeRequestMapper coefficientChangeMapper;
+    private KpiRecordMapper kpiRecordMapper;
     private IpdPermission ipdPermission;
     private WorkbenchService workbenchService;
     private WorkbenchController controller;
@@ -77,9 +105,34 @@ class P431AcceptanceTest {
         deletionRequestMapper = mock(DeletionRequestMapper.class);
         notificationService = mock(NotificationService.class);
         ipdPermission = mock(IpdPermission.class);
+        // P1.2 起真 aggregator + mock mapper；P1.4 起九类全装配（每类 taskType 一个投递器）
+        gateMapper = mock(GateMapper.class);
+        gateReviewMapper = mock(GateReviewMapper.class);
+        gateArbitrationMapper = mock(GateArbitrationMapper.class);
+        handoverMapper = mock(HandoverMapper.class);
+        contributionMapper = mock(ContributionMapper.class);
+        projectScoreTaskMapper = mock(ProjectScoreTaskMapper.class);
+        launchDateChangeMapper = mock(LaunchDateChangeRequestMapper.class);
+        coefficientChangeMapper = mock(CoefficientChangeRequestMapper.class);
+        kpiRecordMapper = mock(KpiRecordMapper.class);
+        when(gateMapper.selectList(any())).thenReturn(List.of());
+        when(handoverMapper.selectList(any())).thenReturn(List.of());
+        when(contributionMapper.selectList(any())).thenReturn(List.of());
+        when(projectScoreTaskMapper.selectList(any())).thenReturn(List.of());
+        when(launchDateChangeMapper.selectList(any())).thenReturn(List.of());
+        when(coefficientChangeMapper.selectList(any())).thenReturn(List.of());
+        when(kpiRecordMapper.selectList(any())).thenReturn(List.of());
         workbenchService = new WorkbenchService(
-            projectMapper, projectMemberMapper, stageActionMapper,
-            deletionRequestMapper, notificationService);
+            projectMapper, projectMemberMapper, stageActionMapper, notificationService,
+            List.of(new StageSignAggregator(stageActionMapper),
+                new DeletionReviewAggregator(deletionRequestMapper),
+                new KeyGateAggregator(gateMapper, gateReviewMapper),
+                new KeyGateArbitrationAggregator(gateMapper, gateArbitrationMapper, projectMapper),
+                new HandoverAggregator(handoverMapper),
+                new ContributionConfirmAggregator(contributionMapper),
+                new CloseoutAggregator(projectScoreTaskMapper),
+                new StrategicChangeAggregator(launchDateChangeMapper, coefficientChangeMapper),
+                new KpiFillAggregator(kpiRecordMapper)));
         controller = new WorkbenchController(ipdPermission, workbenchService);
         mvc = MockMvcBuilders
             .standaloneSetup(controller)
@@ -118,7 +171,7 @@ class P431AcceptanceTest {
             action(102L, 10L, "CDP-02", "研发", "RD_PM", "NOT_STARTED"),
             action(103L, 10L, "CDP-03", "共担", "BOTH", "DONE")));
         when(notificationService.unreadCount(1L)).thenReturn(5L);
-        when(deletionRequestMapper.selectCount(any())).thenReturn(0L);
+        // P1.1：deletionPending 走 DeletionReviewAggregator（MARKET_PM 不触发查询），selectCount stub 已废弃
 
         mvc.perform(get(URL).contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
@@ -126,6 +179,8 @@ class P431AcceptanceTest {
             .andExpect(jsonPath("$.data.stats.pending").value(1))
             .andExpect(jsonPath("$.data.stats.completed").value(1))
             .andExpect(jsonPath("$.data.stats.unread").value(5))
+            .andExpect(jsonPath("$.data.stats.pendingType.stage_sign").value(1))
+            .andExpect(jsonPath("$.data.stats.pendingType.handover").value(0))
             .andExpect(jsonPath("$.data.tasks.length()").value(1))
             .andExpect(jsonPath("$.data.tasks[0].actionCode").value("CDP-01"))
             .andExpect(jsonPath("$.data.tasks[0].projectCode").value("P-001"))
@@ -148,6 +203,7 @@ class P431AcceptanceTest {
             .andExpect(jsonPath("$.data.stats.overdue").value(0))
             .andExpect(jsonPath("$.data.stats.unread").value(0))
             .andExpect(jsonPath("$.data.stats.completed").value(0))
+            .andExpect(jsonPath("$.data.stats.pendingType.stage_sign").value(0))
             .andExpect(jsonPath("$.data.tasks.length()").value(0))
             .andExpect(jsonPath("$.data.currentAdvance").doesNotExist())
             .andExpect(jsonPath("$.data.deletionPending").value(0));
@@ -165,7 +221,6 @@ class P431AcceptanceTest {
             action(102L, 10L, "CDP-02", "研发", "RD_PM", "IN_PROGRESS"),
             action(103L, 10L, "CDP-03", "共担", "BOTH", "IN_PROGRESS")));
         when(notificationService.unreadCount(any())).thenReturn(0L);
-        when(deletionRequestMapper.selectCount(any())).thenReturn(0L);
 
         mvc.perform(get(URL).contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
@@ -179,7 +234,13 @@ class P431AcceptanceTest {
         IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
         when(ipdPermission.requireInternal()).thenReturn(leader);
         when(projectMemberMapper.selectList(any())).thenReturn(List.of());
-        when(deletionRequestMapper.selectCount(any())).thenReturn(7L);
+        // P1.1：deletionPending 口径 = aggregator 投递卡数（原 selectCount 计数废弃，B4 拍板③）
+        java.util.List<DeletionRequest> leaderPending = new java.util.ArrayList<>();
+        for (long i = 1; i <= 7; i++) {
+            leaderPending.add(DeletionRequest.builder()
+                .id(i).entityType("project").entityId(i).status("LEADER_REVIEW").build());
+        }
+        when(deletionRequestMapper.selectList(any())).thenReturn(leaderPending);
 
         mvc.perform(get(URL).contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())

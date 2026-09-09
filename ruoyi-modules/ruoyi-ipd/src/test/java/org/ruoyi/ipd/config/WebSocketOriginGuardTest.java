@@ -56,14 +56,19 @@ class WebSocketOriginGuardTest {
     @DisplayName("1) 父 application.yml allowedOrigins 不为 '*'（应为 ''）")
     void parentAllowedOriginsNotWildcard() throws IOException {
         String content = Files.readString(APP_YML);
-        // 父基线 websocket.allowedOrigins 不能是 '*'（防未来启用后任意源跨域）
-        // 按文档分隔符提取完整 websocket 段（避免固定窗口截断）
-        String wsBlock = extractSection(content, "websocket:");
-        assertThat(wsBlock).as("父 yml 含 websocket 段").isNotEmpty();
-        // 父段必须显式含 allowedOrigins: ''（不能是 '*'）
-        assertThat(wsBlock).contains("allowedOrigins: ''");
-        // 父段不能含 allowedOrigins: '*'（即便在注释中也不行——防漂移）
-        assertThat(wsBlock).doesNotContain("allowedOrigins: '*'");
+        // 父基线 websocket.allowedOrigins 不能是 '*'（防未来启用后任意源跨域）。
+        // R15：yml 存在多个 websocket: 顶层段（IPD 通知段 destination-prefix + SEC-LOW-4 段），
+        // 锚第一个段会错位（R14 修复时仅一段，兄弟会话后插入 IPD 通知段导致败），
+        // 改为逐段校验全部段（任何段都不得放宽到 '*'）。
+        int idx = content.indexOf("\nwebsocket:");
+        assertThat(idx).as("父 yml 含 websocket 段").isNotNegative();
+        while (idx >= 0) {
+            String wsBlock = extractSection(content.substring(idx + 1), "websocket:");
+            assertThat(wsBlock).doesNotContain("allowedOrigins: '*'");
+            idx = content.indexOf("\nwebsocket:", idx + 1);
+        }
+        // 父基线必须显式含 allowedOrigins: ''（同源默认，不能是 '*'）
+        assertThat(content).contains("allowedOrigins: ''");
     }
 
     @Test
