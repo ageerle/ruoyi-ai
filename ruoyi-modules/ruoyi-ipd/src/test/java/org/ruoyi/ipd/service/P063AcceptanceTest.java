@@ -19,6 +19,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.qa.GuardSourceUtils;
 
 
 import java.util.ArrayList;
@@ -209,12 +210,15 @@ class P063AcceptanceTest {
         assertThat(java.nio.file.Files.exists(prodSrc))
             .as("生产源码存在: " + prodSrc.toAbsolutePath()).isTrue();
         String content = java.nio.file.Files.readString(prodSrc);
+        // 2026-09-08 AM-GUARD：先剔注释再断言（本守卫 javadoc/生产源注释叙述旧键名不构成违规，
+        // 正向断言也不能被注释里的示例文字满足——只认代码文本）
+        String codeOnly = GuardSourceUtils.stripComments(content);
         // 验证生产用驼峰键名
-        assertThat(content).contains("getIntValue(\"deletion.leaderDeadlineDays\"");
-        assertThat(content).contains("getIntValue(\"deletion.adminDeadlineDays\"");
+        assertThat(codeOnly).contains("getIntValue(\"deletion.leaderDeadlineDays\"");
+        assertThat(codeOnly).contains("getIntValue(\"deletion.adminDeadlineDays\"");
         // 验证生产源码没有点分键名（防止历史 bug 回流）
-        assertThat(content).doesNotContain("deletion.leader.deadlineDays");
-        assertThat(content).doesNotContain("deletion.admin.deadlineDays");
+        assertThat(codeOnly).doesNotContain("deletion.leader.deadlineDays");
+        assertThat(codeOnly).doesNotContain("deletion.admin.deadlineDays");
         // mock setUp() 驼峰键名已在 line 65/66 静态验证（lenient().when() 调用）
     }
     private DeletionRequest sampleReq(Long id, Long requesterId, String status) {

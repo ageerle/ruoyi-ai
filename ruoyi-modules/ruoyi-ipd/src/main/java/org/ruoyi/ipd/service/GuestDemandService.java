@@ -57,6 +57,14 @@ public class GuestDemandService {
     private final RequirementMapper requirementMapper;
     private final ProductMapper productMapper;
     private final ProjectMemberMapper projectMemberMapper;
+
+
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
     private final AuditLogService auditLogService;
     private final GuestRateLimiter rateLimiter;
 
@@ -207,7 +215,7 @@ public class GuestDemandService {
         boolean beforeAcceptance = "SUBMITTED".equals(r.getStatus());
         Date submittedAt = r.getCreateTime();
         boolean withinWindow = beforeAcceptance && submittedAt != null
-            && System.currentTimeMillis() < submittedAt.getTime() + TRACE_WITHDRAW_HOURS * 3_600_000L;
+            && now().getTime() < submittedAt.getTime() + TRACE_WITHDRAW_HOURS * 3_600_000L;
         String deadline = beforeAcceptance && submittedAt != null
             ? toIsoUtc(new Date(submittedAt.getTime() + TRACE_WITHDRAW_HOURS * 3_600_000L)) : null;
         return new PortalDemandTraceView(r.getQueryCode(), r.getStatus(),
@@ -345,7 +353,7 @@ public class GuestDemandService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int notifyOverdueUnassigned() {
-        Date threshold = subtractBusinessDays(new Date(), 5);
+        Date threshold = subtractBusinessDays(now(), 5);
         List<Requirement> overdue = requirementMapper.selectList(new LambdaQueryWrapper<Requirement>()
             .eq(Requirement::getStatus, "SUBMITTED")
             .isNull(Requirement::getMarketPmId)
@@ -356,7 +364,7 @@ public class GuestDemandService {
             // 调用方注入 NotificationService 不可行（解耦约束），此处落 audit 留痕；
             // 真实通知由 scheduler 在 audit 后调用 publish（见后续 P2-4.1 桥接）
             auditGuestAction("overdue_unassigned", r.getId(), null, null,
-                "threshold=" + threshold.getTime() + ";createTime=" + r.getCreateTime().getTime());
+                "now()=" + now().getTime() + ";createTime=" + r.getCreateTime().getTime());
             notified++;
         }
         return notified;
@@ -444,7 +452,7 @@ public class GuestDemandService {
             }
         }
         if (routed) {
-            r.setRoutedAt(new Date());
+            r.setRoutedAt(now());
             return "routed";
         }
         return "project-no-pm";
@@ -543,16 +551,18 @@ public class GuestDemandService {
         private static final java.util.concurrent.ConcurrentHashMap<String, Window> WINDOWS =
             new java.util.concurrent.ConcurrentHashMap<>();
         static final class Window {
+            // static nested class——保留 System.currentTimeMillis()（静态上下文，访问不了外层 clock 缝）
             final long start = System.currentTimeMillis();
             int count;
         }
 
         @Override
         public synchronized boolean tryAcquire(String ipHash) {
-            long now = System.currentTimeMillis();
-            WINDOWS.entrySet().removeIf(e -> now - e.getValue().start >= 3_600_000L);
+            // 同上：static nested class 实例方法不持有外层实例引用，clock 缝不可达
+            long nowMillis = System.currentTimeMillis();
+            WINDOWS.entrySet().removeIf(e -> nowMillis - e.getValue().start >= 3_600_000L);
             Window w = WINDOWS.computeIfAbsent(ipHash, k -> new Window());
-            if (now - w.start >= 3_600_000L) {
+            if (nowMillis - w.start >= 3_600_000L) {
                 WINDOWS.put(ipHash, new Window());
                 w = WINDOWS.get(ipHash);
             }

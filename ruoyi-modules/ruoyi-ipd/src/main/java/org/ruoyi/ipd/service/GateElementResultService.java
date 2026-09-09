@@ -57,6 +57,13 @@ public class GateElementResultService {
     private final NotificationService notificationService;
     /** [SEC-FIX-HIGH-1.1-FOLLOWUP] 注入本地 OssFileMapper 解析 ossId → URL（IPD 模块不依赖 system 模块）。 */
     private final org.ruoyi.ipd.mapper.OssFileMapper ossFileMapper;
+
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
     /** ROOT-R1 P0-7 字面量迁移：Gate 评审配置（G1 客户验证阈值/签署期限；B-RULE-05 配套）来源 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private BusinessConfigService businessConfigService;
@@ -182,7 +189,7 @@ public class GateElementResultService {
             .afterData(AuditEventData.json(
                 "gateId", gateId, "elementCode", element.getElementCode(),
                 "result", result, "evidenceRef", evidenceRef == null ? "" : evidenceRef))
-            .createTime(new Date())
+            .createTime(now())
             .build());
         return row;
     }
@@ -272,11 +279,11 @@ public class GateElementResultService {
         requireNoOverdueLegacy(gate);
         gate.setMaterialsUrl(materialsUrl);
         gate.setMeetingMinutesUrl(meetingMinutesUrl);
-        gate.setStartedAt(new Date());
+        gate.setStartedAt(now());
         // P2-5.4：签署期限与 startedAt 同步起算（BR-GATE-04；延期/弃权扫描的锚点）
         int signDays = resolveSignDeadlineDays();
         gate.setSignDueAt(new Date(gate.getStartedAt().getTime() + 24L * 60 * 60 * 1000 * signDays));
-        gate.setElementSnapshot(AuditEventData.json("frozenAt", new Date().toString(), "elements", snapshot));
+        gate.setElementSnapshot(AuditEventData.json("frozenAt", now().toString(), "elements", snapshot));
         gateMapper.updateById(gate);
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id())
@@ -294,7 +301,7 @@ public class GateElementResultService {
                 "meetingMinutesUrl", meetingMinutesUrl,
                 "materialsUrlLen", materialsUrl.length(),
                 "meetingMinutesUrlLen", meetingMinutesUrl.length()))
-            .createTime(new Date())
+            .createTime(now())
             .build());
         return gate;
     }
@@ -341,7 +348,7 @@ public class GateElementResultService {
             item.put("leftoverStatus", r.getLeftoverStatus());
             item.put("closedEvidence", r.getClosedEvidence());
             item.put("overdue", "OPEN".equals(r.getLeftoverStatus()) && r.getLeftoverDueAt() != null
-                && r.getLeftoverDueAt().before(new Date()));
+                && r.getLeftoverDueAt().before(now()));
             view.add(item);
         }
         return view;
@@ -380,7 +387,7 @@ public class GateElementResultService {
             .reason("gateCode=" + gate.getGateCode())
             .afterData(AuditEventData.json(
                 "gateId", gateId, "resultId", resultId, "evidence", evidence))
-            .createTime(new Date())
+            .createTime(now())
             .build());
         return row;
     }
@@ -392,7 +399,7 @@ public class GateElementResultService {
         List<GateElementResult> rows = resultMapper.selectList(new LambdaQueryWrapper<GateElementResult>()
             .eq(GateElementResult::getLeftoverStatus, "OPEN")
             .isNotNull(GateElementResult::getLeftoverDueAt)
-            .lt(GateElementResult::getLeftoverDueAt, new Date()));
+            .lt(GateElementResult::getLeftoverDueAt, now()));
         int notified = 0;
         for (GateElementResult r : rows) {
             if (r.getResponsiblePersonId() == null) {
@@ -406,7 +413,7 @@ public class GateElementResultService {
                 "条件遗留项已逾期",
                 String.format("%s 存在逾期未关闭的条件遗留项：%s（期限 %s），关闭前不可进入下一个 Gate",
                     gateCode, r.getLeftoverItem(), r.getLeftoverDueAt()),
-                "/reviews/gate/" + r.getGateId(), new Date());
+                "/reviews/gate/" + r.getGateId(), now());
             notified++;
         }
         if (!rows.isEmpty()) {
@@ -417,7 +424,7 @@ public class GateElementResultService {
                 .entityType("gate_element_results")
                 .entityId(rows.get(0).getId())
                 .reason("overdue=" + rows.size() + " notified=" + notified)
-                .createTime(new Date())
+                .createTime(now())
                 .build());
         }
         return rows.size();
@@ -437,7 +444,7 @@ public class GateElementResultService {
             .in(GateElementResult::getGateId, priorGateIds)
             .eq(GateElementResult::getLeftoverStatus, "OPEN")
             .isNotNull(GateElementResult::getLeftoverDueAt)
-            .lt(GateElementResult::getLeftoverDueAt, new Date()));
+            .lt(GateElementResult::getLeftoverDueAt, now()));
         if (!overdue.isEmpty()) {
             throw new ServiceException(String.format(
                 "前序 Gate 存在 %d 项逾期未关闭的条件遗留（关闭后才能提交本 Gate）: 首项遗留=%s", overdue.size(), overdue.get(0).getLeftoverItem()));

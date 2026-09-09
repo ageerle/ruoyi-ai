@@ -46,6 +46,14 @@ public class BidP231Validator {
     private final IpdPermission ipdPermission;
 
     /** 测试口：仅 mapper 单注入（保持既有 P231 单测可运行） */
+
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
+
     public BidP231Validator(BidInvitationMapper bidInvitationMapper, AuditLogService auditLogService) {
         this(bidInvitationMapper, auditLogService, null, null);
     }
@@ -88,7 +96,7 @@ public class BidP231Validator {
                     "PUBLIC 模式禁止指定 targetPersonId");
             }
         }
-        if (req.getExpireAt() == null || !req.getExpireAt().after(new Date())) {
+        if (req.getExpireAt() == null || !req.getExpireAt().after(now())) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
                 "expireAt 必须为未来时间");
         }
@@ -106,7 +114,7 @@ public class BidP231Validator {
         }
         inv.setExpireAt(req.getExpireAt());
         inv.setStatus("OPEN");
-        inv.setCreateTime(new Date());
+        inv.setCreateTime(now());
         inv.setCreateBy(operator.id());
         bidInvitationMapper.insert(inv);
 

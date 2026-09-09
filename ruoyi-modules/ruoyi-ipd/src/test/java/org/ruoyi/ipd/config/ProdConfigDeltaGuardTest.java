@@ -3,6 +3,7 @@ package org.ruoyi.ipd.config;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.ruoyi.ipd.qa.GuardSourceUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -82,12 +83,14 @@ class ProdConfigDeltaGuardTest {
     @Test
     @DisplayName("2) prod 不得放宽 actuator（无 management 段=继承收窄；出现则禁 '*' / ALWAYS）")
     void prodDoesNotWidenActuator() throws IOException {
-        String prod = Files.readString(PROD_YML);
+        // 2026-09-08 AM-GUARD：剔 # 注释行后再断言（与同文件第 5 条同口径，
+        // 注释掉的示例段不是生效配置，不得误伤；正向断言也不能被注释文字满足）
+        String prod = GuardSourceUtils.stripYamlComments(Files.readString(PROD_YML));
         assertThat(prod).as("prod 不得把 actuator 端点重新放宽为 '*'").doesNotContain("include: '*'");
         assertThat(prod).as("prod 不得把 health show-details 放宽为 ALWAYS")
             .doesNotContain("show-details: ALWAYS");
         // 反向确认继承前提仍然成立：父基线确实是收窄集（正向细粒度断言见 ActuatorNarrowTest）
-        String parent = Files.readString(APP_YML);
+        String parent = GuardSourceUtils.stripYamlComments(Files.readString(APP_YML));
         assertThat(parent).contains("include: health,info,metrics");
     }
 

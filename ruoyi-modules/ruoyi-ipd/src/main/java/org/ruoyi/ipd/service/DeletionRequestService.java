@@ -137,7 +137,7 @@ public class DeletionRequestService {
             withdrawHours = systemConfigService.getIntValue("deletion.withdrawHours", 24);
         }
         Date deadline = new Date(request.getCreateTime().getTime() + withdrawHours * 3600_000L);
-        if (new Date().after(deadline)) {
+        if (now().after(deadline)) {
             throw new ServiceException("已超过 " + withdrawHours + " 小时撤回时限");
         }
         // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
@@ -189,7 +189,7 @@ public class DeletionRequestService {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
         }
         Date deadline = new Date(request.getCreateTime().getTime() + withdrawHours * 3600_000L);
-        if (new Date().after(deadline)) {
+        if (now().after(deadline)) {
             // 超时限 → 同样 NOT_FOUND 化（不暴露时限长度 / 当前是否在窗口内）
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
         }
@@ -227,14 +227,14 @@ public class DeletionRequestService {
         }
         request.setLeaderId(leaderId);
         request.setLeaderDecision(approve ? "APPROVE" : "REJECT");
-        request.setLeaderDecidedAt(new Date());
+        request.setLeaderDecidedAt(now());
         String target = approve ? ST_ADMIN_REVIEW : ST_REJECTED;
         String trigger = approve ? "leaderApprove" : "leaderReject";
         // ROOT-R3-P0-1：守卫 preCheck（LEADER_REVIEW -> ADMIN_REVIEW/REJECTED 合法）
         preCheckGuard("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, target, trigger);
         request.setStatus(approve ? ST_ADMIN_REVIEW : ST_REJECTED);
         if (approve) {
-            request.setAdminDueAt(Workdays.add(new Date(), adminDeadlineDays()));
+            request.setAdminDueAt(Workdays.add(now(), adminDeadlineDays()));
         }
         deletionRequestMapper.updateById(request);
         // ROOT-R3-P0-1：postCommit 跨域副作用
@@ -279,7 +279,7 @@ public class DeletionRequestService {
         preCheckGuard("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_REJECTED, "adminReject");
         request.setAdminId(adminId);
         request.setAdminDecision("REJECT");
-        request.setAdminDecidedAt(new Date());
+        request.setAdminDecidedAt(now());
         request.setStatus(ST_REJECTED);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), adminId, "DELETE_ADMIN_REJECT", request.getId());
@@ -300,21 +300,20 @@ public class DeletionRequestService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int escalateOverdueLeaderReview() {
-        Date now = new Date();
         // 步骤 ①：先用同谓词 selectList 拿受影响行的 id / entityType / entityId（供 audit 用）
         List<DeletionRequest> overdue = deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getStatus, ST_LEADER_REVIEW)
-            .lt(DeletionRequest::getLeaderDueAt, now));
+            .lt(DeletionRequest::getLeaderDueAt, now()));
         if (overdue.isEmpty()) {
             return 0; // affected=0 短路：零 SQL 额外开销
         }
-        Date adminDueAt = Workdays.add(now, adminDeadlineDays());
+        Date adminDueAt = Workdays.add(now(), adminDeadlineDays());
         // 步骤 ②：单 SQL 条件批量 UPDATE（PERF-P0-1：消除 N+1 写放大）
         int affected = deletionRequestMapper.update(null, new LambdaUpdateWrapper<DeletionRequest>()
             .set(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
             .set(DeletionRequest::getAdminDueAt, adminDueAt)
             .eq(DeletionRequest::getStatus, ST_LEADER_REVIEW)
-            .lt(DeletionRequest::getLeaderDueAt, now));
+            .lt(DeletionRequest::getLeaderDueAt, now()));
         if (affected == 0) {
             // 谓词扫描与 UPDATE 之间发生状态变迁（极少见——并发方抢先处置）：同样短路
             return 0;
@@ -332,7 +331,7 @@ public class DeletionRequestService {
     public List<DeletionRequest> listOverdueAdminReview() {
         return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
-            .lt(DeletionRequest::getAdminDueAt, new Date()));
+            .lt(DeletionRequest::getAdminDueAt, now()));
     }
 
     private DeletionRequest getOrThrow(Long id) {
@@ -479,7 +478,7 @@ public class DeletionRequestService {
             .entityType(entityType)
             .entityId(entityId)
             .reason("deletion_request:" + requestId)
-            .createTime(new Date())
+            .createTime(now())
             .build();
         auditLogService.append(log);
     }

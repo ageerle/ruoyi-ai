@@ -12,6 +12,7 @@ import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.qa.GuardSourceUtils;
 import org.springframework.dao.DuplicateKeyException;
 
 import java.io.IOException;
@@ -229,9 +230,13 @@ class LaunchDateDualSignGuardAcceptanceTest {
         Path file = repoRoot().resolve(
             "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java");
         String content = Files.readString(file);
+        // 2026-09-08 AM-GUARD：先剔注释再断言（源码注释提及该串不构成违规）；
+        // 与 1c-1 同口径——空参 .launchDate() 是 record accessor 读（合法），带参形态才是写。
+        String codeOnly = GuardSourceUtils.stripComments(content);
 
-        assertThat(content).doesNotContain("setLaunchDate(");
-        assertThat(content).doesNotContain(".launchDate(");
+        assertThat(codeOnly).doesNotContain("setLaunchDate(");
+        assertThat(java.util.regex.Pattern.compile("\\.launchDate\\([^)]").matcher(codeOnly).find())
+            .as("空参 .launchDate() 是 accessor 读（合法），带参 builder 写才违规").isFalse();
     }
 
     @Test
@@ -246,7 +251,8 @@ class LaunchDateDualSignGuardAcceptanceTest {
 
     private static boolean readsLikeLaunchDateWrite(Path p) {
         try {
-            String c = Files.readString(p);
+            // 2026-09-08 AM-GUARD：先剔注释再匹配（全仓扫描的注释提及不构成违规）
+            String c = GuardSourceUtils.stripComments(Files.readString(p));
             // 空参 .launchDate() 是 record accessor 读取（非写，如 PostLaunchReviewController/ProjectController）；
             // 只识别 setLaunchDate( 与带参 builder 写 .launchDate(x
             return c.contains("setLaunchDate(")

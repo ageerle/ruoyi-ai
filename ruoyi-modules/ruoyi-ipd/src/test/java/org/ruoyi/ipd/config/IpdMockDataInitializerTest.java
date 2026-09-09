@@ -4,6 +4,7 @@ import cn.hutool.crypto.digest.BCrypt;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.ruoyi.ipd.qa.GuardSourceUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,7 +81,8 @@ class IpdMockDataInitializerTest {
     void sourceUsesGensaltTen() throws IOException {
         Path path = Paths.get("src/main/java/org/ruoyi/ipd/config/IpdMockDataInitializer.java");
         assertThat(Files.exists(path)).as("源码文件存在: " + path.toAbsolutePath()).isTrue();
-        String content = Files.readString(path);
+        // 2026-09-08 AM-GUARD：先剔注释再断言（源码 javadoc 叙述「历史曾用 gensalt(4)」不构成违规）
+        String content = GuardSourceUtils.stripComments(Files.readString(path));
         assertThat(content).contains("BCrypt.gensalt(10)");
         assertThat(content).doesNotContain("BCrypt.gensalt(4)");
     }
@@ -97,7 +99,9 @@ class IpdMockDataInitializerTest {
     void sourceUsesRuntimeInitialPwdNotConstant() throws IOException {
         Path path = Paths.get("src/main/java/org/ruoyi/ipd/config/IpdMockDataInitializer.java");
         assertThat(Files.exists(path)).as("源码文件存在: " + path.toAbsolutePath()).isTrue();
-        String content = Files.readString(path);
+        // 2026-09-08 AM-GUARD：先剔注释再断言（javadoc 里「INITIAL_PWD 常量已删除」的叙述不构成违规；
+        // 调用行定位同样基于代码文本）
+        String content = GuardSourceUtils.stripComments(Files.readString(path));
         // 定位 .passwordHash(BCrypt.hashpw(...)) 调用行（精确到调用括号闭合）
         int hashCallStart = content.indexOf(".passwordHash(BCrypt.hashpw(");
         assertThat(hashCallStart).as("应存在 .passwordHash(BCrypt.hashpw(...)) 调用行").isGreaterThan(0);

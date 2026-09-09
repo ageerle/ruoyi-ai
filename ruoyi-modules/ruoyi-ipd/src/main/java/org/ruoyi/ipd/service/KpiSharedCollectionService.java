@@ -111,6 +111,13 @@ public class KpiSharedCollectionService {
     private final SystemConfigService systemConfigService;
     private final NotificationService notificationService;
 
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
+
     /** K01-K04 月度归集；同一请求为项目双 PM 原子追加相同版本。 */
     @Transactional(rollbackFor = Exception.class)
     public SharedKpiCollectView collectSharedKpi(IpdActor requestedActor, SharedKpiCollectReq request) {
@@ -130,7 +137,6 @@ public class KpiSharedCollectionService {
         List<MetricResult> metrics = calculateMetrics(request, project);
         BigDecimal sharedScore = weightedScore(metrics);
 
-        Date now = new Date();
         Set<Long> participantIds = new LinkedHashSet<>();
         participantIds.add(marketPm.getPersonId());
         participantIds.add(rdPm.getPersonId());
@@ -169,7 +175,7 @@ public class KpiSharedCollectionService {
                 .segment(SEGMENT_FULL_SHARED)
                 .scoredBy(actor.id())
                 .status("FINALIZED")
-                .scoredAt(now)
+                .scoredAt(now())
                 .revision(revision)
                 .build();
             permission.bindCreateAudit(row, actor);
@@ -188,7 +194,7 @@ public class KpiSharedCollectionService {
                 "period", request.period(),
                 "sharedScore", sharedScore,
                 "participantIds", participantIds))
-            .createTime(now)
+            .createTime(now())
             .build());
         logResult(actor, request, sharedScore);
         return new SharedKpiCollectView(
@@ -344,7 +350,7 @@ public class KpiSharedCollectionService {
             .reason("period=" + period)
             .afterData(AuditEventData.json("receiverId", receiverId, "projectId", project.getId(),
                 "period", period.toString()))
-            .createTime(new Date())
+            .createTime(now())
             .build());
     }
 
@@ -368,7 +374,7 @@ public class KpiSharedCollectionService {
         // getValue 默认值=空字符串：空表示 config_value 未配置；非空表示已配置
         String configuredRaw = systemConfigService.getValue("kpi.monthlyDeadlineDay", "");
         java.util.LinkedHashMap<String, Object> view = systemConfigService.resolveAsOf(
-            "kpi.monthlyDeadlineDay", new Date());
+            "kpi.monthlyDeadlineDay", now());
         String resolvedFrom = String.valueOf(view.get("resolvedFrom"));
         Object versionObj = view.get("version");
         int version = versionObj instanceof Integer ? (Integer) versionObj : 0;
@@ -557,7 +563,7 @@ public class KpiSharedCollectionService {
             .reason("eventType=" + eventType + " period=" + period)
             .afterData(AuditEventData.json("receiverId", receiverId, "projectId", project.getId(),
                 "period", period.toString(), "eventType", eventType))
-            .createTime(new Date())
+            .createTime(now())
             .build());
     }
 

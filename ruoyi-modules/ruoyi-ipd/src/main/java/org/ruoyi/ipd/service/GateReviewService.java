@@ -105,6 +105,13 @@ public class GateReviewService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private BusinessConfigService businessConfigService;
 
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
+
     /** G1/G5 为双签盲签 Gate（BR-GATE-03 双签否决范围：G1/需求变更/G5）。 */
     static boolean isDualSignGate(String gateCode) {
         return "G1".equals(gateCode) || "G5".equals(gateCode);
@@ -132,7 +139,7 @@ public class GateReviewService {
             .reviewerId(actor.id())
             .decision(decision)
             .opinion(opinion)
-            .signedAt(new Date())
+            .signedAt(now())
             .dueAt(dueAtFrom(gate))
             .round(gate.getCurrentRound())
             .build();
@@ -301,7 +308,7 @@ public class GateReviewService {
             return gate.getSignDueAt();
         }
         int days = resolveSignDeadlineDays();
-        Date base = gate.getStartedAt() == null ? new Date() : gate.getStartedAt();
+        Date base = gate.getStartedAt() == null ? now() : gate.getStartedAt();
         return new Date(base.getTime() + TimeUnit.DAYS.toMillis(days));
     }
 
@@ -359,7 +366,7 @@ public class GateReviewService {
         }
         int newRound = gate.getCurrentRound() + 1;
         int days = resolveSignDeadlineDays();
-        Date newDue = new Date(new Date().getTime() + TimeUnit.DAYS.toMillis(days));
+        Date newDue = new Date(now().getTime() + TimeUnit.DAYS.toMillis(days));
         // 显式 set 清列：MP updateById 忽略 null 字段，concludedAt 必须置回 null
         gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
             .eq(Gate::getId, gateId)
@@ -403,14 +410,13 @@ public class GateReviewService {
         List<Gate> pending = gateMapper.selectList(new LambdaQueryWrapper<Gate>()
             .eq(Gate::getStatus, STATUS_PENDING)
             .isNotNull(Gate::getStartedAt));
-        Date now = new Date();
         int handled = 0;
         for (Gate gate : pending) {
             if (!isDualSignGate(gate.getGateCode())) {
                 continue;
             }
             Date due = dueAtFrom(gate);
-            if (!now.after(due)) {
+            if (!now().after(due)) {
                 continue;
             }
             List<GateReview> rows = roundRows(gate.getId(), gate.getCurrentRound());
@@ -457,10 +463,9 @@ public class GateReviewService {
         List<Gate> pending = gateMapper.selectList(new LambdaQueryWrapper<Gate>()
             .eq(Gate::getStatus, STATUS_PENDING)
             .isNotNull(Gate::getStartedAt));
-        Date now = new Date();
         int reminded = 0;
         for (Gate gate : pending) {
-            long untilDue = dueAtFrom(gate).getTime() - now.getTime();
+            long untilDue = dueAtFrom(gate).getTime() - now().getTime();
             if (untilDue <= 0 || untilDue > TimeUnit.DAYS.toMillis(1)) {
                 continue; // 未到提醒窗口或已超期（归 scanTimeout）
             }
@@ -481,7 +486,7 @@ public class GateReviewService {
                     NotificationService.KIND_ACTION, "gate", gate.getId(),
                     "Gate " + gate.getGateCode() + " 签署期限将于 24 小时内到期",
                     "第 " + gate.getCurrentRound() + " 轮签署期限即将到期（AC-GATE-09），请及时签署",
-                    "/reviews/gate/" + gate.getId(), now);
+                    "/reviews/gate/" + gate.getId(), now());
                 reminded++;
             }
         }
@@ -587,7 +592,6 @@ public class GateReviewService {
         if (observerIds == null || observerIds.isEmpty()) {
             throw new IpdBusinessException("请选择至少 1 位列席人员");
         }
-        Date now = new Date();
         int invited = 0;
         for (Long observerId : observerIds) {
             if (observerId == null) continue;
@@ -608,7 +612,7 @@ public class GateReviewService {
                 .observerId(observerId)
                 .role(role)
                 .invitedBy(actor.id())
-                .invitedAt(now)
+                .invitedAt(now())
                 .attended(0)
                 .build();
             observerMapper.insert(row);
@@ -866,7 +870,7 @@ public class GateReviewService {
             .operatorRole(actor.role())
             .afterData(pairs.length == 0 ? null : AuditEventData.json(pairs))
             .reason(reason)
-            .createTime(new Date())
+            .createTime(now())
             .build());
     }
 }

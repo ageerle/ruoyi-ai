@@ -41,6 +41,13 @@ public class GateCreationService {
     private final ProjectMapper projectMapper;
     private final AuditLogService auditLogService;
 
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
+
     @Transactional(rollbackFor = Exception.class)
     public GateReview autoCreateGate(Long projectId, String gateCode, Long operatorId) {
         if (projectId == null) {
@@ -57,7 +64,7 @@ public class GateCreationService {
             throw new ServiceException("归档/暂停项目不可创建 Gate 评审");
         }
         // 冷却窗口：同项目同 gateCode 最近 14 天内不可重复创建
-        Date cutoff = new Date(System.currentTimeMillis() - CREATE_COOLDOWN_MS);
+        Date cutoff = new Date(now().getTime() - CREATE_COOLDOWN_MS);
         Long recent = gateReviewMapper.selectCount(new LambdaQueryWrapper<GateReview>()
             .eq(GateReview::getProjectId, projectId)
             .eq(GateReview::getGateCode, gateCode)
@@ -71,11 +78,11 @@ public class GateCreationService {
             .reviewerType("MARKET_PM") // 默认发起方；具体双签由 GateReviewService.sign 后续覆盖
             .decision("PENDING")
             .round(1)
-            .signDueAt(new Date(System.currentTimeMillis() + 3L * 24 * 3600 * 1000)) // 默认 3 天签署期
+            .signDueAt(new Date(now().getTime() + 3L * 24 * 3600 * 1000)) // 默认 3 天签署期
             .signExtensionCount(0)
             .delFlag("0")
             .build();
-        review.setCreateTime(new Date());
+        review.setCreateTime(now());
         gateReviewMapper.insert(review);
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId)
@@ -84,7 +91,7 @@ public class GateCreationService {
             .entityId(review.getId())
             .reason("project:" + projectId + " gateCode:" + gateCode)
             .afterData("{\"projectId\":" + projectId + ",\"gateCode\":\"" + gateCode + "\",\"round\":1}")
-            .createTime(new Date())
+            .createTime(now())
             .build());
         return review;
     }

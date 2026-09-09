@@ -48,18 +48,23 @@ public class BidScanService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
 
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
     /**
      * AC-TEAM-06：到期前 3 天的 OPEN 单，提醒市场 PM（dedup_key 含自然日）。
      * 扫描范围：expireAt ∈ [now, now+3d] 且 status=OPEN。
      */
     @Transactional(rollbackFor = Exception.class)
     public int scanExpiringSoon() {
-        Date now = new Date();
-        Date window = new Date(now.getTime() + EXPIRING_SOON_DAYS * 86400_000L);
+        Date window = new Date(now().getTime() + EXPIRING_SOON_DAYS * 86400_000L);
         List<BidInvitation> due = bidInvitationMapper.selectList(
             new LambdaQueryWrapper<BidInvitation>()
                 .eq(BidInvitation::getStatus, "OPEN")
-                .ge(BidInvitation::getExpireAt, now)
+                .ge(BidInvitation::getExpireAt, now())
                 .le(BidInvitation::getExpireAt, window));
         for (BidInvitation inv : due) {
             Long receiverId = inv.getCreateBy();
@@ -73,7 +78,7 @@ public class BidScanService {
                 "招标单即将到期",
                 "招标单 " + inv.getId() + "「" + inv.getTitle() + "」将于 3 天内到期，请尽快遴选或续期。",
                 "/bid-invitations/" + inv.getId(),
-                now);
+                now());
         }
         return due.size();
     }
@@ -86,8 +91,7 @@ public class BidScanService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int scanSelectOverdue() {
-        Date now = new Date();
-        Date cutoff = new Date(now.getTime() - SELECT_OVERDUE_DAYS * 86400_000L);
+        Date cutoff = new Date(now().getTime() - SELECT_OVERDUE_DAYS * 86400_000L);
         List<BidInvitation> overdue = bidInvitationMapper.selectList(
             new LambdaQueryWrapper<BidInvitation>()
                 .eq(BidInvitation::getStatus, "OPEN")
@@ -110,7 +114,7 @@ public class BidScanService {
                     "遴选已超期，请尽快处理",
                     "招标单 " + inv.getId() + "「" + inv.getTitle() + "」到期已超 7 日仍未遴选，请尽快处理。",
                     "/bid-invitations/" + inv.getId(),
-                    now);
+                    now());
             }
             // MEDIUM-2.3：升级主组组长（person_type=GROUP_LEADER AND group_id=project.main_group_id）
             Project project = projectMapper.selectById(inv.getProjectId());
@@ -131,7 +135,7 @@ public class BidScanService {
                             title,
                             content,
                             "/bid-invitations/" + inv.getId(),
-                            now);
+                            now());
                     }
                     auditLogService.append(AuditLog.builder()
                         .operatorId(null)
@@ -139,7 +143,7 @@ public class BidScanService {
                         .entityType("bid_invitation")
                         .entityId(inv.getId())
                         .reason("主组=" + project.getMainGroupId() + "，已通知组长 " + leaders.size() + " 人")
-                        .createTime(now)
+                        .createTime(now())
                         .build());
                 } else {
                     // MEDIUM-2.3：未找到组长时仅 audit 留痕，不发通知
@@ -149,7 +153,7 @@ public class BidScanService {
                         .entityType("bid_invitation")
                         .entityId(inv.getId())
                         .reason("主组=" + project.getMainGroupId() + "，未找到 GROUP_LEADER，未发通知")
-                        .createTime(now)
+                        .createTime(now())
                         .build());
                 }
             }
@@ -166,11 +170,10 @@ public class BidScanService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int scanExpireNoResponse() {
-        Date now = new Date();
         List<BidInvitation> expired = bidInvitationMapper.selectList(
             new LambdaQueryWrapper<BidInvitation>()
                 .eq(BidInvitation::getStatus, "OPEN")
-                .lt(BidInvitation::getExpireAt, now));
+                .lt(BidInvitation::getExpireAt, now()));
         int closed = 0;
         for (BidInvitation inv : expired) {
             Long hasResp = bidResponseMapper.selectCount(new LambdaQueryWrapper<BidResponse>()
@@ -202,7 +205,7 @@ public class BidScanService {
                     "招标已到期无人应标",
                     "招标单 " + inv.getId() + "「" + inv.getTitle() + "」已到期且无人应标，项目转待组队状态。",
                     "/bid-invitations/" + inv.getId(),
-                    now);
+                    now());
             }
             closed++;
         }
