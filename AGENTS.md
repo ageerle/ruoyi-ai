@@ -49,3 +49,4 @@
 - 本工作区是 `ruoyi-ai`（IPD 产品经理管理系统）；勿与 `ZKER-staff`（`/Users/mac/Documents/ChatGPT/ZKER- staff`）或用户规则里的 IOE-DREAM 一卡通内容混淆。
 - 看板操作走 `user-zker_vibe_kanban` MCP，并与 SSOT 镜像 `docs/ipd-系统说明/开发计划-看板镜像.md` 对齐；Mock/单测绿不等于业务闭环，真库或 HTTP 未过不得伪完成。
 - 多会话并行时同一 Controller/测试签名会被兄弟会话改写；验收前以磁盘现态重编译，假红/假绿规则见上文「构建 / 测试」。
+- **五必现查规约（R13 立）**：hash / 端口字段 / 段号 / 看板回读 / 跨仓 cd 五类事实源必须现查现写，规约全文见 `docs/ipd-系统说明/事实源五必现查规约-20260908.md`。实测教训：R12.1 marker 凭记忆写 R11 hash、shell cwd 漂到前端仓导致 git log 显示错误 hash、看板 updated_at PUT 后不刷新（验证只认 desc_len + marker content）。跨仓命令必 `cd 绝对路径 &&` 开头。
