@@ -13,6 +13,8 @@ import org.ruoyi.ipd.domain.Contribution;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.dto.ContributionSaveReq;
 import org.ruoyi.ipd.mapper.ContributionMapper;
+import org.ruoyi.ipd.mapper.ContributionVersionMapper;
+import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
@@ -48,6 +50,9 @@ import static org.mockito.Mockito.when;
 class P361AcceptanceTest {
 
     @Mock private ContributionMapper contributionMapper;
+    // 合流补参：ContributionService 构造器已扩为 6 参（versionMapper / productGroupMapper）
+    @Mock private ContributionVersionMapper contributionVersionMapper;
+    @Mock private ProductGroupMapper productGroupMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private IpdPermission ipdPermission;
@@ -231,8 +236,8 @@ class P361AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ContributionService(contributionMapper, projectMapper,
-            auditLogService, ipdPermission);
+        service = new ContributionService(contributionMapper, contributionVersionMapper,
+            projectMapper, productGroupMapper, auditLogService, ipdPermission);
     }
 
     private IpdActor marketPmActor() {
