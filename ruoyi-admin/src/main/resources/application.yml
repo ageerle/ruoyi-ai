@@ -502,9 +502,9 @@ sse:
 
 --- # 演示模式配置
 demo:
-  # 是否开启演示模式（开启后所有写操作将被拦截）
-  # R8-P0-2：默认关闭，避免误开启阻断全部 IPD 写操作；env 化后可按环境显式开启（默认仍 false）
-  enabled: ${DEMO_ENABLED:false}
+  # R8-P0-2：默认关闭，避免误开启阻断全部 IPD 写操作；dev profile 如需演示模式请在 application-dev.yml 显式覆盖
+  # （upstream 曾 env 化 ${DEMO_ENABLED:false}，ProdConfigDeltaGuardTest 守卫要求字面 false：demo 误开会拦全部写链，不允许 env 注入旁路）
+  enabled: false
   # 提示消息
   message: "演示模式，不允许操作"
   # 排除的路径（这些路径不受演示模式限制）
