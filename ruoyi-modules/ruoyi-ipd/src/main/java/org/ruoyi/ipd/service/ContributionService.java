@@ -15,9 +15,11 @@ import org.ruoyi.ipd.dto.ContributionVersionView;
 import org.ruoyi.ipd.dto.ContributionView;
 import org.ruoyi.ipd.mapper.ContributionMapper;
 import org.ruoyi.ipd.mapper.ContributionVersionMapper;
+import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.domain.ProductGroup;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,17 +52,20 @@ public class ContributionService {
     private final ContributionMapper contributionMapper;
     private final ContributionVersionMapper versionMapper;
     private final ProjectMapper projectMapper;
+    private final ProductGroupMapper productGroupMapper;
     private final AuditLogService auditLogService;
     private final IpdPermission ipdPermission;
 
     public ContributionService(ContributionMapper contributionMapper,
                                 ContributionVersionMapper versionMapper,
                                 ProjectMapper projectMapper,
+                                ProductGroupMapper productGroupMapper,
                                 AuditLogService auditLogService,
                                 IpdPermission ipdPermission) {
         this.contributionMapper = contributionMapper;
         this.versionMapper = versionMapper;
         this.projectMapper = projectMapper;
+        this.productGroupMapper = productGroupMapper;
         this.auditLogService = auditLogService;
         this.ipdPermission = ipdPermission;
     }
@@ -274,6 +279,20 @@ public class ContributionService {
         if (bothDone && Contribution.ST_DRAFT.equals(entity.getStatus())) {
             entity.setStatus(Contribution.ST_SUBMITTED);
             entity.setSubmittedAt(new Date());
+            // R11 / A3 修复:预落 leader_id（项目主组组长 from product_groups.leader_person_id）
+            // 工作台 CT-卡聚合器依赖 leaderId 字段（非 NULL 才能匹配 person → workbench card 关联），
+            // 与 LD/CC 同构范式：propose/self 时刻即可确定的组长，先落库；confirm 时刻仍由 actor 覆盖。
+            if (entity.getLeaderId() == null && project.getMainGroupId() != null) {
+                ProductGroup group = productGroupMapper.selectById(project.getMainGroupId());
+                if (group != null && group.getLeaderPersonId() != null) {
+                    entity.setLeaderId(group.getLeaderPersonId());
+                    log.info("[R11 A3] 项目 {} mainGroupId={} → 预落 leader_id={}（主组组长）",
+                        projectId, project.getMainGroupId(), group.getLeaderPersonId());
+                } else {
+                    log.warn("[R11 A3] 项目 {} mainGroupId={} 未配置组长，leader_id 维持 NULL（CT-卡聚合器将恒空）",
+                        projectId, project.getMainGroupId());
+                }
+            }
         }
 
         if (entity.getId() == null) {
@@ -354,6 +373,16 @@ public class ContributionService {
             && !Contribution.ST_DRAFT.equals(entity.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "贡献度评定必须为 DRAFT/SUBMITTED 状态才能确认（当前=" + entity.getStatus() + "）");
+        }
+
+        // R11 / A3 修复:预落过 leader_id（项目主组组长），actor 必须 = 预落组长 或 超管
+        // 防组长 A 被组长 B 代签（与 LD/CC 加固同构）。
+        if (entity.getLeaderId() != null
+            && !actor.id().equals(entity.getLeaderId())
+            && !"SUPER_ADMIN".equals(actor.role())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "贡献度确认必须为预落组长（leaderId=" + entity.getLeaderId()
+                    + "）或超管，当前 actor=" + actor.id() + "/" + actor.role());
         }
 
         if ("APPROVE".equals(decision)) {

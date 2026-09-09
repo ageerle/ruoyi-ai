@@ -74,7 +74,9 @@ class P122AcceptanceTest {
         });
         Date day = new Date(1_700_000_000_000L);
         LaunchDateChangeRequest pending = launchDateChangeService.propose(
-            70L, day, "GTM 定档", 11L, "MARKET_PM", 70L);
+            70L, day, "GTM 定档", 11L, "MARKET_PM", 70L,
+            // R11 / A1 修复:预落 confirmer（提议人 MARKET_PM → 第二签人 RD_PM 22L）
+            22L, "RD_PM", 70L);
         assertThat(pending.getStatus()).isEqualTo(LaunchDateChangeRequest.ST_PENDING_SECOND);
 
         when(launchDateChangeRequestMapper.selectById(501L)).thenReturn(pending);

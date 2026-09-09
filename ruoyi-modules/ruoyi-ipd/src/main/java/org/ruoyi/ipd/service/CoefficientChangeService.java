@@ -32,6 +32,8 @@ public class CoefficientChangeService {
 
     /**
      * 双PM 联合提议（一次提交同时登记双方 ID）。
+     * <p>R11 / A2 修复（WB-17-1 收口后死路）:提议时预落 leader_id，使 StrategicChangeAggregator
+     * 能正常投递 CC-卡。与 Gate 仲裁方案 1 同构——双 PM 提议时已知组长人选，即落库。
      *
      * @param projectId   项目
      * @param coefficient 提议系数
@@ -39,11 +41,12 @@ public class CoefficientChangeService {
      * @param marketPmId  市场PM
      * @param rdPmId      研发PM
      * @param proposerId  提交人
-     * @return 新建申请（PENDING_LEADER）
+     * @param leaderId    产品组长（提议时由前端选定，必传）
+     * @return 新建申请（PENDING_LEADER，leader_id 已落库）
      */
     @Transactional(rollbackFor = Exception.class)
     public CoefficientChangeRequest propose(Long projectId, BigDecimal coefficient, String reason,
-                                            Long marketPmId, Long rdPmId, Long proposerId) {
+                                            Long marketPmId, Long rdPmId, Long proposerId, Long leaderId) {
         if (projectId == null || coefficient == null || marketPmId == null || rdPmId == null || proposerId == null) {
             throw new ServiceException("项目、系数、双PM 与提交人不能为空");
         }
@@ -52,6 +55,13 @@ public class CoefficientChangeService {
         }
         if (marketPmId.equals(rdPmId)) {
             throw new ServiceException("联合提议须由市场PM与研发PM两位不同人员");
+        }
+        // R11 / A2 修复:提议时即选组长，fail-closed
+        if (leaderId == null) {
+            throw new ServiceException("S/B 级系数定值必须指定产品组长（防工作台 CC-卡恒空）");
+        }
+        if (leaderId.equals(proposerId) || leaderId.equals(marketPmId) || leaderId.equals(rdPmId)) {
+            throw new ServiceException("组长不可与提议人/双PM 同人（职责隔离）");
         }
         Project project = requireProject(projectId);
         String level = project.getLevel();
@@ -75,6 +85,7 @@ public class CoefficientChangeService {
             .marketPmId(marketPmId)
             .rdPmId(rdPmId)
             .proposerId(proposerId)
+            .leaderId(leaderId)
             .status(CoefficientChangeRequest.ST_PENDING_LEADER)
             .build();
         req.setCreateTime(new Date());
@@ -104,6 +115,10 @@ public class CoefficientChangeService {
         }
         if (!CoefficientChangeRequest.ST_PENDING_LEADER.equals(req.getStatus())) {
             throw new ServiceException("状态机不匹配：期望 PENDING_LEADER，实际 " + req.getStatus());
+        }
+        // R11 / A2 修复:必须匹配 propose 时刻预落的 leader_id（防提议人绕过预落自己确认）
+        if (req.getLeaderId() != null && !leaderId.equals(req.getLeaderId())) {
+            throw new ServiceException("组长人必须为提议时指定的组长（leaderId 预落校验）");
         }
         req.setLeaderId(leaderId);
         req.setLeaderDecision(approve ? "APPROVE" : "REJECT");

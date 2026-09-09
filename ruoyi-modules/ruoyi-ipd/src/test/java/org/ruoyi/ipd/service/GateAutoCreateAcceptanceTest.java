@@ -74,6 +74,10 @@ class GateAutoCreateAcceptanceTest {
         assertThat(r.getGateCode()).isEqualTo("G3");
         assertThat(r.getProjectId()).isEqualTo(700L);
         assertThat(r.getRound()).isEqualTo(1);
+        // R11 / A4 修复:决策字段必须 NULL（待决语义），不得预设哨兵值破坏 KeyGateAggregator 锚点。
+        // 死路源头:GateCreationService L72 原 .decision("PENDING")，不在 GateReview.decision 值域（APPROVE|REJECT|ABSTAIN），
+        // 导致 KeyGateAggregator 的 .isNull(GateReview::getDecision) 永不可命中，工作台 key_gate 卡恒空。
+        assertThat(r.getDecision()).as("A4 修复:决策字段保持 NULL").isNull();
         verify(gateReviewMapper, times(1)).insert(any(GateReview.class));
         verify(auditLogService, times(1)).append(any());
     }

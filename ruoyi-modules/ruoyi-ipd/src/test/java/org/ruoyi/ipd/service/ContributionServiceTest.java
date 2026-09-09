@@ -11,6 +11,7 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Contribution;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ContributionMapper;
+import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
@@ -49,6 +50,7 @@ class ContributionServiceTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private IpdPermission ipdPermission;
+    @Mock private ProductGroupMapper productGroupMapper;
 
     private ContributionService service;
 
@@ -60,7 +62,7 @@ class ContributionServiceTest {
     @BeforeEach
     void setUp() {
         service = new ContributionService(contributionMapper, versionMapper, projectMapper,
-            auditLogService, ipdPermission);
+            productGroupMapper, auditLogService, ipdPermission);
     }
 
     private IpdActor marketPmActor() {

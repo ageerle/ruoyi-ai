@@ -61,17 +61,19 @@ class CoefficientChangeServiceTest {
         });
 
         CoefficientChangeRequest created = service.propose(
-            10L, new BigDecimal("1.8"), "旗舰溢价", 101L, 102L, 101L);
+            10L, new BigDecimal("1.8"), "旗舰溢价", 101L, 102L, 101L,
+            // R11 / A2 修复:提议时预落 leaderId（产品组长 103L，与三方独立）
+            103L);
         assertThat(created.getStatus()).isEqualTo(CoefficientChangeRequest.ST_PENDING_LEADER);
         assertThat(created.getProposedCoefficient()).isEqualByComparingTo("1.8");
 
         Project a = sProject();
         a.setLevel("A");
         when(projectMapper.selectById(11L)).thenReturn(a);
-        assertThatThrownBy(() -> service.propose(11L, new BigDecimal("1.0"), "x", 1L, 2L, 1L))
+        assertThatThrownBy(() -> service.propose(11L, new BigDecimal("1.0"), "x", 1L, 2L, 1L, 3L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("A 级");
 
-        assertThatThrownBy(() -> service.propose(10L, new BigDecimal("2.5"), "越界", 1L, 2L, 1L))
+        assertThatThrownBy(() -> service.propose(10L, new BigDecimal("2.5"), "越界", 1L, 2L, 1L, 3L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("1.5–2.0");
     }
 
