@@ -2,6 +2,7 @@ package org.ruoyi.domain.vo.mcp;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.domain.entity.mcp.McpTool;
@@ -52,7 +53,7 @@ public class McpToolVo implements Serializable {
     /**
      * 配置信息
      */
-    @ExcelProperty(value = "配置信息")
+    @JsonIgnore
     private String configJson;
 
     /**

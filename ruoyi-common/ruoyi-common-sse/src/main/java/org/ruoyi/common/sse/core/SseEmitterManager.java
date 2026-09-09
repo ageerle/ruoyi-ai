@@ -97,7 +97,8 @@ public class SseEmitterManager {
             try {
                 emitter.send(SseEmitter.event().comment("disconnected"));
             } catch (Exception exception) {
-                log.error(exception.getMessage());
+                log.error("sse_connection operation=DISCONNECT routeType=SESSION status=FAILED errorType={}",
+                    errorType(exception));
             }
             emitter.complete();
         }
@@ -115,16 +116,18 @@ public class SseEmitterManager {
         }
         SseEmitter emitter = SESSION_EMITTERS.get(sessionId);
         if (emitter == null) {
-            log.warn("【SSE发送失败】sessionId: {} 没有活跃的SSE连接", sessionId);
+            log.warn("sse_delivery routeType=SESSION status=SKIPPED reason=NO_ACTIVE_CONNECTION activeSessionCount={}",
+                SESSION_EMITTERS.size());
             return;
         }
         try {
-            log.debug("【SSE发送】sessionId: {}, event: {}", sessionId, eventDto.getEvent());
+            log.debug("sse_delivery routeType=SESSION status=SENDING eventType={} payloadChars={}",
+                safeEventType(eventDto), eventPayloadLength(eventDto));
             emitter.send(SseEmitter.event()
                 .name(eventDto.getEvent())
                 .data(JSONUtil.toJsonStr(eventDto)));
         } catch (Exception e) {
-            log.error("【SSE发送失败】sessionId: {}, error: {}", sessionId, e.getMessage());
+            log.error("sse_delivery routeType=SESSION status=FAILED errorType={}", errorType(e));
             removeSessionEmitter(sessionId, emitter);
         }
     }
@@ -212,7 +215,8 @@ public class SseEmitterManager {
                 sseEmitter.send(SseEmitter.event().comment("disconnected"));
                 //sseEmitter.complete();
             } catch (Exception exception) {
-                log.error(exception.getMessage());
+                log.error("sse_connection operation=DISCONNECT routeType=USER status=FAILED errorType={}",
+                    errorType(exception));
             }
             emitters.remove(token);
         } else {
@@ -321,14 +325,15 @@ public class SseEmitterManager {
     public void sendEvent(Long userId, SseEventDto eventDto) {
         Map<String, SseEmitter> emitters = USER_TOKEN_EMITTERS.get(userId);
         if (MapUtil.isNotEmpty(emitters)) {
-            log.debug("【SSE发送】userId: {}, emitter数量: {}, event: {}", userId, emitters.size(), eventDto.getEvent());
+            log.debug("sse_delivery routeType=USER status=SENDING connectionCount={} eventType={} payloadChars={}",
+                emitters.size(), safeEventType(eventDto), eventPayloadLength(eventDto));
             for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
                 try {
                     entry.getValue().send(SseEmitter.event()
                         .name(eventDto.getEvent())
                         .data(JSONUtil.toJsonStr(eventDto)));
                 } catch (Exception e) {
-                    log.error("【SSE发送失败】userId: {}, token: {}, error: {}", userId, entry.getKey(), e.getMessage());
+                    log.error("{}", sendFailureSummary(e));
                     SseEmitter remove = emitters.remove(entry.getKey());
                     if (remove != null) {
                         remove.complete();
@@ -336,9 +341,15 @@ public class SseEmitterManager {
                 }
             }
         } else {
-            log.warn("【SSE发送失败】userId: {} 没有活跃的SSE连接, 当前连接用户: {}", userId, USER_TOKEN_EMITTERS.keySet());
+            log.warn("sse_delivery routeType=USER status=SKIPPED reason=NO_ACTIVE_CONNECTION activeUserCount={}",
+                USER_TOKEN_EMITTERS.size());
             USER_TOKEN_EMITTERS.remove(userId);
         }
+    }
+
+    /** This boundary accepts neither routing identifiers nor raw exception text. */
+    static String sendFailureSummary(Exception failure) {
+        return "sse_delivery routeType=USER status=FAILED errorType=" + errorType(failure);
     }
 
 
@@ -365,8 +376,7 @@ public class SseEmitterManager {
         broadcastMessage.setSessionId(sseMessageDto.getSessionId());
         broadcastMessage.setEventDto(sseMessageDto.getEventDto());
         RedisUtils.publish(SSE_TOPIC, broadcastMessage, consumer -> {
-            log.info("SSE发送主题订阅消息topic:{} session:{} session keys:{} message:{}",
-                SSE_TOPIC, sseMessageDto.getSessionId(), sseMessageDto.getUserIds(), sseMessageDto.getMessage());
+            log.info("{}", publishSummary(sseMessageDto));
         });
     }
 
@@ -379,7 +389,56 @@ public class SseEmitterManager {
         SseMessageDto broadcastMessage = new SseMessageDto();
         broadcastMessage.setMessage(message);
         RedisUtils.publish(SSE_TOPIC, broadcastMessage, consumer -> {
-            log.info("SSE发送主题订阅消息topic:{} message:{}", SSE_TOPIC, message);
+            log.info("sse_publish routeType=BROADCAST recipientCount=-1 payloadChars={} eventType=none",
+                textLength(message));
         });
+    }
+
+    static String publishSummary(SseMessageDto message) {
+        if (message == null) {
+            return "sse_publish routeType=UNKNOWN recipientCount=0 payloadChars=0 eventType=none";
+        }
+        String routeType;
+        int recipientCount;
+        if (message.getSessionId() != null && !message.getSessionId().isBlank()) {
+            routeType = "SESSION";
+            recipientCount = 1;
+        } else if (message.getUserIds() != null && !message.getUserIds().isEmpty()) {
+            routeType = "USER";
+            recipientCount = message.getUserIds().size();
+        } else {
+            routeType = "BROADCAST";
+            recipientCount = -1;
+        }
+        return "sse_publish routeType=" + routeType
+            + " recipientCount=" + recipientCount
+            + " payloadChars=" + (textLength(message.getMessage()) + eventPayloadLength(message.getEventDto()))
+            + " eventType=" + safeEventType(message.getEventDto());
+    }
+
+    static String safeEventType(SseEventDto event) {
+        if (event == null || event.getEvent() == null) {
+            return "none";
+        }
+        return switch (event.getEvent()) {
+            case "content", "reasoning", "done", "error", "mcp_tool", "message" -> event.getEvent();
+            default -> "custom";
+        };
+    }
+
+    private static int eventPayloadLength(SseEventDto event) {
+        if (event == null) {
+            return 0;
+        }
+        return textLength(event.getContent()) + textLength(event.getReasoningContent())
+            + textLength(event.getError());
+    }
+
+    private static int textLength(String value) {
+        return value == null ? 0 : value.length();
+    }
+
+    private static String errorType(Throwable failure) {
+        return failure == null ? "unknown" : failure.getClass().getName();
     }
 }

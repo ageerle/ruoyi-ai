@@ -1,6 +1,8 @@
 package org.ruoyi.service.coding.harness.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -49,6 +51,46 @@ public record HarnessContextCheckpoint(
         if (modelIdentity != null && modelIdentity.isBlank()) {
             modelIdentity = null;
         }
+    }
+
+    /**
+     * Property-based JSON creator that migrates snapshots written before range, lineage and model
+     * provenance properties existed. Boxed numeric inputs distinguish an omitted property from a
+     * real zero, while the canonical constructor remains the single invariant validator.
+     */
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public static HarnessContextCheckpoint fromProperties(
+        @JsonProperty("checkpointId") String checkpointId,
+        @JsonProperty("lineage") List<String> lineage,
+        @JsonProperty("fromSequence") Long fromSequence,
+        @JsonProperty("toSequence") Long toSequence,
+        @JsonProperty("compactedThroughMessageSequence") Long compactedThroughMessageSequence,
+        @JsonProperty("summary") String summary,
+        @JsonProperty("artifactIds") List<String> artifactIds,
+        @JsonProperty("inputTokensBefore") Long inputTokensBefore,
+        @JsonProperty("inputTokensAfter") Long inputTokensAfter,
+        @JsonProperty("modelIdentity") String modelIdentity,
+        @JsonProperty("sourceUsageTimestamp") Long sourceUsageTimestamp,
+        @JsonProperty("securityConstraints") List<String> securityConstraints,
+        @JsonProperty("createdAt") Long createdAt
+    ) {
+        long effectiveTo = valueOr(toSequence,
+            valueOr(compactedThroughMessageSequence, 0));
+        long effectiveCompactedThrough = valueOr(compactedThroughMessageSequence, effectiveTo);
+        long effectiveFrom = valueOr(fromSequence, effectiveTo == 0 ? 0 : 1);
+        List<String> effectiveLineage = lineage;
+        if (checkpointId != null && !checkpointId.isBlank()
+            && (effectiveLineage == null || effectiveLineage.isEmpty())) {
+            effectiveLineage = List.of(checkpointId);
+        }
+        return new HarnessContextCheckpoint(checkpointId, effectiveLineage, effectiveFrom,
+            effectiveTo, effectiveCompactedThrough, summary, artifactIds,
+            valueOr(inputTokensBefore, 0), valueOr(inputTokensAfter, 0), modelIdentity,
+            valueOr(sourceUsageTimestamp, 0), securityConstraints, valueOr(createdAt, 0));
+    }
+
+    private static long valueOr(Long value, long fallback) {
+        return value == null ? fallback : value;
     }
 
     /** Compatibility constructor for snapshots written before lineage metadata was added. */

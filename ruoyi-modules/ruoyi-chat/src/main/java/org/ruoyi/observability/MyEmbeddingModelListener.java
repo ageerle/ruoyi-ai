@@ -23,25 +23,32 @@ public class MyEmbeddingModelListener implements EmbeddingModelListener {
 
     @Override
     public void onRequest(EmbeddingModelRequestContext requestContext) {
-        log.info("【EmbeddingModel请求】输入文本段落数量: {}", requestContext.textSegments().size());
-        log.info("【EmbeddingModel请求】嵌入模型: {}", requestContext.embeddingModel());
+        log.info("embedding_model_requested status=STARTED segmentCount={} modelType={}",
+            requestContext.textSegments() == null ? 0 : requestContext.textSegments().size(),
+            modelType(requestContext.embeddingModel()));
     }
 
     @Override
     public void onResponse(EmbeddingModelResponseContext responseContext) {
         Response<List<Embedding>> response = responseContext.response();
         List<Embedding> embeddings = response.content();
-        log.info("【EmbeddingModel响应】嵌入向量数量: {}", embeddings.size());
-        log.info("【EmbeddingModel响应】嵌入维度: {}", embeddings.isEmpty() ? 0 : embeddings.get(0).dimension());
-        log.info("【EmbeddingModel响应】嵌入模型: {}", responseContext.embeddingModel());
-        log.info("【EmbeddingModel响应】输入文本段落: {}", responseContext.textSegments());
+        log.info("embedding_model_completed status=COMPLETED segmentCount={} embeddingCount={} "
+                + "dimension={} modelType={}",
+            responseContext.textSegments() == null ? 0 : responseContext.textSegments().size(),
+            embeddings == null ? 0 : embeddings.size(),
+            embeddings == null || embeddings.isEmpty() ? 0 : embeddings.get(0).dimension(),
+            modelType(responseContext.embeddingModel()));
     }
 
     @Override
     public void onError(EmbeddingModelErrorContext errorContext) {
-        log.error("【EmbeddingModel错误】错误类型: {}", errorContext.error().getClass().getName());
-        log.error("【EmbeddingModel错误】错误信息: {}", errorContext.error().getMessage());
-        log.error("【EmbeddingModel错误】输入文本段落数量: {}", errorContext.textSegments().size());
-        log.error("【EmbeddingModel错误】嵌入模型: {}", errorContext.embeddingModel());
+        log.error("embedding_model_failed status=FAILED segmentCount={} modelType={} errorType={}",
+            errorContext.textSegments() == null ? 0 : errorContext.textSegments().size(),
+            modelType(errorContext.embeddingModel()),
+            errorContext.error() == null ? "unknown" : errorContext.error().getClass().getName());
+    }
+
+    private static String modelType(Object model) {
+        return model == null ? "unknown" : model.getClass().getName();
     }
 }

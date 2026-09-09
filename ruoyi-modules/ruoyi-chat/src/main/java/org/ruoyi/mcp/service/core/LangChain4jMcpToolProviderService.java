@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
+import dev.langchain4j.mcp.client.logging.McpLogMessageHandler;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.domain.entity.mcp.McpTool;
 import org.ruoyi.enums.McpToolStatus;
 import org.ruoyi.mapper.mcp.McpToolMapper;
+import org.ruoyi.common.process.ChildProcessSecretSanitizer;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -38,6 +40,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 public class LangChain4jMcpToolProviderService {
+
+    static final boolean TRAFFIC_LOGGING_ENABLED = false;
+    static final McpLogMessageHandler SAFE_NO_OP_LOG_HANDLER = ignored -> {
+        // MCP server log notifications may contain tool arguments, results or credentials.
+    };
 
     /**
      * 最大失败次数，超过此次数将暂时禁用工具
@@ -171,7 +178,7 @@ public class LangChain4jMcpToolProviderService {
                     clients.add(client);
                 }
             } catch (Exception e) {
-                log.error("Failed to create MCP client for tool {}: {}", tool.getId(), e.getMessage());
+                log.error("mcp_client operation=CREATE status=FAILED errorType={}", errorType(e));
             }
         }
 
@@ -194,7 +201,7 @@ public class LangChain4jMcpToolProviderService {
             builtinTools.addAll(discoveredTools);
             log.debug("Added builtin tool: {}", tool.getName());
         } catch (RuntimeException e) {
-            log.error("Failed to register builtin tool '{}': {}", tool.getName(), e.getMessage());
+            log.error("mcp_builtin operation=REGISTER status=FAILED errorType={}", errorType(e));
         }
     }
 
@@ -283,7 +290,7 @@ public class LangChain4jMcpToolProviderService {
                 log.info("Successfully created LangChain4j MCP client for tool: {}", tool.getName());
                 return client;
             } catch (Exception e) {
-                log.error("Failed to create MCP client for tool {}: {}", tool.getName(), e.getMessage());
+                log.error("mcp_client operation=CREATE status=FAILED errorType={}", errorType(e));
                 // 记录失败并可能禁用工具
                 handleToolFailure(id);
                 return null;
@@ -373,7 +380,7 @@ public class LangChain4jMcpToolProviderService {
             }
             return false;
         } catch (Exception e) {
-            log.error("Health check failed for tool {}: {}", tool.getName(), e.getMessage());
+            log.error("mcp_client operation=HEALTH_CHECK status=FAILED errorType={}", errorType(e));
             handleToolFailure(toolId);
             return false;
         }
@@ -461,17 +468,19 @@ public class LangChain4jMcpToolProviderService {
         fullCommand.add(command);
         fullCommand.addAll(args);
 
-        log.info("Creating STDIO MCP client for tool: {}, command: {}", tool.getName(), fullCommand);
+        log.info("mcp_client transport=STDIO status=CREATING argumentCount={}", fullCommand.size());
 
         // 创建传输层
         McpTransport transport = StdioMcpTransport.builder()
             .command(fullCommand)
-            .logEvents(true)
+            .environment(ChildProcessSecretSanitizer.emptyProviderSecretOverride())
+            .logEvents(TRAFFIC_LOGGING_ENABLED)
             .build();
 
         // 创建客户端
         return new DefaultMcpClient.Builder()
             .transport(transport)
+            .logHandler(SAFE_NO_OP_LOG_HANDLER)
             .build();
     }
 
@@ -482,7 +491,7 @@ public class LangChain4jMcpToolProviderService {
         try {
             ProcessBuilder pb = new ProcessBuilder(command, "--version");
             pb.redirectErrorStream(true);
-            Process process = pb.start();
+            Process process = ChildProcessSecretSanitizer.start(pb);
             boolean finished = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
@@ -493,7 +502,7 @@ public class LangChain4jMcpToolProviderService {
             // 如果进程能启动并退出（无论退出码是什么），我们认为命令可用
             return true;
         } catch (Exception e) {
-            log.debug("Command '{}' is not available: {}", command, e.getMessage());
+            log.debug("mcp_command_check status=UNAVAILABLE errorType={}", errorType(e));
             return false;
         }
     }
@@ -514,17 +523,18 @@ public class LangChain4jMcpToolProviderService {
         }
 
         String baseUrl = configNode.get("baseUrl").asText();
-        log.info("Creating HTTP/SSE MCP client for tool: {}, baseUrl: {}", tool.getName(), baseUrl);
+        log.info("mcp_client transport=HTTP status=CREATING");
 
         // 创建 HTTP/SSE 传输层
         McpTransport transport = StreamableHttpMcpTransport.builder()
             .url(baseUrl)
-            .logRequests(true)
+            .logRequests(TRAFFIC_LOGGING_ENABLED)
             .build();
 
         // 创建客户端
         return new DefaultMcpClient.Builder()
             .transport(transport)
+            .logHandler(SAFE_NO_OP_LOG_HANDLER)
             .build();
     }
 
@@ -545,7 +555,7 @@ public class LangChain4jMcpToolProviderService {
                 lowerCommand.equals("yarn") || lowerCommand.equals("uvx") ||
                 lowerCommand.equals("uv")) {
                 String resolvedCommand = command + ".cmd";
-                log.debug("Windows detected, resolved command: {} -> {}", command, resolvedCommand);
+                log.debug("mcp_command_resolution platform=WINDOWS status=RESOLVED");
                 return resolvedCommand;
             }
         }
@@ -571,7 +581,7 @@ public class LangChain4jMcpToolProviderService {
                 // LangChain4j McpClient 没有 close 方法，直接移除即可
                 log.info("Removed MCP client for tool: {}", toolId);
             } catch (Exception e) {
-                log.warn("Error closing MCP client for tool {}: {}", toolId, e.getMessage());
+                log.warn("mcp_client operation=CLOSE status=FAILED errorType={}", errorType(e));
             }
         }
     }
@@ -590,5 +600,9 @@ public class LangChain4jMcpToolProviderService {
      */
     public int getActiveClientCount() {
         return activeClients.size();
+    }
+
+    private static String errorType(Throwable error) {
+        return error == null ? "unknown" : error.getClass().getName();
     }
 }

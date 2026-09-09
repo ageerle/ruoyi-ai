@@ -76,6 +76,19 @@ public class ChatRequest {
     private Boolean enableThinking = false;
 
     /**
+     * 是否回放上下文中已经存在的模型思考内容。
+     * 仅供需要在非思考动作轮中延续 DeepSeek 工具协议的内部调用使用。
+     */
+    private Boolean replayThinking = false;
+
+    /**
+     * Doubao-Seed-Evolving 思考等级（reasoning_effort）。
+     * 取值 none/minimal/low/medium/high/xhigh/max；null 表示不发送 Doubao 专属参数。
+     * 仅在 custom_api 供应商承载 Doubao 模型时使用，其他模型忽略此字段。
+     */
+    private String reasoningEffort;
+
+    /**
      * 对话模型详情
      */
     private ChatModelVo chatModelVo;

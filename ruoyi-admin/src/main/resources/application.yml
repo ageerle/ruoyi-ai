@@ -20,16 +20,34 @@ server:
       # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
       worker: 256
 
-# Harness 命令仍受工作区租约、执行计划和工具审批约束；开启后才能验证并运行生成的网站。
+# execute_process 只能经由固定镜像的 Docker OS sandbox；缺任一配置均 fail closed。
 coding:
   harness:
+    journal:
+      # Operator HTML projection is opt-in; production paths must be chosen by deployment config.
+      enabled: ${CODING_HARNESS_JOURNAL_ENABLED:false}
+      output-directory: ${CODING_HARNESS_JOURNAL_OUTPUT_DIRECTORY:./data/coding-harness-journal}
     budget:
       # 模型回合上限；工具额度按每回合最多 3 次保持同比例，避免工具预算先于回合耗尽。
-      max-iterations: 200
-      max-tool-calls: 600
+      # No task iteration or wall-time cutoff; context compaction supports continued work.
+      # Optional cumulative spending ceilings (0 = disabled).
+      max-tool-calls: 0
+      max-input-tokens: 0
+      max-output-tokens: 0
     tools:
       execute-process:
-        enabled: true
+        enabled: ${CODING_HARNESS_EXECUTE_PROCESS_ENABLED:false}
+        sandbox:
+          # 必须是宿主 Docker CLI 的绝对路径；不会搜索或继承宿主 PATH/HOME。
+          docker-executable: ${CODING_HARNESS_DOCKER_EXECUTABLE:}
+          # 对 CLI 文件内容做每次控制调用前复核，不能只信文件名或绝对路径。
+          docker-executable-sha256: ${CODING_HARNESS_DOCKER_EXECUTABLE_SHA256:}
+          # 必须是绝对、无链接且始终为空的专用目录，阻断宿主 config.json/proxy/credential helper。
+          docker-config-directory: ${CODING_HARNESS_DOCKER_CONFIG_DIRECTORY:}
+          # 只接受平台本地 Docker Engine（Windows named pipe / Unix socket），拒绝远端 context。
+          docker-host: ${CODING_HARNESS_DOCKER_HOST:}
+          # 仅接受 evaluator 批准的本地 sha256:<64 hex> image ID，永不 pull/build。
+          image: ${CODING_HARNESS_SANDBOX_IMAGE:}
 
 --- # websocket
 websocket:
@@ -67,6 +85,15 @@ logging:
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
+    # MCP traffic/stdout may contain tool arguments, results or credentials.
+    MCP: "OFF"
+    dev.langchain4j.mcp: "OFF"
+    dev.langchain4j.mcp.McpToolProvider: "OFF"
+    dev.langchain4j.mcp.client.logging.DefaultMcpLogMessageHandler: "OFF"
+    dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport: "OFF"
+    dev.langchain4j.mcp.client.transport.stdio.ProcessStderrHandler: "OFF"
+    dev.langchain4j.mcp.transport.stdio.JsonRpcIoHandler: "ERROR"
+    dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport: "OFF"
   # 使用 logback-spring.xml 以支持 <springProfile name="dev|prod"> 切换 root level
   # （详见 logback-spring.xml 头部注释；logback-plus.xml 已废弃仅保留向后兼容）
   config: classpath:logback-spring.xml
@@ -431,6 +458,9 @@ xss:
   # 排除链接
   excludeUrls:
     - /system/notice
+    # Coding prompts contain source text (for example TypeScript <T>), rendered as escaped Markdown.
+    - /coding/harness/sessions/*/runs
+    - /coding/harness/sessions/*/runs/*/inputs
 
 --- # 链路追踪配置
 trace:
@@ -473,8 +503,8 @@ sse:
 --- # 演示模式配置
 demo:
   # 是否开启演示模式（开启后所有写操作将被拦截）
-  # R8-P0-2：默认关闭，避免误开启阻断全部 IPD 写操作；dev profile 如需演示模式请在 application-dev.yml 显式覆盖
-  enabled: false
+  # R8-P0-2：默认关闭，避免误开启阻断全部 IPD 写操作；env 化后可按环境显式开启（默认仍 false）
+  enabled: ${DEMO_ENABLED:false}
   # 提示消息
   message: "演示模式，不允许操作"
   # 排除的路径（这些路径不受演示模式限制）

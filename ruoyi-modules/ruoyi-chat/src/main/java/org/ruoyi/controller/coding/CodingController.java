@@ -81,7 +81,7 @@ public class CodingController {
         // 编程对话只能用聊天模型，按 category=chat 过滤
         ChatModelBo bo = new ChatModelBo();
         bo.setCategory(ModelType.CHAT.getKey());
-        List<ModelOption> models = chatModelService.queryList(bo).stream()
+        List<ModelOption> models = chatModelService.queryAvailableList(bo).stream()
             .map(model -> new ModelOption(model.getId(), model.getModelName(), model.getProviderCode()))
             .toList();
         return R.ok(models);

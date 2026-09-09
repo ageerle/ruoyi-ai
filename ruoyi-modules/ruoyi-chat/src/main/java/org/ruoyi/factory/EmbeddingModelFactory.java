@@ -39,7 +39,9 @@ public class EmbeddingModelFactory {
     private final EmbeddingModelListenerProvider embeddingModelListenerProvider;
 
     // 模型缓存，使用ConcurrentHashMap保证线程安全
-    private final Map<String, BaseEmbedModelService> modelCache = new ConcurrentHashMap<>();
+    private final Map<ModelCacheKey, BaseEmbedModelService> modelCache = new ConcurrentHashMap<>();
+
+    private record ModelCacheKey(Long id, String modelName, String providerCode) { }
 
     /**
      * 创建嵌入模型实例
@@ -48,14 +50,15 @@ public class EmbeddingModelFactory {
      * @param embeddingModelName 嵌入模型名称
      */
     public BaseEmbedModelService createModel(String embeddingModelName) {
-        return modelCache.computeIfAbsent(embeddingModelName, name -> {
-            ChatModelVo modelConfig = chatModelService.selectModelByName(embeddingModelName);
-
-            if (modelConfig == null) {
-                throw new IllegalArgumentException("未找到模型配置，name=" + name);
-            }
-            return createModelInstance(modelConfig.getProviderCode(), modelConfig);
-        });
+        // 即使命中缓存，也先读取当前配置并校验厂商状态。
+        ChatModelVo modelConfig = chatModelService.selectModelByName(embeddingModelName);
+        if (modelConfig == null) {
+            throw new IllegalArgumentException("未找到模型配置，name=" + embeddingModelName);
+        }
+        ModelCacheKey key = new ModelCacheKey(modelConfig.getId(),
+            modelConfig.getModelName(), modelConfig.getProviderCode());
+        return modelCache.computeIfAbsent(key,
+            ignored -> createModelInstance(modelConfig.getProviderCode(), modelConfig));
     }
 
     /**
@@ -92,7 +95,7 @@ public class EmbeddingModelFactory {
     public void refreshModel(Long embeddingModelId) {
         ChatModelVo modelConfig = chatModelService.queryById(embeddingModelId);
         if (modelConfig != null) {
-            modelCache.remove(modelConfig.getModelName());
+            modelCache.keySet().removeIf(key -> embeddingModelId.equals(key.id()));
         }
     }
 
@@ -100,7 +103,7 @@ public class EmbeddingModelFactory {
      * 按模型名称刷新缓存
      */
     public void refreshModelByName(String embeddingModelName) {
-        modelCache.remove(embeddingModelName);
+        modelCache.keySet().removeIf(key -> embeddingModelName.equals(key.modelName()));
     }
 
     /**

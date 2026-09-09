@@ -4,7 +4,8 @@ import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.entity.chat.ChatModel;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-import org.ruoyi.common.core.utils.MapstructUtils;
+import org.ruoyi.common.chat.security.ChatModelCredentialPolicy;
+import org.ruoyi.common.chat.security.ChatModelSecretReference;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
@@ -15,11 +16,15 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.ruoyi.mapper.chat.ChatModelMapper;
+import org.ruoyi.domain.bo.chat.ChatProviderBo;
+import org.ruoyi.domain.vo.chat.ChatProviderVo;
+import org.ruoyi.service.chat.IChatProviderService;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * 模型管理Service业务层处理
@@ -33,6 +38,7 @@ import java.util.Collection;
 public class ChatModelServiceImpl implements IChatModelService {
 
     private final ChatModelMapper baseMapper;
+    private final IChatProviderService chatProviderService;
 
     /**
      * 查询模型管理
@@ -56,7 +62,11 @@ public class ChatModelServiceImpl implements IChatModelService {
         LambdaQueryWrapper<ChatModel> lqw = Wrappers.lambdaQuery();
         lqw.eq(ChatModel::getModelName, modelName);
         lqw.last("LIMIT 1");
-        return baseMapper.selectVoOne(lqw);
+        ChatModelVo model = baseMapper.selectVoOne(lqw);
+        if (model != null) {
+            chatProviderService.requireEnabled(model.getProviderCode());
+        }
+        return model;
     }
 
     /**
@@ -85,8 +95,22 @@ public class ChatModelServiceImpl implements IChatModelService {
         return baseMapper.selectVoList(lqw);
     }
 
+    @Override
+    public List<ChatModelVo> queryAvailableList(ChatModelBo bo) {
+        ChatProviderBo providerQuery = new ChatProviderBo();
+        providerQuery.setStatus("0");
+        List<String> providerCodes = chatProviderService.queryList(providerQuery).stream()
+            .map(ChatProviderVo::getProviderCode)
+            .distinct()
+            .toList();
+        if (providerCodes.isEmpty()) {
+            return List.of();
+        }
+        return baseMapper.selectVoList(buildQueryWrapper(bo)
+            .in(ChatModel::getProviderCode, providerCodes));
+    }
+
     private LambdaQueryWrapper<ChatModel> buildQueryWrapper(ChatModelBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ChatModel> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(ChatModel::getId);
         lqw.eq(StringUtils.isNotBlank(bo.getCategory()), ChatModel::getCategory, bo.getCategory());
@@ -95,7 +119,6 @@ public class ChatModelServiceImpl implements IChatModelService {
         lqw.eq(StringUtils.isNotBlank(bo.getModelDescribe()), ChatModel::getModelDescribe, bo.getModelDescribe());
         lqw.eq(StringUtils.isNotBlank(bo.getModelShow()), ChatModel::getModelShow, bo.getModelShow());
         lqw.eq(StringUtils.isNotBlank(bo.getApiHost()), ChatModel::getApiHost, bo.getApiHost());
-        lqw.eq(StringUtils.isNotBlank(bo.getApiKey()), ChatModel::getApiKey, bo.getApiKey());
         return lqw;
     }
 
@@ -107,8 +130,8 @@ public class ChatModelServiceImpl implements IChatModelService {
      */
     @Override
     public Boolean insertByBo(ChatModelBo bo) {
-        ChatModel add = MapstructUtils.convert(bo, ChatModel.class);
-        validEntityBeforeSave(add);
+        ChatModel add = toEntity(bo);
+        validateEffectiveConfiguration(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setId(add.getId());
@@ -123,17 +146,80 @@ public class ChatModelServiceImpl implements IChatModelService {
      * @return 是否修改成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(ChatModelBo bo) {
-        ChatModel update = MapstructUtils.convert(bo, ChatModel.class);
-        validEntityBeforeSave(update);
+        ChatModel update = toEntity(bo);
+        validateRequestedFields(update);
+        ChatModel current = selectByIdForUpdate(update.getId());
+        if (current == null) {
+            return false;
+        }
+        validateEffectiveConfiguration(mergeEffectiveConfiguration(current, update));
         return baseMapper.updateById(update) > 0;
     }
 
-    /**
-     * 保存前的数据校验
-     */
-    private void validEntityBeforeSave(ChatModel entity){
-        //TODO 做一些数据校验,如唯一约束
+    private void validateRequestedFields(ChatModel requested) {
+        if (requested.getApiKey() != null) {
+            ChatModelSecretReference.requirePersistableReference(requested.getApiKey());
+        }
+        if (requested.getApiHost() != null) {
+            ChatModelCredentialPolicy.requireSecureApiHost(requested.getApiHost());
+        }
+    }
+
+    private void validateEffectiveConfiguration(ChatModel entity) {
+        ChatModelCredentialPolicy.requirePersistableConfiguration(
+            entity.getProviderCode(), entity.getModelName(), entity.getApiHost(), entity.getApiKey());
+        chatProviderService.requireEnabled(entity.getProviderCode());
+    }
+
+    private ChatModel selectByIdForUpdate(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Model id is required for update");
+        }
+        LambdaQueryWrapper<ChatModel> lock = Wrappers.lambdaQuery();
+        lock.eq(ChatModel::getId, id).last("FOR UPDATE");
+        return baseMapper.selectOne(lock);
+    }
+
+    private ChatModel mergeEffectiveConfiguration(ChatModel current, ChatModel requested) {
+        ChatModel effective = new ChatModel();
+        effective.setProviderCode(firstNonNull(requested.getProviderCode(), current.getProviderCode()));
+        effective.setModelName(firstNonNull(requested.getModelName(), current.getModelName()));
+        effective.setApiHost(firstNonNull(requested.getApiHost(), current.getApiHost()));
+        effective.setApiKey(firstNonNull(requested.getApiKey(), current.getApiKey()));
+        return effective;
+    }
+
+    private static <T> T firstNonNull(T requested, T current) {
+        return requested == null ? current : requested;
+    }
+
+    private ChatModel toEntity(ChatModelBo source) {
+        if (source == null) {
+            throw new IllegalArgumentException("Model command is required");
+        }
+        ChatModel target = new ChatModel();
+        target.setSearchValue(source.getSearchValue());
+        target.setCreateDept(source.getCreateDept());
+        target.setCreateBy(source.getCreateBy());
+        target.setCreateTime(source.getCreateTime());
+        target.setUpdateBy(source.getUpdateBy());
+        target.setUpdateTime(source.getUpdateTime());
+        if (source.getParams() != null) {
+            target.setParams(new LinkedHashMap<>(source.getParams()));
+        }
+        target.setId(source.getId());
+        target.setCategory(source.getCategory());
+        target.setModelName(source.getModelName());
+        target.setProviderCode(source.getProviderCode());
+        target.setModelDescribe(source.getModelDescribe());
+        target.setModelShow(source.getModelShow());
+        target.setModelDimension(source.getModelDimension());
+        target.setApiHost(source.getApiHost());
+        target.setApiKey(source.getApiKey());
+        target.setRemark(source.getRemark());
+        return target;
     }
 
     /**
@@ -159,10 +245,27 @@ public class ChatModelServiceImpl implements IChatModelService {
      * @return 是否更新成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean updateApiKeyByProvider(String providerCode, String apiKey) {
+        if (apiKey == null) {
+            throw new IllegalArgumentException("Batch model key reference is required");
+        }
+        String reference = ChatModelSecretReference.requirePersistableReference(apiKey);
+        ChatModelCredentialPolicy.requireProviderReference(providerCode, reference);
+        LambdaQueryWrapper<ChatModel> lock = Wrappers.lambdaQuery();
+        lock.select(ChatModel::getId, ChatModel::getProviderCode, ChatModel::getModelName, ChatModel::getApiHost)
+            .eq(ChatModel::getProviderCode, providerCode)
+            .last("FOR UPDATE");
+        List<ChatModel> current = baseMapper.selectList(lock);
+        if (current.isEmpty()) {
+            return false;
+        }
+        current.forEach(model -> ChatModelCredentialPolicy.requireTrustedConfiguration(
+            model.getProviderCode(), model.getModelName(), model.getApiHost(), reference));
         LambdaUpdateWrapper<ChatModel> uw = Wrappers.lambdaUpdate();
-        uw.set(ChatModel::getApiKey, apiKey)
-            .eq(ChatModel::getProviderCode, providerCode);
+        uw.set(ChatModel::getApiKey, reference)
+            .eq(ChatModel::getProviderCode, providerCode)
+            .in(ChatModel::getId, current.stream().map(ChatModel::getId).toList());
         return baseMapper.update(null, uw) > 0;
     }
 }

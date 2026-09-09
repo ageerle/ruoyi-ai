@@ -3,6 +3,8 @@ package org.ruoyi.service.coding.harness.loop.tool;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ruoyi.service.coding.harness.model.HarnessRunState;
 import org.ruoyi.service.coding.harness.model.HarnessSessionState;
+import org.ruoyi.service.coding.harness.model.HarnessVerificationMode;
+import org.ruoyi.service.coding.harness.modelruntime.HarnessAnalysisDelegate;
 import org.ruoyi.service.coding.harness.plan.ExecutionMode;
 import org.ruoyi.service.coding.harness.plan.tool.HarnessPlanCommandService;
 import org.ruoyi.service.coding.harness.plan.tool.HarnessPlanToolDescriptors;
@@ -20,6 +22,7 @@ import org.ruoyi.service.coding.harness.tool.builtin.BuiltinToolLimits;
 import org.ruoyi.service.coding.harness.tool.builtin.RunContext;
 import org.ruoyi.service.coding.harness.tool.command.CommandToolConfig;
 import org.ruoyi.service.coding.harness.tool.command.CommandToolDescriptors;
+import org.ruoyi.service.coding.harness.tool.command.DockerSandboxConfig;
 import org.ruoyi.service.coding.harness.tool.command.ExecuteProcessTool;
 import org.ruoyi.service.coding.harness.tool.command.InlineProbeTool;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -49,19 +53,77 @@ public class DefaultHarnessToolRuntimeFactory implements HarnessToolRuntimeFacto
     private final HarnessPlanCommandService planCommandService;
     private final HarnessArtifactRepository artifactRepository;
     private final boolean executeProcessEnabled;
+    private final CommandToolConfig commandToolConfig;
+    private final HarnessAnalysisDelegate analysisDelegate;
+
+    private static final ToolDescriptor DELEGATE_DESCRIPTOR = new ToolDescriptor(
+        "delegate_task", Set.of(ToolCapability.READ), true, 120_000,
+        96 * 1024, 32 * 1024, true,
+        "Runs one bounded advisory model worker with no repository or mutation tools");
 
     @Autowired
     public DefaultHarnessToolRuntimeFactory(ObjectMapper objectMapper,
                                             HarnessSkillCatalogFactory skillCatalogFactory,
                                             HarnessPlanCommandService planCommandService,
                                             HarnessArtifactRepository artifactRepository,
+                                            HarnessAnalysisDelegate analysisDelegate,
                                             @Value("${coding.harness.tools.execute-process.enabled:false}")
-                                            boolean executeProcessEnabled) {
+                                            boolean executeProcessEnabled,
+                                            @Value("${coding.harness.tools.execute-process.sandbox.docker-executable:}")
+                                            String dockerExecutable,
+                                            @Value("${coding.harness.tools.execute-process.sandbox.docker-executable-sha256:}")
+                                            String dockerExecutableSha256,
+                                            @Value("${coding.harness.tools.execute-process.sandbox.docker-config-directory:}")
+                                            String dockerConfigDirectory,
+                                            @Value("${coding.harness.tools.execute-process.sandbox.docker-host:}")
+                                            String dockerHost,
+                                            @Value("${coding.harness.tools.execute-process.sandbox.image:}")
+                                            String pinnedImage) {
+        this(objectMapper, skillCatalogFactory, planCommandService, artifactRepository,
+            analysisDelegate, executeProcessEnabled,
+            CommandToolConfig.DEFAULT.withDockerSandbox(
+                DockerSandboxConfig.configured(dockerExecutable, dockerExecutableSha256,
+                    dockerConfigDirectory, dockerHost, pinnedImage)));
+    }
+
+    private DefaultHarnessToolRuntimeFactory(ObjectMapper objectMapper,
+                                             HarnessSkillCatalogFactory skillCatalogFactory,
+                                             HarnessPlanCommandService planCommandService,
+                                             HarnessArtifactRepository artifactRepository,
+                                             HarnessAnalysisDelegate analysisDelegate,
+                                             boolean executeProcessEnabled,
+                                             CommandToolConfig commandToolConfig) {
         this.objectMapper = objectMapper;
         this.skillCatalogFactory = skillCatalogFactory;
         this.planCommandService = planCommandService;
         this.artifactRepository = artifactRepository;
+        this.analysisDelegate = analysisDelegate;
         this.executeProcessEnabled = executeProcessEnabled;
+        this.commandToolConfig = Objects.requireNonNull(commandToolConfig, "commandToolConfig");
+        if (executeProcessEnabled) {
+            this.commandToolConfig.dockerSandbox().requireUsableDockerExecutable();
+        }
+    }
+
+    /** Programmatic construction is fail-closed unless command execution is explicitly enabled. */
+    public DefaultHarnessToolRuntimeFactory(ObjectMapper objectMapper,
+                                            HarnessSkillCatalogFactory skillCatalogFactory,
+                                            HarnessPlanCommandService planCommandService,
+                                            HarnessArtifactRepository artifactRepository,
+                                            boolean executeProcessEnabled) {
+        this(objectMapper, skillCatalogFactory, planCommandService, artifactRepository, null,
+            executeProcessEnabled, CommandToolConfig.DEFAULT);
+    }
+
+    /** Explicit programmatic sandbox configuration; never substitutes a host execution path. */
+    public DefaultHarnessToolRuntimeFactory(ObjectMapper objectMapper,
+                                            HarnessSkillCatalogFactory skillCatalogFactory,
+                                            HarnessPlanCommandService planCommandService,
+                                            HarnessArtifactRepository artifactRepository,
+                                            boolean executeProcessEnabled,
+                                            CommandToolConfig commandToolConfig) {
+        this(objectMapper, skillCatalogFactory, planCommandService, artifactRepository, null,
+            executeProcessEnabled, commandToolConfig);
     }
 
     /** Programmatic construction is fail-closed unless command execution is explicitly enabled. */
@@ -69,11 +131,16 @@ public class DefaultHarnessToolRuntimeFactory implements HarnessToolRuntimeFacto
                                             HarnessSkillCatalogFactory skillCatalogFactory,
                                             HarnessPlanCommandService planCommandService,
                                             HarnessArtifactRepository artifactRepository) {
-        this(objectMapper, skillCatalogFactory, planCommandService, artifactRepository, false);
+        this(objectMapper, skillCatalogFactory, planCommandService, artifactRepository, null, false,
+            CommandToolConfig.DEFAULT);
     }
 
     @Override
     public HarnessToolRuntime create(HarnessSessionState session, HarnessRunState run) {
+        // 外部验收模式：编程智能体不暴露 execute_process/run_inline_probe 等测试/进程工具，
+        // 验证由独立外部验收者完成。默认 AGENT 模式保持原有安全、计划、审批、验证逻辑。
+        boolean externalVerification = session != null
+            && session.verificationMode() == HarnessVerificationMode.EXTERNAL;
         Path workspace = Path.of(session.workspace());
         RunContext context = new RunContext(run.runId(), workspace, BuiltinToolLimits.DEFAULT, true);
         BuiltinCodingTools codingTools = new BuiltinCodingTools(context);
@@ -85,6 +152,12 @@ public class DefaultHarnessToolRuntimeFactory implements HarnessToolRuntimeFacto
         HarnessToolRegistry.Builder registryBuilder = HarnessToolRegistry.builder(objectMapper)
             .registerAnnotatedSubset(codingTools, codingDescriptorsFor(run, context))
             .registerAnnotatedSubset(artifactTools, artifactDescriptorsFor(run));
+        if (analysisDelegate != null && (run.executionPlan() == null
+            || run.executionPlan().mode() == ExecutionMode.PLAN
+            || run.executionPlan().mode() == ExecutionMode.VERIFY)) {
+            registryBuilder.registerAnnotated(new HarnessDelegateTools(analysisDelegate, session, run),
+                List.of(DELEGATE_DESCRIPTOR));
+        }
         if (run.executionPlan() == null
             || run.executionPlan().mode() == ExecutionMode.PLAN) {
             // Skills help discovery and planning. Once a plan is approved, repository truth and
@@ -97,10 +170,10 @@ public class DefaultHarnessToolRuntimeFactory implements HarnessToolRuntimeFacto
             registryBuilder.registerAnnotatedSubset(planTools, planDescriptors);
         }
         ExecutionMode mode = run.executionPlan() == null ? null : run.executionPlan().mode();
-        if (executeProcessEnabled
+        if (!externalVerification && executeProcessEnabled
             && (mode == null || mode == ExecutionMode.BUILD || mode == ExecutionMode.VERIFY)) {
             ExecuteProcessTool commandTool = new ExecuteProcessTool(context,
-                CommandToolConfig.DEFAULT);
+                commandToolConfig);
             if (mode == ExecutionMode.BUILD) {
                 registryBuilder.registerAnnotated(commandTool,
                     List.of(CommandToolDescriptors.executeProcess(commandTool.config())));

@@ -56,6 +56,10 @@ import java.util.regex.Pattern;
 @Slf4j
 public class HarnessPlanCommandService {
 
+    private static final int MAX_BOUNDED_PLAN_STEPS = 3;
+    private static final int ITERATIONS_RESERVED_FOR_VERIFICATION = 3;
+    private static final int MINIMUM_ITERATIONS_PER_PLAN_STEP = 4;
+
     private static final ObjectMapper EVIDENCE_JSON = new ObjectMapper()
         .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     private static final int EVIDENCE_SCAN_PAGE_SIZE = 1_000;
@@ -155,6 +159,13 @@ public class HarnessPlanCommandService {
         Set<String> forbidden = Set.copyOf(draft.forbiddenOperations());
 
         return mutate(owner, sessionId, runId, "plan.created", run -> {
+            int feasibleSteps = maxFeasiblePlanSteps(run.budget().maxIterations(),
+                run.iteration());
+            if (steps.size() > feasibleSteps) {
+                throw new IllegalArgumentException("Plan has " + steps.size()
+                    + " steps but the bounded run can complete at most " + feasibleSteps
+                    + "; consolidate related files and checks into coarse end-to-end steps");
+            }
             requirePinnedProcessCommands(run.originalRequirement(), criteria);
             PlanAggregate current = run.executionPlan();
             if (current == null) {
@@ -175,6 +186,22 @@ public class HarnessPlanCommandService {
         }, "Plan draft was recorded according to the session approval policy");
     }
 
+    /**
+     * Real provider traces show that a coarse step needs an action turn plus enough room for one
+     * truncation/recovery or diagnose/recheck cycle. Reserve three further turns for VERIFY and
+     * final verdict only for legacy runs with an explicit iteration budget. Unbounded tasks
+     * must not inherit this estimate as a hidden plan-size limit.
+     */
+    static int maxFeasiblePlanSteps(int maxIterations, int usedIterations) {
+        if (maxIterations == 0) {
+            return Integer.MAX_VALUE;
+        }
+        int remaining = Math.max(0, maxIterations - usedIterations
+            - ITERATIONS_RESERVED_FOR_VERIFICATION);
+        int byBudget = Math.max(1, remaining / MINIMUM_ITERATIONS_PER_PLAN_STEP);
+        return Math.min(MAX_BOUNDED_PLAN_STEPS, byBudget);
+    }
+
     private PlanAggregate applyApprovalPolicy(HarnessOwner owner, String sessionId,
                                               PlanAggregate plan) {
         HarnessApprovalPolicy approvalPolicy = store.findSession(owner, sessionId)
@@ -185,8 +212,23 @@ public class HarnessPlanCommandService {
             return plan;
         }
         String idempotencyKey = "automatic-plan-approval-" + plan.taskId() + "-" + plan.revision();
-        return plan.approveFromControlPlane(new PlanApprovalCommand(plan.taskId(),
+        PlanAggregate approved = plan.approveFromControlPlane(new PlanApprovalCommand(plan.taskId(),
             plan.revision(), plan.canonicalHash(), idempotencyKey), now());
+        // NEVER means the control plane already supplied approval. Starting the first ready step
+        // in the same durable mutation removes a model-only transition turn without weakening the
+        // approval boundary or allowing any workspace mutation before approval.
+        return startFirstReadyApprovedStep(approved, now());
+    }
+
+    static PlanAggregate startFirstReadyApprovedStep(PlanAggregate approved, long now) {
+        if (approved == null || approved.mode() != ExecutionMode.BUILD
+            || approved.reviewState() != PlanReviewState.APPROVED
+            || approved.inProgressStep().isPresent()) {
+            return approved;
+        }
+        PlanTaskStep firstReady = approved.readySteps().stream().findFirst().orElse(null);
+        return firstReady == null ? approved
+            : approved.startStep(firstReady.stepId(), approved.revision(), now);
     }
 
     private String normalizeCriterionEvidenceKey(PlanCriterionInput input) {
@@ -272,9 +314,11 @@ public class HarnessPlanCommandService {
             } else if (command.action() == PlanStepAction.COMPLETE) {
                 next = completeStepWithDiagnostics(plan, command);
             } else if (command.action() == PlanStepAction.BLOCK) {
+                requireFailedCriterionEvidence(plan, command);
                 next = plan.blockStep(command.stepId(), command.reason(),
                     command.expectedRevision(), now());
             } else if (command.action() == PlanStepAction.FAIL) {
+                requireFailedCriterionEvidence(plan, command);
                 next = plan.failStep(command.stepId(), command.reason(),
                     command.expectedRevision(), now());
             } else if (command.action() == PlanStepAction.RETRY) {
@@ -285,6 +329,30 @@ public class HarnessPlanCommandService {
             }
             return next == plan ? run : run.withExecutionPlan(next, now());
         }, command.action() + " step " + command.stepId());
+    }
+
+    static void requireFailedCriterionEvidence(PlanAggregate plan, PlanStepCommand command) {
+        PlanTaskStep step = plan.steps().stream()
+            .filter(candidate -> candidate.stepId().equals(command.stepId()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Unknown plan step: " + command.stepId()));
+        Set<String> referencedIds = Set.copyOf(command.evidenceIds());
+        Set<String> criterionIds = Set.copyOf(step.acceptanceCriterionIds());
+        Set<String> expectedKeys = plan.contract().criteria().stream()
+            .filter(criterion -> criterionIds.contains(criterion.id()))
+            .map(criterion -> criterion.type() + "\u0000" + criterion.evidenceKey())
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        boolean supported = plan.evidence().stream()
+            .filter(evidence -> referencedIds.contains(evidence.evidenceId()))
+            .filter(evidence -> !evidence.successful())
+            .anyMatch(evidence -> expectedKeys.contains(
+                evidence.type() + "\u0000" + evidence.canonicalKey()));
+        if (!supported) {
+            throw new IllegalArgumentException(command.action()
+                + " requires referenced failed mechanical evidence matching this step; "
+                + "model prose is not blocker authority");
+        }
     }
 
     private PlanAggregate completeStepWithDiagnostics(PlanAggregate plan,

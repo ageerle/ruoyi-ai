@@ -54,8 +54,10 @@ public class BeanConfig {
         int processorsNum = Runtime.getRuntime().availableProcessors();
         log.info("mainExecutor,processorsNum:{}", processorsNum);
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(processorsNum * 2);
-        executor.setMaxPoolSize(100);
+        // 核心线程数不得超过最大线程数
+        int maxPoolSize = 100;
+        executor.setCorePoolSize(Math.min(processorsNum * 2, maxPoolSize));
+        executor.setMaxPoolSize(maxPoolSize);
         return executor;
     }
 

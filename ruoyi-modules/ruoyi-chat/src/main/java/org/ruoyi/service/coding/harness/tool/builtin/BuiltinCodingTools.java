@@ -2,6 +2,7 @@ package org.ruoyi.service.coding.harness.tool.builtin;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import org.ruoyi.common.process.ChildProcessSecretSanitizer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -56,7 +57,8 @@ public final class BuiltinCodingTools {
     private static final int MAX_GIT_CONTEXT_LINES = 20;
     private static final List<String> RIPGREP_IGNORES = List.of(
         "!**/.git/**", "!**/.hg/**", "!**/.svn/**", "!**/.idea/**", "!**/.gradle/**",
-        "!**/node_modules/**", "!**/target/**", "!**/build/**", "!**/dist/**", "!**/coverage/**"
+        "!**/.harness-deps/**", "!**/node_modules/**", "!**/target/**", "!**/build/**",
+        "!**/dist/**", "!**/coverage/**"
     );
 
     private final RunContext context;
@@ -150,9 +152,9 @@ public final class BuiltinCodingTools {
     @Tool(name = "read_source", value = {
         "Read one bounded UTF-8 source page as literal text rather than a JSON-encoded content field. " +
         "Prefer this for code containing backslashes, quotes, template strings, or escape sequences. " +
-        "The header includes the current SHA-256 required by mutation tools. The Harness retains " +
-        "durable line coverage: never request a range already read in the current mutation epoch; " +
-        "reuse that evidence or request only uncovered lines."
+        "The header includes the current SHA-256 required by mutation tools. Reuse unchanged " +
+        "source evidence where possible; coding tasks may re-read to refresh context or obtain " +
+        "the current file version before editing."
     })
     public String readSource(
         @P(name = "path", value = "Workspace-relative path, or an absolute path inside the lease", required = true)
@@ -307,7 +309,7 @@ public final class BuiltinCodingTools {
 
     @Tool(name = "write_file", value = {
         "Atomically create or replace a UTF-8 file inside the workspace lease. " +
-            "When the file exists, expectedSha256 from read_file is mandatory."
+            "When the file exists, expectedSha256 from the current read_source or read_file header is mandatory."
     })
     public FileMutationResult writeFile(
         @P(name = "path", value = "Workspace-relative path, or an absolute path inside the lease", required = true)
@@ -338,6 +340,7 @@ public final class BuiltinCodingTools {
 
     @Tool(name = "replace_text", value = {
         "Atomically replace exactly one literal text occurrence in an existing UTF-8 file. " +
+            "LF and CRLF line endings are equivalent when matching; existing file line endings are preserved. " +
             "Fails without side effects when the match is missing/non-unique or expectedSha256 is stale."
     })
     public FileMutationResult replaceText(
@@ -345,7 +348,8 @@ public final class BuiltinCodingTools {
         String path,
         @P(name = "oldText", value = "Literal text that must occur exactly once", required = true) String oldText,
         @P(name = "newText", value = "Replacement text", required = true) String newText,
-        @P(name = "expectedSha256", value = "Required current SHA-256 from read_file", required = true)
+        @P(name = "expectedSha256", value = "Required current SHA-256 from read_source or read_file",
+            required = true)
         String expectedSha256
     ) {
         if (oldText == null || oldText.isEmpty()) {
@@ -363,15 +367,22 @@ public final class BuiltinCodingTools {
                 throw new BuiltinToolException("BINARY_FILE", "replace_text only supports UTF-8 text files");
             }
             String original = decodeUtf8(existing.bytes(), guard.relative(target));
-            int first = original.indexOf(oldText);
+            String normalized = normalizeLineEndings(original);
+            String needle = normalizeLineEndings(oldText);
+            int match = normalized.indexOf(needle);
+            int first = originalOffset(original, match);
             if (first < 0) {
                 throw new BuiltinToolException("MATCH_NOT_FOUND", "oldText was not found");
             }
-            if (original.indexOf(oldText, first + 1) >= 0) {
+            if (normalized.indexOf(needle, match + 1) >= 0) {
                 throw new BuiltinToolException("MATCH_NOT_UNIQUE", "oldText occurs more than once");
             }
-            String replacement = original.substring(0, first) + newText
-                + original.substring(first + oldText.length());
+            int end = originalOffset(original, match + needle.length());
+            String matched = original.substring(first, end);
+            String lineEnding = preferredLineEnding(matched.isEmpty() || !matched.contains("\n")
+                && !matched.contains("\r") ? original : matched);
+            String replacement = original.substring(0, first)
+                + normalizeLineEndings(newText).replace("\n", lineEnding) + original.substring(end);
             byte[] newBytes = replacement.getBytes(StandardCharsets.UTF_8);
             enforceWriteLimit(newBytes);
             atomicReplace(target, newBytes, existing);
@@ -385,6 +396,34 @@ public final class BuiltinCodingTools {
                 false, "replaced one occurrence at line " + line + "; "
                     + existing.bytes().length + " -> " + newBytes.length + " bytes");
         });
+    }
+
+    private static String normalizeLineEndings(String value) {
+        return value.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
+    /** Map an LF-normalized match back to original bytes without rewriting surrounding text. */
+    private static int originalOffset(String original, int normalizedOffset) {
+        if (normalizedOffset < 0) {
+            return -1;
+        }
+        int offset = 0;
+        for (int count = 0; count < normalizedOffset; count++) {
+            if (original.charAt(offset++) == '\r' && offset < original.length()
+                && original.charAt(offset) == '\n') {
+                offset++;
+            }
+        }
+        return offset;
+    }
+
+    private static String preferredLineEnding(String value) {
+        int cr = value.indexOf('\r');
+        int lf = value.indexOf('\n');
+        if (cr >= 0 && (lf < 0 || cr < lf)) {
+            return cr + 1 < value.length() && value.charAt(cr + 1) == '\n' ? "\r\n" : "\r";
+        }
+        return "\n";
     }
 
     private FileListResult enumerate(String path, String glob, Integer requestedDepth, Integer requestedLimit) {
@@ -477,10 +516,10 @@ public final class BuiltinCodingTools {
 
         final Process process;
         try {
-            process = new ProcessBuilder(command)
+            ProcessBuilder builder = new ProcessBuilder(command)
                 .directory(guard.root().toFile())
-                .redirectErrorStream(true)
-                .start();
+                .redirectErrorStream(true);
+            process = ChildProcessSecretSanitizer.start(builder);
         } catch (IOException unavailable) {
             return null;
         }
@@ -764,13 +803,18 @@ public final class BuiltinCodingTools {
         }
         if (expectedSha256 == null || expectedSha256.isBlank()) {
             throw new BuiltinToolException("PRECONDITION_REQUIRED",
-                "expectedSha256 is required when a file already exists");
+                "expectedSha256 is required for existing file " + guard.relative(target)
+                    + ". No write occurred. Read this current file with read_file/read_source, "
+                    + "then copy its exact sha256 into the retry. Do not guess a hash or repeat this call unchanged.");
         }
         byte[] current = readBounded(target, limits.maxWriteBytes(), "FILE_TOO_LARGE");
         String actual = Hashing.sha256(current);
         if (!actual.equalsIgnoreCase(expectedSha256)) {
             throw new BuiltinToolException("HASH_CONFLICT",
-                "File changed since it was read; expected " + expectedSha256 + " but found " + actual);
+                "File changed since it was read: " + guard.relative(target) + "; expected "
+                    + expectedSha256 + " but found " + actual
+                    + ". No write occurred. Re-read the current file, preserve its changes, and retry "
+                    + "using the fresh sha256. Each successful write returns a new sha256.");
         }
         return new ExistingState(true, current, actual);
     }

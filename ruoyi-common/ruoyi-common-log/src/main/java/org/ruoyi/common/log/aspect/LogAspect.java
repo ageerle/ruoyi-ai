@@ -1,6 +1,5 @@
 package org.ruoyi.common.log.aspect;
 
-import cn.hutool.core.lang.Dict;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -22,6 +21,7 @@ import org.ruoyi.common.log.annotation.Log;
 import org.ruoyi.common.log.enums.BusinessStatus;
 import org.ruoyi.common.log.event.OperLogEvent;
 import org.ruoyi.common.satoken.utils.LoginHelper;
+import org.ruoyi.common.web.utils.SafeRequestLogUtils;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.http.HttpMethod;
 import org.springframework.validation.BindingResult;
@@ -42,7 +42,11 @@ public class LogAspect {
     /**
      * 排除敏感属性字段
      */
-    public static final String[] EXCLUDE_PROPERTIES = { "password", "oldPassword", "newPassword", "confirmPassword" };
+    public static final String[] EXCLUDE_PROPERTIES = {
+        "password", "oldPassword", "newPassword", "confirmPassword", "apiKey",
+        "clientSecret", "secret", "secretKey", "token", "tokenId", "accessToken",
+        "refreshToken", "authorization", "credential", "privateKey"
+    };
 
 
     /**
@@ -91,14 +95,15 @@ public class LogAspect {
             // 请求的地址
             String ip = ServletUtils.getClientIP();
             operLog.setOperIp(ip);
-            operLog.setOperUrl(StringUtils.substring(ServletUtils.getRequest().getRequestURI(), 0, 255));
+            operLog.setOperUrl(StringUtils.substring(SafeRequestLogUtils.sanitizeUri(
+                ServletUtils.getRequest().getRequestURI()), 0, 255));
             LoginUser loginUser = LoginHelper.getLoginUser();
             operLog.setOperName(loginUser.getUsername());
             operLog.setDeptName(loginUser.getDeptName());
 
             if (e != null) {
                 operLog.setStatus(BusinessStatus.FAIL.ordinal());
-                operLog.setErrorMsg(StringUtils.substring(e.getMessage(), 0, 3800));
+                operLog.setErrorMsg("Request failed: " + e.getClass().getSimpleName());
             }
             // 设置方法名称
             String className = joinPoint.getTarget().getClass().getName();
@@ -116,7 +121,7 @@ public class LogAspect {
             SpringUtils.context().publishEvent(operLog);
         } catch (Exception exp) {
             // 记录本地异常日志
-            log.error("异常信息:{}", exp.getMessage());
+            log.error("Operation audit failed: {}", exp.getClass().getSimpleName());
         } finally {
             KEY_CACHE.remove();
         }
@@ -143,7 +148,9 @@ public class LogAspect {
         }
         // 是否需要保存response，参数和值
         if (log.isSaveResponseData() && ObjectUtil.isNotNull(jsonResult)) {
-            operLog.setJsonResult(StringUtils.substring(JsonUtils.toJsonString(jsonResult), 0, 3800));
+            String responseJson = SensitiveLogSanitizer.sanitizeJson(
+                JsonUtils.toJsonString(jsonResult), log.excludeParamNames());
+            operLog.setJsonResult(StringUtils.substring(responseJson, 0, 3800));
         }
     }
 
@@ -160,9 +167,9 @@ public class LogAspect {
             String params = argsArrayToString(joinPoint.getArgs(), excludeParamNames);
             operLog.setOperParam(StringUtils.substring(params, 0, 3800));
         } else {
-            MapUtil.removeAny(paramsMap, EXCLUDE_PROPERTIES);
-            MapUtil.removeAny(paramsMap, excludeParamNames);
-            operLog.setOperParam(StringUtils.substring(JsonUtils.toJsonString(paramsMap), 0, 3800));
+            String params = SensitiveLogSanitizer.sanitizeJson(
+                JsonUtils.toJsonString(paramsMap), ArrayUtil.addAll(excludeParamNames, EXCLUDE_PROPERTIES));
+            operLog.setOperParam(StringUtils.substring(params, 0, 3800));
         }
     }
 
@@ -177,26 +184,7 @@ public class LogAspect {
         String[] exclude = ArrayUtil.addAll(excludeParamNames, EXCLUDE_PROPERTIES);
         for (Object o : paramsArray) {
             if (ObjectUtil.isNotNull(o) && !isFilterObject(o)) {
-                String str = "";
-                if (o instanceof List<?> list) {
-                    List<Dict> list1 = new ArrayList<>();
-                    for (Object obj : list) {
-                        String str1 = JsonUtils.toJsonString(obj);
-                        Dict dict = JsonUtils.parseMap(str1);
-                        if (MapUtil.isNotEmpty(dict)) {
-                            MapUtil.removeAny(dict, exclude);
-                            list1.add(dict);
-                        }
-                    }
-                    str = JsonUtils.toJsonString(list1);
-                } else {
-                    str = JsonUtils.toJsonString(o);
-                    Dict dict = JsonUtils.parseMap(str);
-                    if (MapUtil.isNotEmpty(dict)) {
-                        MapUtil.removeAny(dict, exclude);
-                        str = JsonUtils.toJsonString(dict);
-                    }
-                }
+                String str = SensitiveLogSanitizer.sanitizeJson(JsonUtils.toJsonString(o), exclude);
                 params.add(str);
             }
         }

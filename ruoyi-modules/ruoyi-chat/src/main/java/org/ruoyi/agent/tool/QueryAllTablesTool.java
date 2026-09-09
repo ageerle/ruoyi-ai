@@ -20,7 +20,7 @@ import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 public class QueryAllTablesTool implements BuiltinToolProvider {
 
     // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
-    private TableSchemaManager getTableSchemaManager() {
+    TableSchemaManager getTableSchemaManager() {
         return SpringUtils.getBean(TableSchemaManager.class);
     }
 
@@ -59,8 +59,9 @@ public class QueryAllTablesTool implements BuiltinToolProvider {
             return result.toString();
 
         } catch (Exception e) {
-            log.error("Error retrieving tables from cache", e);
-            return "Error: " + e.getMessage();
+            log.error("sql_tool operation=QUERY_ALL_TABLES status=FAILED errorType={}",
+                e.getClass().getName());
+            return "Error: Database table metadata query failed";
         }
     }
 

@@ -1,6 +1,7 @@
 package org.ruoyi.service.shortdrama.composition;
 
 import org.springframework.stereotype.Component;
+import org.ruoyi.common.process.ChildProcessSecretSanitizer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,7 +39,7 @@ public class FfmpegProcessRunner {
             ProcessBuilder builder = new ProcessBuilder(List.copyOf(command));
             builder.redirectErrorStream(true);
             builder.redirectOutput(absoluteLog.toFile());
-            process = builder.start();
+            process = ChildProcessSecretSanitizer.start(builder);
 
             if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 stop(process);

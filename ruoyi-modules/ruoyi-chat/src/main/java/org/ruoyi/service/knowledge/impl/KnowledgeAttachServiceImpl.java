@@ -257,7 +257,6 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             storeEmbeddingBo.setChunkList(chunkList);
             storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModel());
             storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
-            storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
             storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
             try {
                 // 写入新向量前，先按 docId 清理该文档的旧向量：

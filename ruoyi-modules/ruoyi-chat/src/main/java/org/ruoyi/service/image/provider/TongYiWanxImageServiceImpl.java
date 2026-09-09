@@ -60,7 +60,7 @@ public class TongYiWanxImageServiceImpl extends AbstractImageGenerationService {
     protected Object buildImageModel(ChatModelVo chatModelVo) {
         return ImageSynthesisParam.builder()
             .prompt("")
-            .apiKey(chatModelVo.getApiKey())
+            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
             .model(chatModelVo.getModelName())
             .n(IMAGE_DEFAULT_SIZE)
             .build();

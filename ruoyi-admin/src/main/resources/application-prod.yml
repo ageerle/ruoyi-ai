@@ -47,7 +47,9 @@ spring:
     # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
     dynamic:
       # 性能分析插件(有性能损耗 不建议生产环境使用)
+
       # Batch-3（用户授权手动合并）：prod 显式 false，对齐父基线安全默认（SQL 日志不再落盘，减少性能损耗与敏感 SQL 暴露）
+
       p6spy: false
       # 设置默认的数据源或者数据源组,默认值即为 master
       primary: master

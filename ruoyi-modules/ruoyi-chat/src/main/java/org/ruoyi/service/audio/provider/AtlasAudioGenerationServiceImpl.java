@@ -75,7 +75,7 @@ public class AtlasAudioGenerationServiceImpl extends AbstractAudioGenerationServ
 
         Request request = new Request.Builder()
             .url(AtlasMediaSupport.endpoint(model.getApiHost(), "/model/generateAudio"))
-            .addHeader("Authorization", "Bearer " + model.getApiKey())
+            .addHeader("Authorization", "Bearer " + model.resolveApiKeyForConfiguredEndpoint(getProviderName()))
             .addHeader("Content-Type", "application/json")
             .post(RequestBody.create(payload.toString(), AtlasMediaSupport.JSON))
             .build();

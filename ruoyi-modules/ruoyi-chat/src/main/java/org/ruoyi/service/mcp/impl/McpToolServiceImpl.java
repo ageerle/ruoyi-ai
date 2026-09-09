@@ -49,7 +49,7 @@ public class McpToolServiceImpl implements IMcpToolService {
 
     @Override
     public McpToolListResult listTools(String keyword, String type, String status) {
-        LambdaQueryWrapper<McpTool> wrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<McpTool> wrapper = selectPublicColumns(new LambdaQueryWrapper<>());
 
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(McpTool::getName, keyword)
@@ -71,6 +71,14 @@ public class McpToolServiceImpl implements IMcpToolService {
     }
 
     @Override
+    public McpToolListResult listEnabledOptions() {
+        LambdaQueryWrapper<McpTool> wrapper = selectPublicColumns(new LambdaQueryWrapper<>());
+        wrapper.eq(McpTool::getStatus, McpToolStatus.ENABLED.getValue())
+            .orderByAsc(McpTool::getName);
+        return McpToolListResult.of(baseMapper.selectList(wrapper));
+    }
+
+    @Override
     public List<McpToolVo> queryList(McpToolBo bo) {
         LambdaQueryWrapper<McpTool> wrapper = buildQueryWrapper(bo);
         return baseMapper.selectVoList(wrapper);
@@ -78,12 +86,14 @@ public class McpToolServiceImpl implements IMcpToolService {
 
     @Override
     public McpToolVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        return baseMapper.selectVoOne(selectPublicColumns(new LambdaQueryWrapper<McpTool>())
+            .eq(McpTool::getId, id));
     }
 
     @Override
     @Transactional
     public String insert(McpToolBo bo) {
+        rejectBuiltinType(bo.getType());
         McpTool tool = MapstructUtils.convert(bo, McpTool.class);
         if (tool.getStatus() == null) {
             tool.setStatus(McpToolStatus.ENABLED.getValue());
@@ -99,17 +109,41 @@ public class McpToolServiceImpl implements IMcpToolService {
     @Transactional
     public String update(McpToolBo bo) {
         McpTool existingTool = baseMapper.selectById(bo.getId());
-        if (existingTool != null && BuiltinToolRegistry.TYPE_BUILTIN.equals(existingTool.getType())) {
+        if (existingTool == null) {
+            throw new ServiceException("工具不存在");
+        }
+        if (isBuiltinType(existingTool.getType())) {
             throw new ServiceException("内置工具不允许编辑");
         }
+        rejectBuiltinType(bo.getType());
 
         McpTool tool = MapstructUtils.convert(bo, McpTool.class);
+        applyWriteOnlyConfigPolicy(bo, tool);
         baseMapper.updateById(tool);
 
         // 如果工具正在使用中，需要刷新连接
         langChain4jMcpToolProviderService.refreshClient(bo.getId());
 
         return String.valueOf(tool.getId());
+    }
+
+    static void applyWriteOnlyConfigPolicy(McpToolBo source, McpTool update) {
+        if (!StringUtils.hasText(source.getConfigJson())) {
+            // Connection configuration is write-only. A blank edit preserves the stored value
+            // instead of erasing it merely because the detail response intentionally omitted it.
+            update.setConfigJson(null);
+        }
+    }
+
+    private static void rejectBuiltinType(String type) {
+        if (isBuiltinType(type)) {
+            throw new ServiceException("不允许创建或转换为内置工具");
+        }
+    }
+
+    private static boolean isBuiltinType(String type) {
+        return StringUtils.hasText(type)
+            && BuiltinToolRegistry.TYPE_BUILTIN.equalsIgnoreCase(type.trim());
     }
 
     @Override
@@ -119,7 +153,7 @@ public class McpToolServiceImpl implements IMcpToolService {
         List<Long> deletableIds = ids.stream()
             .filter(id -> {
                 McpTool tool = baseMapper.selectById(id);
-                return tool == null || !BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getType());
+                return tool == null || !isBuiltinType(tool.getType());
             })
             .toList();
 
@@ -135,6 +169,14 @@ public class McpToolServiceImpl implements IMcpToolService {
     @Override
     @Transactional
     public void updateStatus(Long id, String status) {
+        McpTool existingTool = baseMapper.selectById(id);
+        if (existingTool == null) {
+            throw new ServiceException("工具不存在");
+        }
+        if (isBuiltinType(existingTool.getType())) {
+            throw new ServiceException("内置工具不允许修改状态");
+        }
+
         McpTool tool = new McpTool();
         tool.setId(id);
         tool.setStatus(status);
@@ -152,7 +194,7 @@ public class McpToolServiceImpl implements IMcpToolService {
         }
 
         // 根据工具类型选择不同的测试逻辑
-        if (BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getType())) {
+        if (isBuiltinType(tool.getType())) {
             // 内置工具 - 直接验证是否在注册表中
             return testBuiltinTool(tool);
         } else {
@@ -183,8 +225,9 @@ public class McpToolServiceImpl implements IMcpToolService {
                 );
             }
         } catch (Exception e) {
-            log.error("测试内置工具失败: {} - {}", tool.getName(), e.getMessage());
-            return McpToolTestResult.fail("测试失败: " + e.getMessage());
+            log.error("mcp_tool_test toolType=BUILTIN status=FAILED errorType={}",
+                e.getClass().getName());
+            return McpToolTestResult.fail("测试失败");
         }
     }
 
@@ -209,18 +252,26 @@ public class McpToolServiceImpl implements IMcpToolService {
                 );
             }
         } catch (Exception e) {
-            log.error("测试MCP工具失败: {} - {}", tool.getName(), e.getMessage());
-            return McpToolTestResult.fail("测试失败: " + e.getMessage());
+            log.error("mcp_tool_test toolType=MCP status=FAILED errorType={}",
+                e.getClass().getName());
+            return McpToolTestResult.fail("测试失败");
         }
     }
 
     private LambdaQueryWrapper<McpTool> buildQueryWrapper(McpToolBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<McpTool> wrapper = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<McpTool> wrapper = selectPublicColumns(Wrappers.lambdaQuery());
         wrapper.eq(StringUtils.hasText(bo.getType()), McpTool::getType, bo.getType())
             .eq(StringUtils.hasText(bo.getStatus()), McpTool::getStatus, bo.getStatus())
             .like(StringUtils.hasText(bo.getName()), McpTool::getName, bo.getName())
             .like(StringUtils.hasText(bo.getDescription()), McpTool::getDescription, bo.getDescription());
         return wrapper;
+    }
+
+    static LambdaQueryWrapper<McpTool> selectPublicColumns(
+        LambdaQueryWrapper<McpTool> wrapper) {
+        return wrapper.select(McpTool::getId, McpTool::getName, McpTool::getDescription,
+            McpTool::getType, McpTool::getStatus, McpTool::getCreateTime,
+            McpTool::getUpdateTime);
     }
 }

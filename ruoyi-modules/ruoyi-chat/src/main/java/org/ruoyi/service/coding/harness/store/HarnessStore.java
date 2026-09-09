@@ -18,6 +18,10 @@ public interface HarnessStore {
 
     List<HarnessSessionState> listSessions(HarnessOwner owner);
 
+    HarnessSessionState setSessionPinned(HarnessOwner owner, String sessionId, boolean pinned);
+
+    HarnessSessionState setSessionDeleted(HarnessOwner owner, String sessionId, boolean deleted);
+
     HarnessSessionState saveSession(HarnessOwner owner, HarnessSessionState session, long expectedRevision);
 
     HarnessRunState createRun(HarnessOwner owner, HarnessRunState run);
@@ -27,6 +31,15 @@ public interface HarnessStore {
     List<HarnessRunState> listRuns(HarnessOwner owner, String sessionId);
 
     HarnessRunState saveRun(HarnessOwner owner, HarnessRunState run, long expectedRevision);
+
+    /**
+     * Saves a run only if both its revision and the session message-ledger high-watermark still
+     * match the caller's observation. Implementations must validate both conditions and persist
+     * the snapshot inside the same session-level critical section used by message append.
+     */
+    HarnessRunState saveRunIfMessageLedgerUnchanged(HarnessOwner owner, HarnessRunState run,
+                                                    long expectedRevision,
+                                                    long expectedMessageSequence);
 
     /**
      * Internal, read-only enumeration for process startup recovery. Implementations must return a

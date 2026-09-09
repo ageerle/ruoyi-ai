@@ -26,7 +26,11 @@ public class WebSocketTopicListener implements ApplicationRunner, Ordered {
     public void run(ApplicationArguments args) throws Exception {
         // 订阅WebSocket消息
         WebSocketUtils.subscribeMessage((message) -> {
-            log.info("WebSocket主题订阅收到消息session keys={} message={}", message.getSessionKeys(), message.getMessage());
+            boolean broadcast = CollUtil.isEmpty(message.getSessionKeys());
+            int recipientCount = broadcast ? WebSocketSessionHolder.getSessionsAll().size()
+                : message.getSessionKeys().size();
+            log.info("websocket_topic_received broadcast={} recipientCount={} payloadLength={}",
+                broadcast, recipientCount, message.getMessage() == null ? 0 : message.getMessage().length());
             // 如果key不为空就按照key发消息 如果为空就群发
             if (CollUtil.isNotEmpty(message.getSessionKeys())) {
                 message.getSessionKeys().forEach(key -> {
@@ -40,7 +44,7 @@ public class WebSocketTopicListener implements ApplicationRunner, Ordered {
                 });
             }
         });
-        log.info("初始化WebSocket主题订阅监听器成功");
+        log.info("websocket_topic_listener_initialized status=SUCCESS");
     }
 
     @Override

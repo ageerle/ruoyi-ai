@@ -32,7 +32,7 @@ public class OpenAIServiceImpl implements AbstractChatService {
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo,ChatRequest chatRequest) {
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(chatModelVo.getApiHost())
-                .apiKey(chatModelVo.getApiKey())
+                .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
                 .modelName(chatModelVo.getModelName())
                 .timeout(Duration.ofMinutes(30))
                 .listeners(List.of(new MyChatModelListener()))

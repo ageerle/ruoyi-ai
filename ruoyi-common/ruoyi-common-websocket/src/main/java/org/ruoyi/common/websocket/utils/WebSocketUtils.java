@@ -69,8 +69,8 @@ public class WebSocketUtils {
             broadcastMessage.setMessage(webSocketMessage.getMessage());
             broadcastMessage.setSessionKeys(unsentSessionKeys);
             RedisUtils.publish(WEB_SOCKET_TOPIC, broadcastMessage, consumer -> {
-                log.info(" WebSocket发送主题订阅消息topic:{} session keys:{} message:{}",
-                    WEB_SOCKET_TOPIC, unsentSessionKeys, webSocketMessage.getMessage());
+                log.info("websocket_publish topic={} broadcast=false recipientCount={} payloadLength={}",
+                    WEB_SOCKET_TOPIC, unsentSessionKeys.size(), payloadLength(webSocketMessage.getMessage()));
             });
         }
     }
@@ -84,7 +84,8 @@ public class WebSocketUtils {
         WebSocketMessageDto broadcastMessage = new WebSocketMessageDto();
         broadcastMessage.setMessage(message);
         RedisUtils.publish(WEB_SOCKET_TOPIC, broadcastMessage, consumer -> {
-            log.info("WebSocket发送主题订阅消息topic:{} message:{}", WEB_SOCKET_TOPIC, message);
+            log.info("websocket_publish topic={} broadcast=true recipientCount=all payloadLength={}",
+                WEB_SOCKET_TOPIC, payloadLength(message));
         });
     }
 
@@ -120,8 +121,14 @@ public class WebSocketUtils {
             try {
                 session.sendMessage(message);
             } catch (IOException e) {
-                log.error("[send] session({}) 发送消息({}) 异常", session, message, e);
+                log.error("websocket_send_failed sessionId={} payloadType={} payloadLength={} exceptionType={}",
+                    session.getId(), message.getClass().getSimpleName(), message.getPayloadLength(),
+                    e.getClass().getName());
             }
         }
+    }
+
+    private static int payloadLength(String message) {
+        return message == null ? 0 : message.length();
     }
 }

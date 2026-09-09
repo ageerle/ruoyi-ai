@@ -156,6 +156,21 @@ public final class ArtifactStore {
         return verifiedSlice(target, ref.hash(), offset, length);
     }
 
+    /** Reads and verifies a complete small object for provider multimodal input. */
+    public byte[] readAll(ArtifactScope scope, String artifactId, int maximumBytes) {
+        Objects.requireNonNull(scope, "scope");
+        if (maximumBytes < 1 || maximumBytes > maxInputBytes) {
+            throw new IllegalArgumentException("Invalid complete artifact read limit");
+        }
+        String hash = requireHash(artifactId);
+        Path target = objectPath(scope, hash, false);
+        BasicFileAttributes attributes = validateRegularFile(target, hash);
+        if (attributes.size() > maximumBytes || attributes.size() > Integer.MAX_VALUE) {
+            throw new ArtifactLimitExceededException("Artifact exceeds the complete read limit");
+        }
+        return scan(target, hash, 0, Math.toIntExact(attributes.size()), false).slice();
+    }
+
     /** Performs a full stored-byte SHA-256 verification. */
     public boolean verify(ArtifactScope scope, String artifactId) {
         Objects.requireNonNull(scope, "scope");

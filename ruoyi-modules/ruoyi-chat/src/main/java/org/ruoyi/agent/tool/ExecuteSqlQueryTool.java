@@ -8,10 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 import javax.sql.DataSource;
 
@@ -34,8 +31,12 @@ import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 public class ExecuteSqlQueryTool implements BuiltinToolProvider {
 
     // 使用延迟初始化，避免在构造函数中调用 SpringUtils.getBean()
-    private DataSource getDataSource() {
+    DataSource getDataSource() {
         return SpringUtils.getBean(DataSource.class);
+    }
+
+    TableSchemaManager getTableSchemaManager() {
+        return SpringUtils.getBean(TableSchemaManager.class);
     }
 
     /**
@@ -45,101 +46,87 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
      * @param sql 要执行的 SELECT SQL 语句，例如：SELECT * FROM sys_user
      * @return 包含查询结果的字符串
      */
-    @Tool("Execute a SELECT SQL query and return the results. Example: SELECT * FROM sys_user")
+    @Tool("Execute one read-only SELECT on allowed tables. Returns a Markdown table (at most 10 rows and 8 columns), not JSON. Aggregate and LIMIT in SQL; use explicit column aliases. Never infer omitted rows.")
     public String executeSql(String sql) {
-        // 2. 手动推入数据源上下文
-//        DynamicDataSourceContextHolder.push("agent");
         if (sql == null || sql.trim().isEmpty()) {
             return "Error: SQL query cannot be empty";
         }
 
         // 只允许执行 SELECT 查询，防止恶意操作
-        String upperSql = sql.trim().toUpperCase();
+        String upperSql = sql.trim().toUpperCase(Locale.ROOT);
         if (!upperSql.startsWith("SELECT")) {
             return "Error: Only SELECT queries are allowed for security reasons";
         }
 
-        // 校验表白名单：未配置表时直接拒绝，已配置则校验 SQL 中引用的表
-        TableSchemaManager schemaManager = SpringUtils.getBean(TableSchemaManager.class);
-        List<String> allowedTables = schemaManager.getAllowedTableNames();
-        if (allowedTables.isEmpty()) {
-            return "Error: 当前未配置可查询的数据库表，无法执行任何SQL查询。请联系管理员配置 AGENT_ALLOWED_TABLES";
-        }
-        Set<String> allowedSet = allowedTables.stream()
-                .map(String::toLowerCase)
-                .collect(Collectors.toSet());
-        Set<String> referencedTables = extractTableNames(upperSql);
-        for (String table : referencedTables) {
-            if (!allowedSet.contains(table.toLowerCase())) {
-                return "Error: 表 " + table + " 不在允许查询的表列表中。允许查询的表: " + String.join(", ", allowedTables);
-            }
-        }
-
+        boolean routed = false;
         try {
+            // 校验表白名单：未配置表时直接拒绝，已配置则校验 SQL 中引用的表
+            TableSchemaManager schemaManager = getTableSchemaManager();
+            List<String> allowedTables = schemaManager.getAllowedTableNames();
+            if (allowedTables.isEmpty()) {
+                return "Error: 当前未配置可查询的数据库表，无法执行任何SQL查询。请联系管理员配置 AGENT_ALLOWED_TABLES";
+            }
+            try {
+                AgentSqlValidator.validate(sql, allowedTables);
+            } catch (IllegalArgumentException e) {
+                return e.getMessage();
+            }
+            DynamicDataSourceContextHolder.push("agent");
+            routed = true;
             DataSource dataSource = getDataSource();
             if (dataSource == null) {
                 return "Error: Database datasource not configured";
             }
 
             try (Connection connection = dataSource.getConnection()) {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                     ResultSet resultSet = preparedStatement.executeQuery()) {
+                try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                    preparedStatement.setQueryTimeout(30);
+                    preparedStatement.setMaxRows(1001);
+                    try (ResultSet resultSet = preparedStatement.executeQuery()) {
 
-                    ResultSetMetaData metaData = resultSet.getMetaData();
+                        ResultSetMetaData metaData = resultSet.getMetaData();
 
-                    List<Map<String, Object>> results = new ArrayList<>();
-                    int columnCount = metaData.getColumnCount();
+                        List<Map<String, Object>> results = new ArrayList<>();
+                        int columnCount = metaData.getColumnCount();
 
-                    // 获取列名
-                    List<String> columnNames = new ArrayList<>();
-                    for (int i = 1; i <= columnCount; i++) {
-                        columnNames.add(metaData.getColumnName(i));
-                    }
-
-                    // 获取数据行，限制最多1000行以防止内存溢出
-                    int maxRows = 1000;
-                    while (resultSet.next() && results.size() < maxRows) {
-                        Map<String, Object> row = new LinkedHashMap<>();
+                        // 获取列名
+                        List<String> columnNames = new ArrayList<>();
                         for (int i = 1; i <= columnCount; i++) {
-                            row.put(columnNames.get(i - 1), resultSet.getObject(i));
+                            columnNames.add(metaData.getColumnLabel(i));
                         }
-                        results.add(row);
-                    }
 
-                    return formatResults(results, columnNames);
+                        // 获取数据行，限制最多1000行以防止内存溢出
+                        int maxRows = 1000;
+                        while (results.size() < maxRows && resultSet.next()) {
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            for (int i = 1; i <= columnCount; i++) {
+                                row.put(columnNames.get(i - 1), resultSet.getObject(i));
+                            }
+                            results.add(row);
+                        }
+
+                        boolean truncated = results.size() == maxRows && resultSet.next();
+                        return formatResults(results, columnNames, truncated);
+                    }
                 }
             }
         } catch (Exception e) {
-            log.error("Error executing SQL: {}", sql, e);
-            // 3. 必须在 finally 中清除上下文，防止污染其他请求
-            DynamicDataSourceContextHolder.clear();
-            return "Error: " + e.getMessage();
+            log.error("sql_tool operation=EXECUTE_SELECT status=FAILED errorType={}",
+                e.getClass().getName());
+            return "Error: Database query failed";
         } finally {
-            // 3. 必须在 finally 中清除上下文，防止污染其他请求
-            DynamicDataSourceContextHolder.clear();
+            // Restore the caller's route instead of clearing its entire datasource stack.
+            if (routed) {
+                DynamicDataSourceContextHolder.poll();
+            }
         }
-    }
-
-    /**
-     * 从 SQL 中提取引用的表名（FROM / JOIN 后的标识符）
-     * 覆盖 FROM t1, t2 / FROM t1 JOIN t2 / FROM `t1` 等常见写法
-     */
-    private Set<String> extractTableNames(String upperSql) {
-        Set<String> tables = new java.util.HashSet<>();
-        // 匹配 FROM 或 JOIN 后面的表名（支持反引号包裹）
-        Pattern pattern = Pattern.compile("(?:FROM|JOIN)\\s+`?([A-Z0-9_]+)`?", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(upperSql);
-        while (matcher.find()) {
-            tables.add(matcher.group(1));
-        }
-        return tables;
     }
 
     /**
      * 格式化查询结果
      * 返回清晰的表格格式，展示关键数据
      */
-    private String formatResults(List<Map<String, Object>> results, List<String> columnNames) {
+    private String formatResults(List<Map<String, Object>> results, List<String> columnNames, boolean truncated) {
         if (results.isEmpty()) {
             return "Query executed successfully, but no results returned";
         }
@@ -179,12 +166,16 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
         }
 
         // 统计信息
-        result.append("\n").append("Total: ").append(results.size()).append(" rows");
+        result.append("\n").append(truncated ? "Read at least: " : "Total: ")
+            .append(results.size()).append(" rows");
         if (displayRows < results.size()) {
             result.append(" (displayed ").append(displayRows).append(" rows)");
         }
         if (displayCols < columnNames.size()) {
             result.append("\nColumns: ").append(displayCols).append(" / ").append(columnNames.size());
+        }
+        if (truncated || displayRows < results.size() || displayCols < columnNames.size()) {
+            result.append("\nResult truncated. Aggregate/filter in SQL before charting; do not infer omitted data.");
         }
 
         log.info("Successfully executed SQL query, returned {} rows", results.size());
@@ -195,12 +186,7 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
      * 格式化列名，使其更易读
      */
     private String formatColumnName(String columnName) {
-        // 将下划线替换为空格，首字母大写
-        String formatted = columnName.replace("_", " ");
-        if (formatted.length() > 15) {
-            return formatted.substring(0, 12) + "...";
-        }
-        return formatted;
+        return escapeCell(columnName);
     }
 
     /**
@@ -213,9 +199,13 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
         String str = value.toString();
         // 限制列宽以保持表格整洁，长文本截断
         if (str.length() > 20) {
-            return str.substring(0, 17) + "...";
+            return escapeCell(str.substring(0, 17) + "...");
         }
-        return str;
+        return escapeCell(str);
+    }
+
+    private String escapeCell(String text) {
+        return text.replace("|", "\\|").replace("\r", " ").replace("\n", " ");
     }
 
     @Override
@@ -230,6 +220,6 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
 
     @Override
     public String getDescription() {
-        return "Execute a SELECT SQL query and return the results. Example: SELECT * FROM sys_user";
+        return "Execute a read-only SELECT on allowed tables and return a bounded Markdown table";
     }
 }

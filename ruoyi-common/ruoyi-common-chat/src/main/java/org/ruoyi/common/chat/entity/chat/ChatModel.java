@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.ruoyi.common.tenant.core.TenantEntity;
 
 import java.io.Serial;
@@ -67,6 +68,8 @@ public class ChatModel extends TenantEntity {
     /**
      * 密钥
      */
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private String apiKey;
 
     /**

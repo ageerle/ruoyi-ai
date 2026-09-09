@@ -147,7 +147,7 @@ public final class HarnessToolBatchCloser {
                 continue;
             }
             if (effect.status() == HarnessToolEffectStatus.COMMITTED
-                && (result.toolError() || !effect.committedResult().equals(result.content()))) {
+                && !effect.matchesCommittedReceipt(result.toolError(), result.content())) {
                 throw new IllegalStateException(
                     "Durable tool result does not match its committed control receipt");
             }

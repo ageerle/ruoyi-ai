@@ -75,9 +75,12 @@ This project provides two Docker deployment methods:
 ### Method 1: One-click Start All Services (Recommended)
 
 Use `docker-compose-all.yaml` to start all services at once (including backend, admin panel, user frontend, and dependencies):
+#### Requirements
+- Docker Engine（Linux/macOS）或 Docker Desktop（Windows）
+- Docker Compose V2
 
+#### Linux / macOS
 ```bash
-# Requirements: Docker Engine and Docker Compose V2
 
 # Clone the v3.1.0 release
 git clone --depth 1 --branch v3.1.0 https://github.com/ageerle/ruoyi-ai.git
@@ -101,6 +104,37 @@ docker compose --env-file docs/docker/ruoyi-ai/.env \
 # Admin Panel: http://SERVER_IP:25666 (admin / admin123)
 # User Frontend: http://SERVER_IP:25137
 # Backend API: http://SERVER_IP:26039
+```
+
+#### Windows PowerShell
+If you are using Windows with Docker Desktop, you can use PowerShell to execute the following commands:
+
+```PowerShell
+
+# Clone the v3.1.0 release
+git clone --depth 1 --branch v3.1.0 https://github.com/ageerle/ruoyi-ai.git
+cd ruoyi-ai
+
+# Create the environment configuration file
+Copy-Item docs\docker\ruoyi-ai\.env.example docs\docker\ruoyi-ai\.env
+
+# Pin the image version
+(Get-Content docs\docker\ruoyi-ai\.env) `
+  -replace '^RUIYI_VERSION=.*', 'RUIYI_VERSION=v3.1.0' |
+  Set-Content docs\docker\ruoyi-ai\.env
+
+# Check the environment configuration
+Get-Content docs\docker\ruoyi-ai\.env
+
+# Pull pre-built images from GHCR and start all services
+docker compose --env-file docs\docker\ruoyi-ai\.env `
+  -f docs\docker\ruoyi-ai\docker-compose-all.yaml pull
+docker compose --env-file docs\docker\ruoyi-ai\.env `
+  -f docs\docker\ruoyi-ai\docker-compose-all.yaml up -d
+
+# Check service status
+docker compose --env-file docs\docker\ruoyi-ai\.env `
+  -f docs\docker\ruoyi-ai\docker-compose-all.yaml ps
 ```
 
 The default Compose file also publishes MySQL (`23306`), Redis (`26379`),

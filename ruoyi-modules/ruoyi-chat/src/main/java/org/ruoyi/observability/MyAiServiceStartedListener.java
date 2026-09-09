@@ -29,10 +29,8 @@ public class MyAiServiceStartedListener implements AiServiceStartedListener {
         Optional<SystemMessage> systemMessage = event.systemMessage();
         UserMessage userMessage = event.userMessage();
 
-        log.info("【AI服务启动】调用唯一标识符: {}", invocationId);
-        log.info("【AI服务启动】AI服务接口名: {}", aiServiceInterfaceName);
-        log.info("【AI服务启动】调用的方法名: {}", aiServiceMethodName);
-        log.info("【AI服务启动】系统消息: {}", systemMessage.orElse(null));
-        log.info("【AI服务启动】用户消息: {}", userMessage);
+        int messageCount = (systemMessage.isPresent() ? 1 : 0) + (userMessage == null ? 0 : 1);
+        log.info("ai_service_started invocationId={} interfaceType={} method={} status=STARTED messageCount={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName, messageCount);
     }
 }

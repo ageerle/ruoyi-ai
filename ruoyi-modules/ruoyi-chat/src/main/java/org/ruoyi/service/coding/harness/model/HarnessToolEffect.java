@@ -88,6 +88,20 @@ public record HarnessToolEffect(
         return effectId.startsWith(TERMINAL_CLOSURE_PREFIX);
     }
 
+    /** Stable identity for the one public completion signal owned by this durable effect. */
+    public String completedEventId() {
+        return "tool-effect:" + effectId + ":completed";
+    }
+
+    /**
+     * The external side effect may already have happened even though no durable receipt exists.
+     * Ordinary cancellation/failure cleanup must never erase this evidence.
+     */
+    public boolean requiresOperatorAdjudication() {
+        return status == HarnessToolEffectStatus.PENDING
+            && !replaySafe && !terminalClosureIntent();
+    }
+
     public HarnessToolEffect commit(String serializedResult, long now) {
         return commit(serializedResult, null, now);
     }
@@ -105,6 +119,12 @@ public record HarnessToolEffect(
         return new HarnessToolEffect(effectId, toolCallId, toolName, argumentsSha256,
             replaySafe, HarnessToolEffectStatus.COMMITTED, startedAt, now, null, null,
             serializedResult, event, false);
+    }
+
+    /** Exact authoritative receipt semantics shared by live terminal closure and recovery. */
+    public boolean matchesCommittedReceipt(boolean toolError, String resultContent) {
+        return status == HarnessToolEffectStatus.COMMITTED && !toolError
+            && committedResult.equals(resultContent);
     }
 
     public HarnessToolEffect settle(String messageId, long now) {
@@ -151,6 +171,10 @@ public record HarnessToolEffect(
             return this;
         }
         requirePending("abandon");
+        if (requiresOperatorAdjudication()) {
+            throw new IllegalStateException(
+                "Cannot abandon an uncertain non-replayable tool effect");
+        }
         return new HarnessToolEffect(effectId, toolCallId, toolName, argumentsSha256,
             replaySafe, HarnessToolEffectStatus.ABANDONED, startedAt, now, null, reason, null,
             null, false);

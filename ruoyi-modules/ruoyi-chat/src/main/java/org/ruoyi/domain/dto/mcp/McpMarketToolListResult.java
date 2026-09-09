@@ -27,7 +27,7 @@ public class McpMarketToolListResult {
     /**
      * 工具列表
      */
-    private List<McpMarketTool> data;
+    private List<McpMarketToolListItem> data;
 
     /**
      * 总数
@@ -51,9 +51,12 @@ public class McpMarketToolListResult {
 
     public static McpMarketToolListResult of(List<McpMarketTool> data, long total, int page, int size) {
         long pages = (total + size - 1) / size;
+        List<McpMarketToolListItem> publicData = data == null
+            ? List.of()
+            : data.stream().map(McpMarketToolListItem::from).toList();
         return McpMarketToolListResult.builder()
             .success(true)
-            .data(data)
+            .data(publicData)
             .total(total)
             .page(page)
             .size(size)

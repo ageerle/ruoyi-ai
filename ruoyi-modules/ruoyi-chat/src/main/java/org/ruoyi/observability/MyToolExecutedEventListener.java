@@ -27,12 +27,11 @@ public class MyToolExecutedEventListener implements ToolExecutedEventListener {
         ToolExecutionRequest request = event.request();
         String resultText = event.resultText();
 
-        log.info("【工具已执行】调用唯一标识符: {}", invocationId);
-        log.info("【工具已执行】AI服务接口名: {}", aiServiceInterfaceName);
-        log.info("【工具已执行】调用的方法名: {}", aiServiceMethodName);
-        log.info("【工具已执行】工具执行请求 ID: {}", request.id());
-        log.info("【工具已执行】工具名称: {}", request.name());
-        log.info("【工具已执行】工具参数: {}", request.arguments());
-        log.info("【工具已执行】工具执行结果: {}", resultText);
+        log.info("tool_executed invocationId={} interfaceType={} method={} status=COMPLETED "
+                + "toolType={} argumentChars={} resultChars={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName,
+            request == null ? "unknown" : request.name(),
+            request == null || request.arguments() == null ? 0 : request.arguments().length(),
+            resultText == null ? 0 : resultText.length());
     }
 }

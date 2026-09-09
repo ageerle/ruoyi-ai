@@ -37,9 +37,14 @@ public final class TracePayloadUtils {
         if (throwable == null) {
             return null;
         }
-        int maxLength = properties == null ? 1000 : properties.getPayload().getMaxErrorLength();
-        String message = throwable.getClass().getSimpleName() + ": " + (throwable.getMessage() == null ? "" : throwable.getMessage());
-        return truncate(message, maxLength);
+        int maxLength = properties == null || properties.getPayload() == null
+            ? 1000 : properties.getPayload().getMaxErrorLength();
+        // Trace payloads are durable, operator-visible records. Provider exception messages can
+        // carry prompts, credentials, SQL, file-system paths, or response bodies, so this boundary
+        // must never read or retain Throwable#getMessage(). The exception type is sufficient for
+        // classification and remains useful without persisting untrusted content.
+        String summary = "TRACE_FAILURE errorType=" + throwable.getClass().getName();
+        return truncate(summary, maxLength);
     }
 
     public static String toJson(Object value) {

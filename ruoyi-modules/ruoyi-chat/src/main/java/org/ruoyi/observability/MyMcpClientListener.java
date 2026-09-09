@@ -2,7 +2,6 @@ package org.ruoyi.observability;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.langchain4j.invocation.InvocationContext;
 import dev.langchain4j.mcp.client.McpCallContext;
 import dev.langchain4j.mcp.client.McpClientListener;
 import dev.langchain4j.mcp.client.McpGetPromptResult;
@@ -25,7 +24,7 @@ import java.util.Map;
  * <pre>
  * {
  *   "event": "mcp",
- *   "content": "{\"name\":\"工具名称\",\"status\":\"pending|success|error\",\"result\":\"执行结果\"}"
+ *   "content": "{\"name\":\"tool|resource|prompt\",\"status\":\"pending|success|error\",\"result\":null}"
  * }
  * </pre>
  * <b>前端区分方式：</b>
@@ -56,10 +55,9 @@ public class MyMcpClientListener implements McpClientListener {
     public void beforeExecuteTool(McpCallContext context) {
         McpClientRequest message = (McpClientRequest) context.message();
         McpClientParams params = message.getParams();
-        if (params instanceof McpCallToolParams callToolParams) {
-            String name = callToolParams.getName();
-            log.info("工具调用之前：{}",name);
-            pushMcpEvent(name, "pending", null);
+        if (params instanceof McpCallToolParams) {
+            log.info("mcp_operation operationType=TOOL status=PENDING");
+            pushMcpEvent("tool", "pending", null);
         }
 
     }
@@ -68,86 +66,72 @@ public class MyMcpClientListener implements McpClientListener {
     public void afterExecuteTool(McpCallContext context, ToolExecutionResult result, Map<String, Object> rawResult) {
         McpClientRequest message = (McpClientRequest) context.message();
         McpClientParams params = message.getParams();
-        if (params instanceof McpCallToolParams callToolParams) {
-            String name = callToolParams.getName();
-            String resultText = result != null ? result.toString() : "";
-            log.info("工具调用之后：{},返回结果{}",name,result);
-            pushMcpEvent(name, "success", truncate(resultText, 500));
+        if (params instanceof McpCallToolParams) {
+            int resultItemCount = rawResult == null ? 0 : rawResult.size();
+            log.info("mcp_operation operationType=TOOL status=SUCCESS resultItemCount={}", resultItemCount);
+            pushMcpEvent("tool", "success", null);
         }
     }
 
     @Override
     public void onExecuteToolError(McpCallContext context, Throwable error) {
-        String toolName = getMethodName(context);
-        log.error("【MCP工具执行错误】工具: {}, 错误: {}", toolName, error.getMessage());
-        pushMcpEvent(toolName, "error", error.getMessage());
+        log.error("mcp_operation operationType=TOOL status=FAILED errorType={}",
+            error == null ? "unknown" : error.getClass().getName());
+        pushMcpEvent("tool", "error", null);
     }
 
     // ==================== 资源读取 ====================
 
     @Override
     public void beforeResourceGet(McpCallContext context) {
-        String name = getMethodName(context);
-        log.info("【MCP资源读取前】资源: {}", name);
-        pushMcpEvent(name, "pending", null);
+        log.info("mcp_operation operationType=RESOURCE status=PENDING");
+        pushMcpEvent("resource", "pending", null);
     }
 
     @Override
     public void afterResourceGet(McpCallContext context, McpReadResourceResult result, Map<String, Object> rawResult) {
-        String name = getMethodName(context);
-        int count = result.contents() != null ? result.contents().size() : 0;
-        log.info("【MCP资源读取后】资源: {}, 数量: {}", name, count);
-        pushMcpEvent(name, "success", "读取 " + count + " 条资源");
+        int count = result != null && result.contents() != null ? result.contents().size() : 0;
+        log.info("mcp_operation operationType=RESOURCE status=SUCCESS itemCount={}", count);
+        pushMcpEvent("resource", "success", null);
     }
 
     @Override
     public void onResourceGetError(McpCallContext context, Throwable error) {
-        String name = getMethodName(context);
-        log.error("【MCP资源读取错误】资源: {}, 错误: {}", name, error.getMessage());
-        pushMcpEvent(name, "error", error.getMessage());
+        log.error("mcp_operation operationType=RESOURCE status=FAILED errorType={}",
+            error == null ? "unknown" : error.getClass().getName());
+        pushMcpEvent("resource", "error", null);
     }
 
     // ==================== 提示词获取 ====================
 
     @Override
     public void beforePromptGet(McpCallContext context) {
-        String name = getMethodName(context);
-        log.info("【MCP提示词获取前】提示词: {}", name);
-        pushMcpEvent(name, "pending", null);
+        log.info("mcp_operation operationType=PROMPT status=PENDING");
+        pushMcpEvent("prompt", "pending", null);
     }
 
     @Override
     public void afterPromptGet(McpCallContext context, McpGetPromptResult result, Map<String, Object> rawResult) {
-        String name = getMethodName(context);
-        int count = result.messages() != null ? result.messages().size() : 0;
-        log.info("【MCP提示词获取后】提示词: {}, 消息数: {}", name, count);
-        pushMcpEvent(name, "success", "获取 " + count + " 条消息");
+        int count = result != null && result.messages() != null ? result.messages().size() : 0;
+        log.info("mcp_operation operationType=PROMPT status=SUCCESS messageCount={}", count);
+        pushMcpEvent("prompt", "success", null);
     }
 
     @Override
     public void onPromptGetError(McpCallContext context, Throwable error) {
-        String name = getMethodName(context);
-        log.error("【MCP提示词获取错误】提示词: {}, 错误: {}", name, error.getMessage());
-        pushMcpEvent(name, "error", error.getMessage());
+        log.error("mcp_operation operationType=PROMPT status=FAILED errorType={}",
+            error == null ? "unknown" : error.getClass().getName());
+        pushMcpEvent("prompt", "error", null);
     }
 
     // ==================== 辅助方法 ====================
-
-    private String getMethodName(McpCallContext context) {
-        try {
-            McpClientMessage message = context.message();
-            return message.method != null ? message.method.toString() : "unknown";
-        } catch (Exception e) {
-            return "unknown";
-        }
-    }
 
     /**
      * 推送 MCP 事件到前端
      */
     private void pushMcpEvent(String name, String status, String result) {
         if (sessionId == null) {
-            log.warn("sessionId 为空，无法推送 MCP 事件");
+            log.warn("mcp_event_delivery status=SKIPPED reason=SESSION_ID_MISSING");
             return;
         }
         try {
@@ -162,12 +146,8 @@ public class MyMcpClientListener implements McpClientListener {
                 .content(json)
                 .build());
         } catch (JsonProcessingException e) {
-            log.error("序列化 MCP 事件失败: {}", e.getMessage());
+            log.error("mcp_event_delivery status=FAILED errorType={}", e.getClass().getName());
         }
     }
 
-    private String truncate(String str, int maxLen) {
-        if (str == null) return null;
-        return str.length() > maxLen ? str.substring(0, maxLen) + "..." : str;
-    }
 }

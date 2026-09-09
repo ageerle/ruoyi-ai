@@ -49,6 +49,9 @@ public interface IChatModelService {
      */
     List<ChatModelVo> queryList(ChatModelBo bo);
 
+    /** 查询当前租户中厂商已启用的模型，供用户选择或业务调用。 */
+    List<ChatModelVo> queryAvailableList(ChatModelBo bo);
+
     /**
      * 新增模型管理
      *

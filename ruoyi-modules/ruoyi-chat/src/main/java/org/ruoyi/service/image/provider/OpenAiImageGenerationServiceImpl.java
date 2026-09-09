@@ -77,7 +77,7 @@ public class OpenAiImageGenerationServiceImpl extends AbstractImageGenerationSer
     private String postJson(ChatModelVo model, String path, String jsonBody) throws IOException {
         Request request = new Request.Builder()
             .url(OpenAiMediaSupport.endpoint(model.getApiHost(), path))
-            .addHeader("Authorization", "Bearer " + model.getApiKey())
+            .addHeader("Authorization", "Bearer " + model.resolveApiKeyForConfiguredEndpoint(getProviderName()))
             .addHeader("Content-Type", "application/json")
             .post(RequestBody.create(jsonBody, OpenAiMediaSupport.JSON))
             .build();

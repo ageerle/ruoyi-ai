@@ -8,6 +8,7 @@ import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
 import dev.langchain4j.store.embedding.qdrant.QdrantEmbeddingStore;
+import io.grpc.Status;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Collections.Distance;
@@ -277,6 +278,10 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
             client.deleteCollectionAsync(collectionName).get();
             log.info("Qdrant成功删除集合: {}", collectionName);
         } catch (Exception e) {
+            if (Status.fromThrowable(e).getCode() == Status.Code.NOT_FOUND) {
+                log.debug("Qdrant集合不存在，跳过删除: {}", collectionName);
+                return;
+            }
             log.error("Qdrant删除集合失败: {}", collectionName, e);
             throw new ServiceException("失败删除向量数据!");
         }
@@ -284,19 +289,28 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void removeByDocId(String docId, String kid) {
-        String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + kid;
-        EmbeddingStore<TextSegment> embeddingStore = getQdrantStore(collectionName);
-        Filter filter = MetadataFilterBuilder.metadataKey(METADATA_DOC_ID_KEY).isEqualTo(docId);
-        embeddingStore.removeAll(filter);
-        log.info("Qdrant成功删除 docId={} 的所有向量数据", docId);
+        removeByMetadata(kid, METADATA_DOC_ID_KEY, docId);
     }
 
     @Override
     public void removeByFid(String fid, String kid) {
+        removeByMetadata(kid, METADATA_FID_KEY, fid);
+    }
+
+    private void removeByMetadata(String kid, String metadataKey, String value) {
         String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + kid;
         EmbeddingStore<TextSegment> embeddingStore = getQdrantStore(collectionName);
-        Filter filter = MetadataFilterBuilder.metadataKey(METADATA_FID_KEY).isEqualTo(fid);
-        embeddingStore.removeAll(filter);
-        log.info("Qdrant成功删除 fid={} 的所有向量数据", fid);
+        Filter filter = MetadataFilterBuilder.metadataKey(metadataKey).isEqualTo(value);
+        try {
+            embeddingStore.removeAll(filter);
+            log.info("Qdrant成功删除 {}={} 的所有向量数据", metadataKey, value);
+        } catch (RuntimeException e) {
+            // 首次上传会先清理旧向量，此时集合尚未创建；SDK 会将 gRPC 状态包装在异常链中。
+            if (Status.fromThrowable(e).getCode() == Status.Code.NOT_FOUND) {
+                log.debug("Qdrant集合不存在，跳过删除: {}", collectionName);
+                return;
+            }
+            throw e;
+        }
     }
 }

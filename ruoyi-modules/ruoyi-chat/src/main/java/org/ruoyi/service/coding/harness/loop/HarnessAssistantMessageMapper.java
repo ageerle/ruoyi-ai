@@ -9,6 +9,7 @@ import org.ruoyi.service.coding.harness.model.HarnessMessageRole;
 import org.ruoyi.service.coding.harness.model.HarnessRunState;
 import org.ruoyi.service.coding.harness.model.HarnessToolCall;
 import org.ruoyi.service.coding.harness.model.HarnessUsage;
+import org.ruoyi.service.coding.harness.loop.model.ProviderFinishReasonGuard;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,9 +21,21 @@ public final class HarnessAssistantMessageMapper {
 
     public HarnessMessage map(ChatResponse response, HarnessRunState run,
                               String effectId, long fallbackInputTokens, long now) {
+        boolean thinkingEnabled = run != null && run.modelRoute() != null
+            && run.modelRoute().thinkingEnabled();
+        return map(response, run, effectId, fallbackInputTokens, thinkingEnabled, now);
+    }
+
+    public HarnessMessage map(ChatResponse response, HarnessRunState run,
+                              String effectId, long fallbackInputTokens,
+                              boolean thinkingEnabled, long now) {
         if (response == null || response.aiMessage() == null || run == null
             || effectId == null || effectId.isBlank()) {
             throw new IllegalArgumentException("Response, run and model effect are required");
+        }
+        String finishReasonRejection = ProviderFinishReasonGuard.rejectionReason(response);
+        if (finishReasonRejection != null) {
+            throw new IllegalArgumentException(finishReasonRejection);
         }
         AiMessage message = response.aiMessage();
         List<HarnessToolCall> toolCalls = message.toolExecutionRequests().stream()
@@ -30,8 +43,20 @@ public final class HarnessAssistantMessageMapper {
             .toList();
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("effectId", effectId);
+        metadata.put("thinkingEnabled", thinkingEnabled);
         put(metadata, "providerResponseId", response.id());
         put(metadata, "modelName", response.modelName());
+        Map<String, Object> attributes = message.attributes();
+        if (attributes != null) {
+            Object encrypted = attributes.get(
+                org.ruoyi.service.chat.impl.provider.doubao.DoubaoStreamingChatModel
+                    .ENCRYPTED_CONTENT_ATTRIBUTE);
+            if (encrypted instanceof String encryptedText && !encryptedText.isBlank()) {
+                // Doubao 思考加密原文：不透明持久化于 metadata，续轮原样回传；
+                // 不展示到 UI/公众号/普通日志。
+                metadata.put("doubaoEncryptedContent", encryptedText);
+            }
+        }
         if (response.finishReason() != null) {
             metadata.put("finishReason", response.finishReason().name());
         }

@@ -4,11 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.Content;
+import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
+import dev.langchain4j.model.chat.request.ToolChoice;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.service.coding.harness.approval.ApprovalClaimReceipt;
@@ -26,7 +30,10 @@ import org.ruoyi.service.coding.harness.context.ContextState;
 import org.ruoyi.service.coding.harness.context.ContextTokenBudget;
 import org.ruoyi.service.coding.harness.context.Summarizer;
 import org.ruoyi.service.coding.harness.context.TokenEstimator;
+import org.ruoyi.service.coding.harness.event.HarnessEventOutboxService;
 import org.ruoyi.service.coding.harness.event.HarnessEventHub;
+import org.ruoyi.service.coding.harness.journal.RunJournalProjector;
+import org.ruoyi.service.coding.harness.journal.StructuredContextSnapshotFactory;
 import org.ruoyi.service.coding.harness.loop.model.ModelTurnException;
 import org.ruoyi.service.coding.harness.loop.model.ModelTurnFailureKind;
 import org.ruoyi.service.coding.harness.loop.model.ModelTurnHandle;
@@ -55,8 +62,10 @@ import org.ruoyi.service.coding.harness.model.HarnessInspectionLedger;
 import org.ruoyi.service.coding.harness.model.HarnessMessage;
 import org.ruoyi.service.coding.harness.model.HarnessMessageRole;
 import org.ruoyi.service.coding.harness.model.HarnessModelEffect;
+import org.ruoyi.service.coding.harness.model.HarnessModelEffectOutcomeCode;
 import org.ruoyi.service.coding.harness.model.HarnessModelEffectStatus;
 import org.ruoyi.service.coding.harness.model.HarnessOwner;
+import org.ruoyi.service.coding.harness.model.HarnessPermissionMode;
 import org.ruoyi.service.coding.harness.model.HarnessQueuedInput;
 import org.ruoyi.service.coding.harness.model.HarnessReadSpan;
 import org.ruoyi.service.coding.harness.model.HarnessRunState;
@@ -66,6 +75,8 @@ import org.ruoyi.service.coding.harness.model.HarnessToolCall;
 import org.ruoyi.service.coding.harness.model.HarnessToolEffect;
 import org.ruoyi.service.coding.harness.model.HarnessToolEffectStatus;
 import org.ruoyi.service.coding.harness.model.HarnessUsage;
+import org.ruoyi.service.coding.harness.model.ProviderOverflowRecovery;
+import org.ruoyi.service.coding.harness.model.ProviderOverflowRecoveryStage;
 import org.ruoyi.service.coding.harness.modelruntime.HarnessChatModelFactory;
 import org.ruoyi.service.coding.harness.plan.AcceptanceCriterion;
 import org.ruoyi.service.coding.harness.plan.ExecutionEvidence;
@@ -80,6 +91,11 @@ import org.ruoyi.service.coding.harness.prompt.HarnessPromptAssembler;
 import org.ruoyi.service.coding.harness.prompt.HarnessPromptBundle;
 import org.ruoyi.service.coding.harness.prompt.HarnessPromptContext;
 import org.ruoyi.service.coding.harness.prompt.ProjectInstructionLoader;
+import org.ruoyi.service.coding.harness.recovery.ToolEffectLedgerReconciler;
+import org.ruoyi.service.coding.harness.recovery.ToolEffectLedgerFailureReason;
+import org.ruoyi.service.coding.harness.recovery.ToolEffectLedgerReconciliationException;
+import org.ruoyi.service.coding.harness.recovery.UncertainToolEffectGuard;
+import org.ruoyi.service.coding.harness.recovery.UncertainToolEffectReason;
 import org.ruoyi.service.coding.harness.runtime.HarnessActiveTurnRegistry;
 import org.ruoyi.service.coding.harness.runtime.HarnessRunProcessor;
 import org.ruoyi.service.coding.harness.runtime.HarnessRunRequest;
@@ -94,6 +110,7 @@ import org.ruoyi.service.coding.harness.tool.ToolPolicyEngine;
 import org.ruoyi.service.coding.harness.tool.ToolPolicyEvaluation;
 import org.ruoyi.service.coding.harness.tool.builtin.BuiltinToolLimits;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -105,6 +122,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.HashSet;
@@ -115,6 +133,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /** Explicit, durable LangChain4j tool loop. No AiServices recursion owns the run lifecycle. */
@@ -138,16 +157,26 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         "harness-recovery:plan-required:";
     private static final String INCOMPLETE_PLAN_RECOVERY_INPUT_PREFIX =
         "harness-recovery:incomplete-plan:";
+    private static final String REQUIRED_PROCESS_RECOVERY_INPUT_PREFIX =
+        "harness-recovery:required-process:";
     private static final String TRUNCATED_TURN_RECOVERY_INPUT_PREFIX =
         "harness-recovery:truncated-turn:";
     private static final String ANALYSIS_EVIDENCE_REVIEW_INPUT_PREFIX =
         "harness-review:analysis-evidence:";
     private static final String ANALYSIS_CLIENT_COVERAGE_INPUT_PREFIX =
         "harness-review:client-identity-coverage:";
+    private static final String EXTERNAL_VERIFICATION_REVIEW_PREFIX =
+        "harness-review:external-verification:";
     private static final int MAX_CONSECUTIVE_PROVIDER_RETRIES = 3;
+    private static final int MAX_PROVIDER_RETRY_EVENT_SCAN = 100_000;
     private static final long PROVIDER_RETRY_BASE_DELAY_MILLIS = 250;
     private static final long MAX_MODEL_OUTPUT_TOKENS_PER_TURN = 4_096;
-    private static final long MAX_VERIFY_OUTPUT_TOKENS_PER_TURN = 4_096;
+    private static final long MAX_THINKING_MODEL_OUTPUT_TOKENS_PER_TURN = 16_384;
+    private static final long MAX_THINKING_PLAN_OUTPUT_TOKENS_PER_TURN = 12_288;
+    private static final long MAX_THINKING_BUILD_OUTPUT_TOKENS_PER_TURN = 12_288;
+    private static final long MAX_THINKING_PLANNED_BUILD_OUTPUT_TOKENS_PER_TURN = 8_192;
+    private static final long MAX_THINKING_BUILD_RECOVERY_OUTPUT_TOKENS_PER_TURN = 4_096;
+    private static final long MAX_THINKING_VERIFY_OUTPUT_TOKENS_PER_TURN = 8_192;
     private static final int MAX_HISTORICAL_TOOL_ARGUMENT_BYTES = 2_048;
     private static final int MAX_HISTORICAL_ASSISTANT_PREAMBLE_BYTES = 2_048;
     private static final String FINAL_VERDICT_PROMPT =
@@ -170,9 +199,9 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             + "files, methods, routes and line locations that were actually observed in retained "
             + "tool evidence; never turn an inference or partial page into a verified fact, and do "
             + "not claim 100% confidence while material evidence remains unread. Do not call tools.";
-    private static final int DUPLICATE_READS_BEFORE_SYNTHESIS = 3;
-    private static final int MAX_PRE_PLAN_INSPECTION_CALLS = 48;
-    private static final int MAX_READ_ONLY_INSPECTION_CALLS = 64;
+    private static final int DUPLICATE_READS_BEFORE_SYNTHESIS = 2;
+    private static final int MAX_PRE_PLAN_INSPECTION_CALLS = 8;
+    private static final int MAX_READ_ONLY_INSPECTION_CALLS = 24;
     private static final int MAX_PRIOR_RUN_CONTEXT_BYTES = 16 * 1024;
     private static final Set<String> INSPECTION_TOOL_NAMES = Set.of(
         "read_file", "read_source", "list_files", "glob_files", "search_text", "git_diff");
@@ -195,10 +224,36 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         "IMPLEMENTATION ACTION REQUIRED. Repository inspection for the current mutation epoch "
             + "has reached its hard limit. Use the durable evidence already collected. If no "
             + "plan exists, create the smallest complete plan now; otherwise modify or verify "
-            + "the planned files. Do not request more read, list, glob, or search operations.";
+            + "the active planned step with the advertised mutation/process tools. If a required "
+            + "source hash is genuinely absent, record that concrete blocker with plan_step. Do "
+            + "not request or invent more read, list, glob, diff, or search operations.";
+    private static final String PLAN_STEP_ACTION_PROMPT =
+        "PLAN STEP TRANSITION REQUIRED. The approved BUILD plan has unfinished work but no step "
+            + "is IN_PROGRESS. Only plan_step is advertised at this boundary. Start the first "
+            + "ready PENDING step with the exact current revision, or RETRY/resolve the projected "
+            + "FAILED or BLOCKED step. Do not inspect the repository or narrate implementation "
+            + "until one authoritative step is IN_PROGRESS.";
+    private static final String TRUNCATED_REASONING_ACTION_PROMPT =
+        "PREVIOUS BUILD TURN EXHAUSTED ITS OUTPUT LIMIT IN PRIVATE REASONING WITHOUT AN ACTION. "
+            + "Output truncation itself is never a product blocker: do not call plan_step BLOCK, "
+            + "FAIL, or SKIP merely because analysis was unfinished. Do not restart or narrate the "
+            + "analysis. Use the current durable plan and evidence, keep reasoning brief, and "
+            + "immediately issue the smallest advertised mutation or finite process tool call for "
+            + "the current step.";
+    private static final String TRUNCATED_PLAN_REASONING_ACTION_PROMPT =
+        "PREVIOUS PLAN TURN EXHAUSTED ITS OUTPUT LIMIT IN PRIVATE REASONING WITHOUT CREATING THE "
+            + "PLAN. Do not restart, narrate, or inspect again. Immediately call plan_create with "
+            + "the smallest mechanically complete plan, using at most the currently permitted "
+            + "coarse steps and the durable repository evidence already collected.";
+    private static final String FINAL_BUILD_ACTION_PROMPT =
+        "FINAL BUILD ACTION TURN. No later model iteration remains to recover another reasoning-only "
+            + "response. Keep private reasoning minimal and issue the first valid advertised tool "
+            + "call immediately. If only plan_step is available, perform the required transition; "
+            + "otherwise use mutation or finite process tools and do not stop at analysis.";
 
     private final HarnessStore store;
     private final HarnessEventHub eventHub;
+    private final HarnessEventOutboxService eventOutboxService;
     private final HarnessSessionGate sessionGate;
     private final HarnessTranscriptReader transcriptReader;
     private final HarnessChatModelFactory modelFactory;
@@ -215,11 +270,21 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
     private final Clock clock;
     private final Duration modelTimeout;
     private final long contextWindowTokens;
+
+    // A latency target for the current request, independent of run duration/iteration budgets.
+    // Units use the conservative UTF-8 estimator, not provider-billed tokens.
+    @Value("${coding.harness.active-context-input-tokens:131072}")
+    private long activeContextInputTokens = 131_072;
+
+    @Value("${coding.harness.independent-evidence-review-enabled:false}")
+    private boolean independentEvidenceReviewEnabled;
     private final long minProactiveInputTokens;
     private final HarnessArtifactRepository artifactRepository;
     private final int inlineToolOutputBytes;
     private final HarnessToolBatchCloser toolBatchCloser;
+    private final ToolEffectLedgerReconciler toolEffectLedgerReconciler;
     private final HarnessPlanCommandService planCommands;
+    private final NonFatalRunJournalSupport runJournal;
 
     @Autowired
     public DurableHarnessRunProcessor(
@@ -237,17 +302,21 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         ObjectMapper objectMapper,
         Summarizer summarizer,
         HarnessArtifactRepository artifactRepository,
-        @Value("${coding.harness.model-timeout.millis:600000}") long modelTimeoutMillis,
+        @Value("${coding.harness.model-timeout.millis:120000}") long modelTimeoutMillis,
         @Value("${coding.harness.context-window-tokens:262144}") long contextWindowTokens,
         @Value("${coding.harness.compaction-min-input-tokens:200000}")
         long minProactiveInputTokens,
         @Value("${coding.harness.artifacts.inline-tool-output-bytes:65536}")
-        int inlineToolOutputBytes) {
+        int inlineToolOutputBytes,
+        ObjectProvider<RunJournalProjector> journalProjectorProvider,
+        ObjectProvider<StructuredContextSnapshotFactory> journalSnapshotFactoryProvider) {
         this(store, eventHub, sessionGate, transcriptReader, modelFactory, toolRuntimeFactory,
             toolBatchExecutor, promptAssembler, instructionLoader, activeTurns, timeoutScheduler,
             objectMapper, new ContextEngine(summarizer, TokenEstimator.conservativeUtf8()),
             Clock.systemUTC(), Duration.ofMillis(modelTimeoutMillis), contextWindowTokens,
-            minProactiveInputTokens, artifactRepository, inlineToolOutputBytes);
+            minProactiveInputTokens, artifactRepository, inlineToolOutputBytes,
+            new NonFatalRunJournalSupport(journalProjectorProvider::getIfAvailable,
+                journalSnapshotFactoryProvider::getIfAvailable));
     }
 
     DurableHarnessRunProcessor(
@@ -259,8 +328,26 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         ObjectMapper objectMapper, ContextEngine contextEngine, Clock clock,
         Duration modelTimeout, long contextWindowTokens, long minProactiveInputTokens,
         HarnessArtifactRepository artifactRepository, int inlineToolOutputBytes) {
+        this(store, eventHub, sessionGate, transcriptReader, modelFactory, toolRuntimeFactory,
+            toolBatchExecutor, promptAssembler, instructionLoader, activeTurns, timeoutScheduler,
+            objectMapper, contextEngine, clock, modelTimeout, contextWindowTokens,
+            minProactiveInputTokens, artifactRepository, inlineToolOutputBytes,
+            NonFatalRunJournalSupport.disabled());
+    }
+
+    DurableHarnessRunProcessor(
+        HarnessStore store, HarnessEventHub eventHub, HarnessSessionGate sessionGate,
+        HarnessTranscriptReader transcriptReader, HarnessChatModelFactory modelFactory,
+        HarnessToolRuntimeFactory toolRuntimeFactory, HarnessToolBatchExecutor toolBatchExecutor,
+        HarnessPromptAssembler promptAssembler, ProjectInstructionLoader instructionLoader,
+        HarnessActiveTurnRegistry activeTurns, ScheduledExecutorService timeoutScheduler,
+        ObjectMapper objectMapper, ContextEngine contextEngine, Clock clock,
+        Duration modelTimeout, long contextWindowTokens, long minProactiveInputTokens,
+        HarnessArtifactRepository artifactRepository, int inlineToolOutputBytes,
+        NonFatalRunJournalSupport runJournal) {
         this.store = store;
         this.eventHub = eventHub;
+        this.eventOutboxService = new HarnessEventOutboxService(store, eventHub);
         this.sessionGate = sessionGate;
         this.transcriptReader = transcriptReader;
         this.modelFactory = modelFactory;
@@ -283,7 +370,9 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         this.minProactiveInputTokens = minProactiveInputTokens;
         this.artifactRepository = artifactRepository;
         this.inlineToolOutputBytes = inlineToolOutputBytes;
+        this.runJournal = Objects.requireNonNull(runJournal, "runJournal");
         this.toolBatchCloser = new HarnessToolBatchCloser(store, transcriptReader);
+        this.toolEffectLedgerReconciler = new ToolEffectLedgerReconciler(store);
         this.planCommands = new HarnessPlanCommandService(store, eventHub, sessionGate,
             transcriptReader);
     }
@@ -305,15 +394,24 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         if (run == null) {
             return;
         }
+        run = ensureWorkspaceBoundaryIndexed(request, run);
         HarnessSessionState session = requireSession(request);
+        // 验收模式来自当前会话不可变的持久化配置；processor 是单例且执行器允许多线程，
+        // 不能使用跨会话共享的可变布尔值，否则一个会话会覆盖另一个会话的验收模式。
         HarnessToolRuntime toolRuntime = toolRuntimeFactory.create(session, run);
         ExecutionMode toolRuntimePlanMode = executionMode(run);
         String projectInstructions = instructionLoader.load(Path.of(session.workspace()));
         StreamingChatModel model = modelFactory.create(session, run);
-        int consecutiveProviderFailures = 0;
+        int consecutiveProviderFailures = recoveredProviderFailureRetryCount(request);
 
         while (true) {
             run = requireRun(request);
+            run = drainLifecycleEvents(request, run);
+            if (!run.eventOutbox().isEmpty()) {
+                // A transient event-ledger outage is control-plane backpressure, not a business
+                // failure. Maintenance will drain the FIFO and redispatch this RUNNING run.
+                return;
+            }
             ExecutionMode currentPlanMode = executionMode(run);
             if (!Objects.equals(toolRuntimePlanMode, currentPlanMode)) {
                 // Tool schemas are authority, not documentation. A runtime built in BUILD must
@@ -326,15 +424,33 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             if (run.status() != HarnessRunStatus.RUNNING) {
                 return;
             }
-            HarnessToolRegistry effectiveRegistry = effectiveRegistry(request, run,
-                toolRuntime.registry());
             run = reconcileControlEventOutbox(request, run);
-            if (run.cancellationRequested()) {
-                cancelRun(request, "Cancellation requested");
+            run = drainLifecycleEvents(request, run);
+            if (!run.eventOutbox().isEmpty()) {
                 return;
             }
-            if (wallTimeExpired(run)) {
-                failRun(request, "Harness wall-time budget was exhausted");
+            run = reconcilePersistedToolResults(request, run);
+            run = drainLifecycleEvents(request, run);
+            if (!run.eventOutbox().isEmpty()) {
+                return;
+            }
+            Optional<UncertainToolEffectGuard.Finding> uncertainTool =
+                UncertainToolEffectGuard.firstFinding(run);
+            if (uncertainTool.isPresent()) {
+                if (suspendUncertainToolEffect(request)) {
+                    return;
+                }
+                continue;
+            }
+            if (isToolLedgerReconciliationIsolation(run)) {
+                publishToolLedgerReconciliationSuspension(request, run);
+                return;
+            }
+            if (run.status() != HarnessRunStatus.RUNNING) {
+                return;
+            }
+            if (run.cancellationRequested()) {
+                cancelRun(request, "Cancellation requested");
                 return;
             }
             run = ensureUsageInitialized(request, run);
@@ -346,13 +462,19 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             }
 
             List<HarnessMessage> transcript = currentRunMessages(
-                checkpointAwareMessages(request, run.contextCheckpoint().toSequence()),
+                CheckpointCrossingToolProjector.project(
+                    checkpointAwareMessages(request, run.contextCheckpoint().toSequence()),
+                    request.runId()),
                 request.runId());
             ToolProtocolValidation validation = messageMapper.validate(transcript);
             if (!validation.violations().isEmpty()) {
                 failRun(request, "Tool protocol is invalid: " + validation.violations());
                 return;
             }
+            boolean reasoningLengthRecovery = reasoningLengthRecoveryRequired(transcript);
+            boolean finalBuildAction = finalBuildActionRequired(run);
+            HarnessToolRegistry effectiveRegistry = effectiveRegistry(request, run, session,
+                toolRuntime.registry(), reasoningLengthRecovery, finalBuildAction);
             Optional<ToolBatchProjection> openBatch = validation.lastUnclosedBatch();
             if (openBatch.isPresent()) {
                 BatchDisposition disposition = processToolBatch(request, run, session,
@@ -384,7 +506,10 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             }
 
             PlanAggregate currentPlan = run.executionPlan();
-            if (currentPlan != null
+            // A file mutation proves that bytes changed, not that an externally verified
+            // business step is complete. Let the model explicitly finish its steps; otherwise
+            // the first edit can prematurely switch to VERIFY and reject its remaining edits.
+            if (!externalVerification(session) && currentPlan != null
                 && (currentPlan.mode() == ExecutionMode.BUILD
                 || currentPlan.mode() == ExecutionMode.VERIFY)) {
                 var result = planCommands.advanceMechanicallySatisfiedPlan(request.owner(),
@@ -408,6 +533,10 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 if (recoverFromPlanRequiredNaturalStop(request, requireRun(request), validation)) {
                     continue;
                 }
+                if (recoverFromRequiredProcessActionNaturalStop(request, requireRun(request),
+                    effectiveRegistry)) {
+                    continue;
+                }
                 if (recoverFromIncompletePlanNaturalStop(request, requireRun(request),
                     effectiveRegistry)) {
                     continue;
@@ -420,10 +549,21 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                     validation)) {
                     continue;
                 }
-                finishAtNaturalStop(request, requireRun(request));
+                if (externalVerification(session) && requestExternalVerificationHandOff(
+                    request, requireRun(request), validation)) {
+                    continue;
+                }
+                finishAtNaturalStop(request, requireRun(request), session);
                 return;
             }
             if (!validation.allowsNextModelRequest()) {
+                if (externalVerification(session)
+                    && externalVerificationReadyToHandOff(run, effectiveRegistry)) {
+                    // 外部验收模式：允许在一次源码/差异回顾后以“实现完成，等待外部验收”结束，
+                    // 不强迫运行测试/探针，也不伪造测试成功。
+                    finishAtNaturalStop(request, requireRun(request), session);
+                    return;
+                }
                 failRun(request, "Transcript is not at a valid model request boundary");
                 return;
             }
@@ -432,12 +572,30 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             }
 
             run = requireRun(request);
-            if (run.iteration() >= run.budget().maxIterations()) {
-                failRun(request, "Harness model-iteration budget was exhausted before the next turn");
-                return;
-            }
+            boolean requiredActionTurn = requiredActionTurn(
+                !effectiveRegistry.descriptors().isEmpty(),
+                decisionOnlyRegistry(effectiveRegistry),
+                planStepActionRequired(run.executionPlan()),
+                inspectionLimitReached(run), reasoningLengthRecovery, finalBuildAction);
+            boolean requiredProcessAction = requiredProcessAction(session, run.executionPlan(),
+                effectiveRegistry.descriptor("execute_process").isPresent());
+            requiredActionTurn = requiredActionTurn || requiredProcessAction;
+            boolean escalateActionModel = requiredActionTurn
+                && requiredProcessActionRecoveryPresent(transcript, run.executionPlan());
+            HarnessChatModelFactory.ActionModel actionModel = requiredActionTurn
+                ? (escalateActionModel
+                    ? modelFactory.createEscalatedActionModel(session, run)
+                    : modelFactory.createRequiredActionModel(session, run))
+                : null;
+            StreamingChatModel turnModel = actionModel == null ? model : actionModel.model();
+            boolean turnThinkingEnabled = actionModel == null
+                ? run.modelRoute() != null && run.modelRoute().thinkingEnabled()
+                : actionModel.thinkingEnabled();
+            boolean requireToolChoice = actionModel != null
+                && actionModel.requiredToolChoiceSupported();
             PreparedModelRequest prepared = prepareModelRequest(request, run,
-                session, projectInstructions, toolRuntime, effectiveRegistry, model, usage);
+                session, projectInstructions, toolRuntime, effectiveRegistry, turnModel, usage,
+                requireToolChoice);
             if (prepared == null) {
                 return;
             }
@@ -446,25 +604,15 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 HarnessRunState current = requireRun(request);
                 if (current.cancellationRequested()) {
                     cancelRun(request, "Cancellation requested before model execution");
-                } else if (wallTimeExpired(current)) {
-                    failRun(request, "Harness wall-time budget was exhausted");
                 }
                 return;
             }
             String effectId = run.modelEffect().effectId();
-            StreamingModelTurnAdapter adapter = new StreamingModelTurnAdapter(model,
+            StreamingModelTurnAdapter adapter = new StreamingModelTurnAdapter(turnModel,
                 timeoutScheduler, clock);
             HarnessDeltaEventPublisher deltas = new HarnessDeltaEventPublisher(eventHub,
                 request.owner(), run, effectId);
-            long remainingWall = remainingWallMillis(run);
-            if (remainingWall <= 0) {
-                abandonModelEffect(request, "Run wall-time expired before provider start");
-                failRun(request, "Harness wall-time budget was exhausted");
-                return;
-            }
-            Duration turnTimeout = modelTimeout.compareTo(Duration.ofMillis(remainingWall)) <= 0
-                ? modelTimeout : Duration.ofMillis(remainingWall);
-            ModelTurnHandle handle = adapter.start(prepared.request(), turnTimeout, deltas);
+            ModelTurnHandle handle = adapter.start(prepared.request(), modelTimeout, deltas);
             ModelTurnResult turn;
             try (HarnessActiveTurnRegistry.Registration ignored = activeTurns.register(request, handle)) {
                 try {
@@ -474,75 +622,138 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 }
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
-                abandonModelEffect(request, "Model turn interrupted; provider outcome uncertain");
+                abandonModelEffect(request, "Model turn interrupted; provider outcome uncertain",
+                    HarnessModelEffectOutcomeCode.MODEL_INTERRUPTED);
                 suspendRun(request, "Model turn was interrupted");
                 return;
             } catch (ModelTurnException failure) {
-                abandonModelEffect(request, failure.kind() + ": " + failure.getMessage());
+                if (failure.kind() == ModelTurnFailureKind.CONTEXT_OVERFLOW) {
+                    if (requireRun(request).cancellationRequested()) {
+                        cancelRun(request, "Cancellation won provider overflow recovery");
+                        return;
+                    }
+                    String overflowId = "provider:" + prepared.requestSha256();
+                    HarnessRunState recovered = recordProviderContextOverflow(request, effectId,
+                        overflowId, failure);
+                    if (recovered.status() == HarnessRunStatus.SUSPENDED) {
+                        return;
+                    }
+                    if (!recovered.eventOutbox().isEmpty()) {
+                        return;
+                    }
+                    continue;
+                }
+                boolean overflowRetryInFlight = isProviderOverflowRetryInFlight(run, effectId);
+                if (failure.kind() == ModelTurnFailureKind.PROVIDER_ERROR
+                    && !overflowRetryInFlight
+                    && consecutiveProviderFailures < MAX_CONSECUTIVE_PROVIDER_RETRIES) {
+                    int retryAttempt = consecutiveProviderFailures + 1;
+                    Map<String, Object> retryData = Map.of(
+                        "failureKind", failure.kind().name(),
+                        "retry", retryAttempt,
+                        "maxRetries", MAX_CONSECUTIVE_PROVIDER_RETRIES);
+                    RetryTransition retrying = abandonModelEffectWithRetryEvent(request,
+                        effectId, failure.kind() + ": " + failure.getMessage(),
+                        modelFailureOutcomeCode(failure.kind()), retryData);
+                    if (retrying.admitted()) {
+                        consecutiveProviderFailures = retryAttempt;
+                        if (!retrying.run().eventOutbox().isEmpty()) {
+                            return;
+                        }
+                        if (!awaitProviderRetry(request, consecutiveProviderFailures)) {
+                            if (requireRun(request).cancellationRequested()) {
+                                cancelRun(request,
+                                    "Cancellation requested during provider retry backoff");
+                            } else {
+                                suspendRun(request, "Provider retry backoff was interrupted");
+                            }
+                            return;
+                        }
+                        continue;
+                    }
+                }
+                abandonModelEffect(request, failure.kind() + ": " + failure.getMessage(),
+                    modelFailureOutcomeCode(failure.kind()));
                 if (failure.kind() == ModelTurnFailureKind.CANCELLED
                     || requireRun(request).cancellationRequested()) {
                     cancelRun(request, "Model turn cancelled");
                 } else if (failure.kind() == ModelTurnFailureKind.START_FAILURE) {
-                    failRun(request, failure.getMessage());
-                } else if (failure.kind() == ModelTurnFailureKind.PROVIDER_ERROR
-                    && consecutiveProviderFailures < MAX_CONSECUTIVE_PROVIDER_RETRIES
-                    && !wallTimeExpired(requireRun(request))) {
-                    consecutiveProviderFailures++;
-                    publishState(request, "model.turn.retrying", requireRun(request),
-                        Map.of("failureKind", failure.kind().name(),
-                            "retry", consecutiveProviderFailures,
-                            "maxRetries", MAX_CONSECUTIVE_PROVIDER_RETRIES));
-                    if (!awaitProviderRetry(request, consecutiveProviderFailures)) {
-                        if (requireRun(request).cancellationRequested()) {
-                            cancelRun(request, "Cancellation requested during provider retry backoff");
-                        } else {
-                            suspendRun(request, "Provider retry backoff was interrupted");
-                        }
-                        return;
-                    }
-                    continue;
+                    failRun(request, failure.getMessage(),
+                        Map.of("code", HarnessModelEffectOutcomeCode.PROVIDER_START_FAILURE.name()));
+                } else if (overflowRetryInFlight) {
+                    suspendRun(request, "The single provider context-overflow retry failed: "
+                            + failure.getMessage(),
+                        Map.of("code", "PROVIDER_CONTEXT_OVERFLOW_RETRY_FAILED"));
                 } else {
-                    suspendRun(request, failure.getMessage() + "; provider outcome may be uncertain");
+                    suspendRun(request,
+                        failure.getMessage() + "; provider outcome may be uncertain",
+                        Map.of("code", modelFailureOutcomeCode(failure.kind()).name()));
                 }
                 return;
             }
 
-            consecutiveProviderFailures = 0;
-
-            if (wallTimeExpired(requireRun(request))) {
-                abandonModelEffect(request, "Provider response arrived after the run deadline");
-                failRun(request, "Harness wall-time budget was exhausted during model execution");
-                return;
-            }
 
             HarnessMessage assistant = assistantMapper.map(turn.response(), run, effectId,
-                prepared.estimatedInputTokens(), now());
+                prepared.estimatedInputTokens(), turnThinkingEnabled, now());
+            String thinkingProtocolViolation = thinkingReplayViolation(run, List.of(assistant));
+            if (thinkingProtocolViolation != null) {
+                if (consecutiveProviderFailures < MAX_CONSECUTIVE_PROVIDER_RETRIES) {
+                    int retryAttempt = consecutiveProviderFailures + 1;
+                    Map<String, Object> retryData = Map.of(
+                        "failureKind", HarnessModelEffectOutcomeCode.PROTOCOL_REJECTED.name(),
+                        "retry", retryAttempt,
+                        "maxRetries", MAX_CONSECUTIVE_PROVIDER_RETRIES);
+                    RetryTransition retrying = abandonModelEffectWithRetryEvent(request,
+                        effectId, thinkingProtocolViolation,
+                        HarnessModelEffectOutcomeCode.PROTOCOL_REJECTED, retryData);
+                    if (retrying.admitted()) {
+                        consecutiveProviderFailures = retryAttempt;
+                        if (!retrying.run().eventOutbox().isEmpty()) {
+                            return;
+                        }
+                        if (!awaitProviderRetry(request, consecutiveProviderFailures)) {
+                            if (requireRun(request).cancellationRequested()) {
+                                cancelRun(request,
+                                    "Cancellation requested during protocol retry backoff");
+                            } else {
+                                suspendRun(request, "Protocol retry backoff was interrupted");
+                            }
+                            return;
+                        }
+                        continue;
+                    }
+                }
+                abandonModelEffect(request, thinkingProtocolViolation,
+                    HarnessModelEffectOutcomeCode.PROTOCOL_REJECTED);
+                failRun(request, thinkingProtocolViolation);
+                return;
+            }
             assistant = offloadAssistantPayloadIfNeeded(request, assistant);
             String identityViolation = assistantToolIdentityViolation(assistant);
             if (identityViolation != null) {
-                abandonModelEffect(request, identityViolation);
+                abandonModelEffect(request, identityViolation,
+                    HarnessModelEffectOutcomeCode.PROTOCOL_REJECTED);
                 failRun(request, identityViolation);
                 return;
             }
+            consecutiveProviderFailures = 0;
             HarnessMessage stored = store.appendMessage(request.owner(), assistant);
-            settleModelEffect(request, effectId, stored.messageId(), stored.usage());
-            eventHub.publish(request.owner(), HarnessEvent.draft(request.sessionId(),
-                request.runId(), "assistant.completed", null, null, null,
-                Map.of("messageId", stored.messageId(), "effectId", effectId,
-                    "toolCallCount", stored.toolCalls().size()), now()));
+            if (!settleModelEffect(request, effectId, stored.messageId(), stored.usage(),
+                stored.toolCalls().size())) {
+                return;
+            }
         }
     }
 
     private boolean awaitProviderRetry(HarnessRunRequest request, int retry) {
         long delayMillis = PROVIDER_RETRY_BASE_DELAY_MILLIS << Math.min(3, retry - 1);
-        delayMillis = Math.min(delayMillis, Math.max(0, remainingWallMillis(requireRun(request))));
         if (delayMillis <= 0) {
             return false;
         }
         try {
             Thread.sleep(delayMillis);
             HarnessRunState current = requireRun(request);
-            return !current.cancellationRequested() && !wallTimeExpired(current);
+            return !current.cancellationRequested();
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             return false;
@@ -581,35 +792,152 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 && run.status() != HarnessRunStatus.RUNNING) {
                 return null;
             }
-            repairCreationAuditInvariant(request, run);
-            // A durable cancel is authoritative across process loss. Honor it before inspecting
-            // or quarantining any pending provider/tool effect, matching startup recovery.
-            if (run.cancellationRequested()) {
-                String reason = "Cancellation recovered before effect reconciliation";
-                HarnessRunState projected = closeToolBatchForTerminal(run,
-                    SyntheticToolResultReason.CANCEL);
-                HarnessRunState cancelled = abandonPendingEffects(projected, reason)
-                    .transition(HarnessRunStatus.CANCELLED, null, now());
-                HarnessRunState saved = store.saveRun(request.owner(), cancelled,
-                    cancelled.revision());
-                publishState(request, "run.cancelled", saved, Map.of("reason", reason));
-                activeTurns.clearCancellation(request);
+            run = drainLifecycleEvents(request, run);
+            if (!run.eventOutbox().isEmpty()) {
                 return null;
             }
-            if (run.status() == HarnessRunStatus.QUEUED) {
-                HarnessRunState running = store.saveRun(request.owner(),
-                    run.transition(HarnessRunStatus.RUNNING, null, now()), run.revision());
-                activeTurns.clearCancellation(request);
-                publishState(request, "run.started", running, Map.of());
-                return running;
-            }
+            repairCreationAuditInvariant(request, run);
             boolean usageWasInitialized = run.usageInitialized();
             if (!usageWasInitialized) {
                 run = initializeUsageUnderGate(request, run);
             }
             run = reconcileControlEventOutboxUnderGate(request, run);
+            run = drainLifecycleEvents(request, run);
+            if (!run.eventOutbox().isEmpty()) {
+                return null;
+            }
             run = reconcilePersistedToolResults(request, run);
+            run = drainLifecycleEvents(request, run);
+            if (!run.eventOutbox().isEmpty()) {
+                return null;
+            }
+            Optional<UncertainToolEffectGuard.Finding> uncertainTool =
+                UncertainToolEffectGuard.firstFinding(run);
+            if (uncertainTool.isPresent()) {
+                publishUncertainToolSuspension(request, run, uncertainTool.get());
+                return null;
+            }
+            if (isToolLedgerReconciliationIsolation(run)) {
+                publishToolLedgerReconciliationSuspension(request, run);
+                return null;
+            }
+            // A durable cancel is authoritative only after exact ledger reconciliation. Never
+            // turn an unknown non-replayable effect into a synthetic result or abandoned intent.
+            if (run.cancellationRequested()) {
+                String reason = "Cancellation recovered before effect reconciliation";
+                long timestamp = now();
+                HarnessRunState projected = closeToolBatchForTerminal(run,
+                    SyntheticToolResultReason.CANCEL);
+                HarnessRunState cancelled = abandonPendingEffects(projected, reason,
+                    HarnessModelEffectOutcomeCode.RUN_CANCELLED);
+                cancelled = transitionWithOrderedStateEvent(cancelled,
+                    HarnessRunStatus.CANCELLED, null, "run.cancelled",
+                    Map.of("reason", reason), timestamp);
+                HarnessRunState saved = store.saveRun(request.owner(), cancelled,
+                    cancelled.revision());
+                drainLifecycleEvents(request, saved);
+                activeTurns.clearCancellation(request);
+                return null;
+            }
+            if (run.status() == HarnessRunStatus.QUEUED) {
+                long timestamp = now();
+                HarnessRunState started = transitionWithOrderedStateEvent(run,
+                    HarnessRunStatus.RUNNING, null, "run.started", Map.of(), timestamp);
+                HarnessRunState running = store.saveRun(request.owner(),
+                    started, run.revision());
+                activeTurns.clearCancellation(request);
+                HarnessRunState published = drainLifecycleEvents(request, running);
+                return published.eventOutbox().isEmpty() ? published : null;
+            }
             HarnessModelEffect effect = run.modelEffect();
+            ProviderOverflowRecovery overflowRecovery = run.providerOverflowRecovery();
+            if (overflowRecovery != null) {
+                boolean exactFailedEffect = effect != null
+                    && effect.status() == HarnessModelEffectStatus.ABANDONED
+                    && overflowRecovery.matchesFailedEffect(effect)
+                    && run.iteration() == overflowRecovery.failedIteration();
+                boolean exactCompactionBoundary = overflowRecovery.stage()
+                    == ProviderOverflowRecoveryStage.COMPACTION_REQUIRED
+                    && exactFailedEffect
+                    && overflowRecovery.checkpointBeforeMatches(run.contextCheckpoint())
+                    && !run.compactionControl().emergencyAttempted(
+                        overflowRecovery.recoveryId());
+                boolean exactRetryBoundary = overflowRecovery.stage()
+                    == ProviderOverflowRecoveryStage.RETRY_READY
+                    && exactFailedEffect
+                    && overflowRecovery.checkpointMatches(run.contextCheckpoint())
+                    && run.compactionControl().emergencyAttempted(
+                        overflowRecovery.recoveryId());
+                if (exactCompactionBoundary || exactRetryBoundary) {
+                    return run;
+                }
+                if (overflowRecovery.stage() == ProviderOverflowRecoveryStage.EXHAUSTED) {
+                    String reason = overflowRecovery.error();
+                    long timestamp = now();
+                    HarnessRunState next = run;
+                    if (effect != null && effect.status() == HarnessModelEffectStatus.PENDING) {
+                        next = next.abandonModelEffectWithEvent(effect.effectId(), reason,
+                            HarnessModelEffectOutcomeCode.PROVIDER_CONTEXT_OVERFLOW, timestamp);
+                    }
+                    if (next.status() == HarnessRunStatus.RUNNING) {
+                        next = transitionWithOrderedStateEvent(next,
+                            HarnessRunStatus.SUSPENDED, reason, "run.suspended",
+                            Map.of("reason", "provider_context_overflow_exhausted"), timestamp);
+                    }
+                    HarnessRunState saved = next == run ? run
+                        : store.saveRun(request.owner(), next, run.revision());
+                    drainLifecycleEvents(request, saved);
+                    return null;
+                }
+                if (overflowRecovery.stage() != ProviderOverflowRecoveryStage.RETRY_IN_FLIGHT
+                    || effect == null || effect.status() != HarnessModelEffectStatus.PENDING
+                    || !overflowRecovery.matchesRetryEffect(effect)
+                    || run.iteration() != overflowRecovery.retryIteration()) {
+                    String reason = "Provider overflow recovery does not match its model effect";
+                    long timestamp = now();
+                    HarnessRunState next = run;
+                    if (effect != null && effect.status() == HarnessModelEffectStatus.PENDING) {
+                        next = next.abandonModelEffectWithEvent(effect.effectId(), reason,
+                            HarnessModelEffectOutcomeCode.RECOVERY_INCONSISTENT, timestamp);
+                    }
+                    next = next.withProviderOverflowRecovery(
+                        overflowRecovery.exhausted(reason, timestamp), timestamp);
+                    next = transitionWithOrderedStateEvent(next, HarnessRunStatus.SUSPENDED,
+                        reason, "run.suspended",
+                        Map.of("reason", "inconsistent_provider_overflow_recovery"), timestamp);
+                    HarnessRunState saved = store.saveRun(request.owner(), next, run.revision());
+                    drainLifecycleEvents(request, saved);
+                    return null;
+                }
+                Optional<HarnessMessage> retryResponse = transcriptReader.findFirstAfter(
+                    request.owner(), request.sessionId(), run.contextCheckpoint().toSequence(),
+                    message -> message.role() == HarnessMessageRole.ASSISTANT
+                        && effect.effectId().equals(message.metadata().get("effectId")));
+                if (retryResponse.isPresent()) {
+                    long settledAt = now();
+                    HarnessRunState reconciled = run.settleModelEffectWithEvent(effect.effectId(),
+                            retryResponse.get().messageId(), retryResponse.get().usage(),
+                            usageWasInitialized, retryResponse.get().toolCalls().size(), settledAt)
+                        .withProviderOverflowRecovery(null, settledAt);
+                    HarnessRunState saved = store.saveRun(request.owner(), reconciled,
+                        run.revision());
+                    return drainLifecycleEvents(request, saved);
+                }
+                String reason = "Process restarted while the single provider overflow retry was "
+                    + "in flight; provider outcome is uncertain";
+                long timestamp = now();
+                HarnessRunState exhausted = run.abandonModelEffectWithEvent(effect.effectId(),
+                        reason, HarnessModelEffectOutcomeCode.RECOVERY_UNCERTAIN, timestamp)
+                    .withProviderOverflowRecovery(
+                        overflowRecovery.exhausted(reason, timestamp), timestamp);
+                exhausted = transitionWithOrderedStateEvent(exhausted,
+                    HarnessRunStatus.SUSPENDED, reason, "run.suspended",
+                    Map.of("reason", "uncertain_provider_overflow_retry",
+                        "effectId", effect.effectId()), timestamp);
+                HarnessRunState saved = store.saveRun(request.owner(), exhausted, run.revision());
+                drainLifecycleEvents(request, saved);
+                return null;
+            }
             if (effect == null || effect.status() != HarnessModelEffectStatus.PENDING) {
                 return run;
             }
@@ -619,23 +947,27 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                     && effect.effectId().equals(message.metadata().get("effectId")));
             if (persisted.isPresent()) {
                 long settledAt = now();
-                HarnessRunState reconciled = run.withModelEffect(
-                    effect.settle(persisted.get().messageId(), settledAt), settledAt);
                 // A legacy snapshot migration already folded every durable response, including
                 // this crash-window message. Native cumulative snapshots still need to account
                 // the newly discovered response exactly once with the effect settlement.
-                if (usageWasInitialized) {
-                    reconciled = reconciled.addModelUsage(persisted.get().usage(), settledAt);
-                }
-                return store.saveRun(request.owner(), reconciled, run.revision());
+                HarnessRunState reconciled = run.settleModelEffectWithEvent(effect.effectId(),
+                    persisted.get().messageId(), persisted.get().usage(), usageWasInitialized,
+                    persisted.get().toolCalls().size(), settledAt);
+                HarnessRunState saved = store.saveRun(request.owner(), reconciled,
+                    run.revision());
+                return drainLifecycleEvents(request, saved);
             }
-            HarnessRunState suspended = run.withModelEffect(effect.abandon(
-                    "Process restarted with an unsettled provider request", now()), now())
-                .transition(HarnessRunStatus.SUSPENDED,
-                    "Provider request outcome is uncertain after restart", now());
+            long timestamp = now();
+            HarnessRunState suspended = run.abandonModelEffectWithEvent(effect.effectId(),
+                    "Process restarted with an unsettled provider request",
+                    HarnessModelEffectOutcomeCode.RECOVERY_UNCERTAIN, timestamp);
+            suspended = transitionWithOrderedStateEvent(suspended,
+                HarnessRunStatus.SUSPENDED,
+                "Provider request outcome is uncertain after restart", "run.suspended",
+                Map.of("reason", "uncertain_model_effect", "effectId", effect.effectId()),
+                timestamp);
             HarnessRunState saved = store.saveRun(request.owner(), suspended, run.revision());
-            publishState(request, "run.suspended", saved,
-                Map.of("reason", "uncertain_model_effect", "effectId", effect.effectId()));
+            drainLifecycleEvents(request, saved);
             return null;
         });
     }
@@ -751,10 +1083,81 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
      * reachable. Persisting this prompt in the ledger makes the correction replay-safe and bounds
      * it to exactly one extra provider turn.
      */
+    /**
+     * 外部验收模式：计划只绑定实际 FILE_MUTATION 证据。只有在计划已批准、存在真实文件变更
+     * 工具证据（write_file/replace_text/apply_patch 等），且完成过一次源码/差异回顾后，
+     * 才允许以“实现完成，等待外部验收”结束。绝不伪造测试成功，也不标记外部验收通过。
+     */
+    private boolean externalVerificationReadyToHandOff(HarnessRunState run,
+                                                        HarnessToolRegistry registry) {
+        PlanAggregate plan = run.executionPlan();
+        if (plan == null || plan.mode() != ExecutionMode.VERIFY) {
+            return false;
+        }
+        return externalMutationEvidenceReady(plan);
+    }
+
+    private boolean externalMutationEvidenceReady(PlanAggregate plan) {
+        if (plan == null || plan.evidence().isEmpty()) {
+            return false;
+        }
+        // 计划证据必须全部来自实际文件变更（FILE_MUTATION），不能是空话或模拟结果。
+        boolean hasFileMutation = plan.evidence().stream()
+            .filter(ExecutionEvidence::successful)
+            .anyMatch(evidence -> evidence.type() != null
+                && evidence.type().toUpperCase(java.util.Locale.ROOT).contains("FILE_MUTATION"));
+        if (!hasFileMutation) {
+            return false;
+        }
+        // 每个计划步骤至少要有一条成功证据绑定，防止空口完成。
+        return plan.steps().stream()
+            .filter(step -> step.completionEvidenceIds() != null
+                && !step.completionEvidenceIds().isEmpty())
+            .count() > 0;
+    }
+
+    /**
+     * 外部验收模式自然停止时，若已有真实文件变更证据但尚未完成一次源码/差异回顾，
+     * 追加一轮“源码回顾后交接外部验收”的指令；已回顾过则不再重复，直接交接。
+     */
+    private boolean requestExternalVerificationHandOff(HarnessRunRequest request,
+                                                        HarnessRunState run,
+                                                        ToolProtocolValidation validation) {
+        PlanAggregate plan = run.executionPlan();
+        if (plan == null || plan.mode() != ExecutionMode.BUILD
+            || !externalMutationEvidenceReady(plan)) {
+            return false;
+        }
+        String inputId = EXTERNAL_VERIFICATION_REVIEW_PREFIX + run.runId();
+        Set<String> missingInputIds = new HashSet<>();
+        missingInputIds.add(inputId);
+        removeExistingAuditInputIds(request, missingInputIds);
+        if (missingInputIds.isEmpty()) {
+            // 已追加过一次源码回顾指令，本次自然停止直接交接，避免无限循环。
+            return false;
+        }
+        store.appendMessage(request.owner(), HarnessMessage.draft(request.sessionId(), run.runId(),
+            HarnessMessageRole.USER,
+            "EXTERNAL VERIFICATION HANDOFF. 本会话由独立外部验收者负责测试；你没有 "
+                + "execute_process/run_inline_probe 等测试或进程工具，禁止声称或模拟测试通过。"
+                + "已有真实文件变更证据，但这不代表全部实现完成。继续完成当前计划中未完成的步骤，"
+                + "使用最新工具证据推进计划；不要因为测试由外部负责就遗漏代码或 SQL。"
+                + "全部实现后回顾实际源码和差异；发现缺陷时用 plan_verify FAIL 返回 BUILD 修复。"
+                + "不要运行命令、探针或测试。没有已知遗漏后才简要列出变更并说明"
+                + "“实现完成，等待外部验收”；不得伪造验收结论。",
+            null, List.of(), null, null, false, HarnessUsage.empty(),
+            Map.of("kind", "EXTERNAL_VERIFICATION_HANDOFF", "inputId", inputId), now()));
+        return true;
+    }
+
     private boolean requestReadOnlyEvidenceReview(HarnessRunRequest request,
                                                    HarnessRunState run,
                                                    HarnessSessionState session,
                                                    ToolProtocolValidation validation) {
+        // A completed read-only answer must not silently become a new broad investigation.
+        if (!independentEvidenceReviewEnabled) {
+            return false;
+        }
         if (session.permissionMode()
                 != org.ruoyi.service.coding.harness.model.HarnessPermissionMode.READ_ONLY
             || run.executionPlan() != null
@@ -971,6 +1374,38 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         return true;
     }
 
+    /**
+     * DeepSeek-compatible endpoints do not all honor {@code tool_choice=required}. Recover one
+     * narration-only process turn durably, then let the action router escalate from FLASH to the
+     * selected PRO model with thinking still disabled. The stable input ID prevents an unbounded
+     * retry loop when a provider ignores the second instruction too.
+     */
+    private boolean recoverFromRequiredProcessActionNaturalStop(
+        HarnessRunRequest request, HarnessRunState run, HarnessToolRegistry effectiveRegistry) {
+        PlanAggregate plan = run.executionPlan();
+        if (!processOnlyActiveStep(plan)
+            || failedEvidenceSupportsActiveStep(plan)
+            || effectiveRegistry.descriptor("execute_process").isEmpty()) {
+            return false;
+        }
+
+        String inputId = requiredProcessRecoveryInputId(plan);
+        Set<String> missingInputIds = new HashSet<>();
+        missingInputIds.add(inputId);
+        removeExistingAuditInputIds(request, missingInputIds);
+        if (missingInputIds.isEmpty()) {
+            return false;
+        }
+
+        store.appendMessage(request.owner(), HarnessMessage.draft(request.sessionId(), run.runId(),
+            HarnessMessageRole.USER, processActionPrompt(plan), null, List.of(), null, null, false,
+            HarnessUsage.empty(), Map.of("kind", "HARNESS_RECOVERY",
+                "reason", "REQUIRED_PROCESS_ACTION_NATURAL_STOP", "inputId", inputId,
+                "taskId", plan.taskId().toString(),
+                "revision", Long.toString(plan.revision())), now()));
+        return true;
+    }
+
     /** A provider length stop is an interrupted turn, never evidence that the coding task ended. */
     private boolean recoverFromTruncatedAssistant(HarnessRunRequest request,
                                                   HarnessRunState run,
@@ -991,8 +1426,11 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         missingInputIds.add(inputId);
         removeExistingAuditInputIds(request, missingInputIds);
         if (missingInputIds.isEmpty()) {
-            failRun(request, "A truncated model turn could not be advanced safely");
-            return true;
+            // The audit recovery input can be compacted while its source LENGTH assistant remains
+            // pinned as the last provider boundary. Its stable input id proves that correction was
+            // already requested; allow the dynamic truncation suffix and restricted registry to
+            // drive the next bounded request instead of turning compaction into a protocol failure.
+            return false;
         }
         store.appendMessage(request.owner(), HarnessMessage.draft(request.sessionId(), run.runId(),
             HarnessMessageRole.USER,
@@ -1016,50 +1454,89 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
      */
     private HarnessRunState reconcilePersistedToolResults(HarnessRunRequest request,
                                                            HarnessRunState run) {
-        Map<String, HarnessToolEffect> pendingByEffectId = new LinkedHashMap<>();
-        run.toolEffects().values().stream()
+        return reconcilePersistedToolResults(request, run, false);
+    }
+
+    private HarnessRunState reconcilePersistedToolResults(HarnessRunRequest request,
+                                                           HarnessRunState run,
+                                                           boolean requestCancellation) {
+        long timestamp = now();
+        try {
+            return toolEffectLedgerReconciler.updateAtomically(run, timestamp, reconciled -> {
+                UncertainToolEffectGuard.Finding finding =
+                    UncertainToolEffectGuard.firstFinding(reconciled).orElse(null);
+                if (finding == null) {
+                    return reconciled;
+                }
+                HarnessRunState projected = requestCancellation
+                    ? reconciled.requestCancellation(timestamp) : reconciled;
+                if (projected.status() == HarnessRunStatus.SUSPENDED
+                    && finding.reason().code().equals(projected.error())) {
+                    if (requestCancellation && !reconciled.cancellationRequested()) {
+                        return enqueueOrderedStateEvent(reconciled, projected,
+                            "run.cancel.requested",
+                            Map.of("code", "USER_CANCEL_REQUESTED"), timestamp);
+                    }
+                    return projected;
+                }
+                HarnessRunState suspended = UncertainToolEffectGuard.suspend(projected,
+                    finding, timestamp);
+                return enqueueOrderedStateEvent(reconciled, suspended, "run.suspended",
+                    Map.of("reason", finding.reason().code(),
+                        "effectId", finding.effect().effectId()), timestamp);
+            });
+        } catch (RuntimeException reconciliationFailure) {
+            return isolateToolLedgerFailure(request, requestCancellation,
+                reconciliationFailure);
+        }
+    }
+
+    private HarnessRunState isolateToolLedgerFailure(HarnessRunRequest request,
+                                                      boolean requestCancellation,
+                                                      RuntimeException failure) {
+        String reason = UncertainToolEffectReason.LEDGER_RECONCILIATION_UNAVAILABLE.code();
+        for (int attempt = 0; attempt < 4; attempt++) {
+            HarnessRunState current = requireRun(request);
+            if (current.status().isTerminal()) {
+                return current;
+            }
+            long timestamp = now();
+            HarnessRunState projected = requestCancellation
+                ? current.requestCancellation(timestamp) : current;
+            HarnessRunState isolated;
+            if (projected.status() == HarnessRunStatus.SUSPENDED
+                && reason.equals(projected.error())) {
+                isolated = requestCancellation && !current.cancellationRequested()
+                    ? enqueueOrderedStateEvent(current, projected, "run.cancel.requested",
+                        Map.of("code", "USER_CANCEL_REQUESTED"), timestamp)
+                    : projected;
+            } else {
+                isolated = UncertainToolEffectGuard.suspend(projected, reason, timestamp);
+                isolated = enqueueOrderedStateEvent(current, isolated, "run.suspended",
+                    Map.of("reason", reason,
+                        "effectId", firstRecoverableToolEffectId(current)), timestamp);
+            }
+            try {
+                HarnessRunState saved = isolated == current ? current
+                    : store.saveRun(request.owner(), isolated, current.revision());
+                String detail = failure instanceof ToolEffectLedgerReconciliationException exact
+                    ? exact.reason().code() : failure.getClass().getSimpleName();
+                log.warn("Isolated Harness run {} for reason {}, detail {}",
+                    request.runId(), reason, detail);
+                return saved;
+            } catch (HarnessOptimisticLockException conflict) {
+                // Re-read under the caller's session gate; never project stale evidence.
+            }
+        }
+        throw new ToolEffectLedgerReconciliationException(
+            ToolEffectLedgerFailureReason.CONCURRENT_APPEND_RETRY_EXHAUSTED, failure);
+    }
+
+    private String firstRecoverableToolEffectId(HarnessRunState run) {
+        return run.toolEffects().values().stream()
             .filter(effect -> effect.status() == HarnessToolEffectStatus.PENDING
                 || effect.status() == HarnessToolEffectStatus.COMMITTED)
-            .forEach(effect -> pendingByEffectId.put(effect.effectId(), effect));
-        if (pendingByEffectId.isEmpty()) {
-            return run;
-        }
-        Map<String, HarnessMessage> resultByEffectId = new LinkedHashMap<>();
-        transcriptReader.forEachAfter(request.owner(), request.sessionId(), 0, message -> {
-            if (message.role() != HarnessMessageRole.TOOL) {
-                return;
-            }
-            Object effectValue = message.metadata().get("effectId");
-            if (!(effectValue instanceof String effectId)
-                || !pendingByEffectId.containsKey(effectId)) {
-                return;
-            }
-            HarnessToolEffect effect = pendingByEffectId.get(effectId);
-            if (!run.runId().equals(message.runId())
-                || !effect.toolCallId().equals(message.toolCallId())
-                || !effect.toolName().equals(message.toolName())) {
-                throw new IllegalStateException("Tool result effect id was reused for another call");
-            }
-            if (resultByEffectId.putIfAbsent(effectId, message) != null) {
-                throw new IllegalStateException("Tool effect has multiple durable result messages");
-            }
-        });
-        if (resultByEffectId.isEmpty()) {
-            return run;
-        }
-        HarnessRunState next = run;
-        for (Map.Entry<String, HarnessMessage> entry : resultByEffectId.entrySet()) {
-            HarnessToolEffect effect = pendingByEffectId.get(entry.getKey());
-            HarnessMessage result = entry.getValue();
-            if (effect.status() == HarnessToolEffectStatus.COMMITTED
-                && (result.toolError()
-                || !effect.committedResult().equals(result.content()))) {
-                throw new IllegalStateException(
-                    "Durable tool result does not match its committed control receipt");
-            }
-            next = next.withToolEffect(effect.settle(result.messageId(), now()), now());
-        }
-        return store.saveRun(request.owner(), next, run.revision());
+            .map(HarnessToolEffect::effectId).sorted().findFirst().orElse("none");
     }
 
     private HarnessRunState reconcileControlEventOutbox(HarnessRunRequest request,
@@ -1072,7 +1549,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             reconcileControlEventOutboxUnderGate(request, requireRun(request)));
     }
 
-    /** Replays the event draft atomically committed with a plan-tool receipt by stable event id. */
+    /** Moves durable control drafts into the run FIFO before acknowledging their effect marker. */
     private HarnessRunState reconcileControlEventOutboxUnderGate(HarnessRunRequest request,
                                                                   HarnessRunState run) {
         HarnessRunState next = run;
@@ -1082,15 +1559,9 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 continue;
             }
             HarnessEvent event = effect.controlEvent();
-            try {
-                eventHub.publishIdempotent(request.owner(), event);
-                next = next.withToolEffect(effect.markControlEventPublished(), now());
-            } catch (RuntimeException replayFailure) {
-                // The receipt and exact event draft remain durable for a later loop/restart. An
-                // unavailable or over-limit event ledger must never rewrite tool success as error.
-                log.warn("Unable to reconcile control event {} for run {}; outbox remains pending",
-                    event.eventId(), request.runId(), replayFailure);
-            }
+            long timestamp = now();
+            next = next.enqueueEvent(event, timestamp)
+                .withToolEffect(effect.markControlEventPublished(), timestamp);
         }
         return next == run ? run : store.saveRun(request.owner(), next, run.revision());
     }
@@ -1101,7 +1572,8 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                                                      HarnessToolRuntime toolRuntime,
                                                      HarnessToolRegistry tools,
                                                      StreamingChatModel model,
-                                                     UsageTotals usage) {
+                                                     UsageTotals usage,
+                                                     boolean requireToolChoice) {
         long remainingInput = remainingBudget(run.budget().maxInputTokens(), usage.inputTokens());
         if (run.budget().maxInputTokens() > 0 && remainingInput == 0) {
             failRun(request, "Harness cumulative input-token budget is exhausted (used "
@@ -1117,17 +1589,42 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         // The plan and permission projection are dynamic state. Reassemble at every turn so a
         // control-plane approval or plan tool result is visible without restarting the worker.
         HarnessPromptBundle prompt = promptAssembler.assemble(new HarnessPromptContext(
-            session.workspace(), run.permissionMode(), preferredResponseLanguage(
+            session.workspace(), session.workspaceManifest(), run.permissionMode(),
+            run.originalRequirement(),
+            preferredResponseLanguage(
                 run.originalRequirement()), projectInstructions, planProjection(run),
             resourceProjection(run, usage),
-            tools.descriptors(), toolRuntime.skills().metadata()));
+            tools.descriptors(), toolRuntime.skills().metadata(), externalVerification(session)));
         List<HarnessMessage> raw = modelTranscriptForRun(
-            projectCheckpointCrossingControlResults(transcriptReader.readAfter(
-                request.owner(), request.sessionId(), run.contextCheckpoint().toSequence()),
-                request.runId()), request.runId());
+            CheckpointCrossingToolProjector.project(checkpointAwareMessages(request,
+                run.contextCheckpoint().toSequence()), request.runId()), request.runId());
         raw = projectHistoricalCompletedToolPayloads(raw);
-        ReviewContext reviewContext = independentReviewContext(run, raw);
+        String thinkingProtocolViolation = thinkingReplayViolation(run, raw);
+        if (thinkingProtocolViolation != null) {
+            failRun(request, thinkingProtocolViolation);
+            return null;
+        }
+        ReviewContext reviewContext = independentReviewContext(run, raw, session);
         List<HarnessMessage> modelMessages = reviewContext.messages();
+        String reviewSupplemental = reviewContext.supplementalPrompt();
+        String finalVerdictPrompt = finalVerdictPrompt(run, session);
+        boolean reasoningLengthRecovery = reasoningLengthRecoveryRequired(modelMessages);
+        boolean planCreationRecovery = reasoningLengthRecovery && run.executionPlan() == null;
+        boolean finalBuildAction = finalBuildActionRequired(run);
+        List<String> finalControlPrompts = new ArrayList<>(finalControlPrompts(finalVerdictPrompt,
+            decisionOnlyRegistry(tools), planStepActionRequired(run.executionPlan()),
+            analysisSynthesisRequired(run), workspaceBoundaryReached(run),
+            inspectionLimitReached(run), reasoningLengthRecovery, finalBuildAction,
+            planCreationRecovery));
+        if (requiredProcessAction(session, run.executionPlan(),
+            tools.descriptor("execute_process").isPresent())) {
+            // 外部验收模式下 requiredProcessAction 恒为 false，进程动作提示不会进入外部模式。
+            finalControlPrompts.add(processActionPrompt(run.executionPlan()));
+        }
+        finalControlPrompts = List.copyOf(finalControlPrompts);
+        long finalControlPromptTokens = finalControlPromptTokens(finalControlPrompts);
+        List<HarnessMessage> pinnedToolProtocolTail =
+            latestUnconsumedToolProtocolTail(modelMessages);
         ContextPins pins = new ContextPins(run.originalRequirement(), planProjection(run),
             run.permissionMode(), securityConstraints(run));
         ContextState state = new ContextState(pins, modelMessages, reviewContext.checkpoint(),
@@ -1142,15 +1639,30 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         // their current upper bound here. Compaction can remove evidence handles; it cannot make
         // this pre-compaction evidence projection larger.
         long systemTokens = saturatingAdd(16,
-            saturatingAdd(tokenEstimator.estimateText(prompt.systemPrompt()),
-            saturatingAdd(tokenEstimator.estimateText(ARTIFACT_CONTEXT_HEADER),
-                tokenEstimator.estimateText(projectedSupplementalContext))));
+            tokenEstimator.estimateText(prompt.systemPrompt()));
+        systemTokens = saturatingAdd(systemTokens,
+            tokenEstimator.estimateText(ARTIFACT_CONTEXT_HEADER));
+        systemTokens = saturatingAdd(systemTokens,
+            tokenEstimator.estimateText(projectedSupplementalContext));
+        if (!reviewSupplemental.isBlank()) {
+            systemTokens = saturatingAdd(systemTokens, saturatingAdd(32,
+                tokenEstimator.estimateText(reviewSupplemental)));
+        }
+        systemTokens = saturatingAdd(systemTokens, finalControlPromptTokens);
         long toolTokens = tools.specifications().stream()
             .mapToLong(specification -> saturatingAdd(64,
                 tokenEstimator.estimateText(specification.toJson())))
             .reduce(0L, DurableHarnessRunProcessor::saturatingAdd);
-        long turnOutputLimit = executionMode(run) == ExecutionMode.VERIFY
-            ? MAX_VERIFY_OUTPUT_TOKENS_PER_TURN : MAX_MODEL_OUTPUT_TOKENS_PER_TURN;
+        long turnOutputLimit = perTurnOutputLimit(run, executionMode(run),
+            reasoningLengthRecovery);
+        if (requireToolChoice) {
+            turnOutputLimit = Math.min(turnOutputLimit,
+                MAX_THINKING_BUILD_RECOVERY_OUTPUT_TOKENS_PER_TURN);
+        }
+        turnOutputLimit = recoverableTurnOutputLimit(turnOutputLimit, remainingOutput,
+            run.modelRoute() != null && run.modelRoute().thinkingEnabled()
+                && executionMode(run) == ExecutionMode.BUILD,
+            reasoningLengthRecovery, remainingModelTurns(run));
         long outputReserve = run.budget().maxOutputTokens() > 0
             ? Math.min(remainingOutput, turnOutputLimit) : turnOutputLimit;
         // Keep two independent limits here:
@@ -1178,18 +1690,49 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         // recent tool groups available while compacting old history before the hard boundary.
         ContextTokenBudget budget = new ContextTokenBudget(effectiveContextWindow,
             systemTokens, toolTokens, outputReserve, TOOL_GROWTH_RESERVE_TOKENS,
-            CONTEXT_SAFETY_MARGIN_TOKENS);
+            CONTEXT_SAFETY_MARGIN_TOKENS).withActiveInputLimit(activeContextInputTokens);
+        String contextModelIdentity = run.modelRoute() == null
+            ? session.model() : run.modelRoute().selectedModel();
+        ProviderOverflowRecovery overflowRecovery = run.providerOverflowRecovery();
+        boolean recoveringProviderOverflow = overflowRecovery != null
+            && overflowRecovery.stage() == ProviderOverflowRecoveryStage.COMPACTION_REQUIRED;
+        boolean providerOverflowRetryReady = overflowRecovery != null
+            && overflowRecovery.stage() == ProviderOverflowRecoveryStage.RETRY_READY;
+        HarnessContextCheckpoint checkpointBeforeCompaction = run.contextCheckpoint();
+        boolean journalCheckpointSaved = false;
+        boolean exactRequiredBoundary = !recoveringProviderOverflow
+            || (overflowRecovery.checkpointBeforeMatches(run.contextCheckpoint())
+                && !run.compactionControl().emergencyAttempted(overflowRecovery.recoveryId()));
+        boolean exactReadyBoundary = !providerOverflowRetryReady
+            || (overflowRecovery.checkpointMatches(run.contextCheckpoint())
+                && run.compactionControl().emergencyAttempted(overflowRecovery.recoveryId()));
+        if (!exactRequiredBoundary || !exactReadyBoundary) {
+            exhaustProviderOverflowRecoveryAndSuspend(request,
+                "Provider overflow recovery checkpoint/control boundary is inconsistent");
+            return null;
+        }
+        if (overflowRecovery != null && !recoveringProviderOverflow
+            && !providerOverflowRetryReady) {
+            suspendRun(request, "Provider overflow recovery is not at a request boundary: "
+                + overflowRecovery.stage());
+            return null;
+        }
         ContextCompactionResult compaction = contextEngine.compact(state, budget,
-            CompactionRequest.pressure(session.model(), run.updatedAt(), now()));
+            recoveringProviderOverflow
+                ? CompactionRequest.emergency(contextModelIdentity, run.updatedAt(),
+                    overflowRecovery.recoveryId(), now())
+                : CompactionRequest.pressure(contextModelIdentity, run.updatedAt(), now()));
         long tailSequence = state.workingMessages().isEmpty() ? 0
             : state.workingMessages().get(state.workingMessages().size() - 1).sequence();
         String overflowId = "preflight:" + request.runId() + ":" + run.iteration()
             + ":" + run.contextCheckpoint().toSequence() + ":" + tailSequence;
-        if (compaction.window().overBudget()) {
+        if (!recoveringProviderOverflow && compaction.window().overBudget()) {
             compaction = contextEngine.compact(compaction.state(), budget,
-                CompactionRequest.emergency(session.model(), run.updatedAt(), overflowId, now()));
+                CompactionRequest.emergency(contextModelIdentity, run.updatedAt(), overflowId,
+                    now()));
         }
-        if (compaction.window().overBudget() && effectiveContextWindow < hardContextWindow) {
+        if (!recoveringProviderOverflow && compaction.window().overBudget()
+            && budget.contextWindowTokens() < hardContextWindow) {
             // The proactive target is advisory. Give it one emergency attempt before widening;
             // this prevents an indivisible but stale tool group from consuming every later turn.
             // If it still cannot be made safe, retry from the original state against the actual
@@ -1198,24 +1741,82 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 outputReserve, TOOL_GROWTH_RESERVE_TOKENS,
                 CONTEXT_SAFETY_MARGIN_TOKENS);
             compaction = contextEngine.compact(state, budget,
-                CompactionRequest.pressure(session.model(), run.updatedAt(), now()));
+                CompactionRequest.pressure(contextModelIdentity, run.updatedAt(), now()));
             if (compaction.window().overBudget()) {
                 compaction = contextEngine.compact(compaction.state(), budget,
-                    CompactionRequest.emergency(session.model(), run.updatedAt(),
+                    CompactionRequest.emergency(contextModelIdentity, run.updatedAt(),
                         overflowId + ":hard", now()));
             }
         }
-        if (compaction.compacted()
+        if (recoveringProviderOverflow) {
+            ContextCompactionResult durableCompaction = compaction;
+            ProviderOverflowRecovery expectedRecovery = overflowRecovery;
+            if (!compaction.compacted() || compaction.window().overBudget()) {
+                String reason = "Provider context overflow could not be reduced by its single "
+                    + "emergency compaction attempt: " + compaction.detail();
+                HarnessRunState exhausted = mutate(request, current -> {
+                    ProviderOverflowRecovery currentRecovery = current.providerOverflowRecovery();
+                    if (currentRecovery == null
+                        || !currentRecovery.equals(expectedRecovery)) {
+                        throw new IllegalStateException(
+                            "Provider overflow recovery changed during compaction");
+                    }
+                    long timestamp = now();
+                    HarnessRunState next = current.withContextAndProviderOverflowRecovery(
+                        durableCompaction.state().checkpoint(),
+                        durableCompaction.state().compactionControl(),
+                        currentRecovery.exhausted(reason, timestamp), timestamp);
+                    return transitionWithOrderedStateEvent(next,
+                        HarnessRunStatus.SUSPENDED, reason, "run.suspended",
+                        Map.of("reason", "provider_context_compaction_failed",
+                            "overflowId", expectedRecovery.recoveryId()), timestamp);
+                });
+                drainLifecycleEvents(request, exhausted);
+                return null;
+            }
+            run = mutate(request, current -> {
+                ProviderOverflowRecovery currentRecovery = current.providerOverflowRecovery();
+                if (currentRecovery == null || !currentRecovery.equals(expectedRecovery)) {
+                    throw new IllegalStateException(
+                        "Provider overflow recovery changed during compaction");
+                }
+                ProviderOverflowRecovery retryReady = currentRecovery.retryReady(
+                    durableCompaction.state().checkpoint(), now());
+                return current.withContextAndProviderOverflowRecovery(
+                    durableCompaction.state().checkpoint(),
+                    durableCompaction.state().compactionControl(), retryReady, now());
+            });
+            journalCheckpointSaved = run.providerOverflowRecovery() != null
+                && run.providerOverflowRecovery().stage()
+                    == ProviderOverflowRecoveryStage.RETRY_READY
+                && !checkpointBeforeCompaction.equals(run.contextCheckpoint());
+        } else if (providerOverflowRetryReady && compaction.compacted()) {
+            String reason = "The durable provider retry checkpoint changed before retry start";
+            exhaustProviderOverflowRecoveryAndSuspend(request, reason);
+            return null;
+        } else if (compaction.compacted()
             || !compaction.state().compactionControl().equals(run.compactionControl())) {
             ContextCompactionResult durableCompaction = compaction;
             run = mutate(request, current -> current.withContextState(
                 durableCompaction.state().checkpoint(),
                 durableCompaction.state().compactionControl(), now()));
+            journalCheckpointSaved = compaction.compacted()
+                && !checkpointBeforeCompaction.equals(run.contextCheckpoint());
         }
         if (compaction.window().overBudget()) {
-            suspendRun(request, "Context compaction could not produce a safe provider window: "
-                + compaction.detail());
+            String reason = "Context compaction could not produce a safe provider window: "
+                + compaction.detail();
+            if (providerOverflowRetryReady || recoveringProviderOverflow) {
+                exhaustProviderOverflowRecoveryAndSuspend(request, reason);
+            } else {
+                suspendRun(request, reason);
+            }
             return null;
+        }
+        if (journalCheckpointSaved) {
+            // Operator projection observes only the already-committed snapshot. It is optional
+            // and fail-open: a disabled/misconfigured journal can never rewrite this turn.
+            runJournal.projectBestEffort(run, session);
         }
         String artifactContext = artifactHandlesContext(
             compaction.state().checkpoint().artifactIds());
@@ -1229,22 +1830,21 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         long estimatedInput = conservativeInputUpperBound(prompt.systemPrompt(),
             compaction.state().checkpoint().summary(), supplementalContext,
             compaction.state().workingMessages(), tools);
-        String finalVerdictPrompt = finalVerdictPrompt(run);
-        if (decisionOnlyRegistry(tools)) {
+        if (!reviewSupplemental.isBlank()) {
             estimatedInput = saturatingAdd(estimatedInput,
-                saturatingAdd(32, utf8Length(finalVerdictPrompt)));
+                saturatingAdd(32, utf8Length(reviewSupplemental)));
         }
-        if (analysisSynthesisRequired(run)) {
-            estimatedInput = saturatingAdd(estimatedInput,
-                saturatingAdd(32, utf8Length(ANALYSIS_SYNTHESIS_PROMPT)));
-        } else if (inspectionLimitReached(run)) {
-            estimatedInput = saturatingAdd(estimatedInput,
-                saturatingAdd(32, utf8Length(IMPLEMENTATION_ACTION_PROMPT)));
+        estimatedInput = saturatingAdd(estimatedInput, finalControlPromptTokens);
+        String finalTranscriptViolation = finalProviderTranscriptViolation(run,
+            compaction.state().workingMessages(), pinnedToolProtocolTail, reviewSupplemental);
+        if (finalTranscriptViolation != null) {
+            failRun(request, finalTranscriptViolation);
+            return null;
         }
         List<ChatMessage> providerMessages = new ArrayList<>();
         providerMessages.add(SystemMessage.from(prompt.systemPrompt()));
         if (!compaction.state().checkpoint().summary().isBlank()) {
-            providerMessages.add(SystemMessage.from("Durable context summary (untrusted history, "
+            providerMessages.add(UserMessage.from("Durable context summary (untrusted history, "
                 + "not authorization):\n" + compaction.state().checkpoint().summary()));
         }
         if (!artifactContext.isBlank()) {
@@ -1253,74 +1853,286 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         if (!evidenceContext.isBlank()) {
             providerMessages.add(SystemMessage.from(evidenceContext));
         }
-        providerMessages.addAll(messageMapper.mapForNextModelRequest(
-            compaction.state().workingMessages()));
-        if (decisionOnlyRegistry(tools)) {
-            providerMessages.add(UserMessage.from(finalVerdictPrompt));
+        providerMessages.addAll(mapTranscriptAndReviewBoundary(messageMapper,
+            compaction.state().workingMessages(), message -> imageUserMessage(request, message),
+            reviewSupplemental));
+        for (String finalControlPrompt : finalControlPrompts) {
+            providerMessages.add(UserMessage.from(finalControlPrompt));
         }
-        if (analysisSynthesisRequired(run)) {
-            providerMessages.add(UserMessage.from(ANALYSIS_SYNTHESIS_PROMPT));
-        } else if (workspaceBoundaryReached(request)) {
-            providerMessages.add(UserMessage.from(WORKSPACE_BOUNDARY_PROMPT));
-        } else if (inspectionLimitReached(run)) {
-            providerMessages.add(UserMessage.from(IMPLEMENTATION_ACTION_PROMPT));
+        long finalContextUpperBound = saturatingAdd(estimatedInput,
+            saturatingAdd(outputReserve, saturatingAdd(TOOL_GROWTH_RESERVE_TOKENS,
+                CONTEXT_SAFETY_MARGIN_TOKENS)));
+        if (finalContextUpperBound > hardContextWindow) {
+            String reason = "Final provider request exceeds the configured context window "
+                + "after dynamic control messages (estimated=" + finalContextUpperBound
+                + ", limit=" + hardContextWindow + ")";
+            if (requireRun(request).providerOverflowRecovery() != null) {
+                exhaustProviderOverflowRecoveryAndSuspend(request, reason);
+            } else {
+                suspendRun(request, reason);
+            }
+            return null;
         }
         int maxOutput = Math.toIntExact(Math.min(Integer.MAX_VALUE, outputReserve));
-        ChatRequestParameters requestOverrides = ChatRequestParameters.builder()
+        var requestOverridesBuilder = ChatRequestParameters.builder()
             .toolSpecifications(tools.specifications())
-            .maxOutputTokens(maxOutput)
-            .build();
+            .maxOutputTokens(maxOutput);
+        if (requireToolChoice) {
+            requestOverridesBuilder.toolChoice(ToolChoice.REQUIRED);
+        }
+        ChatRequestParameters requestOverrides = requestOverridesBuilder.build();
         ChatRequestParameters modelParameters = model.defaultRequestParameters()
             .overrideWith(requestOverrides);
         ChatRequest chatRequest = ChatRequest.builder().messages(providerMessages)
             .parameters(modelParameters).build();
+        String hashedSupplementalContext = java.util.stream.Stream.of(supplementalContext,
+                reviewSupplemental, String.join("\n\n", finalControlPrompts))
+            .filter(value -> value != null && !value.isBlank())
+            .collect(java.util.stream.Collectors.joining("\n\n"));
+        hashedSupplementalContext += "\n\n[turn-profile:"
+            + (requireToolChoice ? "required-tool" : "normal") + ";model:"
+            + Objects.toString(modelParameters.modelName(), "") + "]";
         return new PreparedModelRequest(chatRequest,
             requestHash(prompt.completePromptSha256(), compaction.state().checkpoint().summary(),
-                supplementalContext, compaction.state().workingMessages(), tools),
+                hashedSupplementalContext,
+                compaction.state().workingMessages(), tools),
             estimatedInput);
     }
 
+    /**
+     * Maps the durable transcript at the next-provider-request boundary and then appends the
+     * independent reviewer pin. A newly persisted VERIFY boundary intentionally has no ordinary
+     * messages after it; in that one case the reviewer pin itself is the USER request boundary.
+     * Every non-empty transcript still passes through the strict tool-protocol mapper, and an
+     * empty ordinary turn without a reviewer pin remains invalid.
+     */
+    static List<ChatMessage> mapTranscriptAndReviewBoundary(
+        LangChain4jMessageMapper mapper,
+        List<HarnessMessage> workingMessages,
+        Function<HarnessMessage, ChatMessage> override,
+        String reviewSupplemental
+    ) {
+        Objects.requireNonNull(mapper, "mapper");
+        Objects.requireNonNull(workingMessages, "workingMessages");
+        Objects.requireNonNull(override, "override");
+        Objects.requireNonNull(reviewSupplemental, "reviewSupplemental");
+        List<ChatMessage> result = new ArrayList<>();
+        if (!workingMessages.isEmpty() || reviewSupplemental.isBlank()) {
+            result.addAll(mapper.mapForNextModelRequest(workingMessages, override));
+        }
+        if (!reviewSupplemental.isBlank()) {
+            result.add(UserMessage.from(reviewSupplemental));
+        }
+        return List.copyOf(result);
+    }
+
+    private ChatMessage imageUserMessage(HarnessRunRequest request, HarnessMessage message) {
+        if (message.role() != HarnessMessageRole.USER) {
+            return null;
+        }
+        Object raw = message.metadata().get("images");
+        if (!(raw instanceof List<?> images) || images.isEmpty()) {
+            return null;
+        }
+        List<Content> contents = new ArrayList<>(images.size() + 1);
+        contents.add(TextContent.from(Objects.toString(message.content(), "")));
+        for (Object item : images) {
+            if (!(item instanceof Map<?, ?> image)) {
+                throw new IllegalStateException("Invalid durable image metadata");
+            }
+            String artifactId = Objects.toString(image.get("artifactId"), "");
+            String mediaType = Objects.toString(image.get("mediaType"), "");
+            String detail = Objects.toString(image.get("detail"), "auto");
+            int byteSize = Math.toIntExact(((Number) image.get("byteSize")).longValue());
+            byte[] bytes = artifactRepository.readImage(request.owner(), request.sessionId(),
+                request.runId(), artifactId, Math.min(8 * 1024 * 1024, byteSize));
+            // DeepSeek: auto/low/original；Doubao 额外真实支持 high/xhigh（xhigh 映射 ULTRA_HIGH，
+            // 由 Doubao 桥接序列化为 detail:xhigh，不降级）。
+            ImageContent.DetailLevel detailLevel =
+                LangChain4jMessageMapper.imageDetailLevel(detail);
+            contents.add(ImageContent.from(Base64.getEncoder().encodeToString(bytes), mediaType,
+                detailLevel));
+        }
+        return UserMessage.from(contents);
+    }
+
     private String resourceProjection(HarnessRunState run, UsageTotals usage) {
-        long wallElapsed = Math.max(0, now() - run.createdAt());
-        long wallRemaining = Math.max(0, run.budget().maxWallTimeMillis() - wallElapsed);
-        return "iterations used=%d remaining=%d; tool calls used=%d remaining=%d; "
-            .formatted(run.iteration(),
-                Math.max(0, run.budget().maxIterations() - run.iteration()),
-                run.toolCallCount(),
-                Math.max(0, run.budget().maxToolCalls() - run.toolCallCount()))
+        int inspectionUsed = run.inspectionLedger().inspectionFingerprints().size();
+        int inspectionRemaining = Math.max(0, inspectionLimit(run) - inspectionUsed);
+        return "iterations used=%d (unlimited); tool calls used=%d remaining=%s; "
+            .formatted(run.iteration(), run.toolCallCount(),
+                remainingBudgetProjection(run.budget().maxToolCalls(), run.toolCallCount()))
+            + "inspection calls used=%d remaining=%d; "
+            .formatted(inspectionUsed, inspectionRemaining)
             + "cumulative input tokens used=%d remaining=%s; output tokens used=%d remaining=%s; "
             .formatted(usage.inputTokens(),
                 remainingBudgetProjection(run.budget().maxInputTokens(), usage.inputTokens()),
                 usage.outputTokens(),
                 remainingBudgetProjection(run.budget().maxOutputTokens(), usage.outputTokens()))
-            + "wall time remaining ms=" + wallRemaining;
+            + "no run wall-time limit; model timeout measures response inactivity only";
     }
 
     private HarnessToolRegistry effectiveRegistry(HarnessRunRequest request, HarnessRunState run,
-                                                  HarnessToolRegistry registry) {
+                                                  HarnessSessionState session,
+                                                  HarnessToolRegistry registry,
+                                                  boolean reasoningLengthRecovery,
+                                                  boolean finalBuildAction) {
         PlanAggregate plan = run.executionPlan();
-        if (authoritativeProcessEvidenceReady(plan)
+        if (!externalVerification(session) && (authoritativeProcessEvidenceReady(plan)
             || planCommands.verificationDecisionReady(request.owner(), request.sessionId(),
-                request.runId(), plan)) {
+                request.runId(), plan))) {
             // A conclusive review still needs an explicit model verdict, but advertising more read
             // and probe tools invites the provider to repeat equivalent checks indefinitely. Tool
             // schemas are the real authority, so expose only the legal verdict transition now.
             return registry.restrictedTo(Set.of("plan_verify"));
         }
+        if (planStepActionRequired(plan)) {
+            // Starting or retrying one authoritative unit of work is a state transition, not
+            // another discovery turn. Without this gate an approved plan can exhaust BUILD on
+            // repository reads while every step remains PENDING.
+            return registry.restrictedTo(Set.of("plan_step"));
+        }
+        if (!externalVerification(session) && processOnlyActiveStep(plan)
+            && !failedEvidenceSupportsActiveStep(plan)) {
+            // A verifier-only step has no implementation ambiguity before its first real failure.
+            // Advertising prose transitions or mutation tools lets the model speculate instead of
+            // running the exact finite commands bound by the acceptance contract.
+            // 外部验收模式没有 execute_process/run_inline_probe，不强制进程动作（防止卡住）。
+            if (registry.descriptor("execute_process").isPresent()) {
+                return registry.restrictedTo(Set.of("execute_process"));
+            }
+        }
+        if (reasoningLengthRecovery && plan == null) {
+            // Once a no-plan turn has already consumed its reasoning allowance, another discovery
+            // schema can only restart the same loop. The recovery request has one legal outcome.
+            return registry.restrictedTo(Set.of("plan_create"));
+        }
+        if ((reasoningLengthRecovery || finalBuildAction) && plan != null
+            && plan.inProgressStep().isPresent()) {
+            // A thinking-only truncation is not evidence that the implementation is blocked.
+            // Removing plan transitions here prevents the recovery turn from converting an
+            // unfinished thought into a durable BLOCK/SKIP detour. On the final BUILD turn the
+            // same action-only boundary makes the remaining iteration useful instead of reserving
+            // it for narration that cannot be recovered.
+            Set<String> actionTools = registry.descriptors().stream()
+                .map(org.ruoyi.service.coding.harness.tool.ToolDescriptor::toolName)
+                .filter(PLAN_GATED_MUTATION_TOOLS::contains)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            if (!actionTools.isEmpty()) {
+                return registry.restrictedTo(actionTools);
+            }
+        }
         if (analysisSynthesisRequired(run)) {
             return registry.restrictedTo(Set.of());
         }
-        if (workspaceBoundaryReached(request)) {
+        if (workspaceBoundaryReached(run)) {
             return registry.restrictedTo(Set.of());
         }
         if (inspectionLimitReached(run)) {
+            if (run.executionPlan() == null) {
+                // A BUILD run cannot mutate without a plan. Once bounded discovery is complete,
+                // advertising mutation/process schemas merely invites denied calls and more
+                // reasoning. Make the only legal convergence action mechanically obvious.
+                return registry.restrictedTo(Set.of("plan_create"));
+            }
+            if (plan.inProgressStep().isPresent()) {
+                Set<String> activeActionTools = registry.descriptors().stream()
+                    .map(org.ruoyi.service.coding.harness.tool.ToolDescriptor::toolName)
+                    .filter(PLAN_GATED_MUTATION_TOOLS::contains)
+                    .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+                if (externalVerification(session) || failedEvidenceSupportsActiveStep(plan)) {
+                    activeActionTools.add("plan_step");
+                }
+                return registry.restrictedTo(Set.copyOf(activeActionTools));
+            }
             Set<String> actionable = registry.descriptors().stream()
                 .map(org.ruoyi.service.coding.harness.tool.ToolDescriptor::toolName)
                 .filter(name -> !INSPECTION_TOOL_NAMES.contains(name))
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
             return registry.restrictedTo(actionable);
         }
+        // EXTERNAL deliberately disables automatic step completion: a successful write may be
+        // only part of the implementation. Keep the evidence-validated manual transition visible
+        // so the model can finish its step before entering VERIFY.
+        if (!externalVerification(session) && plan != null && plan.inProgressStep().isPresent()
+            && !failedEvidenceSupportsActiveStep(plan)) {
+            Set<String> withoutNarrativeTransition = registry.descriptors().stream()
+                .map(org.ruoyi.service.coding.harness.tool.ToolDescriptor::toolName)
+                .filter(name -> !"plan_step".equals(name))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            return registry.restrictedTo(withoutNarrativeTransition);
+        }
         return registry;
+    }
+
+    static boolean processOnlyActiveStep(PlanAggregate plan) {
+        if (plan == null || plan.mode() != ExecutionMode.BUILD
+            || plan.inProgressStep().isEmpty()) {
+            return false;
+        }
+        Set<String> criterionIds = Set.copyOf(
+            plan.inProgressStep().orElseThrow().acceptanceCriterionIds());
+        List<org.ruoyi.service.coding.harness.plan.AcceptanceCriterion> criteria =
+            plan.contract().criteria().stream()
+                .filter(criterion -> criterionIds.contains(criterion.id()))
+                .toList();
+        return !criteria.isEmpty() && criteria.stream().allMatch(criterion ->
+            org.ruoyi.service.coding.harness.plan.AcceptanceCriterion.PROCESS_EXIT_TYPE
+                .equals(criterion.type()));
+    }
+
+    static boolean failedEvidenceSupportsActiveStep(PlanAggregate plan) {
+        if (plan == null || plan.inProgressStep().isEmpty()) {
+            return false;
+        }
+        PlanTaskStep active = plan.inProgressStep().orElseThrow();
+        Set<String> criterionIds = Set.copyOf(active.acceptanceCriterionIds());
+        Set<String> expectedKeys = plan.contract().criteria().stream()
+            .filter(criterion -> criterionIds.contains(criterion.id()))
+            .map(criterion -> criterion.type() + "\u0000" + criterion.evidenceKey())
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return plan.evidence().stream()
+            .filter(evidence -> !evidence.successful())
+            .anyMatch(evidence -> expectedKeys.contains(
+                evidence.type() + "\u0000" + evidence.canonicalKey()));
+    }
+
+    static boolean requiredProcessActionRecoveryPresent(List<HarnessMessage> messages,
+                                                         PlanAggregate plan) {
+        if (messages == null || plan == null) {
+            return false;
+        }
+        String expectedInputId = requiredProcessRecoveryInputId(plan);
+        return messages.stream().anyMatch(message ->
+            message.role() == HarnessMessageRole.USER
+                && "HARNESS_RECOVERY".equals(message.metadata().get("kind"))
+                && "REQUIRED_PROCESS_ACTION_NATURAL_STOP".equals(
+                    message.metadata().get("reason"))
+                && expectedInputId.equals(message.metadata().get("inputId")));
+    }
+
+    static String processActionPrompt(PlanAggregate plan) {
+        if (!processOnlyActiveStep(plan)) {
+            return "";
+        }
+        Set<String> activeCriterionIds = Set.copyOf(
+            plan.inProgressStep().orElseThrow().acceptanceCriterionIds());
+        Optional<AcceptanceCriterion> next = plan.contract().criteria().stream()
+            .filter(criterion -> activeCriterionIds.contains(criterion.id()))
+            .filter(criterion -> !plan.evidence().stream().anyMatch(criterion::isSatisfiedBy))
+            .findFirst();
+        if (next.isEmpty()) {
+            return "";
+        }
+        return "PROCESS ACTION REQUIRED. The active step is a finite mechanical state machine. "
+            + "The only legal next action is the advertised execute_process tool. Immediately "
+            + "call it once with the exact JSON object after the execute_process: prefix below; "
+            + "do not narrate, restate, simulate, change arguments, or call a plan tool.\n"
+            + next.orElseThrow().evidenceKey();
+    }
+
+    private static String requiredProcessRecoveryInputId(PlanAggregate plan) {
+        return REQUIRED_PROCESS_RECOVERY_INPUT_PREFIX + plan.taskId() + ":" + plan.revision();
     }
 
     /**
@@ -1332,97 +2144,10 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         return messages.stream().filter(message -> runId.equals(message.runId())).toList();
     }
 
-    /**
-     * A control tool can commit its result after a compaction checkpoint has already retained the
-     * source assistant message. Reading strictly after that checkpoint would begin with a TOOL
-     * message and manufacture an ORPHAN_RESULT even though the durable run ledger contains the
-     * matching call. Reattach only the checkpoint-crossing assistant batch prefix; ordinary
-     * checkpoints keep the bounded suffix fast path and the provider still receives compacted
-     * history rather than the full run.
-     */
+    /** Reads only the suffix after the durable checkpoint; crossing tool results are projected. */
     private List<HarnessMessage> checkpointAwareMessages(HarnessRunRequest request,
                                                          long checkpointSequence) {
-        List<HarnessMessage> suffix = transcriptReader.readAfter(request.owner(),
-            request.sessionId(), checkpointSequence);
-        if (checkpointSequence <= 0) {
-            return suffix;
-        }
-        HarnessMessage firstCurrent = suffix.stream()
-            .filter(message -> request.runId().equals(message.runId()))
-            .findFirst().orElse(null);
-        if (firstCurrent == null || firstCurrent.role() != HarnessMessageRole.TOOL
-            || firstCurrent.toolCallId() == null) {
-            return suffix;
-        }
-
-        List<HarnessMessage> fullCurrent = currentRunMessages(transcriptReader.readAfter(
-            request.owner(), request.sessionId(), 0), request.runId());
-        int sourceIndex = -1;
-        for (int index = fullCurrent.size() - 1; index >= 0; index--) {
-            HarnessMessage candidate = fullCurrent.get(index);
-            if (candidate.sequence() > checkpointSequence
-                || candidate.role() != HarnessMessageRole.ASSISTANT) {
-                continue;
-            }
-            boolean ownsResult = candidate.toolCalls().stream().anyMatch(call ->
-                firstCurrent.toolCallId().equals(call.toolCallId()));
-            if (ownsResult) {
-                sourceIndex = index;
-                break;
-            }
-        }
-        if (sourceIndex < 0) {
-            return suffix;
-        }
-
-        Map<Long, HarnessMessage> merged = new java.util.TreeMap<>();
-        for (int index = sourceIndex; index < fullCurrent.size(); index++) {
-            HarnessMessage message = fullCurrent.get(index);
-            if (message.sequence() > checkpointSequence) {
-                break;
-            }
-            merged.put(message.sequence(), message);
-        }
-        suffix.forEach(message -> merged.put(message.sequence(), message));
-        return List.copyOf(merged.values());
-    }
-
-    /**
-     * The provider projection cannot contain a TOOL message whose source assistant call is already
-     * represented by the checkpoint summary. CONTROL_COMMITTED results carry no workspace output;
-     * their authoritative state is injected independently through the plan projection. Replace a
-     * leading checkpoint-crossing control result with a neutral continuation message so the model
-     * request remains valid without replaying an already committed control command.
-     */
-    private List<HarnessMessage> projectCheckpointCrossingControlResults(
-        List<HarnessMessage> messages, String runId) {
-        List<HarnessMessage> projected = new ArrayList<>(messages.size());
-        boolean currentRunSeen = false;
-        for (HarnessMessage message : messages) {
-            if (!runId.equals(message.runId())) {
-                projected.add(message);
-                continue;
-            }
-            if (!currentRunSeen && message.role() == HarnessMessageRole.TOOL
-                && "CONTROL_COMMITTED".equals(message.metadata().get("code"))) {
-                Map<String, Object> metadata = new LinkedHashMap<>(message.metadata());
-                metadata.put("projection", "checkpoint-crossing-control-result");
-                metadata.put("sourceToolCallId", message.toolCallId());
-                projected.add(new HarnessMessage(message.schemaVersion(), message.messageId(),
-                    message.sessionId(), message.runId(), message.sequence(),
-                    HarnessMessageRole.USER,
-                    "A committed control result crossed the durable context checkpoint. "
-                        + "Continue from the current server-authored plan and permission "
-                        + "projection without replaying that historical control call.",
-                    null, List.of(), null, null, false, message.usage(), metadata,
-                    message.timestamp()));
-                currentRunSeen = true;
-                continue;
-            }
-            currentRunSeen = true;
-            projected.add(message);
-        }
-        return List.copyOf(projected);
+        return transcriptReader.readAfter(request.owner(), request.sessionId(), checkpointSequence);
     }
 
     /**
@@ -1474,11 +2199,31 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         return List.copyOf(projected);
     }
 
-    private boolean workspaceBoundaryReached(HarnessRunRequest request) {
-        return currentRunMessages(transcriptReader.readAfter(request.owner(), request.sessionId(),
-            0), request.runId()).stream().anyMatch(message ->
-                message.role() == HarnessMessageRole.TOOL
-                    && "OUTSIDE_WORKSPACE".equals(message.metadata().get("code")));
+    /** One streamed migration replaces the former twice-per-turn full-session materialization. */
+    private HarnessRunState ensureWorkspaceBoundaryIndexed(HarnessRunRequest request,
+                                                           HarnessRunState run) {
+        if (run.inspectionLedger().schemaVersion()
+            >= HarnessInspectionLedger.CURRENT_SCHEMA_VERSION) {
+            return run;
+        }
+        boolean reached = transcriptReader.findFirstAfter(request.owner(), request.sessionId(), 0,
+            message -> request.runId().equals(message.runId())
+                && message.role() == HarnessMessageRole.TOOL
+                && "OUTSIDE_WORKSPACE".equals(message.metadata().get("code"))).isPresent();
+        return mutate(request, current -> {
+            HarnessInspectionLedger ledger = current.inspectionLedger();
+            if (ledger.schemaVersion() >= HarnessInspectionLedger.CURRENT_SCHEMA_VERSION) {
+                return current;
+            }
+            HarnessInspectionLedger migrated = reached
+                ? ledger.recordWorkspaceBoundaryReached()
+                : ledger.completeWorkspaceBoundaryMigration();
+            return current.withInspectionLedger(migrated, now());
+        });
+    }
+
+    private boolean workspaceBoundaryReached(HarnessRunState run) {
+        return run.inspectionLedger().workspaceBoundaryReached();
     }
 
     private boolean authoritativeProcessEvidenceReady(PlanAggregate plan) {
@@ -1497,11 +2242,16 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
     }
 
     private boolean inspectionLimitReached(HarnessRunState run) {
-        HarnessInspectionLedger ledger = run.inspectionLedger();
-        return ledger.inspectionFingerprints().size() >= inspectionLimit(run)
-            || (run.permissionMode()
-                != org.ruoyi.service.coding.harness.model.HarnessPermissionMode.READ_ONLY
-                && ledger.duplicateAttempts() >= DUPLICATE_READS_BEFORE_SYNTHESIS);
+        return run.permissionMode()
+            == org.ruoyi.service.coding.harness.model.HarnessPermissionMode.READ_ONLY
+            && run.inspectionLedger().inspectionFingerprints().size() >= inspectionLimit(run);
+    }
+
+    static boolean planStepActionRequired(PlanAggregate plan) {
+        return plan != null
+            && plan.mode() == ExecutionMode.BUILD
+            && plan.inProgressStep().isEmpty()
+            && plan.steps().stream().anyMatch(step -> !step.status().isTerminal());
     }
 
     private int inspectionLimit(HarnessRunState run) {
@@ -1509,8 +2259,46 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             == org.ruoyi.service.coding.harness.model.HarnessPermissionMode.READ_ONLY) {
             return MAX_READ_ONLY_INSPECTION_CALLS;
         }
-        return run.executionPlan() == null
-            ? MAX_PRE_PLAN_INSPECTION_CALLS : MAX_READ_ONLY_INSPECTION_CALLS;
+        // Coding tasks need fresh source after conflicts and across many projects. Context
+        // compaction manages their history; read-only diagnosis convergence rules do not apply.
+        return Integer.MAX_VALUE;
+    }
+
+    static boolean requiredActionTurn(boolean hasTools, boolean decisionOnly,
+                                      boolean planStepRequired,
+                                      boolean inspectionLimitReached,
+                                      boolean reasoningLengthRecovery,
+                                      boolean finalBuildAction) {
+        return hasTools && (decisionOnly || planStepRequired || inspectionLimitReached
+            || reasoningLengthRecovery || finalBuildAction);
+    }
+
+    /**
+     * 实例版：外部验收模式不暴露进程工具，不能强制 execute_process，否则主循环会卡住。
+     * 模式直接取自当前会话不可变的持久化配置，不依赖任何跨会话共享状态。
+     */
+    boolean requiredProcessAction(HarnessSessionState session, PlanAggregate plan,
+                                  boolean executeProcessAvailable) {
+        if (externalVerification(session)) {
+            return false;
+        }
+        return requiredProcessAction(plan, executeProcessAvailable);
+    }
+
+    /** 静态 AGENT 语义，保留给既有测试与纯策略判定（外部验收模式由实例版覆盖为 false）。 */
+    static boolean requiredProcessAction(PlanAggregate plan, boolean executeProcessAvailable) {
+        return executeProcessAvailable && processOnlyActiveStep(plan)
+            && !failedEvidenceSupportsActiveStep(plan);
+    }
+
+    /**
+     * 会话是否选择外部验收模式（验证由独立验收者完成，智能体不跑测试/进程）。
+     * 判定依据是会话创建后不可变的 verificationMode 持久化字段，天然按会话隔离。
+     */
+    boolean externalVerification(HarnessSessionState session) {
+        return session != null
+            && session.verificationMode()
+                == org.ruoyi.service.coding.harness.model.HarnessVerificationMode.EXTERNAL;
     }
 
     private boolean decisionOnlyRegistry(HarnessToolRegistry registry) {
@@ -1521,22 +2309,162 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
     }
 
     private HarnessRunState beginModelEffect(HarnessRunRequest request, String requestHash) {
-        return sessionGate.withSession(request.owner(), request.sessionId(), () -> {
+        HarnessRunState started = sessionGate.withSession(request.owner(), request.sessionId(), () -> {
             HarnessRunState run = requireRun(request);
             if (run.status() != HarnessRunStatus.RUNNING || run.cancellationRequested()) {
                 return null;
             }
-            if (run.iteration() >= run.budget().maxIterations()) {
-                return null;
-            }
             int iteration = run.iteration() + 1;
-            HarnessRunState next = run.withCounters(iteration, run.toolCallCount(), now());
-            next = next.withModelEffect(HarnessModelEffect.pending(iteration, requestHash, now()), now());
-            HarnessRunState saved = store.saveRun(request.owner(), next, run.revision());
-            publishState(request, "model.turn.started", saved,
-                Map.of("effectId", saved.modelEffect().effectId(), "iteration", iteration));
-            return saved;
+            ProviderOverflowRecovery recovery = run.providerOverflowRecovery();
+            if (recovery != null) {
+                HarnessModelEffect failedEffect = run.modelEffect();
+                if (recovery.stage() != ProviderOverflowRecoveryStage.RETRY_READY
+                    || !recovery.matchesFailedEffect(failedEffect)
+                    || run.iteration() != recovery.failedIteration()
+                    || failedEffect.status() != HarnessModelEffectStatus.ABANDONED
+                    || !recovery.checkpointMatches(run.contextCheckpoint())
+                    || !run.compactionControl().emergencyAttempted(recovery.recoveryId())) {
+                    throw new IllegalStateException(
+                        "Provider overflow retry is not at its exact durable boundary");
+                }
+            }
+            long timestamp = now();
+            HarnessModelEffect pending = HarnessModelEffect.pending(iteration, requestHash,
+                timestamp);
+            HarnessRunState next = run.withCounters(iteration, run.toolCallCount(), timestamp);
+            next = next.withStartedModelEffect(pending,
+                recovery == null ? null : recovery.recoveryId(), timestamp);
+            if (recovery != null) {
+                next = next.withProviderOverflowRecovery(
+                    recovery.retryInFlight(pending, timestamp), timestamp);
+            }
+            return store.saveRun(request.owner(), next, run.revision());
         });
+        if (started == null) {
+            return null;
+        }
+        HarnessRunState drained = drainLifecycleEvents(request, started);
+        String startedEventId = drained.modelEffect().startedEventId();
+        boolean startStillPending = drained.eventOutbox().stream().anyMatch(entry ->
+            startedEventId.equals(entry.event().eventId()));
+        if (!startStillPending) {
+            return drained;
+        }
+        String reason = "Model turn start event could not be admitted before provider execution";
+        HarnessRunState suspended = mutate(request, current -> {
+            HarnessModelEffect effect = current.modelEffect();
+            if (effect == null || effect.status() != HarnessModelEffectStatus.PENDING
+                || !effect.effectId().equals(drained.modelEffect().effectId())) {
+                return current;
+            }
+            long timestamp = now();
+            HarnessRunState next = current.abandonModelEffectWithEvent(effect.effectId(), reason,
+                HarnessModelEffectOutcomeCode.RUN_SUSPENDED, timestamp);
+            return transitionWithOrderedStateEvent(next, HarnessRunStatus.SUSPENDED, reason,
+                "run.suspended", Map.of("reason", "model_turn_start_event_deferred"),
+                timestamp);
+        });
+        drainLifecycleEvents(request, suspended);
+        return null;
+    }
+
+    /**
+     * Closes the failed provider effect and advances overflow recovery in one run revision. The
+     * first overflow admits one emergency compaction; an overflow from the identified retry closes
+     * the state machine and suspends without exposing a second retry boundary.
+     */
+    private HarnessRunState recordProviderContextOverflow(HarnessRunRequest request,
+                                                          String effectId,
+                                                          String overflowId,
+                                                          ModelTurnException failure) {
+        HarnessRunState recovered = sessionGate.withSession(request.owner(), request.sessionId(), () -> {
+            HarnessRunState run = requireRun(request);
+            HarnessModelEffect effect = run.modelEffect();
+            if (run.status() != HarnessRunStatus.RUNNING || effect == null
+                || effect.status() != HarnessModelEffectStatus.PENDING
+                || !effect.effectId().equals(effectId)) {
+                throw new IllegalStateException(
+                    "Provider overflow effect changed before durable recovery admission");
+            }
+            long timestamp = now();
+            ProviderOverflowRecovery recovery = run.providerOverflowRecovery();
+            if (recovery == null) {
+                String canonicalRecoveryId = "provider:" + effect.requestSha256();
+                if (!canonicalRecoveryId.equals(overflowId)) {
+                    throw new IllegalStateException("Provider overflow identity is inconsistent");
+                }
+                String reason = failure.kind() + ": " + failure.getMessage()
+                    + "; overflowId=" + canonicalRecoveryId;
+                ProviderOverflowRecovery required =
+                    ProviderOverflowRecovery.compactionRequired(canonicalRecoveryId, effect,
+                        run.contextCheckpoint(), timestamp);
+                HarnessRunState next = run.abandonModelEffectWithEvent(effect.effectId(), reason,
+                        HarnessModelEffectOutcomeCode.PROVIDER_CONTEXT_OVERFLOW, timestamp)
+                    .withProviderOverflowRecovery(required, timestamp);
+                next = enqueueRetryStateEvent(next,
+                    Map.of("failureKind", failure.kind().name(), "retry", 1,
+                        "maxRetries", 1, "overflowId", canonicalRecoveryId), timestamp);
+                return store.saveRun(request.owner(), next, run.revision());
+            }
+            if (recovery.stage() == ProviderOverflowRecoveryStage.RETRY_IN_FLIGHT
+                && recovery.matchesRetryEffect(effect)
+                && run.iteration() == recovery.retryIteration()) {
+                String reason = "Provider context overflow repeated after its single emergency "
+                    + "compaction and retry; manual review is required";
+                HarnessRunState next = run.abandonModelEffectWithEvent(effect.effectId(), reason,
+                        HarnessModelEffectOutcomeCode.PROVIDER_CONTEXT_OVERFLOW, timestamp)
+                    .withProviderOverflowRecovery(recovery.exhausted(reason, timestamp), timestamp);
+                next = transitionWithOrderedStateEvent(next, HarnessRunStatus.SUSPENDED, reason,
+                    "run.suspended", Map.of("reason", "provider_context_overflow_exhausted",
+                        "overflowId", recovery.recoveryId()), timestamp);
+                return store.saveRun(request.owner(), next, run.revision());
+            }
+            String reason = "Provider overflow effect does not match the durable recovery state";
+            HarnessRunState next = run.abandonModelEffectWithEvent(effect.effectId(), reason,
+                    HarnessModelEffectOutcomeCode.RECOVERY_INCONSISTENT, timestamp)
+                .withProviderOverflowRecovery(recovery.exhausted(reason, timestamp), timestamp);
+            next = transitionWithOrderedStateEvent(next, HarnessRunStatus.SUSPENDED, reason,
+                "run.suspended", Map.of("reason", "provider_context_overflow_exhausted",
+                    "overflowId", recovery.recoveryId()), timestamp);
+            return store.saveRun(request.owner(), next, run.revision());
+        });
+        return drainLifecycleEvents(request, recovered);
+    }
+
+    private boolean isProviderOverflowRetryInFlight(HarnessRunState run, String effectId) {
+        ProviderOverflowRecovery recovery = run.providerOverflowRecovery();
+        HarnessModelEffect effect = run.modelEffect();
+        return recovery != null
+            && recovery.stage() == ProviderOverflowRecoveryStage.RETRY_IN_FLIGHT
+            && effect != null && effect.effectId().equals(effectId)
+            && recovery.matchesRetryEffect(effect)
+            && run.iteration() == recovery.retryIteration();
+    }
+
+    private HarnessRunState exhaustProviderOverflowRecoveryAndSuspend(
+        HarnessRunRequest request, String reason) {
+        HarnessRunState exhausted = mutate(request, run -> {
+            ProviderOverflowRecovery recovery = run.providerOverflowRecovery();
+            long timestamp = now();
+            if (recovery == null) {
+                return transitionWithOrderedStateEvent(run, HarnessRunStatus.SUSPENDED, reason,
+                    "run.suspended", Map.of("reason", "provider_context_overflow_exhausted"),
+                    timestamp);
+            }
+            HarnessRunState next = run;
+            HarnessModelEffect effect = next.modelEffect();
+            if (effect != null && effect.status() == HarnessModelEffectStatus.PENDING) {
+                next = next.abandonModelEffectWithEvent(effect.effectId(), reason,
+                    HarnessModelEffectOutcomeCode.PROVIDER_CONTEXT_OVERFLOW, timestamp);
+            }
+            next = next.withProviderOverflowRecovery(recovery.exhausted(reason, timestamp),
+                timestamp);
+            return next.status() == HarnessRunStatus.RUNNING
+                ? transitionWithOrderedStateEvent(next, HarnessRunStatus.SUSPENDED, reason,
+                    "run.suspended", Map.of("reason", "provider_context_overflow_exhausted"),
+                    timestamp) : next;
+        });
+        return drainLifecycleEvents(request, exhausted);
     }
 
     private BatchDisposition processToolBatch(HarnessRunRequest request, HarnessRunState observed,
@@ -1586,8 +2514,12 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                     evaluation = duplicateSuccessfulVerifierAdmission(observed, call, prepared);
                 }
                 if (evaluation == null) {
+                    evaluation = duplicateFailedVerifierAdmission(observed, call, prepared);
+                }
+                if (evaluation == null) {
                     InspectionAdmission admission = inspectReadAdmission(inspectionProjection,
-                        prepared, Path.of(session.workspace()), inspectionLimit(observed));
+                        prepared, Path.of(session.workspace()), inspectionLimit(observed),
+                        observed.permissionMode() == HarnessPermissionMode.READ_ONLY);
                     inspectionProjection = admission.projectedLedger();
                     evaluation = admission.rejection();
                 }
@@ -1628,12 +2560,6 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 return BatchDisposition.WAIT;
             }
             try {
-                long remainingWall = remainingWallMillis(requireRun(request));
-                if (remainingWall <= 0) {
-                    failRun(request,
-                        "Harness wall-time budget was exhausted before tool execution");
-                    return BatchDisposition.WAIT;
-                }
                 HarnessToolBatchExecution execution;
                 HarnessActiveTurnRegistry.CancellationToken cancellation =
                     activeTurns.cancellationToken(request);
@@ -1641,7 +2567,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                          activeTurns.registerInterruptible(request, Thread.currentThread())) {
                     cancellation.throwIfCancellationRequested();
                     execution = toolBatchExecutor.executePrepared(
-                        intent.executable(), registry, remainingWall, cancellation);
+                        intent.executable(), registry, Long.MAX_VALUE, cancellation);
                 }
                 execution.results().forEach(result -> outcomes.put(result.callId(), result));
             } catch (ToolBatchCancellationTimeoutException uncertain) {
@@ -1669,7 +2595,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             .filter(PreparedCandidate::malformed)
             .map(candidate -> candidate.source().toolCallId())
             .collect(java.util.stream.Collectors.toUnmodifiableSet());
-        Map<String, String> resultMessageIds = new LinkedHashMap<>();
+        Map<String, HarnessMessage> resultReceipts = new LinkedHashMap<>();
         for (HarnessToolCall source : batch.calls()) {
             HarnessToolExecutionResult outcome = outcomes.get(source.toolCallId());
             HarnessToolEffect effect = effectState.toolEffects().get(source.toolCallId());
@@ -1707,14 +2633,18 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 request.sessionId(), request.runId(), HarnessMessageRole.TOOL, outcome.content(),
                 null, List.of(), source.toolCallId(), source.toolName(), outcome.error(),
                 HarnessUsage.empty(), metadata, now()));
-            resultMessageIds.put(source.toolCallId(), stored.messageId());
-            eventHub.publish(request.owner(), HarnessEvent.draft(request.sessionId(), request.runId(),
-                "tool.completed", null, source.toolCallId(), null,
-                Map.of("messageId", stored.messageId(), "error", outcome.error(),
-                    "code", outcome.code()), now()));
+            resultReceipts.put(source.toolCallId(), stored);
+        }
+        HarnessRunState settledEffects = settleToolEffects(request, intent.effects(),
+            resultReceipts);
+        if (!settledEffects.eventOutbox().isEmpty()) {
+            return BatchDisposition.WAIT;
+        }
+        if (settledEffects.cancellationRequested()) {
+            cancelRun(request, "Cancellation won tool completion race");
+            return BatchDisposition.WAIT;
         }
         applyInspectionOutcomes(request, session, candidates, outcomes);
-        settleToolEffects(request, intent.effects(), resultMessageIds);
         autoRecordMechanicalEvidence(request, batch.calls(), outcomes);
         boolean rejectedVerifyMutation = candidates.stream().anyMatch(candidate ->
             "plan_phase_denied".equals(candidate.evaluation().code()));
@@ -1738,10 +2668,17 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         }
 
         if (intent.waitForApproval()) {
-            mutate(request, run -> run.status() == HarnessRunStatus.RUNNING
-                ? run.transition(HarnessRunStatus.WAITING_FOR_APPROVAL, null, now()) : run);
-            publishState(request, "run.waiting_for_approval", requireRun(request),
-                Map.of("pendingApprovals", intent.pendingApprovalCount()));
+            HarnessRunState waiting = mutate(request, run -> {
+                if (run.status() != HarnessRunStatus.RUNNING) {
+                    return run;
+                }
+                long timestamp = now();
+                return transitionWithOrderedStateEvent(run,
+                    HarnessRunStatus.WAITING_FOR_APPROVAL, null,
+                    "run.waiting_for_approval",
+                    Map.of("pendingApprovals", intent.pendingApprovalCount()), timestamp);
+            });
+            drainLifecycleEvents(request, waiting);
             return BatchDisposition.WAIT;
         }
         if (outcomes.values().stream()
@@ -1791,6 +2728,51 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 + "criterion's exact canonical argv instead of rerunning unchanged work.");
     }
 
+    private ToolPolicyEvaluation duplicateFailedVerifierAdmission(HarnessRunState run,
+                                                                  HarnessToolCall call,
+                                                                  PreparedToolCall prepared) {
+        if (!"execute_process".equals(prepared.descriptor().toolName())
+            || run.executionPlan() == null) {
+            return null;
+        }
+        Optional<ExecutionEvidence> duplicate = duplicateFailedProcessEvidence(
+            run.executionPlan(), stableHash(call.arguments()));
+        if (duplicate.isEmpty()) {
+            return null;
+        }
+        ExecutionEvidence evidence = duplicate.orElseThrow();
+        return new ToolPolicyEvaluation(PolicyDecision.DENY,
+            "duplicate_failed_verifier_forbidden",
+            "The identical verifier already failed after the latest workspace mutation as "
+                + evidence.evidenceId() + " (" + evidence.canonicalKey() + "). Inspect that "
+                + "durable failure, change the workspace, or use plan_step with the matching "
+                + "evidenceId; unchanged retries are forbidden.");
+    }
+
+    static Optional<ExecutionEvidence> duplicateFailedProcessEvidence(PlanAggregate plan,
+                                                                       String argumentsDigest) {
+        if (plan == null || argumentsDigest == null || argumentsDigest.isBlank()) {
+            return Optional.empty();
+        }
+        long latestRepairAt = plan.evidence().stream()
+            .filter(ExecutionEvidence::successful)
+            .filter(evidence -> AcceptanceCriterion.FILE_MUTATION_TYPE.equals(evidence.type())
+                || AcceptanceCriterion.PROCESS_EXIT_TYPE.equals(evidence.type())
+                    && evidence.attributes().get("sourceArgumentsDigest") != null
+                    && !evidence.attributes().get("sourceArgumentsDigest").isBlank()
+                    && !argumentsDigest.equals(evidence.attributes().get("sourceArgumentsDigest")))
+            .mapToLong(ExecutionEvidence::observedAt)
+            .max()
+            .orElse(Long.MIN_VALUE);
+        return plan.evidence().stream()
+            .filter(evidence -> !evidence.successful())
+            .filter(evidence -> AcceptanceCriterion.PROCESS_EXIT_TYPE.equals(evidence.type()))
+            .filter(evidence -> evidence.observedAt() >= latestRepairAt)
+            .filter(evidence -> argumentsDigest.equals(
+                evidence.attributes().get("sourceArgumentsDigest")))
+            .findFirst();
+    }
+
     private ToolPolicyEvaluation inspectionViaProcessAdmission(PreparedToolCall prepared) {
         if (!"execute_process".equals(prepared.source().toolName())) {
             return null;
@@ -1830,16 +2812,17 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         }
     }
 
-    private InspectionAdmission inspectReadAdmission(HarnessInspectionLedger ledger,
+    InspectionAdmission inspectReadAdmission(HarnessInspectionLedger ledger,
                                                       PreparedToolCall prepared,
                                                       Path workspace,
-                                                      int inspectionLimit) {
-        HarnessInspectionLedger projected = ledger;
+                                                      int inspectionLimit,
+                                                      boolean readOnlyAnalysis) {
+        HarnessInspectionLedger projected = readOnlyAnalysis ? ledger : boundedCodingInspection(ledger);
         String toolName = prepared.source().toolName();
         if (INSPECTION_TOOL_NAMES.contains(toolName)) {
             String fingerprint = inspectionFingerprint(projected, prepared);
             boolean rangeTrackedRead = Set.of("read_file", "read_source").contains(toolName);
-            if (!rangeTrackedRead
+            if (readOnlyAnalysis && !rangeTrackedRead
                 && projected.hasInspection(prepared.source().toolCallId(), fingerprint)) {
                 return new InspectionAdmission(projected,
                     new ToolPolicyEvaluation(PolicyDecision.DENY,
@@ -1849,7 +2832,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                             + "epoch. Reuse that evidence and change strategy; do not issue the "
                             + "same search/list/glob/diff again."));
             }
-            if (projected.inspectionFingerprints().size()
+            if (readOnlyAnalysis && projected.inspectionFingerprints().size()
                 >= inspectionLimit) {
                 return new InspectionAdmission(projected.requireSynthesis(),
                     new ToolPolicyEvaluation(PolicyDecision.DENY,
@@ -1859,7 +2842,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             }
             String callId = prepared.source().toolCallId();
             projected = projected.recordInspection(callId, fingerprint);
-            if (projected.inspectionFingerprints().size()
+            if (readOnlyAnalysis && projected.inspectionFingerprints().size()
                 >= inspectionLimit) {
                 projected = projected.requireSynthesis();
             }
@@ -1873,7 +2856,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         }
         List<HarnessReadSpan> overlaps = projected.overlaps(prepared.source().toolCallId(),
             read.path(), read.startLine(), read.endLine());
-        if (!overlaps.isEmpty()) {
+        if (readOnlyAnalysis && !overlaps.isEmpty()) {
             String covered = overlaps.stream().limit(4)
                 .map(span -> span.startLine() + "-" + span.endLine())
                 .collect(java.util.stream.Collectors.joining(", "));
@@ -1891,6 +2874,13 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             null);
     }
 
+    private HarnessInspectionLedger boundedCodingInspection(HarnessInspectionLedger ledger) {
+        long spans = ledger.readCoverage().values().stream().mapToLong(List::size).sum();
+        return ledger.inspectionFingerprints().size() >= HarnessInspectionLedger.MAX_FINGERPRINTS - 1
+            || spans >= HarnessInspectionLedger.MAX_SPANS - 1
+            ? ledger.beginIndependentPhase() : ledger;
+    }
+
     private void applyInspectionOutcomes(HarnessRunRequest request, HarnessSessionState session,
                                          List<PreparedCandidate> candidates,
                                          Map<String, HarnessToolExecutionResult> outcomes) {
@@ -1898,7 +2888,17 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             HarnessInspectionLedger next = run.inspectionLedger();
             boolean changed = false;
             for (PreparedCandidate candidate : candidates) {
+                if (run.permissionMode() != HarnessPermissionMode.READ_ONLY) {
+                    HarnessInspectionLedger bounded = boundedCodingInspection(next);
+                    changed |= bounded != next;
+                    next = bounded;
+                }
                 HarnessToolExecutionResult outcome = outcomes.get(candidate.source().toolCallId());
+                if (outcome != null && "OUTSIDE_WORKSPACE".equals(outcome.code())) {
+                    HarnessInspectionLedger recorded = next.recordWorkspaceBoundaryReached();
+                    changed |= recorded != next;
+                    next = recorded;
+                }
                 if (INSPECTION_TOOL_NAMES.contains(candidate.source().toolName())) {
                     String callId = candidate.source().toolCallId();
                     HarnessInspectionLedger recorded = next;
@@ -2009,9 +3009,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                                               Map<String, HarnessToolExecutionResult> outcomes) {
         for (HarnessToolCall call : calls) {
             HarnessToolExecutionResult outcome = outcomes.get(call.toolCallId());
-            if (outcome == null || outcome.error()
-                || !Set.of("execute_process", "write_file", "replace_text")
-                    .contains(call.toolName())) {
+            if (!mechanicalEvidenceEligible(call, outcome)) {
                 continue;
             }
             HarnessRunState run = requireRun(request);
@@ -2033,6 +3031,22 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         }
     }
 
+    static boolean mechanicalEvidenceEligible(HarnessToolCall call,
+                                               HarnessToolExecutionResult outcome) {
+        if (call == null || outcome == null) {
+            return false;
+        }
+        if ("execute_process".equals(call.toolName())) {
+            return switch (outcome.code()) {
+                case "PROCESS_EXIT_ZERO" -> !outcome.error();
+                case "PROCESS_EXIT_NONZERO", "PROCESS_TIMEOUT" -> outcome.error();
+                default -> false;
+            };
+        }
+        return Set.of("write_file", "replace_text").contains(call.toolName())
+            && !outcome.error();
+    }
+
     private ToolIntent persistToolIntent(HarnessRunRequest request,
                                          List<PreparedCandidate> candidates) {
         return sessionGate.withSession(request.owner(), request.sessionId(), () -> {
@@ -2040,17 +3054,14 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             if (run.cancellationRequested()) {
                 return ToolIntent.cancel();
             }
-            if (wallTimeExpired(run)) {
-                return ToolIntent.limit();
-            }
             if (run.status() != HarnessRunStatus.RUNNING) {
                 return ToolIntent.suspend("Run is no longer executing");
             }
             Set<String> previouslyCounted = new HashSet<>(run.toolEffects().keySet());
             run.toolApprovals().values().forEach(approval ->
                 previouslyCounted.add(approval.toolCallId()));
-            int remainingToolCalls = Math.max(0,
-                run.budget().maxToolCalls() - run.toolCallCount());
+            int remainingToolCalls = run.budget().maxToolCalls() == 0 ? Integer.MAX_VALUE
+                : Math.max(0, run.budget().maxToolCalls() - run.toolCallCount());
             List<PreparedCandidate> admitted = new ArrayList<>();
             List<PreparedCandidate> overBudget = new ArrayList<>();
             int newlyCounted = 0;
@@ -2074,6 +3085,12 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
 
             for (PreparedCandidate rejectedCandidate : overBudget) {
                 HarnessToolCall rejected = rejectedCandidate.source();
+                String argumentsHash = ToolCallApprovalAggregate.sha256(
+                    rejected.arguments().getBytes(StandardCharsets.UTF_8));
+                HarnessToolEffect rejectedEffect = HarnessToolEffect.pending(
+                    rejected.toolCallId(), rejected.toolName(), argumentsHash, true, now());
+                next = next.withToolEffect(rejectedEffect, now());
+                effects.put(rejected.toolCallId(), rejectedEffect);
                 if (rejectedCandidate.malformed()) {
                     synthetic.put(rejected.toolCallId(), synthetic(rejected,
                         "invalid_tool_call", rejectedCandidate.malformedArguments()));
@@ -2114,10 +3131,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                             call.arguments().getBytes(StandardCharsets.UTF_8));
                         String approvalId = "approval-" + stableHash(request.runId(),
                             call.toolCallId(), argumentsHash);
-                        long approvalExpiry = Math.min(deadlineMillis(now(),
-                                APPROVAL_TTL_MILLIS),
-                            deadlineMillis(next.createdAt(),
-                                next.budget().maxWallTimeMillis()));
+                        long approvalExpiry = deadlineMillis(now(), APPROVAL_TTL_MILLIS);
                         if (approvalExpiry <= now()) {
                             return ToolIntent.limit();
                         }
@@ -2143,6 +3157,16 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                     if (approval.state() == ApprovalState.DENIED
                         || approval.state() == ApprovalState.EXPIRED) {
                         var denied = approval.syntheticOutcome();
+                        HarnessToolEffect deniedEffect = next.toolEffects()
+                            .get(call.toolCallId());
+                        if (deniedEffect == null) {
+                            String argumentsHash = ToolCallApprovalAggregate.sha256(
+                                call.arguments().getBytes(StandardCharsets.UTF_8));
+                            deniedEffect = HarnessToolEffect.pending(call.toolCallId(),
+                                call.toolName(), argumentsHash, true, now());
+                            next = next.withToolEffect(deniedEffect, now());
+                        }
+                        effects.put(call.toolCallId(), deniedEffect);
                         synthetic.put(call.toolCallId(), synthetic(call,
                             denied.reason(), denied.message()));
                         continue;
@@ -2203,28 +3227,29 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         });
     }
 
-    private void settleToolEffects(HarnessRunRequest request,
-                                   Map<String, HarnessToolEffect> effects,
-                                   Map<String, String> messageIds) {
+    private HarnessRunState settleToolEffects(HarnessRunRequest request,
+                                              Map<String, HarnessToolEffect> effects,
+                                              Map<String, HarnessMessage> receipts) {
         if (effects.isEmpty()) {
-            return;
+            return requireRun(request);
         }
-        mutate(request, run -> {
+        HarnessRunState settled = mutate(request, run -> {
             HarnessRunState next = run;
             for (Map.Entry<String, HarnessToolEffect> entry : effects.entrySet()) {
-                String messageId = messageIds.get(entry.getKey());
-                if (messageId == null) {
+                HarnessMessage receipt = receipts.get(entry.getKey());
+                if (receipt == null) {
                     continue;
                 }
                 HarnessToolEffect current = next.toolEffects().get(entry.getKey());
                 if (current != null
                     && (current.status() == HarnessToolEffectStatus.PENDING
                     || current.status() == HarnessToolEffectStatus.COMMITTED)) {
-                    next = next.withToolEffect(current.settle(messageId, now()), now());
+                    next = next.settleToolEffectWithEvent(entry.getKey(), receipt, now());
                 }
             }
             return next;
         });
+        return drainLifecycleEvents(request, settled);
     }
 
     private boolean consumeQueuedInput(HarnessRunRequest request, Set<HarnessInputKind> eligible) {
@@ -2251,7 +3276,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 .filter(candidate -> !candidate.inputId().equals(input.inputId())).toList();
             HarnessRunState saved = store.saveRun(request.owner(),
                 run.withPendingInputs(remaining, now()), run.revision());
-            publishState(request, "input.consumed", saved,
+            publishInputConsumedEvent(request, saved,
                 Map.of("inputId", input.inputId(), "kind", input.kind().name()));
             return true;
         });
@@ -2269,9 +3294,9 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         });
     }
 
-    private void settleModelEffect(HarnessRunRequest request, String effectId, String messageId,
-                                   HarnessUsage usage) {
-        mutate(request, run -> {
+    private boolean settleModelEffect(HarnessRunRequest request, String effectId, String messageId,
+                                      HarnessUsage usage, int assistantToolCallCount) {
+        HarnessRunState settled = mutate(request, run -> {
             HarnessModelEffect effect = run.modelEffect();
             if (effect == null || !effect.effectId().equals(effectId)) {
                 throw new IllegalStateException("Model effect changed before settlement");
@@ -2279,61 +3304,216 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             if (effect.status() != HarnessModelEffectStatus.PENDING) {
                 return run;
             }
+            ProviderOverflowRecovery recovery = run.providerOverflowRecovery();
+            if (recovery != null && !recovery.matchesRetryEffect(effect)) {
+                throw new IllegalStateException(
+                    "Model settlement does not match the durable provider overflow retry");
+            }
             long settledAt = now();
-            return run.addModelUsage(usage, settledAt)
-                .withModelEffect(effect.settle(messageId, settledAt), settledAt);
+            HarnessRunState next = run.settleModelEffectWithEvent(effectId, messageId, usage,
+                true, assistantToolCallCount, settledAt);
+            return recovery == null ? next
+                : next.withProviderOverflowRecovery(null, settledAt);
         });
+        return drainLifecycleEvents(request, settled).eventOutbox().isEmpty();
     }
 
     private void abandonModelEffect(HarnessRunRequest request, String reason) {
-        mutate(request, run -> {
+        abandonModelEffect(request, reason, HarnessModelEffectOutcomeCode.PROVIDER_ERROR);
+    }
+
+    private void abandonModelEffect(HarnessRunRequest request, String reason,
+                                    HarnessModelEffectOutcomeCode code) {
+        HarnessRunState abandoned = mutate(request, run -> {
             HarnessModelEffect effect = run.modelEffect();
             if (effect == null || effect.status() != HarnessModelEffectStatus.PENDING) {
                 return run;
             }
-            return run.withModelEffect(effect.abandon(reason, now()), now());
+            long timestamp = now();
+            HarnessRunState next = run.abandonModelEffectWithEvent(effect.effectId(), reason,
+                code, timestamp);
+            ProviderOverflowRecovery recovery = run.providerOverflowRecovery();
+            if (recovery != null && recovery.matchesRetryEffect(effect)) {
+                next = next.withProviderOverflowRecovery(
+                    recovery.exhausted(reason, timestamp), timestamp);
+            }
+            return next;
         });
+        drainLifecycleEvents(request, abandoned);
     }
 
-    private void completeRun(HarnessRunRequest request) {
+    /**
+     * Closes a failed provider turn and admits its retry signal in the same durable revision.
+     * Cancellation/deadline races fail closed: the effect is still abandoned, but no retry is
+     * advertised and the caller proceeds to terminal handling.
+     */
+    private RetryTransition abandonModelEffectWithRetryEvent(
+        HarnessRunRequest request, String effectId, String reason,
+        HarnessModelEffectOutcomeCode code, Map<String, Object> retryData
+    ) {
+        RetryTransition transition = sessionGate.withSession(request.owner(),
+            request.sessionId(), () -> {
+                HarnessRunState current = requireRun(request);
+                HarnessModelEffect effect = current.modelEffect();
+                if (effect == null || effect.status() != HarnessModelEffectStatus.PENDING
+                    || !effect.effectId().equals(effectId)) {
+                    throw new IllegalStateException(
+                        "Model effect changed before retry admission");
+                }
+                long timestamp = now();
+                HarnessRunState next = current.abandonModelEffectWithEvent(effect.effectId(),
+                    reason, code, timestamp);
+                boolean admitted = current.status() == HarnessRunStatus.RUNNING
+                    && !current.cancellationRequested();
+                if (admitted) {
+                    next = enqueueRetryStateEvent(next, retryData, timestamp);
+                }
+                HarnessRunState saved = store.saveRun(request.owner(), next,
+                    current.revision());
+                return new RetryTransition(saved, admitted);
+            });
+        return new RetryTransition(drainLifecycleEvents(request, transition.run()),
+            transition.admitted());
+    }
+
+    private HarnessModelEffectOutcomeCode modelFailureOutcomeCode(ModelTurnFailureKind kind) {
+        return switch (kind) {
+            case CONTEXT_OVERFLOW -> HarnessModelEffectOutcomeCode.PROVIDER_CONTEXT_OVERFLOW;
+            case START_FAILURE -> HarnessModelEffectOutcomeCode.PROVIDER_START_FAILURE;
+            case CANCELLED -> HarnessModelEffectOutcomeCode.PROVIDER_CANCELLED;
+            case TIMEOUT -> HarnessModelEffectOutcomeCode.MODEL_DEADLINE_EXCEEDED;
+            case INTERRUPTED -> HarnessModelEffectOutcomeCode.MODEL_INTERRUPTED;
+            case REQUEST_REJECTED, PROVIDER_ERROR, LISTENER_ERROR -> HarnessModelEffectOutcomeCode.PROVIDER_ERROR;
+        };
+    }
+
+    /** Restores the bounded provider retry budget from durable retry/settlement events. */
+    private int recoveredProviderFailureRetryCount(HarnessRunRequest request) {
+        try {
+            return scanProviderFailureRetryCount(request);
+        } catch (RuntimeException unavailableLedger) {
+            // Losing retry availability is safer than resetting the budget and replaying an
+            // unbounded provider failure loop. Infrastructure recovery can redispatch later.
+            log.warn("Unable to restore provider retry budget for run {}; retries disabled",
+                request.runId(), unavailableLedger);
+            return MAX_CONSECUTIVE_PROVIDER_RETRIES;
+        }
+    }
+
+    private int scanProviderFailureRetryCount(HarnessRunRequest request) {
+        long cursor = 0;
+        int inspected = 0;
+        int retries = 0;
+        while (inspected < MAX_PROVIDER_RETRY_EVENT_SCAN) {
+            int limit = Math.min(1_000, MAX_PROVIDER_RETRY_EVENT_SCAN - inspected);
+            List<HarnessEvent> page = store.readEvents(request.owner(), request.sessionId(),
+                request.runId(), cursor, limit);
+            if (page.isEmpty()) {
+                return retries;
+            }
+            for (HarnessEvent event : page) {
+                if (event.sequence() <= cursor) {
+                    throw new IllegalStateException(
+                        "Provider retry event scan did not advance its cursor");
+                }
+                cursor = event.sequence();
+                inspected++;
+                if ("assistant.completed".equals(event.type())) {
+                    retries = 0;
+                    continue;
+                }
+                Object failureKind = event.data().get("failureKind");
+                if (!"model.turn.retrying".equals(event.type())
+                    || !(ModelTurnFailureKind.PROVIDER_ERROR.name().equals(failureKind)
+                    || HarnessModelEffectOutcomeCode.PROTOCOL_REJECTED.name()
+                        .equals(failureKind))) {
+                    continue;
+                }
+                Object rawRetry = event.data().get("retry");
+                if (!(rawRetry instanceof Number number)) {
+                    return MAX_CONSECUTIVE_PROVIDER_RETRIES;
+                }
+                retries = Math.max(retries, Math.max(0, number.intValue()));
+            }
+            if (page.size() < limit) {
+                return retries;
+            }
+        }
+        return MAX_CONSECUTIVE_PROVIDER_RETRIES;
+    }
+
+    private HarnessRunState drainLifecycleEvents(HarnessRunRequest request,
+                                                 HarnessRunState observed) {
+        return eventOutboxService.drainBestEffort(request.owner(), observed);
+    }
+
+    void completeRun(HarnessRunRequest request) {
         CompletionTransition completion = sessionGate.withSession(request.owner(),
             request.sessionId(), () -> {
             HarnessRunState current = requireRun(request);
             if (current.status() != HarnessRunStatus.RUNNING) {
                 return new CompletionTransition(current, null, false);
             }
+            current = reconcilePersistedToolResults(request, current,
+                current.cancellationRequested());
+            if (UncertainToolEffectGuard.firstFinding(current).isPresent()
+                || isToolLedgerReconciliationIsolation(current)) {
+                return new CompletionTransition(current, null, false);
+            }
             if (current.cancellationRequested()) {
-                HarnessRunState cancelled = abandonPendingToolEffects(current,
-                    "Cancellation won completion race")
-                    .transition(HarnessRunStatus.CANCELLED, null, now());
+                long timestamp = now();
+                HarnessRunState cancelled = abandonPendingEffects(current,
+                        "Cancellation won completion race",
+                        HarnessModelEffectOutcomeCode.RUN_CANCELLED)
+                    .transition(HarnessRunStatus.CANCELLED, null, timestamp);
+                cancelled = cancelled.enqueueEvent(HarnessEvent.draftWithId(
+                    "run-state:" + current.runId() + ":run.cancelled:"
+                        + (current.revision() + 1), current.sessionId(), current.runId(),
+                    "run.cancelled", null, null, null,
+                    Map.of("status", HarnessRunStatus.CANCELLED.name(),
+                        "revision", current.revision() + 1), timestamp), timestamp);
                 return new CompletionTransition(store.saveRun(request.owner(), cancelled,
                     current.revision()), null, false);
             }
             CompletionReport report = ensureTerminalReportUnderGate(request, current);
-            HarnessRunState completed = current.transition(HarnessRunStatus.COMPLETED, null, now());
+            long timestamp = now();
+            HarnessRunState completed = current.transition(HarnessRunStatus.COMPLETED, null,
+                timestamp);
+            if (report.synthetic()) {
+                completed = completed.enqueueEvent(HarnessEvent.draftWithId(
+                    "terminal-report:" + report.messageId() + ":completed",
+                    current.sessionId(), current.runId(), "assistant.completed",
+                    null, null, null, Map.of("messageId", report.messageId(),
+                        "syntheticTerminalReport", true), timestamp), timestamp);
+            }
+            Map<String, Object> completionData = new LinkedHashMap<>();
+            completionData.put("status", HarnessRunStatus.COMPLETED.name());
+            completionData.put("revision", current.revision() + 1);
+            if (report.messageId() != null) {
+                completionData.put("terminalReportMessageId", report.messageId());
+            }
+            completed = completed.enqueueEvent(HarnessEvent.draftWithId(
+                "run-state:" + current.runId() + ":run.completed:"
+                    + (current.revision() + 1), current.sessionId(), current.runId(),
+                "run.completed", null, null, null, completionData, timestamp), timestamp);
             return new CompletionTransition(store.saveRun(request.owner(), completed,
                 current.revision()), report.messageId(), report.appended());
         });
         HarnessRunState run = completion.run();
-        if (!publishCancellationIfNeeded(request, run, "Cancellation won completion race")) {
-            if (run.status() == HarnessRunStatus.COMPLETED) {
-                if (completion.reportAppended()) {
-                    try {
-                        eventHub.publish(request.owner(), HarnessEvent.draft(request.sessionId(),
-                            request.runId(), "assistant.completed", null, null, null,
-                            Map.of("messageId", completion.reportMessageId(),
-                                "syntheticTerminalReport", true), now()));
-                    } catch (RuntimeException failure) {
-                        log.warn("Run {} completed with a durable terminal report, but its "
-                            + "assistant event could not be published", request.runId(), failure);
-                    }
-                }
-                Map<String, Object> completionData = completion.reportMessageId() == null
-                    ? Map.of()
-                    : Map.of("terminalReportMessageId", completion.reportMessageId());
-                publishState(request, "run.completed", run, completionData);
-                activeTurns.clearCancellation(request);
-            }
+        run = drainLifecycleEvents(request, run);
+        Optional<UncertainToolEffectGuard.Finding> uncertain =
+            UncertainToolEffectGuard.firstFinding(run);
+        if (run.status() == HarnessRunStatus.SUSPENDED && uncertain.isPresent()) {
+            publishUncertainToolSuspension(request, run, uncertain.get());
+            return;
+        }
+        if (isToolLedgerReconciliationIsolation(run)) {
+            publishToolLedgerReconciliationSuspension(request, run);
+            return;
+        }
+        if (run.status() == HarnessRunStatus.CANCELLED
+            || run.status() == HarnessRunStatus.COMPLETED) {
+            activeTurns.clearCancellation(request);
         }
     }
 
@@ -2357,12 +3537,12 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             }
         });
         if (existingReport[0] != null) {
-            return new CompletionReport(existingReport[0].messageId(), false);
+            return new CompletionReport(existingReport[0].messageId(), false, true);
         }
         if (latest[0] != null && latest[0].role() == HarnessMessageRole.ASSISTANT
             && latest[0].toolCalls().isEmpty() && latest[0].content() != null
             && !latest[0].content().isBlank()) {
-            return new CompletionReport(latest[0].messageId(), false);
+            return new CompletionReport(latest[0].messageId(), false, false);
         }
 
         PlanAggregate plan = run.executionPlan();
@@ -2375,12 +3555,13 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         }
         HarnessMessage stored = store.appendMessage(request.owner(), HarnessMessage.draft(
             request.sessionId(), request.runId(), HarnessMessageRole.ASSISTANT,
-            terminalReportContent(run), null, List.of(), null, null, false,
+            terminalReportContent(run, store.findSession(request.owner(), request.sessionId())
+                .map(this::externalVerification).orElse(false)), null, List.of(), null, null, false,
             HarnessUsage.empty(), metadata, now()));
-        return new CompletionReport(stored.messageId(), true);
+        return new CompletionReport(stored.messageId(), true, true);
     }
 
-    private String terminalReportContent(HarnessRunState run) {
+    private String terminalReportContent(HarnessRunState run, boolean external) {
         PlanAggregate plan = run.executionPlan();
         boolean chinese = "Simplified Chinese".equals(
             preferredResponseLanguage(run.originalRequirement()));
@@ -2408,8 +3589,8 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
 
         StringBuilder report = new StringBuilder();
         if (chinese) {
-            report.append("## 任务已完成\n\n")
-                .append("权威计划已通过验收，完成步骤 ")
+            report.append(external ? "## 实现完成，等待外部验收\n\n" : "## 任务已完成\n\n")
+                .append(external ? "已记录文件实现证据，完成步骤 " : "权威计划已通过验收，完成步骤 ")
                 .append(completedSteps).append('/').append(plan.steps().size())
                 .append("，成功证据 ").append(successfulEvidence).append(" 项。");
             if (!changedFiles.isEmpty()) {
@@ -2418,10 +3599,10 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                         .collect(java.util.stream.Collectors.joining("、")))
                     .append('。');
             }
-            report.append("\n\n运行状态：已完成。");
+            report.append(external ? "\n\n未运行测试；运行结束不代表外部验收通过。" : "\n\n运行状态：已完成。");
         } else {
-            report.append("## Task completed\n\n")
-                .append("The authoritative plan passed verification: ")
+            report.append(external ? "## Implementation ready for external acceptance\n\n" : "## Task completed\n\n")
+                .append(external ? "File implementation evidence recorded: " : "The authoritative plan passed verification: ")
                 .append(completedSteps).append('/').append(plan.steps().size())
                 .append(" steps completed with ").append(successfulEvidence)
                 .append(" successful evidence items.");
@@ -2431,20 +3612,31 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                         .collect(java.util.stream.Collectors.joining(", ")))
                     .append('.');
             }
-            report.append("\n\nRun status: completed.");
+            report.append(external ? "\n\nTests were not run; external acceptance is pending." : "\n\nRun status: completed.");
         }
         return report.toString();
     }
 
-    private record CompletionReport(String messageId, boolean appended) {
+    private record CompletionReport(String messageId, boolean appended, boolean synthetic) {
     }
 
     private record CompletionTransition(HarnessRunState run, String reportMessageId,
                                         boolean reportAppended) {
     }
 
-    private void finishAtNaturalStop(HarnessRunRequest request, HarnessRunState run) {
+    private record RetryTransition(HarnessRunState run, boolean admitted) {
+    }
+
+    private void finishAtNaturalStop(HarnessRunRequest request, HarnessRunState run,
+                                      HarnessSessionState session) {
         PlanAggregate plan = run.executionPlan();
+        if (externalVerification(session) && plan != null && plan.mode() == ExecutionMode.VERIFY
+            && externalMutationEvidenceReady(plan)) {
+            // 外部验收模式：VERIFY 阶段完成一次源码/差异回顾后自然停止即交接外部验收，
+            // 不强制探针/plan_verify 测试通过，也不伪造外部验收结论。
+            completeRun(request);
+            return;
+        }
         if (plan == null || plan.mode() == ExecutionMode.COMPLETED) {
             completeRun(request);
             return;
@@ -2473,20 +3665,48 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             + " requires authenticated approval (hash " + plan.canonicalHash() + ")";
     }
 
-    private void waitForInput(HarnessRunRequest request, String reason) {
-        HarnessRunState run = mutate(request, current -> {
+    void waitForInput(HarnessRunRequest request, String reason) {
+        HarnessRunState run = sessionGate.withSession(request.owner(), request.sessionId(), () -> {
+            HarnessRunState current = requireRun(request);
             if (current.status() != HarnessRunStatus.RUNNING) {
                 return current;
             }
-            return current.cancellationRequested()
-                ? abandonPendingToolEffects(current, "Cancellation won wait transition")
-                    .transition(HarnessRunStatus.CANCELLED, null, now())
-                : current.transition(HarnessRunStatus.WAITING_FOR_INPUT, reason, now());
-        });
-        if (!publishCancellationIfNeeded(request, run, "Cancellation won wait transition")) {
-            if (run.status() == HarnessRunStatus.WAITING_FOR_INPUT) {
-                publishState(request, "run.waiting_for_input", run, Map.of("reason", reason));
+            current = reconcilePersistedToolResults(request, current,
+                current.cancellationRequested());
+            if (UncertainToolEffectGuard.firstFinding(current).isPresent()
+                || isToolLedgerReconciliationIsolation(current)) {
+                return current;
             }
+            long timestamp = now();
+            HarnessRunState next;
+            if (current.cancellationRequested()) {
+                next = abandonPendingEffects(current, "Cancellation won wait transition",
+                    HarnessModelEffectOutcomeCode.RUN_CANCELLED);
+                next = transitionWithOrderedStateEvent(next, HarnessRunStatus.CANCELLED, null,
+                    "run.cancelled", Map.of("reason", "Cancellation won wait transition"),
+                    timestamp);
+            } else {
+                next = abandonPendingModelEffect(current, reason,
+                    HarnessModelEffectOutcomeCode.RUN_SUSPENDED);
+                next = transitionWithOrderedStateEvent(next,
+                    HarnessRunStatus.WAITING_FOR_INPUT, reason, "run.waiting_for_input",
+                    Map.of("reason", reason), timestamp);
+            }
+            return store.saveRun(request.owner(), next, current.revision());
+        });
+        run = drainLifecycleEvents(request, run);
+        Optional<UncertainToolEffectGuard.Finding> uncertain =
+            UncertainToolEffectGuard.firstFinding(run);
+        if (run.status() == HarnessRunStatus.SUSPENDED && uncertain.isPresent()) {
+            publishUncertainToolSuspension(request, run, uncertain.get());
+            return;
+        }
+        if (isToolLedgerReconciliationIsolation(run)) {
+            publishToolLedgerReconciliationSuspension(request, run);
+            return;
+        }
+        if (!publishCancellationIfNeeded(request, run, "Cancellation won wait transition")) {
+            // The waiting signal was staged in the same snapshot and drained above.
         }
     }
 
@@ -2497,69 +3717,218 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 return current;
             }
             current = reconcileControlEventOutboxUnderGate(request, current);
+            current = reconcilePersistedToolResults(request, current, true);
+            Optional<UncertainToolEffectGuard.Finding> uncertain =
+                UncertainToolEffectGuard.firstFinding(current);
+            if (uncertain.isPresent()) {
+                return current;
+            }
+            if (isToolLedgerReconciliationIsolation(current)) {
+                return current;
+            }
             HarnessRunState projected = closeToolBatchForTerminal(current,
                 SyntheticToolResultReason.CANCEL);
-            HarnessRunState next = abandonPendingEffects(projected, reason)
-                .transition(HarnessRunStatus.CANCELLED, reason, now());
+            long timestamp = now();
+            HarnessRunState next = abandonPendingEffects(projected, reason,
+                HarnessModelEffectOutcomeCode.RUN_CANCELLED);
+            next = transitionWithOrderedStateEvent(next, HarnessRunStatus.CANCELLED, reason,
+                "run.cancelled", Map.of("reason", reason), timestamp);
             return store.saveRun(request.owner(), next, next.revision());
         });
+        run = drainLifecycleEvents(request, run);
+        Optional<UncertainToolEffectGuard.Finding> uncertain =
+            UncertainToolEffectGuard.firstFinding(run);
+        if (run.status() == HarnessRunStatus.SUSPENDED && uncertain.isPresent()) {
+            publishUncertainToolSuspension(request, run, uncertain.get());
+            activeTurns.cancel(request);
+            return;
+        }
+        if (isToolLedgerReconciliationIsolation(run)) {
+            publishToolLedgerReconciliationSuspension(request, run);
+            activeTurns.cancel(request);
+            return;
+        }
         if (run.status() == HarnessRunStatus.CANCELLED) {
-            publishState(request, "run.cancelled", run, Map.of("reason", reason));
             activeTurns.clearCancellation(request);
         }
     }
 
     private void suspendRun(HarnessRunRequest request, String reason) {
+        suspendRun(request, reason, Map.of("reason", reason));
+    }
+
+    private void suspendRun(HarnessRunRequest request, String reason,
+                            Map<String, Object> stateEventData) {
+        Objects.requireNonNull(stateEventData, "stateEventData");
         HarnessRunState run = sessionGate.withSession(request.owner(), request.sessionId(), () -> {
             HarnessRunState current = requireRun(request);
+            current = reconcilePersistedToolResults(request, current);
+            Optional<UncertainToolEffectGuard.Finding> uncertain =
+                UncertainToolEffectGuard.firstFinding(current);
+            if (uncertain.isPresent()) {
+                return current;
+            }
+            if (isToolLedgerReconciliationIsolation(current)) {
+                return current;
+            }
             if (current.status() == HarnessRunStatus.RUNNING
                 && current.cancellationRequested()) {
                 current = reconcileControlEventOutboxUnderGate(request, current);
             }
             if (current.status() == HarnessRunStatus.RUNNING) {
-                HarnessRunState next = current.cancellationRequested()
-                    ? abandonPendingToolEffects(closeToolBatchForTerminal(current,
-                        SyntheticToolResultReason.CANCEL),
-                        "Cancellation won suspension race")
-                        .transition(HarnessRunStatus.CANCELLED, null, now())
-                    : current.transition(HarnessRunStatus.SUSPENDED, reason, now());
+                long timestamp = now();
+                HarnessRunState next;
+                if (current.cancellationRequested()) {
+                    next = abandonPendingEffects(closeToolBatchForTerminal(current,
+                            SyntheticToolResultReason.CANCEL),
+                        "Cancellation won suspension race",
+                        HarnessModelEffectOutcomeCode.RUN_CANCELLED);
+                    next = transitionWithOrderedStateEvent(next, HarnessRunStatus.CANCELLED,
+                        null, "run.cancelled",
+                        Map.of("reason", "Cancellation won suspension race"), timestamp);
+                } else {
+                    next = abandonPendingModelEffect(current, reason,
+                        HarnessModelEffectOutcomeCode.RUN_SUSPENDED);
+                    next = transitionWithOrderedStateEvent(next, HarnessRunStatus.SUSPENDED,
+                        reason, "run.suspended", stateEventData, timestamp);
+                }
                 return store.saveRun(request.owner(), next, next.revision());
             }
             return current;
         });
+        run = drainLifecycleEvents(request, run);
+        Optional<UncertainToolEffectGuard.Finding> uncertain =
+            UncertainToolEffectGuard.firstFinding(run);
+        if (run.status() == HarnessRunStatus.SUSPENDED && uncertain.isPresent()) {
+            publishUncertainToolSuspension(request, run, uncertain.get());
+            return;
+        }
+        if (isToolLedgerReconciliationIsolation(run)) {
+            publishToolLedgerReconciliationSuspension(request, run);
+            return;
+        }
         if (!publishCancellationIfNeeded(request, run, "Cancellation won suspension race")) {
-            if (run.status() == HarnessRunStatus.SUSPENDED) {
-                publishState(request, "run.suspended", run, Map.of("reason", reason));
-            }
+            // The suspension signal was staged in the same snapshot and drained above.
         }
     }
 
     /** A tool ignored interruption, so cancellation cannot yet be honestly terminalized. */
     private void suspendUncertainToolRun(HarnessRunRequest request, String reason) {
-        HarnessRunState run = mutate(request, current -> current.status() == HarnessRunStatus.RUNNING
-            ? current.transition(HarnessRunStatus.SUSPENDED, reason, now()) : current);
-        publishState(request, "run.suspended", run, Map.of("reason", reason,
-            "cancellationPending", run.cancellationRequested()));
+        HarnessRunState run = mutate(request, current -> {
+            if (current.status() != HarnessRunStatus.RUNNING) {
+                return current;
+            }
+            long timestamp = now();
+            return transitionWithOrderedStateEvent(current, HarnessRunStatus.SUSPENDED, reason,
+                "run.suspended", Map.of("reason", reason,
+                    "cancellationPending", current.cancellationRequested()), timestamp);
+        });
+        drainLifecycleEvents(request, run);
+    }
+
+    /**
+     * Rechecks the immutable ledger under the session gate, then persists only SUSPENDED (and an
+     * optional cancellation request). The effect itself is never settled, abandoned or replaced.
+     */
+    private boolean suspendUncertainToolEffect(HarnessRunRequest request) {
+        UncertainToolIsolation isolation = sessionGate.withSession(request.owner(),
+            request.sessionId(), () -> {
+            HarnessRunState current = requireRun(request);
+            HarnessRunState reconciled = reconcilePersistedToolResults(request, current);
+            if (isToolLedgerReconciliationIsolation(reconciled)) {
+                return new UncertainToolIsolation(reconciled, null);
+            }
+            Optional<UncertainToolEffectGuard.Finding> finding =
+                UncertainToolEffectGuard.firstFinding(reconciled);
+            if (finding.isEmpty()) {
+                return new UncertainToolIsolation(reconciled, null);
+            }
+            return new UncertainToolIsolation(reconciled, finding.get());
+        });
+        if (isolation.finding() == null) {
+            if (isToolLedgerReconciliationIsolation(isolation.run())) {
+                publishToolLedgerReconciliationSuspension(request, isolation.run());
+                return true;
+            }
+            return false;
+        }
+        publishUncertainToolSuspension(request, isolation.run(), isolation.finding());
+        return true;
+    }
+
+    private void publishUncertainToolSuspension(
+        HarnessRunRequest request, HarnessRunState run,
+        UncertainToolEffectGuard.Finding finding) {
+        drainLifecycleEvents(request, run);
+    }
+
+    private boolean isToolLedgerReconciliationIsolation(HarnessRunState run) {
+        return run.status() == HarnessRunStatus.SUSPENDED
+            && UncertainToolEffectReason.LEDGER_RECONCILIATION_UNAVAILABLE.code()
+                .equals(run.error());
+    }
+
+    private void publishToolLedgerReconciliationSuspension(HarnessRunRequest request,
+                                                            HarnessRunState run) {
+        drainLifecycleEvents(request, run);
+    }
+
+    private record UncertainToolIsolation(HarnessRunState run,
+                                          UncertainToolEffectGuard.Finding finding) {
     }
 
     private void failRun(HarnessRunRequest request, String reason) {
+        failRun(request, reason, Map.of("message", reason));
+    }
+
+    private void failRun(HarnessRunRequest request, String reason,
+                         Map<String, Object> stateEventData) {
+        Objects.requireNonNull(stateEventData, "stateEventData");
         HarnessRunState run = sessionGate.withSession(request.owner(), request.sessionId(), () -> {
             HarnessRunState current = requireRun(request);
             if (current.status().isTerminal()) {
                 return current;
             }
             current = reconcileControlEventOutboxUnderGate(request, current);
+            current = reconcilePersistedToolResults(request, current);
+            Optional<UncertainToolEffectGuard.Finding> uncertain =
+                UncertainToolEffectGuard.firstFinding(current);
+            if (uncertain.isPresent()) {
+                return current;
+            }
+            if (isToolLedgerReconciliationIsolation(current)) {
+                return current;
+            }
             boolean cancelled = current.cancellationRequested();
             HarnessRunState projected = closeToolBatchForTerminal(current, cancelled
                 ? SyntheticToolResultReason.CANCEL : SyntheticToolResultReason.LIMIT);
-            HarnessRunState next = abandonPendingToolEffects(projected, reason);
-            next = next.transition(cancelled ? HarnessRunStatus.CANCELLED
-                : HarnessRunStatus.FAILED, cancelled ? null : reason, now());
+            HarnessRunState next = abandonPendingEffects(projected, reason, cancelled
+                ? HarnessModelEffectOutcomeCode.RUN_CANCELLED
+                : HarnessModelEffectOutcomeCode.RUN_FAILED);
+            long timestamp = now();
+            if (cancelled) {
+                next = transitionWithOrderedStateEvent(next, HarnessRunStatus.CANCELLED, null,
+                    "run.cancelled", Map.of("reason", "Cancellation won failure race"),
+                    timestamp);
+            } else {
+                next = transitionWithOrderedStateEvent(next, HarnessRunStatus.FAILED, reason,
+                    "run.failed", stateEventData, timestamp);
+            }
             return store.saveRun(request.owner(), next, next.revision());
         });
+        run = drainLifecycleEvents(request, run);
+        Optional<UncertainToolEffectGuard.Finding> uncertain =
+            UncertainToolEffectGuard.firstFinding(run);
+        if (run.status() == HarnessRunStatus.SUSPENDED && uncertain.isPresent()) {
+            publishUncertainToolSuspension(request, run, uncertain.get());
+            return;
+        }
+        if (isToolLedgerReconciliationIsolation(run)) {
+            publishToolLedgerReconciliationSuspension(request, run);
+            return;
+        }
         if (!publishCancellationIfNeeded(request, run, "Cancellation won failure race")) {
             if (run.status() == HarnessRunStatus.FAILED) {
-                publishState(request, "run.failed", run, Map.of("message", reason));
                 activeTurns.clearCancellation(request);
             }
         }
@@ -2570,7 +3939,6 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         if (run.status() != HarnessRunStatus.CANCELLED) {
             return false;
         }
-        publishState(request, "run.cancelled", run, Map.of("reason", reason));
         activeTurns.clearCancellation(request);
         return true;
     }
@@ -2609,11 +3977,22 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         return next;
     }
 
-    private HarnessRunState abandonPendingEffects(HarnessRunState run, String reason) {
+    private HarnessRunState abandonPendingEffects(HarnessRunState run, String reason,
+                                                  HarnessModelEffectOutcomeCode code) {
         HarnessRunState next = abandonPendingToolEffects(run, reason);
+        return abandonPendingModelEffect(next, reason, code);
+    }
+
+    private HarnessRunState abandonPendingModelEffect(HarnessRunState run, String reason,
+                                                       HarnessModelEffectOutcomeCode code) {
+        HarnessRunState next = run;
         HarnessModelEffect modelEffect = next.modelEffect();
         if (modelEffect != null && modelEffect.status() == HarnessModelEffectStatus.PENDING) {
-            next = next.withModelEffect(modelEffect.abandon(reason, now()), now());
+            next = next.abandonModelEffectWithEvent(modelEffect.effectId(), reason, code, now());
+        }
+        ProviderOverflowRecovery recovery = next.providerOverflowRecovery();
+        if (recovery != null && recovery.stage() != ProviderOverflowRecoveryStage.EXHAUSTED) {
+            next = next.withProviderOverflowRecovery(recovery.exhausted(reason, now()), now());
         }
         return next;
     }
@@ -2626,13 +4005,59 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         }
     }
 
-    private void publishState(HarnessRunRequest request, String type, HarnessRunState state,
-                              Map<String, Object> extra) {
+    /** Commits a run-state signal behind every already-staged lifecycle event in one revision. */
+    private HarnessRunState transitionWithOrderedStateEvent(
+        HarnessRunState run, HarnessRunStatus target, String error, String type,
+        Map<String, Object> extra, long timestamp
+    ) {
+        HarnessRunState transitioned = run.transition(target, error, timestamp);
+        return enqueueOrderedStateEvent(run, transitioned, type, extra, timestamp);
+    }
+
+    /** Binds a stable state signal to the exact business revision which introduced it. */
+    private HarnessRunState enqueueOrderedStateEvent(
+        HarnessRunState source, HarnessRunState mutated, String type,
+        Map<String, Object> extra, long timestamp
+    ) {
+        if (source == null || mutated == null || source.revision() != mutated.revision()
+            || !source.runId().equals(mutated.runId())) {
+            throw new IllegalArgumentException("Run state event must share its source revision");
+        }
+        Map<String, Object> data = new LinkedHashMap<>(extra);
+        data.put("status", mutated.status().name());
+        data.put("revision", source.revision() + 1);
+        HarnessEvent event = HarnessEvent.draftWithId(
+            "run-state:" + source.runId() + ":" + type + ":" + (source.revision() + 1),
+            source.sessionId(), source.runId(), type, null, null, null, data, timestamp);
+        return mutated.enqueueEvent(event, timestamp);
+    }
+
+    /** Appends retrying immediately behind the effect's abandoned marker in the same FIFO. */
+    private HarnessRunState enqueueRetryStateEvent(HarnessRunState run,
+                                                    Map<String, Object> extra,
+                                                    long timestamp) {
+        HarnessModelEffect effect = run.modelEffect();
+        if (effect == null || effect.status() != HarnessModelEffectStatus.ABANDONED) {
+            throw new IllegalStateException("A retry event requires its abandoned model effect");
+        }
+        Map<String, Object> data = new LinkedHashMap<>(extra);
+        data.put("status", run.status().name());
+        data.put("revision", run.revision() + 1);
+        HarnessEvent retrying = HarnessEvent.draftWithId(
+            "model-effect:" + effect.effectId() + ":retrying",
+            run.sessionId(), run.runId(), "model.turn.retrying", null, null, null,
+            data, timestamp);
+        return run.enqueueEvent(retrying, timestamp);
+    }
+
+    /** input.consumed is an audit acknowledgement, never a run-state/lifecycle transition. */
+    private void publishInputConsumedEvent(HarnessRunRequest request, HarnessRunState state,
+                                           Map<String, Object> extra) {
         Map<String, Object> data = new LinkedHashMap<>(extra);
         data.put("status", state.status().name());
         data.put("revision", state.revision());
         eventHub.publish(request.owner(), HarnessEvent.draft(request.sessionId(), request.runId(),
-            type, null, null, null, data, now()));
+            "input.consumed", null, null, null, data, now()));
     }
 
     private HarnessRunState requireRun(HarnessRunRequest request) {
@@ -2645,23 +4070,149 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             .orElseThrow(() -> new IllegalStateException("Harness session no longer exists"));
     }
 
-    private boolean naturalStopBoundary(ToolProtocolValidation validation) {
+    static boolean naturalStopBoundary(ToolProtocolValidation validation) {
         List<HarnessMessage> messages = validation.modelMessages();
         if (messages.isEmpty()) {
             return false;
         }
         HarnessMessage last = messages.get(messages.size() - 1);
-        return last.role() == HarnessMessageRole.ASSISTANT && last.toolCalls().isEmpty();
+        return last.role() == HarnessMessageRole.ASSISTANT && last.toolCalls().isEmpty()
+            && "STOP".equals(Objects.toString(last.metadata().get("finishReason"), ""));
     }
 
-    private boolean wallTimeExpired(HarnessRunState run) {
-        return remainingWallMillis(run) <= 0;
+    /**
+     * Reasoning tokens and visible/tool output share DeepSeek's completion budget. A 4K cap can
+     * therefore end a complex turn after private reasoning but before the first actionable tool
+     * call. Keep fast non-thinking turns small, while giving routed thinking turns enough room to
+     * cross the reasoning/action boundary. VERIFY remains bounded because it only emits a compact
+     * structured verdict.
+     */
+    static long perTurnOutputLimit(HarnessRunState run, ExecutionMode mode) {
+        return perTurnOutputLimit(run, mode, false);
     }
 
-    private long remainingWallMillis(HarnessRunState run) {
-        long elapsed = Math.max(0, now() - run.createdAt());
-        return elapsed >= run.budget().maxWallTimeMillis()
-            ? 0 : run.budget().maxWallTimeMillis() - elapsed;
+    static long perTurnOutputLimit(HarnessRunState run, ExecutionMode mode,
+                                   boolean reasoningLengthRecovery) {
+        boolean thinking = run != null && run.modelRoute() != null
+            && run.modelRoute().thinkingEnabled();
+        if (!thinking) {
+            return MAX_MODEL_OUTPUT_TOKENS_PER_TURN;
+        }
+        if (reasoningLengthRecovery) {
+            return MAX_THINKING_BUILD_RECOVERY_OUTPUT_TOKENS_PER_TURN;
+        }
+        if (mode == ExecutionMode.BUILD) {
+            return run.executionPlan() == null
+                ? MAX_THINKING_BUILD_OUTPUT_TOKENS_PER_TURN
+                : MAX_THINKING_PLANNED_BUILD_OUTPUT_TOKENS_PER_TURN;
+        }
+        if (mode == ExecutionMode.VERIFY) {
+            return MAX_THINKING_VERIFY_OUTPUT_TOKENS_PER_TURN;
+        }
+        return mode == null || mode == ExecutionMode.PLAN
+            ? MAX_THINKING_PLAN_OUTPUT_TOKENS_PER_TURN
+            : MAX_THINKING_MODEL_OUTPUT_TOKENS_PER_TURN;
+    }
+
+    /** Keeps one compact action turn available when a normal thinking turn ends at LENGTH. */
+    static long recoverableTurnOutputLimit(long requestedLimit, long remainingOutput,
+                                           boolean thinkingBuild,
+                                           boolean reasoningLengthRecovery) {
+        return recoverableTurnOutputLimit(requestedLimit, remainingOutput, thinkingBuild,
+            reasoningLengthRecovery, 2);
+    }
+
+    static long recoverableTurnOutputLimit(long requestedLimit, long remainingOutput,
+                                           boolean thinkingBuild,
+                                           boolean reasoningLengthRecovery,
+                                           int remainingModelTurns) {
+        long bounded = Math.max(1, Math.min(requestedLimit, remainingOutput));
+        if (!thinkingBuild || reasoningLengthRecovery
+            || remainingModelTurns <= 1
+            || remainingOutput <= MAX_THINKING_BUILD_RECOVERY_OUTPUT_TOKENS_PER_TURN) {
+            return bounded;
+        }
+        long beforeRecovery = remainingOutput
+            - MAX_THINKING_BUILD_RECOVERY_OUTPUT_TOKENS_PER_TURN;
+        return Math.max(1, Math.min(bounded, beforeRecovery));
+    }
+
+    /** Thinking-mode tool calls are not replayable unless the exact provider reasoning survives. */
+    static String thinkingReplayViolation(HarnessRunState run, List<HarnessMessage> messages) {
+        if (run == null || run.modelRoute() == null || !run.modelRoute().thinkingEnabled()
+            || messages == null) {
+            return null;
+        }
+        boolean missing = messages.stream()
+            .filter(Objects::nonNull)
+            .filter(message -> message.role() == HarnessMessageRole.ASSISTANT)
+            .filter(message -> !Boolean.FALSE.equals(
+                message.metadata().get("thinkingEnabled")))
+            .anyMatch(message -> !message.toolCalls().isEmpty()
+                && !doubaoReplaySatisfied(message)
+                && (message.thinking() == null || message.thinking().isBlank()));
+        return missing
+            ? "Thinking-enabled provider tool calls are missing replayable reasoning content"
+            : null;
+    }
+
+    /**
+     * Doubao 工具多轮上下文的回传依据是 assistant 消息的 encrypted_content（思考加密原文）；
+     * reasoning_content 只是摘要。因此 Doubao 消息只要持久化了不透明加密原文，即满足重放要求，
+     * 不强制要求非空 reasoning_content。
+     */
+    static boolean doubaoReplaySatisfied(HarnessMessage message) {
+        Object encrypted = message.metadata() == null
+            ? null : message.metadata().get("doubaoEncryptedContent");
+        return encrypted instanceof String text && !text.isBlank();
+    }
+
+    /** Exact suffix that cannot be compacted before a later provider assistant consumes it. */
+    static List<HarnessMessage> latestUnconsumedToolProtocolTail(
+        List<HarnessMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return List.of();
+        }
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            HarnessMessage candidate = messages.get(index);
+            if (candidate != null && candidate.role() == HarnessMessageRole.ASSISTANT) {
+                return candidate.toolCalls().isEmpty()
+                    ? List.of() : List.copyOf(messages.subList(index, messages.size()));
+            }
+        }
+        return List.of();
+    }
+
+    /** Defense in depth immediately before LangChain4j request mapping. */
+    String finalProviderTranscriptViolation(HarnessRunState run,
+                                            List<HarnessMessage> messages,
+                                            List<HarnessMessage> pinnedToolProtocolTail,
+                                            String reviewSupplemental) {
+        List<HarnessMessage> current = messages == null ? List.of() : messages;
+        List<HarnessMessage> pinned = pinnedToolProtocolTail == null
+            ? List.of() : pinnedToolProtocolTail;
+        if (!pinned.isEmpty()) {
+            int suffixStart = current.size() - pinned.size();
+            if (suffixStart < 0 || !current.subList(suffixStart, current.size()).equals(pinned)) {
+                return "Latest unconsumed tool protocol group was altered by context compaction";
+            }
+        }
+        String thinkingViolation = thinkingReplayViolation(run, current);
+        if (thinkingViolation != null) {
+            return thinkingViolation;
+        }
+        ToolProtocolValidation validation = messageMapper.validate(current);
+        if (!validation.valid()) {
+            return "Final provider transcript has an incomplete or invalid tool protocol group";
+        }
+        boolean reviewerCreatesBoundary = reviewSupplemental != null
+            && !reviewSupplemental.isBlank();
+        if (current.isEmpty()) {
+            return reviewerCreatesBoundary ? null
+                : "Final provider transcript has no request boundary";
+        }
+        return validation.allowsNextModelRequest() ? null
+            : "Final provider transcript is not at a valid model request boundary";
     }
 
     private long deadlineMillis(long start, long duration) {
@@ -2870,6 +4421,83 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         return Math.min(hardContextWindow, Math.max(highWatermark, minimumUsefulWindow));
     }
 
+    /**
+     * Selects the exact USER control suffix appended after context compaction. The same immutable
+     * list is charged to the compaction reservation and rendered into the provider request, so a
+     * late plan/workspace gate cannot make an otherwise safe projection overflow at final preflight.
+     */
+    static List<String> finalControlPrompts(String finalVerdictPrompt, boolean decisionOnly,
+                                            boolean planStepRequired,
+                                            boolean analysisSynthesisRequired,
+                                            boolean workspaceBoundaryReached,
+                                            boolean inspectionLimitReached,
+                                            boolean reasoningLengthRecoveryRequired,
+                                            boolean finalBuildActionRequired,
+                                            boolean planCreationRecoveryRequired) {
+        List<String> prompts = new ArrayList<>(3);
+        if (decisionOnly) {
+            prompts.add(finalVerdictPrompt);
+        }
+        if (reasoningLengthRecoveryRequired) {
+            prompts.add(planCreationRecoveryRequired
+                ? TRUNCATED_PLAN_REASONING_ACTION_PROMPT
+                : TRUNCATED_REASONING_ACTION_PROMPT);
+        }
+        if (finalBuildActionRequired) {
+            prompts.add(FINAL_BUILD_ACTION_PROMPT);
+        }
+        if (planStepRequired) {
+            prompts.add(PLAN_STEP_ACTION_PROMPT);
+        } else if (analysisSynthesisRequired) {
+            prompts.add(ANALYSIS_SYNTHESIS_PROMPT);
+        } else if (workspaceBoundaryReached) {
+            prompts.add(WORKSPACE_BOUNDARY_PROMPT);
+        } else if (inspectionLimitReached) {
+            prompts.add(IMPLEMENTATION_ACTION_PROMPT);
+        }
+        return List.copyOf(prompts);
+    }
+
+    private boolean finalBuildActionRequired(HarnessRunState run) {
+        return run != null && executionMode(run) == ExecutionMode.BUILD
+            && run.executionPlan() != null
+            && run.executionPlan().inProgressStep().isPresent()
+            && remainingModelTurns(run) <= 1;
+    }
+
+    private static int remainingModelTurns(HarnessRunState run) {
+        if (run == null || run.budget() == null) {
+            return 0;
+        }
+        return Integer.MAX_VALUE;
+    }
+
+    /** Detects a thinking-only LENGTH result so the next BUILD request demands an early action. */
+    static boolean reasoningLengthRecoveryRequired(List<HarnessMessage> messages) {
+        if (messages == null) {
+            return false;
+        }
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            HarnessMessage message = messages.get(index);
+            if (message != null && message.role() == HarnessMessageRole.ASSISTANT) {
+                return message.toolCalls().isEmpty()
+                    && (message.content() == null || message.content().isBlank())
+                    && "LENGTH".equals(Objects.toString(
+                        message.metadata().get("finishReason"), ""));
+            }
+        }
+        return false;
+    }
+
+    /** Conservative provider-message charge: UTF-8 upper bound plus per-message framing. */
+    static long finalControlPromptTokens(List<String> prompts) {
+        long tokens = 0;
+        for (String prompt : prompts) {
+            tokens = saturatingAdd(tokens, saturatingAdd(32, utf8Length(prompt)));
+        }
+        return tokens;
+    }
+
     private static long saturatingAdd(long left, long right) {
         if (right > Long.MAX_VALUE - left) {
             return Long.MAX_VALUE;
@@ -3046,15 +4674,35 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             metadata.put("assistantContentOffloaded", true);
         }
         if (oversizedThinking) {
-            // Private provider reasoning is not needed for tool protocol and must not poison every
-            // later context window. It is intentionally neither replayed nor exposed as an artifact.
-            thinking = null;
-            metadata.put("oversizedThinkingOmitted", true);
+            if (requiresThinkingReplay(message)) {
+                // DeepSeek's thinking + tool protocol is stricter than ordinary OpenAI-compatible
+                // chat: the exact reasoning_content from a tool-bearing assistant response must be
+                // replayed on the next request. Context compaction may later remove the completed
+                // call/result group atomically, but this live group must never be truncated or
+                // replaced by an artifact pointer.
+                metadata.put("oversizedThinkingRetainedForProtocol", true);
+            } else {
+                // Standalone private reasoning has no callable protocol successor and may be
+                // omitted once its visible answer is durable.
+                thinking = null;
+                metadata.put("oversizedThinkingOmitted", true);
+            }
         }
         return new HarnessMessage(message.schemaVersion(), message.messageId(), message.sessionId(),
             message.runId(), message.sequence(), message.role(), visibleContent, thinking,
             message.toolCalls(), message.toolCallId(), message.toolName(), message.toolError(),
             message.usage(), metadata, message.timestamp());
+    }
+
+    static boolean requiresThinkingReplay(HarnessMessage message) {
+        if (message == null || message.toolCalls().isEmpty()) {
+            return false;
+        }
+        // Doubao 的可回传凭证是 encrypted_content，必须原样保留，不能被制品指针替换。
+        if (doubaoReplaySatisfied(message)) {
+            return true;
+        }
+        return message.thinking() != null && !message.thinking().isBlank();
     }
 
     private String jsonError(String code, String message) {
@@ -3090,7 +4738,25 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             + "仅代码、精确标识符、工具名、路径、命令参数和机器错误码可保留原文。";
     }
 
-    private String finalVerdictPrompt(HarnessRunState run) {
+    private String finalVerdictPrompt(HarnessRunState run, HarnessSessionState session) {
+        if (externalVerification(session)) {
+            return requiresSimplifiedChinese(run.originalRequirement())
+                ? "最终交接轮次（外部验收模式）：测试与进程校验由独立外部验收者完成。你没有 "
+                    + "execute_process/run_inline_probe，禁止请求、模拟或声称测试/验收通过。"
+                    + "真实文件变更证据已经持久化。现在只做一次源码/差异回顾：确认实际改动与不可变需求、"
+                    + "计划步骤和哈希一致。若发现缺陷或遗漏，调用 plan_verify FAIL 返回 BUILD 修复，不能交接。"
+                    + "没有已知遗漏后，用简体中文简要给出已变更文件、关键实现点，并以"
+                    + "“实现完成，等待外部验收”结束。不要运行任何命令或探针。"
+                : "FINAL HANDOFF TURN (external verification mode): tests and process checks are "
+                    + "owned by an independent external acceptance party. You have no "
+                    + "execute_process/run_inline_probe tool; never request, simulate, or claim "
+                    + "any test/process/acceptance success. Real FILE_MUTATION evidence is "
+                    + "durable. Perform exactly one source/diff review confirming the actual "
+                    + "changes match the immutable requirement, plan steps, and hashes. If any "
+                    + "implementation is missing or broken, call plan_verify FAIL and repair it in BUILD. "
+                    + "Only when no known implementation omission remains, end "
+                    + "concisely with changed files, key implementation points, and “实现完成，等待外部验收”.";
+        }
         if (authoritativeProcessEvidenceReady(run.executionPlan())) {
             return requiresSimplifiedChinese(run.originalRequirement())
                 ? "最终裁决轮次：当前契约仅包含已满足的有限进程退出条件，精确证据键、退出码和来源已经形成持久证据。"
@@ -3195,13 +4861,14 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
      * filtering and is therefore deliberately skipped.
      */
     private ReviewContext independentReviewContext(HarnessRunState run,
-                                                    List<HarnessMessage> raw) {
+                                                    List<HarnessMessage> raw,
+                                                    HarnessSessionState session) {
         List<HarnessMessage> ordinary = raw.stream()
             .filter(message -> message.role() != HarnessMessageRole.CONTROL)
             .toList();
         PlanAggregate plan = run.executionPlan();
         if (plan == null) {
-            return new ReviewContext(ordinary, run.contextCheckpoint());
+            return new ReviewContext(ordinary, run.contextCheckpoint(), "");
         }
         if (plan.mode() == ExecutionMode.BUILD) {
             ReviewContext repair = failedReviewRepairContext(run, plan, raw);
@@ -3210,7 +4877,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             }
         }
         if (plan.mode() != ExecutionMode.VERIFY) {
-            return new ReviewContext(ordinary, run.contextCheckpoint());
+            return new ReviewContext(ordinary, run.contextCheckpoint(), "");
         }
         long boundarySequence = raw.stream()
             .filter(message -> message.role() == HarnessMessageRole.CONTROL)
@@ -3224,7 +4891,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             .max().orElse(-1);
         if (boundarySequence < 0) {
             if (run.contextCheckpoint().toSequence() <= 0) {
-                return new ReviewContext(ordinary, run.contextCheckpoint());
+                return new ReviewContext(ordinary, run.contextCheckpoint(), "");
             }
             // The exact boundary can be behind the durable checkpoint after compaction. Every
             // visible message is then post-boundary, so recreate the reviewer pin instead of
@@ -3240,10 +4907,28 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
             && afterBoundary.get(firstCompleteGroup).role() == HarnessMessageRole.TOOL) {
             firstCompleteGroup++;
         }
-        List<HarnessMessage> independent = new ArrayList<>();
-        independent.add(independentReviewPrompt(run, plan, boundarySequence));
-        independent.addAll(afterBoundary.subList(firstCompleteGroup, afterBoundary.size()));
-        return new ReviewContext(List.copyOf(independent), HarnessContextCheckpoint.empty());
+        List<HarnessMessage> independent = List.copyOf(
+            afterBoundary.subList(firstCompleteGroup, afterBoundary.size()));
+        return new ReviewContext(independent,
+            reviewProjectionCheckpoint(run.contextCheckpoint()),
+            independentReviewPrompt(run, plan, session));
+    }
+
+    /**
+     * Hides implementation-biased summary text from an independent review while retaining the
+     * exact durable boundary and parent identity used by the next compaction checkpoint.
+     */
+    private HarnessContextCheckpoint reviewProjectionCheckpoint(
+        HarnessContextCheckpoint checkpoint) {
+        if (checkpoint == null || checkpoint.isEmpty() || checkpoint.summary().isBlank()) {
+            return checkpoint == null ? HarnessContextCheckpoint.empty() : checkpoint;
+        }
+        return new HarnessContextCheckpoint(checkpoint.checkpointId(), checkpoint.lineage(),
+            checkpoint.fromSequence(), checkpoint.toSequence(),
+            checkpoint.compactedThroughMessageSequence(), "", checkpoint.artifactIds(),
+            checkpoint.inputTokensBefore(), checkpoint.inputTokensAfter(),
+            checkpoint.modelIdentity(), checkpoint.sourceUsageTimestamp(),
+            checkpoint.securityConstraints(), checkpoint.createdAt());
     }
 
     /**
@@ -3252,10 +4937,10 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
      *
      * <p>Historical placeholders must not remain function-shaped. Providers can imitate any tool
      * call visible in assistant history even when its name is absent from the current schema. A
-     * completed large call and its paired result are therefore collapsed into ordinary assistant
-     * text, while non-compacted siblings retain their exact call/result adjacency.</p>
+     * completed batch is therefore collapsed into ordinary assistant text as one unit; otherwise
+     * every sibling retains its exact reasoning/call/result adjacency.</p>
      */
-    private List<HarnessMessage> projectHistoricalCompletedToolPayloads(
+    List<HarnessMessage> projectHistoricalCompletedToolPayloads(
         List<HarnessMessage> messages) {
         Set<String> completedCallIds = messages.stream()
             .filter(message -> message.role() == HarnessMessageRole.TOOL)
@@ -3280,22 +4965,36 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 }
             }
         }
+        String protectedInlineProbeId = latestSuccessfulInlineProbe;
+        HarnessMessage latestUnconsumedAssistant = null;
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            HarnessMessage candidate = messages.get(index);
+            if (candidate.role() == HarnessMessageRole.ASSISTANT) {
+                latestUnconsumedAssistant = candidate;
+                break;
+            }
+        }
         Map<String, HistoricalEffectProjection> historicalEffects = new LinkedHashMap<>();
         for (HarnessMessage message : messages) {
-            if (message.role() != HarnessMessageRole.ASSISTANT) {
+            if (message.role() != HarnessMessageRole.ASSISTANT || message.toolCalls().isEmpty()
+                || message == latestUnconsumedAssistant) {
+                continue;
+            }
+            boolean successfulBatch = message.toolCalls().stream().allMatch(call ->
+                successfulCompletedCallIds.contains(call.toolCallId()));
+            boolean protectedInlineProbe = message.toolCalls().stream().anyMatch(call ->
+                call.toolCallId().equals(protectedInlineProbeId));
+            boolean containsLargeArguments = message.toolCalls().stream().anyMatch(call ->
+                utf8Length(call.arguments()) > MAX_HISTORICAL_TOOL_ARGUMENT_BYTES);
+            // A provider tool batch is one protocol unit. Collapse every call/result sibling or
+            // retain the complete assistant reasoning + calls + results; never project a subset.
+            if (!successfulBatch || protectedInlineProbe || !containsLargeArguments) {
                 continue;
             }
             for (HarnessToolCall call : message.toolCalls()) {
                 long argumentBytes = utf8Length(call.arguments());
-                // Failed calls retain exact arguments: the next turn often needs to correct one
-                // field without regenerating a large patch. Only successful, repository-reflected
-                // effects are safe to collapse to a historical receipt.
-                if (successfulCompletedCallIds.contains(call.toolCallId())
-                    && !call.toolCallId().equals(latestSuccessfulInlineProbe)
-                    && argumentBytes > MAX_HISTORICAL_TOOL_ARGUMENT_BYTES) {
-                    historicalEffects.put(call.toolCallId(), new HistoricalEffectProjection(
-                        call.toolName(), historicalEffectSummary(call, argumentBytes)));
-                }
+                historicalEffects.put(call.toolCallId(), new HistoricalEffectProjection(
+                    call.toolName(), historicalEffectSummary(call, argumentBytes)));
             }
         }
         if (historicalEffects.isEmpty()) {
@@ -3329,15 +5028,11 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 projected.add(message);
                 continue;
             }
-            List<HarnessToolCall> calls = new ArrayList<>(message.toolCalls().size());
-            boolean messageChanged = false;
-            for (HarnessToolCall call : message.toolCalls()) {
-                HistoricalEffectProjection historical = historicalEffects.get(call.toolCallId());
-                if (historical != null) {
-                    messageChanged = true;
-                } else {
-                    calls.add(call);
-                }
+            boolean projectWholeBatch = message.toolCalls().stream()
+                .allMatch(call -> historicalEffects.containsKey(call.toolCallId()));
+            if (!projectWholeBatch) {
+                projected.add(message);
+                continue;
             }
             String content = message.content();
             boolean completedBatch = message.toolCalls().stream()
@@ -3346,7 +5041,6 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 content = "[Harness compacted a " + utf8Length(message.content())
                     + "-byte completed assistant preamble; use the paired tool result and inspect "
                     + "current repository state.]";
-                messageChanged = true;
             }
             List<String> summaries = message.toolCalls().stream()
                 .map(call -> historicalEffects.get(call.toolCallId()))
@@ -3358,14 +5052,10 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 content = prefix + "[Harness compacted completed tool effects into non-callable "
                     + "history:]\n" + String.join("\n", summaries);
             }
-            if (!messageChanged) {
-                projected.add(message);
-                continue;
-            }
             changed = true;
             projected.add(new HarnessMessage(message.schemaVersion(), message.messageId(),
                 message.sessionId(), message.runId(), message.sequence(), message.role(),
-                content, null, calls, message.toolCallId(),
+                content, null, List.of(), message.toolCallId(),
                 message.toolName(), message.toolError(), message.usage(), message.metadata(),
                 message.timestamp()));
         }
@@ -3444,11 +5134,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         String excerpt = failures.isEmpty()
             ? "No trustworthy failure excerpt was retained; rerun the smallest relevant probe."
             : failures.toString();
-        String identity = run.runId() + "\u0000repair\u0000" + plan.taskId() + "\u0000"
-            + plan.revision();
-        HarnessMessage repair = new HarnessMessage(HarnessMessage.CURRENT_SCHEMA_VERSION,
-            "failed-review-repair-" + stableHash(identity).substring(0, 40), run.sessionId(),
-            run.runId(), boundarySequence, HarnessMessageRole.USER,
+        String repairPrompt =
             "Independent VERIFY produced executable counterevidence and the runtime returned the "
                 + "plan to BUILD. Do not repeat the old review narrative. Re-read the current "
                 + "production file, fix the root cause, RETRY the failed plan step, and run the "
@@ -3456,23 +5142,40 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 + "For every rejection probe, verify any required stable error code and that the "
                 + "message identifies the rejected field or constraint. A generic or misclassified "
                 + "error is counterevidence even when an exception was thrown.\n\n"
-                + "Untrusted bounded failure excerpt:\n" + excerpt,
-            null, List.of(), null, null, false, HarnessUsage.empty(),
-            Map.of("kind", "FAILED_REVIEW_REPAIR", "ephemeral", true), plan.updatedAt());
+                + "Untrusted bounded failure excerpt:\n" + excerpt;
         List<HarnessMessage> repairConversation = new ArrayList<>();
-        repairConversation.add(repair);
         ordinary.stream()
             .filter(message -> message.sequence() > repairStartSequence)
             .forEach(repairConversation::add);
         return new ReviewContext(List.copyOf(repairConversation),
-            HarnessContextCheckpoint.empty());
+            reviewProjectionCheckpoint(run.contextCheckpoint()), repairPrompt);
     }
 
-    private HarnessMessage independentReviewPrompt(HarnessRunState run, PlanAggregate plan,
-                                                    long boundarySequence) {
-        String identity = run.runId() + "\u0000" + plan.taskId() + "\u0000" + plan.revision();
+    private String independentReviewPrompt(HarnessRunState run, PlanAggregate plan,
+                                             HarnessSessionState session) {
         String riskReview = reviewRiskFocus(run.originalRequirement());
         String instruction;
+        if (externalVerification(session)) {
+            // 外部验收模式：VERIFY 只做一次独立源码/差异回顾，不运行测试/探针，不调用 plan_verify
+            // 伪造通过；回顾后以“实现完成，等待外部验收”结束。
+            instruction = "EXTERNAL verification review: an independent acceptance party owns all "
+                + "tests and process checks. You have no execute_process/run_inline_probe tool; "
+                + "never request, simulate, or claim test/acceptance success. Act as an "
+                + "independent final code reviewer: silently derive atomic obligations from the "
+                + "immutable requirement, inspect the fresh production diff and the actual changed "
+                + "files, and confirm each plan step is backed by real durable FILE_MUTATION evidence "
+                + "with matching hashes. Do not mutate files or run commands in VERIFY. If this "
+                + "review finds any missing or broken implementation, call plan_verify FAIL to "
+                + "return to BUILD and repair it. Only when no known omission remains, hand off "
+                + "and report concisely in Chinese: changed files, key "
+                + "implementation points, and “实现完成，等待外部验收”. Never mark external acceptance "
+                + "as passed. " + riskReview;
+            String externalLanguage = verificationLanguageDirective(run);
+            if (!externalLanguage.isBlank()) {
+                instruction = externalLanguage + "\n\n" + instruction;
+            }
+            return instruction;
+        }
         if (authoritativeProcessEvidenceReady(plan)) {
             instruction = "This verification contract consists exclusively of already satisfied "
                 + "mechanical process-exit criteria. Audit the exact durable evidence keys, exit "
@@ -3510,13 +5213,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         if (!languageDirective.isBlank()) {
             instruction = languageDirective + "\n\n" + instruction + "\n\n" + languageDirective;
         }
-        return new HarnessMessage(HarnessMessage.CURRENT_SCHEMA_VERSION,
-            "independent-review-" + stableHash(identity).substring(0, 40), run.sessionId(),
-            run.runId(), boundarySequence, HarnessMessageRole.USER,
-            instruction,
-            null, List.of(), null, null, false, HarnessUsage.empty(),
-            Map.of("kind", "INDEPENDENT_FINAL_REVIEW", "ephemeral", true),
-            plan.updatedAt());
+        return instruction;
     }
 
     private String reviewRiskFocus(String requirement) {
@@ -3682,6 +5379,12 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                     + "criteria. Do not read the repository or run another probe; call plan_verify "
                     + "COMPLETE or FAIL with the exact current revision.";
         }
+        if (planStepActionRequired(plan)) {
+            return "LEGAL NEXT PLAN ACTION: call plan_step with the exact current revision. START "
+                + "the first ready PENDING step, or RETRY/resolve the projected FAILED or BLOCKED "
+                + "step. Repository inspection and mutation tools remain closed until exactly one "
+                + "step is IN_PROGRESS.";
+        }
         return switch (mode) {
             case PLAN -> "LEGAL NEXT PLAN ACTION: plan_create only when replacing the draft after "
                 + "authenticated feedback; otherwise wait for control-plane approval.";
@@ -3792,7 +5495,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         }
     }
 
-    private record InspectionAdmission(HarnessInspectionLedger projectedLedger,
+    record InspectionAdmission(HarnessInspectionLedger projectedLedger,
                                        ToolPolicyEvaluation rejection) { }
 
     private record ReadRequest(String path, int startLine, int endLine) { }
@@ -3804,7 +5507,14 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                                        ArtifactRef artifact) { }
 
     private record ReviewContext(List<HarnessMessage> messages,
-                                 HarnessContextCheckpoint checkpoint) { }
+                                 HarnessContextCheckpoint checkpoint,
+                                 String supplementalPrompt) {
+        private ReviewContext {
+            messages = messages == null ? List.of() : List.copyOf(messages);
+            checkpoint = checkpoint == null ? HarnessContextCheckpoint.empty() : checkpoint;
+            supplementalPrompt = supplementalPrompt == null ? "" : supplementalPrompt;
+        }
+    }
 
     private record ToolIntent(
         HarnessRunState run,

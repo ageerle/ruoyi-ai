@@ -88,7 +88,7 @@ public class WorkflowUtil{
 
     public void streamingInvokeLLM(WfState wfState, WfNodeState state, WorkflowNode node, String modelName,
                                    String prompt, String nodeMessageTemplate) {
-        log.info("stream invoke, modelName: {}", modelName);
+        log.info("workflow_llm operation=STREAM_INVOKE status=STARTED");
 
         // 获取用户信息和Token以及SSe连接对象（对话接口需要使用）
         Long sessionId = wfState.getSessionId();
@@ -103,7 +103,7 @@ public class WorkflowUtil{
         StreamingChatGenerator<AgentState> streamingGenerator = StreamingChatGenerator.builder()
             .mapResult(response -> {
                 String responseTxt = response.aiMessage().text();
-                log.info("llm response:{}", responseTxt);
+                logCompletionMetadata(responseTxt);
                 // 传递所有输入数据 + 添加 LLM 输出
                 wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> {
                     List<NodeIOData> outputs = new ArrayList<>(item.getInputs());
@@ -158,7 +158,7 @@ public class WorkflowUtil{
      * @return
      */
     private UserMessage getMessage(String role, String value) {
-        log.info("Creating message with role: {}, content: {}", role, value);
+        logMessageMetadata(role, value);
         return new UserMessage(value);
     }
 
@@ -177,7 +177,7 @@ public class WorkflowUtil{
      * 调用LLM 根据文字生成图片
      */
     public String buildTextToImage(String modelName, String prompt, String size, Integer seed){
-        log.info("Generate image invoke, modelName: {}", modelName);
+        log.info("workflow_image operation=GENERATE status=STARTED");
         // 根据模型名称查询模型信息
         ChatModelVo chatModelVo = chatModelService.selectModelByName(modelName);
         if (chatModelVo == null) {
@@ -196,5 +196,20 @@ public class WorkflowUtil{
             .build();
         // 调用LLM 生成图片
         return imageService.generateImage(imageContext);
+    }
+
+    static void logCompletionMetadata(String responseText) {
+        log.info("workflow_llm operation=STREAM_INVOKE status=COMPLETED outputChars={}",
+            textLength(responseText));
+    }
+
+    static void logMessageMetadata(String role, String content) {
+        String roleType = "user".equalsIgnoreCase(role) ? "USER" : "OTHER";
+        log.info("workflow_message status=CREATED roleType={} contentChars={}",
+            roleType, textLength(content));
+    }
+
+    private static int textLength(String value) {
+        return value == null ? 0 : value.length();
     }
 }

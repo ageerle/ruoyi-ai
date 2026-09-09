@@ -76,10 +76,13 @@
 ### 方式一：一键启动所有服务（推荐）
 
 使用 `docker-compose-all.yaml` 可以一键启动所有服务（包括后端、管理端、用户端及依赖服务）：
+#### 环境要求
 
+- Docker Engine（Linux/macOS）或 Docker Desktop（Windows）
+- Docker Compose V2
+
+#### Linux / macOS
 ```bash
-# 环境要求：Docker Engine 和 Docker Compose V2
-
 # 克隆 v3.1.0 版本
 git clone --depth 1 --branch v3.1.0 https://github.com/ageerle/ruoyi-ai.git
 cd ruoyi-ai
@@ -102,6 +105,35 @@ docker compose --env-file docs/docker/ruoyi-ai/.env \
 # 管理端: http://SERVER_IP:25666 (admin / admin123)
 # 用户端: http://SERVER_IP:25137
 # 后端API: http://SERVER_IP:26039
+```
+
+#### Windows PowerShell
+如果您使用 Windows + Docker Desktop，可以使用 PowerShell 执行以下命令：
+```PowerShell
+# 克隆 v3.1.0 版本
+git clone --depth 1 --branch v3.1.0 https://github.com/ageerle/ruoyi-ai.git
+cd ruoyi-ai
+
+# 创建环境配置文件
+Copy-Item docs\docker\ruoyi-ai\.env.example docs\docker\ruoyi-ai\.env
+
+# 固定镜像版本
+(Get-Content docs\docker\ruoyi-ai\.env) `
+  -replace '^RUIYI_VERSION=.*', 'RUIYI_VERSION=v3.1.0' |
+  Set-Content docs\docker\ruoyi-ai\.env
+
+# 查看环境配置
+Get-Content docs\docker\ruoyi-ai\.env
+
+# 从 GHCR 拉取预构建镜像并启动全部服务
+docker compose --env-file docs\docker\ruoyi-ai\.env `
+  -f docs\docker\ruoyi-ai\docker-compose-all.yaml pull
+docker compose --env-file docs\docker\ruoyi-ai\.env `
+  -f docs\docker\ruoyi-ai\docker-compose-all.yaml up -d
+
+# 查看服务状态
+docker compose --env-file docs\docker\ruoyi-ai\.env `
+  -f docs\docker\ruoyi-ai\docker-compose-all.yaml ps
 ```
 
 默认 Compose 还会发布 MySQL（`23306`）、Redis（`26379`）、Weaviate（`28080`）和

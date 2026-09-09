@@ -3,9 +3,13 @@ package org.ruoyi.common.chat.domain.vo.chat;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.ruoyi.common.chat.entity.chat.ChatModel;
+import org.ruoyi.common.chat.security.ChatModelCredentialPolicy;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -18,7 +22,7 @@ import java.io.Serializable;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = ChatModel.class)
+@AutoMapper(target = ChatModel.class, convertGenerate = false)
 public class ChatModelVo implements Serializable {
 
     @Serial
@@ -74,10 +78,28 @@ public class ChatModelVo implements Serializable {
     private String apiHost;
 
     /**
-     * 密钥
+     * 密钥仅用于服务端模型调用和写入配置。任何读取接口、日志字符串或 Excel 导出
+     * 都不得把它带出服务端边界。
      */
-    @ExcelProperty(value = "密钥")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private String apiKey;
+
+    /** Returns the stored configuration reference without touching the process environment. */
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    /**
+     * Resolves the reference only after binding it to both the consuming provider and this row's
+     * effective provider, model and endpoint. Non-allowlisted, misrouted, or legacy rows fail
+     * closed before the environment is read.
+     */
+    public String resolveApiKeyForConfiguredEndpoint(String consumingProviderCode) {
+        return ChatModelCredentialPolicy.resolveApiKeyForUse(
+            consumingProviderCode, providerCode, modelName, apiHost, apiKey);
+    }
 
     /**
      * 备注

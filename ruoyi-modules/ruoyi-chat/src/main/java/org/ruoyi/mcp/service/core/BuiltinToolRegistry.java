@@ -143,7 +143,8 @@ public class BuiltinToolRegistry {
                 toolInstances.add(instance);
                 log.debug("创建工具实例: {}", entry.getKey());
             } catch (Exception e) {
-                log.error("创建工具实例失败: {} - {}", entry.getKey(), e.getMessage());
+                log.error("mcp_builtin operation=CREATE_INSTANCE status=FAILED errorType={}",
+                    e.getClass().getName());
             }
         }
 
@@ -167,7 +168,8 @@ public class BuiltinToolRegistry {
             // 使用无参构造函数创建新实例，保留 @Tool 注解
             return toolClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
-            log.error("创建工具实例失败: {} - {}", toolName, e.getMessage());
+            log.error("mcp_builtin operation=CREATE_INSTANCE status=FAILED errorType={}",
+                e.getClass().getName());
             return null;
         }
     }

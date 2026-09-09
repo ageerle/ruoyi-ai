@@ -177,7 +177,6 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
         QueryVectorBo queryVectorBo = new QueryVectorBo();
         queryVectorBo.setQuery(bo.getQuery());
         queryVectorBo.setKid(String.valueOf(bo.getKnowledgeId()));
-        queryVectorBo.setApiKey(chatModel.getApiKey());
         queryVectorBo.setBaseUrl(chatModel.getApiHost());
         queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());

@@ -30,7 +30,8 @@ public class AtlasPredictionService {
         }
         Request request = new Request.Builder()
             .url(AtlasMediaSupport.endpoint(model.getApiHost(), "/model/prediction/" + predictionId))
-            .addHeader("Authorization", "Bearer " + model.getApiKey())
+            .addHeader("Authorization", "Bearer "
+                + model.resolveApiKeyForConfiguredEndpoint("atlas"))
             .get()
             .build();
         try (Response response = okHttpClient.newCall(request).execute()) {

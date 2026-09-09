@@ -24,10 +24,8 @@ public class MyAiServiceErrorListener implements AiServiceErrorListener {
         String aiServiceMethodName = invocationContext.methodName();
         Throwable error = event.error();
 
-        log.error("【AI服务错误】调用唯一标识符: {}", invocationId);
-        log.error("【AI服务错误】AI服务接口名: {}", aiServiceInterfaceName);
-        log.error("【AI服务错误】调用的方法名: {}", aiServiceMethodName);
-        log.error("【AI服务错误】错误类型: {}", error.getClass().getName());
-        log.error("【AI服务错误】错误信息: {}", error.getMessage(), error);
+        log.error("ai_service_failed invocationId={} interfaceType={} method={} status=FAILED errorType={}",
+            invocationId, aiServiceInterfaceName, aiServiceMethodName,
+            error == null ? "unknown" : error.getClass().getName());
     }
 }

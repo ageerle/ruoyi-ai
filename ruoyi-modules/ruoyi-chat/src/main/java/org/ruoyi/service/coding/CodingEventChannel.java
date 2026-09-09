@@ -1,5 +1,7 @@
 package org.ruoyi.service.coding;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -22,14 +24,17 @@ import java.util.function.Consumer;
  *
  * @author ageerle
  */
+@Slf4j
 public class CodingEventChannel {
 
-    /** DONE 哨兵，drain 遇到即退出 */
-    private static final CodingSseEvent DONE = new CodingSseEvent("__done__", null, null, null, null);
+    static final int QUEUE_CAPACITY = 4096;
+    static final String SAFE_ERROR_MESSAGE = "编程任务执行失败，请稍后重试";
 
-    private final BlockingQueue<CodingSseEvent> queue = new LinkedBlockingQueue<>(4096);
-    private final AtomicReference<Throwable> error = new AtomicReference<>();
+    private final BlockingQueue<CodingSseEvent> queue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
+    private final AtomicReference<CodingSseEvent> terminalError = new AtomicReference<>();
     private final CountDownLatch completed = new CountDownLatch(1);
+    private final Object lifecycleLock = new Object();
+    private boolean accepting = true;
 
     /**
      * 写入一个事件：线程安全，队列满时 100ms 超时丢弃。
@@ -38,13 +43,22 @@ public class CodingEventChannel {
         if (event == null) {
             return;
         }
-        try {
-            if (!queue.offer(event, 100, TimeUnit.MILLISECONDS)) {
-                // 队列满，丢弃但不中断流程
-                System.err.println("[CodingEventChannel] 队列满，丢弃事件: " + event.eventType());
+        // error 是终态，不进入有界数据队列；这样即使队列已满也不会丢失唯一错误事件。
+        if ("error".equals(event.eventType())) {
+            finish(CodingSseEvent.error(SAFE_ERROR_MESSAGE));
+            return;
+        }
+        synchronized (lifecycleLock) {
+            if (!accepting) {
+                return;
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            try {
+                if (!queue.offer(event, 100, TimeUnit.MILLISECONDS)) {
+                    log.warn("coding_event_channel status=DROPPED reason=QUEUE_FULL");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -52,19 +66,29 @@ public class CodingEventChannel {
      * 标记正常完成。
      */
     public void complete() {
-        queue.offer(DONE);
-        completed.countDown();
+        finish(null);
     }
 
     /**
      * 标记错误完成，附带一条 error 事件。
      */
-    public void completeWithError(Throwable t) {
-        error.set(t);
-        if (t != null && t.getMessage() != null) {
-            queue.offer(CodingSseEvent.error(t.getMessage()));
+    public void completeWithError(Throwable ignored) {
+        finish(CodingSseEvent.error(SAFE_ERROR_MESSAGE));
+    }
+
+    private void finish(CodingSseEvent safeTerminalError) {
+        synchronized (lifecycleLock) {
+            if (!accepting) {
+                return;
+            }
+            accepting = false;
+            if (safeTerminalError != null) {
+                terminalError.set(safeTerminalError);
+                // A failure terminal is more important than stale progress. Dropping the backlog
+                // lets the drain thread deliver the error before the service closes its emitter.
+                queue.clear();
+            }
         }
-        queue.offer(DONE);
         completed.countDown();
     }
 
@@ -75,15 +99,21 @@ public class CodingEventChannel {
      */
     public void drain(Consumer<CodingSseEvent> emitter) throws InterruptedException {
         while (true) {
+            CodingSseEvent pendingTerminalError = terminalError.getAndSet(null);
+            if (pendingTerminalError != null) {
+                emitter.accept(pendingTerminalError);
+                return;
+            }
             CodingSseEvent msg = queue.poll(200, TimeUnit.MILLISECONDS);
             if (msg != null) {
-                if (DONE == msg || "__done__".equals(msg.eventType())) {
-                    break;
-                }
                 emitter.accept(msg);
             } else if (completed.getCount() == 0 && queue.isEmpty()) {
                 break;
             }
+        }
+        CodingSseEvent safeTerminalError = terminalError.getAndSet(null);
+        if (safeTerminalError != null) {
+            emitter.accept(safeTerminalError);
         }
     }
 

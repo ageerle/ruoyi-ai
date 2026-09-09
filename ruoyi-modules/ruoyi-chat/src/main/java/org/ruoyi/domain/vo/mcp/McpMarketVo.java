@@ -2,6 +2,7 @@ package org.ruoyi.domain.vo.mcp;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.domain.entity.mcp.McpMarket;
@@ -48,9 +49,9 @@ public class McpMarketVo implements Serializable {
     private String description;
 
     /**
-     * 认证配置
+     * 认证配置（只写）
      */
-    @ExcelProperty(value = "认证配置")
+    @JsonIgnore
     private String authConfig;
 
     /**

@@ -11,7 +11,7 @@ public record PlanDraftInput(
     String kind,
     @Description("Mechanical criteria using only the two exact supported criterion forms; every criterion id must be bound to at least one step")
     List<PlanCriterionInput> criteria,
-    @Description("Executable steps. One production file plus one check must be one combined step; collectively bind every criterion id")
+    @Description("Concise executable steps sized to the task. Group related work, avoid one step per file, and collectively bind every criterion id. Unbounded runs have no fixed step-count limit")
     List<PlanStepInput> steps,
     @Description("Only relative production paths authorized to change; never include read-only tests unless requested")
     List<String> allowedMutationRoots,

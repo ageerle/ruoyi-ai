@@ -27,7 +27,7 @@ public class McpToolListResult {
     /**
      * 工具列表
      */
-    private List<McpTool> data;
+    private List<McpToolListItem> data;
 
     /**
      * 总数
@@ -35,10 +35,13 @@ public class McpToolListResult {
     private int total;
 
     public static McpToolListResult of(List<McpTool> data) {
+        List<McpToolListItem> publicData = data == null
+            ? List.of()
+            : data.stream().map(McpToolListItem::from).toList();
         return McpToolListResult.builder()
             .success(true)
-            .data(data)
-            .total(data != null ? data.size() : 0)
+            .data(publicData)
+            .total(publicData.size())
             .build();
     }
 }

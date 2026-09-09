@@ -37,7 +37,7 @@ public class AliBaiLianBaseEmbedProvider extends OpenAiEmbeddingProvider {
     @Override
     public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
         EmbeddingModel model = QwenEmbeddingModel.builder()
-                .apiKey(chatModelVo.getApiKey())
+                .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint("qianwen"))
                 .modelName(chatModelVo.getModelName())
                 .dimension(chatModelVo.getModelDimension())
                 .build();

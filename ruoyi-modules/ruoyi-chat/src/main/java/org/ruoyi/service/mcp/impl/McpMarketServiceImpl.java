@@ -13,6 +13,8 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
+import org.ruoyi.common.satoken.utils.LoginHelper;
+import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.domain.bo.mcp.McpMarketBo;
 import org.ruoyi.domain.dto.mcp.McpMarketListResult;
 import org.ruoyi.domain.dto.mcp.McpMarketRefreshResult;
@@ -59,7 +61,7 @@ public class McpMarketServiceImpl implements IMcpMarketService {
 
     @Override
     public McpMarketListResult listMarkets(String keyword, String status) {
-        LambdaQueryWrapper<McpMarket> wrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<McpMarket> wrapper = selectPublicMarketColumns(new LambdaQueryWrapper<>());
 
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(McpMarket::getName, keyword)
@@ -85,7 +87,8 @@ public class McpMarketServiceImpl implements IMcpMarketService {
 
     @Override
     public McpMarketVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        return baseMapper.selectVoOne(selectPublicMarketColumns(new LambdaQueryWrapper<McpMarket>())
+            .eq(McpMarket::getId, id));
     }
 
     @Override
@@ -103,8 +106,17 @@ public class McpMarketServiceImpl implements IMcpMarketService {
     @Transactional
     public String update(McpMarketBo bo) {
         McpMarket market = MapstructUtils.convert(bo, McpMarket.class);
+        applyWriteOnlyAuthPolicy(bo, market);
         baseMapper.updateById(market);
         return String.valueOf(market.getId());
+    }
+
+    static void applyWriteOnlyAuthPolicy(McpMarketBo source, McpMarket update) {
+        if (!StringUtils.hasText(source.getAuthConfig())) {
+            // Authentication configuration is write-only. Omitting it from an edit preserves
+            // the stored value instead of clearing it because the detail response hid it.
+            update.setAuthConfig(null);
+        }
     }
 
     @Override
@@ -132,11 +144,9 @@ public class McpMarketServiceImpl implements IMcpMarketService {
 
     @Override
     public McpMarketToolListResult getMarketTools(Long marketId, int page, int size) {
-        LambdaQueryWrapper<McpMarketTool> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(McpMarketTool::getMarketId, marketId);
-        wrapper.orderByDesc(McpMarketTool::getCreateTime);
-
-        Page<McpMarketTool> pageResult = mcpMarketToolMapper.selectPage(new Page<>(page, size), wrapper);
+        String tenantId = currentTenantId();
+        Page<McpMarketTool> pageResult = mcpMarketToolMapper.selectOwnedPage(
+            new Page<>(page, size), marketId, tenantId);
 
         return McpMarketToolListResult.of(
             pageResult.getRecords(),
@@ -199,14 +209,15 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                         tool.setToolVersion(getTextValue(toolNode, "version"));
                         tool.setToolMetadata(toolNode.toString());
                         tool.setIsLoaded(false);
+                        tool.setTenantId(market.getTenantId());
                         mcpMarketToolMapper.insert(tool);
                         addedCount++;
                     }
                 }
             }
 
-            log.info("Successfully refreshed market tools for market: {}, added: {}, updated: {}",
-                market.getName(), addedCount, updatedCount);
+            log.info("mcp_market_refresh status=SUCCESS addedCount={} updatedCount={}",
+                addedCount, updatedCount);
 
             return McpMarketRefreshResult.builder()
                 .success(true)
@@ -215,10 +226,10 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                 .updatedCount(updatedCount)
                 .build();
         } catch (Exception e) {
-            log.error("Failed to refresh market tools for market {}: {}", marketId, e.getMessage());
+            log.error("mcp_market_refresh status=FAILED errorType={}", e.getClass().getName());
             return McpMarketRefreshResult.builder()
                 .success(false)
-                .message("刷新市场工具列表失败: " + e.getMessage())
+                .message("刷新市场工具列表失败")
                 .addedCount(0)
                 .updatedCount(0)
                 .build();
@@ -240,7 +251,8 @@ public class McpMarketServiceImpl implements IMcpMarketService {
     @Override
     @Transactional
     public void loadToolToLocal(Long toolId) {
-        McpMarketTool marketTool = mcpMarketToolMapper.selectById(toolId);
+        String tenantId = currentTenantId();
+        McpMarketTool marketTool = mcpMarketToolMapper.selectOwnedById(toolId, tenantId);
         if (marketTool == null) {
             throw new ServiceException("市场工具不存在");
         }
@@ -288,6 +300,7 @@ public class McpMarketServiceImpl implements IMcpMarketService {
             }
 
             localTool.setStatus(McpToolStatus.ENABLED.getValue());
+            localTool.setTenantId(tenantId);
             mcpToolMapper.insert(localTool);
 
             // 更新市场工具状态
@@ -295,10 +308,10 @@ public class McpMarketServiceImpl implements IMcpMarketService {
             marketTool.setLocalToolId(localTool.getId());
             mcpMarketToolMapper.updateById(marketTool);
 
-            log.info("Successfully loaded tool {} to local", marketTool.getToolName());
+            log.info("mcp_market_load status=SUCCESS");
         } catch (Exception e) {
-            log.error("Failed to load tool to local: {}", e.getMessage());
-            throw new ServiceException("加载工具到本地失败: " + e.getMessage());
+            log.error("mcp_market_load status=FAILED errorType={}", e.getClass().getName());
+            throw new ServiceException("加载工具到本地失败");
         }
     }
 
@@ -311,18 +324,47 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                 loadToolToLocal(toolId);
                 successCount++;
             } catch (Exception e) {
-                log.warn("Failed to load tool {}: {}", toolId, e.getMessage());
+                log.warn("mcp_market_load status=FAILED errorType={}", e.getClass().getName());
             }
         }
         return successCount;
     }
 
+    private String currentTenantId() {
+        String tenantId = TenantHelper.getTenantId();
+        if (!StringUtils.hasText(tenantId)) {
+            // TenantHelper intentionally returns null when interception is disabled. Authorization
+            // still comes from the authenticated principal, so this boundary remains explicit.
+            tenantId = LoginHelper.getTenantId();
+        }
+        if (!StringUtils.hasText(tenantId)) {
+            throw new ServiceException("租户上下文无效");
+        }
+        return tenantId;
+    }
+
     private LambdaQueryWrapper<McpMarket> buildQueryWrapper(McpMarketBo bo) {
         Map<String, Object> params = bo.getParams();
-        LambdaQueryWrapper<McpMarket> wrapper = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<McpMarket> wrapper = selectPublicMarketColumns(Wrappers.lambdaQuery());
         wrapper.eq(StringUtils.hasText(bo.getStatus()), McpMarket::getStatus, bo.getStatus())
             .like(StringUtils.hasText(bo.getName()), McpMarket::getName, bo.getName())
             .like(StringUtils.hasText(bo.getDescription()), McpMarket::getDescription, bo.getDescription());
         return wrapper;
+    }
+
+    static LambdaQueryWrapper<McpMarket> selectPublicMarketColumns(
+        LambdaQueryWrapper<McpMarket> wrapper) {
+        return wrapper.select(McpMarket::getId, McpMarket::getName, McpMarket::getUrl,
+            McpMarket::getDescription, McpMarket::getStatus, McpMarket::getCreateTime,
+            McpMarket::getUpdateTime);
+    }
+
+    static LambdaQueryWrapper<McpMarketTool> selectPublicMarketToolColumns(
+        LambdaQueryWrapper<McpMarketTool> wrapper) {
+        return wrapper.select(McpMarketTool::getId, McpMarketTool::getMarketId,
+            McpMarketTool::getToolName, McpMarketTool::getToolDescription,
+            McpMarketTool::getToolVersion, McpMarketTool::getIsLoaded,
+            McpMarketTool::getLocalToolId, McpMarketTool::getCreateTime,
+            McpMarketTool::getUpdateTime);
     }
 }

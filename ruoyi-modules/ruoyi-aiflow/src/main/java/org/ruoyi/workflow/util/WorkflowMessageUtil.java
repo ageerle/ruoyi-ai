@@ -60,6 +60,11 @@ public class WorkflowMessageUtil {
      * @param message 消息
      */
     public static void saveWorkflowMessage(WfState wfState, String message) {
+        // Input validation may fail before WfState is created. Do not mask the
+        // original error and prevent WorkflowEngine from completing the SSE.
+        if (wfState == null) {
+            return;
+        }
         Long sessionId = wfState.getSessionId();
         Long userId = wfState.getUserId();
 

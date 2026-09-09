@@ -39,7 +39,7 @@ public class ZhipuAiEmbeddingProvider implements BaseEmbedModelService {
     public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
         EmbeddingModel model = ZhipuAiEmbeddingModel.builder()
             .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.getApiKey())
+            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint("zhipu"))
             .model(chatModelVo.getModelName())
             .dimensions(chatModelVo.getModelDimension())
             .build();

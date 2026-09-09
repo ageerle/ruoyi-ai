@@ -81,7 +81,8 @@ public class SysUserOnlineController extends BaseController {
      * @param tokenId token值
      */
     @SaCheckPermission("monitor:online:forceLogout")
-    @Log(title = "在线用户", businessType = BusinessType.FORCE)
+    @Log(title = "在线用户", businessType = BusinessType.FORCE,
+        isSaveRequestData = false, isSaveResponseData = false)
     @RepeatSubmit()
     @DeleteMapping("/{tokenId}")
     public R<Void> forceLogout(@PathVariable String tokenId) {
@@ -115,7 +116,8 @@ public class SysUserOnlineController extends BaseController {
      *
      * @param tokenId token值
      */
-    @Log(title = "在线设备", businessType = BusinessType.FORCE)
+    @Log(title = "在线设备", businessType = BusinessType.FORCE,
+        isSaveRequestData = false, isSaveResponseData = false)
     @RepeatSubmit()
     @DeleteMapping("/myself/{tokenId}")
     public R<Void> remove(@PathVariable("tokenId") String tokenId) {

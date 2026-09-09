@@ -15,10 +15,11 @@ public record HarnessInspectionLedger(
     Map<String, List<HarnessReadSpan>> readCoverage,
     Map<String, String> inspectionFingerprints,
     int duplicateAttempts,
-    boolean synthesisRequired
+    boolean synthesisRequired,
+    boolean workspaceBoundaryReached
 ) {
 
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = 2;
     public static final int MAX_SPANS = 4_096;
     public static final int MAX_FINGERPRINTS = 2_048;
 
@@ -45,7 +46,8 @@ public record HarnessInspectionLedger(
     }
 
     public static HarnessInspectionLedger empty() {
-        return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, 0, Map.of(), Map.of(), 0, false);
+        return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, 0, Map.of(), Map.of(), 0,
+            false, false);
     }
 
     public List<HarnessReadSpan> overlaps(String toolCallId, String path, int start, int end) {
@@ -73,7 +75,8 @@ public record HarnessInspectionLedger(
         spans.add(span);
         next.put(path, List.copyOf(spans));
         return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, mutationEpoch, next,
-            inspectionFingerprints, duplicateAttempts, synthesisRequired);
+            inspectionFingerprints, duplicateAttempts, synthesisRequired,
+            workspaceBoundaryReached);
     }
 
     public HarnessInspectionLedger recordInspection(String toolCallId, String fingerprint) {
@@ -87,14 +90,15 @@ public record HarnessInspectionLedger(
         Map<String, String> next = new LinkedHashMap<>(inspectionFingerprints);
         next.put(fingerprint, toolCallId);
         return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, mutationEpoch, readCoverage,
-            next, duplicateAttempts, synthesisRequired);
+            next, duplicateAttempts, synthesisRequired, workspaceBoundaryReached);
     }
 
     public HarnessInspectionLedger recordDuplicate(boolean requireSynthesis) {
         int nextAttempts = duplicateAttempts == Integer.MAX_VALUE
             ? Integer.MAX_VALUE : duplicateAttempts + 1;
         return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, mutationEpoch, readCoverage,
-            inspectionFingerprints, nextAttempts, synthesisRequired || requireSynthesis);
+            inspectionFingerprints, nextAttempts, synthesisRequired || requireSynthesis,
+            workspaceBoundaryReached);
     }
 
     public HarnessInspectionLedger requireSynthesis() {
@@ -102,7 +106,7 @@ public record HarnessInspectionLedger(
             return this;
         }
         return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, mutationEpoch, readCoverage,
-            inspectionFingerprints, duplicateAttempts, true);
+            inspectionFingerprints, duplicateAttempts, true, workspaceBoundaryReached);
     }
 
     /**
@@ -115,7 +119,7 @@ public record HarnessInspectionLedger(
             return this;
         }
         return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, mutationEpoch, readCoverage,
-            inspectionFingerprints, duplicateAttempts, false);
+            inspectionFingerprints, duplicateAttempts, false, workspaceBoundaryReached);
     }
 
     /**
@@ -127,7 +131,7 @@ public record HarnessInspectionLedger(
     public HarnessInspectionLedger beginIndependentPhase() {
         long nextEpoch = mutationEpoch == Long.MAX_VALUE ? Long.MAX_VALUE : mutationEpoch + 1;
         return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, nextEpoch, Map.of(), Map.of(),
-            0, false);
+            0, false, workspaceBoundaryReached);
     }
 
     /**
@@ -138,7 +142,26 @@ public record HarnessInspectionLedger(
     public HarnessInspectionLedger invalidate() {
         long nextEpoch = mutationEpoch == Long.MAX_VALUE ? Long.MAX_VALUE : mutationEpoch + 1;
         return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, nextEpoch, Map.of(),
-            inspectionFingerprints, 0, false);
+            inspectionFingerprints, 0, false, workspaceBoundaryReached);
+    }
+
+    /** Persists a fail-closed workspace escape observation so hot paths never rescan the ledger. */
+    public HarnessInspectionLedger recordWorkspaceBoundaryReached() {
+        if (workspaceBoundaryReached && schemaVersion >= CURRENT_SCHEMA_VERSION) {
+            return this;
+        }
+        return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, mutationEpoch, readCoverage,
+            inspectionFingerprints, duplicateAttempts, synthesisRequired, true);
+    }
+
+    /** Completes the one-time v1 ledger migration even when no escape was observed. */
+    public HarnessInspectionLedger completeWorkspaceBoundaryMigration() {
+        if (schemaVersion >= CURRENT_SCHEMA_VERSION) {
+            return this;
+        }
+        return new HarnessInspectionLedger(CURRENT_SCHEMA_VERSION, mutationEpoch, readCoverage,
+            inspectionFingerprints, duplicateAttempts, synthesisRequired,
+            workspaceBoundaryReached);
     }
 
     private static int spanCount(Map<String, List<HarnessReadSpan>> coverage) {

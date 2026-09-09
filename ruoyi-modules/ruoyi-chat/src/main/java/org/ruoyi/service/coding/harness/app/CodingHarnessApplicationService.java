@@ -6,6 +6,8 @@ import org.ruoyi.service.coding.harness.approval.ApprovalDecision;
 import org.ruoyi.service.coding.harness.approval.ApprovalState;
 import org.ruoyi.service.coding.harness.approval.ResolveApprovalCommand;
 import org.ruoyi.service.coding.harness.approval.ToolCallApprovalAggregate;
+import org.ruoyi.service.coding.harness.artifact.ArtifactRef;
+import org.ruoyi.service.coding.harness.artifact.HarnessArtifactRepository;
 import org.ruoyi.service.coding.harness.context.CompactionControl;
 import org.ruoyi.service.coding.harness.event.HarnessEventHub;
 import org.ruoyi.service.coding.harness.event.HarnessEventOutboxService;
@@ -22,6 +24,7 @@ import org.ruoyi.service.coding.harness.model.HarnessBudget;
 import org.ruoyi.service.coding.harness.model.HarnessInputKind;
 import org.ruoyi.service.coding.harness.model.HarnessMessage;
 import org.ruoyi.service.coding.harness.model.HarnessMessageRole;
+import org.ruoyi.service.coding.harness.model.HarnessModelRoute;
 import org.ruoyi.service.coding.harness.model.HarnessOwner;
 import org.ruoyi.service.coding.harness.model.HarnessPermissionMode;
 import org.ruoyi.service.coding.harness.model.HarnessQueuedInput;
@@ -30,9 +33,16 @@ import org.ruoyi.service.coding.harness.model.HarnessRunStatus;
 import org.ruoyi.service.coding.harness.model.HarnessSessionState;
 import org.ruoyi.service.coding.harness.model.HarnessToolEffect;
 import org.ruoyi.service.coding.harness.model.HarnessToolEffectStatus;
+import org.ruoyi.service.coding.harness.model.WorkspaceManifest;
+import org.ruoyi.service.coding.harness.model.WorkspaceManifestValidator;
 import org.ruoyi.service.coding.harness.plan.PlanAggregate;
 import org.ruoyi.service.coding.harness.plan.PlanApprovalCommand;
 import org.ruoyi.service.coding.harness.plan.ExecutionMode;
+import org.ruoyi.service.coding.harness.modelruntime.HarnessModelPolicy;
+import org.ruoyi.service.coding.harness.modelruntime.HarnessModelRouter;
+import org.ruoyi.service.coding.harness.recovery.ToolEffectLedgerReconciler;
+import org.ruoyi.service.coding.harness.recovery.UncertainToolEffectGuard;
+import org.ruoyi.service.coding.harness.recovery.UncertainToolEffectReason;
 import org.ruoyi.service.coding.harness.runtime.HarnessRunRequest;
 import org.ruoyi.service.coding.harness.runtime.HarnessActiveTurnRegistry;
 import org.ruoyi.service.coding.harness.runtime.HarnessScheduler;
@@ -46,6 +56,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -72,7 +85,23 @@ public class CodingHarnessApplicationService {
     private final HarnessTranscriptReader transcriptReader;
     private final ToolProtocolValidator toolProtocolValidator = new ToolProtocolValidator();
     private final HarnessToolBatchCloser toolBatchCloser;
+    private final ToolEffectLedgerReconciler toolEffectLedgerReconciler;
     private final HarnessBudgetPolicy budgetPolicy;
+    private final HarnessModelRouter modelRouter = new HarnessModelRouter();
+    private final WorkspaceManifestValidator workspaceManifestValidator =
+        new WorkspaceManifestValidator();
+
+    @Autowired
+    private HarnessArtifactRepository artifactRepository;
+
+    private static final int MAX_IMAGES_PER_RUN = 5;
+    private static final long MAX_IMAGE_BYTES_PER_RUN = 8L * 1024 * 1024;
+    private static final Map<String, byte[]> IMAGE_SIGNATURES = Map.of(
+        "image/jpeg", new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff},
+        "image/png", new byte[]{(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a},
+        "image/gif", new byte[]{0x47, 0x49, 0x46, 0x38},
+        "image/webp", new byte[]{0x52, 0x49, 0x46, 0x46}
+    );
 
     @Autowired
     public CodingHarnessApplicationService(HarnessStore store, HarnessEventHub eventHub,
@@ -91,6 +120,7 @@ public class CodingHarnessApplicationService {
         this.activeTurns = activeTurns;
         this.transcriptReader = new HarnessTranscriptReader(store);
         this.toolBatchCloser = new HarnessToolBatchCloser(store, transcriptReader);
+        this.toolEffectLedgerReconciler = new ToolEffectLedgerReconciler(store);
         this.budgetPolicy = Objects.requireNonNull(budgetPolicy, "budgetPolicy");
     }
 
@@ -117,6 +147,8 @@ public class CodingHarnessApplicationService {
             throw new IllegalArgumentException("model is required");
         }
         Path workspace = canonicalWorkspace(owner, command.workspacePath());
+        WorkspaceManifest workspaceManifest = workspaceManifestValidator.normalize(
+            workspace, command.workspaceManifest());
         String model = command.model().strip();
         HarnessPermissionMode permissionMode = command.permissionMode() == null
             ? HarnessPermissionMode.READ_ONLY : command.permissionMode();
@@ -127,6 +159,7 @@ public class CodingHarnessApplicationService {
             HarnessSessionState existing = store.findSession(owner, sessionId).orElse(null);
             if (existing != null) {
                 if (!existing.workspace().equals(workspace.toString())
+                    || !existing.workspaceManifest().equals(workspaceManifest)
                     || !existing.model().equals(model)
                     || existing.permissionMode() != permissionMode
                     || existing.approvalPolicy() != approvalPolicy
@@ -138,7 +171,8 @@ public class CodingHarnessApplicationService {
             }
             long now = System.currentTimeMillis();
             return store.createSession(HarnessSessionState.createWithId(sessionId, owner,
-                workspace.toString(), model, permissionMode, approvalPolicy, command.title(), now));
+                workspace.toString(), model, permissionMode, approvalPolicy, command.title(), now,
+                workspaceManifest, command.thinkingLevel(), command.verificationMode()));
         });
     }
 
@@ -148,7 +182,23 @@ public class CodingHarnessApplicationService {
 
     public HarnessSessionState getSession(HarnessOwner owner, String sessionId) {
         return store.findSession(owner, sessionId)
+            .filter(session -> session.deletedAt() == 0)
             .orElseThrow(() -> new HarnessNotFoundException("session", sessionId));
+    }
+
+    public HarnessSessionState setSessionPinned(HarnessOwner owner, String sessionId, boolean pinned) {
+        return sessionGate.withSession(owner, sessionId, () -> {
+            getSession(owner, sessionId);
+            return store.setSessionPinned(owner, sessionId, pinned);
+        });
+    }
+
+    public void deleteSession(HarnessOwner owner, String sessionId) {
+        sessionGate.withSession(owner, sessionId, () -> store.setSessionDeleted(owner, sessionId, true));
+    }
+
+    public HarnessSessionState restoreSession(HarnessOwner owner, String sessionId) {
+        return sessionGate.withSession(owner, sessionId, () -> store.setSessionDeleted(owner, sessionId, false));
     }
 
     public List<HarnessRunState> listRuns(HarnessOwner owner, String sessionId) {
@@ -157,6 +207,7 @@ public class CodingHarnessApplicationService {
     }
 
     public HarnessRunState getRun(HarnessOwner owner, String sessionId, String runId) {
+        getSession(owner, sessionId);
         return store.findRun(owner, sessionId, runId)
             .orElseThrow(() -> new HarnessNotFoundException("run", runId));
     }
@@ -177,12 +228,17 @@ public class CodingHarnessApplicationService {
                     throw new HarnessConflictException(
                         "idempotencyKey was already used for a different run request");
                 }
-                return repairIdempotentRunCreation(owner, session, existing);
+                validateImageModel(session, command.images());
+                validateExistingInitialImages(owner, existing, command.images());
+                return repairIdempotentRunCreation(owner, session, existing, command.images());
             }
             requireNoActiveRun(owner, session);
+            validateImageModel(session, command.images());
+            HarnessModelRoute modelRoute = modelRouter.route(session,
+                command.requirement(), command.hasImages());
             long now = System.currentTimeMillis();
             HarnessRunState candidate = HarnessRunState.createWithId(runId, session,
-                command.requirement(), enforcedBudget, now);
+                command.requirement(), enforcedBudget, modelRoute, now);
             HarnessRunState predecessor = session.activeRunId() == null ? null
                 : store.findRun(owner, sessionId, session.activeRunId()).orElse(null);
             if (predecessor != null && predecessor.status().isTerminal()
@@ -193,6 +249,10 @@ public class CodingHarnessApplicationService {
                 candidate = candidate.withContextState(predecessor.contextCheckpoint(),
                     CompactionControl.initial(), now);
             }
+            // Creation is observable only through this stable draft. Keeping it in the very first
+            // run snapshot prevents a worker from publishing run.started before run.created and
+            // lets an idempotent retry recover an interrupted ledger append.
+            candidate = candidate.enqueueEvent(runCreatedEvent(owner, candidate), now);
             HarnessRunRequest request = new HarnessRunRequest(owner, sessionId, runId);
             // Admission precedes every durable mutation for this new run. A capacity exception is
             // therefore an honest HTTP 429: no run, session pointer, message or event was written.
@@ -208,13 +268,11 @@ public class CodingHarnessApplicationService {
                     throw new HarnessConflictException("Another run was created concurrently", conflict);
                 }
 
-                appendInitialMessageIfMissing(owner, run, now);
-                admission.commit();
-                // The session gate keeps the worker from publishing run.started until run.created
-                // is durable, while committing first prevents an event-ledger outage from
-                // orphaning work.
-                eventHub.publish(owner, HarnessEvent.draft(sessionId, run.runId(), "run.created",
-                    null, null, null, Map.of("status", run.status().name()), now));
+                appendInitialMessageIfMissing(owner, run, command.images(), now);
+                run = eventOutboxService.drainBestEffort(owner, run);
+                if (run.eventOutbox().isEmpty()) {
+                    commitAdmissionBestEffort(admission, run);
+                }
                 return run;
             }
         });
@@ -274,6 +332,10 @@ public class CodingHarnessApplicationService {
                     "input.queued", null, null, null, Map.of("inputId", inputId,
                         "kind", command.kind().name()), eventInput.createdAt()), now);
             }
+            if (wake) {
+                next = enqueueRunStateEvent(run, next, "run.queued",
+                    Map.of("reason", "input_queued"), now);
+            }
             HarnessRunState saved = next == run ? run
                 : store.saveRun(owner, next, run.revision());
             if (existingMessage == null) {
@@ -282,46 +344,100 @@ public class CodingHarnessApplicationService {
                     false, null, Map.of("kind", command.kind().name(), "queued", true,
                         "inputId", inputId), now));
             }
-            if (saved.status() == HarnessRunStatus.QUEUED) {
-                scheduler.schedule(new HarnessRunRequest(owner, sessionId, runId));
-            }
-            return eventOutboxService.drainBestEffort(owner, saved);
+            return drainAndScheduleIfRunnable(owner, saved);
         });
     }
 
     public HarnessRunState cancel(HarnessOwner owner, String sessionId, String runId) {
         return sessionGate.withSession(owner, sessionId, () -> {
-            HarnessRunState run = getRun(owner, sessionId, runId);
+            HarnessRunState run = eventOutboxService.drainBestEffort(owner,
+                getRun(owner, sessionId, runId));
             if (run.status().isTerminal()) {
                 return run;
             }
             long now = System.currentTimeMillis();
             HarnessRunRequest request = new HarnessRunRequest(owner, sessionId, runId);
-            boolean removedFromQueue = scheduler.cancelQueued(request);
-            HarnessRunState next;
-            String eventType;
-            boolean interruptActive = false;
-            if (removedFromQueue || run.status() != HarnessRunStatus.RUNNING) {
-                HarnessRunState reconciled = acknowledgePendingControlEvents(owner, run, now);
-                HarnessToolBatchCloser.Closure closure = toolBatchCloser.close(reconciled,
-                    SyntheticToolResultReason.CANCEL, now);
-                next = abandonPendingToolEffects(closure.run(), "Cancellation requested", now)
-                    .transition(HarnessRunStatus.CANCELLED, null, now);
-                eventType = "run.cancelled";
+            boolean acceptedBefore = run.cancellationRequested();
+            boolean requestMarkerKnown;
+            if (!acceptedBefore) {
+                // A cancellation intent without its stable event cannot be reconstructed exactly.
+                // Apply honest backpressure before touching the scheduler or active turn when a
+                // legacy/full FIFO has no slot for the write-ahead marker.
+                if (run.eventOutbox().size() >= HarnessRunState.MAX_EVENT_OUTBOX_ENTRIES) {
+                    throw new HarnessConflictException(
+                        "Cancellation is temporarily backpressured by the event outbox");
+                }
+                HarnessRunState requested = run.requestCancellation(now);
+                requested = enqueueCancellationRequestEvent(run, requested, now);
+                run = store.saveRun(owner, requested, run.revision());
+                requestMarkerKnown = true;
             } else {
-                next = run.requestCancellation(now);
-                eventType = "run.cancel.requested";
-                interruptActive = true;
+                requestMarkerKnown = cancellationRequestEventExists(owner, run);
             }
-            HarnessRunState saved = store.saveRun(owner, next, next.revision());
-            // Persist the authoritative decision before signalling the worker. The interrupted
-            // lane can now re-read cancellationRequested without racing an earlier snapshot.
-            if (interruptActive) {
-                activeTurns.cancel(request);
+            if (acceptedBefore && !requestMarkerKnown) {
+                // Compatibility repair for a snapshot accepted by an older writer. Never invent
+                // the marker while the FIFO is full; the durable flag keeps execution fenced and
+                // the next command/maintenance pass can retry after the head drains.
+                if (run.eventOutbox().size() < HarnessRunState.MAX_EVENT_OUTBOX_ENTRIES) {
+                    HarnessRunState repaired = enqueueCancellationRequestEvent(run, run, now);
+                    run = store.saveRun(owner, repaired, run.revision());
+                    requestMarkerKnown = true;
+                }
             }
-            eventHub.publish(owner, HarnessEvent.draft(sessionId, runId, eventType,
-                null, null, null, Map.of("status", saved.status().name()), now));
-            return saved;
+
+            // Scheduler removal and in-process interruption are notifications after the durable
+            // intent. Either may race shutdown/rejection and must never turn an accepted command
+            // into an HTTP error.
+            boolean removedFromQueue = cancelQueuedBestEffort(request);
+            cancelActiveTurnBestEffort(request);
+            run = eventOutboxService.drainBestEffort(owner, run);
+            if (!run.eventOutbox().isEmpty() || !requestMarkerKnown) {
+                return run;
+            }
+
+            HarnessRunState reconciled = reconcileToolEffects(run,
+                System.currentTimeMillis(), true);
+            UncertainToolEffectGuard.Finding uncertain =
+                UncertainToolEffectGuard.firstFinding(reconciled).orElse(null);
+            if (uncertain != null) {
+                return eventOutboxService.drainBestEffort(owner, reconciled);
+            }
+            if (isToolLedgerReconciliationIsolation(reconciled)) {
+                return eventOutboxService.drainBestEffort(owner, reconciled);
+            }
+            run = reconciled;
+            if (!removedFromQueue && run.status() == HarnessRunStatus.RUNNING) {
+                return eventOutboxService.drainBestEffort(owner, run);
+            }
+
+            // Control receipts can exceed the bounded outbox. Stage at most the currently free
+            // capacity minus one terminal slot, persist, drain, and continue. A failed drain
+            // returns the non-terminal cancellationRequested snapshot; recovery/next API resumes
+            // from the remaining per-effect drafts without losing or overtaking one.
+            while (hasPendingControlEvents(run)) {
+                long batchTimestamp = System.currentTimeMillis();
+                HarnessRunState staged = stagePendingControlEvents(run, batchTimestamp);
+                if (staged == run) {
+                    return run;
+                }
+                run = store.saveRun(owner, staged, run.revision());
+                run = eventOutboxService.drainBestEffort(owner, run);
+                if (!run.eventOutbox().isEmpty()) {
+                    return run;
+                }
+            }
+
+            long terminalTimestamp = System.currentTimeMillis();
+            HarnessToolBatchCloser.Closure closure = toolBatchCloser.close(run,
+                SyntheticToolResultReason.CANCEL, terminalTimestamp);
+            HarnessRunState terminalSource = closure.run();
+            HarnessRunState next = abandonPendingToolEffects(terminalSource,
+                    "Cancellation requested", terminalTimestamp)
+                .transition(HarnessRunStatus.CANCELLED, null, terminalTimestamp);
+            next = enqueueRunStateEvent(terminalSource, next, "run.cancelled",
+                Map.of("code", "USER_CANCELLED"), terminalTimestamp);
+            HarnessRunState saved = store.saveRun(owner, next, terminalSource.revision());
+            return eventOutboxService.drainBestEffort(owner, saved);
         });
     }
 
@@ -330,45 +446,76 @@ public class CodingHarnessApplicationService {
      * exact draft remains attached to the effect if delivery fails, so cancellation still returns
      * the authoritative committed tool result and startup recovery can retry by stable event id.
      */
-    private HarnessRunState acknowledgePendingControlEvents(HarnessOwner owner,
-                                                             HarnessRunState run, long now) {
+    private HarnessRunState stagePendingControlEvents(HarnessRunState run, long now) {
         HarnessRunState next = run;
+        int remaining = HarnessRunState.MAX_EVENT_OUTBOX_ENTRIES
+            - run.eventOutbox().size() - 1;
+        if (remaining <= 0) {
+            return run;
+        }
         for (HarnessToolEffect observed : run.toolEffects().values()) {
+            if (remaining == 0) {
+                break;
+            }
             HarnessToolEffect effect = next.toolEffects().get(observed.toolCallId());
             if (effect == null || !effect.hasPendingControlEvent()) {
                 continue;
             }
             HarnessEvent event = effect.controlEvent();
-            try {
-                eventHub.publishIdempotent(owner, event);
-                next = next.withToolEffect(effect.markControlEventPublished(), now);
-            } catch (RuntimeException publicationFailure) {
-                log.warn("Deferred control event {} while cancelling run {}",
-                    event.eventId(), run.runId(), publicationFailure);
-            }
+            next = next.enqueueEvent(event, now)
+                .withToolEffect(effect.markControlEventPublished(), now);
+            remaining--;
         }
         return next;
     }
 
+    private boolean hasPendingControlEvents(HarnessRunState run) {
+        return run.toolEffects().values().stream()
+            .anyMatch(HarnessToolEffect::hasPendingControlEvent);
+    }
+
     public HarnessRunState resume(HarnessOwner owner, String sessionId, String runId) {
         return sessionGate.withSession(owner, sessionId, () -> {
-            HarnessRunState run = getRun(owner, sessionId, runId);
+            HarnessRunState persisted = eventOutboxService.drainBestEffort(owner,
+                getRun(owner, sessionId, runId));
+            long now = System.currentTimeMillis();
+            HarnessRunState run = reconcileToolEffects(persisted, now, false);
+            UncertainToolEffectGuard.Finding uncertain =
+                UncertainToolEffectGuard.firstFinding(run).orElse(null);
+            if (uncertain != null) {
+                throw new HarnessConflictException(uncertain.reason().code()
+                    + ": operator adjudication is required before resume");
+            }
+            if (isToolLedgerReconciliationIsolation(run)) {
+                throw new HarnessConflictException(
+                    UncertainToolEffectReason.LEDGER_RECONCILIATION_UNAVAILABLE.code()
+                        + ": operator adjudication is required before resume");
+            }
             if (run.status() == HarnessRunStatus.RUNNING) {
-                return run;
+                return eventOutboxService.drainBestEffort(owner, run);
             }
             if (run.status() != HarnessRunStatus.SUSPENDED
                 && run.status() != HarnessRunStatus.QUEUED) {
                 throw new HarnessConflictException("Only a suspended run can be resumed");
             }
-            long now = System.currentTimeMillis();
             HarnessRunState resumable = enqueueIncompletePlanResumeInput(run, now);
-            HarnessRunState queued = run.status() == HarnessRunStatus.QUEUED ? run
-                : store.saveRun(owner,
-                    resumable.transition(HarnessRunStatus.QUEUED, null, now), run.revision());
-            scheduler.schedule(new HarnessRunRequest(owner, sessionId, runId));
-            if (queued != run) {
-                eventHub.publish(owner, HarnessEvent.draft(sessionId, runId, "run.queued",
-                    null, null, null, Map.of("reason", "resume"), now));
+            if (run.status() == HarnessRunStatus.SUSPENDED) {
+                // Only a fresh user decision re-arms the durable circuit. Startup recovery and
+                // queued redispatch must preserve failures, otherwise an impossible compaction
+                // can loop forever across process restarts.
+                resumable = resumable.resetCompactionCircuit(now);
+            }
+            HarnessRunState queued = run;
+            if (run.status() == HarnessRunStatus.SUSPENDED) {
+                HarnessRunState transitioned = resumable.transition(HarnessRunStatus.QUEUED,
+                    null, now);
+                transitioned = enqueueRunStateEvent(run, transitioned, "run.queued",
+                    Map.of("reason", "resume"), now);
+                queued = store.saveRun(owner, transitioned, run.revision());
+            }
+            queued = eventOutboxService.drainBestEffort(owner, queued);
+            if (queued.eventOutbox().isEmpty()) {
+                scheduleBestEffort(queued);
             }
             return queued;
         });
@@ -452,14 +599,13 @@ public class CodingHarnessApplicationService {
                     Map.of("decision", decision.name(), "state", resolved.state().name()),
                     resolvedAt), now);
             }
+            if (shouldSchedule) {
+                next = enqueueRunStateEvent(run, next, "run.queued",
+                    Map.of("reason", "approval_resolved"), now);
+            }
             HarnessRunState saved = next == run ? run
                 : store.saveRun(owner, next, run.revision());
-            if (saved.status() == HarnessRunStatus.QUEUED) {
-                // Duplicate scheduling is suppressed by HarnessScheduler and repairs an earlier
-                // post-save event failure on idempotent API retry.
-                scheduler.schedule(new HarnessRunRequest(owner, sessionId, runId));
-            }
-            return eventOutboxService.drainBestEffort(owner, saved);
+            return drainAndScheduleIfRunnable(owner, saved);
         });
     }
 
@@ -474,10 +620,12 @@ public class CodingHarnessApplicationService {
                 throw new HarnessConflictException("Run has no authoritative execution plan");
             }
             long now = System.currentTimeMillis();
+            String normalizedIdempotencyKey = idempotencyKey == null
+                ? null : idempotencyKey.strip();
             PlanAggregate approved;
             try {
                 approved = plan.approveFromControlPlane(new PlanApprovalCommand(
-                    taskId, expectedRevision, expectedHash, idempotencyKey), now);
+                    taskId, expectedRevision, expectedHash, normalizedIdempotencyKey), now);
             } catch (IllegalStateException conflict) {
                 throw new HarnessConflictException(conflict.getMessage(), conflict);
             }
@@ -489,18 +637,23 @@ public class CodingHarnessApplicationService {
             if (shouldSchedule) {
                 next = next.transition(HarnessRunStatus.QUEUED, null, now);
             }
-            HarnessRunState saved = next == run ? run : store.saveRun(owner, next, run.revision());
-            if (saved.status() == HarnessRunStatus.QUEUED) {
-                scheduler.schedule(new HarnessRunRequest(owner, sessionId, runId));
-            }
-            if (!eventWithDataExists(owner, sessionId, runId, "plan.approved",
-                "idempotencyKey", idempotencyKey)) {
-                eventHub.publish(owner, HarnessEvent.draft(sessionId, runId, "plan.approved",
-                    null, null, null, Map.of("taskId", approved.taskId().toString(),
+            if (approved != plan) {
+                String eventId = stableId("event", owner, sessionId,
+                    runId + "\u0000plan.approved\u0000" + normalizedIdempotencyKey);
+                long approvedAt = approved.approvalReceipts().get(normalizedIdempotencyKey)
+                    .approvedAt();
+                next = next.enqueueEvent(HarnessEvent.draftWithId(eventId, sessionId, runId,
+                    "plan.approved", null, null, null,
+                    Map.of("taskId", approved.taskId().toString(),
                         "revision", approved.revision(), "hash", approved.canonicalHash(),
-                        "idempotencyKey", idempotencyKey), now));
+                        "idempotencyKey", normalizedIdempotencyKey), approvedAt), now);
             }
-            return saved;
+            if (shouldSchedule) {
+                next = enqueueRunStateEvent(run, next, "run.queued",
+                    Map.of("reason", "plan_approved"), now);
+            }
+            HarnessRunState saved = next == run ? run : store.saveRun(owner, next, run.revision());
+            return drainAndScheduleIfRunnable(owner, saved);
         });
     }
 
@@ -558,11 +711,13 @@ public class CodingHarnessApplicationService {
                         "revision", revised.revision(), "hash", revised.canonicalHash()),
                     durableFeedback.createdAt()), now);
             }
-            HarnessRunState saved = next == run ? run : store.saveRun(owner, next, run.revision());
-            if (saved.status() == HarnessRunStatus.QUEUED) {
-                scheduler.schedule(new HarnessRunRequest(owner, sessionId, runId));
+            if (run.status() == HarnessRunStatus.WAITING_FOR_INPUT
+                && next.status() == HarnessRunStatus.QUEUED) {
+                next = enqueueRunStateEvent(run, next, "run.queued",
+                    Map.of("reason", "plan_revision_requested"), now);
             }
-            return eventOutboxService.drainBestEffort(owner, saved);
+            HarnessRunState saved = next == run ? run : store.saveRun(owner, next, run.revision());
+            return drainAndScheduleIfRunnable(owner, saved);
         });
     }
 
@@ -649,7 +804,8 @@ public class CodingHarnessApplicationService {
     /** Repairs every durable stage that can be left incomplete by a process crash or event outage. */
     private HarnessRunState repairIdempotentRunCreation(HarnessOwner owner,
                                                         HarnessSessionState session,
-                                                        HarnessRunState run) {
+                                                        HarnessRunState run,
+                                                        List<HarnessImageInput> images) {
         long now = System.currentTimeMillis();
         if (!run.status().isTerminal() && !run.runId().equals(session.activeRunId())) {
             if (session.activeRunId() != null) {
@@ -664,26 +820,166 @@ public class CodingHarnessApplicationService {
                 session.revision());
         }
 
-        appendInitialMessageIfMissing(owner, run, now);
-        if (run.status() == HarnessRunStatus.QUEUED) {
-            scheduler.schedule(new HarnessRunRequest(owner, run.sessionId(), run.runId()));
+        appendInitialMessageIfMissing(owner, run, images, now);
+        if (!outboxContainsType(run, "run.created")
+            && !eventTypeExists(owner, run.sessionId(), run.runId(), "run.created")) {
+            HarnessRunState staged = run.enqueueEvent(runCreatedEvent(owner, run), now);
+            if (staged != run) {
+                run = store.saveRun(owner, staged, run.revision());
+            }
         }
-        if (!eventTypeExists(owner, run.sessionId(), run.runId(), "run.created")) {
-            eventHub.publish(owner, HarnessEvent.draft(run.sessionId(), run.runId(),
-                "run.created", null, null, null, Map.of("status", run.status().name()), now));
-        }
-        return run;
+        return drainAndScheduleIfRunnable(owner, run);
     }
 
-    private void appendInitialMessageIfMissing(HarnessOwner owner, HarnessRunState run, long now) {
+    private void appendInitialMessageIfMissing(HarnessOwner owner, HarnessRunState run,
+                                               List<HarnessImageInput> images, long now) {
         String inputId = "run-create:" + run.runId();
         if (messageWithInputIdExists(owner, run.sessionId(), inputId)) {
             return;
         }
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("kind", HarnessInputKind.INITIAL.name());
+        metadata.put("inputId", inputId);
+        List<Map<String, Object>> attachments = persistImages(owner, run, images);
+        if (!attachments.isEmpty()) {
+            metadata.put("images", attachments);
+        }
         store.appendMessage(owner, HarnessMessage.draft(run.sessionId(), run.runId(),
             HarnessMessageRole.USER, run.originalRequirement(), null, List.of(), null, null,
-            false, null, Map.of("kind", HarnessInputKind.INITIAL.name(), "inputId", inputId), now));
+            false, null, metadata, now));
     }
+
+    private void validateImageModel(HarnessSessionState session, List<HarnessImageInput> images) {
+        if (images != null && !images.isEmpty() && !HarnessModelPolicy.supportsImages(session.model())) {
+            throw new IllegalArgumentException(
+                "当前固定模型不支持图片输入；请选择支持多模态的模型（如 Doubao 或视觉模型）");
+        }
+    }
+
+    private Map<String, Object> runCreatedPayload(HarnessRunState run) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("status", run.status().name());
+        if (run.modelRoute() != null) {
+            payload.put("modelRoute", run.modelRoute().eventMetadata());
+        }
+        return Map.copyOf(payload);
+    }
+
+    private HarnessEvent runCreatedEvent(HarnessOwner owner, HarnessRunState run) {
+        String eventId = stableId("event", owner, run.sessionId(),
+            run.runId() + "\u0000run.created");
+        return HarnessEvent.draftWithId(eventId, run.sessionId(), run.runId(), "run.created",
+            null, null, null, runCreatedPayload(run), run.createdAt());
+    }
+
+    private void validateExistingInitialImages(HarnessOwner owner, HarnessRunState run,
+                                               List<HarnessImageInput> images) {
+        HarnessMessage existing = findMessageByInputId(owner, run.sessionId(),
+            "run-create:" + run.runId());
+        if (existing == null) {
+            return;
+        }
+        List<String> expected = decodeImages(images).stream().map(DecodedImage::sha256).toList();
+        Object raw = existing.metadata().get("images");
+        List<String> actual = raw instanceof List<?> list ? list.stream()
+            .filter(Map.class::isInstance)
+            .map(Map.class::cast)
+            .map(item -> Objects.toString(item.get("artifactId"), ""))
+            .toList() : List.of();
+        if (!actual.equals(expected)) {
+            throw new HarnessConflictException(
+                "idempotencyKey was already used with different images");
+        }
+    }
+
+    private List<Map<String, Object>> persistImages(HarnessOwner owner, HarnessRunState run,
+                                                    List<HarnessImageInput> images) {
+        List<DecodedImage> decoded = decodeImages(images);
+        if (decoded.isEmpty()) {
+            return List.of();
+        }
+        if (artifactRepository == null) {
+            throw new IllegalStateException("Harness artifact repository is unavailable");
+        }
+        List<Map<String, Object>> result = new ArrayList<>(decoded.size());
+        for (DecodedImage image : decoded) {
+            ArtifactRef ref = artifactRepository.putImage(owner, run.sessionId(), run.runId(),
+                image.mediaType(), image.bytes());
+            result.add(Map.of(
+                "artifactId", ref.hash(),
+                "mediaType", image.mediaType(),
+                "byteSize", image.bytes().length,
+                "detail", image.detail()
+            ));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<DecodedImage> decodeImages(List<HarnessImageInput> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
+        if (images.size() > MAX_IMAGES_PER_RUN) {
+            throw new IllegalArgumentException("A run accepts at most 5 images");
+        }
+        long total = 0;
+        List<DecodedImage> result = new ArrayList<>(images.size());
+        for (HarnessImageInput input : images) {
+            String value = input.dataUrl();
+            int separator = value.indexOf(",");
+            if (separator < 0 || !value.startsWith("data:image/")
+                || !value.substring(0, separator).endsWith(";base64")) {
+                throw new IllegalArgumentException("Image must be a base64 data URL");
+            }
+            String mediaType = value.substring(5, separator - ";base64".length())
+                .toLowerCase(java.util.Locale.ROOT);
+            byte[] signature = IMAGE_SIGNATURES.get(mediaType);
+            if (signature == null) {
+                throw new IllegalArgumentException("Unsupported image media type: " + mediaType);
+            }
+            byte[] bytes;
+            try {
+                bytes = Base64.getDecoder().decode(value.substring(separator + 1));
+            } catch (IllegalArgumentException invalidBase64) {
+                throw new IllegalArgumentException("Image data URL contains invalid base64", invalidBase64);
+            }
+            if (!startsWith(bytes, signature)
+                || ("image/webp".equals(mediaType)
+                    && (bytes.length < 12 || bytes[8] != 0x57 || bytes[9] != 0x45
+                        || bytes[10] != 0x42 || bytes[11] != 0x50))) {
+                throw new IllegalArgumentException("Image content does not match " + mediaType);
+            }
+            total += bytes.length;
+            if (bytes.length == 0 || total > MAX_IMAGE_BYTES_PER_RUN) {
+                throw new IllegalArgumentException("Image payload exceeds the 8 MiB run limit");
+            }
+            result.add(new DecodedImage(mediaType, input.detail(), bytes, sha256(bytes)));
+        }
+        return List.copyOf(result);
+    }
+
+    private boolean startsWith(byte[] bytes, byte[] prefix) {
+        if (bytes.length < prefix.length) {
+            return false;
+        }
+        for (int index = 0; index < prefix.length; index++) {
+            if (bytes[index] != prefix[index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String sha256(byte[] bytes) {
+        try {
+            return java.util.HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 is unavailable", impossible);
+        }
+    }
+
+    private record DecodedImage(String mediaType, String detail, byte[] bytes, String sha256) { }
 
     private boolean eventTypeExists(HarnessOwner owner, String sessionId, String runId,
                                     String eventType) {
@@ -696,30 +992,6 @@ public class CodingHarnessApplicationService {
             }
             for (HarnessEvent event : page) {
                 if (eventType.equals(event.type())) {
-                    return true;
-                }
-                cursor = event.sequence();
-                inspected++;
-            }
-            if (page.size() < 1_000) {
-                return false;
-            }
-        }
-        throw new HarnessConflictException("Run event ledger exceeds idempotency scan limit");
-    }
-
-    private boolean eventWithDataExists(HarnessOwner owner, String sessionId, String runId,
-                                        String eventType, String key, Object expectedValue) {
-        long cursor = 0;
-        int inspected = 0;
-        while (inspected < 100_000) {
-            List<HarnessEvent> page = store.readEvents(owner, sessionId, runId, cursor, 1_000);
-            if (page.isEmpty()) {
-                return false;
-            }
-            for (HarnessEvent event : page) {
-                if (eventType.equals(event.type())
-                    && Objects.equals(expectedValue, event.data().get(key))) {
                     return true;
                 }
                 cursor = event.sequence();
@@ -766,6 +1038,185 @@ public class CodingHarnessApplicationService {
         }
         return MessageDigest.isEqual(actual.getBytes(StandardCharsets.US_ASCII),
             expected.strip().toLowerCase().getBytes(StandardCharsets.US_ASCII));
+    }
+
+    private HarnessRunState reconcileToolEffects(HarnessRunState initial, long now,
+                                                  boolean requestCancellation) {
+        try {
+            return toolEffectLedgerReconciler.updateAtomically(initial, now, reconciled -> {
+                UncertainToolEffectGuard.Finding finding =
+                    UncertainToolEffectGuard.firstFinding(reconciled).orElse(null);
+                if (finding == null) {
+                    return reconciled;
+                }
+                HarnessRunState projected = requestCancellation
+                    ? reconciled.requestCancellation(now) : reconciled;
+                if ((!requestCancellation
+                    && projected.status() == HarnessRunStatus.SUSPENDED)
+                    || (projected.status() == HarnessRunStatus.SUSPENDED
+                        && finding.reason().code().equals(projected.error()))) {
+                    if (requestCancellation && !reconciled.cancellationRequested()) {
+                        return enqueueRunStateEvent(reconciled, projected,
+                            "run.cancel.requested",
+                            Map.of("code", "USER_CANCEL_REQUESTED"), now);
+                    }
+                    return projected;
+                }
+                HarnessRunState suspended = UncertainToolEffectGuard.suspend(projected,
+                    finding, now);
+                return enqueueRunStateEvent(reconciled, suspended, "run.suspended",
+                    Map.of("reason", finding.reason().code(),
+                        "effectId", finding.effect().effectId()), now);
+            });
+        } catch (RuntimeException reconciliationFailure) {
+            String reason =
+                UncertainToolEffectReason.LEDGER_RECONCILIATION_UNAVAILABLE.code();
+            HarnessRunState current = initial;
+            for (int attempt = 0; attempt < 4; attempt++) {
+                current = getRun(initial.owner(), initial.sessionId(), initial.runId());
+                if (current.status().isTerminal()) {
+                    return current;
+                }
+                HarnessRunState projected = requestCancellation
+                    ? current.requestCancellation(now) : current;
+                HarnessRunState isolated;
+                if (projected.status() == HarnessRunStatus.SUSPENDED
+                    && reason.equals(projected.error())) {
+                    isolated = requestCancellation && !current.cancellationRequested()
+                        ? enqueueRunStateEvent(current, projected, "run.cancel.requested",
+                            Map.of("code", "USER_CANCEL_REQUESTED"), now)
+                        : projected;
+                } else {
+                    isolated = UncertainToolEffectGuard.suspend(projected, reason, now);
+                    isolated = enqueueRunStateEvent(current, isolated, "run.suspended",
+                        Map.of("reason", reason,
+                            "effectId", firstRecoverableEffectId(current)), now);
+                }
+                if (isolated == current) {
+                    return current;
+                }
+                try {
+                    return store.saveRun(current.owner(), isolated, current.revision());
+                } catch (HarnessOptimisticLockException conflict) {
+                    // Retry from the authoritative snapshot while the application session gate
+                    // prevents a second local command from making a contradictory decision.
+                }
+            }
+            throw new HarnessConflictException(reason);
+        }
+    }
+
+    /** Stages a stable control/state event in the same revision as its authoritative mutation. */
+    private HarnessRunState enqueueRunStateEvent(HarnessRunState source,
+                                                  HarnessRunState mutated,
+                                                  String type,
+                                                  Map<String, Object> extra,
+                                                  long timestamp) {
+        if (source == null || mutated == null || source.revision() != mutated.revision()
+            || !source.runId().equals(mutated.runId())) {
+            throw new IllegalArgumentException("Run state event must share its source revision");
+        }
+        Map<String, Object> data = new LinkedHashMap<>(extra);
+        data.put("status", mutated.status().name());
+        data.put("revision", source.revision() + 1);
+        HarnessEvent event = HarnessEvent.draftWithId(
+            "run-state:" + source.runId() + ":" + type + ":" + (source.revision() + 1),
+            source.sessionId(), source.runId(), type, null, null, null, data, timestamp);
+        return mutated.enqueueEvent(event, timestamp);
+    }
+
+    /** Stable write-ahead event for the one cancellation decision a run can accept. */
+    private HarnessRunState enqueueCancellationRequestEvent(HarnessRunState source,
+                                                             HarnessRunState mutated,
+                                                             long timestamp) {
+        if (source == null || mutated == null || source.revision() != mutated.revision()
+            || !source.runId().equals(mutated.runId()) || !mutated.cancellationRequested()) {
+            throw new IllegalArgumentException(
+                "Cancellation request event must share its accepted source revision");
+        }
+        String eventId = stableId("event", source.owner(), source.sessionId(),
+            source.runId() + "\u0000run.cancel.requested");
+        HarnessEvent event = HarnessEvent.draftWithId(eventId, source.sessionId(),
+            source.runId(), "run.cancel.requested", null, null, null,
+            Map.of("status", mutated.status().name(),
+                "revision", source.revision() + 1,
+                "code", "USER_CANCEL_REQUESTED"), timestamp);
+        return mutated.enqueueEvent(event, timestamp);
+    }
+
+    private boolean cancellationRequestEventExists(HarnessOwner owner, HarnessRunState run) {
+        return outboxContainsType(run, "run.cancel.requested")
+            || eventTypeExists(owner, run.sessionId(), run.runId(), "run.cancel.requested");
+    }
+
+    private boolean outboxContainsType(HarnessRunState run, String type) {
+        return run.eventOutbox().stream()
+            .anyMatch(entry -> type.equals(entry.event().type()));
+    }
+
+    private HarnessRunState drainAndScheduleIfRunnable(HarnessOwner owner,
+                                                        HarnessRunState saved) {
+        HarnessRunState drained = eventOutboxService.drainBestEffort(owner, saved);
+        if (drained.status() == HarnessRunStatus.QUEUED && drained.eventOutbox().isEmpty()) {
+            scheduleBestEffort(drained);
+        }
+        return drained;
+    }
+
+    private void scheduleBestEffort(HarnessRunState run) {
+        try {
+            scheduler.schedule(new HarnessRunRequest(run.owner(), run.sessionId(), run.runId()));
+        } catch (RuntimeException rejected) {
+            // The durable QUEUED snapshot remains authoritative. Maintenance redispatches it.
+            log.warn("Harness dispatch will be retried for run {}", run.runId(), rejected);
+        }
+    }
+
+    private void commitAdmissionBestEffort(HarnessScheduler.Admission admission,
+                                           HarnessRunState run) {
+        try {
+            admission.commit();
+        } catch (RuntimeException rejected) {
+            // Creation and run.created are already durable. Closing an uncommitted reservation
+            // releases it; maintenance can admit the same durable run on a later pass.
+            log.warn("Harness creation dispatch will be retried for run {}", run.runId(),
+                rejected);
+        }
+    }
+
+    private boolean cancelQueuedBestEffort(HarnessRunRequest request) {
+        try {
+            return scheduler.cancelQueued(request);
+        } catch (RuntimeException rejected) {
+            log.warn("Harness queued cancellation notification failed for run {}",
+                request.runId(), rejected);
+            return false;
+        }
+    }
+
+    private void cancelActiveTurnBestEffort(HarnessRunRequest request) {
+        try {
+            activeTurns.cancel(request);
+        } catch (RuntimeException interruptFailure) {
+            // cancellationRequested and its event were committed first. The worker re-reads the
+            // flag at every provider/tool boundary, so an in-process interrupt is only an
+            // acceleration and never part of API success semantics.
+            log.warn("Harness active-turn interrupt will be recovered for run {}",
+                request.runId(), interruptFailure);
+        }
+    }
+
+    private boolean isToolLedgerReconciliationIsolation(HarnessRunState run) {
+        return run.status() == HarnessRunStatus.SUSPENDED
+            && UncertainToolEffectReason.LEDGER_RECONCILIATION_UNAVAILABLE.code()
+                .equals(run.error());
+    }
+
+    private String firstRecoverableEffectId(HarnessRunState run) {
+        return run.toolEffects().values().stream()
+            .filter(effect -> effect.status() == HarnessToolEffectStatus.PENDING
+                || effect.status() == HarnessToolEffectStatus.COMMITTED)
+            .map(HarnessToolEffect::effectId).sorted().findFirst().orElse("none");
     }
 
     private String stableId(String domain, HarnessOwner owner, String sessionId,

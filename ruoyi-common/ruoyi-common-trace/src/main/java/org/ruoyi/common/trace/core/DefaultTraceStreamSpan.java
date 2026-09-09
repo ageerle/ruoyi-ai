@@ -65,7 +65,12 @@ public class DefaultTraceStreamSpan implements TraceStreamSpan {
             traceRecordService.finishNode(traceId, nodeId, status, errorMessage, outputPayload,
                 new Date(), System.currentTimeMillis() - startMillis);
         } catch (Exception e) {
-            log.warn("结束 trace stream span 失败，traceId={}, nodeId={}", traceId, nodeId, e);
+            log.warn("trace_persistence operation=FINISH_STREAM_NODE status=FAILED traceId={} nodeId={} errorType={}",
+                traceId, nodeId, errorType(e));
         }
+    }
+
+    private static String errorType(Throwable error) {
+        return error == null ? "unknown" : error.getClass().getName();
     }
 }
