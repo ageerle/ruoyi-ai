@@ -1,6 +1,8 @@
 -- =====================================================================
 -- 2026-09-08-ipd-c-batch-4-tables-draft.sql
--- 状态:草稿,待 owner 拍板后再 apply
+-- 状态:已 apply（2026-09-09 owner「以上全部都要完整执行」授权，覆盖 R13 登记的待拍板项）
+-- apply 勘误:原 AFTER launch_date 锚点列在真库 products 不存在（SHOW COLUMNS 实查），
+--   实际按 AFTER status / retired_at 执行;下次重放请用本勘误锚点。
 -- 来源:docs/ipd-系统说明/缺表4类-14问澄清-20260908.md（建议全部选甲）
 -- 拍板汇总:
 --   Q1=甲  Q2=乙(加 due_at 列)  Q3=甲  Q4=乙(三签)  Q5=甲
@@ -158,7 +160,7 @@ CREATE TABLE IF NOT EXISTS product_retirements (
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA='ipd_dev' AND TABLE_NAME='products' AND COLUMN_NAME='retired_at');
 SET @sql := IF(@col_exists=0,
-  'ALTER TABLE products ADD COLUMN retired_at DATETIME DEFAULT NULL COMMENT ''产品退市生效时间(Q10 联动 product_retirements.approved_at)'' AFTER launch_date',
+  'ALTER TABLE products ADD COLUMN retired_at DATETIME DEFAULT NULL COMMENT ''产品退市生效时间(Q10 联动 product_retirements.approved_at)'' AFTER status',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
