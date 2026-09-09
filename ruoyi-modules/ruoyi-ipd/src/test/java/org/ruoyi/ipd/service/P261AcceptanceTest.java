@@ -82,8 +82,8 @@ class P261AcceptanceTest {
             .projectId(PROJECT_ID)
             .changeType("SCOPE_EXPAND")
             .reason("范围扩大")
-            .beforeSnapshot("{\"scope\":\"原范围\",\"cost\":100,\"duration\":\"30d\",\"quality\":\"P1\"}")
-            .afterSnapshot("{\"scope\":\"新范围\",\"cost\":150,\"duration\":\"45d\",\"quality\":\"P1\"}")
+            .beforeSnapshot("{\"范围\":\"原范围\",\"成本\":100,\"时限\":\"30d\",\"质量\":\"P1\"}")
+            .afterSnapshot("{\"范围\":\"新范围\",\"成本\":150,\"时限\":\"45d\",\"质量\":\"P1\"}")
             .build();
     }
 

@@ -115,6 +115,7 @@ class ProductServiceTest {
         Project project = new Project();
         project.setId(9L);
         project.setDelFlag("0");
+        project.setMainGroupId(1L);
         when(projectMapper.selectById(9L)).thenReturn(project);
         // P1-1.1：bindProject 改为条件 UPDATE（LambdaUpdateWrapper）+ 自洽终态
         doAnswer(inv -> { p.setProjectId(9L); return 1; })
