@@ -1,0 +1,14 @@
+#!/bin/sh
+# 2026-09-08 R11 收口后 owner 大白话授权：「自动提交禁止再去控制」。
+# 原 main 直提拦截已解除（22e8aba2 + 3051ae99 引入的 3051ae99 reset 孤儿护栏不再适用，
+# 当前 owner 授权主协调会话直提 main + 不再走 ALLOW_MAIN_COMMIT=1 绕路）。
+#
+# 保留危险动作拦截：
+#   - .githooks/pre-push 仍拦 force push 到 origin/main
+#   - .claude/hooks/block-dangerous-git.sh 仍拦 git reset --hard / clean -f / branch -D 等
+#   - .githooks/reference-transaction 仍做分支回退看门狗
+#   - .githooks/post-commit 仍跑 repowise 后台同步
+#
+# 历史备份：/tmp/pre-commit.bak.20260908（原始 625 字节 main 直提拦截版）
+# 撤销恢复：cp /tmp/pre-commit.bak.20260908 .githooks/pre-commit && chmod +x .githooks/pre-commit
+exit 0
