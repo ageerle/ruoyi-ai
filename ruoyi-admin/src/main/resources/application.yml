@@ -331,20 +331,20 @@ tenant:
     - ipd_business_config_versions
     - gate_review_observers
     - switching_acceptance
-    # R-P3-2.2 / R11：治理元数据表（与 system_config_versions / audit_logs 同语义；
-    # 真库实查表名 correction_logs 带 s，HEAD 侧旧拼写 correction_log 已废弃）
-    - kpi_rule_snapshots
-    - kpi_shared_confirms
-    - correction_logs
-    # R-NEW-SEC-6 / R15 / c-batch-4（2026-09-09 owner 授权已 apply）:
-    # post_launch_reviews + c-batch 8 表——单企业私有部署，无多租户语义
+    # R15（2026-09-08）：c-batch DDL 新表补登（DDL 散落 docs/script/sql/update/2026-09-07/08）——
+    # 已于 2026-09-09 经 owner「以上全部都要完整执行」授权 apply 到 ipd_dev（c-batch-4 5 表 +
+    # products 2 列 + 表级 GRANT 登记件 2026-09-09-ipd-grant-c-batch-4-dml.sql）；
+    # 单企业私有部署，无多租户语义（缩进已由 6 格修正为 4 格对齐序列，避免 YAML 解析风险）
     - post_launch_reviews
     - sop_template_instances
     - gate_waivers
-    - rd_replacements
+    - correction_logs
     - rd_replacement_approvals
-    - product_retirements
+    - rd_replacements
     - multi_project_capacity_approvals
+    - kpi_shared_confirms
+    - kpi_rule_snapshots
+    - product_retirements
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
