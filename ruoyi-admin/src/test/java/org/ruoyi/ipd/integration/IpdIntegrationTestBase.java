@@ -8,7 +8,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,51 +23,43 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * IPD 真活集成测试基类（病根 1 根治：测试金字塔倒置）
+ * IPD 真活集成测试基类（病根 1 根治：测试金字塔倒置）。
  *
- * <p>背景：ruoyi-ipd 模块 102 张 AcceptanceTest 全是 Mockito Mock 契约测试（74%）
- * 或直接调用 handler（如 Api01AcceptanceTest），<b>0 张真活集成测试</b>。
- * commit 写「整链验收」「真活」但实际 Mock 单测，导致看板卡误判翻 done。
+ * <p>2026-09-08 按「病根1-基类真跑验证-20260908.md」方向 B 迁入 ruoyi-admin test 域：
+ * RuoYiAIApplication 在本模块（org.ruoyi 包根），测试类包 org.ruoyi.ipd.integration
+ * 可向上搜到 @SpringBootConfiguration，全量 bean 接线与 16039 运行态同构；
+ * ruoyi-ipd（库模块）test 域保持纯 Mockito 契约测试。
  *
- * <p>本基类提供：
- * <ul>
- *   <li>@SpringBootTest(webEnvironment=RANDOM_PORT) 真起 Spring Boot 容器</li>
- *   <li>@AutoConfigureMockMvc 真活 HTTP 端点探测</li>
- *   <li>@ActiveProfiles("ipd-local,dev") 连真库 ipd_dev @ 13306</li>
- *   <li>@Transactional 自动 rollback（零污染）</li>
- *   <li>登录 helper（拿 admin token）</li>
- *   <li>业务表行数探测 helper</li>
- * </ul>
+ * <p>数据源钉死（双实例坑实证：dev profile master 指 3306 Docker ruoyi-ai 库，
+ * 真库是本机原生 13306/ipd_dev）——properties 显式覆盖三键，
+ * TestPropertySource 优先级高于一切 profile 文件，杜绝 profile 顺序连错库。
+ * 密码走 env 占位 {@code ${IPD_IT_DB_PASSWORD:}}，凭据不入版本库不上命令行：
+ * <pre>
+ * export IPD_IT_DB_PASSWORD=$(python3 -c "import json;print(json.load(open('.codex/ipd-dev/config/credentials.json'))['mysql_app'])")
+ * mvn -o -pl ruoyi-admin -Dtest=HandoverIntegrationTest -Dipd.scope.it.enabled=true test
+ * </pre>
  *
- * <p>用法：
- * <pre>{@code
- * @Tag("dev")
- * class HandoverIntegrationTest extends IpdIntegrationTestBase {
- *     @Test
- *     void 单项目角色移交真活() throws Exception {
- *         String token = loginAsAdmin();
- *         mockMvc.perform(post("/api/v1/handovers")
- *                 .header("Authorization", "Bearer " + token)
- *                 .contentType(MediaType.APPLICATION_JSON)
- *                 .content("{\"fromPersonId\":123,\"toPersonId\":456}"))
- *             .andExpect(status().isOk())
- *             .andExpect(jsonPath("$.code").value(0));
- *         assertThat(tableRowCount("handover_records")).isGreaterThan(0);
- *     }
- * }
- * }</pre>
+ * <p>Redis 走 dev profile 默认 localhost:6379（本机 docker 实例）；
+ * 连接池预算（QA-05-P1：max_connections=151，常态 4 实例×20）下本测试容器
+ * 追加 1×20 = 100/151，仍在预算内。
  *
- * <p>边界：
- * <ul>
- *   <li>本基类不动现有 Mockito Mock 单测（保留为 *ContractTest 契约测试）</li>
- *   <li>翻 done 硬门禁要求：必须有 *IntegrationTest 真活证据（见 scripts/check-done-gate.py）</li>
- *   <li>真库 ipd_dev @ 13306（docker ruoyi-ai-mysql），凭证走 .codex/ipd-dev/config/application-ipd-local.yml</li>
- * </ul>
+ * <p>提供：RANDOM_PORT 真起容器 / MockMvc 真活 HTTP / 真库探测 helper /
+ * @Transactional 自动 rollback（零污染）/ 登录 helper。
  *
- * @see scripts/check-done-gate.py 翻 done 硬门禁脚本
- * @see docs/ipd-系统说明/验收/全局病根除-20260908.md 病根除报告
+ * @see org.ruoyi.RuoYiAIApplication
+ * @see org.ruoyi.ipd.controller.HandoverController
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+        "spring.datasource.dynamic.datasource.master.url=jdbc:mysql://127.0.0.1:13306/ipd_dev"
+            + "?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull"
+            + "&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true"
+            + "&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true"
+            + "&nullCatalogMeansCurrent=true",
+        "spring.datasource.dynamic.datasource.master.username=ipd_app",
+        "spring.datasource.dynamic.datasource.master.password=${IPD_IT_DB_PASSWORD:}"
+    })
 @AutoConfigureMockMvc
 @ActiveProfiles({"ipd-local", "dev"})
 @Transactional

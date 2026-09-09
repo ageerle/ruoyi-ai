@@ -233,6 +233,25 @@ class P1101AcceptanceTest {
     }
 
     @Test
+    @DisplayName("AM-SQL：自中间行入参 ⇒ CTE 先向上找根再取全链，history 不误报 STATE_CONFLICT")
+    void history_fromMidRow_fullChain() {
+        AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED);
+        AiDocument v2 = row(2L, 2, 1L, AiDocumentService.STATUS_REVIEWED);
+        AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED);
+        // 两段 CTE 契约（真库探针 2026-09-08 已验）：入参 v2 与 v1/v3 返回同一全链（升序）；
+        // 旧版单段 CTE 从中间行只回 [v2, v3]，首行 versionNo≠1 曾误报 STATE_CONFLICT
+        when(mapper.selectChain(2L)).thenReturn(List.of(v1, v2, v3));
+
+        List<AiDocument> chain = service.history(2L);
+
+        assertThat(chain).extracting(AiDocument::getId, AiDocument::getVersionNo)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple(1L, 1),
+                org.assertj.core.groups.Tuple.tuple(2L, 2),
+                org.assertj.core.groups.Tuple.tuple(3L, 3));
+    }
+
+    @Test
     @DisplayName("链断裂（父版本被软删，向上走不到根）⇒ STATE_CONFLICT")
     void history_brokenChain_rejected() {
         AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED);

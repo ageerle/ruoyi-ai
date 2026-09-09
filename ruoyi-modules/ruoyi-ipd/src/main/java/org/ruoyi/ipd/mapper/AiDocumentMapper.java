@@ -30,17 +30,31 @@ public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument>
      * P1-10.3 / PERF：自任一版本行 ID 递归向上找根 + 向下取全链，
      * 一次 SQL 替代 history() 的 2N-1 次往返。
      * 租户/逻辑删除由 service 内显式过滤；del_flag = '0' 在 CTE 内自带。
+     *
+     * <p>AM-SQL（2026-09-08）：补齐向上找根段——旧版只有向下递归，
+     * 从中间行调用时返回「中间行及其后代」而非全链，history 因首行
+     * versionNo != 1 误报 STATE_CONFLICT。现两段 CTE：ancestors 自
+     * 入参向上走到根（parent_version_id IS NULL），chain 自根向下取全链；
+     * 入参为根/中间/叶子任一行均返回同一全链（升序）。
      */
     @Select("""
-        WITH RECURSIVE chain AS (
+        WITH RECURSIVE ancestors AS (
+            SELECT id, parent_version_id, version_no, del_flag
+            FROM ai_documents
+            WHERE id = #{rootId} AND del_flag = '0'
+            UNION ALL
+            SELECT d.id, d.parent_version_id, d.version_no, d.del_flag
+            FROM ai_documents d INNER JOIN ancestors a ON d.id = a.parent_version_id
+            WHERE d.del_flag = '0'
+        ),
+        chain AS (
             SELECT id, project_id, doc_type, title, content, model,
                    token_prompt, token_completion, content_sha256, status,
                    parent_version_id, version_no, reviewed_by, reviewed_at,
                    review_comment, archived_at, archived_by,
                    create_dept, create_by, create_time, update_by, update_time,
                    tenant_id, del_flag, remark
-            FROM ai_documents
-            WHERE id = #{rootId} AND del_flag = '0'
+            FROM ancestors WHERE parent_version_id IS NULL
             UNION ALL
             SELECT d.id, d.project_id, d.doc_type, d.title, d.content, d.model,
                    d.token_prompt, d.token_completion, d.content_sha256, d.status,
@@ -51,7 +65,13 @@ public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument>
             FROM ai_documents d INNER JOIN chain c ON d.parent_version_id = c.id
             WHERE d.del_flag = '0'
         )
-        SELECT * FROM chain ORDER BY version_no ASC
+        SELECT id, project_id, doc_type, title, content, model,
+               token_prompt, token_completion, content_sha256, status,
+               parent_version_id, version_no, reviewed_by, reviewed_at,
+               review_comment, archived_at, archived_by,
+               create_dept, create_by, create_time, update_by, update_time,
+               tenant_id, del_flag, remark
+        FROM chain ORDER BY version_no ASC
         """)
     List<AiDocument> selectChain(@Param("rootId") Long rootId);
 }
