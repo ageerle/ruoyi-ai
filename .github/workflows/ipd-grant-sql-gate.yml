@@ -1,0 +1,50 @@
+# IPD 表级 GRANT 登记件门禁：docs/script/sql 静态比对（根除建议文档 §四 层 3 项 8）
+#
+# 为什么在 CI 里再做一道「文本级」检查（2026-09-08 实证，AM-GRANT 轮）：
+#   本机权限模型是库级 SELECT+INSERT、表级逐表 GRANT 四权。新建表 SQL 漏写
+#   GRANT 块时 INSERT 静默过、UPDATE 直接 500（kpi_shared_confirms /
+#   gate_arbitrations 双事故实证）。真库 apply 核验靠本机
+#   p1-ddl-apply-check.py --strict（pymysql socket 通道，CI 连不到），但
+#   「SQL 登记件缺失」CI 可以静态抓——本工作流就是这道防线。附带发现实证：
+#   receipt_ledger / negative_feedbacks 真库已授权但 SQL 全域无登记语句，
+#   由本检查上线前的预跑抓出并补登记件。
+#
+# 为什么 step 顺序是自测 → 实查：
+#   护栏写反/配错与「真的通过」表现相同，先跑 --selftest（7 用例含 3 条
+#   阻断分支）证明门禁有牙，再查仓库现状。与 ipd-test-gate 同一纪律。
+
+name: ipd-grant-sql-gate
+
+on:
+  pull_request:
+    paths:
+      - 'docs/script/sql/**'
+      - 'scripts/ci/check-ipd-grant-sql.py'
+      - '.github/workflows/ipd-grant-sql-gate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/script/sql/**'
+      - 'scripts/ci/check-ipd-grant-sql.py'
+      - '.github/workflows/ipd-grant-sql-gate.yml'
+
+jobs:
+  grant-sql-gate:
+    name: GRANT 登记件静态比对
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 门禁自测（护栏必须真的会拦）
+        shell: bash
+        run: python3 scripts/ci/check-ipd-grant-sql.py --selftest
+
+      - name: 检查仓库 SQL 登记件
+        shell: bash
+        run: python3 scripts/ci/check-ipd-grant-sql.py

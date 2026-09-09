@@ -1,5 +1,7 @@
 # IPD 测试红名单基线 —— 由 scripts/ci/ipd-test-red-baseline.py extract 生成，勿手改
 # 语义：以下为「已知债务」，CI 不因其失败；出现本清单之外的新红即阻断。
 # 修好任意一条后请重跑 extract 覆盖本文件，使基线单调收敛。
+# 2026-09-08 AM-BASELINE-TTL：每条红带 first_seen 登记日期；超期条目（默认 14 天）
+#   在 check 时 WARN（渐进版不阻断），推动还款——债务可以缓期，不能免息。
 # total_tests=1938
 # report_files=215

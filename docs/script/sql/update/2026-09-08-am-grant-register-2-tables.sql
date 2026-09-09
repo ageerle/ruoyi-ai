@@ -1,0 +1,12 @@
+-- AM-GRANT 登记件补齐（2026-09-08，根除建议文档 §四 层 3 项 8 CI 接入的附带发现）
+--
+-- 背景：check-ipd-grant-sql.py 静态扫描发现 receipt_ledger / negative_feedbacks
+-- 两表在 docs/script/sql/ 全域找不到任何 GRANT 登记语句，而真库
+-- mysql.tables_priv 实测两表均已授权（Select,Insert,Update,Delete，
+-- 2026-09-08 pymysql socket 探针验证）——属「真库有、登记件缺」漂移。
+--
+-- 本文件为纯登记件（与 12 表补授文件同款注释形态），真库无需重放；
+-- 其他环境 apply 时按需执行。
+
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.receipt_ledger TO 'ipd_app'@'127.0.0.1';
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.negative_feedbacks TO 'ipd_app'@'127.0.0.1';

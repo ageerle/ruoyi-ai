@@ -39,6 +39,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import glob
 import os
 import re
@@ -52,6 +53,11 @@ SRC_MARKER = "src/test/java/"
 
 # 参数化用例名形如 method(arg)[1] / method[3]，统一截到方法名
 _PARAM_SUFFIX = re.compile(r"[\[(].*$")
+
+# 2026-09-08 AM-BASELINE-TTL：超期阈值，默认 14 天。WARN 不阻断（渐进版）。
+DEFAULT_TTL_DAYS = 14
+# 首次出现日期入册格式：ISO 日期注释，不带时区，与仓内现存日期习惯一致
+_FIRST_SEEN_RE = re.compile(r"#\s*first_seen=(\d{4}-\d{2}-\d{2})")
 
 
 def _normalize(name: str) -> str:
@@ -155,11 +161,20 @@ def _source_test_classes(src_glob: str) -> set[str]:
     return out
 
 
-def _emit(reds, total, files, exempt_lines=()) -> str:
+def _emit(reds, total, files, exempt_lines=(), first_seen_map=None) -> str:
+    """生成基线文件内容。
+
+    2026-09-08 AM-BASELINE-TTL：每条红后补 `# first_seen=YYYY-MM-DD` 注释，
+    首次出现的日期入册（已存在的保留原日期——extract 会从旧基线回填）。
+    """
+    first_seen_map = first_seen_map or {}
+    today = _dt.date.today().isoformat()
     lines = [
         "# IPD 测试红名单基线 —— 由 scripts/ci/ipd-test-red-baseline.py extract 生成，勿手改",
         "# 语义：以下为「已知债务」，CI 不因其失败；出现本清单之外的新红即阻断。",
         "# 修好任意一条后请重跑 extract 覆盖本文件，使基线单调收敛。",
+        "# 2026-09-08 AM-BASELINE-TTL：每条红带 first_seen 登记日期；超期条目（默认 14 天）",
+        "#   在 check 时 WARN（渐进版不阻断），推动还款——债务可以缓期，不能免息。",
         f"# total_tests={total}",
         f"# report_files={files}",
     ]
@@ -167,16 +182,23 @@ def _emit(reds, total, files, exempt_lines=()) -> str:
         lines.append("#")
         lines.append("# 下列测试类被显式豁免于「每个测试类都必须真跑」校验（手工登记，extract 不会删除）：")
         lines.extend(exempt_lines)
-    lines.extend(sorted(reds))
+    for red in sorted(reds):
+        date = first_seen_map.get(red, today)
+        lines.append(f"{red}  # first_seen={date}")
     return "\n".join(lines) + "\n"
 
 
 def _load_baseline(path: str):
-    """返回 (红名单, total_tests 下限, exempt_class 原始行列表, 豁免 FQN 集合)。"""
-    reds: set[str] = set()
+    """返回 (红名单 dict{条目:首次日期}, total_tests 下限, exempt_class 原始行列表, 豁免 FQN 集合)。
+
+    2026-09-08 AM-BASELINE-TTL：每条红可带可选 `# first_seen=YYYY-MM-DD` 注释——
+    旧基线（只有条目名）默认首次出现日期为今天，避免一次性全标今天扰乱逐条历史。
+    """
+    reds: dict[str, str] = {}
     exempt: set[str] = set()
     exempt_lines: list[str] = []
     total_floor = None
+    today = _dt.date.today().isoformat()
     with open(path, encoding="utf-8") as fh:
         for raw in fh:
             line = raw.strip()
@@ -191,7 +213,13 @@ def _load_baseline(path: str):
                     exempt.add(m2.group(1))
                     exempt_lines.append(line)
                 continue
-            reds.add(line)
+            # 条目行：「FQN#method」 可选后接 `# first_seen=YYYY-MM-DD`
+            # 先按空白拆出条目名（避免把条目本身的「classname#method」误拆）
+            key = line.split()[0] if line.split() else ""
+            if not key:
+                continue
+            m = _FIRST_SEEN_RE.search(line)
+            reds[key] = m.group(1) if m else today
     return reds, total_floor, exempt_lines, exempt
 
 
@@ -209,13 +237,21 @@ def cmd_extract(args) -> int:
         print(f"BLOCKED: {args.reports} 未匹配到任何 surefire 报告 —— 测试根本没跑起来，"
               "不能据此生成空基线（否则门禁会永久假绿）", file=sys.stderr)
         return 1
-    # extract 会覆写整个文件，先读回旧基线里的 exempt_class 手工登记行，避免抹掉豁免台账
+    # extract 会覆写整个文件，先读回旧基线里的 exempt_class 手工登记行 + 已有的 first_seen，
+    # 避免抹掉豁免台账、避免老条目首次出现日期被重置为今天。
     preserved: list[str] = []
+    prior_first_seen: dict[str, str] = {}
     if args.output != "-" and os.path.exists(args.output):
         try:
             _, _, preserved, _ = _load_baseline(args.output)
+            prior_first_seen, _, _, _ = _load_baseline(args.output)
         except OSError as exc:
             print(f"WARN: 旧基线读取失败，exempt 登记可能丢失: {exc}", file=sys.stderr)
+
+    # 2026-09-08 AM-BASELINE-TTL：本次 extract 仍红的条目继承旧 first_seen；
+    # 已修复（不在 reds 内）的保留在 prior_first_seen 不写出；新进红的填今天。
+    today = _dt.date.today().isoformat()
+    first_seen_map = {red: prior_first_seen.get(red, today) for red in reds}
 
     src_classes = _source_test_classes(args.src_glob)
     silent = sorted(src_classes - classes)
@@ -226,7 +262,7 @@ def cmd_extract(args) -> int:
         for c in silent:
             print(f"  SILENT {c}", file=sys.stderr)
 
-    text = _emit(reds, total, files, preserved)
+    text = _emit(reds, total, files, preserved, first_seen_map)
     if args.output == "-":
         sys.stdout.write(text)
     else:
@@ -241,6 +277,7 @@ def cmd_check(args) -> int:
     reds, total, files, bad, classes = collect(args.reports, args.max_age_minutes,
                                                args.max_spread_minutes)
     baseline, total_floor, _, exempt = _load_baseline(args.baseline)
+    baseline_set = set(baseline.keys())  # 2026-09-08 AM-BASELINE-TTL：baseline 现在是 dict
 
     # 同 extract：先判不可信再判无报告，否则报告全损时会被误报为「测试没跑起来」
     if bad:
@@ -291,17 +328,40 @@ def cmd_check(args) -> int:
               "疑似编译跳过、@Tag 过滤变化或套件中断，不是真的全绿", file=sys.stderr)
         return 1
 
-    new_reds = sorted(reds - baseline)
-    fixed = sorted(baseline - reds)
+    new_reds = sorted(reds - baseline_set)
+    fixed = sorted(baseline_set - reds)
 
     print(f"测试总数 {total}（基线 {total_floor}）| 当前红 {len(reds)} | 基线红 {len(baseline)}")
 
     if fixed:
         print(f"\n已修复 {len(fixed)} 条基线红（请把基线收紧，勿留陈旧条目）：")
         for item in fixed:
-            print(f"  FIXED  {item}")
+            original = baseline.get(item, "?")
+            print(f"  FIXED  {item}  # first_seen={original}")
         print(f"\n更新命令：python3 {os.path.relpath(__file__)} extract "
               f"--reports '{args.reports}' --output {args.baseline}")
+
+    # 2026-09-08 AM-BASELINE-TTL：超期条目 WARN（渐进版不阻断）。
+    # 债务可以缓期，不能免息——以可看可读的方式推动还款。
+    today = _dt.date.today()
+    ttl_days = args.ttl_days
+    overdue: list[tuple[str, str, int]] = []
+    for item in baseline_set & reds:
+        try:
+            first_seen = _dt.date.fromisoformat(baseline[item])
+        except (ValueError, KeyError):
+            continue
+        days = (today - first_seen).days
+        if days >= ttl_days:
+            overdue.append((item, baseline[item], days))
+    if overdue:
+        print(f"\nWARN: {len(overdue)} 条基线红已挂账超过 {ttl_days} 天（渐进版不阻断）：",
+              file=sys.stderr)
+        for item, first_seen, days in sorted(overdue, key=lambda x: -x[2]):
+            print(f"  OVERDUE  {item}  # first_seen={first_seen}  age={days}d",
+                  file=sys.stderr)
+        print(f"\n处置：尽快修掉、修不掉则更新 first_seen（例：# first_seen=YYYY-MM-DD 重记）"
+              "并写明原因。下一阶段门槛会升到阻断。", file=sys.stderr)
 
     if new_reds:
         print(f"\nBLOCKED: 检出 {len(new_reds)} 条基线之外的新增红：", file=sys.stderr)
@@ -338,6 +398,9 @@ def main() -> int:
     p_ck.add_argument("--baseline", required=True, help="基线文件路径")
     p_ck.add_argument("--min-total-ratio", type=float, default=0.9,
                       help="测试总数相对基线的最低比例，低于则判为套件未正常执行（默认 0.9）")
+    p_ck.add_argument("--ttl-days", type=int, default=DEFAULT_TTL_DAYS,
+                      help=f"AM-BASELINE-TTL 超期阈值（默认 {DEFAULT_TTL_DAYS} 天）——"
+                           "check 会 WARN 挂账超期的基线红，不阻断（渐进版）")
     p_ck.set_defaults(func=cmd_check)
 
     args = parser.parse_args()
