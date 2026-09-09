@@ -42,7 +42,9 @@ public final class IpdRolePermissionCatalog {
         // P3-4.4：奖金池详情/列表（内部全员可读；写操作仅超管）
         IpdPermissionCode.OPERATION_BONUS_POOL_QUERY,
         // AC-COMP-01/04/05：合规读（内部全员，角色范围 service 二次校验）
-        IpdPermissionCode.OPERATION_COMPLIANCE_READ
+        IpdPermissionCode.OPERATION_COMPLIANCE_READ,
+        // P3-7.1：切换验收 run/get/list（内部全员可读；lock/unlock 走 ADMIN_WRITE 收口）
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_QUERY
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -117,7 +119,9 @@ public final class IpdRolePermissionCatalog {
         // P3-4.4：奖金池计算/冻结/分配（资金敏感操作仅超管；service 无二次校验，注解即终审）
         IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE,
         IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
-        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE
+        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE,
+        // P3-7.1：切换验收月度锁定/解锁（仅超管；service requireAdmin 兜底）
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_ADMIN
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(

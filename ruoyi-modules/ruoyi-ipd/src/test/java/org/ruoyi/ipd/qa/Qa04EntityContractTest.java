@@ -101,18 +101,9 @@ class Qa04EntityContractTest {
     void softDeletableEntitiesCarryDelFlag() throws Exception {
         assertThat(field(Project.class, "delFlag").getType()).isEqualTo(String.class);
         assertThat(field(Deliverable.class, "delFlag").getType()).isEqualTo(String.class);
-        // 现状分歧（QA-04 报告 DEF-04）：stage_actions / gate_review_elements 的 DDL 有 del_flag，
-        // 实体刻意不映射（当前无软删入口）。此处仅固化存在性事实，不做通过/失败判定。
-        assertThat(hasField(StageAction.class, "delFlag")).isFalse();
-        assertThat(hasField(GateElement.class, "delFlag")).isFalse();
-    }
-
-    private static boolean hasField(Class<?> type, String name) {
-        try {
-            field(type, name);
-            return true;
-        } catch (NoSuchFieldException e) {
-            return false;
-        }
+        // DEF-04 分歧已消解（SEC-FIX-FOLLOWUP e388b7f8）：stage_actions / gate_review_elements
+        // 的实体已补 del_flag 映射 + @TableLogic（软删契约恢复），固化新事实。
+        assertThat(field(StageAction.class, "delFlag").getType()).isEqualTo(String.class);
+        assertThat(field(GateElement.class, "delFlag").getType()).isEqualTo(String.class);
     }
 }

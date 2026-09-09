@@ -315,6 +315,18 @@ tenant:
     - ipd_business_config_versions
     - gate_review_observers
     - switching_acceptance
+      # R15（2026-09-08）：c-batch DDL 新表补登（DDL 散落 docs/script/sql/update/2026-09-07/08，
+      # apply 真库仍待 owner 拍板）——单企业私有部署，无多租户语义；含兄弟在途 drift-backfill 的 4 张
+      - post_launch_reviews
+      - sop_template_instances
+      - gate_waivers
+      - correction_logs
+      - rd_replacement_approvals
+      - rd_replacements
+      - multi_project_capacity_approvals
+      - kpi_shared_confirms
+      - kpi_rule_snapshots
+      - product_retirements
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -65,7 +66,19 @@ public class DeletionRequestService {
     private final GateMapper gateMapper;
     private final ProductMapper productMapper;
     private final PersonMapper personMapper;
-    /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
+    /** 测试口：注入固定时钟（工作日期限断言）；生产走系统时钟。对齐 AiDocumentService#withClock。 */
+    private Clock clock = Clock.systemDefaultZone();
+
+    DeletionRequestService withClock(Clock fixed) {
+        this.clock = fixed;
+        return this;
+    }
+
+    private Date currentDate() {
+        return Date.from(clock.instant());
+    }
+
+        /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
     /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（fail-closed 改造后，测试可显式注入 mock） */
@@ -95,10 +108,10 @@ public class DeletionRequestService {
             .reason(reason)
             .requesterId(requesterId)
             .status(ST_LEADER_REVIEW)
-            .leaderDueAt(Workdays.add(new Date(), leaderDeadlineDays()))
+            .leaderDueAt(Workdays.add(currentDate(), leaderDeadlineDays()))
             .build();
         // ⚠️ @Builder 只覆盖本类字段，BaseEntity 的 createTime 须走 setter
-        request.setCreateTime(new Date());
+        request.setCreateTime(currentDate());
         // ROOT-R3-P0-1：守卫 preCheck（跨域联动合法性校验）—— DRAFT->LEADER_REVIEW 合法
         preCheckGuard("deletion_request", "DRAFT", DeletionRequestService.ST_LEADER_REVIEW, "submit");
         deletionRequestMapper.insert(request);
@@ -126,7 +139,7 @@ public class DeletionRequestService {
             withdrawHours = systemConfigService.getIntValue("deletion.withdrawHours", 24);
         }
         Date deadline = new Date(request.getCreateTime().getTime() + withdrawHours * 3600_000L);
-        if (new Date().after(deadline)) {
+        if (currentDate().after(deadline)) {
             throw new ServiceException("已超过 " + withdrawHours + " 小时撤回时限");
         }
         // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
@@ -163,14 +176,14 @@ public class DeletionRequestService {
         }
         request.setLeaderId(leaderId);
         request.setLeaderDecision(approve ? "APPROVE" : "REJECT");
-        request.setLeaderDecidedAt(new Date());
+        request.setLeaderDecidedAt(currentDate());
         String target = approve ? ST_ADMIN_REVIEW : ST_REJECTED;
         String trigger = approve ? "leaderApprove" : "leaderReject";
         // ROOT-R3-P0-1：守卫 preCheck（LEADER_REVIEW -> ADMIN_REVIEW/REJECTED 合法）
         preCheckGuard("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, target, trigger);
         request.setStatus(approve ? ST_ADMIN_REVIEW : ST_REJECTED);
         if (approve) {
-            request.setAdminDueAt(Workdays.add(new Date(), adminDeadlineDays()));
+            request.setAdminDueAt(Workdays.add(currentDate(), adminDeadlineDays()));
         }
         deletionRequestMapper.updateById(request);
         // ROOT-R3-P0-1：postCommit 跨域副作用
@@ -215,7 +228,7 @@ public class DeletionRequestService {
         preCheckGuard("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_REJECTED, "adminReject");
         request.setAdminId(adminId);
         request.setAdminDecision("REJECT");
-        request.setAdminDecidedAt(new Date());
+        request.setAdminDecidedAt(currentDate());
         request.setStatus(ST_REJECTED);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), adminId, "DELETE_ADMIN_REJECT", request.getId());
@@ -236,7 +249,7 @@ public class DeletionRequestService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int escalateOverdueLeaderReview() {
-        Date now = new Date();
+        Date now = currentDate();
         // 步骤 ①：先用同谓词 selectList 拿受影响行的 id / entityType / entityId（供 audit 用）
         List<DeletionRequest> overdue = deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getStatus, ST_LEADER_REVIEW)
@@ -268,7 +281,7 @@ public class DeletionRequestService {
     public List<DeletionRequest> listOverdueAdminReview() {
         return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
-            .lt(DeletionRequest::getAdminDueAt, new Date()));
+            .lt(DeletionRequest::getAdminDueAt, currentDate()));
     }
 
     private DeletionRequest getOrThrow(Long id) {
@@ -415,7 +428,7 @@ public class DeletionRequestService {
             .entityType(entityType)
             .entityId(entityId)
             .reason("deletion_request:" + requestId)
-            .createTime(new Date())
+            .createTime(currentDate())
             .build();
         auditLogService.append(log);
     }

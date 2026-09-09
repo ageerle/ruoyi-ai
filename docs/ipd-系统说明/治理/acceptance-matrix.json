@@ -52,14 +52,16 @@
       "category": "INC",
       "title": "项目成员锁定级别在绑定时固化，升 L3 该项目仍按 L2 发放津贴",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P034AcceptanceTest#testAC02",
-      "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P034AcceptanceTest.java",
+      "unitTestClass": "org.ruoyi.ipd.service.P241AcceptanceTest#bind_locksSnapshot",
+      "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P241AcceptanceTest.java",
       "auditLog": "MEMBER_LEVEL_LOCK",
       "status": "covered",
       "owner": "rd",
-      "linkedCommits": ["3b8d91c4"],
+      "linkedCommits": [
+        "3b8d91c4"
+      ],
       "zkRef": null,
-      "notes": "DDL L126 project_members.locked_level；G-08 红线；P034AcceptanceTest 已含 AC-INC-02 反向用例"
+      "notes": "R15 勘误：原指向 P034AcceptanceTest#testAC02 但 P034 为 AC-CFG 配置类且无该方法，真覆盖在 P241AcceptanceTest#bind_locksSnapshot（AC-INC-02 正例：L2 成员绑定 ⇒ lockedLevel=L2 / lockedAmount=1500）。DDL L126 project_members.locked_level；G-08 红线。"
     },
     {
       "ac_id": "AC-INC-15b",
@@ -71,7 +73,9 @@
       "auditLog": "BONUS_LEVEL_COEFFICIENT",
       "status": "covered",
       "owner": "rd",
-      "linkedCommits": ["4158337b"],
+      "linkedCommits": [
+        "4158337b"
+      ],
       "zkRef": null,
       "notes": "DDL L564 注释显式 A 级=1.0；G-08 §5 红线；P121AcceptanceTest L129 'AC-INC-15b A 级录入 1.2 拒绝'"
     },
@@ -85,7 +89,11 @@
       "auditLog": "BONUS_CALC",
       "status": "covered",
       "owner": "rd",
-      "linkedCommits": ["5fb4fd42", "d36a5d8c", "311007a5"],
+      "linkedCommits": [
+        "5fb4fd42",
+        "d36a5d8c",
+        "311007a5"
+      ],
       "zkRef": "ZK-16",
       "notes": "B-RULE-02 闭环 + owner 裁决 [CONSISTENCY-1] 改口径为实际回款；P342 L28 'AC-INC-16 实际回款 1000000 × 5% = 50000'"
     },
@@ -99,7 +107,9 @@
       "auditLog": "RECEIPT_LEDGER_REJECT",
       "status": "covered",
       "owner": "rd",
-      "linkedCommits": ["fb2b1627"],
+      "linkedCommits": [
+        "fb2b1627"
+      ],
       "zkRef": "ZK-16",
       "notes": "P341 L78 'AC-INC-16b 口径验证：source=SHIPMENT ⇒ 拒绝（必须是 RECEIPT）'；AC-GLB-09 原阻塞项已结清"
     },
@@ -113,7 +123,10 @@
       "auditLog": "BONUS_TIER_COEFFICIENT",
       "status": "covered",
       "owner": "rd",
-      "linkedCommits": ["7cae2138", "4158337b"],
+      "linkedCommits": [
+        "7cae2138",
+        "4158337b"
+      ],
       "zkRef": null,
       "notes": "bonus.achievementTiers 区间制已实现；G-08 §5 红线；P343 L159 'AC-INC-16 + AC-INC-17: 最终奖金池 = 基础奖金池 x 阶梯系数'"
     },
@@ -127,7 +140,9 @@
       "auditLog": "PERMISSION_DENIED",
       "status": "covered",
       "owner": "qa",
-      "linkedCommits": ["32482420"],
+      "linkedCommits": [
+        "32482420"
+      ],
       "zkRef": null,
       "notes": "QA-03 矩阵 L5 越权 401 全绿；SEC-AUD HIGH-3 修复（handler 白名单补 6 Controller）；Sec02 L26 'AC-AUTH-09：跨组项目/产品对非超管一律不可见'"
     },
@@ -141,7 +156,9 @@
       "auditLog": "PERMISSION_DENIED",
       "status": "covered",
       "owner": "qa",
-      "linkedCommits": ["32482420"],
+      "linkedCommits": [
+        "32482420"
+      ],
       "zkRef": null,
       "notes": "Sec01 L130/L140/L150 3 个 @DisplayName 全覆盖 AC-AUTH-08 正反向；DEF-7 闭环证据"
     },
@@ -155,7 +172,9 @@
       "auditLog": "AUDIT_QUERY",
       "status": "covered",
       "owner": "rd",
-      "linkedCommits": ["32482420"],
+      "linkedCommits": [
+        "32482420"
+      ],
       "zkRef": null,
       "notes": "P054 L53 'AC-AUD-04：本人范围 — 调用 selectPage 时透传 page+wrapper，wrapper 不为 null'；G-03 硬约束"
     },
@@ -169,7 +188,10 @@
       "auditLog": "AUDIT_SCHEMA_ASSERT",
       "status": "covered",
       "owner": "rd",
-      "linkedCommits": ["a52035aa", "7cae2138"],
+      "linkedCommits": [
+        "a52035aa",
+        "7cae2138"
+      ],
       "zkRef": null,
       "notes": "DDL L486-508 注释显式；G-03 硬约束；AuditHashChainTest 7 测全绿"
     },
@@ -183,7 +205,9 @@
       "auditLog": "GATE_REJECTED",
       "status": "partial",
       "owner": "rd",
-      "linkedCommits": ["fb2b1627"],
+      "linkedCommits": [
+        "fb2b1627"
+      ],
       "zkRef": null,
       "notes": "GateElementService + gate_review_elements seed 33 项入库；DEF-QA04-01 gate_element_results 死表无实体/无 mapper，UI 阻断缺位；GateEngineTest 存在但 testVetoHardBlock 需 owner 决策是否新增"
     }

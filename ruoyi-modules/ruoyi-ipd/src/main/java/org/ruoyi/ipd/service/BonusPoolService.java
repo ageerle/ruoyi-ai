@@ -172,7 +172,7 @@ public class BonusPoolService {
             && achievementRate.compareTo(new BigDecimal("70")) < 0;
     }
 
-    /* ============================ P3-4.5 项目绩效系数分档 + 取数策略路由 ============================ */
+    /* --------------------------- P3-4.5 项目绩效系数分档 + 取数策略路由 --------------------------- */
     /* AC-INC-22/23/24；BR-INC-07；分档阈值与系数来源：ProjectScoreService.projectPerformanceCoefficient() */
 
     /** P3-4.5 BR-INC-07：取数策略常量（直接复用 ProjectScoreService，避免双源定义漂移） */

@@ -140,8 +140,13 @@ class AcceptanceMatrixValidationTest {
             assertThat(unitTest)
                 .as("status=covered 的行 unitTestClass 必填: " + acId)
                 .isNotBlank();
-            // unitTestClass FQN → 物理路径
-            String relPath = unitTest.replace('.', '/') + ".java";
+            // unitTestClass FQN → 物理路径（兼容 Class#method 格式：# 之前为 FQN 部分）
+            // R15：原版 unitTest.replace('.', '/') + ".java" 未剩 # 后缀，
+            // 带方法锚点的行拼出 ".../P034AcceptanceTest#testAC02.java" 永不存在 → covered 行 exists() 失败。
+            String fqClass = unitTest.contains("#")
+                ? unitTest.substring(0, unitTest.indexOf('#'))
+                : unitTest;
+            String relPath = fqClass.replace('.', '/') + ".java";
             File testFile = new File(root, "ruoyi-modules/ruoyi-ipd/src/test/java/" + relPath);
             assertThat(testFile)
                 .as("unitTestClass 对应 .java 文件必须存在: " + acId + " → " + unitTest)
