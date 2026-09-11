@@ -88,6 +88,15 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
 
         retrievalResult = retrieveFromVector(config, finalQuery);
 
+        // 严格模式处理：检索无结果时返回默认回复
+        if (StringUtils.isBlank(retrievalResult) && Boolean.TRUE.equals(config.getIsStrict())) {
+            String defaultResp = config.getDefaultResponse();
+            if (StringUtils.isNotBlank(defaultResp)) {
+                log.info("Knowledge retrieval returned no results, using default response (strict mode)");
+                retrievalResult = defaultResp;
+            }
+        }
+
         log.info("Retrieval result length: {}", retrievalResult.length());
 
         // 构建输出
@@ -238,9 +247,9 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
             bo.setVectorModelName(kb.getVectorModel());
             bo.setBaseUrl(embModel.getApiHost());
 
+            // 节点明确选择的模式覆盖知识库配置，避免知识库开启混合检索时节点无法切回纯向量
             String mode = config.getRetrievalMode() != null ? config.getRetrievalMode().toLowerCase() : "vector";
-            boolean enableHybrid = "hybrid".equals(mode)
-                || (kb.getEnableHybrid() != null && kb.getEnableHybrid() == 1);
+            boolean enableHybrid = "hybrid".equals(mode);
             bo.setEnableHybrid(enableHybrid);
             bo.setHybridAlpha(kb.getHybridAlpha());
             bo.setEnableRerank(kb.getEnableRerank() != null && kb.getEnableRerank() == 1);
