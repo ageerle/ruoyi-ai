@@ -1,0 +1,52 @@
+{
+  "title": "①②③ P 变体（owner 拍板）真库部署冒烟结果",
+  "time_local_pdt": "2026-09-05 22:04–22:10 PDT（日志时间 2026-09-06 13:0x Asia/Shanghai）",
+  "operator": "Qoder 第二方治理会话（owner 指令「立即完整执行剩余内容」）",
+  "artifact": {
+    "jar": ".codex/ipd-dev/runtime/ruoyi-admin-ch.jar",
+    "sha256_head16": "d1fdcf0058601800",
+    "pid_at_check": 84810,
+    "port": 16045,
+    "profile": "ipd-local",
+    "inner_lib": "BOOT-INF/lib/ruoyi-ipd-3.1.0.jar (488560 bytes, STORED)",
+    "inner_yml": "BOOT-INF/classes/application.yml = HEAD 版（含 tenant.excludes audit_log_chain_heads @L266）"
+  },
+  "window_timeline": {
+    "pre_state": "audit_logs 226 行 max_seq=1626, seq 仍 AUTO_INCREMENT, chain_heads 陈旧 67/68",
+    "t1_215849_stop": "kill -15 def6i(PID 68065)，1s 优雅退出，ipd_app 活跃连接=0",
+    "t2_seed_sync": "GLOBAL ← last_seq=1626/next_seq=1627/last_hash=尾行(1626)curr_hash，seq_ok=1 hash_ok=1",
+    "t3_215913_ddl": "ALTER TABLE audit_logs MODIFY COLUMN seq BIGINT NOT NULL（去 AUTO_INCREMENT，注释同步基线 L489）",
+    "t4_215923_launch": "首起 ch.jar（PID 60659）40s 启动成功 0 ERROR",
+    "t5_incident": "冒烟首轮全红：No mapping for /api/v1/** → 定性 zip DEFLATE 假红（Spring Boot 3.2+ loader 丢弃 deflated nested jar → ruoyi-ipd 整包不进 classpath，静默零报错）",
+    "t6_2204_fix_relaunch": "zip -0 -X 重打 lib 条目（Stored 验证通过），重启 PID 84810 20s 起，IPD 路由恢复",
+    "t7_2210_smoke": "终轮冒烟 12/12 PASS"
+  },
+  "incident_note": "坏 jar 存活期（21:59–22:04）零审计写入 = 反向佐证「无 DB 自增分配」：旧默认值通道已关闭，seq 只能由锚行分配",
+  "smoke_final": {
+    "baseline_dynamic": "PRE_MAX=1640 PRE_NEXT=1641",
+    "phase1_single_login": {
+      "login": "ipd-admin HTTP 200 + code=0 + JWT(loginType=ipd)",
+      "new_row_seq": 1641,
+      "prev_hash_links_tail": true,
+      "anchor_after": "last_seq=1641 / next_seq=1642 / last_hash==新行curr_hash"
+    },
+    "phase2_verify": { "chain": "OK", "broken": 0, "hashBroken": 0, "gaps": [] },
+    "phase3_concurrent_4_login": {
+      "users": ["ipd-leader", "ipd-market", "ipd-rd", "ipd-admin"],
+      "all_success": true,
+      "new_seqs": [1642, 1643, 1644, 1645],
+      "consecutive_no_gap_no_conflict": true,
+      "chain_linked_prev_eq_prev_curr": true,
+      "anchor_final": "last_seq=1645 / next_seq=1646"
+    },
+    "phase4_verify_after": { "chain": "OK", "broken": 0, "hashBroken": 0, "gaps": [], "new_rows_total": 5 },
+    "checks": "12/12 PASS, 0 FAIL",
+    "rows_cnt": "226(窗口前) → 245(终检) = +19 行，全部锚行分配连续"
+  },
+  "console_log": {
+    "error_count_after_relaunch": 0,
+    "lock_wait_or_deadlock": 0,
+    "anchor_fail_fast_triggered": 0
+  },
+  "script": "见同目录 AUDIT-CHAIN-P变体真库冒烟脚本-20260905.py（凭据经 credentials.json 注入，未内嵌）"
+}

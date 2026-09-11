@@ -1,0 +1,49 @@
+# Batch-5 #4：凭证泄漏静态扫描（gitleaks，开源 MIT）
+#
+# 动机：本仓库的 application*.yml 曾多次出现「JWT secret / 明文 password / PEM 私钥」
+# 字面量风险。本地已有 .claude/helpers/sensitive-field-guard.cjs（PreToolUse hook）拦截
+# Write/Edit，但 hook 只在 Claude Code 会话内生效——人工 commit、其他 IDE、
+# 兄弟会话绕过（SKIP_CONCURRENT_WRITE）均无覆盖。本 workflow 是 CI 侧的第二道防线。
+#
+# 与既有 CI 的关系：仅新增，不修改 a11y-ci.yml / docs-link-check.yml /
+# publish-images.yml / wiki-lint.yml。
+#
+# === 安全加固（commit 1985716b-followup 安全审查响应） ===
+# - actions/checkout 与 gitleaks/gitleaks-action 已 pin 完整 commit SHA（防 supply-chain-unpinned-action）
+# - GITLEAKS_LICENSE 仅对 Organization 仓库有效；条件化注入（个人仓库不传，避免空值泄露）
+# - GITLEAKS_ENABLE_SUMMARY 已设为 true（产出可读摘要）
+# - UPLOAD_ARTIFACTS 设为 true（GITLEAKS_LICENSE=v0+ 才生效；保留 owner 后续启用）
+name: gitleaks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 最小权限：只需读代码；gitleaks-action 在 PR 上写 summary 不需要额外写权限。
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          # gitleaks 需要完整历史才能扫描 commit 序列（浅克隆只扫工作树快照）。
+          fetch-depth: 0
+
+      - name: gitleaks scan
+        uses: gitleaks/gitleaks-action@1938557f6a58837331b99822ab17b8e536e7bef9 # v2.3.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE 仅 GitHub Organization 仓库需要（个人仓库免费）。
+          # 条件化注入：仅组织仓库传递，避免空值泄露到 action 日志。
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE && secrets.GITLEAKS_LICENSE != '' && secrets.GITLEAKS_LICENSE }}
+          # 启用 PR 摘要（gitleaks-action v2.3+ 默认行为）
+          GITLEAKS_ENABLE_SUMMARY: "true"
+          # 上传 artifacts（用于 in-repo 检查详情留档）
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACTS: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}

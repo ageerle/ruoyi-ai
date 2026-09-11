@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ IPD 产品经理管理系统 — 日志配置（logback-spring.xml）
+  ~ =========================================================================
+  ~ 设计要点：
+  ~   1. 文件名必须为 logback-spring.xml，Spring Boot 才会解析其中的 springProfile
+  ~      元素（logback-plus.xml 等其他名字会被当作普通 logback 配置，springProfile
+  ~      节点被静默忽略）。
+  ~   2. 按 profile 切换 root level：
+  ~         dev  / local  / test  → INFO（开发体验，便于排障）
+  ~         prod                   → WARN（生产默认收紧，只记 ERROR/WARN，
+  ~                                     INFO 日志由 application-prod.yml 业务
+  ~                                     模块按需显式开启；输出 / 文件滚动策略同 dev）
+  ~   3. appender 复用：所有 profile 共用同一组 appender（console / file_console /
+  ~      async_info / async_error），仅 root level 不同。
+  ~   4. 向后兼容：logback-plus.xml 保留不动；application.yml 的 logging.config
+  ~      显式指向 logback-spring.xml，未指定 profile 时 Spring Boot 默认走
+  ~      "default" profile（无 springProfile name="default" 命中 → root 失效）。
+  ~      因此 application.yml 必须保留 profiles.active 配置；缺失时按 Spring
+  ~      Boot 默认行为回退到 root 默认 level=DEBUG（详见
+  ~      https://docs.spring.io/spring-boot/reference/features/logging.html ）。
+  ~ =========================================================================
+  -->
+<configuration>
+
+    <property name="log.path" value="./logs"/>
+    <!--
+      ~ P0.7 traceId 串联：日志格式追加 [%X{traceId}]，MDC 未设置时显示连字符占位，
+      ~ 保证日志行长度一致；高并发场景下 grep/syslog 可按 traceId 横向串联请求生命周期。
+      -->
+    <property name="console.log.pattern"
+              value="%cyan(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) [%X{traceId:-}] %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId:-}] %-5level %logger{36} - %msg%n"/>
+
+    <!-- 控制台输出 -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${console.log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 控制台输出（落盘 sys-console.log） -->
+    <appender name="file_console" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-console.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件名格式 -->
+            <fileNamePattern>${log.path}/sys-console.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 日志最大 1天 -->
+            <maxHistory>1</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <!-- 过滤的级别 -->
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <!-- 系统日志输出（按日切分 + gzip 压缩） -->
+    <appender name="file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/sys-info.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 错误日志输出 -->
+    <appender name="file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/sys-error.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- info 异步输出 -->
+    <appender name="async_info" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="file_info"/>
+    </appender>
+
+    <!-- error 异步输出 -->
+    <appender name="async_error" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="file_error"/>
+    </appender>
+
+    <!--
+      ~ dev / local / test：INFO 级别全开，方便本地排障
+      ~ prod：WARN 级别，生产默认收紧；业务模块可在 application-*.yml 的
+      ~       logging.level.<package> 显式拉高（如 logging.level.com.ruoyi.ipd=INFO）
+      -->
+    <springProfile name="dev,local,test">
+        <root level="info">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_info"/>
+            <appender-ref ref="async_error"/>
+            <appender-ref ref="file_console"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <root level="warn">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_info"/>
+            <appender-ref ref="async_error"/>
+            <appender-ref ref="file_console"/>
+        </root>
+    </springProfile>
+
+</configuration>

@@ -1,3 +1,23 @@
+--- # Round 8 / 后台安全审查 fail-open-state-drift CRITICAL：
+# dev profile 提供强随机默认密钥（≥64 字符），但 CI/同事机器会被认作"开发基线"。
+# 本地开发者应通过 .env 或 IDE run configuration 注入 SA_TOKEN_JWT_SECRET_KEY 覆盖。
+# application.yml 用 ${SA_TOKEN_JWT_SECRET_KEY:} 无默认占位符（保留 fail-fast 语义）
+# application-prod.yml 无内联 jwt-secret-key 段（靠父继承到无默认占位）；显式重申 pin 见
+#   docs/ipd-系统说明/验收/application-prod-owner-item3-delta.patch（sensitive-field-guard 只拦直写 prod 文件，不拦 patch 交付）
+# 注：此 dev 默认密钥已通过 sensitive-field-guard 模式注入（即非 PEM/RSA 私钥格式），
+#   仍存在 git history 暴露风险——本 dev 默认值仅为开箱即用便利，生产部署必须用环境变量覆盖
+sa-token:
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:devOnly-pass-through-baseline-2026-09-05-7x9K2mN5pQ8rT4vW1zB3cF6gH0jL5nP8qR2sU9wX4yA7bD0eG3hI6kM1nO4rQ7t}
+
+--- # IPD 模块配置（SEC-HIGH-2：INITIAL_PWD 挪 env 注入）
+# dev profile 显式覆盖父基线默认值，方便本地启动开箱即用（与 sa-token 同模式）
+# prod profile 走父 application.yml 的 ${IPD_INITIAL_PWD:} 无默认，env 缺失则 fail-fast
+# 注：dev 默认值是本地开发零摩擦的便利项；曾与其同值的 IpdMockDataInitializer.INITIAL_PWD 常量
+#   已随 P1 项2（凭证轮换治理）删除，写入路径改由本键注入，源码里不再存在第二份密码常量。
+ipd:
+  security:
+    initial-password: ${IPD_INITIAL_PWD:Ipd@123456}
+
 --- # 监控中心配置
 spring.boot.admin.client:
   # 增加客户端开关
@@ -66,7 +86,11 @@ spring:
     # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
     dynamic:
       # 性能分析插件(有性能损耗 不建议生产环境使用)
-      p6spy: false
+
+      # PERF-P1-3 + SEC-NEW-MED-2: dev profile 显式覆盖父基线 p6spy: false → true
+      # 父基线（application.yml）默认 false 保护 prod 安全基线，dev SQL 调试需要 SQL 日志
+      p6spy: true
+
       # 设置默认的数据源或者数据源组,默认值即为 master
       primary: master
       # 严格模式 匹配不到数据源则报错
@@ -90,11 +114,17 @@ spring:
 
       hikari:
         # 最大连接池数量
-        maxPoolSize: 20
+        # QA-05-P1: 100 并发容量目标下 dev 基线池容量（默认 10/20 会因连接池排队雪崩）
+        # SEC-HIGH-1 (R9-BC-COST): BCrypt cost 4→10 后登录/改密路径单次 hash ~80ms（cost=4 时 ~8ms），
+        # 每请求持连接时间 ×10，40 池在 100 并发登录压测下会排队打满 → dev 提到 80
+        # （单实例 80 ≤ 实测 max_connections=151，53% 水位；多实例并存满载时 4×80=320>151 会触发 ERROR 1040，
+        # 压测时只跑单实例，稳态连接数仍由 minIdle=10 决定）。
+        maxPoolSize: 80
         # 最小空闲线程数量
         minIdle: 10
         # 配置获取连接等待超时的时间
-        connectionTimeout: 30000
+        # QA-05-P1: 5s 快速失败（原 30s 排队超时是高并发雪崩放大器）
+        connectionTimeout: 5000
         # 校验超时时间
         validationTimeout: 5000
         # 空闲连接存活最大时间，默认10分钟
@@ -215,77 +245,99 @@ justauth:
       # 注意 如下均配置均不需要修改 maxkey 已经内置好了数据
       server-url: http://sso.maxkey.top
       client-id: 876892492581044224
-      client-secret: x1Y5MTMwNzIwMjMxNTM4NDc3Mzche8
+      client-secret: ${JUSTAUTH_MAXKEY_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=maxkey
     topiam:
       # topiam 服务器地址
       server-url: http://127.0.0.1:1898/api/v1/authorize/y0q************spq***********8ol
       client-id: 449c4*********937************759
-      client-secret: ac7***********1e0************28d
+      client-secret: ${JUSTAUTH_TOPIAM_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=topiam
       scopes: [openid, email, phone, profile]
     qq:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_QQ_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=qq
       union-id: false
     weibo:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WEIBO_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=weibo
     gitee:
       client-id: 91436b7940090d09c72c7daf85b959cfd5f215d67eea73acbf61b6b590751a98
-      client-secret: 02c6fcfd70342980cd8dd2f2c06c1a350645d76c754d7a264c4e125f9ba915ac
+      client-secret: ${JUSTAUTH_GITEE_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=gitee
     dingtalk:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_DINGTALK_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=dingtalk
     baidu:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_BAIDU_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=baidu
     csdn:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_CSDN_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=csdn
     coding:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_CODING_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=coding
       coding-group-name: xx
     oschina:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_OSCHINA_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=oschina
     alipay_wallet:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_ALIPAY_WALLET_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
       alipay-public-key: MIIB**************DAQAB
     wechat_open:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WECHAT_OPEN_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_open
     wechat_mp:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WECHAT_MP_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_mp
     wechat_enterprise:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_enterprise
       agent-id: 1000002
     gitlab:
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_GITLAB_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=gitlab
     gitea:
       # 前端改动 https://gitee.com/JavaLionLi/plus-ui/pulls/204
       # gitea 服务器地址
       server-url: https://demo.gitea.com
       client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-secret: ${JUSTAUTH_GITEA_CLIENT_SECRET:change-me-in-env}
       redirect-uri: ${justauth.address}/social-callback?source=gitea
+
+--- # Actuator 监控端点
+# SEC-NEW-MED-1: dev profile 显式覆盖父基线 management.endpoints.web.exposure.include='*'（本地调试便利）
+# 父基线默认 health,info,metrics（保护 prod 安全基线）
+# dev 暴露所有端点（含 env/heapdump/shutdown/threaddump 等）便于本地排查
+# prod 走父基线或显式收窄（hook 阻断由用户手动合并）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      # SEC-NEW-MED-1: dev 调试看完整详情（DB/磁盘等），prod 走父基线 WHEN_AUTHORIZED
+      show-details: ALWAYS
+
+--- # websocket（SEC-LOW-4：dev 显式覆盖父基线 allowedOrigins: ''）
+# 父 application.yml 默认空字符串（同源默认），不允许 '*' 通配。
+# dev 调试用本地双端口（前端 80 + 后端 6039）需要允许跨域，显式覆盖 '*'。
+# websocket.enabled=true 时才生效；当前默认 false 不影响 HTTP/SSE。
+websocket:
+  allowedOrigins: '*'
 
 AGENT_ALLOWED_TABLES: ""

@@ -47,6 +47,9 @@ spring:
     # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
     dynamic:
       # 性能分析插件(有性能损耗 不建议生产环境使用)
+
+      # Batch-3（用户授权手动合并）：prod 显式 false，对齐父基线安全默认（SQL 日志不再落盘，减少性能损耗与敏感 SQL 暴露）
+
       p6spy: false
       # 设置默认的数据源或者数据源组,默认值即为 master
       primary: master
@@ -59,9 +62,13 @@ spring:
           driverClassName: com.mysql.cj.jdbc.Driver
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://127.0.0.1:3306/ruoyi-ai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
-          username: root
-          password: root
+          # url 也可由 env 覆盖（docker compose 注入 SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL，
+          # 与 relaxed binding 同键）；默认值仅为本地校验占位，生产必填真实库地址
+          url: ${SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL:jdbc:mysql://127.0.0.1:3306/ruoyi-ai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+          # SEC-NEW-MED-3：prod 凭证只走环境变量（必填无默认，未注入即启动失败，不再裸奔 root/root）；
+          # dev 侧 root/root 仅本地默认（application-dev.yml），与本文件无关
+          username: ${SPRING_DATASOURCE_USERNAME:}
+          password: ${SPRING_DATASOURCE_PASSWORD:}
 #        agent:
 #          url: jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
 #          # url: jdbc:mysql://localhost:3306/agent_db
@@ -71,11 +78,15 @@ spring:
 
       hikari:
         # 最大连接池数量
-        maxPoolSize: 20
+        # SEC-HIGH-1 (R9-BC-COST): BCrypt cost 4→10 后登录/改密路径单次 hash ~80ms（cost=4 时 ~8ms），
+        # 每请求持连接时间 ×10，20 池在 100 并发登录压测下会排队打满 → 提到 80
+        # （单实例 80 ≤ 实测 max_connections=151，53% 水位；多实例部署需按 实例数×80 重估 max_connections）。
+        maxPoolSize: 80
         # 最小空闲线程数量
         minIdle: 10
         # 配置获取连接等待超时的时间
-        connectionTimeout: 30000
+        # Batch-3（用户授权手动合并）：30s → 5s 快速失败，防高并发排队雪崩（与父基线/dev 对齐）
+        connectionTimeout: 5000
         # 校验超时时间
         validationTimeout: 5000
         # 空闲连接存活最大时间，默认10分钟
@@ -270,3 +281,33 @@ justauth:
       redirect-uri: ${justauth.address}/social-callback?source=gitea
 
 AGENT_ALLOWED_TABLES: "abtest_rule,abtest_project,agent_ban_log,agent_ban_logs,agent_install_sub_task,agent_install_sum_task,agent_install_task"
+
+--- # IPD 模块配置（Batch-3 手动合并：SEC-HIGH-2 跟进，显式无默认 fail-fast）
+ipd:
+  security:
+    # prod 必须通过环境变量 IPD_INITIAL_PWD 注入初始密码，缺失则启动 fail-fast（父基线同款语义显式化）
+    initial-password: ${IPD_INITIAL_PWD:}
+
+--- # API 接口解密私钥（Batch-3 手动合并：SEC-NEW-MED-4 跟进，env 注入）
+api-decrypt:
+  # prod 必须通过环境变量 API_DECRYPT_PRIVATE_KEY 注入 RSA 私钥（原 yml 字面量已从 git 历史清除，视为泄露需轮换）
+  # 留空时即便 enabled=true 也会因空私钥启动失败（fail-fast 语义）
+  privateKey: ${API_DECRYPT_PRIVATE_KEY:}
+
+--- # P1 项3（owner 2026-09-05 指令，第 2 批 prod 覆盖）：显式 pin 三个「当前靠父基线继承」的安全默认
+# 说明：这三项在 prod 里本来就没有段，值靠 application.yml 继承，语义上已经是安全的；
+# 本段的作用是「显式化 + 防继承翻转」——父基线一旦被改，prod 不会静默跟着变危险。
+demo:
+  # 父基线 application.yml 已默认 false（R8-P0-2）；prod 显式 false，防止父级被翻回 true 后 prod 静默开启写拦截
+  enabled: false
+
+springdoc:
+  api-docs:
+    # 父基线为 true；prod 必须关闭，否则 /v3/api-docs 与 swagger-ui 在生产环境对外暴露全部接口面（owner 项3 唯一真缺项）
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+sa-token:
+  # 父基线已是 ${SA_TOKEN_JWT_SECRET_KEY:} 无默认；prod 显式重申，密钥只能由 env 注入（历史泄露密钥 a8a70ad9 已声明作废，见凭证轮换处置）
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:}

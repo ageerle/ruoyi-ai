@@ -86,4 +86,7 @@ public interface CacheNames {
      */
     String ONLINE_TOKEN = "online_tokens";
 
+
+    /** IPD AI 文档版本链（P1-10.3 / PERF-02），10 分钟 TTL，本地 Caffeine + Redis 双层 */
+    String IPD_AI_DOC_CHAIN = "ipd:ai_doc:chain#10m#0#500#1";
 }

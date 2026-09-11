@@ -1,0 +1,26 @@
+=== OD-AM-02 ac-import.py 导入报告 ===
+时间: 2026-09-07T07:47:29-07:00
+catalog 解析条数: 237
+draft 总条数:     238
+  新增: 228
+  标题补全: 0
+  保持不变: 9
+
+=== 按 category 分布 ===
+  AI         10
+  AUD         7
+  AUTH       11
+  CFG         3
+  DEL         8
+  ENV         6
+  GATE       15
+  GLB        12
+  HAND       11
+  HR          8
+  INC        57
+  IPD        29
+  KPI        25
+  PROD       13
+  REQ        10
+  TEAM       13
+

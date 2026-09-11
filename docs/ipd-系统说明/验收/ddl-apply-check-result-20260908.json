@@ -1,0 +1,444 @@
+{
+  "checkedAt": "2026-09-08T10:02:38-07:00",
+  "credentialSource": ".codex/ipd-dev/config/mysql-client.cnf",
+  "requestedDbs": [
+    "ruoyi-ai",
+    "ipd_dev",
+    "ipd_restore"
+  ],
+  "resolvedDbs": [
+    "ipd_dev",
+    "ipd_restore"
+  ],
+  "allSchemas": [
+    "information_schema",
+    "ipd_dev",
+    "ipd_perf",
+    "ipd_qa04",
+    "ipd_restore",
+    "mysql",
+    "performance_schema",
+    "sys"
+  ],
+  "detail": [
+    {
+      "db": "ipd_dev",
+      "stage_actions_exists": true,
+      "idx_sa_project_code": {
+        "columns": [
+          "project_id",
+          "action_code"
+        ],
+        "unique": false
+      },
+      "stage_actions_indexes": [
+        "idx_sa_code",
+        "idx_sa_project",
+        "idx_sa_project_code",
+        "idx_sa_stage",
+        "PRIMARY"
+      ],
+      "ldcr_table_exists": true,
+      "uk_ldcr_pending_project": {
+        "columns": [
+          "pending_project_id"
+        ],
+        "unique": true
+      },
+      "col_pending_project_id": true,
+      "col_version": true,
+      "duplicate_pending_rows": [],
+      "column_rules": [
+        {
+          "table": "gate_arbitrations",
+          "column": "decision",
+          "state": "OK",
+          "actual": {
+            "is_nullable": "YES",
+            "type": "varchar(16)"
+          },
+          "why": "WB-17-1: NULL=待裁中间态（openArbitration 预落行），2026-09-08 ALTER 后必须可 NULL"
+        },
+        {
+          "table": "gate_arbitrations",
+          "column": "arbitrator_type",
+          "state": "OK",
+          "actual": {
+            "is_nullable": "NO",
+            "type": "varchar(16)"
+          },
+          "why": "p254 契约：仲裁人类型必填"
+        },
+        {
+          "table": "launch_date_change_requests",
+          "column": "version",
+          "state": "OK",
+          "actual": {
+            "is_nullable": "NO",
+            "type": "int"
+          },
+          "why": "项1b 乐观锁"
+        },
+        {
+          "table": "launch_date_change_requests",
+          "column": "pending_project_id",
+          "state": "OK",
+          "actual": {
+            "is_nullable": "YES",
+            "type": "bigint"
+          },
+          "why": "项1a 生成列（生成列核验见 check_column_rules 的 EXTRA 分支）"
+        }
+      ],
+      "domain_rules": [
+        {
+          "table": "gate_arbitrations",
+          "column": "decision",
+          "state": "IN_DOMAIN",
+          "distribution": [
+            {
+              "v": "REJECT",
+              "c": 2
+            },
+            {
+              "v": "APPROVE",
+              "c": 1
+            }
+          ]
+        },
+        {
+          "table": "gate_arbitrations",
+          "column": "arbitrator_type",
+          "state": "IN_DOMAIN",
+          "distribution": [
+            {
+              "v": "GROUP_LEADER",
+              "c": 2
+            },
+            {
+              "v": "SUPER_ADMIN",
+              "c": 1
+            }
+          ]
+        },
+        {
+          "table": "contributions",
+          "column": "status",
+          "state": "IN_DOMAIN",
+          "distribution": [
+            {
+              "v": "DRAFT",
+              "c": 1
+            },
+            {
+              "v": "CONFIRMED",
+              "c": 1
+            }
+          ]
+        },
+        {
+          "table": "contributions",
+          "column": "leader_decision",
+          "state": "IN_DOMAIN",
+          "distribution": [
+            {
+              "v": null,
+              "c": 1
+            },
+            {
+              "v": "APPROVE",
+              "c": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "db": "ipd_restore",
+      "stage_actions_exists": true,
+      "idx_sa_project_code": {
+        "columns": [
+          "project_id",
+          "action_code"
+        ],
+        "unique": false
+      },
+      "stage_actions_indexes": [
+        "idx_sa_code",
+        "idx_sa_project",
+        "idx_sa_project_code",
+        "idx_sa_stage",
+        "PRIMARY"
+      ],
+      "ldcr_table_exists": true,
+      "uk_ldcr_pending_project": {
+        "columns": [
+          "pending_project_id"
+        ],
+        "unique": true
+      },
+      "col_pending_project_id": true,
+      "col_version": true,
+      "duplicate_pending_rows": [],
+      "column_rules": [
+        {
+          "table": "gate_arbitrations",
+          "column": "decision",
+          "state": "N/A(列缺失)",
+          "why": "WB-17-1: NULL=待裁中间态（openArbitration 预落行），2026-09-08 ALTER 后必须可 NULL"
+        },
+        {
+          "table": "gate_arbitrations",
+          "column": "arbitrator_type",
+          "state": "N/A(列缺失)",
+          "why": "p254 契约：仲裁人类型必填"
+        },
+        {
+          "table": "launch_date_change_requests",
+          "column": "version",
+          "state": "OK",
+          "actual": {
+            "is_nullable": "NO",
+            "type": "int"
+          },
+          "why": "项1b 乐观锁"
+        },
+        {
+          "table": "launch_date_change_requests",
+          "column": "pending_project_id",
+          "state": "OK",
+          "actual": {
+            "is_nullable": "YES",
+            "type": "bigint"
+          },
+          "why": "项1a 生成列（生成列核验见 check_column_rules 的 EXTRA 分支）"
+        }
+      ],
+      "domain_rules": [
+        {
+          "table": "gate_arbitrations",
+          "column": "decision",
+          "state": "N/A(表不存在)"
+        },
+        {
+          "table": "gate_arbitrations",
+          "column": "arbitrator_type",
+          "state": "N/A(表不存在)"
+        },
+        {
+          "table": "contributions",
+          "column": "status",
+          "state": "N/A(表不存在)"
+        },
+        {
+          "table": "contributions",
+          "column": "leader_decision",
+          "state": "N/A(表不存在)"
+        }
+      ]
+    }
+  ],
+  "grantRules": [
+    {
+      "db": "ipd_dev",
+      "table": "gate_arbitrations",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "db": "ipd_dev",
+      "table": "kpi_shared_confirms",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "db": "ipd_dev",
+      "table": "contributions",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "db": "ipd_dev",
+      "table": "contribution_versions",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "sop_template_instances",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "post_launch_reviews",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "switching_acceptance",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "project_score_records",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "project_score_tasks",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "receipt_ledger",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "db": "ipd_dev",
+      "table": "gate_review_observers",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "correction_logs",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "kpi_rule_snapshots",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "ipd_business_config",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "ipd_business_config_versions",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "negative_feedbacks",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "db": "ipd_dev",
+      "table": "launch_date_change_requests",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "db": "ipd_dev",
+      "table": "notification_events",
+      "user": "ipd_app@127.0.0.1",
+      "state": "MISSING(无表级白名单行)",
+      "granted": []
+    },
+    {
+      "db": "ipd_dev",
+      "table": "coefficient_change_requests",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "db": "ipd_dev",
+      "table": "project_cert_items",
+      "user": "ipd_app@127.0.0.1",
+      "state": "FULL",
+      "granted": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    }
+  ],
+  "verdict": [
+    {
+      "db": "ipd_dev",
+      "项5_idx_sa_project_code": "APPLIED",
+      "项1a_uk_ldcr_pending_project": "APPLIED",
+      "项1b_version列": "APPLIED",
+      "双签表存在": true,
+      "列约束": "OK 4/4",
+      "值域": "OK 4/4"
+    },
+    {
+      "db": "ipd_restore",
+      "项5_idx_sa_project_code": "APPLIED",
+      "项1a_uk_ldcr_pending_project": "APPLIED",
+      "项1b_version列": "APPLIED",
+      "双签表存在": true,
+      "列约束": "OK 4/4",
+      "值域": "OK 4/4"
+    }
+  ],
+  "grantVerdict": "缺口 12/20: contribution_versions=MISSING(无表级白名单行); sop_template_instances=MISSING(无表级白名单行); post_launch_reviews=MISSING(无表级白名单行); switching_acceptance=MISSING(无表级白名单行); project_score_records=MISSING(无表级白名单行); project_score_tasks=MISSING(无表级白名单行); gate_review_observers=MISSING(无表级白名单行); correction_logs=MISSING(无表级白名单行); kpi_rule_snapshots=MISSING(无表级白名单行); ipd_business_config=MISSING(无表级白名单行); ipd_business_config_versions=MISSING(无表级白名单行); notification_events=MISSING(无表级白名单行)"
+}

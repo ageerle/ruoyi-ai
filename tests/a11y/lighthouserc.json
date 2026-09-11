@@ -1,0 +1,39 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "node ./serve-fixture.mjs",
+      "startServerReadyPattern": "fixture-server-ready",
+      "startServerReadyTimeout": 60000,
+      "startServerUncaughtRegex": "^Error",
+      "url": [
+        "http://127.0.0.1:4173/login",
+        "http://127.0.0.1:4173/workspace",
+        "http://127.0.0.1:4173/project-list",
+        "http://127.0.0.1:4173/gate-review",
+        "http://127.0.0.1:4173/dashboard"
+      ],
+      "numberOfRuns": 1,
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["accessibility", "best-practices", "seo"],
+        "skipAudits": [
+          "uses-http2",
+          "is-on-https",
+          "redirects-http",
+          "external-anchors-use-rel-noopener"
+        ]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median" }],
+        "categories:best-practices": ["warn", { "minScore": 0.9, "aggregationMethod": "median" }],
+        "categories:seo": ["warn", { "minScore": 0.9, "aggregationMethod": "median" }],
+        "categories:performance": "off"
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

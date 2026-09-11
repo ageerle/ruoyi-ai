@@ -1,0 +1,15 @@
+对账完成。报告已落盘 `docs/ipd-系统说明/梳理-20260906/Agent-D-看板对账-20260906.md`（唯一写产物）。
+
+## Agent-D 摘要（125 卡对账）
+
+**总量**：漂移卡 **30** 张｜可转 done **14** 张｜仍需工作 **4** 张（inreview 内）｜维持 inreview 12 张
+
+- **U0 五卡判定**：MED-1/MED-2/QA-05-P1/AUD-GOV-01 可关；**SEC-NEW-MED-3 假闭环**——patch 改名 `.applied` 但 prod L64-65 实测仍 root/root，且守卫第 5/6 条已丢（高置信）
+- **漂移构成**：todo 侧 26 张（21 高置信：P0-7.4/P2-4.1/P2-5.1 复核已过应 done，P2-5.2 等 17 张应 inreview，P3-7.1 应 inprogress）+ inreview 侧 4 张翻卡未生效（补救包收口批 14:37 声称已翻 6 卡 done，15:10 快照未反映——MCP 失败同型复发）
+- **仍需工作**：SEC-NEW-MED-3（owner 手动 apply）｜PERF-P0-1 + QA-05-P3（修复代码在工作区回滚中丢失，HEAD grep 零命中，stash `47b52272` 或为恢复源）｜P2-7.2（HTTP 冒烟 PARTIAL+验收文档 untracked）
+- **最意外发现**：已复核翻 done 的三卡连同 P2-5.2/P1-4.4 的核心实现（GateReviewService、GateElementResultService、ProjectMemberService、OverdueReminderService + 5 个 AcceptanceTest）**全部 untracked 未入 git**——一次 clean/回滚即灭，归仓优先级高于一切翻卡
+- **29 汇总卡**：无一满足关闭条件，无“凭单测关闭”违规；问题相反——镜像 ⬜ 滞后低估（P1-9/P1-10/P2-3~7/P3-3/3-4/P4-1/2/3 实况均 ◐）
+- **校正清单**：报告第五节六批 50 行「卡号|当前|建议|证据|置信度」，主会话可直接执行；回写前须回读在线板（reviewer-qoder 三卡翻卡发生在快照后 2-30 分钟窗口内）
+- **陷阱提示**：双卡号命名空间实锤（commit f7474e4f"P2-5.1 合规卡"≠看板 P2-5.1；11c169db"P3-6.2"≠看板 P3-6.2），P3-1.2/P4-4.1 判定标低置信
+
+**置信度**：核心判定高（全部基于直接文件读/git 证据：git ls-files、yml 实读、commit stat、守卫源码 grep）；未跑 mvn test（只读约束），守卫红绿为静态推断。

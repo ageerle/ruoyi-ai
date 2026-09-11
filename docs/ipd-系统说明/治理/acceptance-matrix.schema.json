@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://ruoyi-ai.local/schemas/acceptance-matrix.schema.json",
+  "title": "IPD Acceptance Matrix (237 AC ↔ automation ↔ docs)",
+  "description": "ROOT-R4 P0-8 落地：237 条 AC ↔ 自动化测试 ↔ 文档三向关联的 SSOT。\n  - 9 必填字段：ac_id / category / title / docRef / unitTestClass / integrationTestPath / auditLog / status / owner\n  - 3 选填字段：linkedCommits / zkRef / notes\n  - status 枚举：covered / partial / blocked / manual / deprecated\n  - 升级阈值：partial+blocked 总和 ≤ 30%（owner 决策）",
+  "type": "object",
+  "required": ["version", "updated_at", "rows"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "语义化版本号。minor 递增=加行；major 递增=schema 变更"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 最后修订时间"
+    },
+    "owner_decisions_needed": {
+      "type": "object",
+      "description": "owner 决策项。生命周期二态：未决（有 blocker 提问、无 decision）/ 已决（有 decision + decided_by + decided_at + evidence_commit）。\n注意：本段由 docs-link-check.yml 的「AJV schema 强校验」步骤硬阻断，不是「仅提示」；旧 description 与实际门禁行为不符，已更正。\n决策闭环后 items 不删除，blocker 原文保留为历史记录。",
+      "properties": {
+        "open_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "派生值 = items 中无有效 decision 的项数。允许为 0（决策全部闭环）。一致性由 AcceptanceMatrixValidationTest 强校验，防手工填错。"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "topic"],
+            "properties": {
+              "id":              { "type": "string" },
+              "topic":           { "type": "string" },
+              "blocker":         { "type": "string", "description": "未决时的阻塞提问原文；决策闭环后保留为历史记录，不删除" },
+              "decided_by":      { "type": ["string", "null"] },
+              "decided_at":      { "type": ["string", "null"], "description": "决策日期 YYYY-MM-DD" },
+              "decision":        { "type": ["string", "null"], "description": "决策结论。为非空字符串即视为该项已闭环" },
+              "evidence_commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$" },
+              "evidence_doc":    { "type": ["string", "null"] },
+              "evidence_report": { "type": ["string", "null"] },
+              "first_run_stats": { "type": ["string", "null"] },
+              "verified":        { "type": ["string", "null"] }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": ["decision"],
+                  "properties": { "decision": { "type": "string", "minLength": 1 } }
+                },
+                "then": { "required": ["decided_by", "decided_at", "evidence_commit"] },
+                "else": { "required": ["blocker"] }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 0,
+      "description": "237 条 AC；本会话首版仅入 10 条样板，剩余 227 条待 owner 决策后批量导入",
+      "items": {
+        "type": "object",
+        "required": [
+          "ac_id", "category", "title", "docRef", "unitTestClass", "status", "owner"
+        ],
+        "properties": {
+          "ac_id": {
+            "type": "string",
+            "pattern": "^AC-(INC|EXT|MIN|AUTH|AUD|ENV|GATE|GLB|CFG|PROD)-\\d+[a-z]?$",
+            "description": "AC 编号前缀（与 docs/ipd-系统说明/验收/AC-真值回对矩阵-2026-09-05-237条对账.md 对齐）：\n                INC=内部业务链 / EXT=外部 ZK-IPD 参考 / MIN=内部管理\n                AUTH=认证授权 / AUD=审计 / ENV=环境运维 / GATE=Gate 评审\n                GLB=全局约束（G-01~G-11） / CFG=配置 / PROD=产品/项目"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["INC", "EXT", "MIN", "AUTH", "AUD", "ENV", "GATE", "GLB", "CFG", "PROD"],
+            "description": "AC 分类，必须与 ac_id 前缀一致"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 4,
+            "description": "AC 标题（一句话业务规则）"
+          },
+          "docRef": {
+            "type": "string",
+            "description": "AC 原始描述所在文档（相对路径，docs/ 开头）"
+          },
+          "unitTestClass": {
+            "type": ["string", "null"],
+            "pattern": "^[a-z][A-Za-z0-9_.]*(#[A-Za-z0-9_]+)?$",
+            "description": "Java 单测类 FQN，可带 #方法名 精确到用例（现存 10/10 行均为「类FQN#方法名」形式）；如缺测试填 null，status 必须为 blocked/manual。校验方须先按 # 拆分再解析物理路径，并核对方法在测试源中真实存在。"
+          },
+          "integrationTestPath": {
+            "type": ["string", "null"],
+            "description": "集成测试路径（E2E / Controller 端到端）；可缺省 null"
+          },
+          "auditLog": {
+            "type": ["string", "null"],
+            "description": "对应 audit_log 业务类型（与 Sec02AuditCatalog 一致）；可缺省 null"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["covered", "partial", "blocked", "manual", "deprecated"],
+            "description": "covered=单测覆盖+已闭环 / partial=部分覆盖 / blocked=外部依赖阻塞 / manual=人工验收 / deprecated=已废弃"
+          },
+          "owner": {
+            "type": "string",
+            "enum": ["pm", "rd", "qa", "ops", "owner"],
+            "description": "AC owner 角色（pm/rd/qa/ops/owner）"
+          },
+          "linkedCommits": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+            "description": "闭环证据 commit（≥1 for covered）"
+          },
+          "zkRef": {
+            "type": ["string", "null"],
+            "description": "ZK-IPD 业务参考对照条目（line 范围或 ZK-NN 编号）"
+          },
+          "notes": {
+            "type": "string",
+            "description": "失败模式 / 阻塞原因 / owner 待决项"
+          }
+        }
+      }
+    }
+  }
+}

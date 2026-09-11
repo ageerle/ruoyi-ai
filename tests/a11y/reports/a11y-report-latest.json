@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-09-07T08:36:13.442Z",
+  "base": "http://127.0.0.1:4173",
+  "mode": "puppeteer",
+  "pages": [
+    {
+      "name": "login",
+      "url": "http://127.0.0.1:4173/login",
+      "status": 200,
+      "violations": []
+    },
+    {
+      "name": "workbench",
+      "url": "http://127.0.0.1:4173/workspace",
+      "status": 200,
+      "violations": []
+    },
+    {
+      "name": "project-list",
+      "url": "http://127.0.0.1:4173/project-list",
+      "status": 200,
+      "violations": []
+    },
+    {
+      "name": "gate-review",
+      "url": "http://127.0.0.1:4173/gate-review",
+      "status": 200,
+      "violations": []
+    },
+    {
+      "name": "dashboard",
+      "url": "http://127.0.0.1:4173/dashboard",
+      "status": 200,
+      "violations": []
+    }
+  ],
+  "totals": {
+    "violations": 0,
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0
+  }
+}

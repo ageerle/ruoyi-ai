@@ -1,0 +1,401 @@
+---
+source: file:///Users/mac/Documents/ruoyi-ai/ruoyi-admin/src/main/resources/application.yml
+collected: 2026-09-04
+published: 2026-09-04
+topic: project-skeleton
+---
+
+# application.yml
+
+```
+yaml
+# 开发环境配置
+server:
+  # 服务器的HTTP端口，默认为6039
+  port: 6039
+  servlet:
+    # 应用的访问路径
+    context-path: /
+  # undertow 配置
+  undertow:
+    # HTTP post内容的最大大小。当值为-1时，默认值为大小是无限的
+    max-http-post-size: -1
+    # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
+    # 每块buffer的空间大小,越小的空间被利用越充分
+    buffer-size: 512
+    # 是否分配的直接内存
+    direct-buffers: true
+    threads:
+      # 设置IO线程数, 它主要执行非阻塞的任务,它们会负责多个连接, 默认设置每个CPU核心一个线程
+      io: 8
+      # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
+      worker: 256
+
+# Harness 命令仍受工作区租约、执行计划和工具审批约束；开启后才能验证并运行生成的网站。
+coding:
+  harness:
+    budget:
+      # 模型回合上限；工具额度按每回合最多 3 次保持同比例，避免工具预算先于回合耗尽。
+      max-iterations: 200
+      max-tool-calls: 600
+    tools:
+      execute-process:
+        enabled: true
+
+--- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
+chat:
+  default-model: deepseek-v4-flash
+
+captcha:
+  # 是否启用验证码校验
+  enable: false
+  # 验证码类型 math 数组计算 char 字符验证
+  type: MATH
+  # line 线段干扰 circle 圆圈干扰 shear 扭曲干扰
+  category: CIRCLE
+  # 数字验证码位数
+  numberLength: 1
+  # 字符验证码长度
+  charLength: 4
+
+# 日志配置
+logging:
+  level:
+    org.ruoyi: ${LOGGING_LEVEL_ORG_RUOYI:info}
+    org.springframework: warn
+    org.mybatis.spring.mapper: error
+    org.apache.fury: warn
+  config: classpath:logback-plus.xml
+
+# 用户配置
+user:
+  password:
+    # 密码最大错误次数
+    maxRetryCount: 5
+    # 密码锁定时间（默认10分钟）
+    lockTime: 10
+
+# Spring配置
+spring:
+  application:
+    name: ruoyi-ai
+  # ⚠️ 禁用 Spring Boot 的 Neo4j 自动配置
+  # 默认情况下，如果类路径上存在 neo4j-java-driver，Spring Boot 会尝试自动配置
+  # 这会导致应用在启动时尝试连接到 Neo4j，即使我们没有需要它
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration
+  threads:
+    # 开启虚拟线程 仅jdk21可用
+    virtual:
+      enabled: false
+  task:
+    execution:
+      # 从 springboot 3.5 开始 spring自带线程池
+      # 不再需要 AsyncConfig与ThreadPoolConfig 可直接注入线程池使用
+      thread-name-prefix: async-
+      # 由spring自己初始化线程池
+      mode: force
+  # 资源信息
+  messages:
+    # 国际化资源文件路径
+    basename: i18n/messages
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  # 文件上传
+  servlet:
+    multipart:
+      # 单个文件大小
+      max-file-size: 10MB
+      # 设置总上传的文件大小
+      max-request-size: 20MB
+  mvc:
+    # 设置静态资源路径 防止所有请求都去查静态资源
+    static-path-pattern: /static/**
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
+  jackson:
+    # 日期格式化
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      # 格式化输出
+      indent_output: false
+      # 忽略无法转换的对象
+      fail_on_empty_beans: false
+    deserialization:
+      # 允许对象忽略json中不存在的属性
+      fail_on_unknown_properties: false
+
+# Sa-Token配置
+sa-token:
+  # token名称 (同时也是cookie名称)
+  token-name: Authorization
+  # 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
+  is-share: false
+  # jwt秘钥
+  jwt-secret-key: abcdefghijklmnopqrstuvwxyz
+
+# security配置
+security:
+  # 排除路径
+  excludes:
+    - /*.html
+    - /**/*.html
+    - /**/*.css
+    - /**/*.js
+    - /favicon.ico
+    - /error
+    - /*/api-docs
+    - /*/api-docs/**
+    - /warm-flow-ui/config
+    - /workflow/run
+# 多租户配置
+tenant:
+  # 是否开启
+  enable: true
+  # 排除表
+  excludes:
+    - sys_menu
+    - sys_tenant
+    - sys_tenant_package
+    - sys_role_dept
+    - sys_role_menu
+    - sys_user_post
+    - sys_user_role
+    - sys_client
+    - sys_oss_config
+    - flow_spel
+    # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
+    - trace_run
+    - trace_node
+
+# MyBatisPlus配置
+# https://baomidou.com/config/
+mybatis-plus:
+  # 自定义配置 是否全局开启逻辑删除 关闭后 所有逻辑删除功能将失效
+  enableLogicDelete: true
+  # 多包名使用 例如 org.ruoyi.**.mapper,org.xxx.**.mapper
+  mapperPackage: org.ruoyi.**.mapper
+  # 对应的 XML 文件位置
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: org.ruoyi.**.domain
+  global-config:
+    dbConfig:
+      # 主键类型
+      # AUTO 自增 NONE 空 INPUT 用户输入 ASSIGN_ID 雪花 ASSIGN_UUID 唯一 UUID
+      # 如需改为自增 需要将数据库表全部设置为自增
+      idType: ASSIGN_ID
+
+# 数据加密
+mybatis-encryptor:
+  # 是否开启加密
+  enable: false
+  # 默认加密算法
+  algorithm: BASE64
+  # 编码方式 BASE64/HEX。默认BASE64
+  encode: BASE64
+  # 安全秘钥 对称算法的秘钥 如：AES，SM4
+  password:
+  # 公私钥 非对称算法的公私钥 如：SM2，RSA
+  publicKey:
+  privateKey:
+
+# api接口加密
+api-decrypt:
+  # 是否开启全局接口加密
+  enabled: false
+  # AES 加密头标识
+  headerFlag: encrypt-key
+  # 响应加密公钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
+  # 对应前端解密私钥 MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAmc3CuPiGL/LcIIm7zryCEIbl1SPzBkr75E2VMtxegyZ1lYRD+7TZGAPkvIsBcaMs6Nsy0L78n2qh+lIZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=
+  publicKey: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJnNwrj4hi/y3CCJu868ghCG5dUj8wZK++RNlTLcXoMmdZWEQ/u02RgD5LyLAXGjLOjbMtC+/J9qofpSGTKSx/MCAwEAAQ==
+  # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
+  # 对应前端加密公钥 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ==
+  privateKey: MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAqhHyZfSsYourNxaY7Nt+PrgrxkiA50efORdI5U5lsW79MmFnusUA355oaSXcLhu5xxB38SMSyP2KvuKNPuH3owIDAQABAkAfoiLyL+Z4lf4Myxk6xUDgLaWGximj20CUf+5BKKnlrK+Ed8gAkM0HqoTt2UZwA5E2MzS4EI2gjfQhz5X28uqxAiEA3wNFxfrCZlSZHb0gn2zDpWowcSxQAgiCstxGUoOqlW8CIQDDOerGKH5OmCJ4Z21v+F25WaHYPxCFMvwxpcw99EcvDQIgIdhDTIqD2jfYjPTY8Jj3EDGPbH2HHuffvflECt3Ek60CIQCFRlCkHpi7hthhYhovyloRYsM+IS9h/0BzlEAuO0ktMQIgSPT3aFAgJYwKpqRYKlLDVcflZFCKY7u3UP8iWi1Qw0Y=
+
+springdoc:
+  api-docs:
+    # 是否开启接口文档
+    enabled: true
+  info:
+    # 标题
+    title: '标题：ruoyi-ai管理系统_接口文档'
+    # 描述
+    description: '描述：用于管理集团旗下公司的人员信息,具体包括XXX,XXX模块...'
+    # 版本
+    version: '版本号: ${project.version}'
+    # 作者信息
+    contact:
+      name:  ageerle
+      email: ageerle@163.com
+      url: https://gitee.com/ageerle/ruoyi-ai
+
+  #这里定义了两个分组，可定义多个，也可以不定义
+  group-configs:
+    - group: 1.演示模块
+      packages-to-scan: org.ruoyi.demo
+    - group: 2.通用模块
+      packages-to-scan: org.ruoyi.web
+    - group: 3.系统模块
+      packages-to-scan: org.ruoyi.system
+    - group: 4.代码生成模块
+      packages-to-scan: org.ruoyi.generator
+    - group: 5.工作流模块
+      packages-to-scan: org.ruoyi.workflow
+    - group: 6.MCP模块
+      packages-to-scan: org.ruoyi.mcp
+
+# 防止XSS攻击
+xss:
+  # 过滤开关
+  enabled: true
+  # 排除链接
+  excludeUrls:
+    - /system/notice
+
+--- # 链路追踪配置
+trace:
+  # 是否启用链路追踪，默认 true
+  # 关闭后所有埋点代码会直接透传业务逻辑，不写库、不创建上下文，零性能开销
+  enabled: true
+  payload:
+    # 错误信息最大字符长度（格式: "异常类名: 异常消息"），超过部分会被截断丢弃
+    max-error-length: 1000
+
+--- # 分布式锁 lock4j 全局配置
+lock4j:
+  # 获取分布式锁超时时间，默认为 3000 毫秒
+  acquire-timeout: 3000
+  # 分布式锁的超时时间，默认为 30 秒
+  expire: 30000
+
+--- # Actuator 监控端点的配置项
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: ALWAYS
+    logfile:
+      external-file: ./logs/sys-console.log
+
+--- # 默认/推荐使用sse推送
+sse:
+  enabled: true
+  path: /resource/sse
+
+--- # websocket
+websocket:
+  # 如果关闭 需要和前端开关一起关闭
+  enabled: false
+  # 路径
+  path: /resource/websocket
+  # 设置访问源地址
+  allowedOrigins: '*'
+
+--- # 演示模式配置
+demo:
+  # 是否开启演示模式（开启后所有写操作将被拦截）
+  enabled: true
+  # 提示消息
+  message: "演示模式，不允许操作"
+  # 排除的路径（这些路径不受演示模式限制）
+  excludes:
+    - /login
+    - /logout
+    - /register
+    - /captcha/**
+    - /auth/**
+    - /chat/send
+    - /system/session/**
+    - /system/message/**
+    - /system/attach/**
+    - /system/fragment/**
+    - /system/info/**
+--- # warm-flow工作流配置
+warm-flow:
+  # 是否开启工作流，默认true
+  enabled: true
+  # 是否开启设计器ui
+  ui: true
+  # 是否显示流程图顶部文字
+  top-text-show: true
+  # 是否渲染节点悬浮提示，默认true
+  node-tooltip: true
+  # 默认Authorization，如果有多个token，用逗号分隔
+  token-name: ${sa-token.token-name},clientid
+
+# 向量库配置
+vector-store:
+  # 向量存储类型 可选(weaviate/milvus/qdrant)
+  # 如需修改向量库类型，请修改此配置值!
+  # 注意：需与 docker-compose 实际部署的向量库保持一致（当前 compose 内置 weaviate，映射端口 28080）
+  type: weaviate
+  # Weaviate配置
+  weaviate:
+    protocol: http
+    host: 127.0.0.1:28080
+    classname: LocalKnowledge
+  # Milvus配置
+  milvus:
+    url: http://localhost:19530
+    collectionname: LocalKnowledge
+  # Qdrant配置
+  qdrant:
+    host: localhost
+    port: 6334
+    collectionname: LocalKnowledge
+    api-key:
+    use-tls: false
+
+# 流程编排扩展节点
+workflow:
+  web-search:
+    zhipu:
+      # 推荐通过环境变量注入；为空时回退到模型管理中的 zhipu 厂商密钥
+      api-key: ${ZAI_API_KEY:}
+      base-url: ${ZHIPU_WEB_SEARCH_BASE_URL:https://open.bigmodel.cn/api/paas/v4/}
+      connect-timeout: ${ZHIPU_WEB_SEARCH_CONNECT_TIMEOUT:10}
+      read-timeout: ${ZHIPU_WEB_SEARCH_READ_TIMEOUT:30}
+
+# 短剧成片合成
+short-drama:
+  composition:
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    ffprobe-path: ${FFPROBE_PATH:ffprobe}
+    fps: ${SHORT_DRAMA_COMPOSITION_FPS:30}
+    audio-sample-rate: ${SHORT_DRAMA_COMPOSITION_AUDIO_SAMPLE_RATE:48000}
+    video-codec: ${SHORT_DRAMA_COMPOSITION_VIDEO_CODEC:libx264}
+    audio-codec: ${SHORT_DRAMA_COMPOSITION_AUDIO_CODEC:aac}
+    preset: ${SHORT_DRAMA_COMPOSITION_PRESET:medium}
+    crf: ${SHORT_DRAMA_COMPOSITION_CRF:20}
+    audio-bitrate: ${SHORT_DRAMA_COMPOSITION_AUDIO_BITRATE:192k}
+    max-clips: ${SHORT_DRAMA_COMPOSITION_MAX_CLIPS:100}
+    max-transition-seconds: ${SHORT_DRAMA_COMPOSITION_MAX_TRANSITION_SECONDS:2.0}
+    minimum-output-bytes: ${SHORT_DRAMA_COMPOSITION_MINIMUM_OUTPUT_BYTES:1024}
+    max-process-output-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_PROCESS_OUTPUT_BYTES:1048576}
+    max-source-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_SOURCE_BYTES:536870912}
+    max-total-source-bytes: ${SHORT_DRAMA_COMPOSITION_MAX_TOTAL_SOURCE_BYTES:2147483648}
+    probe-timeout: ${SHORT_DRAMA_COMPOSITION_PROBE_TIMEOUT:30s}
+    process-timeout: ${SHORT_DRAMA_COMPOSITION_PROCESS_TIMEOUT:30m}
+    job-stale-after: ${SHORT_DRAMA_COMPOSITION_JOB_STALE_AFTER:45m}
+    watermark-font-file: ${SHORT_DRAMA_COMPOSITION_WATERMARK_FONT_FILE:}
+    worker-core-size: ${SHORT_DRAMA_COMPOSITION_WORKER_CORE_SIZE:1}
+    worker-max-size: ${SHORT_DRAMA_COMPOSITION_WORKER_MAX_SIZE:2}
+    worker-queue-capacity: ${SHORT_DRAMA_COMPOSITION_WORKER_QUEUE_CAPACITY:8}
+    storage-mode: ${SHORT_DRAMA_COMPOSITION_STORAGE_MODE:local}
+    local-output-directory: ${SHORT_DRAMA_COMPOSITION_LOCAL_OUTPUT_DIRECTORY:logs/short-drama-compositions}
+    download:
+      connect-timeout: ${SHORT_DRAMA_DOWNLOAD_CONNECT_TIMEOUT:30s}
+      call-timeout: ${SHORT_DRAMA_DOWNLOAD_CALL_TIMEOUT:10m}
+      max-redirects: ${SHORT_DRAMA_DOWNLOAD_MAX_REDIRECTS:5}
+      # 生产环境建议配置为视频供应商或 OSS/CDN 域名，多个值用逗号分隔。
+      allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_ALLOWED_HOSTS:}
+      fake-ip-allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_FAKE_IP_ALLOWED_HOSTS:atlas-media.oss-us-west-1.aliyuncs.com}
+
+```

@@ -21,7 +21,10 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
-.claude
+# .claude/ 项目级配置（hook / agent / skill / settings.json）保留入库
+# 仅忽略本地 override（settings.local.json 与本地缓存）
+/.claude/settings.local.json
+/.claude/flow/
 .github
 !.github/
 !.github/workflows/
@@ -47,8 +50,15 @@ nbdist/
 *.log.gz
 *.xml.versionsBackup
 *.swp
-data/
+# 只忽略仓库根本地的 agent 数据目录；勿用无限定的 data/ —— 曾误吞
+# ruoyi-modules/ruoyi-aiflow/.../workflow/data/*.java 等真实源码（新增文件会静默不入版本库）
+/data/
 logs/
+
+# OS / Python 缓存垃圾
+.DS_Store
+__pycache__/
+*.pyc
 
 !*/build/*.java
 !*/build/*.html
@@ -57,3 +67,53 @@ logs/
 .flattened-pom.xml
 /.claude/settings.local.json
 /docs/docker/milvus/volumes/
+
+# Ruflo local secrets and runtime data
+.env
+.env.local
+.env.*.local
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/sessions/
+.claude-flow/agents/
+.claude-flow/swarm/
+.claude-flow/daemon.pid
+
+# Codex local configuration
+.codex/
+# Claude Flow runtime data
+# Environment variables
+# Runtime state / swarm / daemon caches (not deliverables)
+.swarm/
+.cursor/
+.zvec-grep/
+ruvector.db
+.claude-flow/daemon-state.json
+.claude-flow/policy/state.json
+# Ruflo 运行时机器态（与 .claude-flow/.gitignore 声明 runtime 目录同一意图）；
+# 保留入库的只有 config.yaml / CAPABILITIES.md / .claude-flow/.gitignore 三个声明件
+.claude-flow/metrics/
+.claude-flow/security/
+.claude-flow/harness-active-policy.json
+.claude-flow/memory-package.json
+# 只指仓库根那个误建的嵌套空仓库；勿用无限定 ruoyi-ai/ —— 曾误吞 docs/docker/ruoyi-ai/** 交付件
+/ruoyi-ai/
+.agents/skills/
+.repowise/
+.repowise-workspace.yaml
+# 工具产物（非业务代码，owner 2026-09-05 第4项裁决=ignore）：
+# Repowise 生成的机器态索引与本仓绝对路径 MCP 配置，换机器/换会话即变脏
+/.repowise-workspace/
+/.mcp.json
+/.claude/CLAUDE.md
+/.vscode/
+tests/a11y/node_modules/
+tests/a11y/reports/a11y-report-2*
+
+# 本地 agent 运行时数据库与配置备份（非交付件）
+node_modules/
+agentdb.rvf
+agentdb.rvf.lock
+.claude/settings.json.bak
+.claude/settings.json.proposed
+.claude/settings.json.*.bak

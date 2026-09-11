@@ -49,6 +49,19 @@ coding:
           # 仅接受 evaluator 批准的本地 sha256:<64 hex> image ID，永不 pull/build。
           image: ${CODING_HARNESS_SANDBOX_IMAGE:}
 
+--- # websocket
+websocket:
+  # 如果关闭 需要和前端开关一起关闭
+  enabled: false
+  # 路径
+  path: /resource/websocket
+  # 设置访问源地址
+  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
+  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
+  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
+  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
+  allowedOrigins: ''
+
 --- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
 chat:
   default-model: deepseek-v4-flash
@@ -81,7 +94,9 @@ logging:
     dev.langchain4j.mcp.client.transport.stdio.ProcessStderrHandler: "OFF"
     dev.langchain4j.mcp.transport.stdio.JsonRpcIoHandler: "ERROR"
     dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport: "OFF"
-  config: classpath:logback-plus.xml
+  # 使用 logback-spring.xml 以支持 <springProfile name="dev|prod"> 切换 root level
+  # （详见 logback-spring.xml 头部注释；logback-plus.xml 已废弃仅保留向后兼容）
+  config: classpath:logback-spring.xml
 
 # 用户配置
 user:
@@ -141,6 +156,60 @@ spring:
     deserialization:
       # 允许对象忽略json中不存在的属性
       fail_on_unknown_properties: false
+  # W20-B：邮件通道 SMTP（W15-C Notification 中间件化 EMAIL 真实化）
+  mail:
+    host: ${MAIL_HOST:smtp.localhost}
+    port: ${MAIL_PORT:25}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+  # 数据源连接池默认参数（QA-05-P1）
+  # 本项目数据源由 baomidou dynamic-datasource 创建，池参数生效路径是
+  # spring.datasource.dynamic.hikari.*（Spring Boot 原生 spring.datasource.hikari.* 不生效）。
+  # 此处为未显式配池的 profile（如 ipd-local）提供安全基线：
+  # 缺省时 HikariCP 默认 maximumPoolSize=10 + connectionTimeout=30s，并发>10 即排队雪崩。
+  # application-dev.yml / application-prod.yml 以同名键覆盖
+  # （dev 已升 80；prod 已 apply application-prod-batch4-bcrypt-hikari.patch 上浮至 80，超原 spec 60 — 同步自 SEC-HIGH-1 R9-BC-COST BCrypt cost=10 持连接时间×10 的压测；详见 Wave3-实施规格包修订 + SEC-AUD rebuttal）。
+  datasource:
+    dynamic:
+      # 性能分析插件（有性能损耗 不建议生产环境使用）
+      # PERF-P1-3 + SEC-NEW-MED-2: 父基线显式 false，所有 profile 默认走安全基线
+      # dev profile 需在 application-dev.yml 显式覆盖为 true（本地 SQL 调试用）
+      # prod profile 必须在 application-prod.yml 显式保持 false 或留空走本基线（hook 阻断由用户手动合并）
+      p6spy: false
+      hikari:
+        # 最大连接池数量
+        # QA-05-P1 P1-1（U0）连接预算约束：基座值必须满足「在跑实例数 × maxPoolSize ≤ max_connections」。
+        # 实测 max_connections=151，本仓常态 4 实例并存（16039/16044/16045/16050）；
+        # 锚点等式 4 × HikariCP 默认 10 = 40 ≡ processlist 中 ipd_app 的 40 个连接（且全为 Sleep 空闲态）
+        # → 常驻连接数由池预留决定、与业务负载无关（零负载也占满），故可据此确定性外推。
+        # 基座取 20（与 prod 现值一致）：4 × 20 = 80，53% 水位，留 71 个连接给压测/运维实例。
+        # 若取 40：4 × 40 = 160 > 151 → ERROR 1040 Too many connections，比池排队雪崩更严重
+        # （新实例根本起不来、运行中实例取不到连接，且 ipd_app 非 SUPER 拿不到 MySQL 保留连接）。
+        # dev 单实例压测若需更大池，请在 application-dev.yml 显式覆盖
+        # （dev 已按 SEC-HIGH-1 (R9-BC-COST) 升至 80，与 BCrypt cost=10 同步发车；多实例并存时注意 4×80>151 的 1040 预算）。
+        maxPoolSize: 20
+        # 最小空闲连接数量
+        minIdle: 10
+        # 配置获取连接等待超时的时间：5s 快速失败，避免高并发下 30s 排队雪崩
+        connectionTimeout: 5000
+        # 校验超时时间
+        validationTimeout: 5000
+        # 空闲连接存活最大时间，默认10分钟
+        idleTimeout: 600000
+        # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+        maxLifetime: 1800000
+        # 多久检查一次连接的活性
+        keepaliveTime: 30000
 
 # Sa-Token配置
 sa-token:
@@ -151,7 +220,37 @@ sa-token:
   # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
   is-share: false
   # jwt秘钥
-  jwt-secret-key: abcdefghijklmnopqrstuvwxyz
+  # 注意：application.yml 不再含任何默认密钥；所有 profile 必须通过 SA_TOKEN_JWT_SECRET_KEY 环境变量注入
+  # application-dev.yml 提供 dev profile 默认值（仅供本地启动）
+  # application-prod.yml 加 jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:}（无默认）覆盖（待 sensitive-field-guard hook 解除后由用户/CI 手动合并）
+  # R8 后台安全审查 credentials-exposure：原 commit a8a70ad9 把密钥明文写入 application.yml 历史已可见，需视为泄露并轮换
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:}
+
+# IPD 模块配置（SEC-HIGH-2：INITIAL_PWD 挪 env 注入）
+ipd:
+  security:
+    # Mock 初始化器（IpdMockDataInitializer）种子的初始密码来源
+    # 父基线无默认：prod profile 必须在 application-prod.yml 或环境变量 IPD_INITIAL_PWD 显式注入，缺失则 fail-fast
+    # dev profile 在 application-dev.yml 显式覆盖默认值方便本地启动
+    initial-password: ${IPD_INITIAL_PWD:}
+  notification:
+    # W20-B：Notification 中间件化真实通道配置
+    email:
+      # 发件人；空则用 spring.mail.username
+      from: ${IPD_NOTIFY_EMAIL_FROM:noreply@ipd.local}
+      # 收件人域后缀（Person 表无 email 字段，按 receiverId 合成 person-{id}@{domain}）
+      receiver-domain: ${IPD_NOTIFY_EMAIL_DOMAIN:ipd.local}
+      # 是否启用真实发送；false 时退化为 stub（仅日志），便于本地不接 SMTP
+      enabled: ${IPD_NOTIFY_EMAIL_ENABLED:false}
+      # 模板字符编码（默认 UTF-8 兼容中文）
+      encoding: UTF-8
+      # 主题前缀（便于邮件客户端筛选）
+      subject-prefix: "[IPD]"
+    websocket:
+      # 推送目的前缀（与 ruoyi-common-websocket 默认 /topic/ 兼容）
+      destination-prefix: /topic/notifications/
+      # 用户离线时是否落库（与 InApp 一致）：true=入 INBOX 兜底
+      offline-fallback-to-inbox: true
 
 # security配置
 security:
@@ -167,6 +266,8 @@ security:
     - /*/api-docs/**
     - /warm-flow-ui/config
     - /workflow/run
+    # IPD 独立认证体系（StpLogic "ipd"）——/api/v1/** 鉴权由 IpdPermission 自管，不走基线 sys_user 会话
+    - /api/v1/**
 # 多租户配置
 tenant:
   # 是否开启
@@ -186,7 +287,91 @@ tenant:
     # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
     - trace_run
     - trace_node
+    # IPD 单企业私有部署：26+2 张业务表统一排除租户过滤（表结构带 tenant_id 默认 000000，无多租户语义）
+    # 26 张基线表 + 2 张 Round 8 新增表（launch_date_change_requests / project_cert_items）
+    - persons
+    - product_groups
+    - products
+    - projects
+    - project_members
+    - project_stages
+    - stage_actions
+    - deliverables
+    - sop_templates
+    - gate_review_elements
+    - gate_element_results
+    - cert_templates
+    - gates
+    - gate_reviews
+    - requirements
+    - requirement_changes
+    - bid_invitations
+    - bid_responses
+    - deletion_requests
+    - handover_records
+    # Round 8 / R8-P0-1：补充 DDL 新增业务表
+    - bonus_allocations
+    - project_scores
+    - contributions
+    # R9 补登：person_roles / coefficient_change_requests / cms_content 为新 DDL 表，无多租户语义
+    - person_roles
+    - coefficient_change_requests
+    - cms_content
+    - negative_feedbacks
+    - contribution_versions
+    - requirement_pool
+    # R10 补登：绩效记录/任务、项目跟随、协同圈、Gate 仲裁等 DDL 新表（无多租户语义）
+    - project_score_records
+    - project_score_tasks
+    - project_followers
+    - project_circle_posts
+    - project_circle_comments
+    - gate_arbitrations
+    - ai_model_configs
+    - system_config_versions
+    - legacy_imports
+    - receipt_ledger
+    - audit_logs
+    - kpi_records
+    - kpi_shared_confirms
+    - allowance_ledgers
+    - bonus_pools
+    - ai_documents
+    - system_configs
+    # Round 8 新增（与上方基线表统一排除租户过滤）
+    - launch_date_change_requests
+    - project_cert_items
 
+    # R8-P0-1 补漏：person_roles / coefficient_change_requests / cms_content
+    - person_roles
+    - coefficient_change_requests
+    - cms_content
+    # ①②③（2026-09-05 晚）：审计链分配器锚表——单行 GLOBAL、无 tenant_id 列、无多租户语义；
+    # 不登记则多租户插件对其追加 tenant_id 过滤 → append 锁读不到锚行全断（与 chain_heads Java 同批上线）
+    - audit_log_chain_heads
+    # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
+    - notification_events
+    # AUD-02-FIX / R11（2026-09-07/08）：审计链与业务参数表——ipd_business_config(+versions) 存业务参数
+    # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers /
+    # switching_acceptance 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错
+    - ipd_business_config
+    - ipd_business_config_versions
+    - gate_review_observers
+    - switching_acceptance
+    # R15（2026-09-08）：c-batch DDL 新表补登（DDL 散落 docs/script/sql/update/2026-09-07/08）——
+    # 已于 2026-09-09 经 owner「以上全部都要完整执行」授权 apply 到 ipd_dev（c-batch-4 5 表 +
+    # products 2 列 + 表级 GRANT 登记件 2026-09-09-ipd-grant-c-batch-4-dml.sql）；
+    # 单企业私有部署，无多租户语义（缩进已由 6 格修正为 4 格对齐序列，避免 YAML 解析风险）
+    - post_launch_reviews
+    - sop_template_instances
+    - gate_waivers
+    - correction_logs
+    - rd_replacement_approvals
+    - rd_replacements
+    - multi_project_capacity_approvals
+    - kpi_shared_confirms
+    - kpi_rule_snapshots
+    - product_retirements
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
@@ -226,11 +411,13 @@ api-decrypt:
   # AES 加密头标识
   headerFlag: encrypt-key
   # 响应加密公钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
-  # 对应前端解密私钥 MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAmc3CuPiGL/LcIIm7zryCEIbl1SPzBkr75E2VMtxegyZ1lYRD+7TZGAPkvIsBcaMs6Nsy0L78n2qh+lIZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=
-  publicKey: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJnNwrj4hi/y3CCJu868ghCG5dUj8wZK++RNlTLcXoMmdZWEQ/u02RgD5LyLAXGjLOjbMtC+/J9qofpSGTKSx/MCAwEAAQ==
+  # 对应前端解密私钥（PEM 字面量已移除以避免 git 历史长期暴露——SEC-NEW-MED-4 Round 9）。
+  # 真值必须通过 ${API_DECRYPT_PRIVATE_KEY} 环境变量注入（见下方 privateKey 行）；
+  # 留空时即便 enabled=true 也会因空私钥启动失败（fail-fast 语义）。
+  publicKey: ${API_DECRYPT_PUBLIC_KEY:}
   # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
-  # 对应前端加密公钥 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ==
-  privateKey: MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAqhHyZfSsYourNxaY7Nt+PrgrxkiA50efORdI5U5lsW79MmFnusUA355oaSXcLhu5xxB38SMSyP2KvuKNPuH3owIDAQABAkAfoiLyL+Z4lf4Myxk6xUDgLaWGximj20CUf+5BKKnlrK+Ed8gAkM0HqoTt2UZwA5E2MzS4EI2gjfQhz5X28uqxAiEA3wNFxfrCZlSZHb0gn2zDpWowcSxQAgiCstxGUoOqlW8CIQDDOerGKH5OmCJ4Z21v+F25WaHYPxCFMvwxpcw99EcvDQIgIdhDTIqD2jfYjPTY8Jj3EDGPbH2HHuffvflECt3Ek60CIQCFRlCkHpi7hthhYhovyloRYsM+IS9h/0BzlEAuO0ktMQIgSPT3aFAgJYwKpqRYKlLDVcflZFCKY7u3UP8iWi1Qw0Y=
+  # 对应前端加密公钥 通过环境变量 API_DECRYPT_PRIVATE_KEY 注入；留空时即便 enabled=true 也会因空私钥启动失败
+  privateKey: ${API_DECRYPT_PRIVATE_KEY:}
 
 springdoc:
   api-docs:
@@ -292,14 +479,18 @@ lock4j:
   expire: 30000
 
 --- # Actuator 监控端点的配置项
+# SEC-NEW-MED-1: 父基线显式收窄到 health,info,metrics（避免暴露 env/heapdump/shutdown/threaddump 等敏感端点）
+# dev profile 在 application-dev.yml 显式覆盖为通配全部端点（本地调试便利）
+# prod profile 必须保持父基线或显式收窄（hook 阻断由用户手动合并）
 management:
   endpoints:
     web:
       exposure:
-        include: '*'
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: ALWAYS
+      # SEC-NEW-MED-1: show-details 从 ALWAYS 改 WHEN_AUTHORIZED（未授权用户只看到 UP/DOWN 状态，不暴露 DB/磁盘详情）
+      show-details: WHEN_AUTHORIZED
     logfile:
       external-file: ./logs/sys-console.log
 
@@ -308,19 +499,12 @@ sse:
   enabled: true
   path: /resource/sse
 
---- # websocket
-websocket:
-  # 如果关闭 需要和前端开关一起关闭
-  enabled: false
-  # 路径
-  path: /resource/websocket
-  # 设置访问源地址
-  allowedOrigins: '*'
 
 --- # 演示模式配置
 demo:
-  # 是否开启演示模式（开启后所有写操作将被拦截）
-  enabled: ${DEMO_ENABLED:false}
+  # R8-P0-2：默认关闭，避免误开启阻断全部 IPD 写操作；dev profile 如需演示模式请在 application-dev.yml 显式覆盖
+  # （upstream 曾 env 化 ${DEMO_ENABLED:false}，ProdConfigDeltaGuardTest 守卫要求字面 false：demo 误开会拦全部写链，不允许 env 注入旁路）
+  enabled: false
   # 提示消息
   message: "演示模式，不允许操作"
   # 排除的路径（这些路径不受演示模式限制）
@@ -336,6 +520,8 @@ demo:
     - /system/attach/**
     - /system/fragment/**
     - /system/info/**
+    # IPD 独立认证体系（与 security.excludes 对齐）：默认 dev profile 演示模式放行 IPD 写操作
+    - /api/v1/**
 --- # warm-flow工作流配置
 warm-flow:
   # 是否开启工作流，默认true

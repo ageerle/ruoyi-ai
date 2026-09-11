@@ -22,8 +22,10 @@ services:
     ports:
       - "23306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ruoyi-ai
+
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
+      MYSQL_DATABASE: ruoyi-ai-agent
+
       TZ: Asia/Shanghai
     volumes:
       - mysql-data:/var/lib/mysql
@@ -86,7 +88,7 @@ services:
       - "29090:9090"
     environment:
       MINIO_ROOT_USER: ruoyi
-      MINIO_ROOT_PASSWORD: ruoyi123
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9090"
@@ -107,7 +109,7 @@ services:
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_DRIVERCLASSNAME: com.mysql.cj.jdbc.Driver
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://mysql:3306/ruoyi-ai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: root
-      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: root
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       # Redis 配置
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379

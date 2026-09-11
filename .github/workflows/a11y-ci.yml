@@ -1,0 +1,187 @@
+# Wave21-A: A11y 自动化 CI（axe-core + lighthouse CI）
+# 触发：
+#   - PR 修改 .github/workflows/a11y-ci.yml 或 tests/a11y/**
+#   - push 到 main（修改上述路径）
+# 行为：
+#   - 默认 WARN（exit 0 + 报告归档），不阻断 PR（与 docs-link-check.yml 风格一致）
+#   - 可选 secret `STRICT_A11Y=1` 升级为 ERROR 阻断（owner 决策 P0-9 落地 30 天后启用）
+# 目标：
+#   - 默认扫前端独立仓库 ZK-IPD LIVE URL（http://127.0.0.1:4173），如不可达则降级到 fixture-server
+#   - 可通过 secret A11Y_TARGET_BASE_URL 覆盖（例如 GitHub Pages / staging URL）
+
+name: a11y-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/a11y-ci.yml'
+      - 'tests/a11y/**'
+  pull_request:
+    paths:
+      - '.github/workflows/a11y-ci.yml'
+      - 'tests/a11y/**'
+  workflow_dispatch:
+    inputs:
+      target_base_url:
+        description: 'A11Y_TARGET_BASE_URL override (e.g. https://ipd.example.com)'
+        required: false
+        default: ''
+
+env:
+  A11Y_TARGET_BASE_URL: ${{ secrets.A11Y_TARGET_BASE_URL || 'http://127.0.0.1:4173' }}
+  A11Y_FIXTURE_PORT: '4173'
+  A11Y_FAIL_ON_CRITICAL: ${{ secrets.STRICT_A11Y == '1' && '1' || '0' }}
+
+jobs:
+  axe-scan:
+    name: axe-core 扫描（5 个 IPD 核心页）
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 缓存 node_modules
+        uses: actions/cache@v4
+        with:
+          path: tests/a11y/node_modules
+          key: a11y-${{ runner.os }}-${{ hashFiles('tests/a11y/package.json') }}
+          restore-keys: |
+            a11y-${{ runner.os }}-
+
+      - name: 安装依赖
+        working-directory: tests/a11y
+        run: |
+          npm install --no-audit --no-fund --loglevel=error 2>&1 | tail -20
+
+      - name: 起 fixture-server（备用，远程不可达时使用）
+        working-directory: tests/a11y
+        run: |
+          node ./serve-fixture.mjs &
+          echo $! > /tmp/fixture-server.pid
+          # wait for ready
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:${A11Y_FIXTURE_PORT}/login > /dev/null 2>&1; then
+              echo "fixture-server ready"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: axe-core 扫描
+        working-directory: tests/a11y
+        env:
+          A11Y_TARGET_BASE_URL: ${{ env.A11Y_TARGET_BASE_URL }}
+          A11Y_FIXTURE_PORT: ${{ env.A11Y_FIXTURE_PORT }}
+          A11Y_MODE: jsdom
+        run: |
+          set +e
+          node ./axe-scan.mjs
+          RC=$?
+          set -e
+          echo "axe-scan 退出码: $RC"
+          # 默认 WARN：critical=0 + 任何 violations 都不阻断；STRICT_A11Y=1 才阻断
+          if [ "$RC" = "2" ] && [ "${{ env.A11Y_FAIL_ON_CRITICAL }}" = "1" ]; then
+            echo "::error::axe-core 检测到 critical 级别违规且 STRICT_A11Y=1，PR 阻断"
+            exit 1
+          fi
+          if [ "$RC" = "3" ]; then
+            echo "::error::axe-scan 自身故障（RC=3），PR 阻断"
+            exit 1
+          fi
+          echo "::warning::axe-scan WARN 模式完成（RC=$RC），报告见 reports/a11y-report-latest.json"
+
+      - name: 报告归档
+        if: always()
+        run: |
+          mkdir -p docs/ipd-系统说明/lint-reports/a11y
+          cp tests/a11y/reports/a11y-report-latest.json \
+             docs/ipd-系统说明/lint-reports/a11y/a11y-$(date -u +%Y-%m-%d).json 2>/dev/null || true
+          echo "## axe-core A11y 扫描结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 目标 URL: \`${A11Y_TARGET_BASE_URL}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 5 页：login / workbench / project-list / gate-review / dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "- 报告：\`docs/ipd-系统说明/lint-reports/a11y/a11y-*.json\`" >> $GITHUB_STEP_SUMMARY
+
+  lighthouse:
+    name: lighthouse CI（accessibility / best-practices / seo）
+    runs-on: ubuntu-latest
+    needs: axe-scan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 缓存 node_modules
+        uses: actions/cache@v4
+        with:
+          path: tests/a11y/node_modules
+          key: a11y-${{ runner.os }}-${{ hashFiles('tests/a11y/package.json') }}
+
+      - name: 安装依赖
+        working-directory: tests/a11y
+        run: |
+          npm install --no-audit --no-fund --loglevel=error 2>&1 | tail -20
+
+      - name: 跑 lighthouse CI（仅 5 个 a11y 关键页）
+        working-directory: tests/a11y
+        run: |
+          set +e
+          # 把 lighthouserc 的 url 替换为 fixture-server（CI 内自有静态服务，避免依赖远程）
+          npx --yes lhci autorun \
+            --config=./lighthouserc.json \
+            --collect.startServerCommand="node ./serve-fixture.mjs" \
+            --collect.url="http://127.0.0.1:${A11Y_FIXTURE_PORT}/login" \
+            --collect.url="http://127.0.0.1:${A11Y_FIXTURE_PORT}/workspace" \
+            --collect.url="http://127.0.0.1:${A11Y_FIXTURE_PORT}/project-list" \
+            --collect.url="http://127.0.0.1:${A11Y_FIXTURE_PORT}/gate-review" \
+            --collect.url="http://127.0.0.1:${A11Y_FIXTURE_PORT}/dashboard"
+          RC=$?
+          set -e
+          echo "lhci 退出码: $RC"
+          # accessibility < 90 → 阻断
+          if [ "$RC" != "0" ]; then
+            if [ "${{ secrets.STRICT_A11Y }}" = "1" ]; then
+              echo "::error::lighthouse 评分低于阈值且 STRICT_A11Y=1，PR 阻断"
+              exit 1
+            fi
+            echo "::warning::lighthouse WARN（RC=$RC），报告见 .lighthouseci/manifest.json"
+          fi
+
+      - name: 报告归档
+        if: always()
+        run: |
+          mkdir -p docs/ipd-系统说明/lint-reports/lighthouse
+          tar -czf docs/ipd-系统说明/lint-reports/lighthouse/lhci-$(date -u +%Y-%m-%d).tgz .lighthouseci 2>/dev/null || true
+          echo "## lighthouse CI 结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 阈值：accessibility ≥ 90 / best-practices ≥ 90 / seo ≥ 90" >> $GITHUB_STEP_SUMMARY
+          echo "- 报告：\`docs/ipd-系统说明/lint-reports/lighthouse/lhci-*.tgz\`" >> $GITHUB_STEP_SUMMARY
+
+  summary:
+    name: 总结
+    runs-on: ubuntu-latest
+    needs: [axe-scan, lighthouse]
+    if: always()
+    steps:
+      - name: 总结
+        run: |
+          echo "## A11y CI 总结" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| axe-scan | ${{ needs.axe-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| lighthouse | ${{ needs.lighthouse.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 默认 WARN 不阻断；owner 可设 \`STRICT_A11Y=1\` secret 升级 ERROR" >> $GITHUB_STEP_SUMMARY
+          echo "- 5 个核心页：login / workbench / project-list / gate-review / dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "- Wave21-A 落地，不动 src/** 与现有 3 个 workflow" >> $GITHUB_STEP_SUMMARY

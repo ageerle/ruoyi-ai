@@ -1,0 +1,58 @@
+# IPD 生产编排模板（2026-09-09 生产就绪 P0-6）
+# 用法：cp .env.example .env 后填真实值；DB 建议用外部托管 MySQL 8.0（本模板不内置 DB，
+# 生产库初始化见 docs/ipd-系统说明/治理/生产部署Runbook-20260909.md）。
+# 凭据一律走 .env（gitignore），禁入版本库（sensitive-field-guard 红线）。
+services:
+  backend:
+    build: .
+    image: ipd-backend:latest
+    restart: unless-stopped
+    ports:
+      - "16039:16039"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: ${IPD_DB_URL}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: ${IPD_DB_USER}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: ${IPD_DB_PASSWORD}
+      SA_TOKEN_JWT_SECRET_KEY: ${IPD_JWT_SECRET_KEY}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:16039/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    volumes:
+      - backend-logs:/app/logs
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    image: ipd-frontend:latest
+    # 前端镜像由 ruoyi-ipd-web 仓 apps/web-antd/Dockerfile 构建（nginx 托管 + /api 反代）
+    restart: unless-stopped
+    ports:
+      - "80:5666"
+    environment:
+      UPSTREAM_HOST: backend:16039
+    depends_on:
+      - backend
+
+volumes:
+  redis-data:
+  backend-logs:

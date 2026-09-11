@@ -1,0 +1,110 @@
+# Docs Link Check + Acceptance Matrix 校验
+# 触发：
+#   - PR 修改 docs/ipd-系统说明/** 或 ruoyi-modules/ruoyi-ipd/src/test/**
+#   - 每周日 02:00 Asia/Shanghai 跑全量回归
+# 行为：
+#   - 默认 WARN（exit 0 + 报告归档），不阻断 PR
+#   - 可选 secret `STRICT_DOCS_LINK=1` 升级为 ERROR 阻断（owner 决策 P0-9 落地 30 天后启用）
+
+name: docs-link-check
+
+on:
+  push:
+    paths:
+      - 'docs/ipd-系统说明/**'
+      - 'ruoyi-modules/ruoyi-ipd/src/test/**'
+      - '.github/workflows/docs-link-check.yml'
+      - '.claude/helpers/acceptance-matrix-validate.cjs'
+  pull_request:
+    paths:
+      - 'docs/ipd-系统说明/**'
+      - 'ruoyi-modules/ruoyi-ipd/src/test/**'
+  schedule:
+    # 每周日 02:00 Asia/Shanghai = 18:00 UTC Saturday
+    - cron: '0 18 * * 6'
+
+jobs:
+  validate-acceptance-matrix:
+    name: acceptance-matrix 双向校验
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 加载 acceptance-matrix.json + schema
+        run: |
+          test -f docs/ipd-系统说明/治理/acceptance-matrix.json \
+            || (echo "::error::acceptance-matrix.json 缺失" && exit 1)
+          test -f docs/ipd-系统说明/治理/acceptance-matrix.schema.json \
+            || (echo "::error::acceptance-matrix.schema.json 缺失" && exit 1)
+
+      - name: JSON 语法校验
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('docs/ipd-系统说明/治理/acceptance-matrix.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('docs/ipd-系统说明/治理/acceptance-matrix.schema.json'))"
+
+      - name: AJV schema 强校验
+        run: |
+          npm install --no-save ajv@8 ajv-formats@3 2>&1 | tail -5
+          node -e "
+            const Ajv = (require('ajv').default || require('ajv'));
+            const addFormats = (require('ajv-formats').default || require('ajv-formats'));
+            const fs = require('fs');
+            // validateSchema:false 跳过对 \$schema 字段的 meta-schema 校验（draft-07 关键字仍识别）
+            const ajv = new Ajv({ allErrors: true, strict: false, validateSchema: false });
+            addFormats(ajv);
+            const schema = JSON.parse(fs.readFileSync('docs/ipd-系统说明/治理/acceptance-matrix.schema.json'));
+            const data = JSON.parse(fs.readFileSync('docs/ipd-系统说明/治理/acceptance-matrix.json'));
+            const validate = ajv.compile(schema);
+            const ok = validate(data);
+            if (!ok) {
+              console.error('AJV errors:', JSON.stringify(validate.errors, null, 2));
+              process.exit(1);
+            }
+            console.log('AJV schema 校验通过');
+          "
+
+      - name: 双向引用校验（unitTestClass / docRef / linkedCommits / @DisplayName 反向）
+        run: |
+          # bash 默认 -e：node 返回 2 会当场终止步骤，WARN 分支永远走不到——同 a11y-ci.yml axe-scan 的包法
+          set +e
+          node .claude/helpers/acceptance-matrix-validate.cjs
+          RC=$?
+          set -e
+          echo "validate 退出码: $RC"
+          if [ "$RC" = "1" ]; then
+            echo "::error::acceptance-matrix 硬错误，PR 阻断"
+            if [ "${{ secrets.STRICT_DOCS_LINK }}" = "1" ]; then
+              exit 1
+            fi
+            echo "::warning::默认 WARN 模式（设 STRICT_DOCS_LINK=1 升级 ERROR）"
+          elif [ "$RC" = "2" ]; then
+            echo "::warning::acceptance-matrix 软警告（@DisplayName 反向未收录，见 OD-AM-01）"
+          fi
+
+      - name: 报告归档
+        if: always()
+        run: |
+          mkdir -p docs/ipd-系统说明/lint-reports
+          node .claude/helpers/acceptance-matrix-validate.cjs \
+            > docs/ipd-系统说明/lint-reports/docs-link-check-$(date -u +%Y-%m-%d).log 2>&1 || true
+          echo "报告已写入 docs/ipd-系统说明/lint-reports/docs-link-check-$(date -u +%Y-%m-%d).log"
+          ls -la docs/ipd-系统说明/lint-reports/ 2>/dev/null | tail -5
+
+  summary:
+    name: 总结
+    runs-on: ubuntu-latest
+    needs: validate-acceptance-matrix
+    if: always()
+    steps:
+      - name: 总结
+        run: |
+          echo "## acceptance-matrix 校验结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- validate job: ${{ needs.validate-acceptance-matrix.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- owner 决策项 4 条（OD-AM-01~04）见 docs/ipd-系统说明/治理/acceptance-matrix.json" >> $GITHUB_STEP_SUMMARY

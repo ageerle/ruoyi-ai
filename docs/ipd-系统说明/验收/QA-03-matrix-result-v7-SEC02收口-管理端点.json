@@ -1,0 +1,322 @@
+{
+ "head": "130fac38",
+ "ts": "1788648458",
+ "base": "http://localhost:16045",
+ "matrix": [
+  {
+   "name": "M1 audit-logs list 超管专属",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M2 audit-logs verify 链校验",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M3 audit-logs export 超管专属",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M4 audit-logs scope 角色范围(AC-AUD-04/05/06)",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M5 audit-logs export/scope 全内部角色",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M6 system-configs list 超管专属",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M7 system-configs read(allowance.capMultiplier) 全内部角色",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "RD": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M8 system-configs update(allowance.capMultiplier) 超管专属(原值回写零副作用)",
+   "cells": {
+    "ADMIN": {
+     "http": 200,
+     "code": 0,
+     "expect": "200",
+     "pass": true
+    },
+    "LEADER": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "RD": {
+     "http": 403,
+     "code": 30001,
+     "expect": "403",
+     "pass": true
+    },
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "401",
+     "pass": true
+    }
+   }
+  },
+  {
+   "name": "M9 coefficient-change-requests NOAUTH/非法body（DEF-2 探针，记录型）",
+   "cells": {
+    "NOAUTH": {
+     "http": 401,
+     "code": 20001,
+     "expect": "not500(记录)",
+     "pass": true
+    },
+    "ADMIN": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not500(记录)",
+     "pass": true
+    },
+    "MARKET": {
+     "http": 400,
+     "code": 10001,
+     "expect": "not500(记录)",
+     "pass": true
+    }
+   }
+  }
+ ],
+ "audit": {
+  "EXPORT_增量(M3+M5四角色应≥5)": 5,
+  "审计总行数增量": 5,
+  "verify链状态": "BROKEN",
+  "verify断裂数": 368,
+  "CONFIG更新审计(本轮)": "0"
+ },
+ "summary": {
+  "pass": 43,
+  "fail": 0
+ },
+ "scope": "SEC-02 收口补充矩阵：管理端点×5身份（业务62格见 v6 重跑）"
+}

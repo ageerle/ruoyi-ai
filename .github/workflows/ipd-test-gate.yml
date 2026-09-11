@@ -1,0 +1,108 @@
+# IPD 测试门禁：基线冻结 + 只挡新增红 + 静默跳过检测
+#
+# 为什么必须有这道门（2026-09-08 实证，均为本机实测非推断）：
+#   本仓既有 6 个 workflow 中唯一碰 Java 构建的是 ipd-compile-gate.yml，命令为
+#   `mvn -DskipTests test-compile` —— CI 只保证「能编译」，不保证「行为对」。后果：
+#     1) origin/main 上 1893 个测试有 21 红，CI 完全看不见；把 21 红推到 100 红，
+#        所有检查依旧全绿。
+#     2) ruoyi-modules/ruoyi-ipd/pom.xml 的 <testExcludes> 豁免了 5 个测试类
+#        （214 个 *Test.java 只编出 209 个 class）。它们不编译、不执行、一份报告不出，
+#        mvn 依旧 BUILD SUCCESS。豁免注释自称「兄弟会话在途编译错误，暂排除」
+#        「仅在 worktree 内追加，不影响 main 分支 HEAD 字节」，实际已随
+#        4feb8ec9 / 221f6c30 / f1ce2db7 进 main 并长期生效。
+#     3) 其中 3 条豁免的理由早已消解：实测撤销后编译通过、测试回归，净增 16 个测试
+#        （1893 → 1909），红数一条未增。剩下 2 条仍真编译失败，已显式登记豁免。
+#     4) 豁免掩盖了实现漂移：Api03AcceptanceTest 的 stub 打在 requireInternal() 上，
+#        而 Controller 在 SEC-AUTH-DEADLOCK 修复中已改调 requireInternalEvenIfPasswordScope()，
+#        stub 未命中 → actor 为 null → Mockito any(IpdActor.class) 不匹配 null →
+#        doThrow 失效 → 3 条「应返回 400」的反例静默返回 200，全成假红。
+#
+# 为什么不把 `mvn test` 直接设成硬阻断：
+#   21 条既有红会让所有 PR 立刻变红、冻结全部并行交付。故采用「基线冻结 + 只挡新增红」：
+#   既有红登记为已知债务逐条消，新增红当场阻断。基线文件 scripts/ci/ipd-test-red-baseline.txt。
+#   基线只允许单调收敛——修好一条就重跑 extract 覆盖，不得为过检往里加条目。
+#
+# 为什么门禁脚本自己要先被自测（step「门禁自测」）：
+#   护栏条件写反、阈值配错、或被后续改动悄悄削弱，表现同样是「检查通过」，
+#   与真的通过无法区分。只跑正向用例证明不了任何事：把 check 改成 `return 0`
+#   也能通过正向用例。故先跑 selftest（13 用例，含 10 条阻断分支），自测不绿则门禁无意义。
+
+name: ipd-test-gate
+
+on:
+  pull_request:
+    paths:
+      - '**/*.java'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - 'scripts/ci/ipd-test-red-baseline*'
+      - '.github/workflows/ipd-test-gate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.java'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - 'scripts/ci/ipd-test-red-baseline*'
+      - '.github/workflows/ipd-test-gate.yml'
+
+jobs:
+  test-gate:
+    name: mvn test + 红名单基线比对
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      # 先验门禁本身：13 个用例覆盖每一道阻断分支，任一不符即失败
+      - name: 门禁自测（护栏必须真的会拦）
+        shell: bash
+        run: python3 scripts/ci/ipd-test-red-baseline-selftest.py
+
+      # 分两步而非 `-pl ... -am test`：-am 会连带跑依赖模块的测试，
+      # 其失败噪音与耗时都与本门禁无关；先跳测装依赖，再只跑 IPD 模块。
+      - name: 装依赖模块到本地仓（跳测试）
+        shell: bash
+        run: mvn -B -ntp -DskipTests install -pl ruoyi-modules/ruoyi-ipd -am
+
+      # 显式清空：CI 虽是全新 checkout，但增量构建残留会让基线混入幽灵报告
+      # （本机实测曾混入 3 份上次跑的旧 XML，其中 2 个类的源文件已删除，
+      #   导致 total_tests 虚高 15）。脚本另有 mtime 离群检测兜底。
+      - name: 清空历史 surefire 报告
+        shell: bash
+        run: rm -rf ruoyi-modules/ruoyi-ipd/target/surefire-reports
+
+      # failure.ignore=true：让全部测试跑完并产出完整报告，红绿判定交给基线比对。
+      # 若在此处直接失败，就只能看到第一个错，看不到「新增了哪些红」。
+      - name: 跑 IPD 全量测试
+        shell: bash
+        run: mvn -B -ntp -pl ruoyi-modules/ruoyi-ipd test -Dmaven.test.failure.ignore=true
+
+      - name: 与红名单基线比对
+        shell: bash
+        run: |
+          set -uo pipefail
+          python3 scripts/ci/ipd-test-red-baseline.py check \
+            --baseline scripts/ci/ipd-test-red-baseline.txt
+
+      # 阻断时人工要看的就是这些 XML；if-no-files-found=error 兼作「测试确实跑过」的旁证
+      - name: 上传 surefire 报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipd-surefire-reports
+          path: ruoyi-modules/ruoyi-ipd/target/surefire-reports/
+          if-no-files-found: error
+          retention-days: 14

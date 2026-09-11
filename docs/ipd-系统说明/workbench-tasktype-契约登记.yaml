@@ -1,0 +1,178 @@
+# =====================================================================
+# IPD 工作台 taskType 数据源契约登记（B 批次机制 1，2026-09-08 立）
+# =====================================================================
+# 目的：防「写入侧与查询侧语义不对偶」（病根二）。17 类 taskType 每类一张契约卡，
+#   登记数据表、查询锚点、未办态表达、写入时机。聚合器实现与配套测试的取值
+#   必须与本登记一致；新增一类任务 = 先登记契约再写聚合器。
+# 一致性测试：ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/workbench/
+#   WorkbenchTaskContractDriftTest.java（17 类键集 == WorkbenchService.ALL_TASK_TYPES；
+#   已实现类的 taskType 字面量与聚合器源码一致；关键状态常量与登记值一致）。
+# 证据基础：2026-09-08 四路只读蜂群盘点（9 聚合器逐文件读源码 + 配套 Service
+#   写入路径 + 真库 DDL/数据探针），字段值以磁盘现态源码为准。
+# 已知死路（真库探针证实，待 owner 拍板修复方向，见
+#   docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md）：
+#   key_gate / strategic_change(LD+CC) / contribution_confirm 三类 4 卡的
+#   投递锚字段在写入路径下恒 NULL，真活卡永不投递（与 gate 仲裁卡恒空同构）。
+# =====================================================================
+
+meta:
+  authority: "spec 页03:165 权威 17 类枚举"
+  all_types_source: "WorkbenchService.ALL_TASK_TYPES（L44-49）"
+  write_timing_values:
+    ALLOCATE: "分配即落行（预建占位行，IS NULL / 状态值查待办）"
+    SUBMIT: "提交才落行（首查即带语义状态）"
+  anchor_values:
+    project_scope: "visibleProjects（按成员关系/超管全量，∩ ACTIVE 项目）"
+    assignee: "指派人全局直查（不经 visibleProjects，项目仅卡面展示）"
+    global_role: "全局按状态查 + 角色分流"
+
+# ------------------------- 已实现 9 类 -------------------------
+
+stage_sign:
+  implemented: true
+  aggregator: StageSignAggregator
+  table: stage_actions
+  write_timing: ALLOCATE        # 立项批量落 69 行（ProjectBootstrapService）+ 阶段推进补挂
+  anchor: project_scope
+  pending_expr: "status IN (NOT_STARTED, IN_PROGRESS, DELAYED) AND status NOT IN (DONE, NA)"
+  outer_status_filter: null     # 项目 ACTIVE 由 visibleProjects 前置保证
+  due_field: action.dueDate
+  owner_field: ownerRole        # WorkbenchPolicy.isMine 匹配
+  notes: "唯一使用 WorkbenchPolicy.OPEN_STATUSES/isMine 的聚合器"
+
+key_gate:
+  implemented: true
+  aggregator: KeyGateAggregator
+  table: gate_reviews           # ⋈ gates
+  write_timing: SUBMIT          # sign 落行即带 decision；无 decision=NULL 生产者
+  anchor: "project_scope ∩ reviewerId"
+  pending_expr: "decision IS NULL"
+  outer_status_filter: "gates.status = 'PENDING'"
+  due_field: "review.signDueAt 优先，回退 gate.signDueAt"
+  owner_field: reviewerId       # 卡 ownerRole=reviewerType
+  known_deadlock: "decision IS NULL 无写入路径（GateCreationService 写 'PENDING' 哨兵且缺 gateId）→ 真活 GR- 卡恒空（死路 A4）"
+  notes: "gates 侧双期限列 dueAt/signDueAt 口径分叉，聚合器只读 signDueAt"
+
+key_gate_arbitration:
+  implemented: true
+  aggregator: KeyGateArbitrationAggregator
+  table: gate_arbitrations      # ⋈ gates + projects 补查
+  write_timing: ALLOCATE        # openArbitration 预落组长 decision=NULL 待裁行（2026-09-08）
+  anchor: assignee              # arbitratorId 全局直查（真活修正：组长非项目成员也收卡）
+  pending_expr: "decision IS NULL"
+  outer_status_filter: "gates.status = 'REJECTED'（含 round==gate.currentRound 一致性防御）"
+  due_field: null               # 表无期限列，恒 normal
+  owner_field: arbitratorId     # 卡 ownerRole=arbitratorType
+  notes: "4 道防御（decision/REJECTED/round/项目 ACTIVE），2026-09-08 真活 9/9 PASS"
+
+deletion_review:
+  implemented: true
+  aggregator: DeletionReviewAggregator
+  table: deletion_requests
+  write_timing: SUBMIT          # submit 即落 status=LEADER_REVIEW
+  anchor: global_role           # SUPER_ADMIN→ADMIN_REVIEW / GROUP_LEADER→LEADER_REVIEW
+  pending_expr: "status IN ('LEADER_REVIEW', 'ADMIN_REVIEW')"
+  outer_status_filter: null
+  due_field: "按角色 adminDueAt / leaderDueAt"
+  owner_field: null             # 按角色分流，无个人锚
+  notes: "卡 ownerRole=null"
+
+handover:
+  implemented: true
+  aggregator: HandoverAggregator
+  table: handover_records
+  write_timing: ALLOCATE        # 发起移交即落 status=DRAFT
+  anchor: "project_scope ∩ 当事人（toPersonId 承接确认 / fromPersonId 跟进）"
+  pending_expr: "status IN ('DRAFT', 'CONFIRMED')"
+  outer_status_filter: null
+  due_field: null
+  owner_field: "toPersonId / fromPersonId"
+  notes: "双侧投卡"
+
+contribution_confirm:
+  implemented: true
+  aggregator: ContributionConfirmAggregator
+  table: contributions
+  write_timing: SUBMIT          # 双 PM 自评均完成 → DRAFT→SUBMITTED（leader_id 仍 NULL）
+  anchor: "project_scope ∩ leaderId"
+  pending_expr: "status = 'SUBMITTED'"
+  outer_status_filter: null
+  due_field: null
+  owner_field: leaderId
+  known_deadlock: "SUBMITTED 行 leader_id 恒 NULL（confirm 才回填且同时转 CONFIRMED）→ 真活 CT- 卡恒空（死路 A3）"
+
+strategic_change:
+  implemented: true
+  aggregator: StrategicChangeAggregator
+  table: "launch_date_change_requests ∪ coefficient_change_requests"
+  write_timing: ALLOCATE        # propose 即落 PENDING_SECOND / PENDING_LEADER（确认人 ID 不写）
+  anchor: "project_scope ∩ (confirmerId | leaderId)"
+  pending_expr: "LD: status='PENDING_SECOND' / CC: status='PENDING_LEADER'"
+  outer_status_filter: null
+  due_field: null
+  owner_field: "LD: confirmerId / CC: leaderId"
+  known_deadlock: "PENDING_SECOND 行 confirmer_id 恒 NULL、PENDING_LEADER 行 leader_id 恒 NULL（decide 才回填且同时离态）→ 真活 LD-/CC- 卡恒空（死路 A1/A2，真库现存 1 条在途 PENDING_SECOND 印证）"
+
+closeout:
+  implemented: true
+  aggregator: CloseoutAggregator
+  table: project_score_tasks
+  write_timing: ALLOCATE        # 定时扫描上市+30/90 日建 PENDING 行
+  anchor: "project_scope ∩ personId"
+  pending_expr: "targetType IN ('SELF_SCORING','LEADER_REVIEW') AND status='PENDING'"
+  outer_status_filter: null
+  due_field: task.dueAt
+  owner_field: personId
+  notes: "上市日期漂移 reschedule 重置 PENDING"
+
+kpi_fill:
+  implemented: true
+  aggregator: KpiFillAggregator
+  table: kpi_records
+  write_timing: ALLOCATE        # 保存草稿即落 status=EDITING
+  anchor: "project_scope ∩ personId ∩ 当月 period"
+  pending_expr: "status = 'EDITING' AND period = 当月"
+  outer_status_filter: null
+  due_field: null               # 月度截止由 kpi.monthlyDeadlineDay 配置，聚合器不读
+  owner_field: personId
+  notes: "DDL 注释 default 'DRAFT' 与代码 EDITING 漂移（无 CHECK 不挡落库，DDL 注释债）"
+
+# ------------------------- 未实现 8 类（PLANNED）-------------------------
+# 建模前须先过 docs/ipd-系统说明/缺表4类-14问澄清-20260908.md 的 owner 拍板
+
+waiver_review:
+  implemented: false
+  table: null                   # 待建（原型 gate_waivers 独立表）
+  notes: "域完全未建模；14 问澄清 Q1-Q3"
+
+rd_replacement:
+  implemented: false
+  table: null                   # 待定（原型双表 vs project_members 扩展，14 问 Q4-Q6）
+  notes: "域完全未建模"
+
+receipt_review:
+  implemented: false
+  table: receipt_ledger
+  notes: "域已建表但流程未贯通"
+
+retirement_review:
+  implemented: false
+  table: null                   # 待定（原型新表 vs 复用 deletion_requests，14 问 Q7-Q9）
+  notes: "域完全未建模"
+
+capacity_approval:
+  implemented: false
+  table: null                   # 待建（原型 multi_project_capacity_approvals，14 问 Q10-Q12）
+  notes: "域完全未建模；契约评审关联 BR-INC-13 是误判，实义为多项目备案"
+
+change_implementation:
+  implemented: false
+  notes: "域已建（变更请求表）但实施动作流程未贯通"
+
+change_verify:
+  implemented: false
+  notes: "域已建但验证动作流程未贯通"
+
+bonus_lock:
+  implemented: false
+  notes: "域已建（奖金分配表）但锁定流程未贯通"

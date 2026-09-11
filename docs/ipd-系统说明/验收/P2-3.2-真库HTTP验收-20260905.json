@@ -1,0 +1,215 @@
+{
+ "card": "P2-3.2",
+ "instance": "http://127.0.0.1:16052",
+ "jar": "ruoyi-admin-p232.jar@22:21(fat javap核验)",
+ "TS": "2026-09-05 22:41:01",
+ "total": 32,
+ "pass": 32,
+ "fail": 0,
+ "inv1": "2096473725200363521",
+ "inv2": "2096473725766594561",
+ "results": [
+  {
+   "name": "T02 创建PUBLIC招标单 code=0",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T02b 状态=OPEN",
+   "pass": true,
+   "got": "OPEN",
+   "want": "OPEN"
+  },
+  {
+   "name": "T02c 发起人落库 create_by=900103",
+   "pass": true,
+   "got": "900103",
+   "want": "900103"
+  },
+  {
+   "name": "T03 创建ONE_TO_ONE招标单 code=0",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T04 rd首次应标 code=0",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T04b 状态=PENDING",
+   "pass": true,
+   "got": "PENDING",
+   "want": "PENDING"
+  },
+  {
+   "name": "T04c rdPmId=会话用户900104",
+   "pass": true,
+   "got": "900104",
+   "want": "900104"
+  },
+  {
+   "name": "T05 幂等重提同id",
+   "pass": true,
+   "got": "2096473726085361666",
+   "want": "2096473726085361666"
+  },
+  {
+   "name": "T05b 库内仅1行（BR-REC-BID-03）",
+   "pass": true,
+   "got": "1",
+   "want": "1"
+  },
+  {
+   "name": "T06 admin应标 code=0",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T07 三人PENDING就绪（AC-TEAM-05 前置）",
+   "pass": true,
+   "got": "3",
+   "want": "3"
+  },
+  {
+   "name": "T08 拒绝 code=0",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T08b data=null（204语义）",
+   "pass": true,
+   "got": "None",
+   "want": "None"
+  },
+  {
+   "name": "T08c INV2 业务表零行",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T08d 审计零拒绝行（BR-TEAM-03）",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T09 非目标人应标ONE_TO_ONE ⇒ 30001",
+   "pass": true,
+   "got": "30001",
+   "want": "30001"
+  },
+  {
+   "name": "T10 摘要<40字 ⇒ 10001",
+   "pass": true,
+   "got": "10001",
+   "want": "10001"
+  },
+  {
+   "name": "T11 非法decision ⇒ 10001",
+   "pass": true,
+   "got": "10001",
+   "want": "10001"
+  },
+  {
+   "name": "T12 非本人撤回 ⇒ 30001",
+   "pass": true,
+   "got": "30001",
+   "want": "30001"
+  },
+  {
+   "name": "T13 遴选 code=0",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T13b 招标单=SELECTED",
+   "pass": true,
+   "got": "SELECTED",
+   "want": "SELECTED"
+  },
+  {
+   "name": "T13c 中标rd=ACCEPTED",
+   "pass": true,
+   "got": "ACCEPTED",
+   "want": "ACCEPTED"
+  },
+  {
+   "name": "T13d 落选admin=REJECTED",
+   "pass": true,
+   "got": "REJECTED",
+   "want": "REJECTED"
+  },
+  {
+   "name": "T13e 落选900105=REJECTED",
+   "pass": true,
+   "got": "REJECTED",
+   "want": "REJECTED"
+  },
+  {
+   "name": "T14 遴选后再应标 ⇒ 50002",
+   "pass": true,
+   "got": "50002",
+   "want": "50002"
+  },
+  {
+   "name": "T15 rd视角仅本人行",
+   "pass": true,
+   "got": "1",
+   "want": "1"
+  },
+  {
+   "name": "T15b 本人行rdPmId=900104",
+   "pass": true,
+   "got": "900104",
+   "want": "900104"
+  },
+  {
+   "name": "T15c 发起人视角全量3行",
+   "pass": true,
+   "got": "3",
+   "want": "3"
+  },
+  {
+   "name": "T16 应标accept审计≥2行",
+   "pass": true,
+   "got": "True",
+   "want": "True"
+  },
+  {
+   "name": "T16b 遴选审计afterData含中标+落选清单",
+   "pass": true,
+   "got": "True",
+   "want": "True"
+  },
+  {
+   "name": "T17 本人撤回 code=0",
+   "pass": true,
+   "got": "0",
+   "want": "0"
+  },
+  {
+   "name": "T17b 状态=WITHDRAWN",
+   "pass": true,
+   "got": "WITHDRAWN",
+   "want": "WITHDRAWN"
+  }
+ ],
+ "evidence": {
+  "selectAuditAfterData": {
+   "selectedResponseId": 2096473726085361666,
+   "selectedRdPmId": 900104,
+   "rejectedRdPmIds": [
+    900105,
+    900101
+   ]
+  }
+ }
+}

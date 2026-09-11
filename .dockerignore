@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+**/target
+**/*.log
+logs
+.codex
+.claude
+.claude-flow
+docs
+node_modules
+*.md
+!README.md
