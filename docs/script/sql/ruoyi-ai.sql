@@ -3476,6 +3476,7 @@ INSERT INTO `t_workflow_component` VALUES (18, '5cd6ac69bbb411f0bb7840c2ba9a7fbc
 INSERT INTO `t_workflow_component` VALUES (19, '5cd6c8eabbb411f0bb7840c2ba9a7fbc', 'Answer', '生成回答', '调用大语言模型回答问题', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0, '000000');
 INSERT INTO `t_workflow_component` VALUES (26, 'bb00fc2f52c74fec82ee3f99725b56bb', 'Switcher', '条件分支', '根据条件执行不同分支', 0, 1, '2025-12-26 16:30:46', '2025-12-26 16:30:46', 0, '000000');
 INSERT INTO `t_workflow_component` VALUES (37, 'a7f8c2d44e5b4c83a9d6f103c2b47e18', 'Google', '网络搜索', '调用智谱 Web Search 检索互联网信息', 40, 1, '2026-07-29 20:30:00', '2026-07-29 20:30:00', 0, '000000');
+INSERT INTO `t_workflow_component` VALUES (38, 'b8e3c1d55f6a4d92b0e7f214d3c58a29', 'KnowledgeRetrieval', '知识库检索', '从知识库中检索相关内容，支持向量检索和混合检索', 30, 1, '2026-09-11 10:00:00', '2026-09-11 10:00:00', 0, '000000');
 
 -- ----------------------------
 -- Table structure for t_workflow_edge
