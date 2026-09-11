@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public final class ChatModelSecretReference {
 
     public static final String ENV_REFERENCE_REGEXP =
-        "^env:(?:(?:DEEPSEEK|PPIO)_API_KEY|" + CustomApiCredentialPolicy.REFERENCE_PATTERN + ")$";
+        "^env:(?:(?:DEEPSEEK|PPIO|ATLAS)_API_KEY|" + CustomApiCredentialPolicy.REFERENCE_PATTERN + ")$";
 
     private static final String ENV_PREFIX = "env:";
     private static final Pattern ENV_REFERENCE = Pattern.compile(ENV_REFERENCE_REGEXP);

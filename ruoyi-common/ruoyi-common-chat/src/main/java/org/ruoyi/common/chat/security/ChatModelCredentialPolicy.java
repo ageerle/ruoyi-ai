@@ -16,6 +16,12 @@ public final class ChatModelCredentialPolicy {
     public static final String DEEPSEEK_API_HOST = "https://api.deepseek.com";
     public static final String PPIO_PROVIDER = "ppio";
     public static final String PPIO_API_HOST = "https://api.ppio.com/openai/v1";
+    public static final String ATLAS_PROVIDER = "atlas";
+    private static final Set<String> ATLAS_API_HOSTS = Set.of(
+        "https://api.atlascloud.ai", "https://api.atlascloud.ai/",
+        "https://api.atlascloud.ai/v1", "https://api.atlascloud.ai/v1/",
+        "https://api.atlascloud.ai/api/v1", "https://api.atlascloud.ai/api/v1/"
+    );
 
     private static final Set<String> PPIO_API_HOSTS = Set.of(
         PPIO_API_HOST, PPIO_API_HOST + "/",
@@ -69,6 +75,10 @@ public final class ChatModelCredentialPolicy {
                                                        String apiHost,
                                                        String apiKey) {
         requireSecureApiHost(apiHost);
+        if (ATLAS_PROVIDER.equals(providerCode)) {
+            requireAtlasConfiguration(providerCode, modelName, apiHost, apiKey);
+            return;
+        }
         if (CustomApiCredentialPolicy.isCustomProvider(providerCode)) {
             CustomApiCredentialPolicy.requireConfiguration(providerCode, modelName, apiHost, apiKey);
             return;
@@ -121,6 +131,8 @@ public final class ChatModelCredentialPolicy {
             expectedReference = "env:DEEPSEEK_API_KEY";
         } else if (PPIO_PROVIDER.equals(providerCode)) {
             expectedReference = "env:PPIO_API_KEY";
+        } else if (ATLAS_PROVIDER.equals(providerCode)) {
+            expectedReference = "env:ATLAS_API_KEY";
         } else {
             throw new IllegalArgumentException("Model credential provider is not allowlisted");
         }
@@ -137,9 +149,27 @@ public final class ChatModelCredentialPolicy {
             CustomApiCredentialPolicy.requireConfiguration(providerCode, modelName, apiHost, apiKey);
         } else if (PPIO_PROVIDER.equals(providerCode)) {
             requirePpioConfiguration(providerCode, modelName, apiHost, apiKey);
+        } else if (ATLAS_PROVIDER.equals(providerCode)) {
+            requireAtlasConfiguration(providerCode, modelName, apiHost, apiKey);
         } else {
             requireDeepSeekConfiguration(providerCode, modelName, apiHost, apiKey);
         }
+    }
+
+    /** Atlas credentials may only be sent to its official media API origin. */
+    public static void requireAtlasConfiguration(String providerCode, String modelName,
+                                                 String apiHost, String apiKey) {
+        if (!ATLAS_PROVIDER.equals(providerCode)) {
+            throw new IllegalArgumentException("Atlas model provider is not trusted");
+        }
+        if (modelName == null || !modelName.matches("[A-Za-z0-9][A-Za-z0-9._/-]{0,254}")) {
+            throw new IllegalArgumentException("Atlas model ID is invalid");
+        }
+        requireSecureApiHost(apiHost);
+        if (!ATLAS_API_HOSTS.contains(apiHost)) {
+            throw new IllegalArgumentException("Atlas API host is not allowlisted");
+        }
+        requireProviderReference(providerCode, apiKey);
     }
 
     /** Validates PPIO and returns the base URL expected by the OpenAI Chat Completions client. */

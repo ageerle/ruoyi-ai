@@ -56,14 +56,18 @@ public class MediaGenerationController {
     @PostMapping("/image")
     public R<MediaGenerationResponse> image(@Valid @RequestBody ImageGenerationRequest request) {
         ChatModelVo model = loadModel(request.getModel(), ModelType.IMAGE.getKey());
-        String result = imageServiceFactory.getOriginalService(model.getProviderCode())
-            .generateImage(ImageContext.builder()
-                .chatModelVo(model)
-                .prompt(request.getPrompt())
-                .size(request.getSize())
-                .seed(request.getSeed())
-                .build());
-        return R.ok(toImageResponse(result));
+        ImageContext context = ImageContext.builder()
+            .chatModelVo(model)
+            .prompt(request.getPrompt())
+            .size(request.getSize())
+            .seed(request.getSeed())
+            .build();
+        var service = imageServiceFactory.getOriginalService(model.getProviderCode());
+        // Atlas sync requests can outlive its gateway timeout. Return a task for the workbench to poll.
+        if ("atlas".equals(model.getProviderCode())) {
+            return R.ok(service.startImageGeneration(context));
+        }
+        return R.ok(toImageResponse(service.generateImage(context)));
     }
 
     @PostMapping("/video")
