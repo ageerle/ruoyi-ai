@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.ruoyi.common.chat.entity.chat.ChatModel;
-import org.ruoyi.common.chat.security.ChatModelCredentialPolicy;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -85,21 +84,6 @@ public class ChatModelVo implements Serializable {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private String apiKey;
-
-    /** Returns the stored configuration reference without touching the process environment. */
-    public String getApiKey() {
-        return apiKey;
-    }
-
-    /**
-     * Resolves the reference only after binding it to both the consuming provider and this row's
-     * effective provider, model and endpoint. Non-allowlisted, misrouted, or legacy rows fail
-     * closed before the environment is read.
-     */
-    public String resolveApiKeyForConfiguredEndpoint(String consumingProviderCode) {
-        return ChatModelCredentialPolicy.resolveApiKeyForUse(
-            consumingProviderCode, providerCode, modelName, apiHost, apiKey);
-    }
 
     /**
      * 备注

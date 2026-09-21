@@ -209,6 +209,9 @@ Want to learn more about installation, deployment, configuration, and secondary 
 
 **👉 [Complete Documentation](https://doc.ruoyiai.chat/)**
 
+- [Model and API Key configuration in ruoyi-admin (Chinese)](docs/model-configuration.md)
+- [Dify Cloud setup for local development (Chinese)](docs/dify-cloud.md)
+
 ## 🤝 Contributing
 
 We warmly welcome community contributions! Whether you are a seasoned developer or just getting started, you can contribute to the project 💪

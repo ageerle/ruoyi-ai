@@ -6,7 +6,6 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-import org.ruoyi.common.chat.security.ChatModelCredentialPolicy;
 import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.observability.MyChatModelListener;
 import org.ruoyi.service.chat.AbstractChatService;
@@ -21,10 +20,10 @@ public class PpioChatServiceImpl implements AbstractChatService {
 
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo config, ChatRequest request) {
-        String baseUrl = validateConfiguration(config);
+        String baseUrl = normalizeBaseUrl(config.getApiHost());
         return OpenAiStreamingChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(config.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(config.getApiKey())
             .modelName(config.getModelName())
             .listeners(List.of(new MyChatModelListener()))
             .returnThinking(Boolean.TRUE.equals(request.getEnableThinking()))
@@ -34,19 +33,22 @@ public class PpioChatServiceImpl implements AbstractChatService {
 
     @Override
     public ChatModel buildChatModel(ChatModelVo config) {
-        String baseUrl = validateConfiguration(config);
+        String baseUrl = normalizeBaseUrl(config.getApiHost());
         return OpenAiChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(config.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(config.getApiKey())
             .modelName(config.getModelName())
             .listeners(List.of(new MyChatModelListener()))
             .timeout(Duration.ofMinutes(3))
             .build();
     }
 
-    private String validateConfiguration(ChatModelVo config) {
-        return ChatModelCredentialPolicy.requirePpioConfiguration(
-            config.getProviderCode(), config.getModelName(), config.getApiHost(), config.getApiKey());
+    private String normalizeBaseUrl(String apiHost) {
+        if (apiHost == null) {
+            return null;
+        }
+        String baseUrl = apiHost.replaceAll("/+$", "");
+        return baseUrl.endsWith("/openai") ? baseUrl + "/v1" : baseUrl;
     }
 
     @Override

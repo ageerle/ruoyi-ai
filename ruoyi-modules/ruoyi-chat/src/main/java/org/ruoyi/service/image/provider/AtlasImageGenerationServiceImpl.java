@@ -56,7 +56,7 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
 
         Request request = new Request.Builder()
             .url(AtlasMediaSupport.endpoint(chatModelVo.getApiHost(), "/model/generateImage"))
-            .addHeader("Authorization", "Bearer " + chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .addHeader("Authorization", "Bearer " + chatModelVo.getApiKey())
             .addHeader("Content-Type", "application/json")
             .post(RequestBody.create(payload.toString(), AtlasMediaSupport.JSON))
             .build();
@@ -173,7 +173,7 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
 
         Request request = new Request.Builder()
             .url(AtlasMediaSupport.endpoint(chatModelVo.getApiHost(), "/model/generateImage"))
-            .addHeader("Authorization", "Bearer " + chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .addHeader("Authorization", "Bearer " + chatModelVo.getApiKey())
             .addHeader("Content-Type", "application/json")
             .post(RequestBody.create(payload.toString(), AtlasMediaSupport.JSON))
             .build();
@@ -217,7 +217,7 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
             .build();
         Request request = new Request.Builder()
             .url(AtlasMediaSupport.endpoint(model.getApiHost(), "/model/uploadMedia"))
-            .addHeader("Authorization", "Bearer " + model.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .addHeader("Authorization", "Bearer " + model.getApiKey())
             .post(requestBody)
             .build();
         try (Response response = okHttpClient.newCall(request).execute()) {

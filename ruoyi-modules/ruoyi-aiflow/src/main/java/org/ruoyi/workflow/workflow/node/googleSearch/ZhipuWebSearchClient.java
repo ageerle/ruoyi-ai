@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-import org.ruoyi.common.chat.security.ChatModelCredentialPolicy;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.springframework.stereotype.Component;
 
@@ -93,10 +92,7 @@ public class ZhipuWebSearchClient {
 
     private Credential credentialForConfiguredEndpoint(ChatModelVo model) {
         String finalBaseUrl = normalizeBaseUrl(model.getApiHost());
-        String apiKey = ChatModelCredentialPolicy.resolveApiKeyForUse(
-            ZHIPU_PROVIDER_CODE, model.getProviderCode(), model.getModelName(), finalBaseUrl,
-            model.getApiKey());
-        return new Credential(finalBaseUrl, apiKey);
+        return new Credential(finalBaseUrl, model.getApiKey());
     }
 
     private boolean isUsableApiKey(String apiKey) {

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,9 +35,11 @@ public class RerankModelFactory {
     /**
      * 模型缓存，使用ConcurrentHashMap保证线程安全
      */
-    private final Map<ModelCacheKey, RerankModelService> modelCache = new ConcurrentHashMap<>();
+    private final Map<ModelCacheKey, CachedModel> modelCache = new ConcurrentHashMap<>();
 
     private record ModelCacheKey(Long id, String modelName, String providerCode) { }
+
+    private record CachedModel(ChatModelVo configuration, RerankModelService model) { }
 
     /**
      * 创建重排序模型实例
@@ -52,8 +55,15 @@ public class RerankModelFactory {
         }
         ModelCacheKey key = new ModelCacheKey(modelConfig.getId(),
             modelConfig.getModelName(), modelConfig.getProviderCode());
-        return modelCache.computeIfAbsent(key,
-            ignored -> createModelInstance(modelConfig.getProviderCode(), modelConfig));
+        return modelCache.compute(key, (ignored, cached) -> {
+            // ChatModelVo.equals deliberately excludes the secret, so compare it separately.
+            if (cached != null && modelConfig.equals(cached.configuration())
+                && Objects.equals(modelConfig.getApiKey(), cached.configuration().getApiKey())) {
+                return cached;
+            }
+            return new CachedModel(modelConfig,
+                createModelInstance(modelConfig.getProviderCode(), modelConfig));
+        }).model();
     }
 
     /**

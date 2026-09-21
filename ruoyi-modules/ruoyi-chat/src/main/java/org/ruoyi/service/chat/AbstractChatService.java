@@ -36,7 +36,7 @@ public interface AbstractChatService {
     default ChatModel buildChatModel(ChatModelVo chatModelVo) {
         return OpenAiChatModel.builder()
             .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
             .timeout(Duration.ofSeconds(120))
             .build();

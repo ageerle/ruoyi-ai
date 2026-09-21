@@ -59,7 +59,7 @@ public class CustomApiServiceImpl implements AbstractChatService {
         }
         return OpenAiStreamingChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
             .timeout(DEFAULT_TIMEOUT)
             .listeners(List.of(new MyChatModelListener()))
@@ -79,7 +79,7 @@ public class CustomApiServiceImpl implements AbstractChatService {
         boolean thinkingEnabled = !"none".equalsIgnoreCase(reasoningEffort);
         return DoubaoStreamingChatModel.builder()
             .endpoint(baseUrl + "/chat/completions")
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
             .timeout(doubaoTimeout)
             .reasoningEffort(reasoningEffort)
@@ -92,7 +92,7 @@ public class CustomApiServiceImpl implements AbstractChatService {
         String baseUrl = validateConfiguration(chatModelVo);
         return OpenAiChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
             .timeout(DEFAULT_TIMEOUT)
             .build();
@@ -107,7 +107,6 @@ public class CustomApiServiceImpl implements AbstractChatService {
         if (!getProviderName().equals(config.getProviderCode())) {
             throw new IllegalArgumentException("模型厂商与 OpenAI 自定义适配器不匹配");
         }
-        return CustomApiCredentialPolicy.requireConfiguration(
-            getProviderName(), config.getModelName(), config.getApiHost(), config.getApiKey());
+        return CustomApiCredentialPolicy.normalizeBaseUrl(getProviderName(), config.getApiHost());
     }
 }

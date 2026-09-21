@@ -4,8 +4,6 @@ import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.entity.chat.ChatModel;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
-import org.ruoyi.common.chat.security.ChatModelCredentialPolicy;
-import org.ruoyi.common.chat.security.ChatModelSecretReference;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
@@ -131,7 +129,7 @@ public class ChatModelServiceImpl implements IChatModelService {
     @Override
     public Boolean insertByBo(ChatModelBo bo) {
         ChatModel add = toEntity(bo);
-        validateEffectiveConfiguration(add);
+        chatProviderService.requireEnabled(add.getProviderCode());
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setId(add.getId());
@@ -149,28 +147,17 @@ public class ChatModelServiceImpl implements IChatModelService {
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(ChatModelBo bo) {
         ChatModel update = toEntity(bo);
-        validateRequestedFields(update);
+        // 编辑表单不回显密钥；留空时保留数据库中的原值。
+        if ("".equals(update.getApiKey())) {
+            update.setApiKey(null);
+        }
         ChatModel current = selectByIdForUpdate(update.getId());
         if (current == null) {
             return false;
         }
-        validateEffectiveConfiguration(mergeEffectiveConfiguration(current, update));
+        chatProviderService.requireEnabled(
+            update.getProviderCode() == null ? current.getProviderCode() : update.getProviderCode());
         return baseMapper.updateById(update) > 0;
-    }
-
-    private void validateRequestedFields(ChatModel requested) {
-        if (requested.getApiKey() != null) {
-            ChatModelSecretReference.requirePersistableReference(requested.getApiKey());
-        }
-        if (requested.getApiHost() != null) {
-            ChatModelCredentialPolicy.requireSecureApiHost(requested.getApiHost());
-        }
-    }
-
-    private void validateEffectiveConfiguration(ChatModel entity) {
-        ChatModelCredentialPolicy.requirePersistableConfiguration(
-            entity.getProviderCode(), entity.getModelName(), entity.getApiHost(), entity.getApiKey());
-        chatProviderService.requireEnabled(entity.getProviderCode());
     }
 
     private ChatModel selectByIdForUpdate(Long id) {
@@ -180,19 +167,6 @@ public class ChatModelServiceImpl implements IChatModelService {
         LambdaQueryWrapper<ChatModel> lock = Wrappers.lambdaQuery();
         lock.eq(ChatModel::getId, id).last("FOR UPDATE");
         return baseMapper.selectOne(lock);
-    }
-
-    private ChatModel mergeEffectiveConfiguration(ChatModel current, ChatModel requested) {
-        ChatModel effective = new ChatModel();
-        effective.setProviderCode(firstNonNull(requested.getProviderCode(), current.getProviderCode()));
-        effective.setModelName(firstNonNull(requested.getModelName(), current.getModelName()));
-        effective.setApiHost(firstNonNull(requested.getApiHost(), current.getApiHost()));
-        effective.setApiKey(firstNonNull(requested.getApiKey(), current.getApiKey()));
-        return effective;
-    }
-
-    private static <T> T firstNonNull(T requested, T current) {
-        return requested == null ? current : requested;
     }
 
     private ChatModel toEntity(ChatModelBo source) {
@@ -247,25 +221,12 @@ public class ChatModelServiceImpl implements IChatModelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateApiKeyByProvider(String providerCode, String apiKey) {
-        if (apiKey == null) {
-            throw new IllegalArgumentException("Batch model key reference is required");
+        if (StringUtils.isBlank(providerCode) || StringUtils.isBlank(apiKey)) {
+            throw new IllegalArgumentException("厂商编码和密钥不能为空");
         }
-        String reference = ChatModelSecretReference.requirePersistableReference(apiKey);
-        ChatModelCredentialPolicy.requireProviderReference(providerCode, reference);
-        LambdaQueryWrapper<ChatModel> lock = Wrappers.lambdaQuery();
-        lock.select(ChatModel::getId, ChatModel::getProviderCode, ChatModel::getModelName, ChatModel::getApiHost)
-            .eq(ChatModel::getProviderCode, providerCode)
-            .last("FOR UPDATE");
-        List<ChatModel> current = baseMapper.selectList(lock);
-        if (current.isEmpty()) {
-            return false;
-        }
-        current.forEach(model -> ChatModelCredentialPolicy.requireTrustedConfiguration(
-            model.getProviderCode(), model.getModelName(), model.getApiHost(), reference));
         LambdaUpdateWrapper<ChatModel> uw = Wrappers.lambdaUpdate();
-        uw.set(ChatModel::getApiKey, reference)
-            .eq(ChatModel::getProviderCode, providerCode)
-            .in(ChatModel::getId, current.stream().map(ChatModel::getId).toList());
+        uw.set(ChatModel::getApiKey, apiKey)
+            .eq(ChatModel::getProviderCode, providerCode);
         return baseMapper.update(null, uw) > 0;
     }
 }

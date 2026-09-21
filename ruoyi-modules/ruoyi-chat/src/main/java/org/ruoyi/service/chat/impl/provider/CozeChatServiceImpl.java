@@ -368,8 +368,7 @@ public class CozeChatServiceImpl implements AbstractChatService {
         }
 
         private String requiredApiKey() {
-            String apiKey = chatModelVo.resolveApiKeyForConfiguredEndpoint(
-                ChatModeType.COZE.getCode());
+            String apiKey = chatModelVo.getApiKey();
             if (StrUtil.isBlank(apiKey)) {
                 throw new IllegalArgumentException("Coze apiKey cannot be blank");
             }

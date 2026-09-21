@@ -27,7 +27,7 @@ public class CustomAnthropicServiceImpl implements AbstractChatService {
         String baseUrl = validateConfiguration(config);
         return AnthropicStreamingChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(config.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(config.getApiKey())
             .modelName(config.getModelName())
             .maxTokens(DEFAULT_MAX_TOKENS)
             .timeout(DEFAULT_TIMEOUT)
@@ -41,7 +41,7 @@ public class CustomAnthropicServiceImpl implements AbstractChatService {
         String baseUrl = validateConfiguration(config);
         return AnthropicChatModel.builder()
             .baseUrl(baseUrl)
-            .apiKey(config.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(config.getApiKey())
             .modelName(config.getModelName())
             .maxTokens(DEFAULT_MAX_TOKENS)
             .timeout(DEFAULT_TIMEOUT)
@@ -53,8 +53,7 @@ public class CustomAnthropicServiceImpl implements AbstractChatService {
         if (!getProviderName().equals(config.getProviderCode())) {
             throw new IllegalArgumentException("模型厂商与 Anthropic 自定义适配器不匹配");
         }
-        return CustomApiCredentialPolicy.requireConfiguration(
-            getProviderName(), config.getModelName(), config.getApiHost(), config.getApiKey());
+        return CustomApiCredentialPolicy.normalizeBaseUrl(getProviderName(), config.getApiHost());
     }
 
     @Override

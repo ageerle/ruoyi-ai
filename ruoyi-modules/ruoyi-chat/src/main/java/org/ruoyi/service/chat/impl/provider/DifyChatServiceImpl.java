@@ -262,8 +262,7 @@ public class DifyChatServiceImpl implements AbstractChatService {
         }
 
         private String requiredApiKey() {
-            String apiKey = chatModelVo.resolveApiKeyForConfiguredEndpoint(
-                ChatModeType.DIFY.getCode());
+            String apiKey = chatModelVo.getApiKey();
             if (StrUtil.isBlank(apiKey)) {
                 throw new IllegalArgumentException("Dify 的 API Key 不能为空");
             }

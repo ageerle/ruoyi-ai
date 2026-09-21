@@ -2,11 +2,9 @@ package org.ruoyi.common.chat.domain.bo.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.ruoyi.common.chat.security.ChatModelSecretReference;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 /**
@@ -30,8 +28,6 @@ public class ModelBatchKeyBo extends BaseEntity {
      */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @NotBlank(message = "密钥不能为空")
-    @Pattern(regexp = ChatModelSecretReference.ENV_REFERENCE_REGEXP,
-        message = "密钥必须使用受信任的环境变量引用")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private String apiKey;

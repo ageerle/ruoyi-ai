@@ -90,7 +90,7 @@ public class ZhiPuRerankModelService implements RerankModelService {
 
         // 生成智谱认证Token
         String token = generateToken(
-            chatModelVo.resolveApiKeyForConfiguredEndpoint("zhipu"));
+            chatModelVo.getApiKey());
 
         // 智谱重排序固定端点路径
         String url = chatModelVo.getApiHost() + "/api/paas/v4/rerank";

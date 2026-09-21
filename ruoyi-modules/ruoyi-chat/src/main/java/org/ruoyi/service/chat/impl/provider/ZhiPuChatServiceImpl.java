@@ -34,7 +34,7 @@ public class ZhiPuChatServiceImpl implements AbstractChatService {
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         return ZhipuAiStreamingChatModel.builder()
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())
             .maxToken(MAX_TOKENS)
             .readTimeout(Duration.ofSeconds(300))
@@ -45,7 +45,7 @@ public class ZhiPuChatServiceImpl implements AbstractChatService {
     @Override
     public ChatModel buildChatModel(ChatModelVo chatModelVo) {
         return ZhipuAiChatModel.builder()
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
+            .apiKey(chatModelVo.getApiKey())
             .model(chatModelVo.getModelName())
             .maxToken(MAX_TOKENS)
             .readTimeout(Duration.ofSeconds(300))

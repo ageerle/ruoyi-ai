@@ -205,6 +205,9 @@ docker-compose up -d --build
 
 **👉 [完整使用文档](https://doc.ruoyiai.chat/)**
 
+- [在 ruoyi-admin 中配置模型和 API Key](docs/model-configuration.md)
+- [本地开发接入 Dify 官方云服务](docs/dify-cloud.md)
+
 ## 🤝 参与贡献
 
 我们热烈欢迎社区贡献！无论您是资深开发者还是初学者，都可以为项目贡献力量 💪

@@ -60,7 +60,7 @@ public class SiliconFlowRerankModelService implements RerankModelService {
             Request httpRequest = new Request.Builder()
                     .url(url)
                     .addHeader("Authorization", "Bearer "
-                        + chatModelVo.resolveApiKeyForConfiguredEndpoint("siliconflow"))
+                        + chatModelVo.getApiKey())
                     .addHeader("Content-Type", "application/json")
                     .post(body)
                     .build();
