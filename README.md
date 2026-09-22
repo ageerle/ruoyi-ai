@@ -212,6 +212,8 @@ Want to learn more about installation, deployment, configuration, and secondary 
 - [Model and API Key configuration in ruoyi-admin (Chinese)](docs/model-configuration.md)
 - [Dify Cloud setup for local development (Chinese)](docs/dify-cloud.md)
 
+- [Parallel Search MCP 智能体联网搜索配置](docs/parallel-search-mcp.md)
+
 ## 🤝 Contributing
 
 We warmly welcome community contributions! Whether you are a seasoned developer or just getting started, you can contribute to the project 💪

@@ -527,7 +527,9 @@ public class LangChain4jMcpToolProviderService {
 
         // 创建 HTTP/SSE 传输层
         McpTransport transport = StreamableHttpMcpTransport.builder()
+            // Identify the calling project without user or installation identifiers.
             .url(baseUrl)
+            .customHeaders(Map.of("User-Agent", "ruoyi-ai"))
             .logRequests(TRAFFIC_LOGGING_ENABLED)
             .build();
 
@@ -578,7 +580,7 @@ public class LangChain4jMcpToolProviderService {
         McpClient client = activeClients.remove(toolId);
         if (client != null) {
             try {
-                // LangChain4j McpClient 没有 close 方法，直接移除即可
+                client.close();
                 log.info("Removed MCP client for tool: {}", toolId);
             } catch (Exception e) {
                 log.warn("mcp_client operation=CLOSE status=FAILED errorType={}", errorType(e));

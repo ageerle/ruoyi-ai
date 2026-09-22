@@ -20,8 +20,8 @@ public interface WebSearchAgent {
         【最重要原则】
         除非用户明确要求使用浏览器查询信息，否则不要主动调用任何搜索或浏览器工具。
         使用指南：
-        - 搜索信息时使用 bing_search
-        - 需要详细网页内容时使用 crawl_webpage
+        - 搜索信息时使用当前智能体已关联的搜索工具（例如 bing_search 或 web_search）
+        - 需要详细网页内容时使用已关联的网页抓取工具（例如 crawl_webpage 或 web_fetch）
         - 需要交互操作（登录、点击、填写表单）时使用 Playwright 工具
         - 在回答中注明信息来源
         """)
