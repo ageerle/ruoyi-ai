@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.domain.bo.chat.ModelBatchKeyBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelDetailVo;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 
@@ -59,6 +60,20 @@ class ModelApiKeyValidationTest {
         assertFalse(mapper.writeValueAsString(view).contains("apiKey"));
         assertFalse(model.toString().contains("test-secret"));
         assertFalse(view.toString().contains("test-secret"));
+    }
+
+    @Test
+    void adminDetailReturnsExactKeyWithoutChangingListOrLogSerialization() throws Exception {
+        var mapper = new ObjectMapper();
+        var model = new ChatModelVo();
+        model.setId(12L);
+        model.setApiKey(" 任意/key: value ");
+        var detail = ChatModelDetailVo.from(model);
+        assertEquals(model.getApiKey(), mapper.readTree(mapper.writeValueAsString(detail)).get("apiKey").asText());
+        assertEquals(model.getId(), detail.getId());
+        assertFalse(mapper.writeValueAsString(model).contains("apiKey"));
+        assertFalse(detail.toString().contains(model.getApiKey()));
+        assertNull(ChatModelDetailVo.from(null));
     }
 
     @Test

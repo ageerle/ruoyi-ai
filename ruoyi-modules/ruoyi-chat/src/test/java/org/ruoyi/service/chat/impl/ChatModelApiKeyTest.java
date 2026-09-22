@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
@@ -47,7 +47,7 @@ class ChatModelApiKeyTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"sk-new-key", " env:LITERAL_VALUE ", "env:ATLAS_API_KEY"})
+    @ValueSource(strings = {"", "   ", "任意内容/key:123", "sk-new-key", " env:LITERAL_VALUE ", "env:ATLAS_API_KEY"})
     void editReplacesAnOldReferenceWithExactlyTheSuppliedValue(String key) {
         when(mapper.selectOne(any())).thenReturn(currentModel());
         when(mapper.updateById(any(ChatModel.class))).thenReturn(1);
@@ -58,7 +58,7 @@ class ChatModelApiKeyTest {
     }
 
     @ParameterizedTest
-    @NullAndEmptySource
+    @NullSource
     void editWithoutANewKeyDoesNotOverwriteTheExistingKey(String key) {
         when(mapper.selectOne(any())).thenReturn(currentModel());
         when(mapper.updateById(any(ChatModel.class))).thenReturn(1);

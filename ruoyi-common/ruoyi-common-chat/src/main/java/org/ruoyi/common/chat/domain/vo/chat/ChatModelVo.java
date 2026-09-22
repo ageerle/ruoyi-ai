@@ -77,8 +77,7 @@ public class ChatModelVo implements Serializable {
     private String apiHost;
 
     /**
-     * 密钥仅用于服务端模型调用和写入配置。任何读取接口、日志字符串或 Excel 导出
-     * 都不得把它带出服务端边界。
+     * 列表、日志及导出不包含密钥；管理员编辑详情由 ChatModelDetailVo 回显原值。
      */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @ToString.Exclude

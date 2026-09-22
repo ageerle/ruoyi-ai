@@ -147,10 +147,6 @@ public class ChatModelServiceImpl implements IChatModelService {
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(ChatModelBo bo) {
         ChatModel update = toEntity(bo);
-        // 编辑表单不回显密钥；留空时保留数据库中的原值。
-        if ("".equals(update.getApiKey())) {
-            update.setApiKey(null);
-        }
         ChatModel current = selectByIdForUpdate(update.getId());
         if (current == null) {
             return false;

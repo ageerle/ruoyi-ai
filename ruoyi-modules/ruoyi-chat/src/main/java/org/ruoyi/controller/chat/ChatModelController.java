@@ -13,6 +13,7 @@ import org.ruoyi.common.chat.domain.bo.chat.ChatModelSelectQuery;
 import org.ruoyi.common.chat.domain.bo.chat.ModelBatchKeyBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelSelectVo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.common.chat.domain.vo.chat.ChatModelDetailVo;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.enums.ModelType;
@@ -105,9 +106,9 @@ public class ChatModelController extends BaseController {
      */
     @SaCheckPermission("system:model:query")
     @GetMapping("/{id}")
-    public R<ChatModelVo> getInfo(@NotNull(message = "主键不能为空")
+    public R<ChatModelDetailVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {
-        return R.ok(chatModelService.queryById(id));
+        return R.ok(ChatModelDetailVo.from(chatModelService.queryById(id)));
     }
 
     /**
