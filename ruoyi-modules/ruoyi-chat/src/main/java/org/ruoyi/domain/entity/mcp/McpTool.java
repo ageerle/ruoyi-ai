@@ -47,7 +47,7 @@ public class McpTool extends TenantEntity {
     /**
      * 配置信息（JSON格式）
      * LOCAL: {"command": "npx", "args": ["-y", "@example/mcp-server"], "env": {...}}
-     * REMOTE: {"baseUrl": "http://localhost:8080/mcp"}
+     * REMOTE: {"baseUrl": "https://example.com/mcp", "bearerKey": "optional-key"}
      * BUILTIN: null
      */
     private String configJson;
