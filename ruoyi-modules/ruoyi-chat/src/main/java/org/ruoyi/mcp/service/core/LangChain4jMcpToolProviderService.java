@@ -525,11 +525,21 @@ public class LangChain4jMcpToolProviderService {
         String baseUrl = configNode.get("baseUrl").asText();
         log.info("mcp_client transport=HTTP status=CREATING");
 
-        // 创建 HTTP/SSE 传输层
-        McpTransport transport = StreamableHttpMcpTransport.builder()
+        // bearerKey is optional and belongs to this REMOTE tool's client only.
+        StreamableHttpMcpTransport.Builder transportBuilder = StreamableHttpMcpTransport.builder()
             .url(baseUrl)
-            .logRequests(TRAFFIC_LOGGING_ENABLED)
-            .build();
+            .logRequests(TRAFFIC_LOGGING_ENABLED);
+        JsonNode bearerKeyNode = configNode.get("bearerKey");
+        if (bearerKeyNode != null && !bearerKeyNode.isNull()) {
+            if (!bearerKeyNode.isTextual()) {
+                throw new IllegalArgumentException("bearerKey must be a string");
+            }
+            String bearerKey = bearerKeyNode.asText().trim();
+            if (!bearerKey.isEmpty()) {
+                transportBuilder.customHeaders(Map.of("Authorization", "Bearer " + bearerKey));
+            }
+        }
+        McpTransport transport = transportBuilder.build();
 
         // 创建客户端
         return new DefaultMcpClient.Builder()
