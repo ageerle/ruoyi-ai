@@ -22,6 +22,7 @@ public enum ChatModeType {
     MINIMAX("minimax", "MiniMax"),
     DIFY("dify", "Dify"),
     COZE("coze", "Coze"),
+    LITE_LLM("litellm", "LiteLLM"),
     XIAOMI("xiaomi", "小米MiMo");
     private final String code;
     private final String description;
