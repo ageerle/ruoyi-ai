@@ -47,4 +47,6 @@ public class ImageContext {
      * 参考图 URL（图生图用）
      */
     private String image;
+    /** Ordered reference images for multi-subject image editing. */
+    private java.util.List<String> referenceImages;
 }

@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS short_drama_visual_asset (
+ id bigint NOT NULL PRIMARY KEY,
+ project_id bigint NOT NULL,
+ tenant_id varchar(20) NOT NULL DEFAULT '000000',
+ storyboard_id bigint DEFAULT NULL,
+ asset_key varchar(180) NOT NULL,
+ kind varchar(24) NOT NULL,
+ title varchar(255) NOT NULL,
+ prompt longtext,
+ reference_images longtext,
+ source_hash varchar(64),
+ status varchar(24) NOT NULL DEFAULT 'pending',
+ image_url text,
+ model varchar(255),
+ prediction_id varchar(255),
+ error_message text,
+ create_time datetime DEFAULT CURRENT_TIMESTAMP,
+ update_time datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uk_project_asset (project_id,asset_key),
+ KEY idx_storyboard (storyboard_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='道具资产和逐镜关键帧，可续跑';

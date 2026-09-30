@@ -7,6 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag("dev")
 class AtlasPredictionServiceTest {
+    @Test void failedPredictionInHttp400IsTerminalButUnrelatedErrorsAreNot() throws Exception {
+        var service = new AtlasPredictionService();
+        String raw = "{\"code\":400,\"data\":{\"id\":\"task-3s\",\"status\":\"failed\",\"error\":\"duration unsupported\"}}";
+        assertEquals("failed", service.terminalFailure(raw, "task-3s", "video").getStatus());
+        org.junit.jupiter.api.Assertions.assertNull(service.terminalFailure(raw, "different-task", "video"));
+        org.junit.jupiter.api.Assertions.assertNull(service.terminalFailure("{\"message\":\"temporary failure\"}", "task-3s", "video"));
+        org.junit.jupiter.api.Assertions.assertNull(service.terminalFailure("Bad gateway", "task-3s", "video"));
+    }
     @Test
     void keepsAudioTypeAndMimeThroughPolling() throws Exception {
         var service = new AtlasPredictionService();

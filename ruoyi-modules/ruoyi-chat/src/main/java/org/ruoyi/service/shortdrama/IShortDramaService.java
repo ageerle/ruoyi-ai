@@ -51,16 +51,18 @@ public interface IShortDramaService {
 
     List<ShortDramaStoryboardVo> generateAllVideos(Long projectId, String videoModel, Long userId);
 
-    ShortDramaDetailVo analyzeAssets(Long projectId, Long scriptId, Long userId);
+    ShortDramaDetailVo analyzeAssets(Long projectId, Long scriptId, Long userId, String model);
 
     /** Phase 1: 剧本打磨，重新生成更丰富的剧本内容 */
-    ShortDramaDetailVo polishScript(Long projectId, Long userId);
+    ShortDramaDetailVo polishScript(Long projectId, Long userId, String model);
 
     /** Phase 3-6: 分镜规划+摄影规则+表演指导+分镜细化 */
     List<ShortDramaStoryboardVo> planStoryboard(Long projectId, Long scriptId, String model, Long userId);
 
     /** Phase 3-6: 流式生成分镜并推送实时进度 */
     SseEmitter planStoryboardStream(Long projectId, Long scriptId, String model, Long userId);
+
+    int importReviewedPlan(Long projectId, org.ruoyi.domain.bo.shortdrama.ShortDramaReviewedPlanBo review, Long userId);
 
     /** Phase 4: 重新生成摄影规则 */
     List<ShortDramaStoryboardVo> generatePhotographyRules(Long projectId, Long scriptId, Long userId);

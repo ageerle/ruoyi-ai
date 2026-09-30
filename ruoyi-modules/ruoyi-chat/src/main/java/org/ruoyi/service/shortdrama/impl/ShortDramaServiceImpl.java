@@ -71,6 +71,7 @@ import org.ruoyi.service.media.AtlasPredictionService;
 import org.ruoyi.service.shortdrama.IShortDramaService;
 import org.ruoyi.service.shortdrama.IShortDramaVideoComposeService;
 import org.springframework.stereotype.Service;
+import org.ruoyi.common.redis.utils.RedisUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -95,6 +96,7 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class ShortDramaServiceImpl implements IShortDramaService {
 
+    private final org.springframework.transaction.support.TransactionTemplate transactionTemplate;
     private final ShortDramaProjectMapper projectMapper;
     private final ShortDramaScriptMapper scriptMapper;
     private final ShortDramaStoryboardMapper storyboardMapper;
@@ -102,6 +104,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     private final ShortDramaCharacterAppearanceMapper characterAppearanceMapper;
     private final ShortDramaLocationMapper locationMapper;
     private final ShortDramaAudioMapper audioMapper;
+    private final ShortDramaVisualAssetService visualAssets;
+    private final ShortDramaSoundService sounds;
     private final IChatModelService chatModelService;
     private final ChatServiceFactory chatServiceFactory;
     private final VideoServiceFactory videoServiceFactory;
@@ -187,6 +191,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         ShortDramaProject project = buildAndInsertProject(userId, polishResult, bo);
         ShortDramaScript script = buildAndInsertScript(project.getId(), polishResult);
 
+        if (Boolean.TRUE.equals(bo.getScriptOnly())) return getDetail(project.getId(), userId);
+
         // Phase 2: 资产分析（角色+场景提取）
         executePhase2_AssetAnalysis(chatModel, project.getId(), script);
 
@@ -198,7 +204,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     @Override
     public SseEmitter createFromIdeaStream(ShortDramaIdeaBo bo, Long userId) {
-        SseEmitter emitter = new SseEmitter(1_800_000L);
+        SseEmitter emitter = new SseEmitter(7_200_000L);
         AtomicBoolean emitterActive = new AtomicBoolean(true);
         activeEmitters.put(emitter, emitterActive);
         emitter.onCompletion(() -> closeEmitter(emitter));
@@ -220,6 +226,13 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 projectId = project.getId();
                 ShortDramaScript script = buildAndInsertScript(projectId, polishResult);
                 emit(emitter, "polish", "done", "剧本打磨完成");
+
+                if (Boolean.TRUE.equals(bo.getScriptOnly())) {
+                    sendEmitterEvent(emitter, SseEmitter.event().name("complete")
+                        .data("{\"projectId\":\"" + projectId + "\"}"));
+                    completeEmitter(emitter);
+                    return;
+                }
 
                 // Phase 2: 资产分析（角色 + 场景 并发，流式输出）
                 emit(emitter, "assets", "running", "正在分析角色和场景...");
@@ -308,7 +321,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     private static String escapeJson(String s) {
         if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t");
     }
 
     private ShortDramaProject buildAndInsertProject(Long userId, ShortDramaScriptResult polishResult, ShortDramaIdeaBo bo) {
@@ -371,13 +384,13 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     @Override
-    public ShortDramaDetailVo polishScript(Long projectId, Long userId) {
+    public ShortDramaDetailVo polishScript(Long projectId, Long userId, String model) {
         ShortDramaProject project = validateProjectOwner(projectId, userId);
         ShortDramaScript script = scriptMapper.selectOne(new LambdaQueryWrapper<ShortDramaScript>()
             .eq(ShortDramaScript::getProjectId, projectId)
             .orderByDesc(ShortDramaScript::getId).last("limit 1"));
         String idea = script != null ? firstNotBlank(script.getScriptText(), script.getOutlineText(), project.getDescription()) : project.getDescription();
-        ChatModelVo modelVo = findChatModel();
+        ChatModelVo modelVo = StrUtil.isNotBlank(model) ? validateAndGetModel(model) : findChatModel();
         AbstractChatService chatService = getChatService(modelVo);
         ChatModel chatModel = chatService.buildChatModel(modelVo);
 
@@ -392,6 +405,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             script.setProjectId(projectId);
             script.setSourceType("llm");
         }
+        project.setStatus("script_changed");
+        videoComposeService.invalidateComposition(projectId);
         project.setProjectName(firstNotBlank(result.getProjectName(), project.getProjectName()));
         project.setDescription(firstNotBlank(result.getDescription(), project.getDescription()));
         projectMapper.updateById(project);
@@ -428,6 +443,14 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (project == null || !userId.equals(project.getUserId())) {
             throw new IllegalArgumentException("项目不存在或无权限");
         }
+        ShortDramaScript existing = bo.getId() == null ? null : scriptMapper.selectById(bo.getId());
+        if (existing != null && !bo.getProjectId().equals(existing.getProjectId())) throw new IllegalArgumentException("剧本不属于当前项目");
+        if (existing == null || !java.util.Objects.equals(existing.getScriptText(), bo.getScriptText())
+            || !java.util.Objects.equals(existing.getOutlineText(), bo.getOutlineText())) {
+            project.setStatus("script_changed");
+            projectMapper.updateById(project);
+            videoComposeService.invalidateComposition(project.getId());
+        }
         ShortDramaScript entity = MapstructUtils.convert(bo, ShortDramaScript.class);
         entity.setSourceType(StrUtil.blankToDefault(entity.getSourceType(), "manual"));
         if (entity.getId() == null) {
@@ -452,22 +475,19 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             throw new IllegalArgumentException("剧本不存在");
         }
         videoComposeService.invalidateComposition(projectId);
-        // 删除旧分镜
-        storyboardMapper.delete(new LambdaQueryWrapper<ShortDramaStoryboard>()
-            .eq(ShortDramaStoryboard::getScriptId, scriptId));
 
         ChatModelVo modelVo = StrUtil.isNotBlank(model) ? validateAndGetModel(model) : findChatModel();
         AbstractChatService chatService = getChatService(modelVo);
         ChatModel chatModel = chatService.buildChatModel(modelVo);
 
-        List<StoryboardPanelData> panels = executePhase3_StoryboardPlan(chatModel, script, projectId);
+        List<StoryboardPanelData> panels = executePhase3_StoryboardPlan(chatModel, null, script, projectId, null, modelVo.getModelName());
         if (panels.isEmpty()) {
             panels = fallbackPanels(script);
         }
         if (!panels.isEmpty()) {
             List<JsonNode> photographyRules = buildLocalPhotographyRules(panels);
             List<ActingDirectionResult> actingDirections = buildLocalActingDirections(panels);
-            executePhase6_StoryboardDetail(chatModel, panels, projectId);
+            executePhase6_StoryboardDetail(chatModel, null, panels, projectId, null, modelVo.getModelName());
             normalizeContinuityChain(panels);
             panels = mergePanelsWithRules(panels, photographyRules, actingDirections);
         }
@@ -483,15 +503,52 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     @Override
+    public int importReviewedPlan(Long projectId, org.ruoyi.domain.bo.shortdrama.ShortDramaReviewedPlanBo review, Long userId) {
+        validateProjectOwner(projectId,userId);
+        Long scriptId=review.getScriptId();
+        if(!beginStoryboardGeneration(scriptId))throw new IllegalStateException("请等待当前分镜生成结束");
+        try {
+            var script=scriptMapper.selectById(scriptId);
+            if(script==null || !projectId.equals(script.getProjectId()))throw new IllegalArgumentException("剧本不属于当前项目");
+            if(!java.util.Objects.equals(script.getScriptText(),review.getExpectedScriptText()))throw new IllegalStateException("剧本已修改，请重新合并审阅稿");
+            var existing=storyboardMapper.selectList(new LambdaQueryWrapper<ShortDramaStoryboard>().eq(ShortDramaStoryboard::getProjectId,projectId));
+            if(!existing.isEmpty())throw new IllegalStateException("已有分镜请使用分镜修订入口；规划导入仅适用于尚未落库的项目");
+            List<String> scenes=splitScriptScenes(script.getScriptText());
+            var panels=review.getPanels();
+            validateReviewedPlan(scenes,panels);
+            var model=StrUtil.isNotBlank(review.getModel())?validateAndGetModel(review.getModel()):findChatModel();
+            String checkpoint=storyboardCheckpointKey(script,projectId)+":parallel-v3:"+ShortDramaDirectorSkills.VERSION+":"+cn.hutool.crypto.digest.DigestUtil.sha256Hex(model.getModelName());
+            for(int i=0;i<scenes.size();i++) {
+                final int sceneNo=i+1;
+                var group=panels.stream().filter(p->java.util.Objects.equals(p.getSceneNumber(),sceneNo)).toList();
+                RedisUtils.setCacheObject(checkpoint+":scene:"+sceneNo,JsonUtils.toJsonString(group),java.time.Duration.ofDays(7));
+            }
+            return panels.size();
+        } finally { endStoryboardGeneration(scriptId); }
+    }
+
+    static void validateReviewedPlan(List<String> scenes,List<StoryboardPanelData> panels) {
+        if(panels==null || panels.isEmpty() || panels.size()>500)throw new IllegalArgumentException("规划镜头数量无效");
+        if(panels.stream().anyMatch(p->p.getSceneNumber()==null || p.getSceneNumber()<1 || p.getSceneNumber()>scenes.size()))throw new IllegalArgumentException("规划场次不属于当前剧本");
+        for(int i=0;i<scenes.size();i++) {
+            final int sceneNo=i+1;
+            var group=panels.stream().filter(p->java.util.Objects.equals(p.getSceneNumber(),sceneNo)).toList();
+            if(group.isEmpty())throw new IllegalArgumentException("缺少第"+sceneNo+"场规划");
+            validateScenePlan(scenes.get(i),group);
+        }
+    }
+
+    @Override
     public SseEmitter planStoryboardStream(Long projectId, Long scriptId, String model, Long userId) {
-        SseEmitter emitter = new SseEmitter(1_800_000L);
+        SseEmitter emitter = new SseEmitter(7_200_000L);
         AtomicBoolean emitterActive = new AtomicBoolean(true);
         activeEmitters.put(emitter, emitterActive);
         emitter.onCompletion(() -> closeEmitter(emitter));
         emitter.onTimeout(() -> closeEmitter(emitter));
         emitter.onError(error -> closeEmitter(emitter));
 
-        CompletableFuture.runAsync(() -> {
+        String tenant = org.ruoyi.common.tenant.helper.TenantHelper.getTenantId();
+        CompletableFuture.runAsync(() -> org.ruoyi.common.tenant.helper.TenantHelper.dynamic(tenant, () -> {
             if (!beginStoryboardGeneration(scriptId)) {
                 sendEmitterEvent(emitter, SseEmitter.event().name("error")
                     .data("{\"message\":\"该剧本正在生成分镜，请勿重复提交\"}"));
@@ -506,8 +563,6 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 }
 
                 videoComposeService.invalidateComposition(projectId);
-                storyboardMapper.delete(new LambdaQueryWrapper<ShortDramaStoryboard>()
-                    .eq(ShortDramaStoryboard::getScriptId, scriptId));
 
                 ChatModelVo modelVo = StrUtil.isNotBlank(model) ? validateAndGetModel(model) : findChatModel();
                 AbstractChatService chatService = getChatService(modelVo);
@@ -516,7 +571,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
                 log.info("开始流式生成分镜: projectId={}, scriptId={}, model={}", projectId, scriptId, modelVo.getModelName());
                 emit(emitter, "storyboard_plan", "running", "正在规划分镜镜头，模型开始输出后会实时显示...");
-                List<StoryboardPanelData> panels = executePhase3_StoryboardPlan(chatModel, streamingModel, script, projectId, emitter);
+                List<StoryboardPanelData> panels = executePhase3_StoryboardPlan(chatModel, streamingModel, script, projectId, emitter, modelVo.getModelName());
                 if (panels.isEmpty()) {
                     throw new IllegalStateException("分镜规划失败，模型未返回有效镜头");
                 }
@@ -531,11 +586,13 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 emit(emitter, "acting", "done", "表演指导生成完成");
 
                 emit(emitter, "storyboard_detail", "running", "正在细化镜头提示词和时长...");
-                executePhase6_StoryboardDetail(chatModel, streamingModel, panels, projectId, emitter);
+                executePhase6_StoryboardDetail(chatModel, streamingModel, panels, projectId, emitter, modelVo.getModelName());
+                emit(emitter, "storyboard_detail", "done", "全部镜头细化完成");
                 normalizeContinuityChain(panels);
                 panels = mergePanelsWithRules(panels, photographyRules, actingDirections);
                 List<ShortDramaStoryboardVo> storyboards = persistStoryboards(projectId, scriptId, panels, script);
 
+                // Keep validated content-addressed checkpoints for seven days; a successful run is reusable.
                 log.info("流式生成分镜完成: projectId={}, count={}", projectId, storyboards.size());
                 sendEmitterEvent(emitter, SseEmitter.event().name("complete")
                     .data("{\"projectId\":\"" + projectId + "\",\"count\":" + storyboards.size() + "}"));
@@ -548,7 +605,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             } finally {
                 endStoryboardGeneration(scriptId);
             }
-        });
+        }));
         return emitter;
     }
 
@@ -626,6 +683,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (entity.getDurationSeconds() == null || entity.getDurationSeconds() <= 0) {
             entity.setDurationSeconds(defaultDurationForSceneType(entity.getSceneType()));
         }
+        ShortDramaTiming.validate(entity.getSceneNo(), entity.getDurationSeconds(), entity.getSourceText(), entity.getContinuityJson());
         if (entity.getId() == null) {
             entity.setVideoStatus("pending");
             storyboardMapper.insert(entity);
@@ -651,8 +709,13 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (storyboard == null) throw new IllegalArgumentException("分镜不存在");
         ShortDramaProject project = projectMapper.selectById(storyboard.getProjectId());
         if (project == null || !userId.equals(project.getUserId())) throw new IllegalArgumentException("项目不存在或无权限");
+        if (ShortDramaVisualAssetService.directInsert(storyboard.getContinuityJson())) throw new IllegalStateException("本镜使用真实素材，不能通过AI视频模型重绘；请在剪辑阶段使用已绑定原图");
+        if ("script_changed".equals(project.getStatus())) throw new IllegalStateException("剧本已修改，请重新分析资产和生成分镜后再生成视频");
+        if (storyboardGenerationStates.containsKey(storyboard.getScriptId())) throw new IllegalStateException("分镜正在更新，请完成审阅后再生成视频");
         ChatModelVo modelVo = chatModelService.selectModelByName(videoModel);
         if (modelVo == null) throw new IllegalArgumentException("未找到视频模型配置: " + videoModel);
+
+        ShortDramaTiming.validate(storyboard.getSceneNo(), storyboard.getDurationSeconds(), storyboard.getSourceText(), storyboard.getContinuityJson());
 
         // 收集所有参考图（角色 + 场景 + 末帧承接）
         List<String> referenceImages = findStoryboardReferenceImages(storyboard, lastFrameUrl);
@@ -660,7 +723,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         // 根据参考图数量自动切换模型
         if (referenceImages != null && !referenceImages.isEmpty()) {
             String targetModel;
-            if (referenceImages.size() >= 2) {
+            if (referenceImages.size() >= 2 || videoModel.endsWith("/reference-to-video")) {
                 targetModel = videoModel.replace("/text-to-video", "/reference-to-video")
                     .replace("/image-to-video", "/reference-to-video");
             } else {
@@ -673,7 +736,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     modelVo = switched;
                     log.info("参考图({}张) → 切换模型: {}", referenceImages.size(), targetModel);
                 } else {
-                    log.info("参考图({}张)但模型未注册: {}，保持原模型", referenceImages.size(), targetModel);
+                    throw new IllegalArgumentException("当前镜头需要参考图，但对应模型未配置："+targetModel+"。请选择已配置的多参考图生视频模型，不能降级为文生视频。");
                 }
             }
         }
@@ -686,6 +749,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             .size(projectAspectRatio(storyboard.getProjectId()))
             .seconds(storyboard.getDurationSeconds())
             .referenceImages(referenceImages)
+            .referenceAudios(sounds.references(storyboard.getProjectId(),storyboard.getSceneNo(),modelVo))
             .generateAudio(Boolean.TRUE)
             .returnLastFrame(Boolean.TRUE)
             .lastFrameUrl(lastFrameUrl)
@@ -747,6 +811,10 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     /** 收集分镜关联的所有参考图：角色形象图（按出场顺序）+ 场景图 + 可选末帧承接 */
     private List<String> findStoryboardReferenceImages(ShortDramaStoryboard storyboard, String lastFrameUrl) {
         List<String> images = new ArrayList<>();
+        String frame = visualAssets.readyFrame(storyboard.getId());
+        // The reviewed frame already resolves identity, set and props. Do not let the
+        // original design sheets compete with it and recreate objects or camera angles.
+        if (StrUtil.isNotBlank(frame)) return List.of(frame);
         List<CharacterRef> chars = parseCharacterRefs(storyboard.getCharactersJson());
         if (chars != null) {
             for (CharacterRef ref : chars) {
@@ -762,6 +830,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 images.add(img);
             }
         }
+        for (String prop : visualAssets.readyPropReferences(storyboard)) if (!images.contains(prop)) images.add(prop);
         // 末帧承接：放在最后一张，@imageN 标记会自动绑定
         if (StrUtil.isNotBlank(lastFrameUrl) && !images.contains(lastFrameUrl)) {
             images.add(lastFrameUrl);
@@ -782,9 +851,22 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     /** 构建增强提示词（含参考图 + 末帧首帧承接） */
     private String buildEnrichedVideoPrompt(ShortDramaStoryboard storyboard, java.util.List<String> refImages, String lastFrameUrl) {
         boolean hasRefImages = refImages != null && !refImages.isEmpty();
+        try {
+            var c=JsonUtils.parseObject(storyboard.getContinuityJson(),JsonNode.class);
+            if(hasRefImages && refImages.size()==1 && StrUtil.isNotBlank(visualAssets.readyFrame(storyboard.getId())))return
+                "本镜唯一画面参考是image 1。严格保持该构图、人物、服装、左右关系、道具与背景，连续单一机位，不切镜、不镜像、不添加参考图中没有的物件。\n"
+                + "起点："+c.path("start_state").asText()+"\n"+storyboard.getVideoPrompt()
+                + "\n终点："+c.path("end_state").asText()+"\n只执行当前镜头，不展示后续镜头，不配乐。";
+        } catch(Exception ignored) { }
         StringBuilder sb = new StringBuilder();
+        sb.append(ShortDramaDirectorSkills.load("emotional-dialogue", "director-blocking", "real-material", "video-continuity"));
 
         // 1. 镜头语言标签
+        String frame = visualAssets.readyFrame(storyboard.getId());
+        if (StrUtil.isNotBlank(frame) && hasRefImages && refImages.contains(frame)) {
+            sb.append("[本镜关键帧] @image").append(refImages.indexOf(frame)+1)
+                .append("是已生成的本镜构图和起始状态；锁定人物身份、道具外观和站位，从该状态展开本镜动作。其他参考图只用于身份和空间，不复制多视图。\n");
+        }
         sb.append("[镜头: ").append(firstNotBlank(storyboard.getSceneType(), "daily"));
         if (StrUtil.isNotBlank(storyboard.getShotType())) sb.append(", ").append(storyboard.getShotType());
         if (StrUtil.isNotBlank(storyboard.getCameraMove())) sb.append(", ").append(storyboard.getCameraMove());
@@ -914,16 +996,15 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         }
 
         // 8. 视觉参考（image_prompt 含光线/氛围/构图细节）
-        if (StrUtil.isNotBlank(storyboard.getImagePrompt())) {
+        // A reviewed/regenerated keyframe supersedes the original visual draft.
+        // Re-appending that draft can reset props and framing to the rejected version.
+        if (StrUtil.isBlank(frame) && StrUtil.isNotBlank(storyboard.getImagePrompt())) {
             sb.append("[视觉] ").append(storyboard.getImagePrompt()).append("\n");
         }
 
         // 9. 目标时长与节奏
         int durationSeconds = storyboard.getDurationSeconds() != null ? storyboard.getDurationSeconds() : 6;
-        sb.append("[时长] ").append(durationSeconds).append("秒，动作与运镜必须完整覆盖全程");
-        if (durationSeconds >= 8) {
-            sb.append("，按前段、中段、后段三个连续节拍展开，避免动作提前结束");
-        }
+        sb.append("[时长] ").append(durationSeconds).append("秒，按已审阅的对白、独占动作及停顿预算自然表演；固定机位和安静倾听均可保留，不添加新动作填秒数");
         sb.append("\n");
 
         // 10. 视觉风格
@@ -934,6 +1015,10 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
         // 11. 视频描述（核心驱动 prompt）
         sb.append("\n").append(storyboard.getVideoPrompt());
+        if (StrUtil.isNotBlank(storyboard.getSourceText())) {
+            sb.append("\n[已审阅剧情与声音原文]\n").append(storyboard.getSourceText())
+                .append("\n对白内容、发言人和先后顺序以以上原文为准，不改写、不对调、不新增台词；手机录音只作画外声，不生成说话者实体。");
+        }
         return sb.toString();
     }
 
@@ -1214,19 +1299,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 .eq(ShortDramaStoryboard::getProjectId, projectId)
                 .orderByAsc(ShortDramaStoryboard::getSceneNo));
 
-        // 按 locationName 分组：同场景内串行（保末帧拼接），跨场景组并发
-        List<List<ShortDramaStoryboard>> groups = new ArrayList<>();
-        List<ShortDramaStoryboard> currentGroup = new ArrayList<>();
-        String currentLoc = null;
-        for (ShortDramaStoryboard sb : storyboards) {
-            String loc = StrUtil.blankToDefault(sb.getLocationName(), "");
-            if (!loc.equals(currentLoc)) {
-                if (!currentGroup.isEmpty()) { groups.add(currentGroup); currentGroup = new ArrayList<>(); }
-                currentLoc = loc;
-            }
-            currentGroup.add(sb);
-        }
-        if (!currentGroup.isEmpty()) groups.add(currentGroup);
+        for (ShortDramaStoryboard shot : storyboards) ShortDramaTiming.validate(shot.getSceneNo(), shot.getDurationSeconds(), shot.getSourceText(), shot.getContinuityJson());
+        List<List<ShortDramaStoryboard>> groups = groupContinuousScenes(storyboards);
 
         // 跨场景组并发，组上限 4
         int parallel = Math.min(4, Math.max(1, groups.size()));
@@ -1239,10 +1313,18 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             }
             // 按 sceneNo 顺序汇总结果
             List<ShortDramaStoryboardVo> result = new ArrayList<>();
+            List<String> failures = new ArrayList<>();
             for (java.util.concurrent.Future<List<ShortDramaStoryboardVo>> f : futures) {
                 try { result.addAll(f.get()); }
-                catch (Exception e) { log.warn("视频生成分组失败: {}", e.getMessage()); }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("视频生成等待被中断，请检查各镜头状态", e);
+                }
+                catch (java.util.concurrent.ExecutionException e) {
+                    failures.add(e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+                }
             }
+            if (!failures.isEmpty()) throw new IllegalStateException(String.join("；", failures));
             result.sort(java.util.Comparator.comparing(v -> v.getSceneNo() == null ? Integer.MAX_VALUE : v.getSceneNo()));
             return result;
         } finally {
@@ -1250,25 +1332,39 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         }
     }
 
-    /** 同场景组内串行生成：上一镜末帧喂下一镜首帧。 */
-    private List<ShortDramaStoryboardVo> generateGroupSerial(List<ShortDramaStoryboard> group, String videoModel, Long userId) {
+    static List<List<ShortDramaStoryboard>> groupContinuousScenes(List<ShortDramaStoryboard> storyboards) {
+        List<List<ShortDramaStoryboard>> groups = new ArrayList<>();
+        String previousKey = null;
+        for (ShortDramaStoryboard sb : storyboards) {
+            String scene = "";
+            if (StrUtil.isNotBlank(sb.getContinuityJson())) {
+                scene = cn.hutool.json.JSONUtil.parseObj(sb.getContinuityJson()).getStr("scene_number", "");
+            }
+            String key = scene + "|" + StrUtil.blankToDefault(sb.getLocationName(), "");
+            if (!key.equals(previousKey)) groups.add(new ArrayList<>());
+            groups.get(groups.size() - 1).add(sb);
+            previousKey = key;
+        }
+        return groups;
+    }
+
+    /** 同场景组内串行生成；包括第一镜在内，完成并取得末帧后才允许下一镜提交。 */
+    List<ShortDramaStoryboardVo> generateGroupSerial(List<ShortDramaStoryboard> group, String videoModel, Long userId) {
         List<ShortDramaStoryboardVo> result = new ArrayList<>();
         String prevLastFrameUrl = null;
-        for (ShortDramaStoryboard sb : group) {
-            try {
-                String lastFrameForThis = StrUtil.isNotBlank(prevLastFrameUrl) ? prevLastFrameUrl : null;
-                ShortDramaStoryboardVo vo = generateVideo(sb.getId(), videoModel, userId, lastFrameForThis);
-                if (lastFrameForThis != null) {
-                    vo = ensureVideoDone(sb.getId(), videoModel, userId);
-                }
-                result.add(vo);
-                ShortDramaStoryboard latest = storyboardMapper.selectById(sb.getId());
-                prevLastFrameUrl = (latest != null && StrUtil.isNotBlank(latest.getLastFrameUrl())) ? latest.getLastFrameUrl() : null;
-            } catch (Exception e) {
-                log.warn("镜头{}视频生成失败: {}", sb.getSceneNo(), e.getMessage());
-                ShortDramaStoryboard current = storyboardMapper.selectById(sb.getId());
-                result.add(MapstructUtils.convert(current != null ? current : sb, ShortDramaStoryboardVo.class));
-                prevLastFrameUrl = null;
+        for (int index = 0; index < group.size(); index++) {
+            ShortDramaStoryboard sb = group.get(index);
+            ShortDramaStoryboardVo vo = generateVideo(sb.getId(), videoModel, userId, prevLastFrameUrl);
+            if (vo == null || !"done".equals(vo.getVideoStatus())) {
+                vo = ensureVideoDone(sb.getId(), videoModel, userId);
+            }
+            if (vo == null || !"done".equals(vo.getVideoStatus())) {
+                throw new IllegalStateException("镜头" + sb.getSceneNo() + "尚未成功完成，已停止后续连续镜头");
+            }
+            result.add(vo);
+            prevLastFrameUrl = vo.getLastFrameUrl();
+            if (index < group.size() - 1 && StrUtil.isBlank(prevLastFrameUrl)) {
+                throw new IllegalStateException("镜头" + sb.getSceneNo() + "缺少末帧，已停止后续连续镜头");
             }
         }
         return result;
@@ -1278,7 +1374,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
      * 后台同步轮询单镜视频直到 done/failed（用于同场景末帧拼接时拿到末帧再喂下一镜）。
      * 单镜累计轮询不超过 5 分钟，超时按当前状态返回。
      */
-    private ShortDramaStoryboardVo ensureVideoDone(Long storyboardId, String videoModel, Long userId) {
+    ShortDramaStoryboardVo ensureVideoDone(Long storyboardId, String videoModel, Long userId) {
         long deadline = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5);
         try {
             while (System.currentTimeMillis() < deadline) {
@@ -1298,14 +1394,14 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     // ==================== 资产分析与管理 ====================
 
     @Override
-    public ShortDramaDetailVo analyzeAssets(Long projectId, Long scriptId, Long userId) {
+    public ShortDramaDetailVo analyzeAssets(Long projectId, Long scriptId, Long userId, String model) {
         ShortDramaProject project = validateProjectOwner(projectId, userId);
         ShortDramaScript script = scriptMapper.selectById(scriptId);
         if (script == null || !projectId.equals(script.getProjectId())) {
             throw new IllegalArgumentException("剧本不存在");
         }
         clearAssets(projectId);
-        ChatModelVo modelVo = findChatModel();
+        ChatModelVo modelVo = StrUtil.isNotBlank(model) ? validateAndGetModel(model) : findChatModel();
         AbstractChatService chatService = getChatService(modelVo);
         ChatModel chatModel = chatService.buildChatModel(modelVo);
         executePhase2_AssetAnalysis(chatModel, projectId, script);
@@ -1376,7 +1472,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         ChatModelVo modelVo = chatModelService.selectModelByName(imageModel);
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + imageModel);
         String prompt = firstNotBlank(primaryLocationDescription(location), location.getSummary(), location.getName());
-        String finalPrompt = ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + prompt +
+        String finalPrompt = ShortDramaDirectorSkills.load("visual-world") + ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + prompt +
             ShortDramaImageConstants.LOCATION_PROMPT_SUFFIX + artStyleSuffix(location.getProjectId());
         String referenceImage = validateReferenceImageUrl(referenceImageUrl);
         String imageUrl = imageServiceFactory.getOriginalService(modelVo.getProviderCode())
@@ -1570,7 +1666,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         ChatModelVo modelVo = chatModelService.selectModelByName(imageModel);
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + imageModel);
         String prompt = firstNotBlank(primaryLocationDescription(location), location.getSummary(), location.getName());
-        String finalPrompt = ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + prompt +
+        String finalPrompt = ShortDramaDirectorSkills.load("visual-world") + ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + prompt +
             ShortDramaImageConstants.LOCATION_PROMPT_SUFFIX + artStyleSuffix(location.getProjectId());
         String referenceImage = validateReferenceImageUrl(referenceImageUrl);
         String imageUrl = imageServiceFactory.getOriginalService(modelVo.getProviderCode())
@@ -1695,7 +1791,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             if (location == null) throw new IllegalArgumentException("场景不存在");
             validateProjectOwner(location.getProjectId(), userId);
             String basePrompt = firstNotBlank(primaryLocationDescription(location), location.getSummary(), location.getName());
-            prompt = ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + basePrompt +
+            prompt = ShortDramaDirectorSkills.load("visual-world") + ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + basePrompt +
                 ShortDramaImageConstants.LOCATION_PROMPT_SUFFIX + artStyleSuffix(location.getProjectId());
             size = projectAspectRatio(location.getProjectId());
             seed = ShortDramaImageConstants.styleSeed(location.getProjectId());
@@ -1765,7 +1861,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         }
 
         String prompt = firstNotBlank(primaryLocationDescription(location), location.getSummary(), location.getName());
-        String finalPrompt = ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + prompt +
+        String finalPrompt = ShortDramaDirectorSkills.load("visual-world") + ShortDramaImageConstants.LOCATION_PROMPT_PREFIX + prompt +
             ShortDramaImageConstants.LOCATION_PROMPT_SUFFIX + artStyleSuffix(location.getProjectId());
 
         location.setPreviousImageUrls(location.getImageUrls());
@@ -1865,21 +1961,26 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         heartbeat.scheduleAtFixedRate(() -> emit(emitter, streamPhase, "running", "模型仍在处理中，请稍候..."),
             15, 15, TimeUnit.SECONDS);
         // 首 token 超时兜底:部分聚合站对 stream=true 既不返回内容也不报错,
-        // 外层 30 分钟总超时才会失败,前端会长时间卡死。90 秒内未收到任何 token 时快速失败。
+        // 长场分镜的推理可能超过90秒；保留心跳，5分钟无正文才判为无响应。
         final AtomicBoolean firstTokenReceived = new AtomicBoolean(false);
+        final java.util.concurrent.atomic.AtomicLong lastTokenAt = new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis());
+        heartbeat.scheduleAtFixedRate(() -> { if (firstTokenReceived.get() && System.currentTimeMillis()-lastTokenAt.get()>90_000) done.completeExceptionally(new RuntimeException("模型输出停滞超过90秒，已完成部分保留")); }, 15, 15, TimeUnit.SECONDS);
         heartbeat.schedule(() -> {
             if (firstTokenReceived.compareAndSet(false, true)) {
                 done.completeExceptionally(new RuntimeException(
-                    "模型在90秒内未返回任何流式内容，可能该模型或服务不支持流式输出，请更换模型或使用同步生成"));
+                    "模型在90秒内未返回正文，已完成场次保留，请重试或更换模型"));
             }
         }, 90, TimeUnit.SECONDS);
         List<ChatMessage> messages = List.of(UserMessage.from(prompt));
         streamingModel.chat(messages, new StreamingChatResponseHandler() {
             @Override
             public void onPartialResponse(String text) {
+                if (done.isDone()) return;
                 firstTokenReceived.set(true);
+                lastTokenAt.set(System.currentTimeMillis());
                 buf.append(text);
-                emitStream(emitter, streamPhase, text);
+                // Detail batches run independently; do not interleave their JSON in the UI.
+                if (!"storyboard_detail".equals(streamPhase) && !"storyboard_plan_parallel".equals(streamPhase)) emitStream(emitter, streamPhase, text);
                 if (onPartial != null) {
                     try { onPartial.accept(buf.toString()); } catch (Exception ex) {
                         log.warn("流式增量回调异常: {}", ex.getMessage());
@@ -1897,10 +1998,12 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             }
         });
         try {
-            done.orTimeout(30, TimeUnit.MINUTES).join();
+            done.orTimeout(8, TimeUnit.MINUTES).join();
         } catch (Exception e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
-            throw new RuntimeException("模型在30分钟内未完成响应，请检查模型服务状态或更换模型后重试", cause);
+            throw new RuntimeException(cause instanceof java.util.concurrent.TimeoutException
+                ? "模型在8分钟内未完成当前批次，请检查模型服务状态或更换模型后重试"
+                : "模型调用失败：" + cause.getMessage(), cause);
         } finally {
             heartbeat.shutdownNow();
         }
@@ -1911,22 +2014,29 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     private static final String SCRIPT_DELIMITER = "===SCRIPT===";
 
-    private static final String PHASE1_COMBINED_SYSTEM = """
+    private static final String PHASE1_COMBINED_SYSTEM = ShortDramaDirectorSkills.load("emotional-dialogue", "story-causality", "visual-world", "real-material") + """
         你是顶级短剧编剧、剧本统筹和场景规划师。根据用户提供的故事资料，创作一部剧情完整、可拍摄、具有多场次推进的短剧，而不是只截取结局或高潮片段。
 
         【输出格式 - 严格按顺序】
-        先输出一行 JSON 元信息，换行后输出 "===SCRIPT===", 再换行后输出完整剧本正文（1200-2500字）。
+        先输出一行 JSON 元信息，换行后输出 "===SCRIPT===", 再换行后输出完整剧本正文（按用户指定时长展开，不用固定字数压缩故事）。
 
         JSON 格式（一行完成，不要换行）：
-        {"projectName":"项目名","description":"简介(30-80字)","scriptName":"剧本名","tone":"类型与基调","outlineText":"完整分场大纲(500-1000字)"}
+        {"projectName":"项目名","description":"简介(30-80字)","scriptName":"剧本名","tone":"类型与基调","outlineText":"简明剧情大纲：整体节奏、因果链与情绪转折"}
 
         【完整故事弧 - 最高优先级】
         1. 必须覆盖用户资料中的完整主线，禁止只选择决赛、告白、复仇等最后高潮单独成篇
-        2. 至少包含5个有不同剧情功能的场次；资料跨度较大时建议6-10场
-        3. 场次必须覆盖：人物与困境建立 → 改变契机 → 发展/训练或关系推进 → 重大挫折或背叛 → 主角自主决定与重组 → 高潮行动 → 结果与主题落点
+        2. 场次数服从故事复杂度和用户时长，不设最低场次数；简单故事合并重复信息，不为了完整而增加支线
+        3. 只覆盖本故事必要的起因、变化、选择与结果；生活故事以认知变化为主，不套用挫折、背叛或反击模板
         4. 每场都必须改变剧情状态，说明角色目标、阻碍、行动和结果；禁止多个场次只是重复训练、重复争吵或重复比赛
         5. 反派倒戈、关系破裂、能力掌握、团队团结、比赛逆转等重大变化必须提前铺垫，不能突然发生
         6. 开场不得直接进入最终决战，除非用户明确要求只写高潮片段
+
+        【因果与信息边界】
+        - outlineText只负责整体节奏、情绪转折与因果关系；每段用1-2句说明为何发生、带来什么变化和下一步，标注时间预算，不写分镜。
+        - 家庭、生活题材按人物认知变化推进，不得强塞反派、背叛、比赛或逆转。
+        - 区分观众知道什么、主角知道什么；推测必须经人物查证后才能作为事实。
+        - 软件只做资料识别和统计，不可凭空推断人物秘密；真实界面与票据的素材使用说明放入分镜，不写进叙事正文。
+        - 每场景头写“内景/外景 地点 时间（预计XX秒）”；各场合计贴近用户时长；对白、动作、停顿均需有实际内容承载。
 
         【分场要求】
         - 使用标准场景头：内景/外景 + 具体地点 + 时间
@@ -1943,10 +2053,17 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
         【剧本格式】
         场景头
-        场景环境与人物初始状态
-        连续动作描述
+        一句交代必要的情境
+        推动剧情的主要行动
         角色名：「台词」
-        该场结果与进入下一场的动作钩子
+        自然收束并承接下一场；不重复标注已表达的结果或钩子
+
+        【大纲、正文、分镜分工 - 最高优先级】
+        - 大纲负责全片节奏、连贯性和因果；保持简明，不复述完整台词或展开执行细节。
+        - 正文只保留必要情境、主要行动和有效对白。一个连续行为用一句说明，不拆成拿起、抬手、转腕、放下的流水账。
+        - 不在正文写景别、机位、运镜、光线参数、左右站位、持物手、逐秒安排、表演参数或软件按钮操作；这些由分镜阶段根据正文补充。
+        - 核心道具出现与移动要交代其剧情原因，但不写机械过程。简单故事不增加无关误会、维修教学、反复核账或多次告别来凑时长。
+        - 不以字数、场数判定完整，不为了达到1000字或5场而扩写。完整性只看必要因果链是否成立。
 
         【台词与动作】
         - 对话必须推动认知、关系、决定或行动变化
@@ -1955,8 +2072,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         - 比赛、战斗和训练必须写清动作过程与结果，不能只用“经过努力”“最终获胜”概括
 
         【自检 - 输出前内部完成】
-        - 是否至少5个场景头，且地点/时间/剧情功能有变化
-        - 是否覆盖了用户资料中的起点、发展、低谷、反击和结局
+        - 场次是否必要，简明正文是否覆盖了完整因果链，技术细节是否留给分镜
+        - 是否覆盖用户资料中的必要起因、变化、选择和结果，而没有强加复杂故事模板
         - 删除任一场是否会造成剧情断裂；若不会，该场应合并或强化
         - 是否存在角色无原因倒戈、突然掌握能力、突然团结或突然获胜
         - 是否误把最终高潮写成了整部剧本
@@ -1990,15 +2107,15 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         return count;
     }
 
-    private static boolean scriptNeedsExpansion(ShortDramaScriptResult result) {
+    static boolean scriptNeedsExpansion(ShortDramaScriptResult result) {
         if (result == null || StrUtil.isBlank(result.getScriptText())) return true;
-        return result.getScriptText().length() < 1000 || countSceneHeadings(result.getScriptText()) < 5;
+        return countSceneHeadings(result.getScriptText()) == 0;
     }
 
     private ShortDramaScriptResult expandIncompleteScript(ChatModel chatModel, ShortDramaIdeaBo bo,
                                                            ShortDramaScriptResult initial) {
         String prompt = PHASE1_COMBINED_SYSTEM
-            + "\n\n以下初稿场次不足或过度集中在高潮。请基于原始资料完整重写，不要只修改局部。"
+            + "\n\n以下初稿缺少可识别的场景头。只修复剧本结构，保留简洁叙事，不增加支线、镜头细节或无关场次。"
             + "\n原始资料：\n" + sanitizeIdeaInput(bo.getIdea())
             + "\n\n不合格初稿：\n" + (initial == null ? "无" : firstNotBlank(initial.getScriptText(), "无"));
         ShortDramaScriptResult expanded = parsePhase1Response(chatModel.chat(prompt));
@@ -2020,7 +2137,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             throw new RuntimeException("剧本打磨失败：LLM 返回格式异常，请重试");
         }
         if (scriptNeedsExpansion(result)) {
-            log.warn("Phase 1 剧本场次不足，自动扩写: length={} scenes={}",
+            log.warn("Phase 1 剧本缺少场景结构，尝试修复: length={} scenes={}",
                 result.getScriptText().length(), countSceneHeadings(result.getScriptText()));
             result = expandIncompleteScript(chatModel, bo, result);
         }
@@ -2294,7 +2411,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     private static String buildCharacterProfilePrompt(String scriptText) {
-        return """
+        return ShortDramaDirectorSkills.load("emotional-dialogue", "story-causality", "visual-world") + """
             你是专业的"选角指导"。请基于提供的文本（小说、剧本或混合格式），分析并输出所有需要制作形象的角色档案信息。
 
             【你的职责】
@@ -2377,7 +2494,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             case "C" -> "80-120字，简洁但完整的形象描述";
             default -> "50-80字，基础形象即可";
         };
-        return """
+        return ShortDramaDirectorSkills.load("visual-world") + """
             你是专业的"角色视觉设计师"。根据角色档案信息，生成详细的人物外貌描述（用于AI图片生成）。
 
             【视觉层级规范】描述长度要求：%s
@@ -2450,7 +2567,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     private static String buildLocationCreatePrompt(String scriptText) {
-        return """
+        return ShortDramaDirectorSkills.load("visual-world") + """
             你是"场景资产建立师"。请基于文本筛选需要制作画面的场景，生成用于出图的资产JSON。
 
             【筛选规则】
@@ -2509,51 +2626,226 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     private List<StoryboardPanelData> executePhase3_StoryboardPlan(ChatModel chatModel, StreamingChatModel streamingModel,
-                                                                    ShortDramaScript script, Long projectId, SseEmitter emitter) {
-        try {
-            String text = firstNotBlank(script.getScriptText(), script.getOutlineText(), "");
-            if (StrUtil.isBlank(text)) return List.of();
-
-            String charsLib = buildCharactersLibString(projectId);
-            String locsLib = buildLocationsLibString(projectId);
-            String charsIntro = buildCharactersIntroString(projectId);
-            String charsAppearanceList = buildCharactersAppearanceListString(projectId);
-            String charsFullDesc = buildCharactersFullDescString(projectId);
-
-            String prompt = buildStoryboardPlanPrompt(text, charsLib, locsLib, charsIntro, charsAppearanceList, charsFullDesc,
-                artStyleSuffix(projectId), projectAspectRatio(projectId));
-            String response;
-            if (emitter != null) {
-                StreamingChatModel activeStreamingModel = streamingModel != null ? streamingModel : buildStreamingChatModel();
-                // 流式增量：每解析出一个完整 panel 就推给前端，不等整个数组完成
-                final org.ruoyi.service.shortdrama.support.IncrementalJsonArrayExtractor<StoryboardPanelData> extractor =
-                    new org.ruoyi.service.shortdrama.support.IncrementalJsonArrayExtractor<>(StoryboardPanelData.class);
-                response = streamingChat(activeStreamingModel, chatModel, prompt, emitter, "storyboard_plan", buf -> {
-                    List<StoryboardPanelData> fresh = extractor.feed(buf);
-                    for (StoryboardPanelData p : fresh) {
-                        if (p != null) emitPanel(emitter, p);
-                    }
-                });
-            } else {
-                response = chatModel.chat(prompt);
-            }
-            List<StoryboardPanelData> panels = parsePanelList(response);
-            if (panels != null && !panels.isEmpty()) {
-                for (int i = 0; i < panels.size(); i++) {
-                    panels.get(i).setPanelNumber(i + 1);
-                }
-                return panels;
-            }
-        } catch (Exception e) {
-            log.warn("Phase 3 分镜规划失败: {}", e.getMessage());
-        }
-        return List.of();
+        ShortDramaScript script, Long projectId, SseEmitter emitter) {
+        return executePhase3_StoryboardPlan(chatModel, streamingModel, script, projectId, emitter, findChatModel().getModelName());
     }
 
-    private static String buildStoryboardPlanPrompt(String text, String charsLib, String locsLib,
+    private List<StoryboardPanelData> executePhase3_StoryboardPlan(ChatModel chatModel, StreamingChatModel streamingModel,
+        ShortDramaScript script, Long projectId, SseEmitter emitter, String modelName) {
+        String text=firstNotBlank(script.getScriptText(),script.getOutlineText(), "");
+        if(StrUtil.isBlank(text))return List.of();
+        String charsLib=buildCharactersLibString(projectId),locsLib=buildLocationsLibString(projectId);
+        String intro=buildCharactersIntroString(projectId),variants=buildCharactersAppearanceListString(projectId),descriptions=buildCharactersFullDescString(projectId);
+        String style=artStyleSuffix(projectId),aspect=projectAspectRatio(projectId);
+        String checkpoint=storyboardCheckpointKey(script,projectId)+":parallel-v3:"+ShortDramaDirectorSkills.VERSION+":"+cn.hutool.crypto.digest.DigestUtil.sha256Hex(modelName);
+        List<String> scenes=splitScriptScenes(text);
+        var completed=new java.util.concurrent.atomic.AtomicInteger();
+        List<Integer> indices=java.util.stream.IntStream.range(0,scenes.size()).boxed().toList();
+        String tenant = org.ruoyi.common.tenant.helper.TenantHelper.getTenantId();
+        var byScene=ShortDramaParallel.mapOrdered(indices,3,sceneIndex->org.ruoyi.common.tenant.helper.TenantHelper.dynamic(tenant,()->{
+            String context="全剧大纲（只作因果上下文）：\n"+firstNotBlank(script.getOutlineText(),text)
+                +"\n当前第"+(sceneIndex+1)+"/"+scenes.size()+"场，只拆本场：\n"+scenes.get(sceneIndex);
+            if(sceneIndex>0) {
+                String previous=scenes.get(sceneIndex-1);
+                context+="\n上一场原文结尾（只作桥梁参考，不重复生成）："+previous.substring(Math.max(0,previous.length()-1000));
+            }
+            String prompt=buildStoryboardPlanPrompt(context,charsLib,locsLib,intro,variants,descriptions,style,aspect);
+            String sceneScript=scenes.get(sceneIndex);
+            prompt+="\n本次只拆以下场次，时长预算以此标题为准："+sceneScript.lines().findFirst().orElse("")
+                +"\n输出前先列内部节拍时间表并加总duration；将正常表演、核实信息、接收对白、情绪反应算入时间。正文是简述，分镜应展开表演，不逐句机械切镜。禁止增加支线、重复台词或无意义空镜。"+sceneBudgetScaffold(sceneScript);
+            String key=checkpoint+":scene:"+(sceneIndex+1);
+            String cached=RedisUtils.getCacheObject(key);
+            List<StoryboardPanelData> result=null;
+            if(StrUtil.isNotBlank(cached)) {
+                result=parsePanelList(cached);
+                if (result != null && !result.isEmpty()) try { validateScenePlan(sceneScript,result); }
+                catch (RuntimeException invalid) {
+                    RedisUtils.setCacheObject(key+":draft",JsonUtils.toJsonString(result),java.time.Duration.ofDays(7));
+                    result=null;
+                }
+            }
+            if(result==null || result.isEmpty()) {
+                String draft = RedisUtils.getCacheObject(key+":draft");
+                if (StrUtil.isNotBlank(draft)) {
+                    result = parsePanelList(draft);
+                    if (result != null && !result.isEmpty()) {
+                        String issue = "恢复上次未通过的场次；保留原文对白与人物表演，重新核对时间表";
+                        try { validateScenePlan(sceneScript,result); } catch (RuntimeException invalid) { issue=invalid.getMessage(); }
+                        prompt = buildSceneBudgetRepairPrompt(sceneScript, result, issue);
+                    }
+                }
+                for(int attempt=1;attempt<=2;attempt++)try {
+                    boolean repairing = result != null && !result.isEmpty();
+                    if(emitter!=null)emit(emitter,"storyboard_plan","running","第"+(sceneIndex+1)+"场"+(repairing?"校对对白与时间表":"规划")+"（第"+attempt+"次）");
+                    String response=emitter==null?chatModel.chat(prompt):streamingChat(streamingModel!=null?streamingModel:buildStreamingChatModel(),chatModel,prompt,emitter,"storyboard_plan_parallel");
+                    result=repairing?applyTimingRepair(result,response):parsePanelList(response);
+                    if(result==null || result.isEmpty())throw new IllegalStateException("模型未返回有效镜头");
+                    RedisUtils.setCacheObject(key+":draft",JsonUtils.toJsonString(result),java.time.Duration.ofDays(7));
+                    validateScenePlan(sceneScript,result);
+                    RedisUtils.setCacheObject(key,JsonUtils.toJsonString(result),java.time.Duration.ofDays(7));
+                    break;
+                }catch(Exception e){if(attempt==2)throw new IllegalStateException("第"+(sceneIndex+1)+"场失败，其他已完成场次保留："+e.getMessage(),e);
+                    prompt=result==null?prompt+"\n修复无效输出："+e.getMessage():buildSceneBudgetRepairPrompt(sceneScript,result,e.getMessage());}
+            }
+            if(emitter!=null)emit(emitter,"storyboard_plan","running","分场规划已完成 "+completed.incrementAndGet()+"/"+scenes.size()+" 场（最多3路并发）");
+            return result;
+        }));
+        List<StoryboardPanelData> all=new ArrayList<>();
+        for(int i=0;i<byScene.size();i++)for(var panel:byScene.get(i)) {
+            panel.setPanelNumber(all.size()+1);panel.setSceneNumber(i+1);all.add(panel);
+            if(emitter!=null)emitPanel(emitter,panel);
+        }
+        return all;
+    }
+
+    static void validateScenePlan(String scene, List<StoryboardPanelData> panels) {
+        List<String> errors = new ArrayList<>();
+        try { validateSceneDuration(scene, panels); } catch (RuntimeException e) { errors.add(e.getMessage()); }
+        for (int i=0;i<panels.size();i++) {
+            var panel=panels.get(i);
+            try { ShortDramaTiming.validate(i+1,panel.getDuration(),panel.getSourceText(),buildContinuityJson(panel)); }
+            catch (RuntimeException e) { errors.add(e.getMessage()); }
+        }
+        StringBuilder spoken=new StringBuilder();
+        var quotes=java.util.regex.Pattern.compile("「([^」]+)」");
+        for(var p:panels) {
+            var m=quotes.matcher(firstNotBlank(p.getSourceText(),""));
+            while(m.find())spoken.append(m.group(1).replaceAll("[^\\p{IsHan}A-Za-z0-9]",""));
+        }
+        int cursor=0; var original=quotes.matcher(scene);
+        while(original.find()) {
+            String line=original.group(1).replaceAll("[^\\p{IsHan}A-Za-z0-9]","");
+            if(line.isBlank())continue;
+            int at=spoken.indexOf(line,cursor);
+            if(at<0)errors.add("遗漏或乱序原文对白：「"+original.group(1)+"」；跨镜拆句须保留原字句，source_text只含本镜部分");
+            else cursor=at+line.length();
+        }
+        if (!errors.isEmpty()) throw new IllegalStateException(String.join("；",errors));
+    }
+
+    static void validateSceneDuration(String scene, List<StoryboardPanelData> panels) {
+        if (panels.stream().anyMatch(p->p.getDuration()==null || p.getDuration()<1 || p.getDuration()>15)) throw new IllegalStateException("每镜必须明确分配1至15秒");
+        String heading=scene.lines().findFirst().orElse("");
+        var matcher=java.util.regex.Pattern.compile("预计\\s*(\\d+(?:\\.\\d+)?)\\s*秒").matcher(heading);
+        if (!matcher.find()) return;
+        double expected=Double.parseDouble(matcher.group(1));
+        int actual=panels.stream().mapToInt(p->p.getDuration()==null?0:p.getDuration()).sum();
+        double tolerance = Math.max(0.5, expected * 0.1);
+        if (expected>0 && Math.abs(actual-expected)>tolerance)
+            throw new IllegalStateException("本场预计"+expected+"秒，规划为"+actual+"秒；允许整数范围"
+                +(int)Math.ceil(expected-tolerance)+"至"+(int)Math.floor(expected+tolerance)
+                +"秒。保留对白和真实反应，不可用空镜填充；确实无法容纳时先修订剧本预算");
+    }
+
+    static String buildSceneBudgetRepairPrompt(String scene, List<StoryboardPanelData> panels, String error) {
+        ArrayNode compact=JsonNodeFactory.instance.arrayNode();
+        for(int i=0;i<panels.size();i++) {
+            var p=panels.get(i); var n=compact.addObject(); n.put("from_panel",i+1);
+            n.put("source_text",firstNotBlank(p.getSourceText(),"")); n.put("duration",p.getDuration());
+            n.put("start_state",firstNotBlank(p.getStartState(),"")); n.put("end_state",firstNotBlank(p.getEndState(),""));
+            if(p.getTiming()!=null)n.set("timing",p.getTiming());
+        }
+        return ShortDramaDirectorSkills.load("emotional-dialogue", "director-blocking")
+            + "只修订本场的可拍节拍表，不重写全套摄影JSON。返回JSON数组，每项字段：from_panel（原镜序号，拆镜可重复）、source_text（仅本镜实际原话与行动，不能引用整场）、description（简洁可拍动作）、start_state、end_state、performance_beats、timing。\n"
+            + "timing字段：spoken_text、speech_rate、action_seconds、pause_seconds、action_note。程序将按ceil(发音字数/语速+独占动作+停顿)计算duration，你不用填写duration。每项计算结果必须在1至15秒，总和应在标题预计时长的±10%内。\n"
+            + "一项只保留一个主要发言人的完整短句与听者回应；超过15秒的长句在自然句界拆开，不能删台词或让语速超过自然范围。from_panel标明取自哪个原镜，角色和场景由程序继承。\n"
+            + "边说边做只算对白时间，action_seconds只计算对白之外必须独占的动作。pause_seconds只计算真正无声的反应，不把倾听说话再算一遍。禁止按旧duration平均分配，不要每镜机械停顿2秒。\n"
+            + "按原文先后遍历，不能漏掉或重复任何原话。拆分后source_text与spoken_text仅包含本项说出的部分。站坐与持物在description、performance_beats与起止状态一致；不要凭空走动。\n"
+            + "原文：\n"+scene+"\n失败原因："+error+"\n当前节拍：\n"+compact;
+    }
+
+    static List<StoryboardPanelData> applyTimingRepair(List<StoryboardPanelData> originals,String response) {
+        var mapper=new com.fasterxml.jackson.databind.ObjectMapper();
+        try {
+            JsonNode edits=mapper.readTree(response.strip().replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", ""));
+            if(!edits.isArray() || edits.isEmpty())throw new IllegalArgumentException("时间表须为非空数组");
+            List<StoryboardPanelData> repaired=new ArrayList<>();
+            for(JsonNode edit:edits) {
+                int from=edit.path("from_panel").asInt(0);
+                if(from<1 || from>originals.size())throw new IllegalArgumentException("时间表原镜序号无效");
+                var panel=mapper.convertValue(mapper.valueToTree(originals.get(from-1)),StoryboardPanelData.class);
+                if(!edit.hasNonNull("source_text") || !edit.path("timing").isObject())throw new IllegalArgumentException("时间表缺少原话或时间预算");
+                panel.setSourceText(edit.path("source_text").asText()); panel.setTiming(edit.path("timing"));
+                panel.setDescription(edit.path("description").asText(panel.getDescription()));
+                panel.setStartState(edit.path("start_state").asText(panel.getStartState()));
+                panel.setEndState(edit.path("end_state").asText(panel.getEndState()));
+                panel.setStoryAction(panel.getDescription()); panel.setStoryResult(panel.getEndState());
+                panel.setContinuityAction("从"+panel.getStartState()+"连续执行至"+panel.getEndState());
+                if(edit.path("performance_beats").isArray())panel.setPerformanceBeats(edit.path("performance_beats"));
+                panel.setDuration(Math.max(1,(int)Math.ceil(ShortDramaTiming.requiredSeconds(panel.getSourceText(),buildContinuityJson(panel)))));
+                panel.setPanelNumber(repaired.size()+1); panel.setSegmentNumber(repaired.size()+1);
+                repaired.add(panel);
+            }
+            return repaired;
+        } catch(Exception e) { throw new IllegalArgumentException("时间表修订无效："+e.getMessage(),e); }
+    }
+
+    private static String sceneBudgetScaffold(String scene) {
+        var match=java.util.regex.Pattern.compile("预计\\s*(\\d+)\\s*秒").matcher(scene.lines().findFirst().orElse(""));
+        if(!match.find())return "";
+        int seconds=Integer.parseInt(match.group(1));
+        if(seconds<1)return "";
+        int count=(int)Math.ceil(seconds/12d),base=seconds/count,remainder=seconds%count;
+        List<Integer> timeline=new ArrayList<>();
+        for(int i=0;i<count;i++)timeline.add(base+(i<remainder?1:0));
+        return "\n【本场时间表】总预算"+seconds+"秒。一份已校验的初始分配为"+count+"镜，逐镜duration="+timeline
+            +"，总和="+seconds+"。请将原文连续表演与对白安排进此时间表；可按实际切点重新分配或增减镜头，但必须重新加总到目标，不要遗漏静默倾听、查证阅读或行动过程。\n";
+    }
+
+    private String storyboardCheckpointKey(ShortDramaScript script, Long projectId) {
+        List<org.ruoyi.common.mybatis.core.domain.BaseEntity> assets = new ArrayList<>();
+        var chars = characterMapper.selectList(new LambdaQueryWrapper<ShortDramaCharacter>().eq(ShortDramaCharacter::getProjectId, projectId));
+        assets.addAll(chars);
+        assets.addAll(locationMapper.selectList(new LambdaQueryWrapper<ShortDramaLocation>().eq(ShortDramaLocation::getProjectId, projectId)));
+        if (!chars.isEmpty()) assets.addAll(characterAppearanceMapper.selectList(new LambdaQueryWrapper<ShortDramaCharacterAppearance>()
+            .in(ShortDramaCharacterAppearance::getCharacterId, chars.stream().map(ShortDramaCharacter::getId).toList())));
+        ShortDramaProject project = projectMapper.selectById(projectId);
+        return checkpointKey(projectId, script.getId(), script.getScriptText(), script.getOutlineText(),
+            project.getArtStyle(), projectAspectRatio(projectId), planningAssetSignature(assets));
+    }
+
+    static String planningAssetSignature(List<? extends org.ruoyi.common.mybatis.core.domain.BaseEntity> assets) {
+        List<String> records = new ArrayList<>();
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        for (var asset : assets) {
+            JsonNode data = mapper.valueToTree(asset);
+            ObjectNode relevant = JsonNodeFactory.instance.objectNode();
+            relevant.put("type", asset.getClass().getSimpleName());
+            for (String field : List.of("id", "characterId", "name", "gender", "ageRange", "roleLevel",
+                "personalityTags", "introduction", "visualDescription", "summary", "descriptions",
+                "availableSlots", "hasCrowd", "crowdDescription", "appearanceIndex", "changeReason", "description")) {
+                if (data.has(field)) relevant.set(field, data.get(field));
+            }
+            records.add(relevant.toString());
+        }
+        // Image completion and selection must not discard successful text-planning checkpoints.
+        java.util.Collections.sort(records);
+        return cn.hutool.crypto.digest.DigestUtil.sha256Hex(String.join("\n", records));
+    }
+
+    static String checkpointKey(Long projectId, Long scriptId, String script, String outline, String style, String aspect, String assetVersion) {
+        String input = String.join("\n", StrUtil.nullToEmpty(script), StrUtil.nullToEmpty(outline), StrUtil.nullToEmpty(style), aspect, assetVersion);
+        return "short-drama:checkpoint:v1:" + projectId + ":" + scriptId + ":" + cn.hutool.crypto.digest.DigestUtil.sha256Hex(input);
+    }
+
+    static List<String> splitScriptScenes(String text) {
+        List<String> scenes = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean seenHeader = false;
+        for (String line : text.split("\\R")) {
+            boolean heading = line.strip().matches("^(?:#{1,6}\\s*)?(?:第[一二三四五六七八九十0-9]+场[：:、. ]*)?(?:内景|外景|内外景|闪回[：:]?\\s*(?:内景|外景)).*");
+            if (heading && seenHeader) { scenes.add(current.toString().trim()); current.setLength(0); }
+            if (heading) seenHeader = true;
+            current.append(line).append("\n");
+        }
+        if (!current.toString().isBlank()) scenes.add(current.toString().trim());
+        return scenes;
+    }
+
+    static String buildStoryboardPlanPrompt(String text, String charsLib, String locsLib,
                                                      String charsIntro, String charsAppearanceList, String charsFullDesc,
                                                      String artStyle, String aspectRatio) {
-        return """
+        return ShortDramaDirectorSkills.load("emotional-dialogue", "story-causality", "director-blocking", "real-material", "director-review") + """
             你是专业的分镜规划师。请根据剧本内容将故事拆解成连续的分镜头。
 
             【三级规划流程 - 最高优先级】
@@ -2566,20 +2858,20 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             相邻片段必须通过动作、情绪、视线或声音中的至少一种桥梁衔接，禁止在片段边界冻结后跳转。
 
             【镜头数量控制 - 最高优先级】
-            - 目标比例：每15-25个有效剧情字符≈1个镜头，根据动作和台词密度调整
-            - 硬上限：最多40个镜头，超过时优先合并重复信息，不得删除因果中间态
-            - 普通镜头5-8秒；无台词镜头也应优先保持5-8秒并包含持续可见变化
-            - 单镜超过8秒只允许用于不可拆的连续台词、连续动作或史诗建立镜头，并必须包含前段→中段→后段的持续变化；任何单镜不得超过15秒
+            - 按可拍动作和场次时间决定镜数，不按字数凑镜头，不强制建立镜、反应镜独立成镜
+            - 当前仅规划一场，不限制全剧镜头总数。本场按场景头预计秒数分配镜头，duration合计应接近预计时长（误差不超过10%%）；不得省略发现、反应、决定等因果中间态
+            - 普通单镜按对白、独占动作与自然停顿预算分配，固定机位和安静反应均可，不强制每秒变化
+            - 单镜超过8秒需有实际对白或动作时长依据，不强制三段动作；任何单镜不得超过15秒
             - 每个片段内所有镜头duration之和必须≤15秒，超过必须拆成新片段
             - 时长必须由实际动作、对白和运镜容量决定，禁止按场景类型机械给长时长
             - 原文只支持1-3秒内容时，应与相邻因果动作合并，禁止靠环境空转填充成长镜头
-            - 对话密集场景：多句对话可合并到一个镜头
+            - 对话密集场景：先计算发音时长再拆镜，一镜最多一个主要说话人，另一人可有短回应；长对白按自然语义切到倾听画面，保留完整原话
 
             【分镜原则】
-            1. 每个场景开始→1个建立镜头
-            2. 每个关键动作→1个镜头
-            3. 每段对话→1-2个镜头（说话者+必要时听者反应）
-            4. 情绪高潮点→1个特写镜头
+            1. 场景信息可在主动作镜头内建立，不强制另加建立镜头
+            2. 同一目的下连续动作可以同镜，切镜由注意力或关系变化驱动
+            3. 对话按真实发音和必要反应预算拆镜，不给每段固定镜数
+            4. 情绪转折可以留在稳定双人中景，只有细节承担信息时才用特写
 
             【每个分镜包含】
             - panel_number: 全剧镜头序号
@@ -2593,7 +2885,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             - characters: [{name, appearance, slot}]，name必须与资产库一致
             - location: 从场景资产库选择，名字完全一致
             - scene_type: daily/emotion/action/epic/suspense
-            - source_text: 对应原文片段（必填）
+            - source_text: 对应原文片段（必填，保留实际对白与说话人）
+            - performance_beats: [{name,acting}]，逐个出镜角色写本镜触发、意图、可见回应与未解决的情绪；禁止通用表情模板。无人镜头为[]
             - start_state: 当前镜头第一帧状态，必须继承上一镜头end_state（场景切换除外）
             - end_state: 当前镜头最后一帧状态，明确人物位置、朝向、姿态、道具和动作结果
             - continuity_action: 与下一镜头衔接的未完成动作、视线方向或运动趋势
@@ -2605,12 +2898,10 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             - story_action: 为实现目标采取的可见行动或说出的关键台词
             - story_result: 当前行动造成的新信息、新阻碍、位置变化或关系变化，镜头结束前必须发生
             - next_hook: story_result中必须在下一镜头得到回应的问题、动作或后果
-            - duration: 镜头时长(秒)，根据scene_type差异化分配：
-              · daily（日常对话）：5-8秒
-              · emotion（情绪高潮）：6-10秒
-              · action（动作冲突）：5-8秒
-              · epic（史诗大景）：8-15秒
-              · suspense（悬疑紧张）：6-10秒
+            - duration: 镜头时长1-15秒。以对白实读、独占动作、反应停顿之和分配，不能按情绪类型机械分配。
+            - timing: {spoken_text:实际发音台词（金额日期展开读音）, speech_rate:语速默认4老人3.2, action_seconds:不与对白重叠的动作秒数, pause_seconds:反应停顿秒数, action_note:动作与对白是否同步}。
+            - duration必须至少容纳timing各项；长台词装不下则拆镜，宁可调整场次时长也不能加速朗读。
+
 
             【片段间过渡设计 - 最高优先级】
             1. 连续动作：前片段bridge_out写动作起始态，后片段bridge_in必须从动作进行时或完成时开始
@@ -2624,7 +2915,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             1. 每个镜头只能承担一个主要剧情职责：建立、触发、反应、决定、行动、结果或转场
             2. 镜头N必须产生story_result；镜头N+1的narrative_cause必须直接承接该story_result或next_hook
             3. 禁止“因为剧本接下来这样写”式跳跃。角色改变位置、情绪、目标、关系或道具状态时，必须先出现触发和过渡动作
-            4. 若状态从A跳到C，必须增加展示B的镜头，例如站立→坐着必须展示坐下，平静→愤怒必须展示触发与表情变化
+            4. 若状态从A变到C，必须展示B的过渡过程，可在同一连续镜头内完成，例如站立→坐下→坐着，不必为每个状态拆镜
             5. 对话不能只是轮流说话：每句关键台词必须改变对方认知、决定或行动，并在下一镜展示反应
             6. 场景切换必须有剧情原因和转场钩子，例如人物出发、时间推进、视线落向目标或结果揭示
             7. source_text必须严格按原文顺序覆盖，不得将后文结果提前，也不得遗漏导致因果断裂的关键动作
@@ -2635,7 +2926,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             【叙事连续性与空间锚定 - 最高优先级】
             1. 同一location内，镜头N+1的start_state必须逐项承接镜头N的end_state，不得重置人物姿态或位置
             2. 角色进入场景后，在明确离场、切为拍不到该角色的特写/反打、或切换场景前，必须持续存在于present_characters
-            3. 连续动作必须拆成“动作开始→动作过程→动作结果”，下一镜头从上一镜头尚未完成的动作或结果继续
+            3. 连续动作应包含开始、过程与结果；能够在预算内完成时优先放在同一镜头，只有叙事视点或时间容量确实要求时才拆镜
             4. 保持180度轴线：同一对话或对峙中，人物左右关系、面对方向不得无理由反转
             5. 道具归属、手持状态、服装形象、伤势、光线方向和时间必须连续
             6. 每个镜头生成前自检：人物从哪里来、现在在哪里、面向谁、正在做什么、镜头结束后停在哪里
@@ -2711,7 +3002,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     private static String buildCinematographerPrompt(String panelsJson, int panelCount, String locsDesc, String charsInfo) {
-        return """
+        return ShortDramaDirectorSkills.load("emotional-dialogue", "director-blocking", "visual-world") + """
             你是一位经验丰富的电影摄影指导(Director of Photography)。你的任务是为一组分镜中的每个镜头分别设计摄影规则。
 
             【核心职责】
@@ -2806,7 +3097,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     private static String buildActingDirectionPrompt(String panelsJson, int panelCount, String charsInfo) {
-        return """
+        return ShortDramaDirectorSkills.load("director-blocking") + """
             你是一位经验丰富的表演指导(Acting Director)。你的任务是为一组分镜中的每个镜头设计角色的表演细节。
 
             【核心职责】
@@ -2877,13 +3168,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
             ObjectNode lighting = rule.putObject("lighting");
             lighting.put("direction", "根据场景主光方向保持连续");
-            lighting.put("quality", switch (firstNotBlank(panel.getSceneType(), "daily")) {
-                case "suspense" -> "低调硬光，保留阴影层次";
-                case "emotion" -> "柔和侧光，突出面部情绪";
-                case "action" -> "高反差光线，强化动作轮廓";
-                case "epic" -> "大范围自然光，突出空间规模";
-                default -> "自然柔光，肤色与环境协调";
-            });
+            lighting.put("quality", "沿用当前地点和时段的真实主光，禁止因情绪标签改变色温、方向或曝光");
 
             ArrayNode characters = rule.putArray("characters");
             if (panel.getCharacters() != null) {
@@ -2896,26 +3181,15 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 }
             }
 
-            String sceneType = firstNotBlank(panel.getSceneType(), "daily");
-            rule.put("depth_of_field", switch (sceneType) {
-                case "epic" -> "深景深，清晰展现环境规模";
-                case "emotion" -> "浅景深，突出角色表情";
-                case "suspense" -> "中浅景深，保留环境压迫感";
-                default -> "中等景深，兼顾角色与环境";
-            });
-            rule.put("color_tone", switch (sceneType) {
-                case "suspense" -> "冷暗色调";
-                case "emotion" -> "克制柔和色调";
-                case "action" -> "高对比高饱和色调";
-                case "epic" -> "宏大通透色调";
-                default -> "自然统一色调";
-            });
+            rule.put("depth_of_field", "依景别保留叙事所需的人物与道具清晰度，对话双人镜避免一人失焦");
+            rule.put("color_tone", "同地点同时间保持曝光、白平衡与参考图一致");
+            rule.put("axis", "先建立空间；同一对话轴同侧拍摄，反打保留视线方向，改变轴侧须经过中性机位或明确移动");
             rules.add(rule);
         }
         return rules;
     }
 
-    private static List<ActingDirectionResult> buildLocalActingDirections(List<StoryboardPanelData> panels) {
+    static List<ActingDirectionResult> buildLocalActingDirections(List<StoryboardPanelData> panels) {
         List<ActingDirectionResult> directions = new ArrayList<>();
         for (StoryboardPanelData panel : panels) {
             ActingDirectionResult result = new ActingDirectionResult();
@@ -2925,27 +3199,25 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 for (CharacterRef ref : panel.getCharacters()) {
                     ObjectNode character = characters.addObject();
                     character.put("name", firstNotBlank(ref.getName(), "角色"));
-                    character.put("acting", localActingText(panel.getSceneType(), panel.getDuration()));
+                    String acting = null;
+                    if (panel.getPerformanceBeats() != null && panel.getPerformanceBeats().isArray()) {
+                        for (JsonNode beat : panel.getPerformanceBeats()) {
+                            if (ref.getName() != null && ref.getName().equals(beat.path("name").asText())) {
+                                acting = beat.path("acting").asText(null);
+                                break;
+                            }
+                        }
+                    }
+                    character.put("acting", firstNotBlank(acting,
+                        "依据本镜原文回应，不新增情绪或台词。原文：" + firstNotBlank(panel.getSourceText(), panel.getDescription(), "")
+                        + "；当前行动：" + firstNotBlank(panel.getStoryAction(), "按原文行动")
+                        + "；回应后的结果：" + firstNotBlank(panel.getStoryResult(), panel.getEndState(), "保持原文状态")));
                 }
             }
             result.setCharacters(characters);
             directions.add(result);
         }
         return directions;
-    }
-
-    private static String localActingText(String sceneType, Integer duration) {
-        String performance = switch (firstNotBlank(sceneType, "daily")) {
-            case "emotion" -> "表情逐步变化，先克制呼吸，再通过眼神和细微肢体释放情绪";
-            case "action" -> "动作预备清晰，发力过程连贯，结束后保留重心与呼吸反馈";
-            case "epic" -> "动作沉稳有力量，视线跟随环境或对手变化，保持画面张力";
-            case "suspense" -> "控制呼吸与眨眼频率，用迟疑、停顿和缓慢转头制造紧张感";
-            default -> "保持自然呼吸和目光交流，动作从起始状态平滑过渡到结束状态";
-        };
-        if (duration != null && duration >= 8) {
-            performance += "，按前段、中段、后段完成三个连续表演节拍";
-        }
-        return performance;
     }
 
     private static void mergePhotographyRules(List<StoryboardPanelData> panels, List<JsonNode> photographyRules) {
@@ -3035,27 +3307,73 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     private void executePhase6_StoryboardDetail(ChatModel chatModel, StreamingChatModel streamingModel,
                                                  List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
+        executePhase6_StoryboardDetail(chatModel, streamingModel, panels, projectId, emitter, "default");
+        if (emitter != null) emit(emitter, "storyboard_detail", "done", "全部镜头细化完成");
+    }
+
+    private void executePhase6_StoryboardDetail(ChatModel chatModel, StreamingChatModel streamingModel,
+            List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter, String modelName) {
+        if (panels.size() > 8) {
+            String tenant = org.ruoyi.common.tenant.helper.TenantHelper.getTenantId();
+            int batches = (panels.size() + 7) / 8;
+            java.util.concurrent.ExecutorService pool = Executors.newFixedThreadPool(Math.min(3, batches));
+            java.util.concurrent.atomic.AtomicInteger finished = new java.util.concurrent.atomic.AtomicInteger();
+            try {
+                List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
+                for (int offset = 0; offset < panels.size(); offset += 8) {
+                    List<StoryboardPanelData> batch = panels.subList(offset, Math.min(offset + 8, panels.size()));
+                    futures.add(pool.submit(() -> org.ruoyi.common.tenant.helper.TenantHelper.dynamic(tenant, () -> {
+                        executePhase6_StoryboardDetail(chatModel, streamingModel, batch, projectId, emitter, modelName);
+                        int count = finished.incrementAndGet();
+                        if (emitter != null) emit(emitter, "storyboard_detail", "running", "镜头细化已完成 " + count + "/" + batches + " 批");
+                    })));
+                }
+                List<String> errors = new ArrayList<>();
+                for (java.util.concurrent.Future<?> future : futures) {
+                    try { future.get(); }
+                    catch (java.util.concurrent.ExecutionException e) { errors.add(e.getCause().getMessage()); }
+                }
+                if (!errors.isEmpty()) throw new IllegalStateException(String.join("；", errors));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("镜头细化被中断，已完成批次已保存", e);
+            } finally {
+                pool.shutdownNow();
+            }
+            return;
+        }
         try {
             String panelsJson = JsonUtils.toJsonString(panels);
-            String charsAgeGender = buildCharactersAgeGenderString(projectId);
+            String charsAgeGender = buildCharactersAgeGenderString(projectId)
+                + "\n【已确认的角色形象，必须逐镜保持，禁止自行换装】\n" + buildCharacterAppearanceConstraints(projectId);
             String locsDesc = buildLocationsDescString(projectId);
             String prompt = buildStoryboardDetailPrompt(panelsJson, charsAgeGender, locsDesc,
                 artStyleSuffix(projectId), projectAspectRatio(projectId));
-            String response;
-            if (emitter != null) {
-                StreamingChatModel activeStreamingModel = streamingModel != null ? streamingModel : buildStreamingChatModel();
-                response = streamingChat(activeStreamingModel, chatModel, prompt, emitter, "storyboard_detail");
-            } else {
-                response = chatModel.chat(prompt);
+            String detailCacheKey = "short-drama:checkpoint:v1:" + projectId + ":detail:v2:" + cn.hutool.crypto.digest.DigestUtil.sha256Hex(modelName + "\n" + prompt);
+            String response = RedisUtils.getCacheObject(detailCacheKey);
+            if (StrUtil.isBlank(response)) {
+                for (int attempt = 1; attempt <= 2; attempt++) {
+                    try {
+                        if (emitter != null) {
+                            StreamingChatModel activeStreamingModel = streamingModel != null ? streamingModel : buildStreamingChatModel();
+                            response = streamingChat(activeStreamingModel, chatModel, prompt, emitter, "storyboard_detail");
+                        } else {
+                            response = chatModel.chat(prompt);
+                        }
+                        break;
+                    } catch (Exception e) {
+                        if (attempt == 2) throw e;
+                        if (emitter != null) emit(emitter, "storyboard_detail", "running", "本批连接中断，正在重试；已完成批次已保存");
+                    }
+                }
             }
             List<StoryboardDetailResult> results = parseJsonArray(extractJson(response), StoryboardDetailResult.class);
             if (results != null) {
                 int matched = 0;
                 for (StoryboardDetailResult r : results) {
                     if (r.getPanelNumber() == null) continue;
-                    int idx = r.getPanelNumber() - 1;
-                    if (idx >= 0 && idx < panels.size()) {
-                        StoryboardPanelData panel = panels.get(idx);
+                    StoryboardPanelData panel = panels.stream().filter(p -> r.getPanelNumber().equals(p.getPanelNumber())).findFirst().orElse(null);
+                    if (panel != null) {
                         panel.setShotType(r.getShotType());
                         panel.setCameraMove(r.getCameraMove());
                         panel.setVideoPrompt(r.getVideoPrompt());
@@ -3065,11 +3383,11 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                         panel.setEndState(firstNotBlank(r.getEndState(), panel.getEndState()));
                         panel.setContinuityAction(firstNotBlank(r.getContinuityAction(), panel.getContinuityAction()));
                         panel.setSpatialAnchor(firstNotBlank(r.getSpatialAnchor(), panel.getSpatialAnchor()));
-                        if (r.getPresentCharacters() != null && !r.getPresentCharacters().isEmpty()) {
+                        if (panel.getPresentCharacters() == null && r.getPresentCharacters() != null) {
                             panel.setPresentCharacters(r.getPresentCharacters());
                         }
-                        panel.setSceneNumber(r.getSceneNumber() != null ? r.getSceneNumber() : panel.getSceneNumber());
-                        panel.setSegmentNumber(r.getSegmentNumber() != null ? r.getSegmentNumber() : panel.getSegmentNumber());
+
+
                         panel.setSegmentGoal(firstNotBlank(r.getSegmentGoal(), panel.getSegmentGoal()));
                         panel.setSegmentResult(firstNotBlank(r.getSegmentResult(), panel.getSegmentResult()));
                         panel.setBridgeIn(firstNotBlank(r.getBridgeIn(), panel.getBridgeIn()));
@@ -3086,98 +3404,25 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                         matched++;
                     }
                 }
-                // 节拍校验 + 二次补写：video_prompt 节拍数低于 ⌈duration/3⌉ 时补写一次
-                if (matched > 0 && streamingModel == null && emitter == null) {
-                    ensureVideoPromptBeats(chatModel, panels, projectId);
-                }
+                // Natural pauses are valid. Do not inflate action count merely to fill duration.
                 if (matched == 0 && emitter != null) {
                     emit(emitter, "storyboard_detail", "error", "分镜细化JSON解析成功但未匹配到任何镜头");
                 } else if (matched > 0 && emitter != null) {
-                    emit(emitter, "storyboard_detail", "done", "分镜细化完成（" + matched + "/" + panels.size() + "）");
-                }
-            } else if (emitter != null) {
-                emit(emitter, "storyboard_detail", "error", "分镜细化失败：LLM返回格式异常");
-            }
-        } catch (Exception e) {
-            log.warn("Phase 6 分镜细化失败: {}", e.getMessage());
-            if (emitter != null) emit(emitter, "storyboard_detail", "error", "分镜细化异常：" + e.getMessage());
-        }
-    }
-
-    /**
-     * 校验每个 panel 的 video_prompt 节拍数（按顿号/逗号/句号粗估可见动作短语），
-     * 低于 ⌈duration/3⌉ 时发起一次二次 LLM 调用补写。补写后再次校验，仍不达标则保留并记 warn。
-     * 仅在非流式（同步生成）模式下执行，避免流式场景重复请求。
-     */
-    private void ensureVideoPromptBeats(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId) {
-        List<StoryboardPanelData> deficient = new ArrayList<>();
-        for (StoryboardPanelData panel : panels) {
-            if (StrUtil.isBlank(panel.getVideoPrompt())) continue;
-            int duration = panel.getDuration() != null && panel.getDuration() > 0 ? panel.getDuration() : 6;
-            int required = Math.max(2, (duration + 2) / 3);
-            int actual = countBeats(panel.getVideoPrompt());
-            if (actual < required) {
-                deficient.add(panel);
-            }
-        }
-        if (deficient.isEmpty()) return;
-        try {
-            String supplementPrompt = buildVideoPromptSupplementPrompt(deficient, artStyleSuffix(projectId), projectAspectRatio(projectId));
-            String response = chatModel.chat(supplementPrompt);
-            List<StoryboardDetailResult> results = parseJsonArray(extractJson(response), StoryboardDetailResult.class);
-            if (results != null) {
-                for (StoryboardDetailResult r : results) {
-                    if (r.getPanelNumber() == null) continue;
-                    int idx = r.getPanelNumber() - 1;
-                    if (idx >= 0 && idx < panels.size() && StrUtil.isNotBlank(r.getVideoPrompt())) {
-                        StoryboardPanelData panel = panels.get(idx);
-                        if (StrUtil.isNotBlank(r.getDescription())) panel.setDescription(r.getDescription());
-                        panel.setVideoPrompt(r.getVideoPrompt());
-                        log.info("Phase 6 节拍补写完成 panel={} 节拍 {}->{}",
-                            r.getPanelNumber(),
-                            countBeats(panel.getVideoPrompt()),
-                            panel.getVideoPrompt());
-                    }
+                    emit(emitter, "storyboard_detail", "running", "本批细化完成（" + matched + "/" + panels.size() + "）");
                 }
             }
+            if (panels.stream().anyMatch(p -> StrUtil.isBlank(p.getVideoPrompt()) || StrUtil.isBlank(p.getImagePrompt()))) {
+                throw new IllegalStateException("镜头细化不完整，旧分镜已保留，请重试");
+            }
+            RedisUtils.setCacheObject(detailCacheKey, response, java.time.Duration.ofDays(7));
         } catch (Exception e) {
-            log.warn("Phase 6 节拍补写失败: {}", e.getMessage());
+            throw new IllegalStateException("分镜细化失败：" + e.getMessage(), e);
         }
-    }
-
-    /** 粗估 video_prompt 的可见节拍数：按顿号、逗号、分号、句号、换行切分的动作短语数。 */
-    private static int countBeats(String videoPrompt) {
-        if (StrUtil.isBlank(videoPrompt)) return 0;
-        String[] parts = videoPrompt.split("[、，,；;。\n]");
-        int count = 0;
-        for (String p : parts) {
-            String t = p.trim();
-            if (t.length() >= 2) count++;
-        }
-        return count;
-    }
-
-    private static String buildVideoPromptSupplementPrompt(List<StoryboardPanelData> deficient, String artStyle, String aspectRatio) {
-        StringBuilder json = new StringBuilder();
-        for (StoryboardPanelData p : deficient) {
-            json.append(JsonUtils.toJsonString(p)).append(",");
-        }
-        if (json.length() > 0 && json.charAt(json.length() - 1) == ',') json.deleteCharAt(json.length() - 1);
-        return """
-            以下是 video_prompt 节拍数不足的分镜，每个镜头的 video_prompt 必须按时长写出足够可见节拍。
-            按导演笔记风格重写 video_prompt（景别+机位、按时序的动作节拍、运镜、光影方向、道具、台词），禁止参数堆砌。
-            duration 为 4-7 秒写 3 个连续节拍，8 秒以上按前段/中段/后段写至少 3 节拍。保留原有信息，只扩写动作细节。
-            只返回 JSON 数组，字段：panel_number、video_prompt、description。
-
-            视觉风格：%s
-            画幅：%s
-            待补写分镜：[%s]
-            """.formatted(artStyle, aspectRatio, json);
     }
 
     private static String buildStoryboardDetailPrompt(String panelsJson, String charsAgeGender, String locsDesc,
                                                       String artStyle, String aspectRatio) {
-        return """
+        return ShortDramaDirectorSkills.load("emotional-dialogue", "director-blocking", "visual-world", "real-material", "director-review") + """
             你是顶级电影分镜师。根据分镜规划和场景类型，设计镜头语言和视频提示词。
 
             【你的职责】
@@ -3189,11 +3434,11 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             镜头运动：固定/缓推/缓拉/跟随/急推/急拉/环绕/升起/俯冲/手持晃动
 
             【根据scene_type选择镜头风格】
-            daily：中景、近景为主，平视+越肩，优先使用缓推/缓拉/轻微跟随
-            emotion：近景、特写捕捉情绪，缓慢推进、环绕运镜
-            action：景别快速切换，特写+全景交替，仰拍/俯拍/荷兰角，急推急拉/跟随/手持晃动
-            epic：必须有大远景建立规模，俯拍/升起/俯冲
-            suspense：主观视角/荷兰角，缓慢推进制造压迫
+            daily：中景、近景为主，优先固定机位；人物移动或信息揭示时才跟随或推近
+            emotion：近景、特写捕捉反应；允许固定机位留出停顿，不自动添加环绕
+            action：按清晰可辨的动作选择景别，一个镜头一个主要动作；不要在单镜内连续切机位
+            epic：必要时用远景建立规模，按实际空间选择机位
+            suspense：通过信息遮挡、视线与反应建立悬念，运镜有具体叙事理由才采用
 
             【全局视觉约束 - 最高优先级】
             - 视觉风格：%s。description、video_prompt、image_prompt都必须显式体现该风格
@@ -3203,7 +3448,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             【三级结构审核与修正 - 最高优先级】
             在设计镜头语言前，先审核输入的scene_number/segment_number分组并直接在输出中修正字段：
             - 每个segment的duration总和必须≤15秒；超过时在合理剧情节点增加segment_number
-            - 普通单镜5-8秒；超过8秒只允许用于不可拆的连续台词、连续动作或史诗建立镜头；任何镜头≤15秒
+            - 单镜按对白、独占动作与停顿预算分配1-15秒；超出15秒时在完整动作或语句边界拆镜
             - 同一segment内必须围绕同一个segment_goal，结尾落实segment_result
             - 相邻segment的bridge_out与bridge_in必须能直接连读；不匹配时重写桥梁字段和当前镜头描述
             - 检查A→C跳跃：位置、姿态、情绪、信息或道具状态缺少B过程时，必须把B过程融入相邻镜头描述
@@ -3216,6 +3461,12 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             - 如果story_result无法在当前时长内可视化，必须简化动作而不是丢掉结果
             - 不得擅自加入输入因果链之外的新事件、台词、能力或角色行为
 
+            【角色与素材一致性 - 最高优先级】
+            - 必须遵守提供的角色形象档案：发型、服装、年龄保持一致。不得根据场景或职业自行添加工装、围裙、外套、伤痕或手机裂纹。
+            - 声源角色不等于出镜角色，是否出镜以present_characters及原文为准；手机录音不生成说话者的实体画面。
+            - 原文标注后期插入的照片、程序界面、账本与表格，必须保留后期替换说明，只设计手部、视线和操作。不要要求视频模型逐字绘制真实文字。
+            - 长账目可以用核对动作、屏幕素材和短句传达，避免在几秒内快速念完整张表。不得修改地址、金额、收款状态或其他事实。
+
             【前后镜头连续性 - 最高优先级】
             - 输入已经包含start_state、end_state、continuity_action、spatial_anchor、present_characters，必须完整保留并落实到description/video_prompt/image_prompt
             - 当前镜头开头必须明确从start_state开始，结尾必须准确停在end_state
@@ -3227,30 +3478,34 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             【时长匹配规则 - 最高优先级】
             - 输入中的duration就是目标视频秒数，video_prompt必须完整覆盖该时长
             - duration为4-7秒：至少写清开始动作、持续变化、结束状态
-            - duration为8秒及以上：必须按“前段→中段→后段”写至少3个连续可见节拍，并包含持续运镜或环境变化
+            - 长镜头允许静止倾听、呼吸和反应停顿；一个镜头只承担一个主要叙事动作，不因时长长而强加运镜或新动作
             - 禁止用一个瞬时动作支撑长镜头，例如仅“吐信、转头、抬手”却标10秒
-            - description也必须同步扩写这些节拍，保证画面描述与video_prompt一致
+            - description与video_prompt共享同一动作、台词和起止状态，不能为了填时长增加剧情
 
             【video_prompt撰写规则 - 重要】
             video_prompt 是发给视频模型的核心可拍指令，必须用"导演笔记"风格写，每个字都可拍、按时序展开。视频模型不认识名字，必须用年龄段+性别替代角色：
             - 年龄段：少年/少女(10-16)、年轻男子/年轻女子(17-30)、中年男子/中年女子(31-50)、老年男子/老年女子(50+)
             - 必须依次包含以下可拍维度：
               1) 景别+机位架设位置：如"中景，机位架设在店内深处正对门口"
-              2) 主体动作（按时序）：按 duration 分档写连续可见节拍——4-7秒写"开始动作→持续变化→结束状态"；8秒及以上按"前段→中段→后段"写至少3个连续可见动作。每秒至少一个可见动作变化，禁止用一个瞬时动作支撑长镜头
+              2) 主体动作（按时序）：写清一个主动作及结果，允许自然停顿。不得要求每秒新增动作。台词、独占动作、反应停顿合计须装得下；可同步的眼神动作不重复计时
               3) 运镜：从镜头运动词库选一个主导运镜（推/拉/摇/移/跟/环绕/手持/固定），写明方向与节奏，禁止只用"缓缓"这种无信息量词
               4) 光影：方向+色温+阴影色，与当前镜头光源位置绑死（如"晨光从卷帘门缝隙逆光射入，发丝边缘泛柔光，店内深处阴影偏冷蓝"），禁止情绪词
               5) 道具/穿着：从 source_text 和角色设定提取具体道具与穿着，写进动作流
               6) 台词：若 source_text 有台词，以「角色说的话」标注并标语气（小声/平淡/恳求），供后续口型对齐；无台词则不写
             - 禁止参数堆砌（8K/HDR/fps/Rec.色域这类），视频模型不认
-            - 禁止纯静态描述，特写镜头必须使用"固定镜头"
+            - 静态机位允许人物静止倾听；特写优先固定镜头，保留自然呼吸与反应
             - description 必须与 video_prompt 的节拍、光影、动作一致
 
-            【动态优先原则 - 核心规则】
-            视频不能僵硬！每个video_prompt必须按时序含可见动作。即使对话场景也要有动作变化。
-            ✅ 正确示例（6秒、2节拍）："中景，机位架设在店内深处正对门口。年轻女子从右侧卷帘门推门进入，门推开约45°，晨光从门缝逆光射入在她发丝边缘形成柔光晕。她站定在门口，身体微前倾又顿住，手里攥着一张揉皱的纸，眼神在店内游移后落向画面中央偏左的座位。镜头手持跟随，从门口缓推至她停步处，保持中景距离。她小声开口：「那个……这里理发吗？」"
-            ❌ 错误："年轻女子坐在沙发上，镜头固定"（无节拍、无光影、无运镜节奏）
+            【表演与摄影约束】
+            - 一个镜头一个主导运镜；固定机位可以完整承载对白和反应，不能每镜都推近。
+            - 坐、站、持物手、门开闭、电源和关键道具位置必须与前后镜及参考图一致。
+            - 光线由地点、时间、真实光源决定，不能随情绪标签突然改变。
+            - 台词时长按实际发音计算，年份/金额/FM先展开读音。默认约4字/秒，老人约3.2字/秒，仅为预算假设。
+            - 先加台词时间、无法同步的动作时间与必要停顿，超时必须拆镜或申请改写；不能删原文台词后假称完整保留。
 
             【image_prompt撰写规则】
+            - 只描述start_state的静态起点，不画end_state，不提前完成坐下、递物、取物等动作
+            - 已确认的手机、眼镜、衣物等不可被其他道具替代；看手机时间不能擅改为看手表
             - 使用角色实际名字（不是年龄段+性别）
             - 包含角色位置、场景环境、光线氛围
             - 纯视觉描述，禁止抽象词
@@ -3295,6 +3550,9 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     // ==================== 持久化 ====================
 
     private List<ShortDramaStoryboardVo> persistStoryboards(Long projectId, Long scriptId, List<StoryboardPanelData> panels, ShortDramaScript script) {
+        if (panels.isEmpty()) throw new IllegalStateException("没有有效分镜，旧分镜已保留");
+        return transactionTemplate.execute(status -> {
+        storyboardMapper.delete(new LambdaQueryWrapper<ShortDramaStoryboard>().eq(ShortDramaStoryboard::getScriptId, scriptId));
         List<ShortDramaStoryboardVo> result = new ArrayList<>();
         int sceneNo = 1;
         for (StoryboardPanelData panel : panels) {
@@ -3324,7 +3582,11 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             result.add(MapstructUtils.convert(entity, ShortDramaStoryboardVo.class));
             sceneNo++;
         }
+        ShortDramaProject project = projectMapper.selectById(projectId);
+        project.setStatus("storyboard_ready");
+        projectMapper.updateById(project);
         return result;
+        });
     }
 
     // ==================== 辅助方法：资产库字符串构建 ====================
@@ -3408,6 +3670,22 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         return sb.toString();
     }
 
+    String buildCharacterAppearanceConstraints(Long projectId) {
+        StringBuilder text = new StringBuilder();
+        for (ShortDramaCharacter character : characterMapper.selectList(new LambdaQueryWrapper<ShortDramaCharacter>()
+                .eq(ShortDramaCharacter::getProjectId, projectId))) {
+            List<ShortDramaCharacterAppearance> appearances = characterAppearanceMapper.selectList(
+                new LambdaQueryWrapper<ShortDramaCharacterAppearance>().eq(ShortDramaCharacterAppearance::getCharacterId, character.getId())
+                    .orderByAsc(ShortDramaCharacterAppearance::getAppearanceIndex));
+            if (appearances.isEmpty()) text.append(character.getName()).append("：").append(character.getVisualDescription()).append("\n");
+            for (ShortDramaCharacterAppearance appearance : appearances) {
+                text.append(character.getName()).append(" / ").append(appearance.getChangeReason()).append("：")
+                    .append(firstNotBlank(appearance.getDescription(), character.getVisualDescription(), "沿用已有参考图")).append("\n");
+            }
+        }
+        return text.toString();
+    }
+
     private String buildLocationsDescString(Long projectId) {
         List<ShortDramaLocation> locs = locationMapper.selectList(
             new LambdaQueryWrapper<ShortDramaLocation>().eq(ShortDramaLocation::getProjectId, projectId));
@@ -3470,7 +3748,14 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     private AbstractChatService getChatService(ChatModelVo modelVo) {
-        return chatServiceFactory.getOriginalService(modelVo.getProviderCode());
+        return chatServiceFactory.getOriginalService(shortDramaProviderCode(modelVo.getProviderCode(), modelVo.getModelName()));
+    }
+
+    static String shortDramaProviderCode(String provider, String model) {
+        return (org.ruoyi.enums.ChatModeType.OPEN_AI.getCode().equalsIgnoreCase(provider)
+            || org.ruoyi.enums.ChatModeType.ATLAS.getCode().equalsIgnoreCase(provider))
+            && StrUtil.containsIgnoreCase(model, "deepseek")
+            ? org.ruoyi.enums.ChatModeType.DEEP_SEEK.getCode() : provider;
     }
 
     // ==================== 语音资产 ====================
@@ -3659,24 +3944,29 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         audioMapper.delete(new LambdaQueryWrapper<ShortDramaAudio>().eq(ShortDramaAudio::getProjectId, projectId));
     }
 
-    private static void normalizeContinuityChain(List<StoryboardPanelData> panels) {
+    static void normalizeContinuityChain(List<StoryboardPanelData> panels) {
         StoryboardPanelData previous = null;
         int sceneNumber = 1;
         int segmentNumber = 1;
         int segmentDuration = 0;
         String previousLocation = null;
+        Integer previousRequestedScene = null;
         for (StoryboardPanelData current : panels) {
+            Integer requestedScene = current.getSceneNumber();
             String currentLocation = firstNotBlank(current.getLocation(), "");
-            if (previousLocation != null && !previousLocation.equals(currentLocation)) {
+            boolean newScene = previous != null && (!java.util.Objects.equals(previousLocation, currentLocation)
+                || (requestedScene != null && previousRequestedScene != null && !requestedScene.equals(previousRequestedScene)));
+            if (newScene) {
                 sceneNumber++;
                 segmentNumber = 1;
                 segmentDuration = 0;
             }
             int duration = current.getDuration() != null && current.getDuration() > 0
-                ? Math.max(5, Math.min(current.getDuration(), 15)) : 6;
+                ? Math.max(1, Math.min(current.getDuration(), 15)) : 6;
             current.setDuration(duration);
+            previousRequestedScene = requestedScene;
             boolean requestedNewSegment = current.getSegmentNumber() != null && current.getSegmentNumber() > segmentNumber;
-            if (previous != null && (requestedNewSegment || segmentDuration + duration > 15)) {
+            if (previous != null && !newScene && (requestedNewSegment || segmentDuration + duration > 15)) {
                 segmentNumber++;
                 segmentDuration = 0;
             }
@@ -3690,7 +3980,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 current.setBridgeIn(firstNotBlank(current.getBridgeIn(), "开场建立"));
             } else {
                 String previousConsequence = firstNotBlank(previous.getStoryResult(), previous.getNextHook(), previous.getContinuityAction(), previous.getEndState());
-                current.setNarrativeCause(previousConsequence);
+                current.setNarrativeCause(firstNotBlank(current.getNarrativeCause(), previousConsequence));
                 if (current.getSegmentNumber().equals(previous.getSegmentNumber()) && current.getSceneNumber().equals(previous.getSceneNumber())) {
                     current.setBridgeIn(firstNotBlank(current.getBridgeIn(), previous.getContinuityAction(), previous.getNextHook(), previous.getEndState()));
                 } else {
@@ -3698,18 +3988,18 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     previous.setBridgeOut(firstNotBlank(previous.getBridgeOut(), current.getBridgeIn()));
                 }
             }
-            if (previous != null && firstNotBlank(previous.getLocation(), "").equals(firstNotBlank(current.getLocation(), ""))) {
+            if (previous != null && !newScene) {
                 String inheritedState = firstNotBlank(previous.getEndState(), previous.getDescription(), previous.getSourceText(), "");
-                current.setStartState(inheritedState);
+                current.setStartState(firstNotBlank(current.getStartState(), inheritedState));
                 if (StrUtil.isBlank(current.getSpatialAnchor())) {
                     current.setSpatialAnchor(previous.getSpatialAnchor());
                 }
-                if ((current.getPresentCharacters() == null || current.getPresentCharacters().isEmpty())
+                if ((current.getPresentCharacters() == null)
                     && previous.getPresentCharacters() != null) {
                     current.setPresentCharacters(new ArrayList<>(previous.getPresentCharacters()));
                 }
             } else {
-                current.setStartState("新场景建立：" + firstNotBlank(current.getLocation(), "新地点") + "，重新交代人物位置、朝向与环境");
+                current.setStartState(firstNotBlank(current.getStartState(), "新场景建立：" + firstNotBlank(current.getLocation(), "新地点") + "，重新交代人物位置、朝向与环境"));
             }
             current.setEndState(firstNotBlank(current.getEndState(), current.getDescription(), current.getSourceText(), current.getStartState()));
             current.setContinuityAction(firstNotBlank(current.getContinuityAction(), "从当前结束姿态自然承接下一镜头"));
@@ -3721,7 +4011,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             current.setSegmentGoal(firstNotBlank(current.getSegmentGoal(), current.getCharacterGoal(), "完成当前连续剧情动作"));
             current.setSegmentResult(firstNotBlank(current.getSegmentResult(), current.getStoryResult(), current.getEndState()));
             current.setBridgeOut(firstNotBlank(current.getBridgeOut(), current.getNextHook(), current.getContinuityAction()));
-            if (current.getPresentCharacters() == null || current.getPresentCharacters().isEmpty()) {
+            if (current.getPresentCharacters() == null) {
                 List<String> present = new ArrayList<>();
                 if (current.getCharacters() != null) {
                     for (CharacterRef ref : current.getCharacters()) {
@@ -3754,6 +4044,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         continuity.put("story_action", firstNotBlank(panel.getStoryAction(), ""));
         continuity.put("story_result", firstNotBlank(panel.getStoryResult(), ""));
         continuity.put("next_hook", firstNotBlank(panel.getNextHook(), ""));
+        if (panel.getPerformanceBeats() != null) continuity.set("performance_beats", panel.getPerformanceBeats());
+        if (panel.getTiming() != null) continuity.set("timing", panel.getTiming());
         return continuity.toString();
     }
 
@@ -3783,6 +4075,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             panel.setStoryAction(continuity.path("story_action").asText(null));
             panel.setStoryResult(continuity.path("story_result").asText(null));
             panel.setNextHook(continuity.path("next_hook").asText(null));
+            if (continuity.has("timing")) panel.setTiming(continuity.get("timing"));
+            if (continuity.has("performance_beats")) panel.setPerformanceBeats(continuity.get("performance_beats"));
         } catch (Exception e) {
             log.debug("解析分镜连续性失败: {}", e.getMessage());
         }
@@ -4075,6 +4369,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         @JsonProperty("source_text")
         private String sourceText;
         private Integer duration;
+        private JsonNode timing;
         @JsonProperty("start_state")
         private String startState;
         @JsonProperty("end_state")
@@ -4097,6 +4392,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         private String storyResult;
         @JsonProperty("next_hook")
         private String nextHook;
+        @JsonProperty("performance_beats")
+        private JsonNode performanceBeats;
         // Phase 4 fills:
         private String photographyRules;
         // Phase 5 fills:
@@ -4245,7 +4542,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     private String buildCharacterPrompt(String basePrompt, Long projectId) {
         String styleSuffix = artStyleSuffix(projectId);
         String stylePrefix = StrUtil.isNotBlank(styleSuffix) ? styleSuffix + "，" : "";
-        return stylePrefix + ShortDramaImageConstants.CHARACTER_PROMPT_PREFIX
+        return ShortDramaDirectorSkills.load("visual-world") + stylePrefix + ShortDramaImageConstants.CHARACTER_PROMPT_PREFIX
             + basePrompt + ShortDramaImageConstants.CHARACTER_PROMPT_SUFFIX;
     }
 

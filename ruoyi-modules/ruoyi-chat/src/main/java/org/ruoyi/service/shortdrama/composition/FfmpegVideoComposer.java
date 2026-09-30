@@ -96,11 +96,11 @@ public class FfmpegVideoComposer {
         List<MediaInfo> result = new ArrayList<>(spec.sources().size());
         for (int index = 0; index < spec.sources().size(); index++) {
             CompositionSource source = spec.sources().get(index);
-            result.add(mediaProbe.probe(
+            result.add(source.forTimeline(mediaProbe.probe(
                 source.path(),
                 source.fallbackDurationSeconds(),
                 workDir.resolve("probe-input-" + jobToken + "-" + index + ".log")
-            ));
+            )));
         }
         return result;
     }

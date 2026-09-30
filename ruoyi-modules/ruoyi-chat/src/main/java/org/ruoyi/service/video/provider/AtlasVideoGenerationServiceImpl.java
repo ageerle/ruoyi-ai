@@ -39,18 +39,25 @@ public class AtlasVideoGenerationServiceImpl extends AbstractVideoGenerationServ
         ChatModelVo model = videoContext.getChatModelVo();
         ObjectNode payload = AtlasMediaSupport.OBJECT_MAPPER.createObjectNode();
         payload.put("model", model.getModelName());
-        payload.put("prompt", videoContext.getPrompt());
+        Integer requestSeconds = requestDuration(model.getModelName(), videoContext.getSeconds());
+        String prompt = videoContext.getPrompt();
+        if (requestSeconds != null && videoContext.getSeconds() != null && requestSeconds > videoContext.getSeconds() && videoContext.getSeconds() > 0) {
+            prompt += "\n剪辑只使用前" + videoContext.getSeconds() + "秒，请在此前完成本镜动作；剩余时间保持结束姿势，不新增动作或对白。";
+        }
+        payload.put("prompt", prompt);
         if (StrUtil.isNotBlank(videoContext.getSize())) {
             payload.put("size", videoContext.getSize());
         }
         if (videoContext.getSeconds() != null) {
-            payload.put("duration", videoContext.getSeconds());
+            payload.put("duration", requestSeconds);
         }
         if (StrUtil.isNotBlank(videoContext.getQuality())) {
             payload.put("quality", videoContext.getQuality());
         }
         java.util.List<String> refImages = videoContext.getReferenceImages();
-        if (refImages != null && !refImages.isEmpty()) {
+        if (model.getModelName().startsWith("bytedance/seedance-") && model.getModelName().endsWith("/image-to-video") && refImages != null && !refImages.isEmpty()) {
+            payload.put("image",refImages.get(0));
+        } else if (refImages != null && !refImages.isEmpty()) {
             com.fasterxml.jackson.databind.node.ArrayNode arr = payload.putArray("reference_images");
             for (String url : refImages) {
                 arr.add(url);
@@ -92,6 +99,13 @@ public class AtlasVideoGenerationServiceImpl extends AbstractVideoGenerationServ
         } catch (IOException e) {
             throw new RuntimeException("Atlas Cloud视频生成任务创建失败: " + e.getMessage(), e);
         }
+    }
+
+    static Integer requestDuration(String model, Integer seconds) {
+        if (seconds == null || !model.startsWith("bytedance/seedance-2.0")) return seconds;
+        if (seconds == -1) return seconds;
+        if (seconds < 1 || seconds > 15) throw new IllegalArgumentException("Seedance 2.0镜头须在1至15秒内，短于4秒的镜头生成后按剪辑时长截取");
+        return Math.max(4, seconds);
     }
 
     @Override

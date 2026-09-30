@@ -118,6 +118,12 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
             payload.put("output_format", "jpeg");
             payload.put("quality", "high");
             payload.put("moderation", "low");
+            if (modelName.startsWith("openai/gpt-image-2.5-")) {
+                payload.remove("enable_base64_output");
+                payload.remove("moderation");
+                payload.put("background", "opaque");
+                payload.put("n", 1);
+            }
         }
         if (StrUtil.isNotBlank(image)) {
             if (gptImageModel) {
@@ -139,6 +145,12 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         if (StrUtil.isBlank(size)) return null;
         String normalizedSize = size.trim();
         if (isGptImageModel(modelName)) {
+            if (modelName.startsWith("openai/gpt-image-2/") || modelName.startsWith("openai/gpt-image-2.5-")) {
+                if ("16:9".equals(normalizedSize)) return "1536x864";
+                if ("9:16".equals(normalizedSize)) return "864x1536";
+                if ("4:3".equals(normalizedSize)) return "1536x1152";
+                if ("3:4".equals(normalizedSize)) return "1152x1536";
+            }
             String mappedSize = GPT_IMAGE_SIZE_MAP.get(normalizedSize);
             if (mappedSize != null) return mappedSize;
             return resolveGptImagePixelSize(normalizedSize);
@@ -170,6 +182,7 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
 
         ObjectNode payload = buildPayload(chatModelVo, prompt, size, seed, image);
         payload.put("enable_sync_mode", false);
+        applyReferenceImages(payload, imageContext);
 
         Request request = new Request.Builder()
             .url(AtlasMediaSupport.endpoint(chatModelVo.getApiHost(), "/model/generateImage"))
@@ -202,6 +215,18 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         } catch (IOException e) {
             throw new RuntimeException("Atlas Cloud图片生成失败: " + e.getMessage(), e);
         }
+    }
+
+    static void applyReferenceImages(ObjectNode payload, ImageContext context) {
+        var references = context.getReferenceImages();
+        if (references == null || references.isEmpty()) return;
+        int limit = context.getChatModelVo().getModelName().startsWith("openai/gpt-image-2.5-") ? 16 : 10;
+        if (references.size() > limit) throw new IllegalArgumentException("当前模型最多绑定" + limit + "张参考图，请减少不必要道具");
+        if (!isGptImageModel(context.getChatModelVo().getModelName())) {
+            throw new IllegalArgumentException("当前多参考图资产流程需要支持 images 的 GPT Image 模型");
+        }
+        var images = payload.putArray("images");
+        references.stream().filter(StrUtil::isNotBlank).distinct().forEach(images::add);
     }
 
     @Override

@@ -63,6 +63,14 @@ public class ShortDramaController {
 
     private final OssService ossService;
 
+    private final org.ruoyi.service.shortdrama.impl.ShortDramaRevisionService revisionService;
+
+    @PostMapping("/{projectId}/revision")
+    public R<ShortDramaDetailVo> applyRevision(@PathVariable Long projectId,
+        @Valid @RequestBody org.ruoyi.domain.bo.shortdrama.ShortDramaRevisionBo revision) {
+        return R.ok(revisionService.apply(projectId, revision, LoginHelper.getUserId()));
+    }
+
     // ==================== 项目 ====================
 
     @GetMapping("/projects")
@@ -174,8 +182,8 @@ public class ShortDramaController {
 
     /** Phase 1: 剧本打磨 */
     @PostMapping("/{projectId}/polish-script")
-    public R<ShortDramaDetailVo> polishScript(@NotNull @PathVariable Long projectId) {
-        return R.ok(shortDramaService.polishScript(projectId, LoginHelper.getUserId()));
+    public R<ShortDramaDetailVo> polishScript(@NotNull @PathVariable Long projectId, @RequestParam(required = false) String model) {
+        return R.ok(shortDramaService.polishScript(projectId, LoginHelper.getUserId(), model));
     }
 
     // ==================== 资产分析 ====================
@@ -183,8 +191,8 @@ public class ShortDramaController {
     /** Phase 2: 资产分析（角色+场景提取） */
     @PostMapping("/{projectId}/analyze-assets")
     public R<ShortDramaDetailVo> analyzeAssets(@NotNull @PathVariable Long projectId,
-                                               @NotNull @RequestParam Long scriptId) {
-        return R.ok(shortDramaService.analyzeAssets(projectId, scriptId, LoginHelper.getUserId()));
+                                               @NotNull @RequestParam Long scriptId, @RequestParam(required = false) String model) {
+        return R.ok(shortDramaService.analyzeAssets(projectId, scriptId, LoginHelper.getUserId(), model));
     }
 
     // ==================== 分镜流水线 ====================
@@ -198,6 +206,12 @@ public class ShortDramaController {
     }
 
     /** Phase 3-6: SSE 流式生成分镜，持续推送规划和细化进度 */
+    @PostMapping("/{projectId}/plan-storyboard/review")
+    public R<Integer> importReviewedPlan(@PathVariable Long projectId,
+        @Valid @RequestBody org.ruoyi.domain.bo.shortdrama.ShortDramaReviewedPlanBo review) {
+        return R.ok(shortDramaService.importReviewedPlan(projectId,review,LoginHelper.getUserId()));
+    }
+
     @PostMapping("/{projectId}/plan-storyboard/stream")
     public SseEmitter planStoryboardStream(@NotNull @PathVariable Long projectId,
                                             @NotNull @RequestParam Long scriptId,

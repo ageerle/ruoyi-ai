@@ -17,4 +17,7 @@ public class ShortDramaIdeaBo {
     private String artStyle;
 
     private String aspectRatio;
+
+    /** Stop after script so the author can review before asset/shot planning. */
+    private Boolean scriptOnly = false;
 }

@@ -48,6 +48,7 @@ public class ShortDramaVideoComposeWorker {
     private final FfmpegCompositionProperties compositionProperties;
     private final SafeVideoSourceDownloader sourceDownloader;
     private final OssService ossService;
+    private final ShortDramaSoundService sounds;
 
     @Async("videoCompositionExecutor")
     public void composeAsync(ShortDramaVideoComposeJob job) {
@@ -83,6 +84,7 @@ public class ShortDramaVideoComposeWorker {
                 return;
             }
 
+            Path finalPath=sounds.mix(job.projectId(),storyboards,artifact.path(),workDirectory,job.transitionType().toString().equalsIgnoreCase("NONE")?0:job.transitionDurationSeconds().doubleValue());
             ShortDramaProject current = selectActiveProject(job);
             if (current == null) {
                 return;
@@ -90,9 +92,9 @@ public class ShortDramaVideoComposeWorker {
             Long previousOssId = current.getComposedVideoOssId();
             boolean localStorage = "local".equalsIgnoreCase(compositionProperties.getStorageMode());
             if (localStorage) {
-                persistLocalComposition(job.projectId(), artifact.path());
+                persistLocalComposition(job.projectId(), finalPath);
             } else {
-                OssDTO uploaded = ossService.uploadFile(artifact.path().toFile());
+                OssDTO uploaded = ossService.uploadFile(finalPath.toFile());
                 if (uploaded == null || uploaded.getOssId() == null) {
                     throw new ServiceException("成片上传对象存储失败");
                 }
@@ -182,16 +184,18 @@ public class ShortDramaVideoComposeWorker {
             ShortDramaStoryboard storyboard = storyboards.get(index);
             Path target = workDirectory.resolve("clip-" + String.format("%04d", index + 1) + ".mp4");
             long remainingTotalBytes = maxTotalSourceBytes - totalBytes;
-            totalBytes += sourceDownloader.download(
-                storyboard.getVideoUrl(),
-                target,
-                maxSourceBytes,
-                remainingTotalBytes
-            );
+            String localPrefix="/short-drama/"+job.projectId()+"/materials/video/";
+            if(storyboard.getVideoUrl().startsWith(localPrefix)) {
+                String id=storyboard.getVideoUrl().substring(localPrefix.length());
+                if(!id.matches("[a-f0-9-]{36}"))throw new ServiceException("素材片段路径无效");
+                Path source=Path.of("data","short-drama-materials",job.projectId().toString(),id+".mp4");
+                long size=Files.size(source);if(size>maxSourceBytes || size>remainingTotalBytes)throw new ServiceException("素材超过大小限制");
+                Files.copy(source,target);totalBytes+=size;
+            } else totalBytes += sourceDownloader.download(storyboard.getVideoUrl(),target,maxSourceBytes,remainingTotalBytes);
             Double fallbackDuration = storyboard.getDurationSeconds() == null
                 ? null
                 : storyboard.getDurationSeconds().doubleValue();
-            sources.add(new CompositionSource(target, fallbackDuration));
+            sources.add(new CompositionSource(target, fallbackDuration, fallbackDuration));
             int progress = 10 + (int) Math.round(30.0 * (index + 1) / storyboards.size());
             if (!updateProgress(job, progress)) {
                 return List.of();

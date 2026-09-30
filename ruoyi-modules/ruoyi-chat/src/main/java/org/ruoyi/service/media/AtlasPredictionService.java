@@ -50,12 +50,24 @@ public class AtlasPredictionService {
                     .build();
             }
             if (!response.isSuccessful()) {
+                if (response.code() == 400 || response.code() == 422) {
+                    MediaGenerationResponse terminal = terminalFailure(responseText, predictionId, mediaType(model.getCategory()));
+                    if (terminal != null) return terminal;
+                }
                 throw new IllegalArgumentException("Atlas Cloud生成结果查询失败: " + response.code() + " - " + responseText);
             }
             return toResponse(responseText, mediaType(model.getCategory()));
         } catch (IOException e) {
             throw new RuntimeException("Atlas Cloud生成结果查询失败: " + e.getMessage(), e);
         }
+    }
+
+    MediaGenerationResponse terminalFailure(String raw, String predictionId, String type) throws IOException {
+        JsonNode data;
+        try { data = AtlasMediaSupport.OBJECT_MAPPER.readTree(raw).path("data"); }
+        catch (com.fasterxml.jackson.core.JsonProcessingException e) { return null; }
+        if (!predictionId.equals(data.path("id").asText()) || !"failed".equals(data.path("status").asText())) return null;
+        return toResponse(raw, type);
     }
 
     public MediaGenerationResponse toResponse(String raw, String type) throws IOException {
