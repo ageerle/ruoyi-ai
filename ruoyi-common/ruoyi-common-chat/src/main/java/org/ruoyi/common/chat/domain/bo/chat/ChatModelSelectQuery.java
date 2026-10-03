@@ -8,4 +8,7 @@ public class ChatModelSelectQuery {
 
     /** Optional model category; defaults to chat at the controller boundary. */
     private String category;
+
+    /** Optional exact provider filter. */
+    private String providerCode;
 }

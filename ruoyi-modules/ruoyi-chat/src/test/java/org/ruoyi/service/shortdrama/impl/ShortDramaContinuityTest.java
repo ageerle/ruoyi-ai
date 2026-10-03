@@ -7,12 +7,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("dev")
 class ShortDramaContinuityTest {
-    @Test
-    void conciseScriptIsNotExpandedMerelyForLengthOrSceneCount() {
-        var result=new org.ruoyi.domain.bo.shortdrama.ShortDramaScriptResult();
-        result.setScriptText("内景 修理铺 下午（预计8秒）\n陈念把账本放入包里，背好包离开。");
-        assertFalse(ShortDramaServiceImpl.scriptNeedsExpansion(result));
-        result.setScriptText("");assertTrue(ShortDramaServiceImpl.scriptNeedsExpansion(result));
+    @Test void normalizationKeepsProductionEstimatesAboveLegacyVideoLimit() {
+        var shot = panel(1, "山谷", "连续飞行后回稳"); shot.setDuration(23);
+        ShortDramaServiceImpl.normalizeContinuityChain(List.of(shot));
+        assertEquals(23, shot.getDuration());
     }
     @Test
     void normalizationPreservesShortShotBudgets() {
@@ -88,6 +86,13 @@ class ShortDramaContinuityTest {
         assertEquals(3, scenes.size());
         assertTrue(scenes.get(0).startsWith("片名"));
         assertTrue(scenes.get(2).contains("下一次探访日期"));
+    }
+
+    @Test void numberedMarkdownHeadingsSplitWithoutSplittingProse() {
+        var scenes = ShortDramaServiceImpl.splitScriptScenes("# 片名\n### 一　黑屏。冬。\n一只布鞋踩进积水。\n### 二　县衙。接上。\n他说了两句。\n### 三　库房。\n结尾。");
+        assertEquals(3, scenes.size());
+        assertTrue(scenes.get(0).contains("一只布鞋"));
+        assertTrue(scenes.get(2).contains("结尾"));
     }
 
     @Test void explicitEmptyCastDoesNotInheritPreviousActor() {

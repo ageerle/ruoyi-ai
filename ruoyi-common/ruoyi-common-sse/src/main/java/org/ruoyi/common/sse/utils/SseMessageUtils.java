@@ -126,6 +126,8 @@ public class SseMessageUtils {
         if (!isEnable() || sessionId == null) {
             return;
         }
+        // The producer normally owns this emitter. Do not race a Redis delivery against disconnect.
+        if (MANAGER.sendLocalEvent(sessionId, eventDto)) return;
         SseMessageDto dto = new SseMessageDto();
         dto.setSessionId(sessionId);
         dto.setEventDto(eventDto);
@@ -208,6 +210,13 @@ public class SseMessageUtils {
      */
     public static void sendError(String sessionId, String error) {
         sendEvent(sessionId, SseEventDto.error(SAFE_ERROR_MESSAGE));
+    }
+
+    /** Final error only: unlike recoverable error events, this flushes and closes the stream. */
+    public static void sendErrorAndComplete(String sessionId, String error) {
+        SseEventDto terminal = SseEventDto.error(SAFE_ERROR_MESSAGE);
+        terminal.setDone(true);
+        sendEvent(sessionId, terminal);
     }
 
     /**

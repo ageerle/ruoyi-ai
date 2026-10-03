@@ -1,0 +1,11 @@
+{
+  "name": "cinematic-storyboard",
+  "title": "专业分镜 · 重点清楚，镜头连贯",
+  "type": "director",
+  "description": "每个镜头先说清楚要让观众看到什么，再安排怎么拍；前后镜头的动作、道具和移动方向要接得上。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/libtv-sources.md"
+  ]
+}

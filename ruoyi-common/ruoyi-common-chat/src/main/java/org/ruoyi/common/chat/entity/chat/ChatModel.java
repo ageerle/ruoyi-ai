@@ -34,6 +34,9 @@ public class ChatModel extends TenantEntity {
      */
     private String category;
 
+    /** 默认模型优先级，数值越小越优先；同值按ID排序。 */
+    private Integer sortOrder;
+
     /**
      * 模型名称
      */

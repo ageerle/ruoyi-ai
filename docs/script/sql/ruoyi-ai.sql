@@ -95,6 +95,7 @@ DROP TABLE IF EXISTS `chat_model`;
 CREATE TABLE `chat_model`  (
                                `id` bigint NOT NULL COMMENT '主键',
                                `category` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '模型分类',
+                               `sort_order` int NOT NULL DEFAULT 100 COMMENT '默认模型优先级，升序',
                                `model_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '模型名称',
                                `provider_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '模型供应商',
                                `model_describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '模型描述',
@@ -115,20 +116,20 @@ CREATE TABLE `chat_model`  (
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
-INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 'deepseek-v4-flash', 'deepseek', 'DeepSeek V4 Flash', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2025-12-15 23:16:54', 1, '2026-08-30 00:00:00', '简单快速编程任务', 0);
-INSERT INTO `chat_model` VALUES (2090000000000000001, 'chat', 'deepseek-v4-pro', 'deepseek', 'DeepSeek V4 Pro', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '复杂编程、规划与审查', 0);
-INSERT INTO `chat_model` VALUES (2090000000000000002, 'chat', 'deepseek-v4-flash-vision-exp', 'deepseek', 'DeepSeek V4 Flash Vision (experimental)', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '带图编程任务的视觉证据提取', 0);
-INSERT INTO `chat_model` VALUES (2007528268536287233, 'vector', 'embedding-3', 'zhipu', 'embedding-3', 2048, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-01-04 03:03:32', 1, '2026-03-15 19:18:51', '向量模型', 0);
-INSERT INTO `chat_model` VALUES (2045071617578237953, 'rerank', 'rerank', 'zhipu', 'rerank', NULL, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-04-17 17:27:24', 1, '2026-04-20 15:21:48', '重排序模型', 0);
-INSERT INTO `chat_model` VALUES (2000585866022060003, 'chat', 'deepseek-ai/deepseek-v4-flash', 'atlas', 'deepseek-v4-flash', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', '对话模型', 0);
-INSERT INTO `chat_model` VALUES (2050000000000000001, 'video', 'bytedance/seedance-2.0/text-to-video', 'atlas', 'Seedance 2.0 文生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-17 18:39:20', 1, '2026-06-17 18:39:20', 'Atlas Cloud 视频模型 - Seedance 2.0', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000001, 'image', 'openai/gpt-image-2/text-to-image', 'atlas', 'GPT-IMAGE-2 文生图', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 文生图，支持三视图、角色设定、场景图', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000002, 'image', 'openai/gpt-image-2/edit', 'atlas', 'GPT-IMAGE-2 图生图编辑', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 图生图/编辑，支持基于参考图修改风格、纹理等', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000003, 'video', 'bytedance/seedance-2.0/image-to-video', 'atlas', 'Seedance 2.0 图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 17:24:07', 1, '2026-06-22 17:24:07', 'Atlas Cloud 视频模型 - Seedance 2.0 图生视频，接收参考图+提示词生成视频', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000004, 'video', 'bytedance/seedance-2.0/reference-to-video', 'atlas', 'Seedance 2.0 多参考图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 20:24:44', 1, '2026-06-22 20:24:44', 'Atlas Cloud 视频模型 - Seedance 2.0 多参考图生视频，接收多张参考图+带@imageN标记的提示词生成视频', 0);
-INSERT INTO `chat_model` VALUES (2070700000000000002, 'chat', 'dify-chat', 'dify', 'Dify Chat App', NULL, 'Y', 'https://api.dify.ai/v1', '', 103, 1, '2026-07-14 11:03:44', 1, '2026-07-14 11:03:44', 'Dify 聊天应用；真实 App API Key 在后台模型管理中填写，model_name 可按应用名修改', 0);
-INSERT INTO `chat_model` VALUES (2070700000000000004, 'chat', '替换为你的COZE_BOT_ID', 'coze', 'Coze Bot', NULL, 'Y', 'https://api.coze.cn', '替换为你的COZE_PAT', 103, 1, '2026-07-14 11:03:38', 1, '2026-07-14 11:03:38', 'Coze 聊天 Bot；model_name 为 Coze Bot ID，api_key 为 PAT 或 OAuth access token', 0);
-INSERT INTO `chat_model` VALUES (2070700000000000010, 'audio', 'bytedance/seed-audio-1.0', 'atlas', 'Seed Audio 1.0 语音生成（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-07-16 18:00:00', 1, '2026-07-16 18:00:00', 'Atlas Cloud 语音模型 - 支持多角色对白配音，references 指定 speaker 音色，text 中用 @audioN 引用', 0);
+INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 100, 'deepseek-v4-flash', 'deepseek', 'DeepSeek V4 Flash', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2025-12-15 23:16:54', 1, '2026-08-30 00:00:00', '简单快速编程任务', 0);
+INSERT INTO `chat_model` VALUES (2090000000000000001, 'chat', 100, 'deepseek-v4-pro', 'deepseek', 'DeepSeek V4 Pro', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '复杂编程、规划与审查', 0);
+INSERT INTO `chat_model` VALUES (2090000000000000002, 'chat', 100, 'deepseek-v4-flash-vision-exp', 'deepseek', 'DeepSeek V4 Flash Vision (experimental)', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '带图编程任务的视觉证据提取', 0);
+INSERT INTO `chat_model` VALUES (2007528268536287233, 'vector', 100, 'embedding-3', 'zhipu', 'embedding-3', 2048, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-01-04 03:03:32', 1, '2026-03-15 19:18:51', '向量模型', 0);
+INSERT INTO `chat_model` VALUES (2045071617578237953, 'rerank', 100, 'rerank', 'zhipu', 'rerank', NULL, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-04-17 17:27:24', 1, '2026-04-20 15:21:48', '重排序模型', 0);
+INSERT INTO `chat_model` VALUES (2000585866022060003, 'chat', 100, 'deepseek-ai/deepseek-v4-flash', 'atlas', 'deepseek-v4-flash', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', '对话模型', 0);
+INSERT INTO `chat_model` VALUES (2050000000000000001, 'video', 100, 'bytedance/seedance-2.0/text-to-video', 'atlas', 'Seedance 2.0 文生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-17 18:39:20', 1, '2026-06-17 18:39:20', 'Atlas Cloud 视频模型 - Seedance 2.0', 0);
+INSERT INTO `chat_model` VALUES (2060622000000000001, 'image', 100, 'openai/gpt-image-2/text-to-image', 'atlas', 'GPT-IMAGE-2 文生图', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 文生图，支持三视图、角色设定、场景图', 0);
+INSERT INTO `chat_model` VALUES (2060622000000000002, 'image', 100, 'openai/gpt-image-2/edit', 'atlas', 'GPT-IMAGE-2 图生图编辑', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 图生图/编辑，支持基于参考图修改风格、纹理等', 0);
+INSERT INTO `chat_model` VALUES (2060622000000000003, 'video', 100, 'bytedance/seedance-2.0/image-to-video', 'atlas', 'Seedance 2.0 图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 17:24:07', 1, '2026-06-22 17:24:07', 'Atlas Cloud 视频模型 - Seedance 2.0 图生视频，接收参考图+提示词生成视频', 0);
+INSERT INTO `chat_model` VALUES (2060622000000000004, 'video', 100, 'bytedance/seedance-2.0/reference-to-video', 'atlas', 'Seedance 2.0 多参考图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 20:24:44', 1, '2026-06-22 20:24:44', 'Atlas Cloud 视频模型 - Seedance 2.0 多参考图生视频，接收多张参考图+带@imageN标记的提示词生成视频', 0);
+INSERT INTO `chat_model` VALUES (2070700000000000002, 'chat', 100, 'dify-chat', 'dify', 'Dify Chat App', NULL, 'Y', 'https://api.dify.ai/v1', '', 103, 1, '2026-07-14 11:03:44', 1, '2026-07-14 11:03:44', 'Dify 聊天应用；真实 App API Key 在后台模型管理中填写，model_name 可按应用名修改', 0);
+INSERT INTO `chat_model` VALUES (2070700000000000004, 'chat', 100, '替换为你的COZE_BOT_ID', 'coze', 'Coze Bot', NULL, 'Y', 'https://api.coze.cn', '替换为你的COZE_PAT', 103, 1, '2026-07-14 11:03:38', 1, '2026-07-14 11:03:38', 'Coze 聊天 Bot；model_name 为 Coze Bot ID，api_key 为 PAT 或 OAuth access token', 0);
+INSERT INTO `chat_model` VALUES (2070700000000000010, 'audio', 100, 'bytedance/seed-audio-1.0', 'atlas', 'Seed Audio 1.0 语音生成（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-07-16 18:00:00', 1, '2026-07-16 18:00:00', 'Atlas Cloud 语音模型 - 支持多角色对白配音，references 指定 speaker 音色，text 中用 @audioN 引用', 0);
 
 -- ----------------------------
 -- Table structure for chat_provider
@@ -1490,6 +1491,9 @@ CREATE TABLE `short_drama_project`  (
                                         `user_id` bigint NOT NULL COMMENT '用户ID',
                                         `project_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '项目名称',
                                         `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '项目描述',
+                                        `original_idea` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '原始创作提示词',
+                                        `aesthetic_skill_name` varchar(64) NULL COMMENT '所选审美技能',
+                                        `director_skill_name` varchar(64) NULL COMMENT '所选导演技能',
                                         `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'draft' COMMENT '状态：draft/active/archived',
                                         `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
                                         `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
@@ -1516,7 +1520,7 @@ CREATE TABLE `short_drama_project`  (
 -- ----------------------------
 -- Records of short_drama_project
 -- ----------------------------
-INSERT INTO `short_drama_project` VALUES (2077007721974484992, 1, '短剧项目', '50岁失意中年小明意外穿越到1985年，利用未来知识创业，在时代洪流中改写命运，最终留下并影响一代人。', 'draft', -1, -1, '2026-07-14 20:30:05', -1, '2026-07-14 20:51:14', 0, 'realistic', NULL, 'done', NULL, 100, 'fade', 0.300, '9:16', 32.267, NULL, '2026-07-14 20:51:14');
+INSERT INTO `short_drama_project` (`id`, `user_id`, `project_name`, `description`, `status`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `tenant_id`, `art_style`, `composed_video_oss_id`, `compose_status`, `compose_job_id`, `compose_progress`, `compose_transition_type`, `compose_transition_duration_seconds`, `compose_aspect_ratio`, `composed_video_duration_seconds`, `compose_error_message`, `composed_at`) VALUES (2077007721974484992, 1, '短剧项目', '50岁失意中年小明意外穿越到1985年，利用未来知识创业，在时代洪流中改写命运，最终留下并影响一代人。', 'draft', -1, -1, '2026-07-14 20:30:05', -1, '2026-07-14 20:51:14', 0, 'realistic', NULL, 'done', NULL, 100, 'fade', 0.300, '9:16', 32.267, NULL, '2026-07-14 20:51:14');
 
 -- ----------------------------
 -- Table structure for short_drama_script
@@ -1530,6 +1534,10 @@ CREATE TABLE `short_drama_script`  (
                                        `outline_text` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '大纲文本',
                                        `tone` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '风格/基调',
                                        `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'manual' COMMENT '来源：manual/ai',
+                                       `creation_mode` varchar(32) DEFAULT 'standard' COMMENT '剧本创作模式',
+                                       `source_materials` longtext COMMENT '创作资料',
+                                       `worldbuilding` longtext COMMENT '世界观设定',
+                                       `revision_notes` longtext COMMENT '打磨要求',
                                        `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
                                        `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
                                        `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -1544,7 +1552,7 @@ CREATE TABLE `short_drama_script`  (
 -- ----------------------------
 -- Records of short_drama_script
 -- ----------------------------
-INSERT INTO `short_drama_script` VALUES (2077007722058371072, 2077007721974484992, '重启1985', '1. 内景 现代办公室 夜\n\n办公室昏暗，只有电脑屏幕亮着。50岁的小明穿着皱巴巴的衬衫，盯着屏幕上的辞退邮件。他拿起手机，看到妻子发来的离婚协议截图。手抖着放下手机，碰倒桌上的电水壶，水洒在插座上。火花闪过，小明倒在椅子上。\n\n2. 外景 小巷 日 1985年\n\n小明醒来，发现自己躺在地上，身穿80年代蓝色工装。他摸着脸——没有皱纹。旁边老式自行车铃响，一个年轻人喊：“小明，上班迟到了！”小明看着路口的二八自行车，墙上的标语“时间就是金钱”，愣住。他低头看手腕上的电子表：1985年6月。他深吸一口气，眼神从迷茫变成坚定：“再来一次。”\n\n3. 外景 街道办门口 日\n\n小明拿着一叠手写方案，站在街道办门口。门卫拦住他。小明：“同志，我有商业计划，能帮工厂接全国订单！”门卫：“胡闹！”推他出去。小明捡起散落的纸，抬头看到路对面一个穿中山装的中年男人（老陈）正在看他的方案。老陈：“你这上面写的‘电商’是啥？”小明眼睛一亮：“陈厂长，我能让您仓库里的积压货三天卖掉。”\n\n4. 内景 废弃仓库 日\n\n老陈和小明对面坐着。桌上摆着两盒烟。老陈：“我信你一次，但怎么弄？”小明在纸上画：“用电话线连电脑，搞个库存信息库。我写程序。”老陈：“钱呢？”小明：“我先拉商户，您出设备。”老陈犹豫后点头。小明看着仓库墙上的“工业学大庆”，低声：“这次一定要成。”\n\n5. 内景 工厂办公室 日\n\n办公桌上电话响起。老陈接起，脸色变白。挂断后对小明：“国营百货举报我们投机倒把，工商明天来查。”小明快速翻看账本：“我们走的是信息服务，不是倒卖。”老陈：“没人认可这个。”小明：“明天我来说。”\n\n6. 内景 小明的出租屋 夜\n\n团队成员（两个年轻人）拍桌：“不干了，风险太大！”老陈沉默。小明拿出一块黑板，画出时间轴：“1985年，电脑刚进中国，我们的优势是信息差。不做商品买卖，做平台——帮工厂和供销社匹配库存。”他指着黑板：“明天工商来，我就说这是‘技术咨询’。”老陈抬头：“你哪来的这些？”小明：“梦里学的。”\n\n7. 外景 百货大楼门口 日\n\n工商人员和小明、老陈站在门口。小明拿出一份表格：“这是通过我们信息服务成交的订单，全部有记录，不碰资金，只收咨询费。”工商人员翻看，递给旁边一个戴眼镜的中年人（百货公司经理）。经理看了后低声：“这方法能帮我们清库存？”小明：“三天见效。”经理点头。工商人员收起表格：“先观察。”\n\n8. 内景 厂庆礼堂 夜\n\n工人坐满长凳。老陈上台：“感谢小明的信息平台，咱们工厂活了。”台下鼓掌。小明站在侧台，看着灯光下兴奋的面孔。他手摸到口袋里的现代身份证——早已发黄。他默默撕碎。主持人：“请小明同志讲话！”小明上前，拿着话筒停顿三秒：“各位，未来三十年，互联网会改变一切。今天，我们从这里开始。”台下掌声雷动。\n\n9. 外景 工厂大门 晨\n\n阳光照在新挂牌上：“华夏信息服务中心”。小明推着自行车出来，老陈追上：“下一步？”小明：“跑遍全国，建数据库。”老陈笑：“疯了。”小明跨上车：“1985年，疯的人才能赢。”他蹬车远去，街道两旁的工厂烟囱开始冒烟。', '1.现代办公室夜，小明被老板辞退，回家发现妻子要离婚，绝望中碰倒电水壶触电。2.1985年小巷外景清晨，小明醒来发现变成25岁身体，确认穿越，决定利用记忆创业。3.街道办外景日，小明推销‘互联网购物’概念，被当成疯子赶出，遇到工厂副厂长老陈愿意听。4.废弃仓库内景，小明说服老陈入股，用记忆设计简易电商系统，团队组建。5.工厂办公室内景，初获订单，却遭国营百货公司经理举报，面临查封危机。6.小作家中内景夜，团队内讧，老陈动摇，小明用未来管理经验分析市场，决定转型做信息中介。7.百货大楼外景日，小明带团队利用数据库帮商家库存匹配，化解危机，赢取首个大客户。8.厂庆礼堂内景夜，小明站在台上，回想现代生活，决定留下，带领工人转型。9.同场景，小明讲话，镜头拉远，工厂转型成功。', '现实与励志', 'llm', -1, -1, '2026-07-14 20:30:05', -1, '2026-07-14 20:30:05', 0);
+INSERT INTO `short_drama_script` (`id`, `project_id`, `script_name`, `script_text`, `outline_text`, `tone`, `source_type`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `tenant_id`) VALUES (2077007722058371072, 2077007721974484992, '重启1985', '1. 内景 现代办公室 夜\n\n办公室昏暗，只有电脑屏幕亮着。50岁的小明穿着皱巴巴的衬衫，盯着屏幕上的辞退邮件。他拿起手机，看到妻子发来的离婚协议截图。手抖着放下手机，碰倒桌上的电水壶，水洒在插座上。火花闪过，小明倒在椅子上。\n\n2. 外景 小巷 日 1985年\n\n小明醒来，发现自己躺在地上，身穿80年代蓝色工装。他摸着脸——没有皱纹。旁边老式自行车铃响，一个年轻人喊：“小明，上班迟到了！”小明看着路口的二八自行车，墙上的标语“时间就是金钱”，愣住。他低头看手腕上的电子表：1985年6月。他深吸一口气，眼神从迷茫变成坚定：“再来一次。”\n\n3. 外景 街道办门口 日\n\n小明拿着一叠手写方案，站在街道办门口。门卫拦住他。小明：“同志，我有商业计划，能帮工厂接全国订单！”门卫：“胡闹！”推他出去。小明捡起散落的纸，抬头看到路对面一个穿中山装的中年男人（老陈）正在看他的方案。老陈：“你这上面写的‘电商’是啥？”小明眼睛一亮：“陈厂长，我能让您仓库里的积压货三天卖掉。”\n\n4. 内景 废弃仓库 日\n\n老陈和小明对面坐着。桌上摆着两盒烟。老陈：“我信你一次，但怎么弄？”小明在纸上画：“用电话线连电脑，搞个库存信息库。我写程序。”老陈：“钱呢？”小明：“我先拉商户，您出设备。”老陈犹豫后点头。小明看着仓库墙上的“工业学大庆”，低声：“这次一定要成。”\n\n5. 内景 工厂办公室 日\n\n办公桌上电话响起。老陈接起，脸色变白。挂断后对小明：“国营百货举报我们投机倒把，工商明天来查。”小明快速翻看账本：“我们走的是信息服务，不是倒卖。”老陈：“没人认可这个。”小明：“明天我来说。”\n\n6. 内景 小明的出租屋 夜\n\n团队成员（两个年轻人）拍桌：“不干了，风险太大！”老陈沉默。小明拿出一块黑板，画出时间轴：“1985年，电脑刚进中国，我们的优势是信息差。不做商品买卖，做平台——帮工厂和供销社匹配库存。”他指着黑板：“明天工商来，我就说这是‘技术咨询’。”老陈抬头：“你哪来的这些？”小明：“梦里学的。”\n\n7. 外景 百货大楼门口 日\n\n工商人员和小明、老陈站在门口。小明拿出一份表格：“这是通过我们信息服务成交的订单，全部有记录，不碰资金，只收咨询费。”工商人员翻看，递给旁边一个戴眼镜的中年人（百货公司经理）。经理看了后低声：“这方法能帮我们清库存？”小明：“三天见效。”经理点头。工商人员收起表格：“先观察。”\n\n8. 内景 厂庆礼堂 夜\n\n工人坐满长凳。老陈上台：“感谢小明的信息平台，咱们工厂活了。”台下鼓掌。小明站在侧台，看着灯光下兴奋的面孔。他手摸到口袋里的现代身份证——早已发黄。他默默撕碎。主持人：“请小明同志讲话！”小明上前，拿着话筒停顿三秒：“各位，未来三十年，互联网会改变一切。今天，我们从这里开始。”台下掌声雷动。\n\n9. 外景 工厂大门 晨\n\n阳光照在新挂牌上：“华夏信息服务中心”。小明推着自行车出来，老陈追上：“下一步？”小明：“跑遍全国，建数据库。”老陈笑：“疯了。”小明跨上车：“1985年，疯的人才能赢。”他蹬车远去，街道两旁的工厂烟囱开始冒烟。', '1.现代办公室夜，小明被老板辞退，回家发现妻子要离婚，绝望中碰倒电水壶触电。2.1985年小巷外景清晨，小明醒来发现变成25岁身体，确认穿越，决定利用记忆创业。3.街道办外景日，小明推销‘互联网购物’概念，被当成疯子赶出，遇到工厂副厂长老陈愿意听。4.废弃仓库内景，小明说服老陈入股，用记忆设计简易电商系统，团队组建。5.工厂办公室内景，初获订单，却遭国营百货公司经理举报，面临查封危机。6.小作家中内景夜，团队内讧，老陈动摇，小明用未来管理经验分析市场，决定转型做信息中介。7.百货大楼外景日，小明带团队利用数据库帮商家库存匹配，化解危机，赢取首个大客户。8.厂庆礼堂内景夜，小明站在台上，回想现代生活，决定留下，带领工人转型。9.同场景，小明讲话，镜头拉远，工厂转型成功。', '现实与励志', 'llm', -1, -1, '2026-07-14 20:30:05', -1, '2026-07-14 20:30:05', 0);
 
 -- ----------------------------
 -- Table structure for short_drama_storyboard
@@ -2253,7 +2261,7 @@ CREATE TABLE `sys_client`  (
                                `client_secret` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户端秘钥',
                                `grant_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '授权类型',
                                `device_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '设备类型',
-                               `active_timeout` int NULL DEFAULT 1800 COMMENT 'token活跃超时时间',
+                               `active_timeout` int NULL DEFAULT 43200 COMMENT 'token活跃超时时间',
                                `timeout` int NULL DEFAULT 604800 COMMENT 'token固定超时',
                                `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
                                `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
@@ -2268,9 +2276,9 @@ CREATE TABLE `sys_client`  (
 -- ----------------------------
 -- Records of sys_client
 -- ----------------------------
-INSERT INTO `sys_client` VALUES (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 1800, 604800, '0', '0', 103, 1, '2026-02-03 05:14:53', 1, '2026-02-03 05:14:53');
+INSERT INTO `sys_client` VALUES (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 43200, 604800, '0', '0', 103, 1, '2026-02-03 05:14:53', 1, '2026-02-03 05:14:53');
 INSERT INTO `sys_client` VALUES (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 1800, 604800, '0', '0', 103, 1, '2026-02-03 05:14:53', 1, '2026-02-03 05:14:53');
-INSERT INTO `sys_client` VALUES (2033738530356912129, '0d4c873ff6146ecd7f38e2e45526ab1b', 'web', 'web123', 'sms,email,password', 'pc', 1800, 604800, '0', '0', 103, 1, '2026-03-17 10:53:45', 1, '2026-03-17 10:59:16');
+INSERT INTO `sys_client` VALUES (2033738530356912129, '0d4c873ff6146ecd7f38e2e45526ab1b', 'web', 'web123', 'sms,email,password', 'pc', 43200, 604800, '0', '0', 103, 1, '2026-03-17 10:53:45', 1, '2026-03-17 10:59:16');
 
 -- ----------------------------
 -- Table structure for sys_config

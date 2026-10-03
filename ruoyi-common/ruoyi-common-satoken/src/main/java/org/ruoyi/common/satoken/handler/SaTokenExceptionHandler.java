@@ -50,9 +50,9 @@ public class SaTokenExceptionHandler {
      */
     @ExceptionHandler(NotLoginException.class)
     public R<Void> handleNotLoginException(NotLoginException e, HttpServletRequest request) {
-        log.error("authorization_failed category=NOT_LOGIN method={} path={} exceptionType={}",
+        log.debug("authorization_failed category=NOT_LOGIN method={} path={} exceptionType={}",
             request.getMethod(), safePath(request), e.getClass().getName());
-        return R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源");
+        return R.fail(HttpStatus.HTTP_UNAUTHORIZED, "请先登录");
     }
 
     private static String safePath(HttpServletRequest request) {

@@ -32,4 +32,12 @@ public class ShortDramaScriptVo implements Serializable {
     private Date createTime;
 
     private Date updateTime;
+
+    private String creationMode;
+
+    private String sourceMaterials;
+
+    private String worldbuilding;
+
+    private String revisionNotes;
 }

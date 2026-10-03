@@ -42,6 +42,11 @@ public interface AbstractChatService {
             .build();
     }
 
+    /** Optional request parameters; native providers keep their existing adapter behavior. */
+    default ChatModel buildChatModel(ChatModelVo chatModelVo, ChatRequest request) {
+        return buildChatModel(chatModelVo);
+    }
+
     /**
      * 获取服务提供商名称
      */

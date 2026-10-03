@@ -35,6 +35,9 @@ public class ChatModelBo extends BaseEntity {
     @NotBlank(message = "模型分类不能为空", groups = { AddGroup.class, EditGroup.class })
     private String category;
 
+    /** 默认模型优先级，数值越小越优先；同值按ID排序。 */
+    private Integer sortOrder;
+
     /**
      * 模型名称
      */

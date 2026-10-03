@@ -110,10 +110,10 @@ public class ChatModelServiceImpl implements IChatModelService {
 
     private LambdaQueryWrapper<ChatModel> buildQueryWrapper(ChatModelBo bo) {
         LambdaQueryWrapper<ChatModel> lqw = Wrappers.lambdaQuery();
-        lqw.orderByAsc(ChatModel::getId);
+        lqw.orderByAsc(ChatModel::getSortOrder, ChatModel::getId);
         lqw.eq(StringUtils.isNotBlank(bo.getCategory()), ChatModel::getCategory, bo.getCategory());
         lqw.like(StringUtils.isNotBlank(bo.getModelName()), ChatModel::getModelName, bo.getModelName());
-        lqw.like(StringUtils.isNotBlank(bo.getProviderCode()), ChatModel::getProviderCode, bo.getProviderCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getProviderCode()), ChatModel::getProviderCode, bo.getProviderCode());
         lqw.eq(StringUtils.isNotBlank(bo.getModelDescribe()), ChatModel::getModelDescribe, bo.getModelDescribe());
         lqw.eq(StringUtils.isNotBlank(bo.getModelShow()), ChatModel::getModelShow, bo.getModelShow());
         lqw.eq(StringUtils.isNotBlank(bo.getApiHost()), ChatModel::getApiHost, bo.getApiHost());
@@ -181,6 +181,7 @@ public class ChatModelServiceImpl implements IChatModelService {
         }
         target.setId(source.getId());
         target.setCategory(source.getCategory());
+        target.setSortOrder(source.getSortOrder());
         target.setModelName(source.getModelName());
         target.setProviderCode(source.getProviderCode());
         target.setModelDescribe(source.getModelDescribe());

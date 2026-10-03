@@ -50,10 +50,10 @@ public class AtlasPredictionService {
                     .build();
             }
             if (!response.isSuccessful()) {
-                if (response.code() == 400 || response.code() == 422) {
-                    MediaGenerationResponse terminal = terminalFailure(responseText, predictionId, mediaType(model.getCategory()));
-                    if (terminal != null) return terminal;
-                }
+                // Music validation can be wrapped as HTTP 500 by the provider. A matching
+                // prediction id plus explicit failed status is terminal; unrelated errors are not.
+                MediaGenerationResponse terminal = terminalFailure(responseText, predictionId, mediaType(model.getCategory()));
+                if (terminal != null) return terminal;
                 throw new IllegalArgumentException("Atlas Cloud生成结果查询失败: " + response.code() + " - " + responseText);
             }
             return toResponse(responseText, mediaType(model.getCategory()));

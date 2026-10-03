@@ -4,6 +4,8 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.chat.entity.media.MediaGenerationResponse;
@@ -18,8 +20,10 @@ import org.ruoyi.domain.bo.shortdrama.ShortDramaAudioBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaLocationBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaProjectBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaScriptBo;
+import org.ruoyi.domain.bo.shortdrama.ShortDramaScriptRevisionBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaStoryboardBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaIdeaBo;
+import org.ruoyi.domain.bo.shortdrama.ShortDramaImageRevisionBo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaCharacterVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaCharacterAppearanceVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaComposeVideoVo;
@@ -31,8 +35,10 @@ import org.ruoyi.domain.vo.shortdrama.ShortDramaScriptVo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaStoryboardVo;
 import org.ruoyi.service.shortdrama.IShortDramaService;
 import org.ruoyi.service.shortdrama.IShortDramaVideoComposeService;
+import org.ruoyi.service.shortdrama.impl.ShortDramaTiming;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,6 +62,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/short-drama")
 public class ShortDramaController {
+
+    @ExceptionHandler(ShortDramaTiming.ReviewException.class)
+    public R<Void> handleTimingReview(ShortDramaTiming.ReviewException error) {
+        return R.fail(error.getMessage());
+    }
 
     private final IShortDramaService shortDramaService;
 
@@ -131,10 +142,30 @@ public class ShortDramaController {
         return R.ok(shortDramaService.saveStoryboard(bo, LoginHelper.getUserId()));
     }
 
+    @PostMapping("/storyboard/add")
+    public R<ShortDramaStoryboardVo> addStoryboard(@RequestParam Long projectId, @RequestParam Long scriptId,
+                                                    @RequestParam(required = false) Long afterId) {
+        return R.ok(shortDramaService.addStoryboard(projectId, scriptId, afterId, LoginHelper.getUserId()));
+    }
+
+    @DeleteMapping("/storyboard/{storyboardId}")
+    public R<Void> deleteStoryboard(@PathVariable Long storyboardId) {
+        shortDramaService.deleteStoryboard(storyboardId, LoginHelper.getUserId());
+        return R.ok();
+    }
+
     @PostMapping("/storyboard/{storyboardId}/generate-video")
     public R<ShortDramaStoryboardVo> generateVideo(@NotNull @PathVariable Long storyboardId,
-                                                    @NotBlank @RequestParam String model) {
-        return R.ok(shortDramaService.generateVideo(storyboardId, model, LoginHelper.getUserId()));
+                                                    @NotBlank @RequestParam String model,
+                                                    @RequestParam(required = false) String requestId,
+                                                    @RequestParam(defaultValue = "false") boolean regenerate) {
+        return R.ok(shortDramaService.generateVideo(storyboardId, model, LoginHelper.getUserId(), requestId, regenerate));
+    }
+
+    @GetMapping("/storyboard/{storyboardId}/video-submissions/{requestId}")
+    public R<org.ruoyi.service.shortdrama.impl.ShortDramaVideoSubmissionStore.Submission> videoSubmission(
+        @NotNull @PathVariable Long storyboardId, @PathVariable String requestId) {
+        return R.ok(shortDramaService.videoSubmission(storyboardId, requestId, LoginHelper.getUserId()));
     }
 
     @GetMapping("/storyboard/{storyboardId}/video-result")
@@ -145,8 +176,10 @@ public class ShortDramaController {
 
     @PostMapping("/{projectId}/generate-all-videos")
     public R<List<ShortDramaStoryboardVo>> generateAllVideos(@NotNull @PathVariable Long projectId,
-                                                              @NotBlank @RequestParam String model) {
-        return R.ok(shortDramaService.generateAllVideos(projectId, model, LoginHelper.getUserId()));
+                                                              @NotBlank @RequestParam String model,
+                                                              @RequestParam(required = false) Integer sceneStart,
+                                                              @RequestParam(required = false) Integer sceneCount) {
+        return R.ok(shortDramaService.generateAllVideos(projectId, model, LoginHelper.getUserId(), sceneStart, sceneCount));
     }
 
     @PostMapping("/{projectId}/compose-video")
@@ -180,10 +213,11 @@ public class ShortDramaController {
 
     // ==================== 阶段式流水线端点 ====================
 
-    /** Phase 1: 剧本打磨 */
+    /** 按修改意见重新生成固定格式剧本 */
     @PostMapping("/{projectId}/polish-script")
-    public R<ShortDramaDetailVo> polishScript(@NotNull @PathVariable Long projectId, @RequestParam(required = false) String model) {
-        return R.ok(shortDramaService.polishScript(projectId, LoginHelper.getUserId(), model));
+    public R<ShortDramaDetailVo> polishScript(@NotNull @PathVariable Long projectId,
+                                               @Valid @RequestBody ShortDramaScriptRevisionBo revision) {
+        return R.ok(shortDramaService.polishScript(projectId, LoginHelper.getUserId(), revision.getInstruction()));
     }
 
     // ==================== 资产分析 ====================
@@ -196,27 +230,73 @@ public class ShortDramaController {
     }
 
     // ==================== 分镜流水线 ====================
+    @PostMapping("/{projectId}/analyze-assets/stream")
+    public SseEmitter analyzeAssetsStream(@NotNull @PathVariable Long projectId,
+        @NotNull @RequestParam Long scriptId, @RequestParam(required = false) String model,
+        @RequestParam(required = false) String requestId) {
+        return shortDramaService.analyzeAssetsStream(projectId, scriptId, LoginHelper.getUserId(), model, requestId);
+    }
+
+    @GetMapping("/{projectId}/analyze-assets/status")
+    public R<java.util.Map<String, Object>> assetAnalysisStatus(@NotNull @PathVariable Long projectId,
+        @NotNull @RequestParam Long scriptId, @RequestParam(required = false) String requestId) {
+        return R.ok(shortDramaService.assetAnalysisStatus(projectId, scriptId, requestId, LoginHelper.getUserId()));
+    }
+
 
     /** Phase 3-6: 分镜规划+摄影规则+表演指导+分镜细化 */
     @PostMapping("/{projectId}/plan-storyboard")
     public R<List<ShortDramaStoryboardVo>> planStoryboard(@NotNull @PathVariable Long projectId,
                                                            @NotNull @RequestParam Long scriptId,
-                                                           @RequestParam(required = false) String model) {
-        return R.ok(shortDramaService.planStoryboard(projectId, scriptId, model, LoginHelper.getUserId()));
+                                                           @RequestParam(required = false) String model,
+                                                           @Min(1) @Max(15) @RequestParam(defaultValue = "1") Integer minimumShotSeconds) {
+        return R.ok(shortDramaService.planStoryboard(projectId, scriptId, model, LoginHelper.getUserId(), minimumShotSeconds));
     }
 
     /** Phase 3-6: SSE 流式生成分镜，持续推送规划和细化进度 */
-    @PostMapping("/{projectId}/plan-storyboard/review")
+    @PostMapping({"/{projectId}/plan-storyboard/review", "/{projectId}/import-reviewed-plan"})
     public R<Integer> importReviewedPlan(@PathVariable Long projectId,
         @Valid @RequestBody org.ruoyi.domain.bo.shortdrama.ShortDramaReviewedPlanBo review) {
-        return R.ok(shortDramaService.importReviewedPlan(projectId,review,LoginHelper.getUserId()));
+        try {
+            return R.ok(shortDramaService.importReviewedPlan(projectId,review,LoginHelper.getUserId()));
+        } catch (IllegalArgumentException | IllegalStateException rejected) {
+            // The global handler intentionally hides even ServiceException messages. This normal,
+            // owner-checked endpoint returns only known domain validation feedback, without a stack/cause.
+            String message = org.ruoyi.service.shortdrama.impl.ShortDramaReviewedImportMessages.failureMessage(rejected);
+            if (message == null) throw rejected;
+            return R.fail(message);
+        }
+    }
+
+    /** Read-only recovery proof; it never submits a model request or promotes an unchecked draft. */
+    @GetMapping("/{projectId}/checkpoint-status")
+    public R<java.util.Map<String, Object>> storyboardCheckpointStatus(@NotNull @PathVariable Long projectId,
+        @NotNull @RequestParam Long scriptId, @RequestParam(required = false) String model,
+        @Min(1) @Max(15) @RequestParam(defaultValue = "1") Integer minimumShotSeconds) {
+        return R.ok(shortDramaService.storyboardCheckpointStatus(projectId, scriptId, model, LoginHelper.getUserId(), minimumShotSeconds));
+    }
+
+    /** Unreviewed native output only; viewing it does not validate or import any panel. */
+    @GetMapping("/{projectId}/plan-storyboard/candidates")
+    public R<java.util.Map<String, Object>> storyboardCandidates(@NotNull @PathVariable Long projectId,
+        @NotNull @RequestParam Long scriptId, @RequestParam(required = false) String model,
+        @Min(1) @Max(15) @RequestParam(defaultValue = "4") Integer minimumShotSeconds) {
+        return R.ok(shortDramaService.storyboardCandidates(projectId, scriptId, model, LoginHelper.getUserId(), minimumShotSeconds));
+    }
+
+    @GetMapping("/{projectId}/plan-storyboard/status")
+    public R<java.util.Map<String, Object>> storyboardPlanningStatus(@NotNull @PathVariable Long projectId,
+        @NotNull @RequestParam Long scriptId, @RequestParam(required = false) String requestId) {
+        return R.ok(shortDramaService.storyboardPlanningStatus(projectId, scriptId, requestId, LoginHelper.getUserId()));
     }
 
     @PostMapping("/{projectId}/plan-storyboard/stream")
     public SseEmitter planStoryboardStream(@NotNull @PathVariable Long projectId,
                                             @NotNull @RequestParam Long scriptId,
-                                            @RequestParam(required = false) String model) {
-        return shortDramaService.planStoryboardStream(projectId, scriptId, model, LoginHelper.getUserId());
+                                            @RequestParam(required = false) String model,
+                                            @Min(1) @Max(15) @RequestParam(defaultValue = "1") Integer minimumShotSeconds,
+                                            @RequestParam(required = false) String requestId) {
+        return shortDramaService.planStoryboardStream(projectId, scriptId, model, LoginHelper.getUserId(), minimumShotSeconds, requestId);
     }
 
     /** Phase 4: 重新生成摄影规则 */
@@ -328,15 +408,19 @@ public class ShortDramaController {
     @PostMapping("/location/{locationId}/generate-image")
     public R<ShortDramaLocationVo> generateLocationImage(@NotNull @PathVariable Long locationId,
                                                           @NotBlank @RequestParam String model,
-                                                          @RequestParam(required = false) String referenceImageUrl) {
-        return R.ok(shortDramaService.generateLocationImage(locationId, model, referenceImageUrl, LoginHelper.getUserId()));
+                                                          @RequestParam(required = false) String referenceImageUrl,
+                                                          @Valid @RequestBody(required = false) org.ruoyi.domain.bo.shortdrama.ShortDramaLocationImageRevisionBo revision) {
+        return R.ok(shortDramaService.generateLocationImage(locationId, model, referenceImageUrl,
+            revision == null ? null : revision.getRevisionRequirements(), LoginHelper.getUserId()));
     }
 
     @PostMapping("/location/{locationId}/regenerate")
     public R<ShortDramaLocationVo> regenerateLocationImage(@NotNull @PathVariable Long locationId,
                                                             @NotBlank @RequestParam String model,
-                                                            @RequestParam(required = false) String referenceImageUrl) {
-        return R.ok(shortDramaService.regenerateLocationImage(locationId, model, referenceImageUrl, LoginHelper.getUserId()));
+                                                            @RequestParam(required = false) String referenceImageUrl,
+                                                            @Valid @RequestBody(required = false) org.ruoyi.domain.bo.shortdrama.ShortDramaLocationImageRevisionBo revision) {
+        return R.ok(shortDramaService.regenerateLocationImage(locationId, model, referenceImageUrl,
+            revision == null ? null : revision.getRevisionRequirements(), LoginHelper.getUserId()));
     }
 
     @PostMapping("/location/{locationId}/select-image")
@@ -400,8 +484,12 @@ public class ShortDramaController {
     public R<MediaGenerationResponse> startImage(@NotBlank @RequestParam String assetType,
                                                   @NotNull @RequestParam Long assetId,
                                                   @NotBlank @RequestParam String model,
-                                                  @RequestParam(required = false) String referenceImageUrl) {
-        return R.ok(shortDramaService.startImageGeneration(assetType, assetId, model, referenceImageUrl, LoginHelper.getUserId()));
+                                                  @RequestParam(required = false) String referenceImageUrl,
+                                                  @Valid @RequestBody(required = false) ShortDramaImageRevisionBo revision) {
+        return R.ok(shortDramaService.startImageGeneration(assetType, assetId, model, referenceImageUrl,
+            revision == null ? null : revision.getReferencePurpose(),
+            revision == null ? null : revision.getRevisionRequirements(),
+            revision == null ? null : revision.getStyleReferenceImageUrls(), LoginHelper.getUserId()));
     }
 
     /** 轮询确认形象图片并保存 */

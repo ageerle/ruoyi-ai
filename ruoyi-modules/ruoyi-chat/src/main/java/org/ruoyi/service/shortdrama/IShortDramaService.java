@@ -42,7 +42,15 @@ public interface IShortDramaService {
 
     ShortDramaStoryboardVo saveStoryboard(ShortDramaStoryboardBo bo, Long userId);
 
+    ShortDramaStoryboardVo addStoryboard(Long projectId, Long scriptId, Long afterId, Long userId);
+
+    void deleteStoryboard(Long storyboardId, Long userId);
+
     ShortDramaStoryboardVo generateVideo(Long storyboardId, String videoModel, Long userId);
+
+    ShortDramaStoryboardVo generateVideo(Long storyboardId, String videoModel, Long userId, String requestId, boolean regenerate);
+
+    org.ruoyi.service.shortdrama.impl.ShortDramaVideoSubmissionStore.Submission videoSubmission(Long storyboardId, String requestId, Long userId);
 
     ShortDramaStoryboardVo retrieveVideo(Long storyboardId, String videoModel, Long userId);
 
@@ -51,18 +59,30 @@ public interface IShortDramaService {
 
     List<ShortDramaStoryboardVo> generateAllVideos(Long projectId, String videoModel, Long userId);
 
-    ShortDramaDetailVo analyzeAssets(Long projectId, Long scriptId, Long userId, String model);
+    List<ShortDramaStoryboardVo> generateAllVideos(Long projectId, String videoModel, Long userId, Integer sceneStart, Integer sceneCount);
 
-    /** Phase 1: 剧本打磨，重新生成更丰富的剧本内容 */
-    ShortDramaDetailVo polishScript(Long projectId, Long userId, String model);
+    ShortDramaDetailVo analyzeAssets(Long projectId, Long scriptId, Long userId, String model);
+    SseEmitter analyzeAssetsStream(Long projectId, Long scriptId, Long userId, String model, String requestId);
+    java.util.Map<String, Object> assetAnalysisStatus(Long projectId, Long scriptId, String requestId, Long userId);
+
+    /** 按修改意见重新生成固定格式剧本 */
+    ShortDramaDetailVo polishScript(Long projectId, Long userId, String instruction);
 
     /** Phase 3-6: 分镜规划+摄影规则+表演指导+分镜细化 */
     List<ShortDramaStoryboardVo> planStoryboard(Long projectId, Long scriptId, String model, Long userId);
+    List<ShortDramaStoryboardVo> planStoryboard(Long projectId, Long scriptId, String model, Long userId, Integer minimumShotSeconds);
 
     /** Phase 3-6: 流式生成分镜并推送实时进度 */
     SseEmitter planStoryboardStream(Long projectId, Long scriptId, String model, Long userId);
+    SseEmitter planStoryboardStream(Long projectId, Long scriptId, String model, Long userId, Integer minimumShotSeconds);
+    SseEmitter planStoryboardStream(Long projectId, Long scriptId, String model, Long userId, Integer minimumShotSeconds, String requestId);
+    java.util.Map<String, Object> storyboardPlanningStatus(Long projectId, Long scriptId, String requestId, Long userId);
+    java.util.Map<String, Object> storyboardCandidates(Long projectId, Long scriptId, String model, Long userId, Integer minimumShotSeconds);
 
     int importReviewedPlan(Long projectId, org.ruoyi.domain.bo.shortdrama.ShortDramaReviewedPlanBo review, Long userId);
+
+    java.util.Map<String, Object> storyboardCheckpointStatus(Long projectId, Long scriptId, String model, Long userId);
+    java.util.Map<String, Object> storyboardCheckpointStatus(Long projectId, Long scriptId, String model, Long userId, Integer minimumShotSeconds);
 
     /** Phase 4: 重新生成摄影规则 */
     List<ShortDramaStoryboardVo> generatePhotographyRules(Long projectId, Long scriptId, Long userId);
@@ -77,6 +97,7 @@ public interface IShortDramaService {
     ShortDramaCharacterVo generateCharacterImage(Long characterId, String imageModel, String referenceImageUrl, Long userId);
 
     ShortDramaLocationVo generateLocationImage(Long locationId, String imageModel, String referenceImageUrl, Long userId);
+    ShortDramaLocationVo generateLocationImage(Long locationId, String imageModel, String referenceImageUrl, String revisionRequirements, Long userId);
 
     Boolean deleteCharacter(Long characterId, Long userId);
 
@@ -97,6 +118,7 @@ public interface IShortDramaService {
     ShortDramaCharacterAppearanceVo undoAppearanceImage(Long appearanceId, Long userId);
 
     ShortDramaLocationVo regenerateLocationImage(Long locationId, String imageModel, String referenceImageUrl, Long userId);
+    ShortDramaLocationVo regenerateLocationImage(Long locationId, String imageModel, String referenceImageUrl, String revisionRequirements, Long userId);
 
     ShortDramaLocationVo selectLocationImage(Long locationId, Integer index, Long userId);
 
@@ -106,6 +128,14 @@ public interface IShortDramaService {
 
     /** 异步启动图片生成，返回 prediction 信息供前端轮询 */
     MediaGenerationResponse startImageGeneration(String assetType, Long assetId, String model, String referenceImageUrl, Long userId);
+
+    /** Explicit identity revision produces an unselected candidate and retains approved continuity. */
+    MediaGenerationResponse startImageGeneration(String assetType, Long assetId, String model, String referenceImageUrl,
+                                                String referencePurpose, String revisionRequirements, Long userId);
+
+    MediaGenerationResponse startImageGeneration(String assetType, Long assetId, String model, String referenceImageUrl,
+                                                String referencePurpose, String revisionRequirements,
+                                                java.util.List<String> styleReferenceImageUrls, Long userId);
 
     /** 上传到图片模型供应商，返回仅用于当前生成会话的临时参考图 URL。 */
     String uploadReferenceImage(MultipartFile file, String model, Long userId);

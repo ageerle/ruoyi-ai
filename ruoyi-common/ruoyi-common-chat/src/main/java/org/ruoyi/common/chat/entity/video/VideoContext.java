@@ -25,6 +25,9 @@ public class VideoContext {
 
     private String quality;
 
+    /** Provider output resolution; distinct from aspect ratio and quality. */
+    private String resolution;
+
     /** 参考图 URL（图生视频模式，单图） */
     private String imageUrl;
 

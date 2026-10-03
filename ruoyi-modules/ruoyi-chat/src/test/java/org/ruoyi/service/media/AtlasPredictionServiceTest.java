@@ -11,6 +11,9 @@ class AtlasPredictionServiceTest {
         var service = new AtlasPredictionService();
         String raw = "{\"code\":400,\"data\":{\"id\":\"task-3s\",\"status\":\"failed\",\"error\":\"duration unsupported\"}}";
         assertEquals("failed", service.terminalFailure(raw, "task-3s", "video").getStatus());
+        String music="{\"code\":500,\"data\":{\"id\":\"music-1\",\"status\":\"failed\",\"error\":\"tags exceeds 1000 characters\"}}";
+        assertEquals("failed",service.terminalFailure(music,"music-1","audio").getStatus());
+        org.junit.jupiter.api.Assertions.assertNull(service.terminalFailure(music,"another-id","audio"));
         org.junit.jupiter.api.Assertions.assertNull(service.terminalFailure(raw, "different-task", "video"));
         org.junit.jupiter.api.Assertions.assertNull(service.terminalFailure("{\"message\":\"temporary failure\"}", "task-3s", "video"));
         org.junit.jupiter.api.Assertions.assertNull(service.terminalFailure("Bad gateway", "task-3s", "video"));

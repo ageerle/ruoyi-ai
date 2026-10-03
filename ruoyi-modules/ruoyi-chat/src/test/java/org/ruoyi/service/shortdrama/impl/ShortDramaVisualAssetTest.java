@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.*;
         assertFalse(ShortDramaVisualAssetService.directInsert("{\"source_media\":{\"mode\":\"reference\"}}"));
         assertFalse(ShortDramaVisualAssetService.directInsert(null));
     }
-    @Test void sceneBudgetRejectsSilentDurationInflation() {
+    @Test void sceneBudgetRemainsAnEditableEstimate() {
         var panel=new ShortDramaServiceImpl.StoryboardPanelData();panel.setDuration(15);
-        assertThrows(IllegalStateException.class,()->ShortDramaServiceImpl.validateSceneDuration("第一场 内景 修理铺 下午（预计8秒）",List.of(panel)));
+        assertDoesNotThrow(()->ShortDramaServiceImpl.validateSceneDuration("第一场 内景 修理铺 下午（预计8秒）",List.of(panel)));
         panel.setDuration(8);
         assertDoesNotThrow(()->ShortDramaServiceImpl.validateSceneDuration("第一场 内景 修理铺 下午（预计8秒）",List.of(panel)));
     }
@@ -29,6 +29,20 @@ import static org.junit.jupiter.api.Assertions.*;
         s.setContinuityJson("站着");assertNotEquals(first,ShortDramaVisualAssetService.frameHash(s,List.of("face"),"props"));
         s.setContinuityJson("坐着");assertNotEquals(first,ShortDramaVisualAssetService.frameHash(s,List.of("new face"),"props"));
         assertTrue(ShortDramaVisualAssetService.framePrompt(s).contains("只画起始状态"));
+    }
+    @Test void singleFrameRevisionCanReuseThePreviousCompositionAsAnEditReference() {
+        assertEquals("https://example.com/previous.jpg", ShortDramaVisualAssetService.previousFrameReference(
+            "{\"previousImageUrl\":\"https://example.com/previous.jpg\"}"));
+        assertEquals("", ShortDramaVisualAssetService.previousFrameReference(
+            "{\"previousImageUrl\":\"http://example.com/unsafe.jpg\"}"));
+        assertEquals("", ShortDramaVisualAssetService.previousFrameReference("not-json"));
+    }
+    @Test void propMetadataKeepsLegacyShotBindingsAndASeparateUserReference() {
+        assertEquals(List.of(1,3), ShortDramaVisualAssetService.propShotNumbers("[3,1,3]"));
+        assertEquals("", ShortDramaVisualAssetService.propReferenceImage("[3,1,3]"));
+        String metadata = ShortDramaVisualAssetService.propMetadataJson(List.of(3,1), "https://example.com/prop-reference.jpg");
+        assertEquals(List.of(1,3), ShortDramaVisualAssetService.propShotNumbers(metadata));
+        assertEquals("https://example.com/prop-reference.jpg", ShortDramaVisualAssetService.propReferenceImage(metadata));
     }
     @Test void cameraChangeInvalidatesPreviouslyGeneratedComposition() {
         var shot=new ShortDramaStoryboard();shot.setImagePrompt("核对账本");shot.setShotType("平视中景");
@@ -69,5 +83,25 @@ import static org.junit.jupiter.api.Assertions.*;
         assertTrue(prompt.contains("右手持手机"));
         assertTrue(prompt.contains("两枚对角后摄，手机仍在手中"));
         assertFalse(prompt.contains("手已放开手机"));
+    }
+    @Test void morningLightingAndMaterialsSurviveWithoutImportingLaterSitUpAction() {
+        var shot = new ShortDramaStoryboard(); shot.setShotType("侧面近景");
+        shot.setImagePrompt("朱承晏坐起伸手接纸。清晨冷蓝天光从左窗透入，低曝光保留窗外细节。粗麻衣料与炕板旧木纹清晰，青灰冷色调。镜头背景还有两名老农人影。");
+        shot.setContinuityJson("{\"start_state\":\"朱承晏仰卧炕上，双手空置\",\"present_characters\":[\"朱承晏\"]}");
+        String prompt = ShortDramaVisualAssetService.framePrompt(shot);
+        assertTrue(prompt.contains("朱承晏仰卧炕上，双手空置"));
+        assertTrue(prompt.contains("清晨冷蓝天光从左窗透入，低曝光保留窗外细节"));
+        assertTrue(prompt.contains("粗麻衣料与炕板旧木纹清晰"));
+        assertTrue(prompt.contains("不锁时间、天气、色温、光照或曝光"));
+        assertFalse(prompt.contains("坐起伸手接纸")); assertFalse(prompt.contains("两名老农人影"));
+    }
+    @Test void mixedActionClauseIsOmittedAndStructuredCurrentLightingCanSupplyMorning() {
+        var shot = new ShortDramaStoryboard();
+        shot.setImagePrompt("朱承晏坐起，清晨光线映在脸上；傍晚人物站在门口。");
+        shot.setPhotographyRules("{\"lighting\":{\"direction\":\"清晨主光从画面左侧窗户照入\",\"quality\":\"柔和冷蓝色天光\"},\"depth_of_field\":\"浅景深与旧木纹质感\",\"acting\":\"朱承晏坐起\"}");
+        shot.setContinuityJson("{\"start_state\":\"朱承晏仰卧，双手空置\"}");
+        String prompt = ShortDramaVisualAssetService.framePrompt(shot);
+        assertTrue(prompt.contains("清晨主光从画面左侧窗户照入")); assertTrue(prompt.contains("柔和冷蓝色天光"));
+        assertFalse(prompt.contains("坐起")); assertFalse(prompt.contains("傍晚人物站"));
     }
 }

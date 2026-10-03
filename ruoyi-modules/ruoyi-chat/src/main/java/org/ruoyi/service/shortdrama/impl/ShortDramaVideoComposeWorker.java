@@ -195,7 +195,9 @@ public class ShortDramaVideoComposeWorker {
             Double fallbackDuration = storyboard.getDurationSeconds() == null
                 ? null
                 : storyboard.getDurationSeconds().doubleValue();
-            sources.add(new CompositionSource(target, fallbackDuration, fallbackDuration));
+            // Storyboard duration is a planning estimate, not an edit point.
+            // Probe the completed clip and preserve its full video and dialogue.
+            sources.add(new CompositionSource(target, fallbackDuration));
             int progress = 10 + (int) Math.round(30.0 * (index + 1) / storyboards.size());
             if (!updateProgress(job, progress)) {
                 return List.of();

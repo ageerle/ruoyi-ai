@@ -27,9 +27,14 @@ public class ShortDramaProject extends BaseEntity {
 
     private String description;
 
+    /** Original user input, independent of generated summaries and script revisions. */
+    private String originalIdea;
+
     private String status;
 
     private String artStyle;
+    private String aestheticSkillName;
+    private String directorSkillName;
 
     private Long composedVideoOssId;
 

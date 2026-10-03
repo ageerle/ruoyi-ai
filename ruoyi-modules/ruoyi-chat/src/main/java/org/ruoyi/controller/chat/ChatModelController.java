@@ -67,6 +67,7 @@ public class ChatModelController extends BaseController {
         } else {
             internalQuery.setCategory(query.getCategory());
         }
+        if (query != null) internalQuery.setProviderCode(query.getProviderCode());
         return R.ok(chatModelService.queryAvailableList(internalQuery).stream()
             .map(ChatModelSelectVo::from)
             .toList());

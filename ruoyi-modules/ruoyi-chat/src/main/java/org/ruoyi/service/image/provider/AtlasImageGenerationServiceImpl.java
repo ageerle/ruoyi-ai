@@ -17,6 +17,7 @@ import org.ruoyi.common.chat.entity.media.MediaGenerationResponse;
 import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.service.image.AbstractImageGenerationService;
 import org.ruoyi.service.media.AtlasMediaSupport;
+import org.ruoyi.service.media.AtlasPredictionService;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component("atlasImage")
 public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationService {
+    private final AtlasPredictionService predictions;
+    public AtlasImageGenerationServiceImpl(AtlasPredictionService predictions) { this.predictions = predictions; }
 
     /** 比例 → 像素映射（AtlasCloud 要求 width*height，min 768 max 1360） */
     private static final Map<String, String> SIZE_MAP = Map.of(
@@ -42,6 +45,13 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         "16:9", "1536x1024",
         "9:16", "1024x1536"
     );
+    private static final String SEEDREAM_47_TEXT_TO_IMAGE = "bytedance/seedream-v4.7/text-to-image";
+    /** Atlas's documented 2K presets; the exact T2I variant produces one image, without references. */
+    private static final Map<String, String> SEEDREAM_47_SIZE_MAP = Map.of(
+        "1:1", "2048*2048", "4:3", "2304*1728", "3:4", "1728*2304",
+        "16:9", "2848*1600", "9:16", "1600*2848", "3:2", "2496*1664",
+        "2:3", "1664*2496", "21:9", "3136*1344"
+    );
 
     private final OkHttpClient okHttpClient = new OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -50,7 +60,35 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         .build();
 
     @Override
+    public String generateImage(ImageContext context) {
+        if (!isSeedream47TextToImage(context.getChatModelVo().getModelName())) return super.generateImage(context);
+        // The official 4.7 schema is asynchronous. A synchronous caller submits exactly once,
+        // then queries that prediction; it does not rely on an undocumented sync-mode flag.
+        var started = startImageGeneration(context);
+        return awaitSeedream47Image(context.getChatModelVo(), started.getId());
+    }
+
+    String awaitSeedream47Image(ChatModelVo model, String predictionId) {
+        long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(5);
+        try {
+            while (System.nanoTime() < deadline) {
+                var result = predictions.retrieve(model, predictionId);
+                if (result != null && ("completed".equals(result.getStatus()) || "succeeded".equals(result.getStatus())) && StrUtil.isNotBlank(result.getUrl())) return result.getUrl();
+                if (result != null && "failed".equals(result.getStatus())) throw new IllegalStateException("Seedream 4.7图片任务失败，predictionId=" + predictionId);
+                Thread.sleep(1500);
+            }
+            throw new IllegalStateException("Seedream 4.7图片任务尚未完成，请查询原任务而勿重新提交：predictionId=" + predictionId);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); throw new IllegalStateException("图片等待被中断，请查询原任务：predictionId=" + predictionId, e);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("Seedream 4.7原任务查询未完成，predictionId=" + predictionId + "；" + e.getMessage(), e);
+        }
+    }
+
+    @Override
     protected String doGenerateImage(ChatModelVo chatModelVo, String prompt, String size, Integer seed, String image) {
+        if (isSeedream47TextToImage(chatModelVo.getModelName())) return generateImage(ImageContext.builder()
+            .chatModelVo(chatModelVo).prompt(prompt).size(size).seed(seed).image(image).build());
         ObjectNode payload = buildPayload(chatModelVo, prompt, size, seed, image);
         payload.put("enable_sync_mode", true);
 
@@ -101,17 +139,25 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         return "";
     }
 
-    private ObjectNode buildPayload(ChatModelVo chatModelVo, String prompt, String size, Integer seed, String image) {
+    static ObjectNode buildPayload(ChatModelVo chatModelVo, String prompt, String size, Integer seed, String image) {
         String modelName = chatModelVo.getModelName();
         boolean gptImageModel = isGptImageModel(modelName);
+        boolean seedream47T2i = isSeedream47TextToImage(modelName);
+        if (seedream47T2i && StrUtil.isNotBlank(image)) {
+            throw seedream47ReferenceError();
+        }
         ObjectNode payload = AtlasMediaSupport.OBJECT_MAPPER.createObjectNode();
         payload.put("model", modelName);
         payload.put("prompt", prompt);
         if (StrUtil.isNotBlank(size)) {
             payload.put("size", resolveSize(modelName, size));
         }
-        if (seed != null && !gptImageModel) {
+        if (seed != null && !gptImageModel && !seedream47T2i) {
             payload.put("seed", seed);
+        }
+        if (seedream47T2i) {
+            payload.put("prompt_expansion_mode", "standard");
+            payload.put("enable_base64_output", false);
         }
         if (gptImageModel) {
             payload.put("enable_base64_output", false);
@@ -140,10 +186,22 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         return StrUtil.isNotBlank(modelName) && modelName.startsWith("openai/gpt-image-");
     }
 
+    static boolean isSeedream47TextToImage(String modelName) {
+        return SEEDREAM_47_TEXT_TO_IMAGE.equals(modelName);
+    }
+
+    private static IllegalArgumentException seedream47ReferenceError() {
+        return new IllegalArgumentException("Seedream 4.7 文生图型号不接收参考图；请使用无参考图的新资产候选流程。身份绑定或多参考首帧需要另行选择支持参考图的编辑型号，不会自动切换模型。");
+    }
+
     /** 根据 AtlasCloud 模型将比例转换为该模型支持的像素格式。 */
     static String resolveSize(String modelName, String size) {
         if (StrUtil.isBlank(size)) return null;
         String normalizedSize = size.trim();
+        if (isSeedream47TextToImage(modelName)) {
+            String mapped = SEEDREAM_47_SIZE_MAP.get(normalizedSize);
+            return mapped != null ? mapped : resolveSeedream47PixelSize(normalizedSize);
+        }
         if (isGptImageModel(modelName)) {
             if (modelName.startsWith("openai/gpt-image-2/") || modelName.startsWith("openai/gpt-image-2.5-")) {
                 if ("16:9".equals(normalizedSize)) return "1536x864";
@@ -157,6 +215,22 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         }
         if (normalizedSize.contains("*") || normalizedSize.contains("x")) return normalizedSize;
         return SIZE_MAP.getOrDefault(normalizedSize, "1024*1024");
+    }
+
+    private static String resolveSeedream47PixelSize(String size) {
+        String[] dimensions = size.toLowerCase(java.util.Locale.ROOT).replace('x', '*').split("\\*", -1);
+        try {
+            if (dimensions.length != 2) throw new NumberFormatException();
+            int width = Integer.parseInt(dimensions[0].trim()), height = Integer.parseInt(dimensions[1].trim());
+            long pixels = (long) width * height;
+            if (width <= 0 || height <= 0 || pixels < 921600L || pixels > 16777216L
+                || (long) width > (long) height * 16L || (long) height > (long) width * 16L) {
+                throw new NumberFormatException();
+            }
+            return width + "*" + height;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Seedream 4.7 尺寸须为有效比例或WIDTH*HEIGHT：总像素921600–16777216，长宽比例在1:16至16:1之间");
+        }
     }
 
     private static String resolveGptImagePixelSize(String size) {
@@ -181,7 +255,7 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
         String image = imageContext.getImage();
 
         ObjectNode payload = buildPayload(chatModelVo, prompt, size, seed, image);
-        payload.put("enable_sync_mode", false);
+        if (!isSeedream47TextToImage(chatModelVo.getModelName())) payload.put("enable_sync_mode", false);
         applyReferenceImages(payload, imageContext);
 
         Request request = new Request.Builder()
@@ -220,6 +294,7 @@ public class AtlasImageGenerationServiceImpl extends AbstractImageGenerationServ
     static void applyReferenceImages(ObjectNode payload, ImageContext context) {
         var references = context.getReferenceImages();
         if (references == null || references.isEmpty()) return;
+        if (isSeedream47TextToImage(context.getChatModelVo().getModelName())) throw seedream47ReferenceError();
         int limit = context.getChatModelVo().getModelName().startsWith("openai/gpt-image-2.5-") ? 16 : 10;
         if (references.size() > limit) throw new IllegalArgumentException("当前模型最多绑定" + limit + "张参考图，请减少不必要道具");
         if (!isGptImageModel(context.getChatModelVo().getModelName())) {

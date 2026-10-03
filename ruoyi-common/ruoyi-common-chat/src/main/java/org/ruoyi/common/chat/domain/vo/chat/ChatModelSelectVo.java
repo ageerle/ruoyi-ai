@@ -29,9 +29,14 @@ public class ChatModelSelectVo implements Serializable {
     /** Provider identifier used for display. */
     private String providerCode;
 
+    private String category;
+    private Integer sortOrder;
+
     public static ChatModelSelectVo from(ChatModelVo source) {
         ChatModelSelectVo target = new ChatModelSelectVo();
         target.setId(source.getId());
+        target.setCategory(source.getCategory());
+        target.setSortOrder(source.getSortOrder());
         target.setModelName(source.getModelName());
         target.setModelDescribe(source.getModelDescribe());
         target.setProviderCode(source.getProviderCode());

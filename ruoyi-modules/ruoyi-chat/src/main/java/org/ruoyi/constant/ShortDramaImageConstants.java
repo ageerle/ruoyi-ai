@@ -44,9 +44,10 @@ public final class ShortDramaImageConstants {
     /** 项目视觉风格 → 生图 prompt 后缀映射，确保同项目所有图片风格一致 */
     public static final java.util.Map<String, String> ART_STYLE_PROMPTS = java.util.Map.of(
         "american-comic", "美式漫画风格，粗线条，高饱和度色彩，强烈光影对比",
+        "chinese-3d", "国风电影级三维动画，Chinese donghua cinematic 3D animation，统一的角色三维建模和辨识度，东方人物面部结构与自然身体比例，PBR衣料、木石金属材质和细腻服饰纹理，立体体积光与可解释的环境灯光，克制的次表面散射，自然表情和电影镜头景深，国风建筑与服饰遵循当前故事年代，色彩清透且光色统一；不使用真人摄影实拍、2D赛璐璐平涂、黑色漫画线稿、塑料玩偶或油亮蜡像肤质",
         "chinese-comic", "现代国漫动画风格，Chinese donghua 2D comic style，赛璐璐平涂上色，干净锐利的黑色线稿，平面化光影无真实景深，动漫人物比例（略放大双眼、修长身形），皮肤平滑无毛孔无写实肤质，国风服饰剪裁与材质细节清晰，色彩饱满通透，画面精致干净；禁止真人写实、摄影实拍、3D渲染、CGI、厚涂油画、写实皮肤纹理、景深虚化",
         "japanese-anime", "现代日系动漫风格，赛璐璐上色，清晰干净的线条，视觉小说CG感，高质量2D风格",
-        "realistic", "真实电影级画面质感，真实现实场景，色彩饱满通透，画面干净精致，真实感"
+        "realistic", "真人影视写实，自然人物比例与未磨皮肤质，真实衣料与环境材质，可解释的光源和丰富中间调，色彩与维护程度服从故事，不使用美颜滤镜、塑料CG或电商棚拍质感"
     );
 
     /** 默认视觉风格 */

@@ -36,7 +36,8 @@ public class ShortDramaRevisionService {
             if (script == null || !projectId.equals(script.getProjectId())) throw new IllegalArgumentException("剧本不属于当前项目");
             if (!Objects.equals(script.getScriptText(), revision.getExpectedScriptText())) throw new IllegalStateException("剧本已发生变化，请重新导出并合并修订");
             var existing = boards.selectList(new LambdaQueryWrapper<ShortDramaStoryboard>().eq(ShortDramaStoryboard::getProjectId, projectId));
-            if (existing.stream().anyMatch(s -> "generating".equals(s.getVideoStatus()))) throw new IllegalStateException("请等待运行中的视频任务完成再修订");
+            if (existing.stream().anyMatch(s -> Set.of("submitting", "generating", "submission_unknown")
+                .contains(Objects.toString(s.getVideoStatus(), "")))) throw new IllegalStateException("请等待运行中的视频任务完成再修订");
             var ids = existing.stream().map(ShortDramaStoryboard::getId).collect(Collectors.toSet());
             var incoming = revision.getStoryboards();
             if (incoming == null || incoming.size() != ids.size() || !ids.equals(incoming.stream().map(s -> s.getId()).collect(Collectors.toSet()))) throw new IllegalArgumentException("修订稿必须完整覆盖当前项目的镜头，不能增删或重复镜号");
@@ -47,6 +48,8 @@ public class ShortDramaRevisionService {
                 if (s.getUpdateTime() == null || !Objects.equals(s.getUpdateTime(), current.getUpdateTime())) throw new IllegalStateException("镜头" + s.getSceneNo() + "已发生变化，请重新导出再修订");
                 if (s.getSourceText() == null || s.getSourceText().isBlank() || s.getVideoPrompt() == null || s.getVideoPrompt().isBlank()) throw new IllegalArgumentException("原文及视频提示词不能为空");
                 ShortDramaTiming.validate(s.getSceneNo(), s.getDurationSeconds(), s.getSourceText(), s.getContinuityJson());
+                if (!Objects.equals(current.getVideoPrompt(), s.getVideoPrompt()) || !Objects.equals(current.getSourceText(), s.getSourceText()))
+                    ShortDramaVideoPromptReview.validate(s.getSceneNo(), s.getVideoPrompt(), s.getDurationSeconds(), s.getSourceText());
             }
             if (revision.getCharacters() != null) for (var c : revision.getCharacters()) {
                 var current = characters.selectById(c.getId());
@@ -67,17 +70,22 @@ public class ShortDramaRevisionService {
                         .eq(ShortDramaVisualAsset::getProjectId,projectId).eq(ShortDramaVisualAsset::getStoryboardId,s.getId())
                         .set(ShortDramaVisualAsset::getStatus,"obsolete"));
                 }
-                boolean videoChanged=changedFrames.contains(s.getId()) || !Objects.equals(current.getVideoPrompt(),s.getVideoPrompt())
-                    || !Objects.equals(current.getSourceText(),s.getSourceText()) || !Objects.equals(current.getDurationSeconds(),s.getDurationSeconds());
-                if(videoChanged) {
-                    boards.update(null,new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ShortDramaStoryboard>()
-                        .eq(ShortDramaStoryboard::getId,s.getId()).set(ShortDramaStoryboard::getVideoStatus,"pending")
-                        .set(ShortDramaStoryboard::getVideoId,null).set(ShortDramaStoryboard::getVideoUrl,null).set(ShortDramaStoryboard::getLastFrameUrl,null));
-                }
-                s.setUpdateTime(null); boards.updateById(MapstructUtils.convert(s, ShortDramaStoryboard.class));
+                // A reviewed text revision does not replace paid media. Copy from the
+                // current row rather than accepting media fields from the revision BO.
+                // Only an explicit regenerate request may replace the existing video.
+                s.setUpdateTime(null);
+                var revised = MapstructUtils.convert(s, ShortDramaStoryboard.class);
+                revised.setVideoStatus(current.getVideoStatus());
+                revised.setVideoId(current.getVideoId());
+                revised.setVideoUrl(current.getVideoUrl());
+                revised.setLastFrameUrl(current.getLastFrameUrl());
+                boards.updateById(revised);
             }
             script.setScriptText(revision.getScriptText());
             if (revision.getOutlineText() != null) script.setOutlineText(revision.getOutlineText());
+            if (revision.getTone() != null) script.setTone(revision.getTone());
+            if (revision.getWorldbuilding() != null) script.setWorldbuilding(revision.getWorldbuilding());
+            if (revision.getRevisionNotes() != null) script.setRevisionNotes(revision.getRevisionNotes());
             scripts.updateById(script);
             visualService.synchronizeExistingFrames(projectId, changedFrames);
             project.setStatus("storyboard_ready");

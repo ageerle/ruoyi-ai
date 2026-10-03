@@ -19,9 +19,13 @@ public class ShortDramaProjectBo extends BaseEntity {
 
     private String description;
 
+    private String originalIdea;
+
     private String status;
 
     private String artStyle;
+    private String aestheticSkillName;
+    private String directorSkillName;
 
     private String composeAspectRatio;
 }

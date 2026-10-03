@@ -262,8 +262,8 @@ public class ChatServiceFacade implements IChatService {
                 llmSpan.detach();
             }
             finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-            SseMessageUtils.sendError(String.valueOf(chatRequest.getSessionId()), SAFE_CHAT_ERROR_MESSAGE);
-            SseMessageUtils.completeConnection(String.valueOf(chatRequest.getSessionId()));
+            saveModelChatFailure(chatRequest, "");
+            SseMessageUtils.sendErrorAndComplete(String.valueOf(chatRequest.getSessionId()), SAFE_CHAT_ERROR_MESSAGE);
             log.error("chat_operation operation=MODEL_CHAT status=FAILED errorType={}", errorType(e));
         }
         return chatRequest.getEmitter();
@@ -807,20 +807,24 @@ public class ChatServiceFacade implements IChatService {
         return new StreamingChatResponseHandler() {
 
             private final StringBuilder messageBuffer = new StringBuilder();
+            private final AtomicBoolean terminal = new AtomicBoolean();
 
             @Override
             public void onPartialResponse(String partialResponse) {
+                if (terminal.get()) return;
                 messageBuffer.append(partialResponse);
                 SseMessageUtils.sendContent(sessionId, partialResponse);
             }
 
             @Override
             public void onPartialThinking(PartialThinking partialThinking) {
+                if (terminal.get()) return;
                 SseMessageUtils.sendReasoning(sessionId, partialThinking.text());
             }
 
             @Override
             public void onCompleteResponse(ChatResponse completeResponse) {
+                if (!terminal.compareAndSet(false, true)) return;
                 try {
                     String fullMessage = messageBuffer.toString();
                     if (StringUtils.isNotBlank(fullMessage)) {
@@ -832,7 +836,7 @@ public class ChatServiceFacade implements IChatService {
                             chatRequest.getModel()
                         );
                     } else {
-                        log.warn("chat_stream status=EMPTY_RESPONSE");
+                        throw new IllegalStateException("Model completed without text content");
                     }
                     if (llmSpan != null) {
                         llmSpan.finishSuccess(RagTracePayloadBuilder.streamOutputSummary(fullMessage.length()));
@@ -844,28 +848,41 @@ public class ChatServiceFacade implements IChatService {
                         llmSpan.finishError(e);
                     }
                     finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-                    SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
+                    saveModelChatFailure(chatRequest, messageBuffer.toString());
+                    SseMessageUtils.sendErrorAndComplete(sessionId, SAFE_CHAT_ERROR_MESSAGE);
                     log.error("chat_stream operation=COMPLETE status=FAILED errorType={}", errorType(e));
                 } finally {
                     if (llmSpan != null) {
                         llmSpan.detach();
                     }
-                    SseMessageUtils.completeConnection(sessionId);
                 }
             }
 
             @Override
             public void onError(Throwable error) {
-                if (llmSpan != null) {
-                    llmSpan.finishError(error);
-                    llmSpan.detach();
+                if (!terminal.compareAndSet(false, true)) return;
+                try {
+                    if (llmSpan != null) llmSpan.finishError(error);
+                    finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, error);
+                    saveModelChatFailure(chatRequest, messageBuffer.toString());
+                } finally {
+                    if (llmSpan != null) llmSpan.detach();
+                    SseMessageUtils.sendErrorAndComplete(sessionId, SAFE_CHAT_ERROR_MESSAGE);
                 }
-                finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, error);
-                SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
-                SseMessageUtils.completeConnection(sessionId);
                 log.error("chat_stream operation=MODEL_STREAM status=FAILED errorType={}", errorType(error));
             }
         };
+    }
+
+    private void saveModelChatFailure(ChatRequest request, String partialText) {
+        try {
+            String saved = StringUtils.isBlank(partialText) ? SAFE_CHAT_ERROR_MESSAGE
+                : partialText + "\n\n[响应未完成] " + SAFE_CHAT_ERROR_MESSAGE;
+            chatMessageService.saveChatMessage(request.getUserId(), request.getSessionId(), saved,
+                RoleType.ASSISTANT.getName(), request.getModel());
+        } catch (Exception failure) {
+            log.error("chat_stream operation=SAVE_ERROR status=FAILED errorType={}", errorType(failure));
+        }
     }
 
     /**

@@ -15,9 +15,13 @@ public class ShortDramaIdeaBo {
     private String projectName;
 
     private String artStyle;
+    private String aestheticSkillName;
+    private String directorSkillName;
 
     private String aspectRatio;
 
-    /** Stop after script so the author can review before asset/shot planning. */
-    private Boolean scriptOnly = false;
+    /** 兼容旧请求字段；创建接口始终只生成剧本，该值不再控制后续阶段。 */
+    @Deprecated
+    private Boolean scriptOnly = true;
+
 }

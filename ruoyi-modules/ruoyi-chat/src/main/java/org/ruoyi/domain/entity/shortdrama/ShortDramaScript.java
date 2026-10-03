@@ -30,4 +30,12 @@ public class ShortDramaScript extends BaseEntity {
     private String tone;
 
     private String sourceType;
+
+    private String creationMode;
+
+    private String sourceMaterials;
+
+    private String worldbuilding;
+
+    private String revisionNotes;
 }

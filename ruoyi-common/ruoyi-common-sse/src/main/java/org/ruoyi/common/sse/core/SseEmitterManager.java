@@ -111,25 +111,36 @@ public class SseEmitterManager {
      * @param eventDto  SSE事件对象
      */
     public void sendEvent(String sessionId, SseEventDto eventDto) {
+        if (!sendLocalEvent(sessionId, eventDto)) {
+            log.warn("sse_delivery routeType=SESSION status=SKIPPED reason=NO_ACTIVE_CONNECTION activeSessionCount={}",
+                SESSION_EMITTERS.size());
+        }
+    }
+
+    /** Deliver locally in order; a terminal event is flushed before its connection is removed. */
+    public boolean sendLocalEvent(String sessionId, SseEventDto eventDto) {
         if (sessionId == null || eventDto == null) {
-            return;
+            return false;
         }
         SseEmitter emitter = SESSION_EMITTERS.get(sessionId);
         if (emitter == null) {
-            log.warn("sse_delivery routeType=SESSION status=SKIPPED reason=NO_ACTIVE_CONNECTION activeSessionCount={}",
-                SESSION_EMITTERS.size());
-            return;
+            return false;
         }
         try {
             log.debug("sse_delivery routeType=SESSION status=SENDING eventType={} payloadChars={}",
                 safeEventType(eventDto), eventPayloadLength(eventDto));
-            emitter.send(SseEmitter.event()
-                .name(eventDto.getEvent())
-                .data(JSONUtil.toJsonStr(eventDto)));
+            synchronized (emitter) {
+                if (SESSION_EMITTERS.get(sessionId) != emitter) return false;
+                emitter.send(SseEmitter.event()
+                    .name(eventDto.getEvent())
+                    .data(JSONUtil.toJsonStr(eventDto)));
+                if (Boolean.TRUE.equals(eventDto.getDone())) removeSessionEmitter(sessionId, emitter);
+            }
         } catch (Exception e) {
             log.error("sse_delivery routeType=SESSION status=FAILED errorType={}", errorType(e));
             removeSessionEmitter(sessionId, emitter);
         }
+        return true;
     }
 
     private void removeSessionEmitter(String sessionId, SseEmitter emitter) {

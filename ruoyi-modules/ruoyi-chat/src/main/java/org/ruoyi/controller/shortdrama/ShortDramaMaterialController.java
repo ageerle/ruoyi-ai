@@ -87,7 +87,7 @@ public class ShortDramaMaterialController {
             ObjectNode image = replace >= 0 ? ((ObjectNode)list.get(replace)).deepCopy() : JSON.createObjectNode();
             image.remove("items");
             image.put("url", "/short-drama/"+projectId+"/materials/file/"+name);
-            image.put("filename", Objects.toString(file.getOriginalFilename(), "真实素材"));
+            image.put("filename", Objects.toString(file.getOriginalFilename(), "素材"));
             image.put("type", type);
             if (replace >= 0) list.set(replace, image); else list.add(image);
         }
@@ -155,8 +155,8 @@ public class ShortDramaMaterialController {
         owner(projectId);var shot=boards.selectById(shotId);
         if(shot==null || !projectId.equals(shot.getProjectId()) || "generating".equals(shot.getVideoStatus()))throw new IllegalArgumentException("镜头不存在或正在生成");
         var continuity=(ObjectNode)JSON.readTree(Objects.toString(shot.getContinuityJson(),"{}"));
-        if(!"direct_insert".equals(continuity.path("source_media").path("mode").asText()))throw new IllegalArgumentException("仅支持真实素材镜头");
-        var images=items(continuity);if(images.isEmpty())throw new IllegalArgumentException("请先上传真实素材");
+        if(!"direct_insert".equals(continuity.path("source_media").path("mode").asText()))throw new IllegalArgumentException("仅支持素材镜头");
+        var images=items(continuity);if(images.isEmpty())throw new IllegalArgumentException("请先上传素材");
         Path dir=directory(projectId);String job=UUID.randomUUID().toString();
         List<String> command=new ArrayList<>(List.of("ffmpeg","-v","error","-y"));List<String> filters=new ArrayList<>();StringBuilder concat=new StringBuilder();
         double duration=shot.getDurationSeconds(), part=duration/images.size();

@@ -415,4 +415,4 @@ short-drama:
       max-redirects: ${SHORT_DRAMA_DOWNLOAD_MAX_REDIRECTS:5}
       # 生产环境建议配置为视频供应商或 OSS/CDN 域名，多个值用逗号分隔。
       allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_ALLOWED_HOSTS:}
-      fake-ip-allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_FAKE_IP_ALLOWED_HOSTS:atlas-media.oss-us-west-1.aliyuncs.com}
+      fake-ip-allowed-hosts: ${SHORT_DRAMA_DOWNLOAD_FAKE_IP_ALLOWED_HOSTS:atlas-media.oss-us-west-1.aliyuncs.com,ark-acg-ap-southeast-1.tos-ap-southeast-1.volces.com}

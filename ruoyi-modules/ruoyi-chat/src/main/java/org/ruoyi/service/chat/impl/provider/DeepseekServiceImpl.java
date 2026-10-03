@@ -2,6 +2,8 @@ package org.ruoyi.service.chat.impl.provider;
 
 
 import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,23 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class DeepseekServiceImpl implements AbstractChatService {
+
+    @Override
+    public ChatModel buildChatModel(ChatModelVo model) {
+        return buildChatModel(model, new ChatRequest());
+    }
+
+    @Override
+    public ChatModel buildChatModel(ChatModelVo model, ChatRequest request) {
+        boolean thinking = Boolean.TRUE.equals(request.getEnableThinking());
+        var builder = OpenAiChatModel.builder().baseUrl(model.getApiHost()).apiKey(model.getApiKey())
+            .modelName(model.getModelName()).listeners(List.of(new MyChatModelListener()))
+            .customParameters(thinkingParameters(thinking)).returnThinking(thinking)
+            .sendThinking(thinking || Boolean.TRUE.equals(request.getReplayThinking()))
+            .timeout(Duration.ofMinutes(3)).maxRetries(0);
+        if (thinking) builder.reasoningEffort("high");
+        return builder.build();
+    }
 
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {

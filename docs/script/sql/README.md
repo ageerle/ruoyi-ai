@@ -8,7 +8,7 @@
 mysql -uroot -p < ruoyi-ai.sql
 ```
 
-主 SQL 已合并下表中的全部更新，无需再次执行 `update` 目录中的脚本。[snail_job_mysql.sql](snail_job_mysql.sql) 仅用于单独初始化调度库，执行主 SQL 后无需再执行它。
+主 SQL 已合并下表列出的基础更新，以及原始想法、技能绑定、剧本打磨字段、模型优先级和 PC 登录超时结构。新安装仍需执行下面“后续功能更新”中注明的补充脚本。[snail_job_mysql.sql](snail_job_mysql.sql) 仅用于单独初始化调度库，执行主 SQL 后无需再执行它。
 
 全量初始化包含 `DROP TABLE` 和调度库的 `DROP DATABASE`，已有数据库升级应使用对应的增量脚本。
 
@@ -43,3 +43,18 @@ mysql -uroot -p < ruoyi-ai.sql
 | [2026-09-01-sys-url.sql](update/2026-09-01-sys-url.sql) | `sys_url` 表、5 个菜单权限和 2 条公开链接 |
 
 后续增加更新脚本时，同步修改主 SQL 中对应的表结构或初始化数据，并更新本清单及主 SQL 文件头。
+
+## 后续功能更新
+
+以下脚本统一位于 `update/`。已有数据库按日期升级，保留原始输入、已批准媒体和提供商密钥；不要执行全量初始化。
+
+| 脚本 | 内容与新安装要求 |
+| --- | --- |
+| [知识库检索节点](update/2026-09-11-knowledge-retrieval-node.sql) | 补充节点注册，新安装也需执行 |
+| [短剧视觉资产](update/2026-09-30-short-drama-visual-asset.sql) | 补充异步视觉资产表，新安装也需执行 |
+| [剧本打磨与 Seedance 2.5](update/2026-09-30-script-refinement-seedance-25.sql) | 打磨字段已并入全量结构；新安装执行以补充视频模型记录 |
+| [技能绑定](update/2026-10-01-short-drama-skill-bindings.sql) | 项目审美与导演绑定，幂等；全量结构已包含 |
+| [模型优先级](update/2026-10-02-chat-model-sort-order.sql) | 幂等增加优先级列，保留已自定义优先级；全量结构已包含 |
+| [PC 登录空闲时间](update/2026-10-02-pc-login-idle-timeout.sql) | 仅调整原 30 分钟配置；全量默认已更新，已签发令牌需重新登录 |
+| [文字模型默认优先级](update/2026-10-03-short-drama-flash-default.sql) | 先应用模型优先级迁移，再调整已有 Flash / Seed 模型排序，不新增模型或密钥 |
+| [原始创作输入](update/2026-10-03-short-drama-original-idea.sql) | 幂等增加独立原文列，不用生成概要回填；全量结构已包含 |

@@ -12,6 +12,9 @@ public class ShortDramaRevisionBo {
     @NotBlank private String expectedScriptText;
     @NotBlank private String scriptText;
     private String outlineText;
+    private String tone;
+    private String worldbuilding;
+    private String revisionNotes;
     @NotEmpty private List<ShortDramaStoryboardBo> storyboards;
     private List<ShortDramaCharacterBo> characters;
     private List<ShortDramaLocationBo> locations;

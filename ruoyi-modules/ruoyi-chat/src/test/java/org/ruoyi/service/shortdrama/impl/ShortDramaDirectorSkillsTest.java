@@ -15,12 +15,12 @@ class ShortDramaDirectorSkillsTest {
         location.setDescriptions("家具位置改变");
         assertNotEquals(before, ShortDramaServiceImpl.planningAssetSignature(java.util.List.of(location)));
     }
-    @Test void sceneBudgetReportsUsableIntegerBoundsWithoutRelaxingTheGuard() {
+    @Test void sceneBudgetIsAnAdvisoryEstimate() {
         var panel = new ShortDramaServiceImpl.StoryboardPanelData(); panel.setDuration(5);
         var panels = new java.util.ArrayList<ShortDramaServiceImpl.StoryboardPanelData>();
         for(int i=0;i<17;i++) panels.add(panel);
-        var error=assertThrows(IllegalStateException.class,()->ShortDramaServiceImpl.validateSceneDuration("内景 维修铺（预计95秒）",panels));
-        assertTrue(error.getMessage().contains("86至104秒"));
+        assertDoesNotThrow(()->ShortDramaServiceImpl.validateSceneDuration("内景 维修铺（预计95秒）",panels));
+        assertFalse(ShortDramaServiceImpl.scenePlanIssues("内景 维修铺（预计95秒）",panels).isEmpty());
     }
     @Test void bundledSkillLoadsEvenWhenWorkerContextCannotSeeApplicationResources() {
         var thread = Thread.currentThread();
@@ -32,12 +32,22 @@ class ShortDramaDirectorSkillsTest {
         } finally { thread.setContextClassLoader(previous); }
     }
     @Test void allDefaultSkillsAreBundledAndVersioned() {
-        for (String name : new String[]{"emotional-dialogue","story-causality","director-blocking","visual-world","real-material","director-review","video-continuity"}) {
+        for (String name : new String[]{"emotional-dialogue","story-causality","director-blocking","visual-world","character-art-direction","real-material","director-review","video-continuity","video-prompt","script-refinement"}) {
             String text=ShortDramaDirectorSkills.load(name);
             assertTrue(text.contains("[skill:"+name+"@"));
             assertFalse(text.contains("description:"));
         }
         assertThrows(IllegalStateException.class,()->ShortDramaDirectorSkills.load("missing-skill"));
+    }
+    @Test void referenceMaterialIsStyleAwareAndKeepsUsersIdentityMarks() {
+        String realistic=ShortDramaCharacterArtPrompt.reference("左腕浅灰旧布，右手无伤", "realistic");
+        assertTrue(realistic.contains("【写实身份参照材质】"));
+        assertTrue(realistic.contains("左腕浅灰旧布，右手无伤"));
+        assertTrue(realistic.contains("【用途：身份参照图，不是剧情首帧】"));
+        String comic=ShortDramaCharacterArtPrompt.reference("黑色短发", "chinese-comic");
+        assertFalse(comic.contains("【写实身份参照材质】"));
+        assertTrue(comic.contains("Chinese donghua 2D comic style"));
+        assertTrue(comic.contains("不混入真人肤质或摄影景深"));
     }
     @Test void performanceIsMatchedByPersonRatherThanSharedEmotionTemplate() throws Exception {
         var panel = new ShortDramaServiceImpl.StoryboardPanelData();
