@@ -23,11 +23,11 @@ class ShortDramaContinuityTest {
 
     @Test
     void compatibleDeepSeekUsesAdapterThatSendsThinkingSetting() {
-        assertEquals("deepseek", ShortDramaServiceImpl.shortDramaProviderCode("openai", "deepseek-ai/deepseek-v4.1-flash"));
+        assertThrows(IllegalArgumentException.class, () -> ShortDramaServiceImpl.shortDramaProviderCode("openai", "deepseek-ai/deepseek-v4.1-flash"));
         assertEquals("deepseek", ShortDramaServiceImpl.shortDramaProviderCode("atlas", "deepseek-ai/deepseek-v4.1-flash"));
         assertEquals("atlas", ShortDramaServiceImpl.shortDramaProviderCode("atlas", "gemini-3-flash"));
-        assertEquals("openai", ShortDramaServiceImpl.shortDramaProviderCode("openai", "gemini-3-flash"));
-        assertEquals("custom_api", ShortDramaServiceImpl.shortDramaProviderCode("custom_api", "deepseek-v4"));
+        assertThrows(IllegalArgumentException.class, () -> ShortDramaServiceImpl.shortDramaProviderCode("openai", "gemini-3-flash"));
+        assertThrows(IllegalArgumentException.class, () -> ShortDramaServiceImpl.shortDramaProviderCode("custom_api", "deepseek-v4"));
     }
 
     @Test

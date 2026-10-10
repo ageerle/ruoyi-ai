@@ -80,9 +80,9 @@ class ShortDramaVideoSubmissionTest {
         when(mapper.selectById(99L)).thenAnswer(a -> shot);
         when(projects.selectById(10L)).thenReturn(project);
         when(assets.readyFrame(99L)).thenReturn("https://example.com/reviewed.png");
-        when(models.selectModelByName(MODEL)).thenReturn(model(MODEL));
-        when(models.selectModelByName(ACTUAL)).thenReturn(model(ACTUAL));
-        when(videos.getOriginalService("fixture")).thenReturn(provider);
+        ShortDramaAtlasTestModels.register(models, MODEL, model(MODEL), "video");
+        ShortDramaAtlasTestModels.register(models, ACTUAL, model(ACTUAL), "video");
+        when(videos.getOriginalService("atlas")).thenReturn(provider);
         when(sounds.references(eq(10L), eq(1), any())).thenReturn(List.of());
         when(provider.generateVideo(any())).thenReturn(MediaGenerationResponse.builder().id("prediction-1").status("processing").build());
         when(mapper.update(isNull(), any())).thenAnswer(a -> {
@@ -113,8 +113,8 @@ class ShortDramaVideoSubmissionTest {
         var sample=new ShortDramaSoundService.Reference("voice:42:sample","阿青",directory.resolve("sample.mp3"),3.0,"immutable-hash");
         var binding=new ShortDramaCharacterVoiceService.Binding("42","阿青","sample",1,3.0,1);
         when(voices.plan(any(),nullable(String.class),anyBoolean())).thenReturn(new ShortDramaCharacterVoiceService.Plan(List.of(binding),List.of(sample),"\n阿青使用 @音频1 的音色",List.of(),true,List.of("42")));
-        when(models.selectModelByName(referenceModel)).thenReturn(model(referenceModel));
-        when(models.selectModelByName(requestedModel)).thenReturn(model(requestedModel));
+        ShortDramaAtlasTestModels.register(models, referenceModel, model(referenceModel), "video");
+        ShortDramaAtlasTestModels.register(models, requestedModel, model(requestedModel), "video");
         when(sounds.uploadReferences(anyList(),any())).thenReturn(List.of("https://example.com/voice-a.mp3"),List.of("https://example.com/voice-b.mp3"));
         String first=request();service.generateVideo(99L,requestedModel,1L,first,false);
         var capture=org.mockito.ArgumentCaptor.forClass(VideoContext.class);verify(provider).generateVideo(capture.capture());

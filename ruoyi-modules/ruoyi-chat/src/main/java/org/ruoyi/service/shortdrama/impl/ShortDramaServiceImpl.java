@@ -1075,7 +1075,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (ShortDramaVisualAssetService.directInsert(storyboard.getContinuityJson())) throw new IllegalStateException("本镜使用素材，不能通过AI视频模型重绘；请在剪辑阶段使用已绑定原图");
         if ("script_changed".equals(project.getStatus())) throw new IllegalStateException("剧本已修改，请重新分析资产和生成分镜后再生成视频");
         if (storyboardGenerationStates.containsKey(storyboard.getScriptId())) throw new IllegalStateException("分镜正在更新，请完成审阅后再生成视频");
-        ChatModelVo modelVo = chatModelService.selectModelByName(videoModel);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, videoModel, "video");
         if (modelVo == null) throw new IllegalArgumentException("未找到视频模型配置: " + videoModel);
 
         Integer videoSeconds = ShortDramaVideoDuration.seconds(storyboard.getContinuityJson());
@@ -1095,7 +1095,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     .replace("/reference-to-video", "/image-to-video");
             }
             if (!targetModel.equals(videoModel)) {
-                ChatModelVo switched = chatModelService.selectModelByName(targetModel);
+                ChatModelVo switched = ShortDramaAtlasModels.require(chatModelService, targetModel, "video");
                 if (switched != null) {
                     modelVo = switched;
                     log.info("参考图({}张) → 切换模型: {}", referenceImages == null ? 0 : referenceImages.size(), targetModel);
@@ -1715,8 +1715,10 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             return MapstructUtils.convert(storyboard, ShortDramaStoryboardVo.class);
         }
         // Never reconstruct the queried provider/model from a client dropdown after a switch.
+        if (receipt != null && !"atlas".equalsIgnoreCase(receipt.providerCode()))
+            throw new IllegalArgumentException("短剧仅支持查询 Atlas 视频任务；原有视频文件保留");
         String actualModel = receipt != null ? receipt.actualModel() : videoModel;
-        ChatModelVo modelVo = chatModelService.selectModelByName(actualModel);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, actualModel, "video");
         if (modelVo == null) {
             throw new IllegalArgumentException("未找到原视频任务模型配置: " + actualModel);
         }
@@ -2139,7 +2141,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         ShortDramaCharacter character = characterMapper.selectById(characterId);
         if (character == null) throw new IllegalArgumentException("角色不存在");
         validateProjectOwner(character.getProjectId(), userId);
-        ChatModelVo modelVo = chatModelService.selectModelByName(imageModel);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, imageModel, "image");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + imageModel);
         String basePrompt = firstNotBlank(character.getVisualDescription(), character.getName());
         String finalPrompt = buildCharacterPrompt(basePrompt, character.getProjectId());
@@ -2172,7 +2174,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         ShortDramaLocation location = locationMapper.selectById(locationId);
         if (location == null) throw new IllegalArgumentException("场景不存在");
         validateProjectOwner(location.getProjectId(), userId);
-        ChatModelVo modelVo = chatModelService.selectModelByName(imageModel);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, imageModel, "image");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + imageModel);
         String prompt = firstNotBlank(primaryLocationDescription(location), location.getSummary(), location.getName());
         String finalPrompt = buildLocationPrompt(location.getName(), prompt, location.getProjectId(), revisionRequirements);
@@ -2258,7 +2260,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         ShortDramaCharacter character = characterMapper.selectById(appearance.getCharacterId());
         if (character == null) throw new IllegalArgumentException("角色不存在");
         validateProjectOwner(character.getProjectId(), userId);
-        ChatModelVo modelVo = chatModelService.selectModelByName(imageModel);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, imageModel, "image");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + imageModel);
         String basePrompt = firstNotBlank(appearance.getDescription(), character.getVisualDescription(), character.getName());
         String finalPrompt = buildCharacterPrompt(basePrompt, character.getProjectId());
@@ -2292,7 +2294,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         ShortDramaCharacter character = characterMapper.selectById(appearance.getCharacterId());
         if (character == null) throw new IllegalArgumentException("角色不存在");
         validateProjectOwner(character.getProjectId(), userId);
-        ChatModelVo modelVo = chatModelService.selectModelByName(imageModel);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, imageModel, "image");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + imageModel);
         String basePrompt = firstNotBlank(appearance.getDescription(), character.getVisualDescription(), character.getName());
         String finalPrompt = buildCharacterPrompt(basePrompt, character.getProjectId());
@@ -2457,7 +2459,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             || "image/webp".equalsIgnoreCase(contentType))) {
             throw new IllegalArgumentException("参考图仅支持JPEG、PNG或WebP");
         }
-        ChatModelVo modelVo = chatModelService.selectModelByName(model);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, model, "image", "video");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + model);
         try {
             return imageServiceFactory.getOriginalService(modelVo.getProviderCode())
@@ -2493,7 +2495,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (revision && !locationAsset && (!"appearance".equals(assetType) || StrUtil.isBlank(referenceImage))) {
             throw new IllegalArgumentException("身份修订仅用于角色形象，且必须提供身份参考图");
         }
-        ChatModelVo modelVo = chatModelService.selectModelByName(model);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, model, "image");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + model);
 
         String prompt;
@@ -2559,7 +2561,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (character == null) throw new IllegalArgumentException("角色不存在");
         validateProjectOwner(character.getProjectId(), userId);
 
-        ChatModelVo modelVo = chatModelService.selectModelByName(model);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, model, "image");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + model);
 
         MediaGenerationResponse result = atlasPredictionService.retrieve(modelVo, predictionId);
@@ -2598,7 +2600,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (location == null) throw new IllegalArgumentException("场景不存在");
         validateProjectOwner(location.getProjectId(), userId);
 
-        ChatModelVo modelVo = chatModelService.selectModelByName(model);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, model, "image");
         if (modelVo == null) throw new IllegalArgumentException("未找到图片模型配置: " + model);
 
         MediaGenerationResponse result = atlasPredictionService.retrieve(modelVo, predictionId);
@@ -3040,7 +3042,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         try {
             streamDone.join();
         } catch (Exception e) {
-            throw new RuntimeException("剧本生成失败：" + e.getMessage(), e);
+            throw new RuntimeException("剧本生成失败：" + ShortDramaModelErrors.message(e), e);
         }
         return requireFixedScript(result[0]);
     }
@@ -4712,7 +4714,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     // ==================== 辅助方法 ====================
 
     private ChatModelVo validateAndGetModel(String modelName) {
-        ChatModelVo modelVo = chatModelService.selectModelByName(modelName);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, modelName, "chat");
         if (modelVo == null) {
             throw new IllegalArgumentException("未找到模型配置: " + modelName);
         }
@@ -4720,19 +4722,16 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     }
 
     private ChatModelVo findChatModel() {
-        org.ruoyi.common.chat.domain.bo.chat.ChatModelBo query = new org.ruoyi.common.chat.domain.bo.chat.ChatModelBo();
-        query.setCategory("chat");
-        query.setProviderCode("atlas");
-        List<ChatModelVo> models = chatModelService.queryAvailableList(query);
-        if (models != null && !models.isEmpty()) return models.get(0);
-        throw new IllegalArgumentException("无可用聊天模型");
+        return ShortDramaAtlasModels.defaultModel(chatModelService, "chat");
     }
 
     private AbstractChatService getChatService(ChatModelVo modelVo) {
+        ShortDramaAtlasModels.requireProvider(modelVo);
         return chatServiceFactory.getOriginalService(shortDramaProviderCode(modelVo.getProviderCode(), modelVo.getModelName()));
     }
 
     public static String shortDramaProviderCode(String provider, String model) {
+        if (!"atlas".equalsIgnoreCase(provider)) throw new IllegalArgumentException("短剧仅支持 Atlas 模型");
         return (org.ruoyi.enums.ChatModeType.OPEN_AI.getCode().equalsIgnoreCase(provider)
             || org.ruoyi.enums.ChatModeType.ATLAS.getCode().equalsIgnoreCase(provider))
             && StrUtil.containsIgnoreCase(model, "deepseek")
@@ -4781,7 +4780,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (audio == null) throw new IllegalArgumentException("语音资产不存在");
         validateProjectOwner(audio.getProjectId(), userId);
         if (StrUtil.isBlank(audio.getText())) throw new IllegalArgumentException("语音文案不能为空");
-        ChatModelVo modelVo = chatModelService.selectModelByName(audioModel);
+        ChatModelVo modelVo = ShortDramaAtlasModels.require(chatModelService, audioModel, "audio");
         if (modelVo == null) throw new IllegalArgumentException("未找到语音模型配置: " + audioModel);
         if (audioModel.startsWith("suno/")) throw new IllegalArgumentException("Suno 是音乐模型，请使用音乐创作面板；对白配音需选择语音模型");
         if (!org.ruoyi.enums.ModelType.AUDIO.getKey().equals(modelVo.getCategory())) {

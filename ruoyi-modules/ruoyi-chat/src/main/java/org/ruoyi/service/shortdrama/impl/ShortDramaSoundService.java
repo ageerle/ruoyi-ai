@@ -84,6 +84,7 @@ public class ShortDramaSoundService {
         catch(Exception e){throw new IllegalStateException("参考音频读取失败："+e.getMessage(),e);}
     }
     public synchronized List<String> uploadReferences(List<Reference> references,org.ruoyi.common.chat.domain.vo.chat.ChatModelVo model) {
+        ShortDramaAtlasModels.requireProvider(model);
         try {
             ShortDramaVoiceContract.validateReferences(model.getModelName(),references.stream().map(Reference::duration).toList());
             List<String> result=new ArrayList<>();

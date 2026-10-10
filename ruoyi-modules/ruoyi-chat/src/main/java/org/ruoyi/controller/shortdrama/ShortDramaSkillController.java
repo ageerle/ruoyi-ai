@@ -13,6 +13,7 @@ public class ShortDramaSkillController {
     private final ShortDramaSkillCatalog catalog;
     private final ShortDramaSkillMarket market;
     @GetMapping("/market") public R<List<ShortDramaSkillMarket.Entry>> market() { return R.ok(market.list()); }
+    @GetMapping("/categories") public R<List<ShortDramaSkillCatalog.Category>> categories() { return R.ok(catalog.categories()); }
     @GetMapping public R<List<ShortDramaSkillCatalog.Option>> list(@RequestParam(required=false) String type,
         @RequestParam(defaultValue="false") boolean includeDisabled) { return R.ok(catalog.list(type, includeDisabled)); }
     @GetMapping("/{name}") public R<ShortDramaSkillCatalog.Skill> detail(@PathVariable String name) { return R.ok(catalog.detail(name)); }

@@ -89,7 +89,7 @@ class ShortDramaAssetAnalysisFailureTest {
         when(scripts.selectById(20L)).thenReturn(script);
         when(scripts.selectOne(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(script);
         var configuration = new ChatModelVo(); configuration.setModelName("writing-model"); configuration.setProviderCode("atlas");
-        when(models.selectModelByName("writing-model")).thenReturn(configuration);
+        ShortDramaAtlasTestModels.register(models, "writing-model", configuration, "chat");
         when(factory.getOriginalService("atlas")).thenReturn(chat);
         when(chat.buildChatModel(eq(configuration), any())).thenReturn(model);
         when(model.chat(anyString())).thenReturn(COMBINED);

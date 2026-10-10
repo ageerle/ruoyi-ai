@@ -75,7 +75,7 @@ class ShortDramaPartialPlanRecoveryTest {
         when(appearances.selectList(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(assets.appearances());
         when(locations.selectList(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(assets.locations());
         when(boards.selectList(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(List.of());
-        var model = new ChatModelVo(); model.setModelName("writer"); when(models.selectModelByName("writer")).thenReturn(model);
+        var model = new ChatModelVo(); model.setModelName("writer"); ShortDramaAtlasTestModels.register(models, "writer", model, "chat");
         review = new ShortDramaReviewedPlanBo(); review.setScriptId(20L); review.setModel("writer"); review.setExpectedScriptText(script.getScriptText());
         review.setMinimumShotSeconds(4); review.setSceneNumbers(List.of(1)); review.setExpectedAssetSignature(assets.signature());
         review.setPanels(List.of(ShortDramaSceneCheckpointTest.panel()));

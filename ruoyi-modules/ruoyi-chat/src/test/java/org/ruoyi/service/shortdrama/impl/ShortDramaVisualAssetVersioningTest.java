@@ -33,7 +33,7 @@ class ShortDramaVisualAssetVersioningTest {
         var asset = new ShortDramaVisualAsset(); asset.setId(1L); asset.setProjectId(7L); asset.setStoryboardId(11L);
         asset.setKind("shot_frame"); asset.setStatus("waiting"); asset.setPredictionId("original-prediction"); asset.setModel("openai/gpt-image-2/edit"); asset.setSourceHash("old-version");
         var original = new org.ruoyi.common.chat.domain.vo.chat.ChatModelVo(); original.setModelName(asset.getModel());
-        when(models.selectModelByName(asset.getModel())).thenReturn(original);
+        ShortDramaAtlasTestModels.register(models, asset.getModel(), original, "image");
         when(predictions.retrieve(original, "original-prediction")).thenReturn(org.ruoyi.common.chat.entity.media.MediaGenerationResponse.builder()
             .id("original-prediction").status("completed").url("https://example.com/old-result.png").build());
         ReflectionTestUtils.invokeMethod(service, "generateOne", asset, "bytedance/seedream-v4.7/text-to-image");

@@ -47,7 +47,7 @@ public class ShortDramaMusicService {
         try(var files=Files.list(directory(project))){List<Job> jobs=new ArrayList<>();for(Path path:files.filter(p->p.toString().endsWith(".json")).toList()){var job=AtlasMediaSupport.OBJECT_MAPPER.readValue(path.toFile(),Job.class);if("submitting".equals(job.status()) && System.currentTimeMillis()-job.createdAt()>210000)job=new Job(job.id(),job.predictionId(),job.request(),"submission_unknown","提交尚未取得任务编号，请先核对 Atlas 记录；未自动重试",job.variants(),job.createdAt());jobs.add(job);}jobs.sort(Comparator.comparingLong(Job::createdAt).reversed());return jobs;}
     }
     private ChatModelVo musicModel(String name) {
-        var model=models.selectModelByName(name);
+        var model=ShortDramaAtlasModels.require(models,name,"audio");
         if(model==null || !"audio".equals(model.getCategory()) || !"atlas".equalsIgnoreCase(model.getProviderCode()) || !"suno/chirp-v6".equals(name))throw new IllegalArgumentException("请选择已配置的 Atlas Suno Chirp V6 音乐模型");
         return model;
     }
@@ -101,7 +101,7 @@ public class ShortDramaMusicService {
         return selected;
     }
     public Brief write(Long project,Long user,BriefRequest request) {
-        sounds.owner(project,user);var model=models.selectModelByName(request.model());if(model==null || !"chat".equals(model.getCategory()))throw new IllegalArgumentException("请选择写作模型");
+        sounds.owner(project,user);var model=ShortDramaAtlasModels.require(models,request.model(),"chat");if(model==null || !"chat".equals(model.getCategory()))throw new IllegalArgumentException("请选择写作模型");
         if(!Set.of("bgm","theme","ending").contains(Objects.toString(request.purpose(),"")) || request.direction()!=null && request.direction().length()>2000)throw new IllegalArgumentException("音乐用途或创作要求无效");
         var script=scripts.selectOne(new LambdaQueryWrapper<ShortDramaScript>().eq(ShortDramaScript::getProjectId,project).orderByDesc(ShortDramaScript::getId).last("limit 1"));if(script==null)throw new IllegalArgumentException("请先保存剧本");
         String context=Objects.toString(script.getScriptText(),"");if(context.length()>16000)context=context.substring(0,16000);

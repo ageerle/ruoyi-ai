@@ -91,7 +91,7 @@ class ShortDramaScriptOnlyCreationTest {
         ReflectionTestUtils.setField(service, "activeEmitters", emitters);
         ReflectionTestUtils.setField(service, "planningProgress", new ConcurrentHashMap<>());
         var configuration = new ChatModelVo(); configuration.setModelName("writing-model"); configuration.setProviderCode("atlas");
-        when(models.selectModelByName("writing-model")).thenReturn(configuration);
+        ShortDramaAtlasTestModels.register(models, "writing-model", configuration, "chat");
         when(factory.getOriginalService("atlas")).thenReturn(chat);
         when(chat.buildChatModel(eq(configuration), any())).thenReturn(model);
         when(chat.buildStreamingChatModel(eq(configuration), any())).thenReturn(streaming);

@@ -63,7 +63,7 @@ public class ShortDramaVisualAssetService {
         owner(id,user);
         var script=scripts.selectById(scriptId);
         if(script==null || !id.equals(script.getProjectId())) throw new IllegalArgumentException("剧本不属于当前项目");
-        var configured=models.selectModelByName(model);
+        var configured=ShortDramaAtlasModels.require(models,model,"chat");
         if(configured==null || !"chat".equals(configured.getCategory())) throw new IllegalArgumentException("后台尚未配置可用写作模型");
         var project=projects.selectById(id);
         var snapshot=skillCatalog.snapshot(project);
@@ -175,8 +175,7 @@ public class ShortDramaVisualAssetService {
         var project = projects.selectById(id);
         String selectedDirection = skillCatalog.selected(project, "aesthetic") + skillCatalog.selected(project, "director");
         String selectedMediaDirection = skillCatalog.selectedVisual(project, "aesthetic") + skillCatalog.selectedVisual(project, "director");
-        var m=models.selectModelByName(model);
-        if(m==null) { var q=new ChatModelBo();q.setCategory("chat");m=models.queryAvailableList(q).stream().findFirst().orElseThrow(); }
+        var m=model==null || model.isBlank() ? ShortDramaAtlasModels.defaultModel(models,"chat") : ShortDramaAtlasModels.require(models,model,"chat");
         var chat=chats.getOriginalService(ShortDramaServiceImpl.shortDramaProviderCode(m.getProviderCode(),m.getModelName())).buildChatModel(m);
         // Do not invent extra characters or costumes merely to increase image counts.
         String prompt=PROP_EXTRACTION_PROMPT+script.getScriptText()+"\n镜头列表：\n"+
@@ -492,7 +491,7 @@ public class ShortDramaVisualAssetService {
         var asset = assets.selectById(assetId);
         if(asset==null || !projectId.equals(asset.getProjectId()) || !"prop".equals(asset.getKind())) throw new IllegalArgumentException("只能重新生成当前项目的道具");
         if(asset.getPrompt()==null || asset.getPrompt().isBlank()) throw new IllegalArgumentException("请先填写道具提示词");
-        var configured=models.selectModelByName(model);
+        var configured=ShortDramaAtlasModels.require(models,model,"image");
         if(configured==null || !"image".equals(configured.getCategory())) throw new IllegalArgumentException("请选择已配置的生图模型");
         if(!propReferenceImage(asset.getReferenceImages()).isBlank() && "bytedance/seedream-v4.7/text-to-image".equals(model))
             throw new IllegalArgumentException("当前 Seedream 4.7 文生图不支持参考图；请在创意设定中改用可编辑的图片模型后重试");
@@ -558,7 +557,7 @@ public class ShortDramaVisualAssetService {
     /** Generate missing project props only; never generate storyboard frames from the asset button. */
     public Map<String,Object> generateMissingProps(Long id, String model, Long user) {
         owner(id,user);
-        var configured=models.selectModelByName(model);
+        var configured=ShortDramaAtlasModels.require(models,model,"image");
         if(configured==null || !"image".equals(configured.getCategory())) throw new IllegalArgumentException("后台尚未配置可用图片模型");
         if(running.putIfAbsent(id,"生成缺图道具")!=null) throw new IllegalStateException("资产任务正在运行，请等待完成");
         errors.remove(id);
@@ -579,7 +578,7 @@ public class ShortDramaVisualAssetService {
     public Map<String,Object> generateRange(Long id,String model,Long user,int start,int end) {
         if(start<1 || end<start || end-start>=40)throw new IllegalArgumentException("每批请选择连续1至40镜");
         requireCurrentScript(id,user);
-        var configured=models.selectModelByName(model);
+        var configured=ShortDramaAtlasModels.require(models,model,"image");
         if(configured==null || !"image".equals(configured.getCategory()))throw new IllegalArgumentException("请选择生图模型");
         var selectedShots=boards.selectList(new LambdaQueryWrapper<ShortDramaStoryboard>().eq(ShortDramaStoryboard::getProjectId,id).ge(ShortDramaStoryboard::getSceneNo,start).le(ShortDramaStoryboard::getSceneNo,end));
         var selected=selectedShots.stream().map(ShortDramaStoryboard::getId).collect(java.util.stream.Collectors.toSet());
@@ -628,7 +627,7 @@ public class ShortDramaVisualAssetService {
         if (boards.selectCount(new LambdaQueryWrapper<ShortDramaStoryboard>().eq(ShortDramaStoryboard::getProjectId,id)) > 0)
             requireCurrentScript(id,user);
         synchronizeExistingFrames(id);
-        var configured=models.selectModelByName(model);
+        var configured=ShortDramaAtlasModels.require(models,model,"image");
         if(configured==null || !"image".equals(configured.getCategory()))throw new IllegalArgumentException("请选择已配置的生图模型");
         if(rows(id).isEmpty())throw new IllegalStateException("请先分析镜头资产");
         if(running.putIfAbsent(id,"生成关键道具")!=null)throw new IllegalStateException("资产任务正在运行");
@@ -649,7 +648,7 @@ public class ShortDramaVisualAssetService {
         var asset=assets.selectById(assetId);
         if(asset==null || !id.equals(asset.getProjectId()) || !"shot_frame".equals(asset.getKind())) throw new IllegalArgumentException("只能修正本项目的镜头关键帧");
         if(prompt==null || prompt.isBlank() || prompt.length()>12000) throw new IllegalArgumentException("请填写有效的画面描述（最多12000字）");
-        var configured=models.selectModelByName(model);
+        var configured=ShortDramaAtlasModels.require(models,model,"image");
         if(configured==null || !"image".equals(configured.getCategory()))throw new IllegalArgumentException("请选择生图模型");
         if(running.putIfAbsent(id,"修正单镜构图")!=null)throw new IllegalStateException("请等待当前资产队列完成后修正单图");
         try {
@@ -702,7 +701,7 @@ public class ShortDramaVisualAssetService {
         try {
             boolean resume=a.getPredictionId()!=null && !a.getPredictionId().isBlank() && !"failed".equals(a.getStatus());
             if (resume) {
-                var original = models.selectModelByName(a.getModel());
+                var original = ShortDramaAtlasModels.require(models,a.getModel(),"image");
                 if (original == null) throw new IllegalStateException("原任务模型配置缺失，无法查询原prediction；没有提交新任务");
                 awaitImage(a, original); return;
             }
@@ -752,7 +751,7 @@ public class ShortDramaVisualAssetService {
                 throw new IllegalArgumentException("所选Seedream 4.7文生图不接参考图；此首帧需另行选择编辑型号，不会自动转换或丢弃已批准身份参考");
             if(!refs.isEmpty() && model.endsWith("/text-to-image"))selected=model.replace("/text-to-image","/edit");
             if(refs.isEmpty() && model.endsWith("/edit"))selected=model.replace("/edit","/text-to-image");
-            var m=models.selectModelByName(selected);if(m==null)throw new IllegalStateException("缺少对应多参考图模型配置："+selected);
+            var m=ShortDramaAtlasModels.require(models,selected,"image");if(m==null)throw new IllegalStateException("缺少对应多参考图模型配置："+selected);
             // Resume acknowledged jobs; never submit the same prediction twice.
             a.setModel(m.getModelName());a.setErrorMessage("");a.setStatus("generating");a.setUpdateTime(new Date());assets.updateById(a);
             if(!resume) {

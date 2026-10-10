@@ -95,7 +95,7 @@ class ShortDramaImageRevisionTest {
         var locations = mock(ShortDramaLocationMapper.class); when(locations.selectById(50L)).thenReturn(location);
         var models = mock(IChatModelService.class);
         model = new ChatModelVo(); model.setModelName("edit-model"); model.setProviderCode("atlas");
-        when(models.selectModelByName("edit-model")).thenReturn(model);
+        ShortDramaAtlasTestModels.register(models, "edit-model", model, "image");
         images = mock(IImageGenerationService.class);
         when(images.startImageGeneration(any())).thenReturn(MediaGenerationResponse.builder().id("prediction-1").status("processing").build());
         when(images.generateImage(any())).thenReturn("");

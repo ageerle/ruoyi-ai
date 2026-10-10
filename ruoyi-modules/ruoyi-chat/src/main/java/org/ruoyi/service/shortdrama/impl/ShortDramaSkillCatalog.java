@@ -16,7 +16,16 @@ import java.util.*;
 @Service
 public class ShortDramaSkillCatalog {
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final Set<String> TYPES = Set.of("aesthetic", "director");
+    public record Category(String type, String title, boolean editable, boolean projectSelectable) {}
+    private static final List<Category> CATEGORIES = List.of(
+        new Category("system", "系统提示词", false, false),
+        new Category("production", "默认制作技能", false, false),
+        new Category("screenwriting", "编剧风格", true, true),
+        new Category("director", "导演风格", true, true),
+        new Category("aesthetic", "视觉风格", true, true));
+    private static final Set<String> TYPES = CATEGORIES.stream().filter(Category::editable)
+        .map(Category::type).collect(java.util.stream.Collectors.toUnmodifiableSet());
+    public List<Category> categories() { return CATEGORIES; }
     private static final Set<String> STYLES = org.ruoyi.constant.ShortDramaImageConstants.ART_STYLE_PROMPTS.keySet();
     private static final int MAX_TEXT = 200_000, MAX_FILES = 32, MAX_TOTAL = 1_000_000, MAX_MEDIA_BODY = 2_000;
     private final Path root;

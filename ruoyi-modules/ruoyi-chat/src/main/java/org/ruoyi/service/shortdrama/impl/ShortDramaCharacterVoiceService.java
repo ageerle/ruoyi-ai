@@ -100,7 +100,7 @@ public class ShortDramaCharacterVoiceService {
         write(profileFile(project,character),updated);return updated;
     }
     private ChatModelVo model(String name) {
-        var model=models.selectModelByName(name);
+        var model=ShortDramaAtlasModels.require(models,name,"audio");
         if (model==null || !MODEL.equals(name) || !"audio".equals(model.getCategory()) || !"atlas".equalsIgnoreCase(model.getProviderCode()))
             throw new ShortDramaVoiceException("请在模型配置中启用 Atlas Seed Audio 1.0");
         return model;
