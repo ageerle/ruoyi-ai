@@ -48,6 +48,12 @@ public final class HarnessAssistantMessageMapper {
         put(metadata, "modelName", response.modelName());
         Map<String, Object> attributes = message.attributes();
         if (attributes != null) {
+            if (Boolean.TRUE.equals(attributes.get(
+                org.ruoyi.service.chat.impl.provider.doubao.DoubaoStreamingChatModel
+                    .REASONING_ABSENT_ATTRIBUTE))) {
+                metadata.put("doubaoReasoningAbsent", true);
+                metadata.put("protocolWarning", "Provider completed a tool response without reasoning_content or encrypted_content; neither field was synthesized.");
+            }
             Object encrypted = attributes.get(
                 org.ruoyi.service.chat.impl.provider.doubao.DoubaoStreamingChatModel
                     .ENCRYPTED_CONTENT_ATTRIBUTE);

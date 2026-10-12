@@ -19,6 +19,9 @@ public final class HarnessModelPolicy {
     public static final String DOUBAO_SEED_EVOLVING = "doubao-seed-evolving";
     public static final String DOUBAO_SEED_EVOLVING_QUALIFIED =
         "bytedance/doubao-seed-evolving";
+    public static final String DOUBAO_SEED_21_PRO = "doubao-seed-2.1-pro-260628";
+    public static final String DOUBAO_SEED_21_PRO_QUALIFIED =
+        "bytedance/doubao-seed-2.1-pro-260628";
 
     private static final List<String> AUTOMATIC_CANDIDATES = List.of(FLASH, PRO, VISION);
 
@@ -45,14 +48,15 @@ public final class HarnessModelPolicy {
     }
 
     /**
-     * 是否为字节 Doubao-Seed-Evolving 模型。精确支持 doubao-seed-evolving 与
-     * bytedance/doubao-seed-evolving 两个 Model ID；Doubao 会话固定模型，永不
-     * 回退到 DeepSeek 自动路由。
+     * 精确识别已适配的 Doubao Model ID，包括固定版本 Seed 2.1 Pro。
+     * 保持所选模型及思考配置，动作恢复轮不得回退到 DeepSeek。
      */
     public static boolean isDoubao(String model) {
         String normalized = normalizeModel(model);
         return DOUBAO_SEED_EVOLVING.equals(normalized)
-            || DOUBAO_SEED_EVOLVING_QUALIFIED.equals(normalized);
+            || DOUBAO_SEED_EVOLVING_QUALIFIED.equals(normalized)
+            || DOUBAO_SEED_21_PRO.equals(normalized)
+            || DOUBAO_SEED_21_PRO_QUALIFIED.equals(normalized);
     }
 
     /** 模型是否支持图片输入（Doubao-Seed-Evolving 原生支持多模态图片理解）。 */

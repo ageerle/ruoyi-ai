@@ -89,6 +89,8 @@ public class DoubaoStreamingChatModel implements StreamingChatModel {
 
     /** AiMessage.attributes() 中存储 Doubao 思考加密原文的键。 */
     public static final String ENCRYPTED_CONTENT_ATTRIBUTE = "doubao_encrypted_content";
+    /** A completed provider response may omit both fields; preserve that fact, never invent them. */
+    public static final String REASONING_ABSENT_ATTRIBUTE = "doubao_reasoning_absent";
     /** 与 attributes 对应的请求 JSON 字段名。 */
     public static final String ENCRYPTED_CONTENT_FIELD = "encrypted_content";
     private static final String REASONING_CONTENT_FIELD = "reasoning_content";
@@ -706,6 +708,10 @@ public class DoubaoStreamingChatModel implements StreamingChatModel {
             Map<String, Object> attributes = new LinkedHashMap<>();
             if (encryptedContent.length() > 0) {
                 attributes.put(ENCRYPTED_CONTENT_ATTRIBUTE, encryptedContent.toString());
+            }
+            if (thinkingEnabled && !requests.isEmpty()
+                && reasoning.length() == 0 && encryptedContent.length() == 0) {
+                attributes.put(REASONING_ABSENT_ATTRIBUTE, true);
             }
             messageBuilder.toolExecutionRequests(requests);
             if (!attributes.isEmpty()) {

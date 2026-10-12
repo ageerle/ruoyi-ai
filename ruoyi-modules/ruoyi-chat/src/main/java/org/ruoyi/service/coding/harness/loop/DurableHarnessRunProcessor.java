@@ -4150,6 +4150,7 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
                 message.metadata().get("thinkingEnabled")))
             .anyMatch(message -> !message.toolCalls().isEmpty()
                 && !doubaoReplaySatisfied(message)
+                && !doubaoProviderOmittedReasoning(run, message)
                 && (message.thinking() == null || message.thinking().isBlank()));
         return missing
             ? "Thinking-enabled provider tool calls are missing replayable reasoning content"
@@ -4165,6 +4166,19 @@ public class DurableHarnessRunProcessor implements HarnessRunProcessor {
         Object encrypted = message.metadata() == null
             ? null : message.metadata().get("doubaoEncryptedContent");
         return encrypted instanceof String text && !text.isBlank();
+    }
+
+    /**
+     * Distinguish provider omission from losing a field during ledger/context projection.
+     * Only the Doubao SSE adapter, after a complete response, can attest to this omission.
+     * Keep the warning and replay the actual response unchanged. Other providers and old
+     * messages without this provenance still fail closed if their reasoning was lost.
+     */
+    static boolean doubaoProviderOmittedReasoning(HarnessRunState run, HarnessMessage message) {
+        return run != null && run.modelRoute() != null
+            && org.ruoyi.service.coding.harness.modelruntime.HarnessModelPolicy
+                .isDoubao(run.modelRoute().selectedModel())
+            && Boolean.TRUE.equals(message.metadata().get("doubaoReasoningAbsent"));
     }
 
     /** Exact suffix that cannot be compacted before a later provider assistant consumes it. */

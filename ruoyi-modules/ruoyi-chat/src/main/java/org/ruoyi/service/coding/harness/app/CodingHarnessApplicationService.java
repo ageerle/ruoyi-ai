@@ -95,7 +95,7 @@ public class CodingHarnessApplicationService {
     private HarnessArtifactRepository artifactRepository;
 
     private static final int MAX_IMAGES_PER_RUN = 5;
-    private static final long MAX_IMAGE_BYTES_PER_RUN = 8L * 1024 * 1024;
+    private static final long MAX_IMAGE_BYTES_PER_RUN = 50L * 1024 * 1024;
     private static final Map<String, byte[]> IMAGE_SIGNATURES = Map.of(
         "image/jpeg", new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff},
         "image/png", new byte[]{(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a},
@@ -950,8 +950,8 @@ public class CodingHarnessApplicationService {
                 throw new IllegalArgumentException("Image content does not match " + mediaType);
             }
             total += bytes.length;
-            if (bytes.length == 0 || total > MAX_IMAGE_BYTES_PER_RUN) {
-                throw new IllegalArgumentException("Image payload exceeds the 8 MiB run limit");
+            if (bytes.length == 0 || bytes.length > 10L * 1024 * 1024 || total > MAX_IMAGE_BYTES_PER_RUN) {
+                throw new IllegalArgumentException("单张图片不能超过 10 MB，合计不能超过 50 MB");
             }
             result.add(new DecodedImage(mediaType, input.detail(), bytes, sha256(bytes)));
         }
