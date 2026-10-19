@@ -48,13 +48,13 @@ class MinimaxServiceImplTest {
     @ParameterizedTest
     @CsvSource({
         "https://api.minimax.io/v1, MiniMax-M3, false, openai",
-        "https://api.minimax.io/v1, MiniMax-M2.7, true, openai",
+        "https://api.minimax.io/v1, MiniMax-M3.1-Flash, true, openai",
         "https://api.minimaxi.com/v1, MiniMax-M3, true, openai",
-        "https://api.minimaxi.com/v1, MiniMax-M2.7, true, openai",
+        "https://api.minimaxi.com/v1, MiniMax-M3.1-Flash, true, openai",
         "https://api.minimax.io/anthropic, MiniMax-M3, false, anthropic",
-        "https://api.minimax.io/anthropic, MiniMax-M2.7, true, anthropic",
+        "https://api.minimax.io/anthropic, MiniMax-M3.1-Flash, true, anthropic",
         "https://api.minimaxi.com/anthropic, MiniMax-M3, true, anthropic",
-        "https://api.minimaxi.com/anthropic, MiniMax-M2.7, true, anthropic"
+        "https://api.minimaxi.com/anthropic, MiniMax-M3.1-Flash, true, anthropic"
     })
     void buildStreamingChatModel_supportsCurrentModelsRegionsAndProtocols(
         String apiHost, String modelName, boolean enableThinking, String protocol) {

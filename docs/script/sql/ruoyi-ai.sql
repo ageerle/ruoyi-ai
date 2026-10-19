@@ -116,6 +116,14 @@ CREATE TABLE `chat_model`  (
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
+-- MiniMax fresh-install presets only; do not re-run this schema script on an existing database.
+-- Both models: 1,000,000 context / 524,288 maximum output tokens. Prices below are USD per million tokens.
+-- Flash: input 0.15 / output 0.60 / cache read 0.015; cache-write price unpublished.
+-- M3 Standard <=512k: 0.30 / 1.20 / 0.06; above 512k: 0.60 / 2.40 / 0.12; Priority 1.5x; cache-write price unpublished.
+-- These are provider limits/prices, not runtime billing or token-limit settings in chat_model.
+-- https://platform.minimax.io/docs/guides/models-intro.md and https://platform.minimax.io/docs/pricing/overview.md
+INSERT INTO `chat_model` VALUES (2091019000000000001, 'chat', 100, 'MiniMax-M3.1-Flash', 'minimax', 'MiniMax M3.1 Flash (preferred)', NULL, 'Y', 'https://api.minimax.io/v1', '', 103, 1, '2026-10-19 00:00:00', 1, '2026-10-19 00:00:00', 'Always adaptive; effort low/medium/high/xhigh/max, default max. Configure API key before use.', 0);
+INSERT INTO `chat_model` VALUES (2091019000000000002, 'chat', 101, 'MiniMax-M3', 'minimax', 'MiniMax M3', NULL, 'Y', 'https://api.minimax.io/v1', '', 103, 1, '2026-10-19 00:00:00', 1, '2026-10-19 00:00:00', 'Adaptive/disabled thinking; reasoning effort is ignored. Configure API key before use.', 0);
 INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 100, 'deepseek-v4-flash', 'deepseek', 'DeepSeek V4 Flash', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2025-12-15 23:16:54', 1, '2026-08-30 00:00:00', '简单快速编程任务', 0);
 INSERT INTO `chat_model` VALUES (2090000000000000001, 'chat', 100, 'deepseek-v4-pro', 'deepseek', 'DeepSeek V4 Pro', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '复杂编程、规划与审查', 0);
 INSERT INTO `chat_model` VALUES (2090000000000000002, 'chat', 100, 'deepseek-v4-flash-vision-exp', 'deepseek', 'DeepSeek V4 Flash Vision (experimental)', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '带图编程任务的视觉证据提取', 0);
@@ -167,7 +175,7 @@ INSERT INTO `chat_provider` VALUES (12, '智谱AI', 'zhipu', 'https://example-12
 INSERT INTO `chat_provider` VALUES (13, '小米MIMO', 'xiaomi', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/04/19/18dd39365ce244e3ae5e030da036760e.png', '小米官方API', 'https://api.xiaomimimo.com/v1', '0', 3, 103, '2026-04-19 12:48:24', '1', '1', '2026-04-19 13:14:22', '小米官方API', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (14, '阿里云百炼', 'qianwen', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/02/25/de2aa7e649de44f3ba5c6380ac6acd04.png', '阿里云百炼大模型服务', 'https://dashscope.aliyuncs.com', '0', 2, 103, '2025-12-14 21:48:11', '1', '1', '2026-02-25 20:49:13', '阿里云厂商', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (15, 'Atlas Cloud', 'atlas', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/04/19/atlascloud.png', '全模态AI推理平台', 'https://api.atlascloud.ai/v1', '0', 5, 103, '2025-12-15 23:13:42', '1', '1', '2026-02-25 20:49:01', 'Atlas Cloud AI平台', NULL, '0', NULL, 0);
-INSERT INTO `chat_provider` VALUES (16, 'MiniMax', 'minimax', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/04/19/fdc712e90e0e4d78b05862ad230884e5.png', 'MiniMax model service supporting MiniMax-M3 and MiniMax-M2.7', 'https://api.minimax.io/v1', '0', 6, 103, '2026-04-19 12:50:12', '1', '1', '2026-04-19 13:14:59', 'MiniMax provider', NULL, '0', NULL, 0);
+INSERT INTO `chat_provider` VALUES (16, 'MiniMax', 'minimax', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/04/19/fdc712e90e0e4d78b05862ad230884e5.png', 'MiniMax model service supporting MiniMax-M3.1-Flash (preferred) and MiniMax-M3', 'https://api.minimax.io/v1', '0', 6, 103, '2026-04-19 12:50:12', '1', '1', '2026-04-19 13:14:59', 'MiniMax provider', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (17, 'ollama', 'ollama', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/02/25/afecabebc8014d80b0f06b4796a74c5d.png', 'ollama大模型', 'http://127.0.0.1:11434', '0', 7, 103, '2025-12-14 21:48:11', '1', '1', '2026-02-25 20:48:48', 'ollama厂商', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (18, '自定义厂商', 'custom_api', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/04/19/c1a8e122510f4e2f90deb36958af710b.png', 'OPENAI兼容格式', '自定义', '0', 8, 103, '2026-04-19 12:35:57', '1', '1', '2026-04-19 13:17:20', 'OPENAI兼容格式', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (2070700000000000001, 'Dify', 'dify', NULL, 'Dify 应用 API 服务', 'https://api.dify.ai/v1', '0', 9, 103, '2026-07-14 11:03:44', '1', '1', '2026-07-14 11:03:44', 'Dify 应用 API 服务商', NULL, '0', NULL, 0);
