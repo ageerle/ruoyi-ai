@@ -59,6 +59,7 @@ class ShortDramaPartialPlanRecoveryTest {
         when(catalog.effectiveArtStyle(any())).thenReturn("chinese-3d");
         when(catalog.selectedVisual(any(), anyString())).thenReturn("");
         when(catalog.selected(any(), anyString())).thenReturn("");
+        when(catalog.selectedDirection(any())).thenReturn("");
         ReflectionTestUtils.setField(service, "skillCatalog", catalog);
         var projects = mock(ShortDramaProjectMapper.class); var scripts = mock(ShortDramaScriptMapper.class);
         var chars = mock(ShortDramaCharacterMapper.class); var appearances = mock(ShortDramaCharacterAppearanceMapper.class);

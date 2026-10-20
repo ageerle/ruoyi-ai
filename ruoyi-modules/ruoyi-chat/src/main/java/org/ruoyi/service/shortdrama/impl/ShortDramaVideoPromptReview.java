@@ -13,9 +13,9 @@ public final class ShortDramaVideoPromptReview {
         "光色与材质", "声音", "结束与承接", "约束"};
     private static final Pattern RANGE = Pattern.compile("(?<![\\d.])(\\d+(?:\\.\\d+)?)\\s*(?:秒|s)?\\s*[-–—~至到]\\s*(\\d+(?:\\.\\d+)?)\\s*(?:秒|s)", Pattern.CASE_INSENSITIVE);
     private static final Pattern QUOTE = Pattern.compile("「([^」]+)」|“([^”]+)”");
-    private static final Pattern SOURCE_DIALOGUE = Pattern.compile("「([^」]+)」|“([^”]+)”|(?m)^\\s*([\\p{IsHan}A-Za-z0-9（）()· ]{1,24})\\s*[:：]\\s*([^\\r\\n]+)");
+    private static final Pattern SOURCE_DIALOGUE = Pattern.compile("「([^」]+)」|“([^”]+)”|(?m)^\\s*([\\p{IsHan}A-Za-z0-9（）()· ，,]{1,32})\\s*[:：]\\s*([^\\r\\n]+)");
     private static final Pattern VISUAL_TEXT_CONTEXT = Pattern.compile(
-        ".*(?:屏幕|界面|查询栏|字幕|叠字|光字|画面文字|告示|牌匾|标题|题字|字样|标注|显示|内容为).*");
+        ".*(?:屏幕|界面|查询栏|字幕|叠字|光字|画面文字|告示|牌匾|铭牌|牌面|标题|题字|字样|标注|显示|内容为).*");
     private static final Pattern PLACEHOLDER = Pattern.compile("^(?:待补充|待生成|待设计|同上|略|TODO|暂无|未填写)[。；;\\s]*$", Pattern.CASE_INSENSITIVE);
 
     public static List<String> issues(String prompt, Integer duration, String source) {
@@ -64,7 +64,21 @@ public final class ShortDramaVideoPromptReview {
             issues.add("对白与口型须明确声源和开口规则");
         if (spokenLines.isEmpty() && !dialogue.isBlank() && QUOTE.matcher(dialogue).find())
             issues.add("原文无标注对白，须核对是否擅加台词");
+        reviewDoorway(text, source, issues);
         return List.copyOf(issues);
+    }
+
+    /** Missing staging is advisory; door swing alone cannot determine entry or exit. */
+    private static void reviewDoorway(String prompt, String source, List<String> issues) {
+        String action = QUOTE.matcher((source == null ? "" : source) + "\n" + prompt).replaceAll("");
+        if (!action.matches("(?s).*(?:进屋|进门|入库|进入(?:屋|房|库)|走入(?:屋|房|库)|出门|出屋|走出(?:屋|房|库)|跨[^。；\\n]{0,10}门槛).*")) return;
+        String staging = QUOTE.matcher(prompt).replaceAll("");
+        if (!staging.matches("(?s).*(?:门外|门内|屋外|屋内|库外|库内|室外|室内).*"))
+            issues.add("进出门动作须核对人物起始一侧与抵达位置");
+        if (!staging.matches("(?s).*(?:跨[^。；\\n]{0,10}门槛|越过门槛|穿过门口|从[^。；\\n]{0,24}(?:走入|走出|进入|走到)).*"))
+            issues.add("进出门动作须写清跨门路线，开门不等于人物已经到位");
+        if (!staging.matches("(?s).*(?:摄影机|机位|镜头)[^。；\\n]{0,32}(?:门外|门内|屋外|屋内|库外|库内|室外|室内).*"))
+            issues.add("进出门动作须说明摄影机所在一侧，门扇方向与人物行进方向分别核对");
     }
 
     /** Keep the model's staging while making the dialogue block mechanically match source text. */
@@ -114,7 +128,7 @@ public final class ShortDramaVideoPromptReview {
         return List.copyOf(lines);
     }
 
-    private static String sourceSpeaker(String source, String line) {
+    static String sourceSpeaker(String source, String line) {
         var matcher = SOURCE_DIALOGUE.matcher((source == null ? "" : source).replace("\\n", "\n"));
         while (matcher.find()) if (matcher.group(3) != null && matcher.group(4).contains(line))
             return matcher.group(3).replaceAll("（[^）]*）|\\([^)]*\\)", "")
@@ -172,18 +186,8 @@ public final class ShortDramaVideoPromptReview {
         if (!issues.isEmpty()) log.info("镜头{}导演稿审阅建议（继续保存或生成）：{}", number, String.join("；", issues));
     }
 
-    /** Used by the one-keyframe fast path, which must retain speech, duration and skills. */
+    /** The reviewed image binds the start; skills and provider parameters stay outside execution prose. */
     static String anchoredPrompt(String prompt, Integer duration, String source, String start, String end) {
-        String reviewedStart = section(nullToEmpty(prompt), "首帧实况");
-        String actualStart = reviewedStart.isBlank() ? nullToEmpty(start) : reviewedStart;
-        return ShortDramaDirectorSkills.load("video-prompt", "video-continuity")
-            + "本镜唯一画面参考是image 1，索引只说明实际已绑定的首帧。锁定身份、服装、构图、左右关系、持物手和光源，单一连续镜头，不复制多视图。\n"
-            + "【绑定起止状态】起点：" + actualStart + "；终点：" + nullToEmpty(end)
-            + (duration == null
-                ? "\n【时长与内容】未指定视频秒数，完整执行原剧情、对白及动作顺序，不按制作估算删减。\n"
-                : "\n【用户指定视频时长】" + duration + "秒\n") + nullToEmpty(prompt)
-            + "\n【已审阅剧情与声音原文】\n" + nullToEmpty(source)
-            + "\n只执行当前镜头。对白原话、发言人、先后顺序与声音位置以原文为准；画外声/心声不驱动画面人物口型；不得让听者代说。无特别约定不加音乐，不显示下一镜剧情。";
+        return "image 1为起始画面，后续动作按导演稿。\n" + ShortDramaVideoPromptPolicy.execution(prompt, source);
     }
-    private static String nullToEmpty(String value) { return value == null ? "" : value; }
 }

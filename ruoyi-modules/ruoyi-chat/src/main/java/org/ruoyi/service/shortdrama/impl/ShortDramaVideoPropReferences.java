@@ -13,9 +13,8 @@ final class ShortDramaVideoPropReferences {
             int index = images.indexOf(binding.imageUrl());
             if (index < 0) throw new IllegalArgumentException("道具参考未实际附图：" + binding.title());
             text.append(binding.title()).append("对应@image").append(index + 1)
-                .append("，仅提供器物轮廓、材质与比例；位置、持握者、动作和出现时机按本镜导演稿。")
-                .append("同一物件保持形制，不能复制棚拍背景或让器物凭空出现。\n");
+                .append("；\n");
         }
-        return text.toString();
+        return text.append("图片仅提供器物外形，位置、持握与出现时机按导演稿。\n").toString();
     }
 }

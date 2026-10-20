@@ -29,6 +29,26 @@ class ShortDramaVisualAssetVersioningTest {
     @InjectMocks ShortDramaVisualAssetService service;
     @AfterEach void close() { service.close(); }
 
+    @Test void referenceGalleryReceivesTheSameLegacyPropLinksAsVideoGeneration() {
+        var project = new org.ruoyi.domain.entity.shortdrama.ShortDramaProject();
+        project.setId(7L); project.setUserId(1L);
+        when(projects.selectById(7L)).thenReturn(project);
+        var prop = new ShortDramaVisualAsset(); prop.setId(2L); prop.setProjectId(7L);
+        prop.setKind("prop"); prop.setTitle("护城炮"); prop.setStatus("done");
+        prop.setImageUrl("https://example.com/approved.jpg"); prop.setPredictionId("original-task");
+        prop.setReferenceImages("{\"shotNumbers\":[78,51,68],\"referenceImageUrl\":\"https://example.com/source.jpg\"}");
+        when(assets.selectList(any())).thenReturn(java.util.List.of(prop));
+        var view = (ShortDramaVisualAssetService.AssetView) ((java.util.List<?>) service.status(7L, 1L).get("assets")).getFirst();
+        assertEquals(java.util.List.of(51,68,78), view.shotNumbers());
+        assertEquals(prop.getImageUrl(), view.imageUrl()); assertEquals("original-task", view.predictionId());
+        var shot = new org.ruoyi.domain.entity.shortdrama.ShortDramaStoryboard();
+        shot.setProjectId(7L); shot.setSceneNo(51); shot.setContinuityJson("{}");
+        assertEquals(java.util.List.of(view.imageUrl()), service.readyPropReferences(shot));
+        shot.setContinuityJson("{\"visible_props\":[]}");
+        assertTrue(service.readyPropReferences(shot).isEmpty());
+        verifyNoInteractions(images, predictions, boards);
+    }
+
     @Test void acceptedOldTaskQueriesOriginalModelWithoutLookingAtNewSkillOrReferences() {
         var asset = new ShortDramaVisualAsset(); asset.setId(1L); asset.setProjectId(7L); asset.setStoryboardId(11L);
         asset.setKind("shot_frame"); asset.setStatus("waiting"); asset.setPredictionId("original-prediction"); asset.setModel("openai/gpt-image-2/edit"); asset.setSourceHash("old-version");

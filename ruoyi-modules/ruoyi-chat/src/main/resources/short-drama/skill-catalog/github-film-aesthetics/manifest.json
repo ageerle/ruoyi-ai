@@ -1,0 +1,11 @@
+{
+  "name": "github-film-aesthetics",
+  "title": "电影写实 · 光色与空间",
+  "type": "aesthetic",
+  "description": "电影写实 · 光色与空间；按已批准人物、场景与基调维护具体视觉决定。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

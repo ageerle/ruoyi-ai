@@ -22,6 +22,7 @@ import org.ruoyi.domain.bo.shortdrama.ShortDramaProjectBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaScriptBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaScriptRevisionBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaStoryboardBo;
+import org.ruoyi.domain.bo.shortdrama.ShortDramaVideoRejectionBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaIdeaBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaImageRevisionBo;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaCharacterVo;
@@ -174,6 +175,21 @@ public class ShortDramaController {
         return R.ok(shortDramaService.retrieveVideo(storyboardId, model, LoginHelper.getUserId()));
     }
 
+    /** Recover an ID verified in provider history; queries the original provider before releasing the claim. */
+    @PostMapping("/storyboard/{storyboardId}/video-submissions/{requestId}/resolve")
+    public R<ShortDramaStoryboardVo> resolveVideoSubmission(@NotNull @PathVariable Long storyboardId,
+        @PathVariable String requestId, @NotBlank @RequestParam String predictionId,
+        @RequestParam(required = false) String confirmedFailureEvidence) {
+        return R.ok(shortDramaService.resolveVideoSubmission(storyboardId, requestId, predictionId, LoginHelper.getUserId(), confirmedFailureEvidence));
+    }
+
+    /** No prediction ID is invented for an explicit legacy rejection. This only releases its local claim. */
+    @PostMapping("/storyboard/{storyboardId}/video-submissions/{requestId}/confirm-rejection")
+    public R<ShortDramaStoryboardVo> confirmVideoSubmissionRejection(@NotNull @PathVariable Long storyboardId,
+        @PathVariable String requestId, @Valid @RequestBody ShortDramaVideoRejectionBo evidence) {
+        return R.ok(shortDramaService.confirmVideoSubmissionRejection(storyboardId, requestId, LoginHelper.getUserId(), evidence));
+    }
+
     @PostMapping("/{projectId}/generate-all-videos")
     public R<List<ShortDramaStoryboardVo>> generateAllVideos(@NotNull @PathVariable Long projectId,
                                                               @NotBlank @RequestParam String model,
@@ -217,7 +233,7 @@ public class ShortDramaController {
     @PostMapping("/{projectId}/polish-script")
     public R<ShortDramaDetailVo> polishScript(@NotNull @PathVariable Long projectId,
                                                @Valid @RequestBody ShortDramaScriptRevisionBo revision) {
-        return R.ok(shortDramaService.polishScript(projectId, LoginHelper.getUserId(), revision.getInstruction()));
+        return R.ok(shortDramaService.polishScript(projectId, LoginHelper.getUserId(), revision.getInstruction(), revision.getModel()));
     }
 
     // ==================== 资产分析 ====================

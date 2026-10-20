@@ -34,6 +34,9 @@ public class VideoContext {
     /** 多参考图 URL（多参考图生视频模式，配合 @imageN prompt 使用） */
     private java.util.List<String> referenceImages;
 
+    /** Motion/camera reference clips; distinct from appearance reference images. */
+    private java.util.List<String> referenceVideos;
+
     /** 参考音频 URL 列表（对白口型对齐模式） */
     private java.util.List<String> referenceAudios;
 

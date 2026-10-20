@@ -1,0 +1,11 @@
+{
+  "name": "github-short-drama-writing",
+  "title": "微短剧 · 选题、人物与分集",
+  "type": "screenwriting",
+  "description": "规划题材、人物目标、单集变化和连载钩子，适合商业微短剧写作与修订。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

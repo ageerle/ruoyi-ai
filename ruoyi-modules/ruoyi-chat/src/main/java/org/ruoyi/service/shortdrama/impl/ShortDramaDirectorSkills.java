@@ -8,13 +8,22 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Versioned, bundled production skills. Loaded by default, independent of tool calling. */
 public final class ShortDramaDirectorSkills {
     private ShortDramaDirectorSkills() {}
-    public static final String VERSION = "director-video-prompt-v11";
+    public static final String VERSION = "director-video-prompt-v16";
     public static final String PACING_VERSION = "content-pacing-advisory-v2";
     public static final String PLANNING_VERSION = "semantic-segment-advisory-v12";
     private static final Map<String,String> CACHE = new ConcurrentHashMap<>();
     public static String load(String... names) {
         StringBuilder result = new StringBuilder("【默认导演业务规范：在保持输出格式和用户意图的前提下优先遵循】\n");
-        for (String name : names) result.append(CACHE.computeIfAbsent(name, ShortDramaDirectorSkills::read)).append("\n");
+        // Reuse the same stage-specific methods in every existing drafting/review path.
+        // Catalog styles remain opt-in; this never loads every external handbook.
+        var staged = new java.util.LinkedHashSet<String>();
+        for (String name : names) {
+            staged.add(name);
+            if ("story-causality".equals(name)) staged.add("github-story-methods");
+            if ("cinematic-storyboard".equals(name) || "video-prompt".equals(name)) staged.add("github-shot-methods");
+            if ("director-review".equals(name)) staged.add("github-production-methods");
+        }
+        for (String name : staged) result.append(CACHE.computeIfAbsent(name, ShortDramaDirectorSkills::read)).append("\n");
         return result.toString();
     }
     /** Only remove an exact duplicate in the selected-skill section. Edited bindings and references stay intact. */

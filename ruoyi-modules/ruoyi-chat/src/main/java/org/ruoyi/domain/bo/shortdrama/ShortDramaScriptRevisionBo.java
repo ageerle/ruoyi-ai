@@ -10,4 +10,7 @@ public class ShortDramaScriptRevisionBo {
     @NotBlank(message = "修改意见不能为空")
     @Size(max = 10000, message = "修改意见不能超过10000字")
     private String instruction;
+
+    /** Optional exact writing model; omission preserves the configured default. */
+    private String model;
 }

@@ -1,0 +1,11 @@
+{
+  "name": "github-novel-adaptation",
+  "title": "说好 · 小说改编与制作资料",
+  "type": "screenwriting",
+  "description": "把原著证据、改编取舍、人物关系、场景道具和分集剧本串成可追踪的制作资料。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

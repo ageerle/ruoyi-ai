@@ -1,0 +1,11 @@
+{
+  "name": "github-cg-aesthetics",
+  "title": "三维 CG · 造型与材料",
+  "type": "aesthetic",
+  "description": "三维 CG · 造型与材料；按已批准人物、场景与基调维护具体视觉决定。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

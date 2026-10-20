@@ -44,4 +44,12 @@ class ShortDramaVideoResolutionFrameTest {
         assertTrue(ShortDramaVisualAssetService.onlyVideoResolutionChanged(before,after));
         assertTrue(ShortDramaVisualAssetService.onlyVideoResolutionChanged(after,before));
     }
+
+    @Test void changingVideoModelPreservesReviewedImageAndItsContinuity() {
+        var before=shot("{\"start_state\":\"standing\",\"video_model\":\"provider/old\"}");
+        var after=shot("{\"start_state\":\"standing\",\"video_model\":\"provider/mini\"}");
+        assertTrue(ShortDramaVisualAssetService.onlyVideoResolutionChanged(before,after));
+        after.setContinuityJson("{\"start_state\":\"sitting\",\"video_model\":\"provider/mini\"}");
+        assertFalse(ShortDramaVisualAssetService.onlyVideoResolutionChanged(before,after));
+    }
 }

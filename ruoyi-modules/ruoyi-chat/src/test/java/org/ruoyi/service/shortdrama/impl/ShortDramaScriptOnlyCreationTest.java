@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -33,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.Set;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -40,6 +42,7 @@ import static org.mockito.Mockito.*;
 
 @Tag("dev")
 class ShortDramaScriptOnlyCreationTest {
+    @TempDir Path skillRoot;
     private static final String RESPONSE = "{\"projectName\":\"御风\",\"scriptName\":\"云间行\",\"tone\":\"古风幻想\"}\n===SCRIPT===\n《御风》第一集：云间行\n\n一　山谷上空。晴日。\n匠人乘竹骨布面风筝滑翔。\n\n第一集完。";
     private ShortDramaServiceImpl service;
     private ChatModel model;
@@ -87,6 +90,7 @@ class ShortDramaScriptOnlyCreationTest {
         ReflectionTestUtils.setField(service, "visualAssets", visualAssets);
         ReflectionTestUtils.setField(service, "chatModelService", models);
         ReflectionTestUtils.setField(service, "chatServiceFactory", factory);
+        ReflectionTestUtils.setField(service, "skillCatalog", new ShortDramaSkillCatalog(skillRoot.toString()));
         emitters = new ConcurrentHashMap<>();
         ReflectionTestUtils.setField(service, "activeEmitters", emitters);
         ReflectionTestUtils.setField(service, "planningProgress", new ConcurrentHashMap<>());

@@ -26,4 +26,11 @@ import static org.junit.jupiter.api.Assertions.*;
         assertTrue(ShortDramaImageStyleReferences.direction(false, 3).contains("身份、年龄"));
         assertTrue(ShortDramaImageStyleReferences.direction(false, 3).contains("不复制后者的人脸"));
     }
+    @Test void respectsWardrobeRevisionAndRequestedCharacterLayout() {
+        String direction = ShortDramaImageStyleReferences.direction(false, 3);
+        assertTrue(direction.contains("服装与配色以本轮明确修订为准"));
+        assertTrue(direction.contains("构图按本次资产的明确用途与布局"));
+        assertFalse(direction.contains("输出一个连续单幅"));
+        assertTrue(ShortDramaImageStyleReferences.direction(true, 3).contains("连续单幅场景"));
+    }
 }

@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
             assertFalse(entry.body().isBlank());
             assertEquals(64, entry.version().length());
         }
-        assertEquals(12, entries.stream().filter(e -> e.type().equals("production")).count());
+        assertEquals(15, entries.stream().filter(e -> e.type().equals("production")).count());
         assertTrue(entries.stream().anyMatch(e -> e.name().equals("video-prompt") && e.body().contains("timing")));
         assertTrue(entries.stream().noneMatch(e -> e.name().contains("vue") || e.name().contains("mcp-builder")));
     }

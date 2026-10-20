@@ -1,0 +1,11 @@
+{
+  "name": "github-manju-directing",
+  "title": "漫剧导演 · 空间、动作与表演",
+  "type": "director",
+  "description": "强化空间站位、持物、视线、受力与微表情，面向文戏和动作戏的具体导演规划。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

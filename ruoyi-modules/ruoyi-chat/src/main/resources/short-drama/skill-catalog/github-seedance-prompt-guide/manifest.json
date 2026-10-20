@@ -1,0 +1,11 @@
+{
+  "name": "github-seedance-prompt-guide",
+  "title": "Seedance · 多模态提示词",
+  "type": "director",
+  "description": "按真实参考素材编写身份、动作、运镜和音频职责明确的视频提示词。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

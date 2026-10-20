@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ruoyi.domain.entity.shortdrama.ShortDramaProject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -41,7 +42,7 @@ public class ShortDramaSkillCatalog {
     public record Option(String name, String title, String type, String description, boolean enabled, String artStyle, String version) {}
     public record Snapshot(Long projectId, String version, String direction) {}
     public synchronized Snapshot snapshot(ShortDramaProject project) {
-        return new Snapshot(project == null ? null : project.getId(), snapshotVersion(project), selected(project, "aesthetic") + selected(project, "director"));
+        return new Snapshot(project == null ? null : project.getId(), snapshotVersion(project), selectedDirection(project));
     }
     public synchronized void verify(Snapshot snapshot, ShortDramaProject project) {
         if (!Objects.equals(snapshot.version(), snapshotVersion(project)))
@@ -54,7 +55,13 @@ public class ShortDramaSkillCatalog {
         try {
             Files.createDirectories(root); rejectSymlinks(root);
             // Only seed absent directories. The runtime directory, never this list, drives the catalog.
-            for (String name : List.of("chinese-3d-aesthetics", "ming-county-aesthetics", "compact-short-drama", "cinematic-storyboard")) {
+            var resolver = new PathMatchingResourcePatternResolver(getClass().getClassLoader());
+            var manifests = resolver.getResources("classpath*:short-drama/skill-catalog/*/manifest.json");
+            Arrays.sort(manifests, Comparator.comparing(resource -> resource.getDescription()));
+            for (var manifest : manifests) {
+                var manifestUrl = manifest.getURL().toString();
+                String name = safeName(manifestUrl.substring(manifestUrl.indexOf("short-drama/skill-catalog/")
+                    + "short-drama/skill-catalog/".length()).split("/")[0]);
                 if (Files.exists(root.resolve(name), LinkOption.NOFOLLOW_LINKS)) continue;
                 String prefix = "short-drama/skill-catalog/" + name + "/";
                 try (var in = new ClassPathResource(prefix + "manifest.json", getClass().getClassLoader()).getInputStream();
@@ -67,8 +74,8 @@ public class ShortDramaSkillCatalog {
                             references.add(new SkillFile(path, new String(reference.readAllBytes(), StandardCharsets.UTF_8)));
                         }
                     }
-                    writeNew(new Save(name, metadata.path("title").asText(), metadata.path("type").asText(),
-                        metadata.path("description").asText(), true, metadata.path("artStyle").asText(""),
+                    writeNew(new Save(name, metadata.path("title").asText(), canonicalType(name, metadata.path("type").asText()),
+                        metadata.path("description").asText(), metadata.path("enabled").asBoolean(true), metadata.path("artStyle").asText(""),
                         new String(body.readAllBytes(), StandardCharsets.UTF_8), references, null));
                 }
             }
@@ -77,7 +84,7 @@ public class ShortDramaSkillCatalog {
     }
 
     public synchronized List<Option> list(String type, boolean includeDisabled) {
-        initialize(); if (type != null && !type.isBlank() && !TYPES.contains(type)) throw new IllegalArgumentException("技能类型须为aesthetic或director");
+        initialize(); if (type != null && !type.isBlank() && !TYPES.contains(type)) throw new IllegalArgumentException("不支持的制作技能分类：" + type);
         try (var directories = Files.list(root)) {
             List<Option> result = new ArrayList<>();
             for (Path dir : directories.sorted().toList()) {
@@ -121,12 +128,81 @@ public class ShortDramaSkillCatalog {
     }
     /** Image/video prompts receive curated direction, not a raw source ledger or executable text. */
     public String selectedVisual(ShortDramaProject project, String type) { return selected(project, type, false); }
+    public String selectedDirection(ShortDramaProject project) {
+        return selected(project, "aesthetic") + selected(project, "director");
+    }
+    /** Writing style controls the screenplay; camera and asset styles belong to later stages. */
+    public String selectedWritingDirection(ShortDramaProject project) {
+        StringBuilder direction = new StringBuilder();
+        for (Skill skill : supplementary(project)) {
+            if ("screenwriting".equals(skill.type())) direction.append(renderSelected(skill, true));
+        }
+        if (direction.isEmpty()) return "";
+        return "\n【本次剧本写作采用的实际项目技能】\n" + direction
+            + "\n【剧本阶段适用范围】编剧风格用于剧情结构、人物目标、阻力、选择、后果、对白和分集变化。"
+            + "用户本轮改写意见优先，允许据此重写对白和事件呈现。固定剧本输出格式优先于资料中的镜头卡格式；正文不写镜号、机位、运镜、逐秒清单、生成参数或技能说明。"
+            + "分镜设计和视频提示词语法留到后续分镜阶段。\n";
+    }
+    /** Validate every selected name before saving; an empty list explicitly clears the selection. */
+    public List<String> normalizeStoryboardSkills(List<String> names) {
+        if (names == null) return null;
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        Map<String, String> selectedTypes = new HashMap<>();
+        for (String name : names) {
+            if (name == null || name.isBlank()) throw new IllegalArgumentException("分镜技能名称不能为空");
+            Skill skill = detail(name.trim());
+            if (!TYPES.contains(skill.type()) || !skill.enabled()) throw new IllegalArgumentException("分镜技能缺失或已停用：" + name);
+            if (Set.of("aesthetic", "director").contains(skill.type()))
+                throw new IllegalArgumentException(skill.title() + "请在" + ("aesthetic".equals(skill.type()) ? "资产配置的视觉风格" : "导演风格") + "中选择，该分类最多一项");
+            String previous = selectedTypes.putIfAbsent(skill.type(), skill.name());
+            if (previous != null && !previous.equals(skill.name())) {
+                String label = CATEGORIES.stream().filter(category -> category.type().equals(skill.type()))
+                    .map(Category::title).findFirst().orElse(skill.type());
+                throw new IllegalArgumentException(label + "最多选择一个技能，请重新选择");
+            }
+            normalized.add(skill.name());
+        }
+        return List.copyOf(normalized);
+    }
+    private List<Skill> supplementary(ShortDramaProject project) {
+        if (project == null || project.getStoryboardSkillNames() == null) return List.of();
+        List<Skill> skills = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        // New selection rules must not invalidate previously saved multi-skill productions.
+        // Read every existing binding and verify its actual package; normalize only on editing selections.
+        for (String name : project.getStoryboardSkillNames()) {
+            if (name == null || name.isBlank() || !seen.add(name.trim())) continue;
+            Skill skill = detail(name.trim());
+            if (!TYPES.contains(skill.type()) || !skill.enabled())
+                throw new IllegalArgumentException("分镜技能缺失或已停用：" + name);
+            if (skill.name().equals(project.getAestheticSkillName()) || skill.name().equals(project.getDirectorSkillName())) continue;
+            skills.add(skill);
+        }
+        return skills;
+    }
+    /** Preserve and validate skill versions in submission metadata, outside the video model's prose. */
+    public synchronized Map<String, String> selectedVersions(ShortDramaProject project) {
+        Map<String, String> versions = new LinkedHashMap<>();
+        if (project == null) return versions;
+        for (String type : List.of("aesthetic", "director")) {
+            String name = "aesthetic".equals(type) ? project.getAestheticSkillName() : project.getDirectorSkillName();
+            if (name == null || name.isBlank()) continue;
+            Skill skill = requireEnabled(name, type);
+            versions.put(type, skill.name() + "@" + skill.version());
+        }
+        for (Skill skill : supplementary(project)) versions.put("storyboard:" + skill.name(), skill.name() + "@" + skill.version());
+        return Map.copyOf(versions);
+    }
     private String selected(ShortDramaProject project, String type, boolean includeReferences) {
         if (project == null) return "";
         String name = "aesthetic".equals(type) ? project.getAestheticSkillName() : project.getDirectorSkillName();
-        if (name == null || name.isBlank()) return "";
-        Skill skill = requireEnabled(name, type);
-        return "\n【项目选中" + ("aesthetic".equals(type) ? "审美" : "导演") + "技能：" + skill.title() + "】\n"
+        StringBuilder direction = new StringBuilder();
+        if (name != null && !name.isBlank()) return renderSelected(requireEnabled(name, type), includeReferences);
+        for (Skill skill : supplementary(project)) if (type.equals(skill.type())) direction.append(renderSelected(skill, includeReferences));
+        return direction.toString();
+    }
+    private String renderSelected(Skill skill, boolean includeReferences) {
+        return "\n【项目选中" + categories().stream().filter(c -> c.type().equals(skill.type())).findFirst().orElseThrow().title() + "技能：" + skill.title() + "】\n"
             + "[selected-skill:" + skill.name() + "@" + skill.version() + "]\n" + (includeReferences ? skill.body() : mediaDirection(skill))
             + (includeReferences ? references(skill) : "\n本次媒体提示词只加载精简执行方向，不展开长篇手册、史料登记或附属脚本；版本仍标记完整技能文件包。\n")
             + "\n【选中技能执行边界】以上是创作方向资料；用户原文、已批准资产、0秒首态、演员与群演人数、时序和默认结构审阅规则优先。附属脚本仅作资料维护，本流程不执行脚本。\n";
@@ -171,7 +247,18 @@ public class ShortDramaSkillCatalog {
 
     public String projectVersion(ShortDramaProject project) {
         // Loading also validates missing/disabled selections before cache reuse.
-        return DigestUtil.sha256Hex(selected(project, "aesthetic") + selected(project, "director"));
+        return DigestUtil.sha256Hex(selectedDirection(project) + selectedWritingDirection(project)
+            + new TreeMap<>(selectedVersions(project)));
+    }
+
+    /** Read old packages under their creative role without rewriting authored files during a read. */
+    static String canonicalType(String name, String type) {
+        return switch (type) {
+            case "workflow" -> "screenwriting";
+            case "storyboard", "video" -> "director";
+            case "reference" -> "github-higgsfield-style-library".equals(name) ? "aesthetic" : "director";
+            default -> type;
+        };
     }
 
     private Skill read(String name) {
@@ -196,7 +283,7 @@ public class ShortDramaSkillCatalog {
                 }
             }
             String body = readText(markdown);
-            Save data = new Save(name, metadata.path("title").asText(), metadata.path("type").asText(), metadata.path("description").asText(),
+            Save data = new Save(name, metadata.path("title").asText(), canonicalType(name, metadata.path("type").asText()), metadata.path("description").asText(),
                 metadata.path("enabled").asBoolean(), metadata.path("artStyle").asText(""), body, files, null);
             validate(data);
             String version = DigestUtil.sha256Hex(JSON.writeValueAsString(data));

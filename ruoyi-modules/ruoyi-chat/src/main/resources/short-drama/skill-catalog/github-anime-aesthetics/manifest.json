@@ -1,0 +1,11 @@
+{
+  "name": "github-anime-aesthetics",
+  "title": "动漫动作 · 轮廓与动势",
+  "type": "aesthetic",
+  "description": "动漫动作 · 轮廓与动势；按已批准人物、场景与基调维护具体视觉决定。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

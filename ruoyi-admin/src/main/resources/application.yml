@@ -122,9 +122,9 @@ spring:
   servlet:
     multipart:
       # 单个文件大小
-      max-file-size: 10MB
+      max-file-size: 30MB
       # 设置总上传的文件大小
-      max-request-size: 20MB
+      max-request-size: 40MB
   mvc:
     # 设置静态资源路径 防止所有请求都去查静态资源
     static-path-pattern: /static/**

@@ -1,0 +1,11 @@
+{
+  "name": "github-seedance-directing",
+  "title": "Seedance · 表演、摄影与声音",
+  "type": "director",
+  "description": "为已确认故事规划有动机的摄影、表演、声音和跨段接续；不绑定单一供应商参数。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

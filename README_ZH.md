@@ -30,6 +30,7 @@
 | 管理端 | http://129.226.199.247:25666 | admin / admin123 |
 | 用户端 | http://129.226.199.247:25137 | admin / admin123 |
 | 商业版 | https://web.ruoyiai.chat | 微信扫码登录 |
+| 新版演示 | [code.ruoyiai.chat](https://code.ruoyiai.chat/) | — |
 
 ## ✨ 核心亮点
 

@@ -1,0 +1,11 @@
+{
+  "name": "github-comic-motion-aesthetics",
+  "title": "漫画运动 · 画面层级与连续性",
+  "type": "aesthetic",
+  "description": "漫画运动 · 画面层级与连续性；按已批准人物、场景与基调维护具体视觉决定。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

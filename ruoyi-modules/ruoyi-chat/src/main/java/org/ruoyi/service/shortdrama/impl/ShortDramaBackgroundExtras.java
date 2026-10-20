@@ -11,7 +11,7 @@ final class ShortDramaBackgroundExtras {
     private static final Pattern COUNT = Pattern.compile("^0(?:秒|s)\\s*[：:]\\s*可见人数\\s*[=:：]\\s*(\\d+)(?:\\s*[-–—~～至]\\s*(\\d+))?\\s*[；;]");
     // Role/category vocabulary, rather than a list of identities from any particular drama.
     // A generic occupation alias does not uniquely identify its registered foreground representative.
-    private static final String CATEGORY = "军队|敌军|守军|援军|骑兵|步兵|乱兵|溃兵|散兵|兵卒|军士|士兵|军群|群众|百姓|村民|乡亲|路人|行人|人群|众人|同伴|差役|衙役|工匠|宾客|队伍|护卫|兵士|乡勇|徒弟|学徒|学生|工人|农民|农户|商人|顾客|乘客|医护人员|护士|医生|警员|警察|记者|店员|伙计|侍卫|侍从|仆人|仆役|富户|宫女|老人|老汉|少年|少女|儿童";
+    private static final String CATEGORY = "军队|敌军|守军|援军|骑兵|步兵|乱兵|溃兵|散兵|兵卒|守卒|守卫|军士|士兵|军群|群众|百姓|村民|乡亲|路人|行人|人群|众人|同伴|差役|衙役|工匠|宾客|队伍|护卫|兵士|乡勇|徒弟|学徒|学生|工人|农民|农户|商人|顾客|乘客|医护人员|护士|医生|警员|警察|记者|店员|伙计|侍卫|侍从|仆人|仆役|富户|宫女|老人|老汉|少年|少女|儿童";
     private static final Pattern GROUP = Pattern.compile(CATEGORY);
     private static final Pattern GENERIC_NAME = Pattern.compile("^(?:(?:前景|后景|年轻|年老|老|小|普通|匿名|无名|一名|领队的|排首的|带头的|男|女))*(?:" + CATEGORY + ")$");
     static boolean genericRole(String name) { return name != null && GENERIC_NAME.matcher(name.trim()).matches(); }

@@ -8,6 +8,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("dev")
 class ShortDramaCharacterArtPromptTest {
+    @Test void naturalFullBodyCompositionDoesNotReintroduceDefaultSheet() {
+        for (String composition : new String[]{"单幅三分之四完整全身服装母版", "单张完整全身定妆", "单幅3/4全身母版"}) {
+            String prompt = ShortDramaCharacterArtPrompt.reference("成年男子。" + composition + "，不拼贴、分格、三视图。", "custom-skill");
+            assertTrue(prompt.contains("单幅身份定妆图：一个完整全身人物"));
+            assertFalse(prompt.contains(ShortDramaImageConstants.CHARACTER_PROMPT_PREFIX));
+            assertFalse(prompt.contains(ShortDramaImageConstants.CHARACTER_PROMPT_SUFFIX));
+        }
+        assertTrue(ShortDramaCharacterArtPrompt.reference("成年男子，完整全身，附脸部与三视图", "custom-skill")
+            .contains(ShortDramaImageConstants.CHARACTER_PROMPT_SUFFIX));
+    }
     @Test void explicitPortraitDoesNotBecomeFullBodyOrMultiViewSheet() {
         String description = "单幅头肩面部母版，24岁男子，完整乌纱帽，脸高占画面55%，双眼均在焦内";
         String prompt = ShortDramaCharacterArtPrompt.reference(description, "custom-skill");

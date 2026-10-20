@@ -1,0 +1,11 @@
+{
+  "name": "github-drama-workflow",
+  "title": "ZenStory · 分阶段制作流程",
+  "type": "screenwriting",
+  "description": "按创作阶段组织原著、剧本、视觉、分镜、提示词、生成和剪辑，支持中途接管与返修。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

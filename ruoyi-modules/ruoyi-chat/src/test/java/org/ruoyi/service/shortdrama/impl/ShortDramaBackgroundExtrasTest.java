@@ -69,6 +69,15 @@ class ShortDramaBackgroundExtrasTest {
         var malformedObject = JSON.createObjectNode(); malformedObject.putArray("background_extras");
         assertThrows(IllegalArgumentException.class, () -> ShortDramaBackgroundExtras.readText(malformedObject));
     }
+
+    @Test void guardsInOriginalActionMayBeAnonymousAlongsideARegisteredYoungGuard() {
+        var young = character(99L, "年轻守卒", "");
+        var panel = anonymousPanel();
+        panel.setBackgroundExtras("0秒：可见人数=3；身份服饰=匿名守卒，灰布衣；位置=门板边；姿态动作=弓身抵住门板");
+        assertDoesNotThrow(() -> ShortDramaBackgroundExtras.validateScene("守卒探身查看。门内的守卒仍在顶门，年轻守卒靠在一侧。", List.of(young), List.of(panel)));
+        assertThrows(ShortDramaSceneCheckpoint.BindingMismatch.class,
+            () -> ShortDramaBackgroundExtras.validateScene("年轻守卒独自留在门边。", List.of(young), List.of(panel)));
+    }
     @Test void explicitZeroExtrasNeedNeitherCostumesNorSourceCrowds() {
         var p = ShortDramaSceneCheckpointTest.panel();
         p.setBackgroundExtras("0秒：可见人数=0；无匿名群演");
@@ -120,14 +129,29 @@ class ShortDramaBackgroundExtrasTest {
         assertTrue(prompt.contains("严格只有1人：工匠")); assertTrue(prompt.contains("0秒匿名群演可见人数=0"));
         assertFalse(prompt.contains("将在第3秒进入门口"));
     }
-    @Test void namedCloseUpVideoIdentityRuleRespectsExplicitAnonymousExtras() throws Exception {
-        var service = mock(ShortDramaServiceImpl.class, CALLS_REAL_METHODS); var ref = new CharacterRef(); ref.setName("工匠");
-        var shot = shot(List.of("工匠"), EXTRAS); shot.setShotType("人物近景"); var sb = new StringBuilder();
-        ReflectionTestUtils.invokeMethod(service, "appendCharacterIdentityIsolationPrompt", sb, shot, List.of(ref), List.of("https://example.test/face.png"));
-        assertTrue(sb.toString().contains("0秒匿名群演必须按background_extras保留")); assertFalse(sb.toString().contains("只允许一张"));
-        shot = shot(List.of("工匠"), null); shot.setShotType("人物近景"); sb = new StringBuilder();
-        ReflectionTestUtils.invokeMethod(service, "appendCharacterIdentityIsolationPrompt", sb, shot, List.of(ref), List.of("https://example.test/face.png"));
-        assertTrue(sb.toString().contains("只允许一张可辨认人脸"));
+    @Test void namedCloseUpReferencePreservesDirectedExtrasWithoutAddingASoloFaceRule() throws Exception {
+        var service = mock(ShortDramaServiceImpl.class, CALLS_REAL_METHODS);
+        var characters = mock(org.ruoyi.mapper.shortdrama.ShortDramaCharacterMapper.class);
+        var appearances = mock(org.ruoyi.mapper.shortdrama.ShortDramaCharacterAppearanceMapper.class);
+        var actor = character(1L, "工匠", ""); actor.setReferenceImageUrl("https://example.test/face.png");
+        when(characters.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(actor));
+        ReflectionTestUtils.setField(service, "characterMapper", characters);
+        ReflectionTestUtils.setField(service, "characterAppearanceMapper", appearances);
+        ReflectionTestUtils.setField(service, "projectMapper", mock(org.ruoyi.mapper.shortdrama.ShortDramaProjectMapper.class));
+        ReflectionTestUtils.setField(service, "skillCatalog", mock(ShortDramaSkillCatalog.class));
+        ReflectionTestUtils.setField(service, "visualAssets", mock(ShortDramaVisualAssetService.class));
+        var shot = shot(List.of("工匠"), EXTRAS); shot.setProjectId(10L); shot.setShotType("人物近景");
+        shot.setVideoPrompt("工匠保持近景，后方保留不同脸型的匿名军士。" + EXTRAS);
+        String continuity = shot.getContinuityJson();
+        String prompt = ReflectionTestUtils.invokeMethod(service, "buildEnrichedVideoPrompt", shot, List.of(actor.getReferenceImageUrl()), null);
+        assertNotNull(prompt); assertTrue(prompt.startsWith(shot.getVideoPrompt()));
+        assertTrue(prompt.contains("工匠的身份与衣装对应@image1")); assertFalse(prompt.contains("只允许一张"));
+        assertEquals(continuity, shot.getContinuityJson());
+        shot = shot(List.of("工匠"), null); shot.setProjectId(10L); shot.setShotType("人物近景");
+        shot.setVideoPrompt("工匠独自抬头，画内只允许一张可辨认人脸。");
+        prompt = ReflectionTestUtils.invokeMethod(service, "buildEnrichedVideoPrompt", shot, List.of(actor.getReferenceImageUrl()), null);
+        assertNotNull(prompt); assertTrue(prompt.startsWith(shot.getVideoPrompt()));
+        assertFalse(prompt.contains(EXTRAS));
     }
     @Test void eachPanelBindsOneRealLocationInsideOneMultiLocationSourceScene() {
         var assets = ShortDramaSceneCheckpointTest.assets(); assets.locations().get(0).setName("县城城头_秋日");

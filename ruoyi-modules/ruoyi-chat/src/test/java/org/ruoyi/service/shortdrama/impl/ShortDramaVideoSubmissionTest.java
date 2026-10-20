@@ -17,6 +17,8 @@ import org.ruoyi.common.chat.service.video.IVideoGenerationService;
 import org.ruoyi.domain.entity.shortdrama.ShortDramaProject;
 import org.ruoyi.domain.entity.shortdrama.ShortDramaStoryboard;
 import org.ruoyi.domain.vo.shortdrama.ShortDramaStoryboardVo;
+import org.ruoyi.domain.bo.shortdrama.ShortDramaVideoRejectionBo;
+import org.ruoyi.service.video.VideoSubmissionRejectedException;
 import org.ruoyi.mapper.shortdrama.ShortDramaProjectMapper;
 import org.ruoyi.mapper.shortdrama.ShortDramaStoryboardMapper;
 import org.ruoyi.service.shortdrama.IShortDramaVideoComposeService;
@@ -67,6 +69,9 @@ class ShortDramaVideoSubmissionTest {
         var videos = mock(VideoServiceFactory.class);
         var assets = mock(ShortDramaVisualAssetService.class);
         var sounds = mock(ShortDramaSoundService.class);
+        var motion = mock(ShortDramaVideoReferenceService.class);
+        when(motion.selected(anyLong(), anyLong(), nullable(String.class))).thenReturn(List.of());
+        when(motion.transport(anyLong(), any(), anyList())).thenReturn(List.of());
         var voices = mock(ShortDramaCharacterVoiceService.class);
         when(voices.plan(any(),nullable(String.class),anyBoolean())).thenReturn(new ShortDramaCharacterVoiceService.Plan(List.of(),List.of(),"",List.of(),false,List.of()));
         var skills = mock(ShortDramaSkillCatalog.class);
@@ -99,12 +104,87 @@ class ShortDramaVideoSubmissionTest {
         fields(Map.of("storyboardMapper", mapper, "projectMapper", projects, "videoServiceFactory", videos,
             "visualAssets", assets, "sounds", sounds, "chatModelService", models, "videoSubmissions", store,
             "storyboardGenerationStates", new ConcurrentHashMap<>(), "videoComposeService", mock(IShortDramaVideoComposeService.class), "skillCatalog",skills));
+        ReflectionTestUtils.setField(service,"motionReferences",motion);
         ReflectionTestUtils.setField(service,"characterVoices",voices);
     }
 
     private void fields(Map<String, Object> fields) { fields.forEach((name, value) -> ReflectionTestUtils.setField(service, name, value)); }
     private static ChatModelVo model(String name) { var model = new ChatModelVo(); model.setModelName(name); model.setProviderCode("fixture"); return model; }
     private String request() { return UUID.randomUUID().toString(); }
+    private void atlasProvider() {
+        var videos = (VideoServiceFactory) ReflectionTestUtils.getField(service, "videoServiceFactory");
+        var requested = model(MODEL); requested.setProviderCode("atlas");
+        var actual = model(ACTUAL); actual.setProviderCode("atlas");
+        ShortDramaAtlasTestModels.register(models, MODEL, requested, "video");
+        ShortDramaAtlasTestModels.register(models, ACTUAL, actual, "video");
+        when(videos.getOriginalService("atlas")).thenReturn(provider);
+    }
+    private static final String BALANCE_REJECTION = "{\"code\":402,\"msg\":\"insufficient balance\"}";
+
+    @Test void explicitBalanceRejectionReleasesOnlyLocalClaimAndKeepsPreviousPaidFile() {
+        atlasProvider();
+        shot.setVideoStatus("done"); shot.setVideoId("old-id"); shot.setVideoUrl("https://example.com/approved.mp4"); shot.setLastFrameUrl("old-frame");
+        when(provider.generateVideo(any())).thenThrow(VideoSubmissionRejectedException.atlasResponse(402, BALANCE_REJECTION));
+        String id = request(); var result = generate(id, true);
+        assertEquals("failed", result.getVideoStatus()); assertNull(result.getVideoId());
+        assertEquals("https://example.com/approved.mp4", result.getVideoUrl()); assertEquals("old-frame", result.getLastFrameUrl());
+        var receipt = store.read(99L, id);
+        assertNull(receipt.predictionId()); assertEquals("failed", receipt.status());
+        assertTrue(receipt.error().contains("HTTP 402")); assertEquals("old-id", receipt.previousVideo().videoId());
+        generate(id, true); verify(provider, times(1)).generateVideo(any());
+        doReturn(MediaGenerationResponse.builder().id("new-id").status("processing").build()).when(provider).generateVideo(any());
+        generate(request(), false); verify(provider, times(2)).generateVideo(any());
+        assertEquals("new-id", shot.getVideoId());
+    }
+
+    @Test void uncertainResponseCannotBeReclassifiedAsBalanceRejection() {
+        assertNull(VideoSubmissionRejectedException.atlasResponse(504, BALANCE_REJECTION));
+        assertNull(VideoSubmissionRejectedException.atlasResponse(500, BALANCE_REJECTION));
+        assertNull(VideoSubmissionRejectedException.atlasResponse(402, "{\"code\":402,\"msg\":\"insufficient balance\",\"data\":{\"id\":\"accepted\"}}"));
+        assertNull(VideoSubmissionRejectedException.atlasResponse(402, "not json"));
+        assertNull(VideoSubmissionRejectedException.atlasResponse(402, "{\"code\":400,\"msg\":\"insufficient balance\"}"));
+        when(provider.generateVideo(any())).thenThrow(new IllegalArgumentException("HTTP 504 with insufficient balance in upstream text"));
+        String id = request(); generate(id, false);
+        assertEquals("submission_unknown", store.read(99L, id).status());
+        generate(request(), true); verify(provider, times(1)).generateVideo(any());
+    }
+
+    @Test void legacyBalanceRecoveryRequiresOwnerAndExactClaimAndDoesNotCreatePredictionOrPayment() {
+        atlasProvider();
+        when(provider.generateVideo(any())).thenThrow(new IllegalArgumentException("Atlas Cloud视频生成任务创建失败: 402 - " + BALANCE_REJECTION));
+        String id = request(); generate(id, false);
+        var evidence = new ShortDramaVideoRejectionBo(402, BALANCE_REJECTION, "Runtime log verified requestId=" + id + ": HTTP 402, no prediction ID");
+        assertThrows(IllegalArgumentException.class, () -> service.confirmVideoSubmissionRejection(99L, id, 2L, evidence));
+        assertThrows(IllegalArgumentException.class, () -> service.confirmVideoSubmissionRejection(99L, id, 1L,
+            new ShortDramaVideoRejectionBo(402, BALANCE_REJECTION, "Runtime log refers to another request " + request())));
+        assertThrows(IllegalArgumentException.class, () -> service.confirmVideoSubmissionRejection(99L, id, 1L,
+            new ShortDramaVideoRejectionBo(504, BALANCE_REJECTION, evidence.evidence())));
+        assertEquals("submission_unknown", shot.getVideoStatus());
+        var recovered = service.confirmVideoSubmissionRejection(99L, id, 1L, evidence);
+        assertEquals("failed", recovered.getVideoStatus()); assertNull(recovered.getVideoId());
+        assertNull(store.read(99L, id).predictionId()); assertTrue(store.read(99L, id).error().contains(id));
+        service.confirmVideoSubmissionRejection(99L, id, 1L, evidence);
+        verify(provider, times(1)).generateVideo(any()); verify(provider, never()).retrieveVideo(any());
+    }
+
+    @Test void legacyBalanceEvidenceCannotOverwriteAnAcceptedPrediction() {
+        atlasProvider(); String id = request(); generate(id, false);
+        var evidence = new ShortDramaVideoRejectionBo(402, BALANCE_REJECTION, "Runtime log verified requestId=" + id + ": HTTP 402");
+        assertThrows(IllegalStateException.class, () -> service.confirmVideoSubmissionRejection(99L, id, 1L, evidence));
+        assertEquals("prediction-1", shot.getVideoId()); assertEquals("generating", store.read(99L, id).status());
+        verify(provider, times(1)).generateVideo(any());
+    }
+
+    @Test void savedModelChoiceBlocksAnotherModelBeforeAnyPaidSubmission() {
+        shot.setContinuityJson("{\"video_model\":\"" + MODEL + "\",\"video_seconds\":-1,\"video_resolution\":\"720p\"}");
+        String wrongRequest = request();
+        assertThrows(IllegalArgumentException.class, () -> service.generateVideo(99L, "other/video-model", 1L, wrongRequest, false));
+        verifyNoInteractions(provider, models); assertNull(store.read(99L, wrongRequest));
+        generate(request(), false);
+        var capture = org.mockito.ArgumentCaptor.forClass(VideoContext.class); verify(provider).generateVideo(capture.capture());
+        assertEquals(-1, capture.getValue().getSeconds()); assertEquals("720p", capture.getValue().getResolution());
+        assertEquals(ACTUAL, capture.getValue().getChatModelVo().getModelName());
+    }
     @Test void boundVoiceIsAttachedWithStableIdentityOnSingleRegenerateAndRetry() throws Exception {
         String referenceModel="bytedance/seedance-2.0-mini/reference-to-video";
         String requestedModel="bytedance/seedance-2.0-mini/text-to-video";
@@ -128,6 +208,25 @@ class ShortDramaVideoSubmissionTest {
     }
     private ShortDramaStoryboardVo generate(String request, boolean regenerate) { return service.generateVideo(99L, MODEL, 1L, request, regenerate); }
 
+    @Test void motionReferenceIsSentOnceAndContentChangesCannotReuseThePaidRequest() {
+        String referenceModel="bytedance/seedance-2.0-mini/reference-to-video";
+        ShortDramaAtlasTestModels.register(models, referenceModel, model(referenceModel), "video");
+        var motion=(ShortDramaVideoReferenceService)ReflectionTestUtils.getField(service,"motionReferences");
+        var clip=new ShortDramaVideoReferenceService.Clip("00000000-0000-0000-0000-000000000001","白模.mp4",12,1280,720,24,1000,"immutable-hash");
+        when(motion.selected(anyLong(),anyLong(),nullable(String.class))).thenReturn(List.of(clip));
+        when(motion.transport(anyLong(),any(),anyList())).thenReturn(List.of("https://example.com/motion.mp4"));
+        String first=request();service.generateVideo(99L,referenceModel,1L,first,false);
+        var capture=org.mockito.ArgumentCaptor.forClass(VideoContext.class);verify(provider).generateVideo(capture.capture());
+        assertEquals(List.of("https://example.com/motion.mp4"),capture.getValue().getReferenceVideos());
+        assertTrue(capture.getValue().getPrompt().contains("@video1"));
+        service.generateVideo(99L,referenceModel,1L,first,false);
+        verify(provider,times(1)).generateVideo(any());verify(motion,times(1)).transport(anyLong(),any(),anyList());
+        var changed=new ShortDramaVideoReferenceService.Clip(clip.id(),clip.name(),clip.duration(),1280,720,24,1000,"changed-hash");
+        when(motion.selected(anyLong(),anyLong(),nullable(String.class))).thenReturn(List.of(changed));
+        assertThrows(IllegalArgumentException.class,()->service.generateVideo(99L,referenceModel,1L,first,false));
+        verify(provider,times(1)).generateVideo(any());
+    }
+
     @Test void repeatedRequestAndAnotherUuidNeverSubmitAnAcceptedShotAgain() {
         String id = request(); generate(id, false); generate(id, false); generate(request(), false);
         verify(provider, times(1)).generateVideo(any());
@@ -141,7 +240,7 @@ class ShortDramaVideoSubmissionTest {
         var capture=org.mockito.ArgumentCaptor.forClass(VideoContext.class);
         verify(provider).generateVideo(capture.capture());
         assertNull(capture.getValue().getSeconds());
-        assertTrue(capture.getValue().getPrompt().contains("未指定视频秒数"));
+        assertFalse(capture.getValue().getPrompt().contains("视频秒数"));
         assertFalse(capture.getValue().getPrompt().contains("【目标时长】1秒"));
     }
 
@@ -170,7 +269,7 @@ class ShortDramaVideoSubmissionTest {
         var capture=org.mockito.ArgumentCaptor.forClass(VideoContext.class);
         verify(provider).generateVideo(capture.capture());
         assertEquals(6,capture.getValue().getSeconds());
-        assertTrue(capture.getValue().getPrompt().contains("【用户指定视频时长】6秒"));
+        assertFalse(capture.getValue().getPrompt().contains("【用户指定视频时长】"));
         shot.setVideoStatus("done");shot.setVideoUrl("https://example.com/approved.mp4");
         shot.setContinuityJson("{\"start_state\":\"站立\",\"end_state\":\"右手留纸上\"}");
         generate(request(),true);
@@ -209,6 +308,70 @@ class ShortDramaVideoSubmissionTest {
         generate(id, false); generate(request(), true);
         verify(provider, times(1)).generateVideo(any());
         assertEquals("submission_unknown", new ShortDramaVideoSubmissionStore(directory).read(99L, id).status());
+    }
+
+    @Test void historyRecoveryConfirmsFailureBeforeANewUuidCanRetry() {
+        when(provider.generateVideo(any())).thenThrow(new IllegalStateException("gateway timeout"));
+        String first = request(); generate(first, false);
+        when(provider.retrieveVideo(any())).thenReturn(MediaGenerationResponse.builder().id("history-id").status("failed")
+            .rawResponse("{\"data\":{\"id\":\"history-id\",\"status\":\"failed\"}}").build());
+        var recovered = service.resolveVideoSubmission(99L, first, "history-id", 1L);
+        assertEquals("failed", recovered.getVideoStatus()); assertEquals("history-id", recovered.getVideoId());
+        assertEquals("history-id", store.read(99L, first).predictionId());
+        doReturn(MediaGenerationResponse.builder().id("retry-id").status("processing").build()).when(provider).generateVideo(any());
+        generate(request(), false);
+        verify(provider, times(2)).generateVideo(any());
+        assertEquals("failed", store.read(99L, first).status());
+    }
+
+    @Test void unconfirmedHistoryIdKeepsUnknownClaimAndDoesNotPayAgain() {
+        when(provider.generateVideo(any())).thenThrow(new IllegalStateException("gateway timeout"));
+        String first = request(); generate(first, false);
+        when(provider.retrieveVideo(any())).thenReturn(MediaGenerationResponse.builder().id("history-id").status("failed")
+            .rawResponse("{\"error\":\"not found\"}").build());
+        assertThrows(IllegalStateException.class, () -> service.resolveVideoSubmission(99L, first, "history-id", 1L));
+        assertEquals("local:" + first, shot.getVideoId()); assertEquals("submission_unknown", store.read(99L, first).status());
+        generate(request(), true); verify(provider, times(1)).generateVideo(any());
+        assertThrows(IllegalArgumentException.class, () -> service.resolveVideoSubmission(99L, first, "../invalid", 1L));
+    }
+
+    @Test void ownerConfirmedHistoryFailureCanResolveAQueryTimeoutButIsNeverAnAutomaticFallback() {
+        when(provider.generateVideo(any())).thenThrow(new IllegalStateException("submit timeout"));
+        String first = request(); generate(first, false);
+        when(provider.retrieveVideo(any())).thenThrow(new IllegalStateException("query timeout"));
+        assertThrows(IllegalStateException.class, () -> service.resolveVideoSubmission(99L, first, "history-id", 1L));
+        assertEquals("submission_unknown", store.read(99L, first).status());
+        var resolved = service.resolveVideoSubmission(99L, first, "history-id", 1L,
+            "Owner checked provider history history-id: failed, matching prompt and assets; retry authorized");
+        assertEquals("failed", resolved.getVideoStatus()); assertEquals("history-id", resolved.getVideoId());
+        assertTrue(store.read(99L, first).error().contains("Owner checked"));
+        verify(provider, times(1)).generateVideo(any());
+    }
+
+    @Test void uploadedReferenceChangesOnlyTransportAndParametersFingerprint() {
+        shot.setContinuityJson("{\"video_reference_mirrors\":{\"https://example.com/reviewed.png\":\"https://provider.test/upload.png\"}}");
+        generate(request(), false);
+        var capture = org.mockito.ArgumentCaptor.forClass(VideoContext.class); verify(provider).generateVideo(capture.capture());
+        assertEquals(List.of("https://provider.test/upload.png"), capture.getValue().getReferenceImages());
+        verify((ShortDramaVisualAssetService) ReflectionTestUtils.getField(service, "visualAssets"), atLeastOnce()).readyFrame(99L);
+    }
+
+    @Test void videoReferenceUploadUsesTheSelectedModelsLimitWithoutRaisingImageLimits() throws Exception {
+        String mini = "bytedance/seedance-2.0-mini/reference-to-video";
+        ShortDramaAtlasTestModels.register(models, mini, model(mini), "video");
+        var images = mock(org.ruoyi.common.chat.factory.ImageServiceFactory.class);
+        var imageProvider = mock(org.ruoyi.common.chat.service.image.IImageGenerationService.class);
+        ReflectionTestUtils.setField(service, "imageServiceFactory", images);
+        when(images.getOriginalService("atlas")).thenReturn(imageProvider);
+        var file = mock(org.springframework.web.multipart.MultipartFile.class);
+        when(file.getSize()).thenReturn(12L * 1024 * 1024); when(file.getContentType()).thenReturn("image/png");
+        when(file.getOriginalFilename()).thenReturn("original.png"); when(file.getBytes()).thenReturn(new byte[]{1,2,3});
+        when(imageProvider.uploadMedia(any(), any(), anyString(), anyString())).thenReturn("https://provider.test/copy.png");
+        assertEquals("https://provider.test/copy.png", service.uploadReferenceImage(file, mini, 1L));
+        assertThrows(IllegalArgumentException.class, () -> service.uploadReferenceImage(file, MODEL, 1L));
+        when(file.getSize()).thenReturn(30L * 1024 * 1024);
+        assertThrows(IllegalArgumentException.class, () -> service.uploadReferenceImage(file, mini, 1L));
+        verify(imageProvider, times(1)).uploadMedia(any(), any(), anyString(), anyString());
     }
 
     @Test void doneIsReturnedWithoutEvenResolvingNewModelOrReviewingAnOldDraft() {

@@ -1,0 +1,11 @@
+{
+  "name": "github-higgsfield-style-library",
+  "title": "影视风格 · 题材与视觉方法库",
+  "type": "aesthetic",
+  "description": "整理电影、CG、手绘、漫画、动作及商业场景的风格方法，供按项目选用。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

@@ -19,8 +19,8 @@ class ShortDramaSkillCatalogTest {
                     new ShortDramaSkillCatalog.SkillFile("scripts/review.py", "raise RuntimeError('MUST NEVER EXECUTE')")), expected);
     }
     @Test void optionsComeFromActualStoredSkillsAndInitializationNeverOverwritesAnEdit() {
-        var catalog = catalog(); assertEquals(2, catalog.list("aesthetic", false).size());
-        assertEquals(2, catalog.list("director", false).size());
+        var catalog = catalog(); assertEquals(8, catalog.list("aesthetic", false).size());
+        assertEquals(8, catalog.list("director", false).size());
         assertTrue(catalog.detail("cinematic-storyboard").files().stream().anyMatch(f -> f.path().equals("references/libtv-sources.md")));
         var created = catalog.save("test-art", input("test-art", "aesthetic", true, "原创审美方向甲", null), true);
         assertTrue(catalog.list("aesthetic", false).stream().anyMatch(s -> s.name().equals("test-art")));
@@ -39,6 +39,44 @@ class ShortDramaSkillCatalogTest {
         assertEquals(current.version(), catalog.detail("test-director").version());
         assertEquals("节奏乙", catalog.detail("test-director").body());
     }
+    @Test void eachSupplementaryCategoryAllowsOneSkillAndPrimaryRolesHaveSeparateFields() {
+        var catalog = catalog();
+        catalog.save("test-writing-a", input("test-writing-a", "screenwriting", true, "人物甲", null), true);
+        catalog.save("test-writing", input("test-writing", "screenwriting", true, "人物诉求", null), true);
+        assertEquals(List.of("test-writing"), catalog.normalizeStoryboardSkills(List.of("test-writing", "test-writing")));
+        assertEquals(List.of(), catalog.normalizeStoryboardSkills(List.of()));
+        assertNull(catalog.normalizeStoryboardSkills(null));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> catalog.normalizeStoryboardSkills(List.of("test-writing-a", "test-writing"))).getMessage().contains("最多选择一个"));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> catalog.normalizeStoryboardSkills(List.of("chinese-3d-aesthetics"))).getMessage().contains("视觉风格"));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> catalog.normalizeStoryboardSkills(List.of("compact-short-drama"))).getMessage().contains("导演风格"));
+        assertTrue(catalog.categories().stream().filter(ShortDramaSkillCatalog.Category::editable).allMatch(ShortDramaSkillCatalog.Category::projectSelectable));
+    }
+    @Test void olderCategoryFilesReadUnderCreativeRolesWithoutOverwritingAuthoredContents() throws Exception {
+        var catalog = catalog();
+        for (String oldType : List.of("workflow", "storyboard", "video", "reference")) {
+            String name = "legacy-" + oldType;
+            String role = "workflow".equals(oldType) ? "screenwriting" : "director";
+            catalog.save(name, input(name, role, true, "用户维护正文", null), true);
+            Path manifest = root.resolve(name + "/manifest.json");
+            String oldManifest = Files.readString(manifest).replace("\"type\" : \"" + role + "\"", "\"type\" : \"" + oldType + "\"");
+            Files.writeString(manifest, oldManifest);
+            assertEquals(role, catalog.detail(name).type());
+            assertEquals("用户维护正文", catalog.detail(name).body());
+            assertEquals(oldManifest, Files.readString(manifest));
+        }
+        assertEquals("aesthetic", ShortDramaSkillCatalog.canonicalType("github-higgsfield-style-library", "reference"));
+    }
+
+    @Test void explicitAssetStyleTakesPrecedenceOverHistoricalSupplementalVisuals() {
+        var catalog = catalog();
+        var visual = catalog.save("legacy-visual", input("legacy-visual", "aesthetic", true, "过往视觉方向", null), true);
+        var project = new ShortDramaProject(); project.setAestheticSkillName("chinese-3d-aesthetics");
+        project.setStoryboardSkillNames(List.of(visual.name()));
+        assertTrue(catalog.selectedVisual(project, "aesthetic").contains("[selected-skill:chinese-3d-aesthetics@"));
+        assertFalse(catalog.selectedVisual(project, "aesthetic").contains(visual.body()));
+        assertEquals(List.of(visual.name()), project.getStoryboardSkillNames());
+    }
+
     @Test void disabledAndMissingBindingsAreReadableButCannotSilentlyGenerateOrReuseCache() {
         var catalog = catalog(); var project = new ShortDramaProject();
         project.setAestheticSkillName("chinese-3d-aesthetics"); project.setDirectorSkillName("compact-short-drama");
@@ -49,7 +87,7 @@ class ShortDramaSkillCatalogTest {
             false, current.artStyle(), current.body(), current.files(), current.version()), false);
         assertFalse(catalog.detail("compact-short-drama").enabled());
         assertTrue(catalog.list("director", false).stream().noneMatch(s -> s.name().equals("compact-short-drama")));
-        assertEquals(2, catalog.list("director", true).size());
+        assertEquals(8, catalog.list("director", true).size());
         assertThrows(IllegalArgumentException.class, () -> catalog.projectVersion(project));
         project.setDirectorSkillName("missing-director");
         assertThrows(IllegalArgumentException.class, () -> catalog.projectVersion(project));
@@ -89,6 +127,38 @@ class ShortDramaSkillCatalogTest {
         assertTrue(llm.contains("原创提炼")); assertTrue(llm.contains("scripts/review.py")); assertFalse(llm.contains("raise RuntimeError"));
         assertFalse(visual.contains("原创提炼")); assertFalse(visual.contains("raise RuntimeError")); assertTrue(visual.contains("已审美术方向"));
         assertTrue(visual.contains(catalog.detail("test-art").version()));
+    }
+
+    @Test void videoVersionsValidateEachActualBindingWithoutReturningSkillBodies() {
+        var catalog = catalog();
+        var art = catalog.save("test-art", input("test-art", "aesthetic", true, "水墨淡彩且允许渗墨", null), true);
+        var director = catalog.save("test-director", input("test-director", "director", true, "克制表演与动作接镜", null), true);
+        var project = new ShortDramaProject(); project.setAestheticSkillName(art.name()); project.setDirectorSkillName(director.name());
+        var versions = catalog.selectedVersions(project);
+        assertEquals(art.name() + "@" + art.version(), versions.get("aesthetic"));
+        assertEquals(director.name() + "@" + director.version(), versions.get("director"));
+        assertFalse(versions.toString().contains(art.body()));
+        catalog.save(director.name(), input(director.name(), "director", false, director.body(), director.version()), false);
+        assertThrows(IllegalArgumentException.class, () -> catalog.selectedVersions(project));
+    }
+    @Test void existingMultiSkillBindingsRemainReadableWithoutWeakeningNewSelectionRules() {
+        var catalog = catalog();
+        var art = catalog.save("legacy-art", input("legacy-art", "aesthetic", true, "旧项目材料方向", null), true);
+        var director = catalog.save("legacy-director", input("legacy-director", "director", true, "旧项目动作方向", null), true);
+        var writer1 = catalog.save("legacy-writer-one", input("legacy-writer-one", "screenwriting", true, "因果写作方向", null), true);
+        var writer2 = catalog.save("legacy-writer-two", input("legacy-writer-two", "screenwriting", true, "改编写作方向", null), true);
+        var project = new ShortDramaProject(); project.setAestheticSkillName("chinese-3d-aesthetics"); project.setDirectorSkillName("github-seedance-directing");
+        var bindings = List.of(art.name(), director.name(), writer1.name(), writer2.name()); project.setStoryboardSkillNames(bindings);
+        var versions = catalog.selectedVersions(project);
+        for (String name : bindings) assertTrue(versions.containsKey("storyboard:" + name));
+        assertTrue(catalog.selectedWritingDirection(project).contains("因果写作方向"));
+        assertTrue(catalog.selectedWritingDirection(project).contains("改编写作方向"));
+        assertFalse(catalog.selectedDirection(project).contains("因果写作方向"));
+        assertFalse(catalog.selectedWritingDirection(project).contains("旧项目动作方向"));
+        assertEquals(bindings, project.getStoryboardSkillNames());
+        assertThrows(IllegalArgumentException.class, () -> catalog.normalizeStoryboardSkills(bindings));
+        catalog.save(writer2.name(), input(writer2.name(), "screenwriting", false, writer2.body(), writer2.version()), false);
+        assertThrows(IllegalArgumentException.class, () -> catalog.selectedVersions(project));
     }
     @Test void longSkillHandbooksDoNotFloodEachMediaPrompt() {
         var catalog = catalog();

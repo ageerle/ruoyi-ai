@@ -250,8 +250,8 @@ public class ShortDramaCharacterVoiceService {
             refs.addAll(sounds.referenceFiles(shot.getProjectId(),shot.getSceneNo()));
             if(model!=null && !model.isBlank())try {ShortDramaVoiceContract.validateReferences(model,refs.stream().map(ShortDramaSoundService.Reference::duration).toList());}catch(IllegalArgumentException e){issues.add(e.getMessage());}
             if(required && !issues.isEmpty())throw new ShortDramaVoiceException("镜"+shot.getSceneNo()+"声音绑定未就绪："+String.join("；",issues));
-            String direction=bindings.isEmpty()?"":"\n【本镜角色声音绑定】\n"+bindings.stream().map(b -> b.characterName()+"（角色ID "+b.characterId()+"）使用 @音频"+b.audioIndex()+" 的音色").reduce((a,b)->a+"\n"+b).orElse("")
-                +"\n这些样音只用于同一角色音色参考。按原对白与声源顺序表演，画外对白仍由对应角色发声；不要朗读样音正文或绑定说明，不给静默听者增加台词。";
+            String direction=bindings.isEmpty()?"":"\n【角色音色】\n"+bindings.stream().map(b -> b.characterName()+"对应@音频"+b.audioIndex()).reduce((a,b)->a+"；"+b).orElse("")
+                +"。仅参考音色，按本镜对白发声，不朗读样音；画外声不驱动画内口型。";
             return new Plan(List.copyOf(bindings),List.copyOf(refs),direction,List.copyOf(issues),resolved.explicit(),resolved.actors().stream().map(c -> c.getId().toString()).toList());
         } catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("角色声音档案无法读取，请修复后再生成视频",e);}
     }

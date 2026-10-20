@@ -15,6 +15,20 @@ import static org.mockito.Mockito.*;
 
 @Tag("dev")
 class ShortDramaVideoPromptReviewTest {
+    @Test void doorwayReviewFindsMissingTransitWithoutDictatingDoorSwing() {
+        String vague = "旧库房，中景跟拍，周慎推门进屋。冷灰天光，只有脚步声，无对白。";
+        assertEquals(3, ShortDramaVideoPromptReview.issues(vague, null, "周慎推门进屋。").stream()
+            .filter(s -> s.contains("进出门动作")).count());
+        String clear = "旧库房，周慎起初站在门外，中景固定机位，镜头在门外院内。周慎把门向外拉开让到一旁，再迈步跨过门槛进入屋内，站到炮旁。冷灰天光，只有脚步声，无对白。";
+        assertTrue(ShortDramaVideoPromptReview.issues(clear, null, "周慎进屋。").isEmpty());
+        String exit = "旧库房，周慎起初站在屋内，中景固定机位，摄影机在门内。周慎迈步跨过门槛走出屋外，钥匙仍挂在腰间。冷灰天光，只有脚步声，无对白。";
+        assertTrue(ShortDramaVideoPromptReview.issues(exit, null, "周慎出门。").isEmpty());
+        assertDoesNotThrow(() -> ShortDramaVideoPromptReview.validate(1, vague, null, "周慎进屋。"));
+        for (String source : List.of("周慎打开柜门。", "周慎站在门外守候。", "周慎说：「先进屋再说。」")) {
+            assertTrue(ShortDramaVideoPromptReview.issues("周慎在院中中景固定，低头摸钥匙，冷灰天光，环境声是风声。" + source, null, source)
+                .stream().noneMatch(s -> s.contains("进出门动作")));
+        }
+    }
     @BeforeAll static void provideProductionJsonMapper() {
         var factory = new org.springframework.beans.factory.support.DefaultListableBeanFactory();
         factory.registerSingleton("objectMapper", new ObjectMapper().findAndRegisterModules());
@@ -61,6 +75,25 @@ class ShortDramaVideoPromptReviewTest {
             .stream().anyMatch(s -> s.contains("发言人朱承晏")));
     }
 
+    @Test void unquotedInnerVoiceWithPunctuationIsReviewedInPromptAndWholeScene() {
+        String source = "主角（内心声，嘴唇不动）：我刚才还在机房……\n同伴：先喝药。";
+        assertEquals(List.of("我刚才还在机房……", "先喝药。"), ShortDramaVideoPromptReview.sourceDialogue(source));
+        assertEquals("主角", ShortDramaVideoPromptReview.sourceSpeaker(source, "我刚才还在机房……"));
+        var omitted = panel(); omitted.setSourceText("同伴：先喝药。");
+        assertTrue(ShortDramaServiceImpl.scenePlanIssues(source, List.of(omitted)).stream()
+            .anyMatch(issue -> issue.contains("遗漏或乱序原文对白") && issue.contains("机房")));
+        omitted.setSourceText(source);
+        assertFalse(ShortDramaServiceImpl.scenePlanIssues(source, List.of(omitted)).stream()
+            .anyMatch(issue -> issue.contains("遗漏或乱序原文对白")));
+    }
+
+    @Test void nameplateTextDoesNotBecomeDialogueOrExtraSpeechBudget() {
+        String source = "暖风吹过，器物尾部的“青芜”铭牌被阳光照亮。";
+        assertEquals(List.of(), ShortDramaVideoPromptReview.sourceDialogue(source));
+        assertEquals(3, ShortDramaTiming.requiredSeconds(source, "{\"timing\":{\"spoken_text\":\"\",\"action_seconds\":3,\"pause_seconds\":0}}"));
+        assertEquals("近景固定，阳光照铭牌。风声中切出。", ShortDramaVideoPromptPolicy.execution("近景固定，阳光照铭牌。风声中切出。",source));
+    }
+
     @Test void timeGapsOverlapsEmptyBeatsAndWrongEndAreVisible() {
         for (String range : new String[]{"3-6秒", "1-6秒", "2-7秒"}) {
             assertTrue(ShortDramaVideoPromptReview.issues(PROMPT.replace("2-6秒", range), 6, SOURCE)
@@ -82,7 +115,7 @@ class ShortDramaVideoPromptReviewTest {
     @Test void modelBatchReviewRejectsMissingDuplicateButKeepsCreativeDrafts() throws Exception {
         var panel = panel(); panel.setVideoPrompt("已有人工草稿");
         String good = new ObjectMapper().writeValueAsString(List.of(java.util.Map.of(
-            "panel_number", 1, "video_prompt", PROMPT, "image_prompt", "青年站立在桌前")));
+            "panel_number", 1, "video_prompt", "中景固定，朱承晏放下文书，烛光照手，低声说「请父皇准我查账。」父皇静听，结束在纸边；环境声轻微。", "image_prompt", "青年站立在桌前")));
         assertEquals(1, ShortDramaServiceImpl.reviewStoryboardDetailResponse(good, List.of(panel)).size());
         assertEquals("已有人工草稿", panel.getVideoPrompt());
         assertThrows(IllegalStateException.class, () -> ShortDramaServiceImpl.reviewStoryboardDetailResponse("[]", List.of(panel)));
@@ -107,13 +140,14 @@ class ShortDramaVideoPromptReviewTest {
         verifyNoInteractions(mapper);
     }
 
-    @Test void generationAndKeyframeFastPathLoadSkillKeepSourceAndAvoidRejectedImageDraft() {
+    @Test void draftingLoadsSkillsButKeyframeExecutionKeepsOnlyPromptAndBindings() {
         assertTrue(ShortDramaServiceImpl.buildStoryboardDetailPrompt("[]", "青年", "御书房", "realistic", "16:9")
             .contains("[skill:video-prompt@"));
         String enriched = ShortDramaVideoPromptReview.anchoredPrompt(PROMPT, 6, SOURCE, "站着", "右指留纸上");
-        assertTrue(enriched.contains("[skill:video-prompt@"));
-        assertTrue(enriched.contains(PROMPT)); assertTrue(enriched.contains(SOURCE));
-        assertTrue(enriched.contains("6秒")); assertTrue(enriched.contains("心声不驱动"));
+        assertFalse(enriched.contains("[skill:"));
+        assertTrue(enriched.contains(PROMPT)); assertTrue(enriched.contains("请父皇准我查账。"));
+        assertFalse(enriched.contains("【用户指定视频时长】"));
+        assertFalse(enriched.contains("【已审阅剧情与声音原文】"));
         assertFalse(enriched.contains("@image1"));
     }
 
@@ -137,9 +171,10 @@ class ShortDramaVideoPromptReviewTest {
             org.ruoyi.domain.entity.shortdrama.ShortDramaStoryboard.class, List.class, String.class);
         method.setAccessible(true);
         String result = (String) method.invoke(service, shot, List.of("https://example.com/confirmed-frame.png"), null);
-        assertTrue(result.contains(PROMPT)); assertTrue(result.contains(SOURCE));
-        assertTrue(result.contains("[skill:video-prompt@")); assertTrue(result.contains("6秒"));
-        assertTrue(result.contains("[selected-skill:art@v1]")); assertTrue(result.contains("[selected-skill:director@v2]"));
+        assertTrue(result.contains(PROMPT)); assertTrue(result.contains("请父皇准我查账。"));
+        assertFalse(result.contains("[skill:")); assertFalse(result.contains("[selected-skill:"));
+        assertEquals(result.indexOf(PROMPT), result.lastIndexOf(PROMPT));
+        verify(catalog).selectedVersions(project);
         assertFalse(result.contains("rejected-image-draft-do-not-append"));
     }
 
@@ -151,9 +186,9 @@ class ShortDramaVideoPromptReviewTest {
     @Test void reviewedActualFirstFrameOverridesTheRejectedPlannedPoseWithoutRegeneration() {
         String prompt="【首帧实况】青年已经坐在床沿，双眼睁开。"+PROMPT;
         String actual=ShortDramaVideoPromptReview.anchoredPrompt(prompt,6,SOURCE,"原计划躺着睡觉","右指留纸上");
-        assertTrue(actual.contains("【绑定起止状态】起点：青年已经坐在床沿，双眼睁开。"));
+        assertTrue(actual.contains("青年已经坐在床沿，双眼睁开。"));
         assertFalse(actual.contains("原计划躺着睡觉"));
-        assertTrue(actual.contains(PROMPT)); assertTrue(actual.contains(SOURCE));
-        assertTrue(ShortDramaVideoPromptReview.anchoredPrompt(PROMPT,6,SOURCE,"默认站着","右指留纸上").contains("起点：默认站着"));
+        assertTrue(actual.contains(PROMPT)); assertTrue(actual.contains("请父皇准我查账。"));
+        assertFalse(ShortDramaVideoPromptReview.anchoredPrompt(PROMPT,6,SOURCE,"默认站着","右指留纸上").contains("默认站着"));
     }
 }

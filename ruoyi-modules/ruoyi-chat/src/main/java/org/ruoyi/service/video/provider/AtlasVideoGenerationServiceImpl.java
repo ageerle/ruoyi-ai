@@ -16,6 +16,7 @@ import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.service.media.AtlasMediaSupport;
 import org.ruoyi.service.media.AtlasPredictionService;
 import org.ruoyi.service.video.AbstractVideoGenerationService;
+import org.ruoyi.service.video.VideoSubmissionRejectedException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -48,6 +49,8 @@ public class AtlasVideoGenerationServiceImpl extends AbstractVideoGenerationServ
             ResponseBody body = response.body();
             String responseText = body == null ? "" : body.string();
             if (!response.isSuccessful()) {
+                var rejected = VideoSubmissionRejectedException.atlasResponse(response.code(), responseText);
+                if (rejected != null) throw rejected;
                 throw new IllegalArgumentException("Atlas Cloud视频生成任务创建失败: " + response.code() + " - " + responseText);
             }
             return atlasPredictionService.toResponse(responseText, "video");
@@ -58,12 +61,21 @@ public class AtlasVideoGenerationServiceImpl extends AbstractVideoGenerationServ
 
     static ObjectNode buildPayload(VideoContext videoContext) {
         ChatModelVo model = videoContext.getChatModelVo();
+        if ("minimax/h3-developer/image-to-video".equals(model.getModelName())) {
+            return buildH3Payload(videoContext);
+        }
         boolean seedanceMini = model.getModelName().startsWith("bytedance/seedance-2.0-mini/");
         ObjectNode payload = AtlasMediaSupport.OBJECT_MAPPER.createObjectNode();
         payload.put("model", model.getModelName());
         Integer requestSeconds = requestDuration(model.getModelName(), videoContext.getSeconds());
         String prompt = videoContext.getPrompt();
-        if (model.getModelName().startsWith("bytedance/seedance-2.5/")) prompt = prompt.replaceAll("@image(\\d+)", "@Image$1").replaceAll("@audio(\\d+)", "@Audio$1");
+        if (model.getModelName().startsWith("bytedance/seedance-2.5/")) {
+            // Role bindings and older saved directions use Chinese labels. Seedance 2.5
+            // resolves reference media through @ImageN / @AudioN / @VideoN, in list order.
+            prompt = prompt.replaceAll("(?i)@(?:image|图片)(\\d+)", "@Image$1")
+                .replaceAll("(?i)@(?:audio|音频)(\\d+)", "@Audio$1")
+                .replaceAll("(?i)@(?:video|视频)(\\d+)", "@Video$1");
+        }
         payload.put("prompt", prompt);
         if (StrUtil.isNotBlank(videoContext.getSize())) {
             payload.put(model.getModelName().startsWith("bytedance/seedance-") ? "ratio" : "size", videoContext.getSize());
@@ -119,6 +131,16 @@ public class AtlasVideoGenerationServiceImpl extends AbstractVideoGenerationServ
             if (refImages != null && !refImages.isEmpty()) payload.put("omni_reference_task_type", "reference");
         }
 
+        var refVideos = videoContext.getReferenceVideos();
+        if (refVideos != null && !refVideos.isEmpty()) {
+            boolean full = model.getModelName().startsWith("bytedance/seedance-2.5/");
+            if ((!full && !model.getModelName().startsWith("bytedance/seedance-2.0")) || !model.getModelName().endsWith("/reference-to-video"))
+                throw new IllegalArgumentException("当前模型不支持视频参考");
+            if (refVideos.size() > (full ? 10 : 3)) throw new IllegalArgumentException("动作视频参考数量超出模型限制");
+            var videos = payload.putArray("reference_videos");
+            for (String url : refVideos) videos.add(url);
+            if (full) payload.put("omni_reference_task_type", "reference");
+        }
         // 同步音频生成（环境音/动效）
         if (videoContext.getGenerateAudio() != null) {
             payload.put("generate_audio", videoContext.getGenerateAudio());
@@ -128,21 +150,58 @@ public class AtlasVideoGenerationServiceImpl extends AbstractVideoGenerationServ
         if (refAudios != null && !refAudios.isEmpty()) {
             if (seedanceMini) {
                 if (refAudios.size() > 3) throw new IllegalArgumentException("Seedance 2.0 Mini最多3条参考音频，总时长须不超过15秒");
-                if (!payload.has("reference_images") && !payload.has("image")) {
-                    throw new IllegalArgumentException("Seedance 2.0 Mini参考音频需要至少1张参考图");
+                if (!payload.has("reference_images") && !payload.has("image") && !payload.has("reference_videos")) {
+                    throw new IllegalArgumentException("Seedance 2.0 Mini参考音频需要至少1张参考图或1条参考视频");
                 }
             }
-            if (model.getModelName().startsWith("bytedance/seedance-2.5/") && refAudios.size() > 10) throw new IllegalArgumentException("Seedance 2.5最多10条参考音频");
+            boolean full = model.getModelName().startsWith("bytedance/seedance-2.5/");
+            if (full && !model.getModelName().endsWith("/reference-to-video")) {
+                throw new IllegalArgumentException("Seedance 2.5音频参考须使用reference-to-video模型");
+            }
+            if (full && refAudios.size() > 10) throw new IllegalArgumentException("Seedance 2.5最多10条参考音频");
             com.fasterxml.jackson.databind.node.ArrayNode arr = payload.putArray("reference_audios");
             for (String url : refAudios) {
                 arr.add(url);
             }
+            if (full) payload.put("omni_reference_task_type", "reference");
         }
         // 返回末帧（同场景连续镜头首帧承接用）
         if (videoContext.getReturnLastFrame() != null) {
             payload.put("return_last_frame", videoContext.getReturnLastFrame());
         }
 
+        return payload;
+    }
+
+    /** H3's published schema uses a single image, adaptive ratio and explicit SR tiers. */
+    private static ObjectNode buildH3Payload(VideoContext context) {
+        Integer seconds = context.getSeconds();
+        if (seconds == null || seconds < 4 || seconds > 15)
+            throw new IllegalArgumentException("H3 Developer须指定4至15秒视频时长");
+        String resolution = switch (StrUtil.blankToDefault(context.getResolution(), "768P").toLowerCase(java.util.Locale.ROOT)) {
+            case "480p" -> "480P";
+            case "768p" -> "768P";
+            case "1440p-sr" -> "1440p-sr";
+            case "4k-sr" -> "4k-sr";
+            default -> throw new IllegalArgumentException("H3 Developer不支持该分辨率，请选择480P、768P、1440p-sr或4k-sr");
+        };
+        var images = context.getReferenceImages();
+        if (images != null && images.size() > 1)
+            throw new IllegalArgumentException("H3 Developer仅支持一张起始图，请关闭额外角色和场景参考");
+        String image = images != null && !images.isEmpty() ? images.get(0) : context.getImageUrl();
+        if (StrUtil.isBlank(image)) throw new IllegalArgumentException("H3图生视频需要已审阅的起始图");
+        if ((context.getReferenceAudios() != null && !context.getReferenceAudios().isEmpty())
+            || (context.getReferenceVideos() != null && !context.getReferenceVideos().isEmpty()))
+            throw new IllegalArgumentException("H3 Developer不支持音频或视频参考");
+        ObjectNode payload = AtlasMediaSupport.OBJECT_MAPPER.createObjectNode();
+        payload.put("model", context.getChatModelVo().getModelName());
+        payload.put("prompt", context.getPrompt());
+        payload.put("image", image);
+        payload.put("duration", seconds);
+        payload.put("resolution", resolution);
+        payload.put("ratio", "adaptive");
+        payload.put("prompt_expansion", false);
+        // Do not forward Seedance-only audio/last-frame switches to H3.
         return payload;
     }
 

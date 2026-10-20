@@ -1,0 +1,11 @@
+{
+  "name": "github-storyboard-generator",
+  "title": "故事转分镜 · 资产与段落交接",
+  "type": "director",
+  "description": "从故事事件落实角色、地点、道具、段落任务和跨镜承接，适合多集分镜规划。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

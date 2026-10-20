@@ -27,6 +27,6 @@ class ShortDramaVideoDurationTest {
         assertFalse(ShortDramaVideoPromptReview.issues(prose.replace("请父皇准我查账。","查一下。"),null,ShortDramaVideoPromptReviewTest.SOURCE).isEmpty());
         var anchored=ShortDramaVideoPromptReview.anchoredPrompt(prose,null,ShortDramaVideoPromptReviewTest.SOURCE,"站立","手留纸边");
         assertFalse(anchored.contains("【目标时长】"));
-        assertTrue(anchored.contains("未指定视频秒数"));
+        assertFalse(anchored.contains("视频秒数"));
     }
 }

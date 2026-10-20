@@ -2,6 +2,8 @@ package org.ruoyi.domain.entity.shortdrama;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -12,7 +14,7 @@ import java.util.Date;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("short_drama_project")
+@TableName(value = "short_drama_project", autoResultMap = true)
 public class ShortDramaProject extends BaseEntity {
 
     @Serial
@@ -35,6 +37,9 @@ public class ShortDramaProject extends BaseEntity {
     private String artStyle;
     private String aestheticSkillName;
     private String directorSkillName;
+    /** Ordered supplementary skills for storyboard planning and review. */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private java.util.List<String> storyboardSkillNames;
 
     private Long composedVideoOssId;
 

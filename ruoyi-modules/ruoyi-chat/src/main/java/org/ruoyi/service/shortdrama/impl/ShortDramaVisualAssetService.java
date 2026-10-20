@@ -88,7 +88,7 @@ public class ShortDramaVisualAssetService {
     }
 
     public record AssetView(Long id,Long storyboardId,String kind,String title,String prompt,String status,
-            String imageUrl,String model,String predictionId,String errorMessage,String referenceImageUrl,boolean undoAvailable) { }
+            String imageUrl,String model,String predictionId,String errorMessage,String referenceImageUrl,boolean undoAvailable,List<Integer> shotNumbers) { }
     /** Called inside the asset-analysis transaction, after the entire result has been validated. */
     void saveAnalyzedProps(Long id, List<JsonNode> props, Long user) {
         Set<String> existing = rows(id).stream().filter(a -> "prop".equals(a.getKind()))
@@ -109,7 +109,7 @@ public class ShortDramaVisualAssetService {
             if (history > 0) undoableProps.add(key.substring(0, history));
         }
         return Map.of("outdated","script_changed".equals(project.getStatus()),"running",running.containsKey(id),"phase",running.getOrDefault(id,"idle"),
-            "error",errors.getOrDefault(id,""),"assets",rows.stream().map(a->new AssetView(a.getId(),a.getStoryboardId(),a.getKind(),a.getTitle(),a.getPrompt(),a.getStatus(),a.getImageUrl(),a.getModel(),a.getPredictionId(),a.getErrorMessage(),propReferenceImage(a.getReferenceImages()),"prop".equals(a.getKind()) && undoableProps.contains(a.getAssetKey()))).toList(),
+            "error",errors.getOrDefault(id,""),"assets",rows.stream().map(a->new AssetView(a.getId(),a.getStoryboardId(),a.getKind(),a.getTitle(),a.getPrompt(),a.getStatus(),a.getImageUrl(),a.getModel(),a.getPredictionId(),a.getErrorMessage(),propReferenceImage(a.getReferenceImages()),"prop".equals(a.getKind()) && undoableProps.contains(a.getAssetKey()),"prop".equals(a.getKind()) ? propShotNumbers(a.getReferenceImages()) : List.of())).toList(),
             "completed",rows.stream().filter(a -> "done".equals(a.getStatus())).count(),"total",rows.size());
     }
     /**
@@ -173,8 +173,8 @@ public class ShortDramaVisualAssetService {
         if(shots.isEmpty()) throw new IllegalStateException("请先确认分镜，再规划逐镜资产");
         var script=scripts.selectById(shots.get(0).getScriptId());
         var project = projects.selectById(id);
-        String selectedDirection = skillCatalog.selected(project, "aesthetic") + skillCatalog.selected(project, "director");
-        String selectedMediaDirection = skillCatalog.selectedVisual(project, "aesthetic") + skillCatalog.selectedVisual(project, "director");
+        String selectedDirection = skillCatalog.selected(project, "aesthetic");
+        String selectedMediaDirection = skillCatalog.selectedVisual(project, "aesthetic");
         var m=model==null || model.isBlank() ? ShortDramaAtlasModels.defaultModel(models,"chat") : ShortDramaAtlasModels.require(models,model,"chat");
         var chat=chats.getOriginalService(ShortDramaServiceImpl.shortDramaProviderCode(m.getProviderCode(),m.getModelName())).buildChatModel(m);
         // Do not invent extra characters or costumes merely to increase image counts.
@@ -316,7 +316,7 @@ public class ShortDramaVisualAssetService {
     }
     private String selectedDirection(Long projectId) {
         var project = projects.selectById(projectId);
-        return skillCatalog.selectedVisual(project, "aesthetic") + skillCatalog.selectedVisual(project, "director");
+        return skillCatalog.selectedVisual(project, "aesthetic");
     }
     private String productionFramePrompt(ShortDramaStoryboard shot) { return framePrompt(shot) + selectedDirection(shot.getProjectId()); }
     private String productionFrameHash(ShortDramaStoryboard shot, List<String> refs, String props) {
@@ -330,6 +330,7 @@ public class ShortDramaVisualAssetService {
             var old = (com.fasterxml.jackson.databind.node.ObjectNode) JSON.readTree(before.getContinuityJson());
             var next = (com.fasterxml.jackson.databind.node.ObjectNode) JSON.readTree(after.getContinuityJson());
             old.remove("video_resolution"); next.remove("video_resolution");
+            old.remove("video_model"); next.remove("video_model");
             old.remove("video_seconds"); next.remove("video_seconds");
             old.remove("video_use_start_frame"); next.remove("video_use_start_frame");
             old.remove("video_reference_include_location"); next.remove("video_reference_include_location");

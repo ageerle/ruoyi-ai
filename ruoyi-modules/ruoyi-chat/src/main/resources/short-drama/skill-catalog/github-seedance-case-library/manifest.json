@@ -1,0 +1,11 @@
+{
+  "name": "github-seedance-case-library",
+  "title": "Seedance · 案例与技能导航",
+  "type": "director",
+  "description": "按题材、镜头目的和参考策略检索案例；用于比较方法，不直接代表模型能力或质量保证。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}

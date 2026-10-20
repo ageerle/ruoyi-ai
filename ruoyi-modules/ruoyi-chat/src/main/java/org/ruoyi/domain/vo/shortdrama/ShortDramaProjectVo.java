@@ -31,6 +31,7 @@ public class ShortDramaProjectVo implements Serializable {
     private String artStyle;
     private String aestheticSkillName;
     private String directorSkillName;
+    private java.util.List<String> storyboardSkillNames;
 
     private Long composedVideoOssId;
 

@@ -17,6 +17,7 @@ public class ShortDramaIdeaBo {
     private String artStyle;
     private String aestheticSkillName;
     private String directorSkillName;
+    private java.util.List<String> storyboardSkillNames;
 
     private String aspectRatio;
 

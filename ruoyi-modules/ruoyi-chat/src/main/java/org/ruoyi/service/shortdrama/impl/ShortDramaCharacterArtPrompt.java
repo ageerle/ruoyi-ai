@@ -27,7 +27,7 @@ final class ShortDramaCharacterArtPrompt {
         String subjectDescription = description == null ? "" : description;
         // Portraits are independent casting masters, not a small inset in a full-body sheet.
         boolean portraitReference = subjectDescription.matches("(?s).*(?:单幅|单张)(?:头肩|面部|脸部|胸像)(?:面部)?(?:母版|定妆|肖像|特写).*" );
-        boolean singleReference = subjectDescription.matches("(?s).*(?:单幅(?:角色|人物|定妆|全身)|单张(?:角色|人物|定妆|全身)|单人\\s*3/4\\s*全身|(?:不要|不做|不用)三视图).*" );
+        boolean singleReference = subjectDescription.matches("(?s).*(?:(?:单幅|单张)(?:(?:三分之四|3/4)?(?:完整)?全身|角色|人物|定妆)|单人\\s*3/4\\s*全身|(?:不要|不做|不用)三视图).*" );
         if (NON_HUMAN_SUBJECT.matcher(subjectDescription).find()) {
             return nonHumanReference(subjectDescription, style, worldbuilding) + revisionRules(revision, revisionRequirements, true);
         }

@@ -52,6 +52,13 @@ public interface IShortDramaService {
 
     org.ruoyi.service.shortdrama.impl.ShortDramaVideoSubmissionStore.Submission videoSubmission(Long storyboardId, String requestId, Long userId);
 
+    ShortDramaStoryboardVo resolveVideoSubmission(Long storyboardId, String requestId, String predictionId, Long userId);
+
+    ShortDramaStoryboardVo resolveVideoSubmission(Long storyboardId, String requestId, String predictionId, Long userId, String confirmedFailureEvidence);
+
+    ShortDramaStoryboardVo confirmVideoSubmissionRejection(Long storyboardId, String requestId, Long userId,
+        org.ruoyi.domain.bo.shortdrama.ShortDramaVideoRejectionBo evidence);
+
     ShortDramaStoryboardVo retrieveVideo(Long storyboardId, String videoModel, Long userId);
 
     /** 代理流式输出视频，绕过 OSS 强制下载 header */
@@ -67,6 +74,8 @@ public interface IShortDramaService {
 
     /** 按修改意见重新生成固定格式剧本 */
     ShortDramaDetailVo polishScript(Long projectId, Long userId, String instruction);
+
+    ShortDramaDetailVo polishScript(Long projectId, Long userId, String instruction, String model);
 
     /** Phase 3-6: 分镜规划+摄影规则+表演指导+分镜细化 */
     List<ShortDramaStoryboardVo> planStoryboard(Long projectId, Long scriptId, String model, Long userId);

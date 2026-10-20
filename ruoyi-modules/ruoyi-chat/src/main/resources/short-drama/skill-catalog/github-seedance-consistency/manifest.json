@@ -1,0 +1,11 @@
+{
+  "name": "github-seedance-consistency",
+  "title": "Seedance · 一致性与续段提示词",
+  "type": "director",
+  "description": "整理多模态素材职责、跨镜一致性和续段起止关系，适合提示词局部修订。",
+  "enabled": true,
+  "artStyle": "",
+  "files": [
+    "references/source.md"
+  ]
+}
