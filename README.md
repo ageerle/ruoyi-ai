@@ -25,12 +25,11 @@
 
 ## 🚀 Live Demo
 
-| Service | URL | Default Account |
+| Service | URL | Login Method |
 |---|---|---|
-| Admin Panel | http://129.226.199.247:25666 | admin / admin123 |
-| User Frontend | http://129.226.199.247:25137 | admin / admin123 |
-| Commercial Edition | https://web.ruoyiai.chat | WeChat QR code login |
-| Additional Demo | [code.ruoyiai.chat](https://code.ruoyiai.chat/) | — |
+| Short Drama Demo | [drama.ruoyiai.chat](https://drama.ruoyiai.chat/) | QR code login |
+| User Frontend Demo | [web.ruoyiai.chat](https://web.ruoyiai.chat/) | QR code login |
+| Coding Demo | [code.ruoyi.chat](https://code.ruoyi.chat/) | QR code login |
 
 ## ✨ Core Features
 

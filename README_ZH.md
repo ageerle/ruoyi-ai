@@ -25,12 +25,11 @@
 
 ## 🚀 演示地址
 
-| 服务 | 访问地址 | 默认账号 |
+| 服务 | 访问地址 | 登录方式 |
 |---|---|---|
-| 管理端 | http://129.226.199.247:25666 | admin / admin123 |
-| 用户端 | http://129.226.199.247:25137 | admin / admin123 |
-| 商业版 | https://web.ruoyiai.chat | 微信扫码登录 |
-| 新版演示 | [code.ruoyiai.chat](https://code.ruoyiai.chat/) | — |
+| 短剧演示环境 | [drama.ruoyiai.chat](https://drama.ruoyiai.chat/) | 扫码登录 |
+| 用户端演示环境 | [web.ruoyiai.chat](https://web.ruoyiai.chat/) | 扫码登录 |
+| 编程演示环境 | [code.ruoyi.chat](https://code.ruoyi.chat/) | 扫码登录 |
 
 ## ✨ 核心亮点
 
