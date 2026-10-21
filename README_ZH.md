@@ -29,7 +29,7 @@
 |---|---|---|
 | 短剧演示环境 | [drama.ruoyiai.chat](https://drama.ruoyiai.chat/) | 扫码登录 |
 | 用户端演示环境 | [web.ruoyiai.chat](https://web.ruoyiai.chat/) | 扫码登录 |
-| 编程演示环境 | [code.ruoyi.chat](https://code.ruoyi.chat/) | 扫码登录 |
+| 编程演示环境 | [code.ruoyiai.chat](https://code.ruoyiai.chat/) | 扫码登录 |
 
 ## ✨ 核心亮点
 

@@ -29,7 +29,7 @@
 |---|---|---|
 | Short Drama Demo | [drama.ruoyiai.chat](https://drama.ruoyiai.chat/) | QR code login |
 | User Frontend Demo | [web.ruoyiai.chat](https://web.ruoyiai.chat/) | QR code login |
-| Coding Demo | [code.ruoyi.chat](https://code.ruoyi.chat/) | QR code login |
+| Coding Demo | [code.ruoyiai.chat](https://code.ruoyiai.chat/) | QR code login |
 
 ## ✨ Core Features
 
