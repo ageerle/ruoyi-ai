@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.SerializationUtils;
 import org.ruoyi.common.chat.enums.ErrorEnum;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.enums.WfIODataTypeEnum;
@@ -97,15 +98,34 @@ public class WfNodeIODataUtil {
         if (outputExist) {
             return result;
         }
+        // 必须"复制后改名"而非原地改名：inputs 中的 NodeIOData 对象同时被 wfState.getInput()、
+        // 开始节点自身的 state.getInputs() 以及运行时输入记录引用，原地 setName 会销毁原始参数名，
+        // 下游节点按名引用（LLM 模板变量 {{xxx}}、条件分支取值、getFirstInputText）将全部取不到用户输入。
+        // 同理不能直接 add 原对象（会得到两条指向同一实例的重复参数），应 add 改名后的副本。
         if (null != defaultInputName) {
-            defaultInputName.setName(DEFAULT_OUTPUT_PARAM_NAME);
+            result.add(copyAndRenameToOutput(defaultInputName));
         } else if (null != txtExist) {
-            txtExist.setName(DEFAULT_OUTPUT_PARAM_NAME);
+            result.add(copyAndRenameToOutput(txtExist));
         } else if (null != first) {
-            first.setName(DEFAULT_OUTPUT_PARAM_NAME);
+            result.add(copyAndRenameToOutput(first));
         }
-        result.add(inputs.get(0));
         return result;
+    }
+
+    /**
+     * 复制输入参数，并将副本的名称改为默认输出参数名（output）
+     * <p>
+     * 使用深拷贝（与 {@code AbstractWfNode#createByReferParam} 一致）：
+     * 副本与原始参数的 content 相互独立，避免 EndNode 的
+     * {@link #changeFilesContentToMarkdown} 等原地修改 content 的逻辑互相污染。
+     *
+     * @param source 被复制的输入参数
+     * @return 名称为 output 的副本
+     */
+    private static NodeIOData copyAndRenameToOutput(NodeIOData source) {
+        NodeIOData copy = SerializationUtils.clone(source);
+        copy.setName(DEFAULT_OUTPUT_PARAM_NAME);
+        return copy;
     }
 
     /**
