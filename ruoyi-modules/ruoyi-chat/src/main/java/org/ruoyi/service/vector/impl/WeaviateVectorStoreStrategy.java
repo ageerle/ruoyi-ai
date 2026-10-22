@@ -32,10 +32,12 @@ import org.ruoyi.domain.entity.knowledge.KnowledgeAttach;
 import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Weaviate向量库策略实现
@@ -45,6 +47,16 @@ import java.util.Map;
 @Slf4j
 @Component
 public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
+
+    /**
+     * Weaviate 集成标识请求头（Weaviate 1.38+ 用于识别调用来源的集成）
+     */
+    static final String INTEGRATION_HEADER = "X-Weaviate-Client-Integration";
+
+    /**
+     * 集成标识，格式为 {name}/{version}
+     */
+    static final String INTEGRATION_VALUE = "ruoyi-ai/" + resolveVersion();
 
     private volatile WeaviateClient client;
     private final KnowledgeAttachMapper knowledgeAttachMapper;
@@ -70,11 +82,31 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 if (client == null) {
                     String protocol = vectorStoreProperties.getWeaviate().getProtocol();
                     String host = vectorStoreProperties.getWeaviate().getHost();
-                    client = new WeaviateClient(new Config(protocol, host));
+                    client = new WeaviateClient(new Config(protocol, host, Map.of(INTEGRATION_HEADER, INTEGRATION_VALUE)));
                 }
             }
         }
         return client;
+    }
+
+    /**
+     * 从 Maven 打包生成的 pom.properties 读取 ruoyi-ai 版本，读取失败时返回 unknown
+     */
+    private static String resolveVersion() {
+        try (InputStream in = WeaviateVectorStoreStrategy.class
+                .getResourceAsStream("/META-INF/maven/org.ruoyi/ruoyi-chat/pom.properties")) {
+            if (in != null) {
+                Properties props = new Properties();
+                props.load(in);
+                String version = props.getProperty("version");
+                if (version != null && !version.isBlank()) {
+                    return version.trim();
+                }
+            }
+        } catch (Exception ignored) {
+            // 版本信息仅用于统计，不影响向量库功能
+        }
+        return "unknown";
     }
 
     @Override
