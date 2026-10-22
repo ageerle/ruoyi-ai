@@ -147,6 +147,12 @@ To upgrade to another published release, update `RUIYI_VERSION` in
 `docker compose up -d` with the same `--env-file` and `-f` options. Do not use
 `docker compose down -v` unless you intend to delete persistent data volumes.
 
+Weaviate supports upgrading its persistent data one minor version at a time.
+If an existing `weaviate-data` volume was created by an older Weaviate image
+(for example `1.30.0`), step the `weaviate` image through each intermediate
+minor release (`1.31.x`, `1.32.x`, ...) before starting the version pinned in
+the Compose file.
+
 ### Method 2: Step-by-step Deployment (Source Build)
 
 If you need to build backend services from source, follow these steps:

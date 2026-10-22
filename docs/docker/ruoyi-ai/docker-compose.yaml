@@ -62,7 +62,7 @@ services:
 
   # Weaviate 向量数据库
   weaviate:
-    image: semitechnologies/weaviate:1.30.0
+    image: semitechnologies/weaviate:1.39.13
     container_name: ruoyi-ai-weaviate
     restart: always
     ports:
