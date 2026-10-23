@@ -16,14 +16,19 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MiniMax chat service.
  * <p>
- * Supports MiniMax-M3 and MiniMax-M2.7 through the OpenAI-compatible and
- * Anthropic-compatible APIs in both global and China regions.
+ * Prefers MiniMax-M3.1-Flash, with MiniMax-M3 as the other current text model,
+ * through OpenAI-compatible and Anthropic-compatible APIs in both regions.
+ * Explicit legacy/custom database model IDs are passed through unchanged.
+ * Flash always uses adaptive thinking; enableThinking controls returned reasoning
+ * visibility, while reasoningEffort accepts low/medium/high/xhigh/max (default max).
  *
  * @author octopus
  * @date 2026/3/21
@@ -32,15 +37,18 @@ import java.util.Map;
 @Slf4j
 public class MinimaxServiceImpl implements AbstractChatService {
 
+    private static final String MINIMAX_FLASH = "MiniMax-M3.1-Flash";
     private static final String MINIMAX_M3 = "MiniMax-M3";
+    private static final Set<String> FLASH_EFFORTS = Set.of("low", "medium", "high", "xhigh", "max");
     private static final String ANTHROPIC_PATH_SUFFIX = "/anthropic";
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(120);
 
     @Override
     public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         String baseUrl = normalizeBaseUrl(chatModelVo.getApiHost());
-        boolean thinkingEnabled = Boolean.TRUE.equals(chatRequest.getEnableThinking());
+        boolean thinkingEnabled = chatRequest != null && Boolean.TRUE.equals(chatRequest.getEnableThinking());
         String thinkingType = thinkingType(chatModelVo.getModelName(), thinkingEnabled);
+        String effort = flashEffort(chatModelVo.getModelName(), chatRequest);
 
         if (isAnthropicBaseUrl(baseUrl)) {
             return AnthropicStreamingChatModel.builder()
@@ -50,6 +58,7 @@ public class MinimaxServiceImpl implements AbstractChatService {
                 .timeout(DEFAULT_TIMEOUT)
                 .listeners(List.of(new MyChatModelListener()))
                 .thinkingType(thinkingType)
+                .customParameters(anthropicEffort(effort))
                 .returnThinking(thinkingEnabled)
                 .build();
         }
@@ -61,21 +70,28 @@ public class MinimaxServiceImpl implements AbstractChatService {
             .timeout(DEFAULT_TIMEOUT)
             .listeners(List.of(new MyChatModelListener()))
             .returnThinking(thinkingEnabled);
-        if (thinkingType != null) {
-            builder.customParameters(Map.of("thinking", Map.of("type", thinkingType)));
-        }
-        return builder.build();
+        return builder.customParameters(openAiParameters(thinkingType, effort)).build();
     }
 
     @Override
     public ChatModel buildChatModel(ChatModelVo chatModelVo) {
+        return buildChatModel(chatModelVo, null);
+    }
+
+    @Override
+    public ChatModel buildChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         String baseUrl = normalizeBaseUrl(chatModelVo.getApiHost());
+        String effort = flashEffort(chatModelVo.getModelName(), chatRequest);
+        // Preserve the synchronous M3/legacy API defaults.
+        String thinkingType = effort == null ? null : "adaptive";
         if (isAnthropicBaseUrl(baseUrl)) {
             return AnthropicChatModel.builder()
                 .baseUrl(toAnthropicClientBaseUrl(baseUrl))
                 .apiKey(chatModelVo.getApiKey())
                 .modelName(chatModelVo.getModelName())
                 .timeout(DEFAULT_TIMEOUT)
+                .thinkingType(thinkingType)
+                .customParameters(anthropicEffort(effort))
                 .build();
         }
         return OpenAiChatModel.builder()
@@ -83,6 +99,7 @@ public class MinimaxServiceImpl implements AbstractChatService {
             .apiKey(chatModelVo.getApiKey())
             .modelName(chatModelVo.getModelName())
             .timeout(DEFAULT_TIMEOUT)
+            .customParameters(openAiParameters(thinkingType, effort))
             .build();
     }
 
@@ -91,7 +108,39 @@ public class MinimaxServiceImpl implements AbstractChatService {
         return ChatModeType.MINIMAX.getCode();
     }
 
+    private static String flashEffort(String modelName, ChatRequest request) {
+        if (!MINIMAX_FLASH.equals(modelName)) {
+            return null;
+        }
+        String effort = request == null ? null : request.getReasoningEffort();
+        if (effort == null || effort.isBlank()) {
+            return "max";
+        }
+        if (!FLASH_EFFORTS.contains(effort)) {
+            throw new IllegalArgumentException("MiniMax-M3.1-Flash effort must be low, medium, high, xhigh or max");
+        }
+        return effort;
+    }
+
+    private static Map<String, Object> anthropicEffort(String effort) {
+        return effort == null ? Map.of() : Map.of("output_config", Map.of("effort", effort));
+    }
+
+    private static Map<String, Object> openAiParameters(String thinkingType, String effort) {
+        Map<String, Object> parameters = new HashMap<>();
+        if (thinkingType != null) {
+            parameters.put("thinking", Map.of("type", thinkingType));
+        }
+        if (effort != null) {
+            parameters.put("reasoning_effort", effort);
+        }
+        return parameters;
+    }
+
     static String thinkingType(String modelName, boolean thinkingEnabled) {
+        if (MINIMAX_FLASH.equals(modelName)) {
+            return "adaptive";
+        }
         if (!MINIMAX_M3.equals(modelName)) {
             return null;
         }

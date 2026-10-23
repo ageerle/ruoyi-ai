@@ -84,7 +84,8 @@ public class ChatRequest {
     /**
      * Doubao-Seed-Evolving 思考等级（reasoning_effort）。
      * 取值 none/minimal/low/medium/high/xhigh/max；null 表示不发送 Doubao 专属参数。
-     * 仅在 custom_api 供应商承载 Doubao 模型时使用，其他模型忽略此字段。
+     * custom_api 的 Doubao 模型使用上述范围；MiniMax-M3.1-Flash 仅接受
+     * low/medium/high/xhigh/max，缺省为 max。MiniMax-M3 和其他模型忽略此字段。
      */
     private String reasoningEffort;
 
