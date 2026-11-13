@@ -17,9 +17,15 @@ import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriUtils;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * HTTP 请求节点
@@ -31,6 +37,11 @@ public class HttpRequestNode extends AbstractWfNode {
         super(wfComponent, nodeDef, wfState, nodeState);
     }
 
+    /**
+     * 处理 HTTP 请求节点并返回响应或错误输出。
+     *
+     * @return 节点处理结果
+     */
     @Override
     public NodeProcessResult onProcess() {
         // 获取节点模板提示词信息
@@ -40,7 +51,7 @@ public class HttpRequestNode extends AbstractWfNode {
             List<NodeIOData> inputs = state.getInputs();
 
             // 渲染 URL（支持变量替换）
-            String url = renderTemplate(config.getUrl(), inputs);
+            String url = renderUrlTemplate(config.getUrl(), inputs);
             if (StringUtils.isBlank(url)) {
                 throw new IllegalArgumentException("请求 URL 不能为空");
             }
@@ -55,7 +66,7 @@ public class HttpRequestNode extends AbstractWfNode {
             Object requestBody = buildRequestBody(config, inputs);
 
             // 执行 HTTP 请求（支持重试）
-            String response = executeHttpRequest(url, config.getMethod(), headers, requestBody, config);
+            String response = executeHttpRequest(URI.create(url), config.getMethod(), headers, requestBody, config);
 
             // 清除 HTML 标签（如果需要）
             if (Boolean.TRUE.equals(config.getClearHtml()) && StringUtils.isNotBlank(response)) {
@@ -195,15 +206,69 @@ public class HttpRequestNode extends AbstractWfNode {
     }
 
     /**
-     * 构建带参数的 URL
+     * 渲染 URL 模板，并按 URL 组件编码变量值。
+     *
+     * @param template URL 模板
+     * @param inputs 工作流输入
+     * @return 已渲染的 URL
+     */
+    private String renderUrlTemplate(String template, List<NodeIOData> inputs) {
+        if (StringUtils.isBlank(template)) {
+            return "";
+        }
+
+        int queryIndex = template.indexOf('?');
+        int fragmentIndex = template.indexOf('#');
+        Matcher matcher = Pattern.compile("\\{[^{}]+}").matcher(template);
+        StringBuffer url = new StringBuffer();
+
+        while (matcher.find()) {
+            String placeholder = matcher.group();
+            String value = renderTemplate(placeholder, inputs);
+            boolean inQuery = queryIndex >= 0
+                && (fragmentIndex < 0 || queryIndex < fragmentIndex)
+                && matcher.start() > queryIndex
+                && (fragmentIndex < 0 || matcher.start() < fragmentIndex);
+            String replacement = placeholder.equals(value)
+                ? placeholder
+                : inQuery
+                    ? encodeQueryComponent(value)
+                    : UriUtils.encodePathSegment(value, StandardCharsets.UTF_8);
+            matcher.appendReplacement(url, Matcher.quoteReplacement(replacement));
+        }
+
+        matcher.appendTail(url);
+        return url.toString();
+    }
+
+    /**
+     * 对 Query 参数名或值进行 UTF-8 表单编码。
+     *
+     * @param value 原始参数名或参数值
+     * @return 编码后的参数片段
+     */
+    private String encodeQueryComponent(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 构建带参数的 URL。
+     *
+     * @param baseUrl 已渲染的基础 URL
+     * @param params Query 参数配置
+     * @param inputs 工作流输入
+     * @return 包含编码后 Query 参数的 URL
      */
     private String buildUrlWithParams(String baseUrl, List<HttpRequestNodeConfig.ParamItem> params, List<NodeIOData> inputs) {
         if (params == null || params.isEmpty()) {
             return baseUrl;
         }
 
-        StringBuilder urlBuilder = new StringBuilder(baseUrl);
-        boolean hasQuery = baseUrl.contains("?");
+        int fragmentIndex = baseUrl.indexOf('#');
+        String urlWithoutFragment = fragmentIndex >= 0 ? baseUrl.substring(0, fragmentIndex) : baseUrl;
+        String fragment = fragmentIndex >= 0 ? baseUrl.substring(fragmentIndex) : "";
+        StringBuilder urlBuilder = new StringBuilder(urlWithoutFragment);
+        boolean hasQuery = urlWithoutFragment.contains("?");
 
         for (HttpRequestNodeConfig.ParamItem param : params) {
             if (StringUtils.isBlank(param.getName())) {
@@ -214,16 +279,19 @@ public class HttpRequestNode extends AbstractWfNode {
             String value = renderTemplate(param.getValue(), inputs);
 
             if (hasQuery) {
-                urlBuilder.append("&");
+                char lastChar = urlBuilder.charAt(urlBuilder.length() - 1);
+                if (lastChar != '?' && lastChar != '&') {
+                    urlBuilder.append("&");
+                }
             } else {
                 urlBuilder.append("?");
                 hasQuery = true;
             }
 
-            urlBuilder.append(name).append("=").append(value);
+            urlBuilder.append(encodeQueryComponent(name)).append("=").append(encodeQueryComponent(value));
         }
 
-        return urlBuilder.toString();
+        return urlBuilder.append(fragment).toString();
     }
 
     /**
@@ -381,9 +449,16 @@ public class HttpRequestNode extends AbstractWfNode {
     }
 
     /**
-     * 执行 HTTP 请求（支持重试）
+     * 执行 HTTP 请求并按配置重试。
+     *
+     * @param url 已编码的请求 URI
+     * @param method HTTP 方法
+     * @param headers 请求头
+     * @param body 请求体
+     * @param config 节点配置
+     * @return HTTP 响应正文
      */
-    private String executeHttpRequest(String url, String method, HttpHeaders headers, Object body, HttpRequestNodeConfig config) {
+    private String executeHttpRequest(URI url, String method, HttpHeaders headers, Object body, HttpRequestNodeConfig config) {
         RestTemplate restTemplate = createRestTemplate(config.getTimeout());
 
         int maxRetries = config.getRetryTimes() != null ? config.getRetryTimes() : 0;
