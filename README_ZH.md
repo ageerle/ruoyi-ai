@@ -143,6 +143,10 @@ MinIO（`29000`/`29090`）端口。生产环境请修改 MySQL 和 MinIO 默认�
 `--env-file` 和 `-f` 参数执行 `docker compose pull`、`docker compose up -d`。除非确定要删除持久化数据卷，
 不要执行 `docker compose down -v`。
 
+Weaviate 的持久化数据只支持逐个次版本升级。如果已有的 `weaviate-data` 数据卷由较旧的 Weaviate
+镜像（例如 `1.30.0`）创建，请先依次升级到每个中间次版本（`1.31.x`、`1.32.x`……），再启动 Compose
+文件中固定的版本。
+
 ### 方式二：分步部署（源码编译）
 
 如果您需要从源码构建后端服务，请按照以下步骤操作：
