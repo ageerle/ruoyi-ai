@@ -28,12 +28,24 @@ public class AudioServiceFactory implements ApplicationContextAware {
     }
 
     public IAudioGenerationService getOriginalService(String providerCode) {
+        IAudioGenerationService service = findService(providerCode);
+        if (service == null) {
+            throw new IllegalArgumentException("不支持的语音模型供应商: " + providerCode);
+        }
+        return service;
+    }
+
+    public boolean supports(String providerCode) {
+        return findService(providerCode) != null;
+    }
+
+    private IAudioGenerationService findService(String providerCode) {
+        if (providerCode == null) {
+            return null;
+        }
         IAudioGenerationService service = audioServiceMap.get(providerCode);
         if (service == null && "custom_api".equals(providerCode)) {
             service = audioServiceMap.get("openai");
-        }
-        if (service == null) {
-            throw new IllegalArgumentException("不支持的语音模型供应商: " + providerCode);
         }
         return service;
     }

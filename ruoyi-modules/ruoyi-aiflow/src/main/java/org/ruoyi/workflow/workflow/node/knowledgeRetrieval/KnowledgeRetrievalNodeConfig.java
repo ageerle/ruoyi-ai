@@ -75,21 +75,10 @@ public class KnowledgeRetrievalNodeConfig {
     }
 
     /**
-     * 检索模式：vector（向量检索）、graph（图谱检索）、hybrid（混合检索）
+     * 历史检索模式，用于识别旧流程中的图谱检索配置
      */
     @JsonProperty("retrieval_mode")
     private String retrievalMode = "vector";
-
-    /**
-     * 模型分类（用于LLM查询改写）
-     */
-    private String category;
-
-    /**
-     * LLM模型名称（用于查询改写）
-     */
-    @JsonProperty("model_name")
-    private String modelName;
 
     /**
      * Embedding模型名称（用于向量检索）
@@ -102,12 +91,6 @@ public class KnowledgeRetrievalNodeConfig {
      */
     @JsonProperty("return_source")
     private Boolean returnSource = true;
-
-    /**
-     * 自定义查询提示词（可选）
-     * 用于对查询进行预处理或改写
-     */
-    private String prompt;
 
     /**
      * 是否开启严格模式

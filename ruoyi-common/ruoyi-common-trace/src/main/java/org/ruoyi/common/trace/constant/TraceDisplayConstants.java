@@ -34,7 +34,6 @@ public final class TraceDisplayConstants {
      * 业务类型中文标签。
      */
     public static final Map<String, String> BUSINESS_TYPE_LABELS = Map.ofEntries(
-        Map.entry("RAG_CHAT", "RAG 对话"),
         Map.entry("API", "API 调用"),
         Map.entry("SCHEDULED", "定时任务")
     );
@@ -94,8 +93,6 @@ public final class TraceDisplayConstants {
         String trimmed = raw.trim();
         // 已知映射优先
         Map<String, String> known = Map.ofEntries(
-            Map.entry("rag-chat", "RAG 流式对话"),
-            Map.entry("rag-stream-chat", "RAG 流式对话"),
             Map.entry("retrieval-engine", "知识库检索"),
             Map.entry("multi-channel-retrieval", "多路召回"),
             Map.entry("context-build", "上下文组装"),

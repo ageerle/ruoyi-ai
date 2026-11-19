@@ -67,6 +67,9 @@ public class ChatModelVo implements Serializable {
     @ExcelProperty(value = "是否显示")
     private String modelShow;
 
+    /** 是否支持图片理解。 */
+    private Boolean supportsVision;
+
     /**
      * 向量维度
      */

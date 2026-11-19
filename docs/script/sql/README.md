@@ -17,7 +17,7 @@ mysql -uroot -p < ruoyi-ai.sql
 连接目标主库后，按文件名升序执行尚未应用的更新脚本；不要根据文件重命名重复执行已应用的更新。
 
 - `2026-06-15-trace.sql` 原名为 `update-0615-trace.sql`，内容未变；其中菜单插入没有判重，不应重复执行。
-- `2026-08-30-mcp-market-tool-tenant.sql` 是一次性迁移，执行前检查脚本内的预检要求；部分执行失败后应按实际表结构续跑。
+- `2026-08-30-mcp-market-tool-tenant.sql` 仅用于仍运行 MCP 市场功能的历史版本。升级到移除市场功能的版本时可跳过。
 - 其余脚本包含重复执行保护，具体适用条件见各脚本注释。
 
 ## 命名约定
@@ -39,7 +39,7 @@ mysql -uroot -p < ruoyi-ai.sql
 | [2026-07-24-register-default-role-and-missing-menus.sql](update/2026-07-24-register-default-role-and-missing-menus.sql) | 默认注册角色、角色菜单关联、默认角色配置，以及会话、附件和片段权限 |
 | [2026-07-29-sys-config-node-template-all.sql](update/2026-07-29-sys-config-node-template-all.sql) | 工作流全部 8 个模板，前 7 个配置与上一批模板合并去重 |
 | [2026-07-29-zhipu-web-search-node.sql](update/2026-07-29-zhipu-web-search-node.sql) | 智谱网络搜索节点及其消息模板；内部组件名保留 `Google` 以兼容已有流程 |
-| [2026-08-30-mcp-market-tool-tenant.sql](update/2026-08-30-mcp-market-tool-tenant.sql) | `mcp_market_tool` 租户、审计字段和 `idx_tenant_market` 索引 |
+| [2026-08-30-mcp-market-tool-tenant.sql](update/2026-08-30-mcp-market-tool-tenant.sql) | 历史市场表的租户和审计字段。当前全量初始化已移除市场表 |
 | [2026-09-01-sys-url.sql](update/2026-09-01-sys-url.sql) | `sys_url` 表、5 个菜单权限和 2 条公开链接 |
 
 后续增加更新脚本时，同步修改主 SQL 中对应的表结构或初始化数据，并更新本清单及主 SQL 文件头。
@@ -58,3 +58,4 @@ mysql -uroot -p < ruoyi-ai.sql
 | [PC 登录空闲时间](update/2026-10-02-pc-login-idle-timeout.sql) | 仅调整原 30 分钟配置；全量默认已更新，已签发令牌需重新登录 |
 | [文字模型默认优先级](update/2026-10-03-short-drama-flash-default.sql) | 先应用模型优先级迁移，再调整已有 Flash / Seed 模型排序，不新增模型或密钥 |
 | [原始创作输入](update/2026-10-03-short-drama-original-idea.sql) | 幂等增加独立原文列，不用生成概要回填；全量结构已包含 |
+| [后台菜单调整](update/2026-11-19-admin-menu-layout.sql) | 全量初始化已包含。已有库执行后重新登录后台。历史市场表保留数据供归档 |

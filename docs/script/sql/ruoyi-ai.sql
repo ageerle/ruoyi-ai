@@ -55,6 +55,52 @@ CREATE TABLE `agent_info`  (
                                INDEX `idx_agent_model_id`(`model_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '智能体信息表' ROW_FORMAT = Dynamic;
 
+CREATE TABLE IF NOT EXISTS agent_skill (
+    id bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+    tenant_id varchar(20) NOT NULL DEFAULT '000000' COMMENT '租户编号',
+    name varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '技能标识',
+    description varchar(1024) NOT NULL COMMENT '技能描述',
+    content longtext NOT NULL COMMENT '技能指令',
+    status char(1) NOT NULL DEFAULT '0' COMMENT '0启用 1停用',
+    create_dept bigint DEFAULT NULL,
+    create_by bigint DEFAULT NULL,
+    create_time datetime DEFAULT NULL,
+    update_by bigint DEFAULT NULL,
+    update_time datetime DEFAULT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_agent_skill_tenant_name (tenant_id, name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '智能体技能';
+
+-- Starter skills for the default tenant. Preserve any existing skill with the same identifier.
+INSERT INTO agent_skill (tenant_id, name, description, content, status, create_by, create_time)
+VALUES
+    ('000000', 'repair-answer', '报修答复。根据售后说明回答设备报修问题，交代提交入口、受理时间和填单信息。', '# 报修答复
+
+用户询问设备漏水、故障或报修流程时，先读对话或知识库检索到的售后说明。按下面三项回答：
+- 报修入口：在哪里提交报修单。
+- 受理时间：原文写明的工作日和时段。
+- 填单信息：原文要求提供的设备编号、故障现象、回电方式等。
+
+有资料名称时注明来源。原文没写的项目标为「待确认」。需要补信息时只问最影响下一步的一项。只有工具明确返回已提交时，才说报修单已提交。', '0', 1, NOW()),
+    ('000000', 'shift-handover', '值班交接。根据服务台的状态和查询结果，写清下一班要跟进的事项。', '# 值班交接
+
+整理服务台或其他值班事项时，优先使用这次查询的工具结果，也可以引用用户提供的记录。交接说明按三项写：
+- 状态：当前能否使用，有没有正在处理的异常。
+- 依据：依据哪次查询或哪条记录。有查询时间时一并注明。
+- 下一班跟进：列出一到三项具体动作。已有负责人和截止时间时一并写上。
+
+如果查询失败、结果冲突或手边没有记录，状态写「待确认」，并说明下一班应重新核对哪一项。', '0', 1, NOW()),
+    ('000000', 'release-review', '发布前评审。按生产或测试环境整理发布检查清单，写明依据和待确认事项。', '# 发布前评审
+
+先核对应用版本、发布环境和本次改动。环境或应用版本不明确时，先请用户补充。涉及依赖升级时，记录依赖当前版本和目标版本，缺失就写入待确认项。
+
+按「评审摘要」「检查清单」「待确认」输出。参考用户提供的材料和检索到的规范，有来源就注明。
+- 生产环境：核对变更审批、灰度范围、监控安排、可回滚的版本和触发条件。
+- 测试环境：核对环境和部署版本，列出受改动影响的冒烟测试，并安排失败项复测。
+
+用户已确认的结果要带到后续追问里。尚未执行或缺少证据的项目保持待核对。', '0', 1, NOW())
+ON DUPLICATE KEY UPDATE id = agent_skill.id;
+
 -- ----------------------------
 -- Records of agent_info
 -- ----------------------------
@@ -63,6 +109,7 @@ INSERT INTO `agent_info` VALUES (1, 0, '对话智能体', '对话智能体', NUL
 -- ----------------------------
 -- Table structure for chat_message
 -- ----------------------------
+DROP TABLE IF EXISTS `chat_message_image`;
 DROP TABLE IF EXISTS `chat_message`;
 CREATE TABLE `chat_message`  (
                                  `id` bigint NOT NULL COMMENT '主键',
@@ -89,6 +136,18 @@ INSERT INTO `chat_message` VALUES (2076944340894203905, 2076944338398593026, 1, 
 INSERT INTO `chat_message` VALUES (2076944348947267585, 2076944338398593026, 1, '你好！有什么可以帮你的吗？', 'assistant', 0, 'deepseek-v4-flash', -1, -1, '2026-07-14 16:18:15', -1, '2026-07-14 16:18:15', NULL, 0);
 
 -- ----------------------------
+-- Table structure for chat_message_image
+-- ----------------------------
+CREATE TABLE `chat_message_image` (
+    `message_id` BIGINT NOT NULL PRIMARY KEY,
+    `mime_type` VARCHAR(32) NOT NULL,
+    `image_data` MEDIUMBLOB NOT NULL,
+    `recognized_text` MEDIUMTEXT NULL,
+    CONSTRAINT `fk_chat_message_image_message`
+        FOREIGN KEY (`message_id`) REFERENCES `chat_message` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天消息原图和识别文字';
+
+-- ----------------------------
 -- Table structure for chat_model
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_model`;
@@ -110,26 +169,27 @@ CREATE TABLE `chat_model`  (
                                `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
                                `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
                                `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户Id',
+                               `supports_vision` tinyint(1) NOT NULL DEFAULT 0 COMMENT '支持识图',
                                PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '模型管理' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chat_model
 -- ----------------------------
-INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 100, 'deepseek-v4-flash', 'deepseek', 'DeepSeek V4 Flash', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2025-12-15 23:16:54', 1, '2026-08-30 00:00:00', '简单快速编程任务', 0);
-INSERT INTO `chat_model` VALUES (2090000000000000001, 'chat', 100, 'deepseek-v4-pro', 'deepseek', 'DeepSeek V4 Pro', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '复杂编程、规划与审查', 0);
-INSERT INTO `chat_model` VALUES (2090000000000000002, 'chat', 100, 'deepseek-v4-flash-vision-exp', 'deepseek', 'DeepSeek V4 Flash Vision (experimental)', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '带图编程任务的视觉证据提取', 0);
-INSERT INTO `chat_model` VALUES (2007528268536287233, 'vector', 100, 'embedding-3', 'zhipu', 'embedding-3', 2048, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-01-04 03:03:32', 1, '2026-03-15 19:18:51', '向量模型', 0);
-INSERT INTO `chat_model` VALUES (2045071617578237953, 'rerank', 100, 'rerank', 'zhipu', 'rerank', NULL, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-04-17 17:27:24', 1, '2026-04-20 15:21:48', '重排序模型', 0);
-INSERT INTO `chat_model` VALUES (2000585866022060003, 'chat', 100, 'deepseek-ai/deepseek-v4-flash', 'atlas', 'deepseek-v4-flash', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', '对话模型', 0);
-INSERT INTO `chat_model` VALUES (2050000000000000001, 'video', 100, 'bytedance/seedance-2.0/text-to-video', 'atlas', 'Seedance 2.0 文生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-17 18:39:20', 1, '2026-06-17 18:39:20', 'Atlas Cloud 视频模型 - Seedance 2.0', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000001, 'image', 100, 'openai/gpt-image-2/text-to-image', 'atlas', 'GPT-IMAGE-2 文生图', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 文生图，支持三视图、角色设定、场景图', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000002, 'image', 100, 'openai/gpt-image-2/edit', 'atlas', 'GPT-IMAGE-2 图生图编辑', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 图生图/编辑，支持基于参考图修改风格、纹理等', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000003, 'video', 100, 'bytedance/seedance-2.0/image-to-video', 'atlas', 'Seedance 2.0 图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 17:24:07', 1, '2026-06-22 17:24:07', 'Atlas Cloud 视频模型 - Seedance 2.0 图生视频，接收参考图+提示词生成视频', 0);
-INSERT INTO `chat_model` VALUES (2060622000000000004, 'video', 100, 'bytedance/seedance-2.0/reference-to-video', 'atlas', 'Seedance 2.0 多参考图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 20:24:44', 1, '2026-06-22 20:24:44', 'Atlas Cloud 视频模型 - Seedance 2.0 多参考图生视频，接收多张参考图+带@imageN标记的提示词生成视频', 0);
-INSERT INTO `chat_model` VALUES (2070700000000000002, 'chat', 100, 'dify-chat', 'dify', 'Dify Chat App', NULL, 'Y', 'https://api.dify.ai/v1', '', 103, 1, '2026-07-14 11:03:44', 1, '2026-07-14 11:03:44', 'Dify 聊天应用；真实 App API Key 在后台模型管理中填写，model_name 可按应用名修改', 0);
-INSERT INTO `chat_model` VALUES (2070700000000000004, 'chat', 100, '替换为你的COZE_BOT_ID', 'coze', 'Coze Bot', NULL, 'Y', 'https://api.coze.cn', '替换为你的COZE_PAT', 103, 1, '2026-07-14 11:03:38', 1, '2026-07-14 11:03:38', 'Coze 聊天 Bot；model_name 为 Coze Bot ID，api_key 为 PAT 或 OAuth access token', 0);
-INSERT INTO `chat_model` VALUES (2070700000000000010, 'audio', 100, 'bytedance/seed-audio-1.0', 'atlas', 'Seed Audio 1.0 语音生成（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-07-16 18:00:00', 1, '2026-07-16 18:00:00', 'Atlas Cloud 语音模型 - 支持多角色对白配音，references 指定 speaker 音色，text 中用 @audioN 引用', 0);
+INSERT INTO `chat_model` VALUES (2000585866022060033, 'chat', 100, 'deepseek-v4-flash', 'deepseek', 'DeepSeek V4 Flash', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2025-12-15 23:16:54', 1, '2026-08-30 00:00:00', '简单快速编程任务', 0, 0);
+INSERT INTO `chat_model` VALUES (2090000000000000001, 'chat', 100, 'deepseek-v4-pro', 'deepseek', 'DeepSeek V4 Pro', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '复杂编程、规划与审查', 0, 0);
+INSERT INTO `chat_model` VALUES (2090000000000000002, 'chat', 100, 'deepseek-v4-flash-vision-exp', 'deepseek', 'DeepSeek V4 Flash Vision (experimental)', NULL, 'Y', 'https://api.deepseek.com', '', 103, 1, '2026-08-30 00:00:00', 1, '2026-08-30 00:00:00', '带图编程任务的视觉证据提取', 0, 0);
+INSERT INTO `chat_model` VALUES (2007528268536287233, 'vector', 100, 'embedding-3', 'zhipu', 'embedding-3', 2048, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-01-04 03:03:32', 1, '2026-03-15 19:18:51', '向量模型', 0, 0);
+INSERT INTO `chat_model` VALUES (2045071617578237953, 'rerank', 100, 'rerank', 'zhipu', 'rerank', NULL, 'N', 'https://open.bigmodel.cn', 'sk_xx', 103, 1, '2026-04-17 17:27:24', 1, '2026-04-20 15:21:48', '重排序模型', 0, 0);
+INSERT INTO `chat_model` VALUES (2000585866022060003, 'chat', 100, 'deepseek-ai/deepseek-v4-flash', 'atlas', 'deepseek-v4-flash', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2025-12-15 23:16:54', 1, '2026-03-15 19:18:48', '对话模型', 0, 0);
+INSERT INTO `chat_model` VALUES (2050000000000000001, 'video', 100, 'bytedance/seedance-2.0/text-to-video', 'atlas', 'Seedance 2.0 文生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-17 18:39:20', 1, '2026-06-17 18:39:20', 'Atlas Cloud 视频模型 - Seedance 2.0', 0, 0);
+INSERT INTO `chat_model` VALUES (2060622000000000001, 'image', 100, 'openai/gpt-image-2/text-to-image', 'atlas', 'GPT-IMAGE-2 文生图', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 文生图，支持三视图、角色设定、场景图', 0, 0);
+INSERT INTO `chat_model` VALUES (2060622000000000002, 'image', 100, 'openai/gpt-image-2/edit', 'atlas', 'GPT-IMAGE-2 图生图编辑', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 14:45:54', 1, '2026-06-22 14:45:54', 'Atlas Cloud 图片模型 - 图生图/编辑，支持基于参考图修改风格、纹理等', 0, 0);
+INSERT INTO `chat_model` VALUES (2060622000000000003, 'video', 100, 'bytedance/seedance-2.0/image-to-video', 'atlas', 'Seedance 2.0 图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 17:24:07', 1, '2026-06-22 17:24:07', 'Atlas Cloud 视频模型 - Seedance 2.0 图生视频，接收参考图+提示词生成视频', 0, 0);
+INSERT INTO `chat_model` VALUES (2060622000000000004, 'video', 100, 'bytedance/seedance-2.0/reference-to-video', 'atlas', 'Seedance 2.0 多参考图生视频（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-06-22 20:24:44', 1, '2026-06-22 20:24:44', 'Atlas Cloud 视频模型 - Seedance 2.0 多参考图生视频，接收多张参考图+带@imageN标记的提示词生成视频', 0, 0);
+INSERT INTO `chat_model` VALUES (2070700000000000002, 'chat', 100, 'dify-chat', 'dify', 'Dify Chat App', NULL, 'Y', 'https://api.dify.ai/v1', '', 103, 1, '2026-07-14 11:03:44', 1, '2026-07-14 11:03:44', 'Dify 聊天应用；真实 App API Key 在后台模型管理中填写，model_name 可按应用名修改', 0, 0);
+INSERT INTO `chat_model` VALUES (2070700000000000004, 'chat', 100, '替换为你的COZE_BOT_ID', 'coze', 'Coze Bot', NULL, 'Y', 'https://api.coze.cn', '替换为你的COZE_PAT', 103, 1, '2026-07-14 11:03:38', 1, '2026-07-14 11:03:38', 'Coze 聊天 Bot；model_name 为 Coze Bot ID，api_key 为 PAT 或 OAuth access token', 0, 0);
+INSERT INTO `chat_model` VALUES (2070700000000000010, 'audio', 100, 'bytedance/seed-audio-1.0', 'atlas', 'Seed Audio 1.0 语音生成（字节跳动）', NULL, 'Y', 'https://api.atlascloud.ai/v1', 'sk_xx', 103, 1, '2026-07-16 18:00:00', 1, '2026-07-16 18:00:00', 'Atlas Cloud 语音模型 - 支持多角色对白配音，references 指定 speaker 音色，text 中用 @audioN 引用', 0, 0);
 
 -- ----------------------------
 -- Table structure for chat_provider
@@ -172,6 +232,12 @@ INSERT INTO `chat_provider` VALUES (17, 'ollama', 'ollama', 'https://example-123
 INSERT INTO `chat_provider` VALUES (18, '自定义厂商', 'custom_api', 'https://example-1234567890.cos.ap-guangzhou.myqcloud.com/2026/04/19/c1a8e122510f4e2f90deb36958af710b.png', 'OPENAI兼容格式', '自定义', '0', 8, 103, '2026-04-19 12:35:57', '1', '1', '2026-04-19 13:17:20', 'OPENAI兼容格式', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (2070700000000000001, 'Dify', 'dify', NULL, 'Dify 应用 API 服务', 'https://api.dify.ai/v1', '0', 9, 103, '2026-07-14 11:03:44', '1', '1', '2026-07-14 11:03:44', 'Dify 应用 API 服务商', NULL, '0', NULL, 0);
 INSERT INTO `chat_provider` VALUES (2070700000000000003, 'Coze', 'coze', NULL, 'Coze Bot API 服务', 'https://api.coze.cn', '0', 10, 103, '2026-07-14 11:03:38', '1', '1', '2026-07-14 11:03:38', 'Coze Bot API 服务商', NULL, '0', NULL, 0);
+INSERT INTO `chat_provider`
+    (provider_name, provider_code, provider_desc, api_host, status, sort_order, create_dept,
+     create_by, create_time, remark, del_flag, tenant_id)
+VALUES ('火山方舟', 'ark', '火山方舟 Agent Plan，兼容 OpenAI 对话接口',
+        'https://ark.cn-beijing.volces.com/api/plan/v3', '0', 10, 103, '1',
+        '2026-11-19 00:00:00', '使用 Agent Plan 专属 API Key', '0', 0);
 
 -- ----------------------------
 -- Table structure for chat_session
@@ -1235,64 +1301,6 @@ CREATE TABLE `knowledge_info`  (
 -- ----------------------------
 
 -- ----------------------------
--- Table structure for mcp_market_info
--- ----------------------------
-DROP TABLE IF EXISTS `mcp_market_info`;
-CREATE TABLE `mcp_market_info`  (
-                                    `id` bigint NOT NULL AUTO_INCREMENT COMMENT '市场ID',
-                                    `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '市场名称',
-                                    `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '市场URL',
-                                    `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '市场描述',
-                                    `auth_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '认证配置（JSON格式）',
-                                    `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ENABLED' COMMENT '状态：ENABLED-启用, DISABLED-禁用',
-                                    `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                                    `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
-                                    `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
-                                    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                    `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
-                                    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                    `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-                                    PRIMARY KEY (`id`) USING BTREE,
-                                    INDEX `idx_name`(`name` ASC) USING BTREE,
-                                    INDEX `idx_status`(`status` ASC) USING BTREE,
-                                    INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mcp_market_info
--- ----------------------------
-
--- ----------------------------
--- Table structure for mcp_market_tool
--- ----------------------------
-DROP TABLE IF EXISTS `mcp_market_tool`;
-CREATE TABLE `mcp_market_tool`  (
-                                    `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
-                                    `market_id` bigint NOT NULL COMMENT '市场ID',
-                                    `tool_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '工具名称',
-                                    `tool_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '工具描述',
-                                    `tool_version` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工具版本',
-                                    `tool_metadata` json NULL COMMENT '工具元数据（JSON格式）',
-                                    `is_loaded` tinyint(1) NULL DEFAULT 0 COMMENT '是否已加载到本地',
-                                    `local_tool_id` bigint NULL DEFAULT NULL COMMENT '关联的本地工具ID',
-                                    `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                                    `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
-                                    `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
-                                    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                                    `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
-                                    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                                    PRIMARY KEY (`id`) USING BTREE,
-                                    INDEX `idx_market_id`(`market_id` ASC) USING BTREE,
-                                    INDEX `idx_tenant_market`(`tenant_id` ASC, `market_id` ASC) USING BTREE,
-                                    INDEX `idx_tool_name`(`tool_name` ASC) USING BTREE,
-                                    INDEX `idx_is_loaded`(`is_loaded` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MCP市场工具关联表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mcp_market_tool
--- ----------------------------
-
--- ----------------------------
 -- Table structure for mcp_tool_info
 -- ----------------------------
 DROP TABLE IF EXISTS `mcp_tool_info`;
@@ -2322,6 +2330,18 @@ INSERT INTO `sys_config` (`config_id`, `tenant_id`, `config_name`, `config_key`,
 INSERT INTO `sys_config` (`config_id`, `tenant_id`, `config_name`, `config_key`, `config_value`, `config_type`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2027217577397391361, '000000', '工作流异常响应模板', 'node.exception.template', '🛑 工作流发生异常：', 'N', 103, 1, '2026-02-27 11:01:49', 1, '2026-02-27 11:02:01', NULL);
 INSERT INTO `sys_config` (`config_id`, `tenant_id`, `config_name`, `config_key`, `config_value`, `config_type`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2084157200000000003, '000000', '网络搜索节点响应模板', 'node.googleSearch.template', '🔍 网络搜索节点处理完成：', 'Y', 103, 1, '2026-07-29 19:40:00', 1, '2026-07-29 19:40:00', NULL);
 
+INSERT INTO `sys_config` (
+    `config_id`, `tenant_id`, `config_name`, `config_key`,
+    `config_value`, `config_type`, `create_dept`, `create_by`, `create_time`, `remark`
+)
+SELECT 2123320236999876410, '000000', '聊天默认视觉模型', 'chat.image.visionModels',
+       '', 'N', 103, 1, NOW(), '填写已开启「支持识图」的对话模型名称。当前模型未开启时，带图消息由此模型回答。'
+FROM DUAL
+WHERE NOT EXISTS (
+    SELECT 1 FROM `sys_config`
+    WHERE `tenant_id` = '000000' AND `config_key` = 'chat.image.visionModels'
+);
+
 -- ----------------------------
 -- Table structure for sys_dept
 -- ----------------------------
@@ -2461,7 +2481,10 @@ INSERT INTO `sys_dict_data` VALUES (2026642525081116674, '000000', 1, '图像', 
 INSERT INTO `sys_dict_data` VALUES (2026643983713247233, '000000', 1, '次数计费', '1', 'sys_model_billing', NULL, 'green', 'N', 103, 1, '2026-02-25 21:02:34', 1, '2026-02-25 21:02:56', NULL);
 INSERT INTO `sys_dict_data` VALUES (2026644058522853378, '000000', 2, 'token计费', '2', 'sys_model_billing', NULL, 'primary', 'N', 103, 1, '2026-02-25 21:02:51', 1, '2026-02-25 21:02:51', NULL);
 INSERT INTO `sys_dict_data` VALUES (2027261114955931650, '000000', 2, '向量', 'vector', 'chat_model_category', NULL, 'default', 'N', 103, 1, '2026-02-27 13:54:49', 1, '2026-02-27 13:54:54', NULL);
+INSERT INTO `sys_dict_data` VALUES (2099111900010000200, '000000', 3, '语音', 'audio', 'chat_model_category', NULL, 'purple', 'N', 103, 1, '2026-11-19 00:00:00', 1, '2026-11-19 00:00:00', NULL);
 INSERT INTO `sys_dict_data` VALUES (2045070879435259905, '000000', 4, '重排序', 'rerank', 'chat_model_category', NULL, '#000000', 'N', 103, 1, '2026-04-17 17:24:28', 1, '2026-04-19 01:02:20', '重排序模型');
+INSERT INTO `sys_dict_data` VALUES (2099111900010000201, '000000', 5, '视频', 'video', 'chat_model_category', NULL, 'red', 'N', 103, 1, '2026-11-19 00:00:00', 1, '2026-11-19 00:00:00', NULL);
+INSERT INTO `sys_dict_data` VALUES (2099111900010000202, '000000', 6, '图片识字', 'ocr', 'chat_model_category', NULL, 'blue', 'N', 103, 1, '2026-11-19 00:00:00', 1, '2026-11-19 00:00:00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -2596,9 +2619,9 @@ CREATE TABLE `sys_menu`  (
 -- ----------------------------
 -- Records of sys_menu
 -- ----------------------------
-INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 3, 'system', '', '', 1, 0, 'M', '0', '0', '', 'eos-icons:system-group', 103, 1, '2025-12-14 16:11:49', 1, '2026-01-01 19:06:19', '系统管理目录');
-INSERT INTO `sys_menu` VALUES (2, '系统监控', 0, 3, 'monitor', '', '', 1, 0, 'M', '0', '0', '', 'solar:monitor-camera-outline', 103, 1, '2025-12-14 16:11:49', 1, '2025-12-14 17:56:44', '系统监控目录');
-INSERT INTO `sys_menu` VALUES (3, '系统工具', 0, 4, 'tool', NULL, '', 1, 0, 'M', '0', '0', '', 'ant-design:tool-outlined', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '系统工具目录');
+INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 5, 'system', '', '', 1, 0, 'M', '0', '0', '', 'eos-icons:system-group', 103, 1, '2025-12-14 16:11:49', 1, '2026-01-01 19:06:19', '系统管理目录');
+INSERT INTO `sys_menu` VALUES (2, '系统监控', 0, 5, 'monitor', '', '', 1, 0, 'M', '0', '0', '', 'solar:monitor-camera-outline', 103, 1, '2025-12-14 16:11:49', 1, '2025-12-14 17:56:44', '系统监控目录');
+INSERT INTO `sys_menu` VALUES (3, '系统工具', 0, 6, 'tool', NULL, '', 1, 0, 'M', '0', '0', '', 'ant-design:tool-outlined', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '系统工具目录');
 INSERT INTO `sys_menu` VALUES (6, '租户管理', 0, 8, 'tenant', '', '', 1, 0, 'M', '0', '0', '', 'ph:users-light', 103, 1, '2025-12-14 16:11:49', 1, '2026-02-25 20:42:14', '租户管理目录');
 INSERT INTO `sys_menu` VALUES (100, '用户管理', 1, 1, 'user', 'system/user/index', '', 1, 0, 'C', '0', '0', 'system:user:list', 'ant-design:user-outlined', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '用户管理菜单');
 INSERT INTO `sys_menu` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'eos-icons:role-binding-outlined', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '角色管理菜单');
@@ -2703,29 +2726,15 @@ INSERT INTO `sys_menu` VALUES (1620, '配置列表', 118, 5, '#', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (1621, '配置添加', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:add', '#', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1622, '配置编辑', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:edit', '#', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1623, '配置删除', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:remove', '#', 103, 1, '2025-12-14 16:11:49', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2000, 'MCP管理', 0, 2, 'mcp', '', '', 1, 0, 'M', '0', '0', '', 'mdi:robot-industrial', 103, 1, '2026-02-24 20:02:47', 1, '2026-02-25 20:41:54', 'MCP模块管理菜单');
-INSERT INTO `sys_menu` VALUES (2001, 'MCP工具管理', 2000, 1, 'tool', 'mcp/tool/index', '', 1, 0, 'C', '0', '0', 'mcp:tool:list', 'octicon:tools-24', 103, 1, '2026-02-24 20:02:47', 1, '2026-02-25 20:41:27', 'MCP工具管理菜单');
+INSERT INTO `sys_menu` VALUES (2000, '工具管理', 0, 2, 'mcp', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'octicon:tools-24', 103, 1, '2026-11-19 00:00:00', NULL, NULL, '工具管理目录');
+INSERT INTO `sys_menu` VALUES (2001, 'MCP管理', 2000, 1, 'tool', 'mcp/tool/index', '', 1, 0, 'C', '0', '0', 'mcp:tool:list', 'octicon:tools-24', 103, 1, '2026-02-24 20:02:47', 1, '2026-02-25 20:41:27', '工具管理菜单');
 INSERT INTO `sys_menu` VALUES (2002, 'MCP工具查询', 2001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:query', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2003, 'MCP工具新增', 2001, 2, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:add', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2004, 'MCP工具修改', 2001, 3, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:edit', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2005, 'MCP工具删除', 2001, 4, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:remove', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2006, 'MCP工具测试', 2001, 5, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:test', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2007, 'MCP工具导出', 2001, 6, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:tool:export', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2010, 'MCP市场管理', 2000, 2, 'market', 'mcp/market/index', '', 1, 0, 'C', '0', '0', 'mcp:market:list', 'mdi:storefront-outline', 103, 1, '2026-02-24 20:02:47', NULL, NULL, 'MCP市场管理菜单');
-INSERT INTO `sys_menu` VALUES (2011, 'MCP市场查询', 2010, 1, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:query', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2012, 'MCP市场新增', 2010, 2, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:add', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2013, 'MCP市场修改', 2010, 3, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:edit', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2014, 'MCP市场删除', 2010, 4, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:remove', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2015, 'MCP市场刷新', 2010, 5, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:refresh', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2016, 'MCP工具加载', 2010, 6, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:load', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2017, 'MCP市场导出', 2010, 7, '#', '', '', 1, 0, 'F', '0', '0', 'mcp:market:export', '#', 103, 1, '2026-02-24 20:02:47', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2020, 'URL管理', 1, 12, 'url', 'system/url/index', '', 1, 0, 'C', '0', '0', 'system:url:list', 'mdi:link-variant', 103, 1, '2026-09-01 00:00:00', NULL, NULL, 'URL管理菜单');
-INSERT INTO `sys_menu` VALUES (2021, 'URL查询', 2020, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:query', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2022, 'URL新增', 2020, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:add', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2023, 'URL修改', 2020, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:edit', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2024, 'URL删除', 2020, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:url:remove', '#', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (3000, '智能体管理', 0, 1, 'agent', '', '', 1, 0, 'M', '0', '0', '', 'mdi:robot', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '智能体管理目录');
-INSERT INTO `sys_menu` VALUES (3001, '智能体列表', 3000, 1, 'agent', 'agent/agent/index', '', 1, 0, 'C', '0', '0', 'agent:agent:list', 'mdi:robot-outline', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '智能体列表菜单');
+INSERT INTO `sys_menu` VALUES (3001, '智能体管理', 0, 4, 'agent/agent', 'agent/agent/index', '', 1, 0, 'C', '0', '0', 'agent:agent:list', 'mdi:robot-outline', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '智能体管理菜单');
 INSERT INTO `sys_menu` VALUES (3002, '智能体查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'agent:agent:query', '#', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3003, '智能体新增', 3001, 2, '#', '', '', 1, 0, 'F', '0', '0', 'agent:agent:add', '#', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3004, '智能体修改', 3001, 3, '#', '', '', 1, 0, 'F', '0', '0', 'agent:agent:edit', '#', 103, 1, '2026-07-07 21:37:37', NULL, NULL, '');
@@ -2762,25 +2771,36 @@ INSERT INTO `sys_menu` VALUES (2000210913451892740, '厂商管理新增', 200021
 INSERT INTO `sys_menu` VALUES (2000210913451892741, '厂商管理修改', 2000210913451892738, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:provider:edit', '#', 103, 1, '2025-12-14 22:28:05', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210913451892742, '厂商管理删除', 2000210913451892738, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:provider:remove', '#', 103, 1, '2025-12-14 22:28:05', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210913451892743, '厂商管理导出', 2000210913451892738, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:provider:export', '#', 103, 1, '2025-12-14 22:28:05', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2000210913846157314, '模型管理', 2000209300188356609, 1, 'model', 'chat/model/index', NULL, 1, 0, 'C', '0', '0', 'system:model:list', 'carbon:model-alt', 103, 1, '2025-12-14 22:27:59', 1, '2025-12-15 00:51:01', '模型管理菜单');
+INSERT INTO `sys_menu` VALUES (2000210913846157314, '模型管理', 2000209300188356609, 2, 'model', 'chat/model/index', NULL, 1, 0, 'C', '0', '0', 'system:model:list', 'carbon:model-alt', 103, 1, '2025-12-14 22:27:59', 1, '2025-12-15 00:51:01', '模型管理菜单');
 INSERT INTO `sys_menu` VALUES (2000210913846157315, '模型管理查询', 2000210913846157314, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:query', '#', 103, 1, '2025-12-14 22:27:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210913846157316, '模型管理新增', 2000210913846157314, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:add', '#', 103, 1, '2025-12-14 22:27:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210913846157317, '模型管理修改', 2000210913846157314, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:edit', '#', 103, 1, '2025-12-14 22:27:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210913846157318, '模型管理删除', 2000210913846157314, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:remove', '#', 103, 1, '2025-12-14 22:27:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210913846157319, '模型管理导出', 2000210913846157314, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:model:export', '#', 103, 1, '2025-12-14 22:28:00', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2000210914680823809, '聊天消息', 2000209300188356609, 1, 'message', 'chat/message/index', NULL, 1, 0, 'C', '0', '0', 'system:message:list', 'system-uicons:message', 103, 1, '2025-12-14 22:27:54', 1, '2025-12-15 00:53:47', '聊天消息菜单');
+INSERT INTO `sys_menu` VALUES (2000210914680823809, '聊天消息', 2000209300188356609, 3, 'message', 'chat/message/index', NULL, 1, 0, 'C', '0', '0', 'system:message:list', 'system-uicons:message', 103, 1, '2025-12-14 22:27:54', 1, '2025-12-15 00:53:47', '聊天消息菜单');
 INSERT INTO `sys_menu` VALUES (2000210914680823810, '聊天消息查询', 2000210914680823809, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:query', '#', 103, 1, '2025-12-14 22:27:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210914680823811, '聊天消息新增', 2000210914680823809, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:add', '#', 103, 1, '2025-12-14 22:27:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210914680823812, '聊天消息修改', 2000210914680823809, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:edit', '#', 103, 1, '2025-12-14 22:27:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210914680823813, '聊天消息删除', 2000210914680823809, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:remove', '#', 103, 1, '2025-12-14 22:27:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000210914680823814, '聊天消息导出', 2000210914680823809, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:message:export', '#', 103, 1, '2025-12-14 22:27:54', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2006681261898813441, '知识管理', 2000209300188356609, 1, 'info', 'knowledge/info/index', NULL, 1, 0, 'C', '0', '0', 'knowledge:info:list', 'solar:book-line-duotone', 103, 1, '2026-01-01 18:59:05', 1, '2026-03-15 21:07:50', '知识库菜单');
+INSERT INTO `sys_menu` VALUES (2006681261898813441, '知识库', 2099010100000000040, 3, 'info', 'knowledge/info/index', NULL, 1, 0, 'C', '0', '0', 'system:info:list', 'solar:book-line-duotone', 103, 1, '2026-01-01 18:59:05', 1, '2026-03-15 21:07:50', '知识库菜单');
 INSERT INTO `sys_menu` VALUES (2006681261898813442, '知识库查询', 2006681261898813441, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:info:query', '#', 103, 1, '2026-01-01 18:59:05', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2006681261898813443, '知识库新增', 2006681261898813441, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:info:add', '#', 103, 1, '2026-01-01 18:59:05', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2006681261898813444, '知识库修改', 2006681261898813441, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:info:edit', '#', 103, 1, '2026-01-01 18:59:05', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2006681261898813445, '知识库删除', 2006681261898813441, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:info:remove', '#', 103, 1, '2026-01-01 18:59:06', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2006681261898813446, '知识库导出', 2006681261898813441, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:info:export', '#', 103, 1, '2026-01-01 18:59:06', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2031361596464902145, '编排管理', 2000209300188356609, 1, 'aiflow', 'aiflow/index', NULL, 1, 0, 'C', '0', '0', NULL, 'carbon:flow', 103, 1, '2026-03-10 21:28:40', 1, '2026-03-15 21:06:01', '');
+INSERT INTO `sys_menu` VALUES (2031361596464902145, '流程编排', 0, 3, 'chat/aiflow', 'aiflow/index', NULL, 1, 0, 'C', '0', '0', NULL, 'carbon:flow', 103, 1, '2026-03-10 21:28:40', 1, '2026-03-15 21:06:01', '');
+
+INSERT IGNORE INTO sys_menu
+    (menu_id, menu_name, parent_id, order_num, path, component, query_param,
+     is_frame, is_cache, menu_type, visible, status, perms, icon,
+     create_dept, create_by, create_time, remark)
+VALUES
+    (2099111900010000100, '技能管理', 2000, 2, 'skill', 'agent/skill/index', '', 1, 0, 'C', '0', '0', 'agent:skill:list', 'mdi:book-cog-outline', 103, 1, NOW(), '智能体技能管理'),
+    (2099111900010000101, '技能详情', 2099111900010000100, 1, '#', '', '', 1, 0, 'F', '0', '0', 'agent:skill:query', '#', 103, 1, NOW(), ''),
+    (2099111900010000102, '技能新增', 2099111900010000100, 2, '#', '', '', 1, 0, 'F', '0', '0', 'agent:skill:add', '#', 103, 1, NOW(), ''),
+    (2099111900010000103, '技能修改', 2099111900010000100, 3, '#', '', '', 1, 0, 'F', '0', '0', 'agent:skill:edit', '#', 103, 1, NOW(), ''),
+    (2099111900010000104, '技能删除', 2099111900010000100, 4, '#', '', '', 1, 0, 'F', '0', '0', 'agent:skill:remove', '#', 103, 1, NOW(), '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -2807,33 +2827,6 @@ CREATE TABLE `sys_notice`  (
 -- ----------------------------
 INSERT INTO `sys_notice` VALUES (1, '000000', '温馨提醒：2018-07-01 新版本发布啦', '2', 0xE696B0E78988E69CACE58685E5AEB9, '0', 103, 1, '2026-02-03 05:14:52', NULL, NULL, '管理员');
 INSERT INTO `sys_notice` VALUES (2, '000000', '维护通知：2018-07-01 系统凌晨维护', '1', 0xE7BBB4E68AA4E58685E5AEB9, '0', 103, 1, '2026-02-03 05:14:52', NULL, NULL, '管理员');
-
--- ----------------------------
--- Table structure for sys_url
--- ----------------------------
-DROP TABLE IF EXISTS `sys_url`;
-CREATE TABLE `sys_url`  (
-                            `url_id` bigint NOT NULL AUTO_INCREMENT COMMENT '链接ID',
-                            `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '000000' COMMENT '租户编号',
-                            `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '链接名称',
-                            `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'HTTP(S) 地址',
-                            `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '链接说明',
-                            `sort_order` int NULL DEFAULT 0 COMMENT '显示顺序',
-                            `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
-                            `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门',
-                            `create_by` bigint NULL DEFAULT NULL COMMENT '创建者',
-                            `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-                            `update_by` bigint NULL DEFAULT NULL COMMENT '更新者',
-                            `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                            `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
-                            PRIMARY KEY (`url_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'URL 管理表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sys_url
--- ----------------------------
-INSERT INTO `sys_url` VALUES (1, '000000', '若依官网', 'https://ruoyi.vip', 'RuoYi 官方网站，提供文档、源码与社区支持', 1, '0', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '初始公开链接');
-INSERT INTO `sys_url` VALUES (2, '000000', 'RuoYi-AI 开源仓库', 'https://github.com/ageerle/ruoyi-ai', 'RuoYi-AI 项目 GitHub 仓库', 2, '0', 103, 1, '2026-09-01 00:00:00', NULL, NULL, '初始公开链接');
 
 -- ----------------------------
 -- Table structure for sys_oper_log
@@ -3484,7 +3477,7 @@ INSERT INTO `t_workflow_component` VALUES (18, '5cd6ac69bbb411f0bb7840c2ba9a7fbc
 INSERT INTO `t_workflow_component` VALUES (19, '5cd6c8eabbb411f0bb7840c2ba9a7fbc', 'Answer', '生成回答', '调用大语言模型回答问题', 0, 1, '2025-11-07 16:32:49', '2025-11-07 16:32:49', 0, '000000');
 INSERT INTO `t_workflow_component` VALUES (26, 'bb00fc2f52c74fec82ee3f99725b56bb', 'Switcher', '条件分支', '根据条件执行不同分支', 0, 1, '2025-12-26 16:30:46', '2025-12-26 16:30:46', 0, '000000');
 INSERT INTO `t_workflow_component` VALUES (37, 'a7f8c2d44e5b4c83a9d6f103c2b47e18', 'Google', '网络搜索', '调用智谱 Web Search 检索互联网信息', 40, 1, '2026-07-29 20:30:00', '2026-07-29 20:30:00', 0, '000000');
-INSERT INTO `t_workflow_component` VALUES (38, 'b8e3c1d55f6a4d92b0e7f214d3c58a29', 'KnowledgeRetrieval', '知识库检索', '从知识库中检索相关内容，支持向量检索和混合检索', 30, 1, '2026-09-11 10:00:00', '2026-09-11 10:00:00', 0, '000000');
+INSERT INTO `t_workflow_component` VALUES (38, 'b8e3c1d55f6a4d92b0e7f214d3c58a29', 'KnowledgeRetrieval', '知识库检索', '根据输入在知识库中检索相关片段。', 30, 1, '2026-09-11 10:00:00', '2026-09-11 10:00:00', 0, '000000');
 
 -- ----------------------------
 -- Table structure for t_workflow_edge
@@ -3705,7 +3698,7 @@ INSERT INTO `test_tree` VALUES (13, '000000', 10, 108, 3, '子节点99', 0, 103,
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
--- 第二部分：链路追踪（trace_run / trace_node + 监控菜单）
+-- 第二部分：通用链路追踪存储（trace_run / trace_node）
 -- 来源：update/2026-06-15-trace.sql
 -- 说明：全新库中 CREATE TABLE 已含 tenant_id 及索引，
 --       原脚本中的旧表兼容 ALTER 段已省略；菜单插入加了判重守卫。
@@ -3774,20 +3767,6 @@ CREATE TABLE IF NOT EXISTS `trace_node` (
   KEY `idx_trace_node_type_status` (`node_type`, `status`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='链路追踪节点记录表' ROW_FORMAT=DYNAMIC;
 
--- 链路追踪监控菜单 & 按钮权限（判重守卫，可重复执行）
-INSERT INTO `sys_menu`
-(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`, `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_dept`, `create_by`, `create_time`, `remark`)
-SELECT (SELECT COALESCE(MAX(`menu_id`), 0) + 1 FROM (SELECT `menu_id` FROM `sys_menu`) t), '链路追踪', 2, 7, 'trace', 'monitor/trace/index', '', 1, 0, 'C', '0', '0', 'monitor:trace:list', 'tabler:route', 103, 1, NOW(), '链路追踪监控菜单'
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` WHERE `perms` = 'monitor:trace:list' AND `menu_type` = 'C');
-
-INSERT INTO `sys_menu`
-(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`, `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_dept`, `create_by`, `create_time`, `remark`)
-SELECT (SELECT COALESCE(MAX(`menu_id`), 0) + 1 FROM (SELECT `menu_id` FROM `sys_menu`) t), '链路追踪查询', (SELECT `menu_id` FROM `sys_menu` WHERE `perms` = 'monitor:trace:list' AND `menu_type` = 'C' LIMIT 1), 1, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:trace:query', '#', 103, 1, NOW(), ''
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` WHERE `perms` = 'monitor:trace:query' AND `menu_type` = 'F');
-
-
 -- ============================================================
 -- 第三部分：注册默认角色 + 补齐菜单权限
 -- 来源：update/2026-07-24-register-default-role-and-missing-menus.sql
@@ -3798,18 +3777,14 @@ WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` WHERE `perms` = 'monitor:trace:query'
 -- 关联问题：
 --   #3 注册用户无默认角色 -> 无权限访问 AI 对话界面
 --   #4 sys_menu 缺 system:session:* / system:attach:* / system:fragment:*，
---      且 知识管理 父菜单 perms 为 knowledge:info:list，与控制器
---      KnowledgeInfoController 用的 system:info:list 对不上，:list 无法授权。
 -- 本脚本幂等，可重复执行（INSERT IGNORE + UPDATE 天然幂等）。
 -- 新增 menu_id / role_id / config_id 统一使用 2099010100000000xxx 段，
 -- 与现有 snowflake id（2xxxxxxxxxxxxxxxxx）不冲突。
 
 -- ============================================================
--- 1. 修正 知识管理 父菜单权限标识：knowledge:info:list -> system:info:list
+-- 1. 新增知识管理目录。
 -- ============================================================
-UPDATE `sys_menu`
-SET `perms` = 'system:info:list'
-WHERE `menu_id` = 2006681261898813441 AND `perms` = 'knowledge:info:list';
+INSERT INTO `sys_menu` VALUES (2099010100000000040, '知识管理', 0, 1, 'knowledge', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'solar:book-line-duotone', 103, 1, '2026-11-19 00:00:00', NULL, NULL, '知识管理目录');
 
 -- ============================================================
 -- 2. 新增 会话管理 菜单组（system:session:*）
@@ -3827,10 +3802,10 @@ INSERT IGNORE INTO `sys_menu` VALUES
 
 -- ============================================================
 -- 3. 新增 知识附件 菜单组（system:attach:*）
---    父菜单=对话管理(2000209300188356609)，组件对应管理端 knowledge/attach/index。
+--    父菜单=知识管理(2099010100000000040)，组件对应管理端 knowledge/attach/index。
 -- ============================================================
 INSERT IGNORE INTO `sys_menu` VALUES
-(2099010100000000010, '知识附件', 2000209300188356609, 7, 'attach', 'knowledge/attach/index', NULL, 1, 0, 'C', '0', '0', 'system:attach:list', 'ant-design:paper-clip-outlined', 103, 1, '2026-07-24 00:00:00', NULL, NULL, '知识附件菜单'),
+(2099010100000000010, '知识附件', 2006681261898813441, 6, 'attach', 'knowledge/attach/index', NULL, 1, 0, 'C', '1', '0', 'system:attach:list', 'ant-design:paper-clip-outlined', 103, 1, '2026-07-24 00:00:00', NULL, NULL, '知识附件菜单'),
 (2099010100000000011, '知识附件查询', 2099010100000000010, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:query', '#', 103, 1, '2026-07-24 00:00:00', NULL, NULL, ''),
 (2099010100000000012, '知识附件新增', 2099010100000000010, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:add', '#', 103, 1, '2026-07-24 00:00:00', NULL, NULL, ''),
 (2099010100000000013, '知识附件修改', 2099010100000000010, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:edit', '#', 103, 1, '2026-07-24 00:00:00', NULL, NULL, ''),
@@ -3839,10 +3814,10 @@ INSERT IGNORE INTO `sys_menu` VALUES
 
 -- ============================================================
 -- 4. 新增 知识片段 菜单组（system:fragment:*）
---    父菜单=对话管理(2000209300188356609)，组件对应管理端 knowledge/fragment/index。
+--    父菜单=知识管理(2099010100000000040)，组件对应管理端 knowledge/fragment/index。
 -- ============================================================
 INSERT IGNORE INTO `sys_menu` VALUES
-(2099010100000000020, '知识片段', 2000209300188356609, 8, 'fragment', 'knowledge/fragment/index', NULL, 1, 0, 'C', '0', '0', 'system:fragment:list', 'ant-design:file-text-outlined', 103, 1, '2026-07-24 00:00:00', NULL, NULL, '知识片段菜单'),
+(2099010100000000020, '知识片段', 2099010100000000010, 6, 'fragment', 'knowledge/fragment/index', NULL, 1, 0, 'C', '1', '0', 'system:fragment:list', 'ant-design:file-text-outlined', 103, 1, '2026-07-24 00:00:00', NULL, NULL, '知识片段菜单'),
 (2099010100000000021, '知识片段查询', 2099010100000000020, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:query', '#', 103, 1, '2026-07-24 00:00:00', NULL, NULL, ''),
 (2099010100000000022, '知识片段新增', 2099010100000000020, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:add', '#', 103, 1, '2026-07-24 00:00:00', NULL, NULL, ''),
 (2099010100000000023, '知识片段修改', 2099010100000000020, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:edit', '#', 103, 1, '2026-07-24 00:00:00', NULL, NULL, ''),

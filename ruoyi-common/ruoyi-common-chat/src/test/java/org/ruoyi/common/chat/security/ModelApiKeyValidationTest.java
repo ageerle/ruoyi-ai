@@ -85,4 +85,16 @@ class ModelApiKeyValidationTest {
         assertThrows(IllegalArgumentException.class, () -> CustomApiCredentialPolicy.normalizeBaseUrl(
             "custom_anthropic", "https://example.com/v1/chat/completions"));
     }
+    @Test
+    void arkEndpointDefaultsToAgentPlanAndAcceptsACompleteEndpoint() {
+        assertEquals("https://ark.cn-beijing.volces.com/api/plan/v3",
+            CustomApiCredentialPolicy.normalizeBaseUrl("ark", null));
+        assertEquals("https://ark.cn-beijing.volces.com/api/plan/v3",
+            CustomApiCredentialPolicy.normalizeBaseUrl("ark",
+                "https://ark.cn-beijing.volces.com/api/plan/v3/chat/completions"));
+        assertThrows(IllegalArgumentException.class, () -> CustomApiCredentialPolicy.normalizeBaseUrl(
+            "ark", "https://example.com/v1/messages"));
+        assertThrows(IllegalArgumentException.class, () -> CustomApiCredentialPolicy.normalizeBaseUrl(
+            "custom_api", null));
+    }
 }

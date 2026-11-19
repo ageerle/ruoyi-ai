@@ -119,11 +119,16 @@ public class SseEmitterManager {
 
     /** Deliver locally in order; a terminal event is flushed before its connection is removed. */
     public boolean sendLocalEvent(String sessionId, SseEventDto eventDto) {
-        if (sessionId == null || eventDto == null) {
-            return false;
-        }
-        SseEmitter emitter = SESSION_EMITTERS.get(sessionId);
-        if (emitter == null) {
+        return sessionId != null && sendLocalEvent(sessionId, SESSION_EMITTERS.get(sessionId), eventDto);
+    }
+
+    public boolean isCurrent(String sessionId, SseEmitter emitter) {
+        return sessionId != null && emitter != null && SESSION_EMITTERS.get(sessionId) == emitter;
+    }
+
+    /** An old producer must never deliver events to a replacement connection. */
+    public boolean sendLocalEvent(String sessionId, SseEmitter emitter, SseEventDto eventDto) {
+        if (!isCurrent(sessionId, emitter) || eventDto == null) {
             return false;
         }
         try {

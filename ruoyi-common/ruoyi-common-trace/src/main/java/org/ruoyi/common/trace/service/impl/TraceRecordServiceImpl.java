@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 public class TraceRecordServiceImpl implements TraceRecordService {
 
     private static final int TOP_SLOW_NODES_LIMIT = 5;
+    private static final String RETIRED_RAG_CHAT = "RAG_CHAT";
 
     private final TraceRunMapper traceRunMapper;
     private final TraceNodeMapper traceNodeMapper;
@@ -108,7 +109,9 @@ public class TraceRecordServiceImpl implements TraceRecordService {
 
     @Override
     public TraceRunVo getRun(String traceId) {
-        TraceRunVo run = traceRunMapper.selectVoOne(Wrappers.lambdaQuery(TraceRun.class).eq(TraceRun::getTraceId, traceId));
+        TraceRunVo run = traceRunMapper.selectVoOne(Wrappers.lambdaQuery(TraceRun.class)
+            .eq(TraceRun::getTraceId, traceId)
+            .ne(TraceRun::getBusinessType, RETIRED_RAG_CHAT));
         if (run != null) {
             enrichRunVo(run);
         }
@@ -119,6 +122,8 @@ public class TraceRecordServiceImpl implements TraceRecordService {
     public List<TraceNodeVo> listNodes(String traceId) {
         List<TraceNodeVo> nodes = traceNodeMapper.selectVoList(Wrappers.lambdaQuery(TraceNode.class)
             .eq(TraceNode::getTraceId, traceId)
+            .notExists("SELECT 1 FROM trace_run WHERE trace_run.trace_id = trace_node.trace_id AND trace_run.business_type = {0}",
+                RETIRED_RAG_CHAT)
             .orderByAsc(TraceNode::getStartTime)
             .orderByAsc(TraceNode::getId));
         if (nodes != null) {
@@ -239,6 +244,7 @@ public class TraceRecordServiceImpl implements TraceRecordService {
     private LambdaQueryWrapper<TraceRun> buildRunWrapper(TraceRunBo bo) {
         Map<String, Object> params = bo.getParams();
         return new LambdaQueryWrapper<TraceRun>()
+            .ne(TraceRun::getBusinessType, RETIRED_RAG_CHAT)
             .eq(StringUtils.isNotBlank(bo.getTraceId()), TraceRun::getTraceId, bo.getTraceId())
             .like(StringUtils.isNotBlank(bo.getTraceName()), TraceRun::getTraceName, bo.getTraceName())
             .eq(StringUtils.isNotBlank(bo.getBusinessType()), TraceRun::getBusinessType, bo.getBusinessType())

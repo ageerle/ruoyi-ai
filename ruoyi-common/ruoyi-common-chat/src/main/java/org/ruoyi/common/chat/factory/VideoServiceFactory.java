@@ -28,12 +28,24 @@ public class VideoServiceFactory implements ApplicationContextAware {
     }
 
     public IVideoGenerationService getOriginalService(String providerCode) {
+        IVideoGenerationService service = findService(providerCode);
+        if (service == null) {
+            throw new IllegalArgumentException("不支持的视频模型供应商: " + providerCode);
+        }
+        return service;
+    }
+
+    public boolean supports(String providerCode) {
+        return findService(providerCode) != null;
+    }
+
+    private IVideoGenerationService findService(String providerCode) {
+        if (providerCode == null) {
+            return null;
+        }
         IVideoGenerationService service = videoServiceMap.get(providerCode);
         if (service == null && "custom_api".equals(providerCode)) {
             service = videoServiceMap.get("openai");
-        }
-        if (service == null) {
-            throw new IllegalArgumentException("不支持的视频模型供应商: " + providerCode);
         }
         return service;
     }

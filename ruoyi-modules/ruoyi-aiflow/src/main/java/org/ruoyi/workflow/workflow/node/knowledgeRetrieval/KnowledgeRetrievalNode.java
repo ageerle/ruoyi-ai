@@ -1,6 +1,5 @@
 package org.ruoyi.workflow.workflow.node.knowledgeRetrieval;
 
-import dev.langchain4j.data.message.SystemMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.ruoyi.workflow.entity.WorkflowComponent;
@@ -9,7 +8,6 @@ import org.ruoyi.workflow.util.SpringUtil;
 import org.ruoyi.workflow.workflow.NodeProcessResult;
 import org.ruoyi.workflow.workflow.WfNodeState;
 import org.ruoyi.workflow.workflow.WfState;
-import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 
@@ -36,10 +34,8 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
      *   "knowledge_id": "kb_123",
      *   "top_k": 5,
      *   "similarity_threshold": 0.7,
-     *   "retrieval_mode": "vector",
      *   "embedding_model": "text-embedding-3-small",
-     *   "return_source": true,
-     *   "prompt": "额外的查询改写提示词"
+     *   "return_source": true
      * }
      *
      * @return 检索结果
@@ -69,24 +65,12 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
         log.info("Knowledge retrieval node config: {}", config);
         log.info("Query text: {}", queryText);
 
-        // 如果有自定义提示词，对查询进行改写
-        String finalQuery = queryText;
-        if (StringUtils.isNotBlank(config.getPrompt())) {
-            finalQuery = rewriteQuery(config, queryText);
-            log.info("Rewritten query: {}", finalQuery);
-        }
-
-        // 根据检索模式执行不同的检索策略
-        String retrievalResult;
-        String mode = config.getRetrievalMode() != null ? config.getRetrievalMode().toLowerCase() : "vector";
-
-        // 图谱检索需要依赖 graph 模块，暂不支持；vector/hybrid 由统一检索服务处理
-        if ("graph".equals(mode)) {
+        if ("graph".equalsIgnoreCase(config.getRetrievalMode())) {
             log.warn("Graph retrieval mode is not supported");
             throw new UnsupportedOperationException("GraphRAG retrieval is not supported");
         }
 
-        retrievalResult = retrieveFromVector(config, finalQuery);
+        String retrievalResult = retrieveFromVector(config, queryText);
 
         // 严格模式处理：检索无结果时返回默认回复
         if (StringUtils.isBlank(retrievalResult) && Boolean.TRUE.equals(config.getIsStrict())) {
@@ -103,125 +87,21 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
         List<NodeIOData> outputs = new ArrayList<>();
         outputs.add(NodeIOData.createByText(DEFAULT_OUTPUT_PARAM_NAME, "", retrievalResult));
 
-        // 如果需要返回原始查询
-        outputs.add(NodeIOData.createByText("query", "", finalQuery));
+        outputs.add(NodeIOData.createByText("query", "", queryText));
 
         return NodeProcessResult.builder().content(outputs).build();
     }
 
     /**
-     * 使用LLM改写查询
-     */
-    private String rewriteQuery(KnowledgeRetrievalNodeConfig config, String originalQuery) {
-        try {
-            // 构建改写提示词
-            String prompt = WorkflowUtil.renderTemplate(config.getPrompt(), state.getInputs());
-            prompt = prompt.replace("{query}", originalQuery);
-
-            log.info("Query rewrite prompt: {}", prompt);
-
-            // 调用LLM进行查询改写
-            String rewrittenQuery = invokeLLMSync(config, prompt);
-
-            if (StringUtils.isNotBlank(rewrittenQuery)) {
-                log.info("Query rewritten from '{}' to '{}'", originalQuery, rewrittenQuery);
-                return rewrittenQuery.trim();
-            }
-
-            // 如果改写失败，返回原查询
-            return originalQuery;
-        } catch (Exception e) {
-            log.error("Failed to rewrite query, using original query", e);
-            return originalQuery;
-        }
-    }
-
-    /**
-     * 同步调用LLM
-     * 使用一个临时的流式处理器来收集完整响应
-     */
-    private String invokeLLMSync(KnowledgeRetrievalNodeConfig config, String prompt) {
-        try {
-            // 创建一个StringBuilder来收集LLM响应
-            StringBuilder responseBuilder = new StringBuilder();
-            Object lock = new Object();
-            boolean[] completed = {false};
-
-            // 创建临时节点状态用于LLM调用
-            WfNodeState tempState = new WfNodeState();
-            tempState.setUuid(state.getUuid() + "_rewrite");
-            List<NodeIOData> tempInputs = new ArrayList<>();
-            tempInputs.add(NodeIOData.createByText("input", "", prompt));
-            tempState.setInputs(tempInputs);
-
-            // 创建临时工作流节点定义
-            WorkflowNode tempNode = new WorkflowNode();
-            tempNode.setUuid(tempState.getUuid());
-            tempNode.setInputConfig(node.getInputConfig());
-
-            // 使用WorkflowUtil调用LLM（流式）
-            WorkflowUtil workflowUtil = SpringUtil.getBean(WorkflowUtil.class);
-
-            // 调用流式LLM
-            String modelName = StringUtils.isNotBlank(config.getModelName()) ? config.getModelName() : "deepseek-chat";
-
-            workflowUtil.streamingInvokeLLM(
-                wfState,
-                tempState,
-                tempNode,
-                modelName,
-                prompt,
-                ""
-            );
-
-            // 等待LLM响应完成（最多等待30秒）
-            long startTime = System.currentTimeMillis();
-            long timeout = 30000; // 30秒超时
-
-            while (!completed[0] && (System.currentTimeMillis() - startTime) < timeout) {
-                synchronized (lock) {
-                    // 检查是否有输出
-                    if (!tempState.getOutputs().isEmpty()) {
-                        for (NodeIOData output : tempState.getOutputs()) {
-                            if ("output".equals(output.getName())) {
-                                String text = output.valueToString();
-                                if (StringUtils.isNotBlank(text)) {
-                                    responseBuilder.append(text);
-                                    completed[0] = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (!completed[0]) {
-                    Thread.sleep(100); // 等待100ms后重试
-                }
-            }
-
-            String result = responseBuilder.toString().trim();
-            if (StringUtils.isBlank(result)) {
-                log.warn("LLM sync call returned empty response");
-            }
-
-            return result;
-        } catch (Exception e) {
-            log.error("Failed to invoke LLM synchronously", e);
-            return "";
-        }
-    }
-
-    /**
-     * 从向量库检索（复用聊天模块的统一检索服务：向量 + 可选混合检索 + 可选重排）
+     * 从向量库检索，重排序设置继承自知识库
      */
     private String retrieveFromVector(KnowledgeRetrievalNodeConfig config, String query) {
         try {
             Long knowledgeId = Long.parseLong(config.getKnowledgeId());
 
-            org.ruoyi.service.knowledge.IKnowledgeInfoService knowledgeInfoService =
-                SpringUtil.getBean(org.ruoyi.service.knowledge.IKnowledgeInfoService.class);
-            org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo kb = knowledgeInfoService.queryById(knowledgeId);
+            org.ruoyi.chat.service.knowledge.IKnowledgeInfoService knowledgeInfoService =
+                SpringUtil.getBean(org.ruoyi.chat.service.knowledge.IKnowledgeInfoService.class);
+            org.ruoyi.chat.domain.vo.knowledge.KnowledgeInfoVo kb = knowledgeInfoService.queryById(knowledgeId);
             if (kb == null) {
                 log.error("Knowledge base not found: {}", knowledgeId);
                 return "错误：知识库不存在, id=" + knowledgeId;
@@ -236,8 +116,8 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
                 return "错误：知识库未配置有效的向量模型";
             }
 
-            // 组装检索参数：节点配置优先，混合检索/重排继承知识库配置
-            org.ruoyi.domain.bo.vector.QueryVectorBo bo = new org.ruoyi.domain.bo.vector.QueryVectorBo();
+            // 组装检索参数，优先使用节点的返回数量和相似度阈值
+            org.ruoyi.chat.domain.bo.vector.QueryVectorBo bo = new org.ruoyi.chat.domain.bo.vector.QueryVectorBo();
             bo.setQuery(query);
             bo.setKid(String.valueOf(knowledgeId));
             bo.setMaxResults(config.getTopK() != null ? config.getTopK() : kb.getRetrieveLimit());
@@ -247,19 +127,14 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
             bo.setVectorModelName(kb.getVectorModel());
             bo.setBaseUrl(embModel.getApiHost());
 
-            // 节点明确选择的模式覆盖知识库配置，避免知识库开启混合检索时节点无法切回纯向量
-            String mode = config.getRetrievalMode() != null ? config.getRetrievalMode().toLowerCase() : "vector";
-            boolean enableHybrid = "hybrid".equals(mode);
-            bo.setEnableHybrid(enableHybrid);
-            bo.setHybridAlpha(kb.getHybridAlpha());
             bo.setEnableRerank(kb.getEnableRerank() != null && kb.getEnableRerank() == 1);
             bo.setRerankModelName(kb.getRerankModel());
             bo.setRerankTopN(kb.getRerankTopN());
             bo.setRerankScoreThreshold(kb.getRerankScoreThreshold());
 
-            org.ruoyi.service.retrieval.KnowledgeRetrievalService retrievalService =
-                SpringUtil.getBean(org.ruoyi.service.retrieval.KnowledgeRetrievalService.class);
-            java.util.List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> results = retrievalService.retrieve(bo);
+            org.ruoyi.chat.service.retrieval.KnowledgeRetrievalService retrievalService =
+                SpringUtil.getBean(org.ruoyi.chat.service.retrieval.KnowledgeRetrievalService.class);
+            java.util.List<org.ruoyi.chat.domain.vo.knowledge.KnowledgeRetrievalVo> results = retrievalService.retrieve(bo);
             if (results == null || results.isEmpty()) {
                 log.info("Knowledge retrieval returned no results, kid={}, query={}", knowledgeId, query);
                 return "";
@@ -269,7 +144,7 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
             boolean returnSource = config.getReturnSource() == null || config.getReturnSource();
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < results.size(); i++) {
-                org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo vo = results.get(i);
+                org.ruoyi.chat.domain.vo.knowledge.KnowledgeRetrievalVo vo = results.get(i);
                 sb.append(i + 1).append(". ").append(vo.getContent());
                 if (returnSource && StringUtils.isNotBlank(vo.getSourceName())) {
                     sb.append("（来源: ").append(vo.getSourceName());

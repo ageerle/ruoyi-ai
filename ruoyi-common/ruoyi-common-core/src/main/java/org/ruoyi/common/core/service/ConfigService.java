@@ -24,4 +24,7 @@ public interface ConfigService {
      */
     String getConfigValue(String category, String configKey);
 
+    /** Updates a tenant's system parameter or creates it if it does not exist. */
+    String upsertConfigValue(String configKey, String configName, String configValue);
+
 }

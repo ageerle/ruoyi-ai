@@ -6,6 +6,8 @@ import java.net.URI;
 public final class CustomApiCredentialPolicy {
 
     public static final String OPENAI_PROVIDER = "custom_api";
+    public static final String ARK_PROVIDER = "ark";
+    public static final String ARK_DEFAULT_BASE_URL = "https://ark.cn-beijing.volces.com/api/plan/v3";
     public static final String ANTHROPIC_PROVIDER = "custom_anthropic";
 
     private CustomApiCredentialPolicy() {
@@ -15,12 +17,19 @@ public final class CustomApiCredentialPolicy {
         return OPENAI_PROVIDER.equals(providerCode) || ANTHROPIC_PROVIDER.equals(providerCode);
     }
 
+    public static boolean isOpenAiCompatibleProvider(String providerCode) {
+        return OPENAI_PROVIDER.equals(providerCode) || ARK_PROVIDER.equals(providerCode);
+    }
+
     /** Accepts a base URL or the selected protocol's complete chat endpoint. */
     public static String normalizeBaseUrl(String providerCode, String apiHost) {
-        if (!isCustomProvider(providerCode)) {
+        if (!isCustomProvider(providerCode) && !ARK_PROVIDER.equals(providerCode)) {
             throw new IllegalArgumentException("不支持的自定义厂商协议");
         }
         if (apiHost == null || apiHost.isBlank()) {
+            if (ARK_PROVIDER.equals(providerCode)) {
+                return ARK_DEFAULT_BASE_URL;
+            }
             throw new IllegalArgumentException("请填写自定义厂商的请求地址");
         }
         URI uri = URI.create(apiHost);

@@ -1,5 +1,6 @@
 package org.ruoyi.common.chat.factory;
 
+import org.ruoyi.common.chat.security.CustomApiCredentialPolicy;
 import org.ruoyi.common.chat.service.image.IImageGenerationService;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -36,12 +37,25 @@ public class ImageServiceFactory implements ApplicationContextAware {
      * 获取原始服务（不包装代理）
      */
     public IImageGenerationService getOriginalService(String category) {
-        IImageGenerationService service = imageSerivceMap.get(category);
-        if (service == null && "custom_api".equals(category)) {
-            service = imageSerivceMap.get("openai");
-        }
+        IImageGenerationService service = findService(category);
         if (service == null) {
             throw new IllegalArgumentException("不支持的模型类别: " + category);
+        }
+        return service;
+    }
+
+    public boolean supports(String providerCode) {
+        return findService(providerCode) != null;
+    }
+
+    private IImageGenerationService findService(String providerCode) {
+        if (providerCode == null) {
+            return null;
+        }
+        IImageGenerationService service = imageSerivceMap.get(providerCode);
+        if (service == null && (CustomApiCredentialPolicy.OPENAI_PROVIDER.equals(providerCode)
+            || CustomApiCredentialPolicy.ARK_PROVIDER.equals(providerCode))) {
+            service = imageSerivceMap.get("openai");
         }
         return service;
     }

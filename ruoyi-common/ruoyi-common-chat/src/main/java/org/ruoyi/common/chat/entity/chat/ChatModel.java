@@ -58,6 +58,9 @@ public class ChatModel extends TenantEntity {
      */
     private String modelShow;
 
+    /** 是否支持图片理解。 */
+    private Boolean supportsVision;
+
     /**
      * 向量维度
      */

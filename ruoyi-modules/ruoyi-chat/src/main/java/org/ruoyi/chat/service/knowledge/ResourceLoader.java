@@ -1,0 +1,14 @@
+package org.ruoyi.chat.service.knowledge;
+
+import java.io.InputStream;
+import java.util.List;
+
+/**
+ * 资源载入
+ */
+public interface ResourceLoader {
+
+    String getContent(InputStream inputStream);
+
+    List<String> getChunkList(String content, DocumentSplitConfig config);
+}

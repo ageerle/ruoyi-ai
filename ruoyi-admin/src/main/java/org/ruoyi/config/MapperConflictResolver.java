@@ -32,8 +32,8 @@ public class MapperConflictResolver implements BeanDefinitionRegistryPostProcess
 
                 log.info("Found mapper bean: {} -> {}", beanName, beanClassName);
 
-                // 如果是 org.ruoyi.domain.bo.chat 包下的（冲突的），移除它
-                if (beanClassName != null && beanClassName.startsWith("org.ruoyi.domain.bo.chat")) {
+                // 如果是 org.ruoyi.chat.domain.bo.chat 包下的（冲突的），移除它
+                if (beanClassName != null && beanClassName.startsWith("org.ruoyi.chat.domain.bo.chat")) {
                     log.warn("Removing conflicting bean definition: {} ({})", beanName, beanClassName);
                     registry.removeBeanDefinition(beanName);
                 }

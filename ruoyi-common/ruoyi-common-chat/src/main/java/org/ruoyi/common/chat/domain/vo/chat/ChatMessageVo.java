@@ -48,6 +48,8 @@ public class ChatMessageVo implements Serializable {
     @ExcelProperty(value = "消息内容")
     private String content;
 
+    private boolean hasImage;
+
     /**
      * 对话角色
      */

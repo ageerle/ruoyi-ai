@@ -1,10 +1,16 @@
 package org.ruoyi.common.chat.domain.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import dev.langchain4j.data.message.ChatMessage;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.ToString;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -35,8 +41,33 @@ public class ChatRequest {
     /**
      * 对话消息
      */
-    @NotEmpty(message = "对话消息不能为空")
     private String content;
+
+    @Valid
+    @ToString.Exclude
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Image image;
+
+    /** Internal flag set only when the model call includes a native image. */
+    @JsonIgnore
+    private boolean imageInput;
+
+    @JsonIgnore
+    @AssertTrue(message = "请输入消息或添加图片")
+    public boolean isMessagePresent() {
+        return (content != null && !content.isEmpty()) || image != null;
+    }
+
+    @Data
+    public static class Image {
+        public static final int MAX_BYTES = 10 * 1024 * 1024;
+        public static final int MAX_BASE64_LENGTH = 4 * ((MAX_BYTES + 2) / 3);
+
+        @NotEmpty(message = "请添加图片")
+        @Size(max = MAX_BASE64_LENGTH, message = "图片不能超过 10 MB")
+        @ToString.Exclude
+        private String dataBase64;
+    }
 
     /**
      * 工作流请求体

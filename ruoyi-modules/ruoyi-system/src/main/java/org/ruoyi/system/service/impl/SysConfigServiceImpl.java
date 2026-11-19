@@ -2,6 +2,7 @@ package org.ruoyi.system.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
+import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -215,6 +216,30 @@ public class SysConfigServiceImpl implements ISysConfigService, ConfigService {
     @Override
     public String getConfigValue(String configKey) {
         return SpringUtils.getAopProxy(this).selectConfigByKey(configKey);
+    }
+
+    @Override
+    @Lock4j(keys = "#configKey")
+    @CachePut(cacheNames = CacheNames.SYS_CONFIG, key = "#configKey")
+    public String upsertConfigValue(String configKey, String configName, String configValue) {
+        SysConfig current = baseMapper.selectOne(Wrappers.<SysConfig>lambdaQuery()
+            .eq(SysConfig::getConfigKey, configKey));
+        SysConfig config = new SysConfig();
+        config.setConfigValue(configValue);
+        int rows;
+        if (current == null) {
+            config.setConfigKey(configKey);
+            config.setConfigName(configName);
+            config.setConfigType(SystemConstants.YES);
+            rows = baseMapper.insert(config);
+        } else {
+            config.setConfigId(current.getConfigId());
+            rows = baseMapper.updateById(config);
+        }
+        if (rows == 0) {
+            throw new ServiceException("参数保存失败，请重试");
+        }
+        return configValue;
     }
 
     @Override

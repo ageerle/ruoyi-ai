@@ -1,0 +1,35 @@
+package org.ruoyi.chat.domain.bo.shortdrama;
+
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+import org.ruoyi.chat.domain.ShortDramaScript;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@AutoMapper(target = ShortDramaScript.class, reverseConvertGenerate = false)
+public class ShortDramaScriptBo extends BaseEntity {
+
+    private Long id;
+
+    private Long projectId;
+
+    private String scriptName;
+
+    private String scriptText;
+
+    private String outlineText;
+
+    private String tone;
+
+    private String sourceType;
+
+    private String creationMode;
+
+    private String sourceMaterials;
+
+    private String worldbuilding;
+
+    private String revisionNotes;
+}
